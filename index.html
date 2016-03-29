@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Kernel tuner : A simple CUDA kernel tuner in Python">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Kernel tuner</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/benvanwerkhoven/kernel_tuner">View on GitHub</a>
+
+          <h1 id="project_title">Kernel tuner</h1>
+          <h2 id="project_tagline">A simple CUDA kernel tuner in Python</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/benvanwerkhoven/kernel_tuner/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/benvanwerkhoven/kernel_tuner/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="a-simple-cuda-kernel-tuner-in-python" class="anchor" href="#a-simple-cuda-kernel-tuner-in-python" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A simple CUDA kernel tuner in Python</h1>
+
+<p>The goal of this project is to provide a - as simple as possible - tool
+for tuning CUDA kernels. This implies that any CUDA kernel can be tuned
+without requiring extensive changes to the original kernel code.</p>
+
+<p>A very common problem in CUDA programming is that some combination of
+thread block dimensions and other kernel parameters, like tiling or
+unrolling factors, results in dramatically better performance than other
+kernel configurations. The goal of auto-tuning is to automate the
+process of finding the best performing configuration for a given device.</p>
+
+<p>This kernel tuner aims that you can directly use the tuned kernel
+without introducing any new dependencies. The tuned kernels can
+afterwards be used independently of the programming environment, whether
+that is using C/C++/Java/Fortran or Python doesn't matter.</p>
+
+<p>The kernel_tuner module currently only contains one function which is called
+tune_kernel to which you pass at least the kernel name, a string
+containing the kernel code, the problem size, a list of kernel function
+arguments, and a dictionary of tunable parameters. There are also a lot
+of optional parameters, for a full list see the documentation of
+tune_kernel.</p>
+
+<h2>
+<a id="dependencies" class="anchor" href="#dependencies" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Dependencies</h2>
+
+<ul>
+<li>PyCuda</li>
+<li>A CUDA capable device</li>
+</ul>
+
+<h2>
+<a id="example-usage" class="anchor" href="#example-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example usage</h2>
+
+<p>The following shows a simple example use of the kernel tuner:</p>
+
+<pre><code>kernel_string = """
+__global__ void vector_add(float *c, float *a, float *b, int n) {
+    int i = blockIdx.x * block_size_x + threadIdx.x;
+    if (i&lt;n) {
+        c[i] = a[i] + b[i];
+    }
+}
+"""
+
+size = 10000000
+problem_size = (size, 1)
+
+a = numpy.random.randn(size).astype(numpy.float32)
+b = numpy.random.randn(size).astype(numpy.float32)
+c = numpy.zeros_like(b)
+
+args = [c, a, b]
+tune_params = dict()
+tune_params["block_size_x"] = [128+64*i for i in range(15)]
+
+tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
+</code></pre>
+
+<p>More extensive examples will be added later.</p>
+
+<h2>
+<a id="contribution-guide" class="anchor" href="#contribution-guide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contribution guide</h2>
+
+<p>The kernel tuner follows the Google Python style guide. If you want to
+contribute to the project please fork it, create a branch including
+your addition, and create a pull request.</p>
+
+<p>Contributing authors so far:</p>
+
+<ul>
+<li>Ben van Werkhoven</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Kernel tuner maintained by <a href="https://github.com/benvanwerkhoven">benvanwerkhoven</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
