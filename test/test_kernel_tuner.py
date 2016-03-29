@@ -76,3 +76,20 @@ def test_get_thread_block_dimensions():
     assert threads[0] == 123
     assert threads[1] == 257
     assert threads[2] == 1
+
+def test_prepare_kernel_string():
+    kernel = "this is a weird kernel"
+    params = dict()
+    params["is"] = 8
+    params["weird"] = 14
+
+    new_kernel = kernel_tuner._prepare_kernel_string(kernel, params)
+    assert new_kernel == "th8 8 a 14 kernel"
+
+    new_kernel = kernel_tuner._prepare_kernel_string(kernel, dict())
+    assert kernel == new_kernel
+
+    params = dict()
+    params["blablabla"] = 8
+    new_kernel = kernel_tuner._prepare_kernel_string(kernel, params)
+    assert kernel == new_kernel

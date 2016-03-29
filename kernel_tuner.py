@@ -103,10 +103,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         grid = _get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
 
-        #replace occurrences of the tuning parameters with their current value
-        kernel_string = original_kernel
-        for k, v in params.iteritems():
-            kernel_string = kernel_string.replace(k, str(v))
+        #create configuration specific kernel string
+        kernel_string = _prepare_kernel_string(original_kernel, params)
 
         #rename the kernel to guarantee that PyCuda compiles a new kernel
         name = kernel_name + "_" + instance_string
@@ -193,6 +191,12 @@ def _get_thread_block_dimensions(params):
     block_size_z = params.get("block_size_z", 1)
     return (block_size_x, block_size_y, block_size_z)
 
+def _prepare_kernel_string(original_kernel, params):
+    #replace occurrences of the tuning parameters with their current value
+    kernel_string = original_kernel
+    for k, v in params.iteritems():
+        kernel_string = kernel_string.replace(k, str(v))
+    return kernel_string
 
 
 
