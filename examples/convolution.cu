@@ -1,5 +1,5 @@
-#define image_height 1024
-#define image_width 1024
+#define image_height 4096
+#define image_width 4096
 #define filter_height 17
 #define filter_width 17
 
@@ -41,7 +41,7 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
             for (int yi=0; yi<tile_size_y; yi++) {   
                 #pragma unroll
                 for (int xi=0; xi<tile_size_x; xi++) {
-                    sum[yi][xi] += sh_input[ty+yi*block_size_y+i][tx+xi*block_size_x+j] * c_filter[i*filter_width+j];
+                    sum[yi][xi] += sh_input[ty+yi*block_size_y+i][tx+xi*block_size_x+j] * filter[i*filter_width+j];
                 }
             }
 
@@ -53,7 +53,7 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
     for (int yi=0; yi<tile_size_y; yi++) {   
         #pragma unroll
         for (int xi=0; xi<tile_size_x; xi++) {
-             output[(y+ti*block_size_x)*image_width+x+xi*block_size_x] = sum;
+             output[(y+yi*block_size_x)*image_width+x+xi*block_size_x] = sum[yi][xi];
         }
     }
 
