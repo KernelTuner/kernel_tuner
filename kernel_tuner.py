@@ -85,6 +85,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     """
 
     original_kernel = kernel_string
+    results = dict()
 
     #move data to GPU
     gpu_args = _create_gpu_args(arguments)
@@ -100,12 +101,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
         #compute thread block and grid dimensions for this kernel
         threads = (block_size_x, block_size_y, block_size_z)
-        div_x = numpy.prod([params[i] for i in grid_div_x])
-        div_y = 1
-        if grid_div_y is not None:
-            div_y = numpy.prod([params[i] for i in grid_div_y])
-        grid = (int(numpy.ceil(float(problem_size[0]) / float(div_x))),
-                int(numpy.ceil(float(problem_size[1]) / float(div_y))) )
+        grid = _get_grid_dimensions(problem_size, params,
+                       grid_div_y, grid_div_x)
 
         #replace occurrences of the tuning parameters with their current value
         kernel_string = original_kernel
@@ -113,7 +110,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             kernel_string = kernel_string.replace(k, str(v))
 
         #rename the kernel to guarantee that PyCuda compiles a new kernel
-        name = kernel_name + "_" + "_".join([str(i) for i in params.values()])
+        instance_string = "_".join([str(i) for i in params.values()])
+        name = kernel_name + "_" + instance_string
         kernel_string = kernel_string.replace(kernel_name, name)
 
         #compile kernel func
@@ -136,9 +134,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #print the result
         #later we'll save the results and return nice statistics
         print params, kernel_name, "took:", time, " ms."
+        results[instance_string] = time
 
 
+    #finished iterating over search space
 
+    return results
 
 
 
@@ -152,6 +153,18 @@ def _create_gpu_args(arguments):
         else: # if not an array, just pass argument along
             gpu_args.append(arg)
     return gpu_args
+
+
+def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
+    div_x = 1
+    if grid_div_x is not None:
+        div_x = numpy.prod([params[i] for i in grid_div_x])
+    div_y = 1
+    if grid_div_y is not None:
+        div_y = numpy.prod([params[i] for i in grid_div_y])
+    grid = (int(numpy.ceil(float(problem_size[0]) / float(div_x))),
+            int(numpy.ceil(float(problem_size[1]) / float(div_y))) )
+    return grid
 
 
 

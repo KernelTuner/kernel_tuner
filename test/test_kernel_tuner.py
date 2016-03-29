@@ -21,3 +21,43 @@ def test_create_gpu_args():
     gpu_args[0].free()
     gpu_args[2].free()
 
+
+def test_get_grid_dimensions():
+
+    problem_size = (1024, 1024)
+
+    params = dict()
+    params["block_x"] = 41
+    params["block_y"] = 37
+
+    grid_div_x = ["block_x"]
+    grid_div_y = ["block_y"]
+
+    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+                    grid_div_y, grid_div_x)
+
+    assert len(grid) == 2
+    assert type(grid[0]) is int
+    assert type(grid[1]) is int
+
+    print grid
+    assert grid[0] == 25
+    assert grid[1] == 28
+
+    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+                    None, grid_div_x)
+
+    print grid
+    assert grid[0] == 25
+    assert grid[1] == 1024
+
+    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+                    grid_div_y, None)
+
+    print grid
+    assert grid[0] == 1024
+    assert grid[1] == 28
+
+    return grid
+
+
