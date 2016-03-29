@@ -93,6 +93,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #compute cartesian product of all tunable parameters
     for element in itertools.product(*tune_params.values()):
         params = dict(zip(tune_params.keys(), element))
+        instance_string = "_".join([str(i) for i in params.values()])
 
         #thread block size from tunable parameters, current using convention
         block_size_x = params.get("block_size_x", 256)
@@ -101,6 +102,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
         #compute thread block and grid dimensions for this kernel
         threads = (block_size_x, block_size_y, block_size_z)
+        if numpy.prod(threads) > 1024:
+            print "skipping config", instance_string, "reason: too many threads per block"
+            continue
         grid = _get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
 
@@ -110,14 +114,23 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             kernel_string = kernel_string.replace(k, str(v))
 
         #rename the kernel to guarantee that PyCuda compiles a new kernel
-        instance_string = "_".join([str(i) for i in params.values()])
         name = kernel_name + "_" + instance_string
         kernel_string = kernel_string.replace(kernel_name, name)
 
         #compile kernel func
-        func = SourceModule(kernel_string, options=['-Xcompiler=-Wall'],
+        try:
+            func = SourceModule(kernel_string, options=['-Xcompiler=-Wall'],
                     arch='compute_' + str(cc), code='sm_' + str(cc),
                     cache_dir=False).get_function(name)
+        except drv.CompileError, e:
+            #compiles may fail because certain kernel configurations use too
+            #much shared memory for example, the desired behavior is to simply
+            #skip over this configuration and try the next one
+            if "uses too much shared data" in e.stderr:
+                print "skipping config", instance_string, "reason: too much shared memory used"
+                continue
+            else:
+                raise e
 
         #test kernel
         start = drv.Event()
@@ -125,7 +138,18 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
         context.synchronize()
         start.record()
-        func( *gpu_args, block=threads, grid=grid)
+        try:
+            func( *gpu_args, block=threads, grid=grid)
+        except drv.LaunchError, e:
+            #some launches may fail because too many registers are required
+            #to run the kernel given the current thread block size
+            #the desired behavior is to simply skip over this configuration
+            #and proceed to try the next one
+            if "too many resources requested for launch" in str(e):
+                print "skipping config", instance_string, "reason: too many resources requested for launch"
+                continue
+            else:
+                raise e
         end.record()
 
         context.synchronize()
