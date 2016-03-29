@@ -1,26 +1,26 @@
 #!/usr/bin/env python
 """ A simple CUDA kernel tuner in Python
 
-The goal of this project is to provide a - as simple as possible - tool 
-for tuning CUDA kernels. This implies that any CUDA kernel can be tuned 
+The goal of this project is to provide a - as simple as possible - tool
+for tuning CUDA kernels. This implies that any CUDA kernel can be tuned
 without requiring extensive changes to the original kernel code.
 
-A very common problem in CUDA programming is that some combination of 
-thread block dimensions and other kernel parameters, like tiling or 
-unrolling factors, results in dramatically better performance than other 
-kernel configurations. The goal of auto-tuning is the automate the 
+A very common problem in CUDA programming is that some combination of
+thread block dimensions and other kernel parameters, like tiling or
+unrolling factors, results in dramatically better performance than other
+kernel configurations. The goal of auto-tuning is to automate the
 process of finding the best performing configuration for a given device.
 
-This kernel tuner aims that you can directly use the tuned kernels 
-without introducing any new dependencies. The tuned kernels can 
-afterwards be used independently of the programming environment, whether 
+This kernel tuner aims that you can directly use the tuned kernels
+without introducing any new dependencies. The tuned kernels can
+afterwards be used independently of the programming environment, whether
 that is using C/C++/Java/Fortran or Python doesn't matter.
 
-This module currently only contains one function which is called 
-tune_kernel() to which you pass at least the kernel name, a string 
-containing the kernel code, the problem size, a list of kernel function 
-arguments, and a dictionary of tunable parameters. There are also a lot 
-of optional parameters, for a full list see the documentation of 
+This module currently only contains one function which is called
+tune_kernel() to which you pass at least the kernel name, a string
+containing the kernel code, the problem size, a list of kernel function
+arguments, and a dictionary of tunable parameters. There are also a lot
+of optional parameters, for a full list see the documentation of
 tune_kernel().
 
 Example usage:
@@ -78,7 +78,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             the grid dimensions in the x-direction, ["block_size_x"] by default
         grid_div_y: A list of names of the parameters whose values divide
             the grid dimensions in the y-direction, empty by default
-        
+
     Returns:
         nothing for the moment it just prints a lot of stuff
 
@@ -87,14 +87,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     original_kernel = kernel_string
 
     #move data to GPU
-    gpu_args = []
-    for i in range(len(arguments)):
-        # if arg i is a numpy array copy to device
-        if hasattr(arguments[i], "nbytes"):
-            gpu_args.append(drv.mem_alloc(arguments[i].nbytes))
-            drv.memcpy_htod(gpu_args[i], arguments[i])
-        else: # if not an array, just pass argument along
-            gpu_args.append(arguments[i])
+    gpu_args = _create_gpu_args(arguments)
 
     #compute cartesian product of all tunable parameters
     for element in itertools.product(*tune_params.values()):
@@ -144,6 +137,21 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #later we'll save the results and return nice statistics
         print params, kernel_name, "took:", time, " ms."
 
+
+
+
+
+
+def _create_gpu_args(arguments):
+    gpu_args = []
+    for arg in arguments:
+        # if arg i is a numpy array copy to device
+        if hasattr(arg, "nbytes"):
+            gpu_args.append(drv.mem_alloc(arg.nbytes))
+            drv.memcpy_htod(gpu_args[-1], arg)
+        else: # if not an array, just pass argument along
+            gpu_args.append(arg)
+    return gpu_args
 
 
 

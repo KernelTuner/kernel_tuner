@@ -2,26 +2,26 @@
 A simple CUDA kernel tuner in Python
 ====================================
 
-The goal of this project is to provide a - as simple as possible - tool 
-for tuning CUDA kernels. This implies that any CUDA kernel can be tuned 
+The goal of this project is to provide a - as simple as possible - tool
+for tuning CUDA kernels. This implies that any CUDA kernel can be tuned
 without requiring extensive changes to the original kernel code.
 
-A very common problem in CUDA programming is that some combination of 
-thread block dimensions and other kernel parameters, like tiling or 
-unrolling factors, results in dramatically better performance than other 
-kernel configurations. The goal of auto-tuning is the automate the 
+A very common problem in CUDA programming is that some combination of
+thread block dimensions and other kernel parameters, like tiling or
+unrolling factors, results in dramatically better performance than other
+kernel configurations. The goal of auto-tuning is to automate the
 process of finding the best performing configuration for a given device.
 
-This kernel tuner aims that you can directly use the tuned kernel 
-without introducing any new dependencies. The tuned kernels can 
-afterwards be used independently of the programming environment, whether 
+This kernel tuner aims that you can directly use the tuned kernel
+without introducing any new dependencies. The tuned kernels can
+afterwards be used independently of the programming environment, whether
 that is using C/C++/Java/Fortran or Python doesn't matter.
 
-The kernel_tuner module currently only contains one function which is called 
-tune_kernel to which you pass at least the kernel name, a string 
-containing the kernel code, the problem size, a list of kernel function 
-arguments, and a dictionary of tunable parameters. There are also a lot 
-of optional parameters, for a full list see the documentation of 
+The kernel_tuner module currently only contains one function which is called
+tune_kernel to which you pass at least the kernel name, a string
+containing the kernel code, the problem size, a list of kernel function
+arguments, and a dictionary of tunable parameters. There are also a lot
+of optional parameters, for a full list see the documentation of
 tune_kernel.
 
 Dependencies
@@ -60,7 +60,7 @@ More extensive examples will be added later.
 
 Contribution guide
 ------------------
-The kernel tuner follows the Google Python style guide. If you want to 
+The kernel tuner follows the Google Python style guide. If you want to
 contribute to the project please fork it, create a branch including
 your addition, and create a pull request.
 
