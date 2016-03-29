@@ -26,11 +26,11 @@ tune_kernel.
 
 Installation
 ------------
-clone the repository
-change into the top-level directory
-type: pip install .
+clone the repository  
+change into the top-level directory  
+type: pip install .  
 
-Dependencies
+Dependencies:
  * PyCuda
  * A CUDA capable device
 
