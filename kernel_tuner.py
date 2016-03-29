@@ -22,27 +22,32 @@ containing the kernel code, the problem size, a list of kernel function
 arguments, and a dictionary of tunable parameters. There are also a lot
 of optional parameters, for a full list see the documentation of
 tune_kernel().
+"""
 
-Example usage:
-    See the bottom of this file.
+"""
+Example usage
+-------------
+See the bottom of this file (kernel_tuner.py)
 
-Author:
-    Ben van Werkhoven <b.vanwerkhoven@esciencenter.nl>
+Author
+------
+Ben van Werkhoven <b.vanwerkhoven@esciencenter.nl>
 
-Copyright and License:
-    Copyright 2014 Netherlands eScience Center
+Copyright and License
+---------------------
+* Copyright 2016 Netherlands eScience Center
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 """
 
 import pycuda.driver as drv
@@ -56,32 +61,50 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, cc=52, grid_div_x=["block_size_x"], grid_div_y=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
-    Args:
-        kernel_name: A string containing the kernel name
-        kernel_string: A string containing the CUDA kernel code
-        problem_size: A tuple containing the size from which the grid
-            dimensions of the kernel will be computed
-        arguments: A list of kernel arguments, use numpy arrays for arrays
-        tune_params: A dictionary containing the parameter names as keys
+    :param kernel_name: The name of the kernel in the code
+    :type kernel_name: string
+
+    :param kernel_string: The CUDA kernel code as a string
+    :type kernel_string: string
+
+    :param problem_size: A tuple containing the size from which the grid
+            dimensions of the kernel will be computed. Do not divide by
+            the thread block sizes, if this is necessary use grid_div_x/y to
+            specify.
+    :type problem_size: tuple(int, int)
+
+    :param arguments: A list of kernel arguments, use numpy arrays for
+            arrays
+    :type arguments: list
+
+    :param tune_params: A dictionary containing the parameter names as keys
             and lists of possible parameter settings as values.
             Currently the kernel tuner uses the convention that the following
             list of tunable parameters are used as compile-time constants
             in the code:
-                block_size_x    thread block size x-dimension
-                block_size_y    thread block size y-dimension
-                block_size_z    thread block size z-dimension
+
+                * "block_size_x"   thread block size x-dimension
+                * "block_size_y"   thread block size y-dimension
+                * "block_size_z"   thread block size z-dimension
+
             Options for changing these defaults will be added later.
+    :type tune_params: dict
 
-        cc: compute capability of the CUDA device, 52 by default.
-            Could be changed to detect this at runtime.
-        grid_div_x: A list of names of the parameters whose values divide
-            the grid dimensions in the x-direction, ["block_size_x"] by default
-        grid_div_y: A list of names of the parameters whose values divide
-            the grid dimensions in the y-direction, empty by default
+    :param cc: compute capability of the CUDA device, 52 by default.
+        Could be changed to detect this at runtime.
+    :type cc: int
 
-    Returns:
-        nothing for the moment it just prints a lot of stuff
+    :param grid_div_x: A list of names of the parameters whose values divide
+        the grid dimensions in the x-direction, ["block_size_x"] by default
+    :type grid_div_x: list
 
+    :param grid_div_y: A list of names of the parameters whose values divide
+        the grid dimensions in the y-direction, empty by default
+    :type grid_div_y: list
+
+    :returns: a dictionary of all executed kernel configurations and their
+        execution times.
+    :rtype: dict
     """
 
     original_kernel = kernel_string
@@ -149,7 +172,6 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         time = end.time_since(start)
 
         #print the result
-        #later we'll save the results and return nice statistics
         print params, kernel_name, "took:", time, " ms."
         results[instance_string] = time
 
@@ -160,6 +182,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     return results
 
 
+#module private functions
 
 def _create_gpu_args(arguments):
     gpu_args = []
@@ -171,7 +194,6 @@ def _create_gpu_args(arguments):
         else: # if not an array, just pass argument along
             gpu_args.append(arg)
     return gpu_args
-
 
 def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     div_x = 1
@@ -185,7 +207,7 @@ def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     return grid
 
 def _get_thread_block_dimensions(params):
-    #thread block size from tunable parameters, current using convention
+    #thread block size from tunable parameters, currently using convention
     block_size_x = params.get("block_size_x", 256)
     block_size_y = params.get("block_size_y", 1)
     block_size_z = params.get("block_size_z", 1)
