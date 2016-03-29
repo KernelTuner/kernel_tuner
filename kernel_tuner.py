@@ -155,8 +155,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         print params, kernel_name, "took:", time, " ms."
         results[instance_string] = time
 
-
     #finished iterating over search space
+    best_config = min(results, key=results.get)
+    print "best performing configuration: ", best_config, "took:", results[best_config], "ms."
 
     return results
 
