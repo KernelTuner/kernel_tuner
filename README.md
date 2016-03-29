@@ -57,6 +57,10 @@ The following shows a simple example use of the kernel tuner:
 
 More extensive examples will be added later.
 
+Documentation
+-------------
+The kernel_tuner's full documentation is available [here](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html).
+
 
 Contribution guide
 ------------------
