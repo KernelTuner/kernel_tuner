@@ -95,13 +95,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         params = dict(zip(tune_params.keys(), element))
         instance_string = "_".join([str(i) for i in params.values()])
 
-        #thread block size from tunable parameters, current using convention
-        block_size_x = params.get("block_size_x", 256)
-        block_size_y = params.get("block_size_y", 1)
-        block_size_z = params.get("block_size_z", 1)
-
         #compute thread block and grid dimensions for this kernel
-        threads = (block_size_x, block_size_y, block_size_z)
+        threads = _get_thread_block_dimensions(params)
         if numpy.prod(threads) > 1024:
             print "skipping config", instance_string, "reason: too many threads per block"
             continue
@@ -189,6 +184,17 @@ def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     grid = (int(numpy.ceil(float(problem_size[0]) / float(div_x))),
             int(numpy.ceil(float(problem_size[1]) / float(div_y))) )
     return grid
+
+def _get_thread_block_dimensions(params):
+    #thread block size from tunable parameters, current using convention
+    block_size_x = params.get("block_size_x", 256)
+    block_size_y = params.get("block_size_y", 1)
+    block_size_z = params.get("block_size_z", 1)
+    return (block_size_x, block_size_y, block_size_z)
+
+
+
+
 
 
 

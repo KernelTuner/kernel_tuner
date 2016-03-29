@@ -61,3 +61,18 @@ def test_get_grid_dimensions():
     return grid
 
 
+def test_get_thread_block_dimensions():
+
+    params = dict()
+    params["block_size_x"] = 123
+    params["block_size_y"] = 257
+
+    threads = kernel_tuner._get_thread_block_dimensions(params)
+    assert len(threads) == 3
+    assert type(threads[0]) is int
+    assert type(threads[1]) is int
+    assert type(threads[2]) is int
+
+    assert threads[0] == 123
+    assert threads[1] == 257
+    assert threads[2] == 1
