@@ -51,7 +51,7 @@ The following shows a simple example use of the kernel tuner:
 
     args = [c, a, b]
     tune_params = dict()
-    tune_params["block_size_x"] = [128+64*i for i in range(14)]
+    tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
     tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
 
