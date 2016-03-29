@@ -52,7 +52,7 @@ import numpy
 import itertools
 
 
-def tune_kernel(kernel_name, kernel_string, problem_size, arguments, 
+def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, cc=52, grid_div_x=["block_size_x"], grid_div_y=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
