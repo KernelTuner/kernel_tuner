@@ -24,8 +24,13 @@ arguments, and a dictionary of tunable parameters. There are also a lot
 of optional parameters, for a full list see the documentation of
 tune_kernel.
 
-Dependencies
+Installation
 ------------
+clone the repository
+change into the top-level directory
+type: pip install .
+
+Dependencies
  * PyCuda
  * A CUDA capable device
 
