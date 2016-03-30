@@ -162,13 +162,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 raise e
 
         #test kernel
-        start = drv.Event()
-        end = drv.Event()
-
-        context.synchronize()
-        start.record()
         try:
-            func( *gpu_args, block=threads, grid=grid)
+            time = _benchmark(func, gpu_args, threads, grid)
         except drv.LaunchError, e:
             #some launches may fail because too many registers are required
             #to run the kernel given the current thread block size
@@ -179,10 +174,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 continue
             else:
                 raise e
-        end.record()
 
-        context.synchronize()
-        time = end.time_since(start)
 
         #print the result
         print params, kernel_name, "took:", time, " ms."
@@ -198,6 +190,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 #module private functions
 
 def _create_gpu_args(arguments):
+    """ready argument list to be passed to the kernel, allocates gpu mem"""
     gpu_args = []
     for arg in arguments:
         # if arg i is a numpy array copy to device
@@ -209,6 +202,7 @@ def _create_gpu_args(arguments):
     return gpu_args
 
 def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
+    """compute grid dims based on problem sizes and listed grid divisors"""
     div_x = 1
     if grid_div_x is not None:
         div_x = numpy.prod([params[i] for i in grid_div_x])
@@ -220,21 +214,34 @@ def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     return grid
 
 def _get_thread_block_dimensions(params):
-    #thread block size from tunable parameters, currently using convention
+    """thread block size from tuning params, currently using convention"""
     block_size_x = params.get("block_size_x", 256)
     block_size_y = params.get("block_size_y", 1)
     block_size_z = params.get("block_size_z", 1)
     return (block_size_x, block_size_y, block_size_z)
 
 def _prepare_kernel_string(original_kernel, params):
-    #replace occurrences of the tuning parameters with their current value
+    """replace occurrences of the tuning params with their current value"""
     kernel_string = original_kernel
     for k, v in params.iteritems():
         kernel_string = kernel_string.replace(k, str(v))
     return kernel_string
 
-
-
+def _benchmark(func, gpu_args, threads, grid):
+    """runs the kernel and measures time repeatedly, returns average time"""
+    ITERATIONS = 7
+    start = drv.Event()
+    end = drv.Event()
+    times = []
+    for i in range(ITERATIONS):
+        context.synchronize()
+        start.record()
+        func(*gpu_args, block=threads, grid=grid)
+        end.record()
+        context.synchronize()
+        times.append(end.time_since(start))
+    times = sorted(times)
+    return numpy.mean(times[1:-1])
 
 
 
