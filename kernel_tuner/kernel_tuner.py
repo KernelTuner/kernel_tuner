@@ -63,7 +63,8 @@ except:
     pass
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
-        tune_params, cc=52, grid_div_x=["block_size_x"], grid_div_y=None):
+        tune_params, cc=52, grid_div_x=["block_size_x"], grid_div_y=None,
+        restrictions=None, verbose=False):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code
@@ -115,6 +116,20 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         the grid dimensions in the y-direction, None by default
     :type grid_div_y: list
 
+    :param restrictions: A list of strings containing boolean expression that
+        limited the search space in that they must be satisfied by the kernel
+        configuration. These expressions must be true for the configuration
+        to be part of the search space. For example:
+        restrictions=["block_size_x==block_size_y*tile_size_y"] limits the
+        search to configurations where the block_size_x equals the product
+        of block_size_y and tile_size_y.
+        The default is None.
+    :type restrictions: list
+
+    :param verbose: Sets whether or not to report about configurations that
+        were skipped during the search, by default set to False.
+    :type verbose: boolean
+
     :returns: A dictionary of all executed kernel configurations and their
         execution times.
     :rtype: dict( string, float )
@@ -131,10 +146,19 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         params = dict(zip(tune_params.keys(), element))
         instance_string = "_".join([str(i) for i in params.values()])
 
+        #check for search space restrictions
+        try:
+            _check_restrictions(restrictions, params)
+        except Exception, e:
+            if verbose:
+                print "skipping config", instance_string, "reason:", str(e)
+            continue
+
         #compute thread block and grid dimensions for this kernel
         threads = _get_thread_block_dimensions(params)
         if numpy.prod(threads) > 1024:
-            print "skipping config", instance_string, "reason: too many threads per block"
+            if verbose:
+                print "skipping config", instance_string, "reason: too many threads per block"
             continue
         grid = _get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
@@ -156,7 +180,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             #much shared memory for example, the desired behavior is to simply
             #skip over this configuration and try the next one
             if "uses too much shared data" in e.stderr:
-                print "skipping config", instance_string, "reason: too much shared memory used"
+                if verbose:
+                    print "skipping config", instance_string, "reason: too much shared memory used"
                 continue
             else:
                 raise e
@@ -170,10 +195,14 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             #the desired behavior is to simply skip over this configuration
             #and proceed to try the next one
             if "too many resources requested for launch" in str(e):
-                print "skipping config", instance_string, "reason: too many resources requested for launch"
+                if verbose:
+                    print "skipping config", instance_string, "reason: too many resources requested for launch"
                 continue
             else:
                 raise e
+        except Exception, e:
+            print "Error while benchmarking:", instance_string
+            raise e
 
 
         #print the result
@@ -242,6 +271,13 @@ def _benchmark(func, gpu_args, threads, grid):
         times.append(end.time_since(start))
     times = sorted(times)
     return numpy.mean(times[1:-1])
+
+def _check_restrictions(restrictions, params):
+    if restrictions != None:
+        for restrict in restrictions:
+            if not eval(_prepare_kernel_string(restrict, params)):
+                raise Exception("config fails restriction")
+
 
 
 

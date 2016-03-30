@@ -1,6 +1,6 @@
 import numpy
 from nose import SkipTest
-from nose.tools import nottest
+from nose.tools import nottest, raises
 from .context import kernel_tuner
 
 try:
@@ -113,3 +113,27 @@ def test_prepare_kernel_string():
     params["blablabla"] = 8
     new_kernel = kernel_tuner._prepare_kernel_string(kernel, params)
     assert kernel == new_kernel
+
+@raises(Exception)
+def test_check_restrictions1():
+    params = dict()
+    params["a"] = 7
+    params["b"] = 4
+    params["c"] = 1
+    restrictions = ["a==b+c"]
+    kernel_tuner._check_restrictions(restrictions, params)
+    assert False
+
+def test_check_restrictions2():
+    params = dict()
+    params["a"] = 7
+    params["b"] = 4
+    params["c"] = 3
+    restrictions = ["a==b+c", "b==b", "a-b==c"]
+    #test that the call does not return an exception
+    try:
+        kernel_tuner._check_restrictions(restrictions, params)
+        assert True
+    except:
+        assert False
+
