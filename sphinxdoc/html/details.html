@@ -137,7 +137,7 @@
 called including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name, kernel_string, problem_size, arguments, tune_params, cc=52, grid_div_x=['block_size_x'], grid_div_y=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name, kernel_string, problem_size, arguments, tune_params, cc=52, grid_div_x=['block_size_x'], grid_div_y=None, restrictions=None, verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -151,7 +151,7 @@ dimensions of the kernel will be computed. Do not divide by
 the thread block sizes, if this is necessary use grid_div_x/y to
 specify.</li>
 <li><strong>arguments</strong> (<em>list</em>) &#8211; A list of kernel arguments, use numpy arrays for
-arrays</li>
+arrays, use numpy.int32 or numpy.float32 for singulars</li>
 <li><strong>tune_params</strong> (<em>dict( string : [int, int, ...] )</em>) &#8211; <p>A dictionary containing the parameter names as keys
 and lists of possible parameter settings as values.
 The kernel tuner will try to compile and benchmark all possible
@@ -179,6 +179,16 @@ Could be changed to detect this at runtime.</li>
 the grid dimensions in the x-direction, [&#8220;block_size_x&#8221;] by default</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
 the grid dimensions in the y-direction, None by default</li>
+<li><strong>restrictions</strong> (<em>list</em>) &#8211; A list of strings containing boolean expression that
+limited the search space in that they must be satisfied by the kernel
+configuration. These expressions must be true for the configuration
+to be part of the search space. For example:
+restrictions=[&#8220;block_size_x==block_size_y*tile_size_y&#8221;] limits the
+search to configurations where the block_size_x equals the product
+of block_size_y and tile_size_y.
+The default is None.</li>
+<li><strong>verbose</strong> (<em>boolean</em>) &#8211; Sets whether or not to report about configurations that
+were skipped during the search, by default set to False.</li>
 </ul>
 </td>
 </tr>
