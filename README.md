@@ -31,18 +31,14 @@ The full documentation is available [here](http://benvanwerkhoven.github.io/kern
 Installation
 ------------
 clone the repository  
-
-    git clone git@github.com:benvanwerkhoven/kernel_tuner.git
-
+    `git clone git@github.com:benvanwerkhoven/kernel_tuner.git`  
 change into the top-level directory  
-
-    cd kernel_tuner
-
+    `cd kernel_tuner`  
 install using  
+    `pip install .`
 
-    pip install .
-
-Dependencies:
+Dependencies
+------------
  * PyCuda (https://mathema.tician.de/software/pycuda/)
  * A CUDA capable device
 
@@ -72,9 +68,7 @@ The following shows a simple example use of the kernel tuner:
 
     tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
 
-More extensive examples will be added later.
-
-
+More extensive examples are available in the `examples` directory
 
 Contribution guide
 ------------------
