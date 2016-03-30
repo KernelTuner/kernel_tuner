@@ -84,16 +84,24 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     :param tune_params: A dictionary containing the parameter names as keys
             and lists of possible parameter settings as values.
+            The kernel tuner will try to compile and benchmark all possible
+            combinations of all possible values for all tuning parameters.
+            This typically results in a rather large search space of all
+            possible kernel configurations.
+            For each kernel configuration, each tuning parameter is
+            replaced at compile-time with its current value.
             Currently the kernel tuner uses the convention that the following
-            list of tunable parameters are used as compile-time constants
-            in the code:
+            list of tuning parameters are used as thread block dimensions:
 
                 * "block_size_x"   thread block size x-dimension
                 * "block_size_y"   thread block size y-dimension
                 * "block_size_z"   thread block size z-dimension
 
-            Options for changing these defaults will be added later.
-    :type tune_params: dict
+            Options for changing these defaults will be added later. If you
+            don't want the thread block dimensions to be compiled in, you
+            may use the built-in variables blockDim.xyz instead
+
+    :type tune_params: dict( string : [int, int, ...] )
 
     :param cc: compute capability of the CUDA device, 52 by default.
         Could be changed to detect this at runtime.
@@ -104,12 +112,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :type grid_div_x: list
 
     :param grid_div_y: A list of names of the parameters whose values divide
-        the grid dimensions in the y-direction, empty by default
+        the grid dimensions in the y-direction, None by default
     :type grid_div_y: list
 
-    :returns: a dictionary of all executed kernel configurations and their
+    :returns: A dictionary of all executed kernel configurations and their
         execution times.
-    :rtype: dict
+    :rtype: dict( string, float )
     """
 
     original_kernel = kernel_string
