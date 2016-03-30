@@ -46,6 +46,7 @@ Example usage
 -------------
 The following shows a simple example use of the kernel tuner:
 
+```python
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_size_x + threadIdx.x;
@@ -67,7 +68,7 @@ The following shows a simple example use of the kernel tuner:
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
     tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
-
+```
 More extensive examples are available in the `examples` directory
 
 Contribution guide
