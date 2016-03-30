@@ -1,9 +1,20 @@
 import numpy
-import pycuda.driver
-
+from nose import SkipTest
+from nose.tools import nottest
 from .context import kernel_tuner
 
+@nottest
+def skip_if_no_cuda_device():
+    try:
+        import pycuda.driver
+        from pycuda.autoinit import context
+    except pycuda.driver.RuntimeError, e:
+        if "no CUDA-capable device is detected" in str(e):
+            raise SkipTest("no CUDA-capable device is detected")
+
 def test_create_gpu_args():
+
+    skip_if_no_cuda_device()
 
     size = 1000
     a = 0.75

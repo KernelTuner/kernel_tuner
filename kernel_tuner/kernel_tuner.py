@@ -50,12 +50,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import pycuda.driver as drv
-from pycuda.autoinit import context
-from pycuda.compiler import SourceModule
 import numpy
 import itertools
 
+#embedded in try block to be able to generate documentation
+#and run many of the tests on machines with no CUDA capable GPU
+try:
+    import pycuda.driver as drv
+    from pycuda.autoinit import context
+    from pycuda.compiler import SourceModule
+except:
+    pass
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, cc=52, grid_div_x=["block_size_x"], grid_div_y=None):
