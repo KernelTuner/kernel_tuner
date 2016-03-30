@@ -127,7 +127,14 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :type restrictions: list
 
     :param verbose: Sets whether or not to report about configurations that
-        were skipped during the search, by default set to False.
+        were skipped during the search. This could be due to several reasons:
+
+            * kernel configuration fails one or more restrictions
+            * too many threads per thread block
+            * too much shared memory used by the kernel
+            * too many resources requested for launch
+
+        verbose is set to False by default.
     :type verbose: boolean
 
     :returns: A dictionary of all executed kernel configurations and their
