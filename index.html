@@ -84,28 +84,27 @@ install using<br>
 
 <p>The following shows a simple example use of the kernel tuner:</p>
 
-<pre><code>kernel_string = """
-__global__ void vector_add(float *c, float *a, float *b, int n) {
-    int i = blockIdx.x * block_size_x + threadIdx.x;
-    if (i&lt;n) {
-        c[i] = a[i] + b[i];
-    }
-}
-"""
+<div class="highlight highlight-source-python"><pre>    kernel_string <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"""</span></span>
+<span class="pl-s">    __global__ void vector_add(float *c, float *a, float *b, int n) {</span>
+<span class="pl-s">        int i = blockIdx.x * block_size_x + threadIdx.x;</span>
+<span class="pl-s">        if (i&lt;n) {</span>
+<span class="pl-s">            c[i] = a[i] + b[i];</span>
+<span class="pl-s">        }</span>
+<span class="pl-s">    }</span>
+<span class="pl-s">    <span class="pl-pds">"""</span></span>
 
-size = 10000000
-problem_size = (size, 1)
+    size <span class="pl-k">=</span> <span class="pl-c1">10000000</span>
+    problem_size <span class="pl-k">=</span> (size, <span class="pl-c1">1</span>)
 
-a = numpy.random.randn(size).astype(numpy.float32)
-b = numpy.random.randn(size).astype(numpy.float32)
-c = numpy.zeros_like(b)
+    a <span class="pl-k">=</span> numpy.random.randn(size).astype(numpy.float32)
+    b <span class="pl-k">=</span> numpy.random.randn(size).astype(numpy.float32)
+    c <span class="pl-k">=</span> numpy.zeros_like(b)
 
-args = [c, a, b]
-tune_params = dict()
-tune_params["block_size_x"] = [128+64*i for i in range(15)]
+    args <span class="pl-k">=</span> [c, a, b]
+    tune_params <span class="pl-k">=</span> <span class="pl-c1">dict</span>()
+    tune_params[<span class="pl-s"><span class="pl-pds">"</span>block_size_x<span class="pl-pds">"</span></span>] <span class="pl-k">=</span> [<span class="pl-c1">128</span><span class="pl-k">+</span><span class="pl-c1">64</span><span class="pl-k">*</span>i <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">15</span>)]
 
-tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
-</code></pre>
+    tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span class="pl-pds">"</span></span>, kernel_string, problem_size, args, tune_params)</pre></div>
 
 <p>More extensive examples are available in the <code>examples</code> directory</p>
 
