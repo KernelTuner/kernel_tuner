@@ -1,6 +1,7 @@
 
 A simple CUDA kernel tuner in Python
 ====================================
+[![Build Status](https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master)](https://travis-ci.org/benvanwerkhoven/kernel_tuner)
 
 The goal of this project is to provide a - as simple as possible - tool
 for tuning CUDA kernels. This implies that any CUDA kernel can be tuned
