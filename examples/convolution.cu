@@ -8,6 +8,7 @@
 #define input_height (image_height + border_height)
 #define input_width (image_width + border_width)
 
+__constant__ float d_filter[filter_height*filter_width];
 
 __global__ void convolution_kernel(float *output, float *input, float *filter) {
     int ty = threadIdx.y;
@@ -24,7 +25,9 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
     __shared__ float sh_input[block_size_y*tile_size_y+border_height][block_size_x*tile_size_x+border_width];
 
     //load all input data needed by this thread block into shared memory
+    #pragma unroll
     for (int i=ty; i<block_size_y*tile_size_y+border_height; i+=block_size_y) {
+        #pragma unroll
         for (int j=tx; j<block_size_x*tile_size_x+border_width; j+=block_size_x) {
             sh_input[i][j] = input[(by+i)*input_width + (bx+j)];
         }
@@ -41,7 +44,7 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
             for (int yi=0; yi<tile_size_y; yi++) {   
                 #pragma unroll
                 for (int xi=0; xi<tile_size_x; xi++) {
-                    sum[yi][xi] += sh_input[ty+yi*block_size_y+i][tx+xi*block_size_x+j] * filter[i*filter_width+j];
+                    sum[yi][xi] += sh_input[ty+yi*block_size_y+i][tx+xi*block_size_x+j] * d_filter[i*filter_width+j];
                 }
             }
 
