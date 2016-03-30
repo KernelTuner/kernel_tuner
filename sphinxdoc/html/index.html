@@ -138,25 +138,6 @@
 </div>
 <div class="section" id="module-kernel_tuner">
 <span id="introduction"></span><h2>Introduction<a class="headerlink" href="#module-kernel_tuner" title="Permalink to this headline">¶</a></h2>
-<p>A simple CUDA kernel tuner in Python</p>
-<p>The goal of this project is to provide a - as simple as possible - tool
-for tuning CUDA kernels. This implies that any CUDA kernel can be tuned
-without requiring extensive changes to the original kernel code.</p>
-<p>A very common problem in CUDA programming is that some combination of
-thread block dimensions and other kernel parameters, like tiling or
-unrolling factors, results in dramatically better performance than other
-kernel configurations. The goal of auto-tuning is to automate the
-process of finding the best performing configuration for a given device.</p>
-<p>This kernel tuner aims that you can directly use the tuned kernels
-without introducing any new dependencies. The tuned kernels can
-afterwards be used independently of the programming environment, whether
-that is using C/C++/Java/Fortran or Python doesn&#8217;t matter.</p>
-<p>This module currently only contains one function which is called
-tune_kernel() to which you pass at least the kernel name, a string
-containing the kernel code, the problem size, a list of kernel function
-arguments, and a dictionary of tunable parameters. There are also a lot
-of optional parameters, for a full list see the documentation of
-tune_kernel().</p>
 </div>
 <div class="section" id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>

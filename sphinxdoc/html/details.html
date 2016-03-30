@@ -152,11 +152,16 @@ the thread block sizes, if this is necessary use grid_div_x/y to
 specify.</li>
 <li><strong>arguments</strong> (<em>list</em>) &#8211; A list of kernel arguments, use numpy arrays for
 arrays</li>
-<li><strong>tune_params</strong> (<em>dict</em>) &#8211; <p>A dictionary containing the parameter names as keys
+<li><strong>tune_params</strong> (<em>dict( string : [int, int, ...] )</em>) &#8211; <p>A dictionary containing the parameter names as keys
 and lists of possible parameter settings as values.
+The kernel tuner will try to compile and benchmark all possible
+combinations of all possible values for all tuning parameters.
+This typically results in a rather large search space of all
+possible kernel configurations.
+For each kernel configuration, each tuning parameter is
+replaced at compile-time with its current value.
 Currently the kernel tuner uses the convention that the following
-list of tunable parameters are used as compile-time constants
-in the code:</p>
+list of tuning parameters are used as thread block dimensions:</p>
 <blockquote>
 <div><ul>
 <li>&#8220;block_size_x&#8221;   thread block size x-dimension</li>
@@ -164,22 +169,24 @@ in the code:</p>
 <li>&#8220;block_size_z&#8221;   thread block size z-dimension</li>
 </ul>
 </div></blockquote>
-<p>Options for changing these defaults will be added later.</p>
+<p>Options for changing these defaults will be added later. If you
+don&#8217;t want the thread block dimensions to be compiled in, you
+may use the built-in variables blockDim.xyz instead</p>
 </li>
 <li><strong>cc</strong> (<em>int</em>) &#8211; compute capability of the CUDA device, 52 by default.
 Could be changed to detect this at runtime.</li>
 <li><strong>grid_div_x</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
 the grid dimensions in the x-direction, [&#8220;block_size_x&#8221;] by default</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
-the grid dimensions in the y-direction, empty by default</li>
+the grid dimensions in the y-direction, None by default</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a dictionary of all executed kernel configurations and their
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A dictionary of all executed kernel configurations and their
 execution times.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict( string, float )</p>
 </td>
 </tr>
 </tbody>
