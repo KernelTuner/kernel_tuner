@@ -57,16 +57,25 @@ of optional parameters, for a full list see the documentation of
 tune_kernel.</p>
 
 <h2>
+<a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Documentation</h2>
+
+<p>The full documentation is available <a href="http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html">here</a>.</p>
+
+<h2>
 <a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
 
 <p>clone the repository<br>
+    <code>git clone git@github.com:benvanwerkhoven/kernel_tuner.git</code><br>
 change into the top-level directory<br>
-type: pip install .  </p>
+    <code>cd kernel_tuner</code><br>
+install using<br>
+    <code>pip install .</code></p>
 
-<p>Dependencies:</p>
+<h2>
+<a id="dependencies" class="anchor" href="#dependencies" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Dependencies</h2>
 
 <ul>
-<li>PyCuda</li>
+<li>PyCuda (<a href="https://mathema.tician.de/software/pycuda/">https://mathema.tician.de/software/pycuda/</a>)</li>
 <li>A CUDA capable device</li>
 </ul>
 
@@ -98,12 +107,7 @@ tune_params["block_size_x"] = [128+64*i for i in range(15)]
 tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
 </code></pre>
 
-<p>More extensive examples will be added later.</p>
-
-<h2>
-<a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Documentation</h2>
-
-<p>The kernel_tuner's full documentation is available <a href="http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html">here</a>.</p>
+<p>More extensive examples are available in the <code>examples</code> directory</p>
 
 <h2>
 <a id="contribution-guide" class="anchor" href="#contribution-guide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contribution guide</h2>
