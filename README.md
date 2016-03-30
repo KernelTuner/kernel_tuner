@@ -24,14 +24,21 @@ arguments, and a dictionary of tunable parameters. There are also a lot
 of optional parameters, for a full list see the documentation of
 tune_kernel.
 
+Documentation
+-------------
+The full documentation is available [here](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html).
+
 Installation
 ------------
 clone the repository  
+    git clone git@github.com:benvanwerkhoven/kernel_tuner.git
 change into the top-level directory  
-type: pip install .  
+    cd kernel_tuner
+install using  
+    pip install .
 
 Dependencies:
- * PyCuda
+ * PyCuda (https://mathema.tician.de/software/pycuda/)
  * A CUDA capable device
 
 Example usage
@@ -62,9 +69,6 @@ The following shows a simple example use of the kernel tuner:
 
 More extensive examples will be added later.
 
-Documentation
--------------
-The kernel_tuner's full documentation is available [here](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html).
 
 
 Contribution guide
