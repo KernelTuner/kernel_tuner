@@ -13,6 +13,7 @@ Contents:
 
    Introduction <self>
    details
+   examples
 
 Introduction
 ------------
