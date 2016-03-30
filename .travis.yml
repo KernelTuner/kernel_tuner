@@ -6,3 +6,8 @@ python:
 #  - pip install 
 # command to run tests
 script: nosetests
+branches:
+  only:
+    - master
+notifications:
+  email: false
