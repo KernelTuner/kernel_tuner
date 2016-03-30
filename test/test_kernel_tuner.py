@@ -3,7 +3,10 @@ from nose import SkipTest
 from nose.tools import nottest
 from .context import kernel_tuner
 
-import pycuda.driver
+try:
+    import pycuda.driver
+except:
+    pass
 
 @nottest
 def skip_if_no_cuda_device():
