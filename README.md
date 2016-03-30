@@ -31,10 +31,15 @@ The full documentation is available [here](http://benvanwerkhoven.github.io/kern
 Installation
 ------------
 clone the repository  
+
     git clone git@github.com:benvanwerkhoven/kernel_tuner.git
+
 change into the top-level directory  
+
     cd kernel_tuner
+
 install using  
+
     pip install .
 
 Dependencies:
