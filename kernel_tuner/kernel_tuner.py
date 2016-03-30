@@ -79,7 +79,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :type problem_size: tuple(int, int)
 
     :param arguments: A list of kernel arguments, use numpy arrays for
-            arrays
+            arrays, use numpy.int32 or numpy.float32 for singulars
     :type arguments: list
 
     :param tune_params: A dictionary containing the parameter names as keys
@@ -201,7 +201,7 @@ def _create_gpu_args(arguments):
     gpu_args = []
     for arg in arguments:
         # if arg i is a numpy array copy to device
-        if hasattr(arg, "nbytes"):
+        if type(arg) is numpy.ndarray:
             gpu_args.append(drv.mem_alloc(arg.nbytes))
             drv.memcpy_htod(gpu_args[-1], arg)
         else: # if not an array, just pass argument along

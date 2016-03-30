@@ -3,10 +3,11 @@ from nose import SkipTest
 from nose.tools import nottest
 from .context import kernel_tuner
 
+import pycuda.driver
+
 @nottest
 def skip_if_no_cuda_device():
     try:
-        import pycuda.driver
         from pycuda.autoinit import context
     except pycuda.driver.RuntimeError, e:
         if "no CUDA-capable device is detected" in str(e):
@@ -17,7 +18,7 @@ def test_create_gpu_args():
     skip_if_no_cuda_device()
 
     size = 1000
-    a = 0.75
+    a = numpy.int32(75)
     b = numpy.random.randn(size).astype(numpy.float32)
     c = numpy.zeros_like(b)
 
@@ -26,7 +27,7 @@ def test_create_gpu_args():
     gpu_args = kernel_tuner._create_gpu_args(arguments)
 
     assert type(gpu_args[0]) is pycuda.driver.DeviceAllocation
-    assert type(gpu_args[1]) is float
+    assert type(gpu_args[1]) is numpy.int32
     assert type(gpu_args[2]) is pycuda.driver.DeviceAllocation
 
     gpu_args[0].free()
