@@ -16,8 +16,23 @@ Contents:
    examples
 
 Introduction
-------------
+============
 .. automodule:: kernel_tuner.kernel_tuner
+
+Installation
+------------
+clone the repository  
+    `git clone git@github.com:benvanwerkhoven/kernel_tuner.git`  
+change into the top-level directory  
+    `cd kernel_tuner`  
+install using  
+    `pip install .`
+
+Dependencies
+------------
+ * PyCuda (https://mathema.tician.de/software/pycuda/)
+ * A CUDA capable device
+
 
 Example usage
 -------------
