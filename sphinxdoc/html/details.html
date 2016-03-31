@@ -139,7 +139,7 @@
 called including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name, kernel_string, problem_size, arguments, tune_params, device=0, grid_div_x=['block_size_x'], grid_div_y=None, restrictions=None, verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>device=0</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -178,7 +178,9 @@ may use the built-in variables blockDim.xyz instead</p>
 <li><strong>device</strong> (<em>int</em>) &#8211; CUDA device to use, in case you have multiple CUDA-capable
 GPUs you may use this to select one, 0 by default.</li>
 <li><strong>grid_div_x</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
-the grid dimensions in the x-direction, [&#8220;block_size_x&#8221;] by default</li>
+the grid dimensions in the x-direction. If not supplied,
+[&#8220;block_size_x&#8221;] will be used by default, if do not want this pass
+an empty list.</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
 the grid dimensions in the y-direction, None by default</li>
 <li><strong>restrictions</strong> (<em>list</em>) &#8211; A list of strings containing boolean expression that
