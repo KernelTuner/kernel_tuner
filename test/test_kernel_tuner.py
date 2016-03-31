@@ -134,6 +134,6 @@ def test_check_restrictions2():
     try:
         kernel_tuner._check_restrictions(restrictions, params)
         assert True
-    except:
+    except Exception:
         assert False
 

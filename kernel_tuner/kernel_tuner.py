@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """ A simple CUDA kernel tuner in Python
 
 The goal of this project is to provide a - as simple as possible - tool
@@ -22,12 +21,50 @@ containing the kernel code, the problem size, a list of kernel function
 arguments, and a dictionary of tunable parameters. There are also a lot
 of optional parameters, for a full list see the documentation of
 tune_kernel().
-"""
 
-"""
+Installation
+------------
+clone the repository
+    `git clone git@github.com:benvanwerkhoven/kernel_tuner.git`
+change into the top-level directory
+    `cd kernel_tuner`
+install using
+    `pip install .`
+
+Dependencies
+------------
+ * PyCuda (https://mathema.tician.de/software/pycuda/)
+ * A CUDA capable device
+
 Example usage
 -------------
-See the bottom of this file (kernel_tuner.py)
+The following shows a simple example use of the kernel tuner:
+
+::
+
+    kernel_string = \"\"\"
+    __global__ void vector_add(float *c, float *a, float *b, int n) {
+        int i = blockIdx.x * block_size_x + threadIdx.x;
+        if (i<n) {
+            c[i] = a[i] + b[i];
+        }
+    }
+    \"\"\"
+
+    size = 10000000
+    problem_size = (size, 1)
+
+    a = numpy.random.randn(size).astype(numpy.float32)
+    b = numpy.random.randn(size).astype(numpy.float32)
+    c = numpy.zeros_like(b)
+
+    args = [c, a, b]
+
+    tune_params = dict()
+    tune_params["block_size_x"] = [128+64*i for i in range(15)]
+
+    tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
+
 
 Author
 ------
@@ -278,7 +315,7 @@ def _benchmark(func, gpu_args, threads, grid):
     start = drv.Event()
     end = drv.Event()
     times = []
-    for i in range(ITERATIONS):
+    for _ in range(ITERATIONS):
         context.synchronize()
         start.record()
         func(*gpu_args, block=threads, grid=grid)
@@ -296,32 +333,5 @@ def _check_restrictions(restrictions, params):
 
 
 
-
-
-if __name__ == "__main__":
-    #The following shows a simple example use of the kernel tuner
-
-    kernel_string = """
-    __global__ void vector_add(float *c, float *a, float *b, int n) {
-        int i = blockIdx.x * block_size_x + threadIdx.x;
-        if (i<n) {
-            c[i] = a[i] + b[i];
-        }
-    }
-    """
-
-    size = 10000000
-    problem_size = (size, 1)
-
-    a = numpy.random.randn(size).astype(numpy.float32)
-    b = numpy.random.randn(size).astype(numpy.float32)
-    c = numpy.zeros_like(b)
-
-    args = [c, a, b]
-
-    tune_params = dict()
-    tune_params["block_size_x"] = [128+64*i for i in range(15)]
-
-    tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
 
 
