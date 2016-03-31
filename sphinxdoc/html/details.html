@@ -139,7 +139,7 @@
 called including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name, kernel_string, problem_size, arguments, tune_params, cc=52, grid_div_x=['block_size_x'], grid_div_y=None, restrictions=None, verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name, kernel_string, problem_size, arguments, tune_params, device=0, grid_div_x=['block_size_x'], grid_div_y=None, restrictions=None, verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -175,8 +175,8 @@ list of tuning parameters are used as thread block dimensions:</p>
 don&#8217;t want the thread block dimensions to be compiled in, you
 may use the built-in variables blockDim.xyz instead</p>
 </li>
-<li><strong>cc</strong> (<em>int</em>) &#8211; compute capability of the CUDA device, 52 by default.
-Could be changed to detect this at runtime.</li>
+<li><strong>device</strong> (<em>int</em>) &#8211; CUDA device to use, in case you have multiple CUDA-capable
+GPUs you may use this to select one, 0 by default.</li>
 <li><strong>grid_div_x</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
 the grid dimensions in the x-direction, [&#8220;block_size_x&#8221;] by default</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
