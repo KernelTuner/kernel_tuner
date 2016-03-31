@@ -5,7 +5,7 @@ from .context import kernel_tuner
 
 try:
     import pycuda.driver
-except:
+except Exception:
     pass
 
 @nottest
@@ -34,9 +34,9 @@ def test_create_gpu_args():
 
     gpu_args = kernel_tuner._create_gpu_args(arguments)
 
-    assert type(gpu_args[0]) is pycuda.driver.DeviceAllocation
-    assert type(gpu_args[1]) is numpy.int32
-    assert type(gpu_args[2]) is pycuda.driver.DeviceAllocation
+    assert isinstance(gpu_args[0], pycuda.driver.DeviceAllocation)
+    assert isinstance(gpu_args[1], numpy.int32)
+    assert isinstance(gpu_args[2], pycuda.driver.DeviceAllocation)
 
     gpu_args[0].free()
     gpu_args[2].free()
@@ -57,8 +57,8 @@ def test_get_grid_dimensions():
                     grid_div_y, grid_div_x)
 
     assert len(grid) == 2
-    assert type(grid[0]) is int
-    assert type(grid[1]) is int
+    assert isinstance(grid[0], int)
+    assert isinstance(grid[1], int)
 
     print grid
     assert grid[0] == 25
@@ -89,9 +89,9 @@ def test_get_thread_block_dimensions():
 
     threads = kernel_tuner._get_thread_block_dimensions(params)
     assert len(threads) == 3
-    assert type(threads[0]) is int
-    assert type(threads[1]) is int
-    assert type(threads[2]) is int
+    assert isinstance(threads[0], int)
+    assert isinstance(threads[1], int)
+    assert isinstance(threads[2], int)
 
     assert threads[0] == 123
     assert threads[1] == 257

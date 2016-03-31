@@ -59,11 +59,11 @@ try:
     import pycuda.driver as drv
     from pycuda.autoinit import context
     from pycuda.compiler import SourceModule
-except:
+except Exception:
     pass
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
-        tune_params, device=0, grid_div_x=["block_size_x"], grid_div_y=None,
+        tune_params, device=0, grid_div_x=None, grid_div_y=None,
         restrictions=None, verbose=False):
     """ Tune a CUDA kernel given a set of tunable parameters
 
@@ -109,7 +109,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :type device: int
 
     :param grid_div_x: A list of names of the parameters whose values divide
-        the grid dimensions in the x-direction, ["block_size_x"] by default
+        the grid dimensions in the x-direction. If not supplied,
+        ["block_size_x"] will be used by default, if do not want this pass
+        an empty list.
     :type grid_div_x: list
 
     :param grid_div_y: A list of names of the parameters whose values divide
@@ -235,7 +237,7 @@ def _create_gpu_args(arguments):
     gpu_args = []
     for arg in arguments:
         # if arg i is a numpy array copy to device
-        if type(arg) is numpy.ndarray:
+        if isinstance(arg, numpy.ndarray):
             gpu_args.append(drv.mem_alloc(arg.nbytes))
             drv.memcpy_htod(gpu_args[-1], arg)
         else: # if not an array, just pass argument along
@@ -245,6 +247,8 @@ def _create_gpu_args(arguments):
 def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     """compute grid dims based on problem sizes and listed grid divisors"""
     div_x = 1
+    if grid_div_x is None and "block_size_x" in params:
+        grid_div_x = ["block_size_x"]
     if grid_div_x is not None:
         div_x = numpy.prod([params[i] for i in grid_div_x])
     div_y = 1
@@ -295,7 +299,7 @@ def _check_restrictions(restrictions, params):
 
 
 if __name__ == "__main__":
-    """ The following shows a simple example use of the kernel tuner """
+    #The following shows a simple example use of the kernel tuner
 
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
