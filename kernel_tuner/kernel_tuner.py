@@ -63,7 +63,7 @@ except:
     pass
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
-        tune_params, cc=52, grid_div_x=["block_size_x"], grid_div_y=None,
+        tune_params, device=0, grid_div_x=["block_size_x"], grid_div_y=None,
         restrictions=None, verbose=False):
     """ Tune a CUDA kernel given a set of tunable parameters
 
@@ -104,9 +104,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     :type tune_params: dict( string : [int, int, ...] )
 
-    :param cc: compute capability of the CUDA device, 52 by default.
-        Could be changed to detect this at runtime.
-    :type cc: int
+    :param device: CUDA device to use, in case you have multiple CUDA-capable
+        GPUs you may use this to select one, 0 by default.
+    :type device: int
 
     :param grid_div_x: A list of names of the parameters whose values divide
         the grid dimensions in the x-direction, ["block_size_x"] by default
@@ -145,6 +145,11 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     original_kernel = kernel_string
     results = dict()
 
+    #inspect device properties
+    devprops = { str(k): v for (k, v) in drv.Device(device).get_attributes().items() }
+    max_threads = devprops['MAX_THREADS_PER_BLOCK']
+    cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
+
     #move data to GPU
     gpu_args = _create_gpu_args(arguments)
 
@@ -163,7 +168,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
         #compute thread block and grid dimensions for this kernel
         threads = _get_thread_block_dimensions(params)
-        if numpy.prod(threads) > 1024:
+        if numpy.prod(threads) > max_threads:
             if verbose:
                 print "skipping config", instance_string, "reason: too many threads per block"
             continue
@@ -180,7 +185,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #compile kernel func
         try:
             func = SourceModule(kernel_string, options=['-Xcompiler=-Wall'],
-                    arch='compute_' + str(cc), code='sm_' + str(cc),
+                    arch='compute_' + cc, code='sm_' + cc,
                     cache_dir=False).get_function(name)
         except drv.CompileError, e:
             #compiles may fail because certain kernel configurations use too
