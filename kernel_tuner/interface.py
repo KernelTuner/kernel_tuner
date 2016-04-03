@@ -101,7 +101,7 @@ except Exception:
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, device=0, grid_div_x=None, grid_div_y=None,
-        restrictions=None, verbose=False):
+        restrictions=None, verbose=False, lang=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code
@@ -184,13 +184,18 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     original_kernel = kernel_string
     results = dict()
 
+    lang = _detect_language(lang, original_kernel)
+    if lang == "CUDA":
+        from kernel_tuner.cuda import CudaFunctions
+        dev = CudaFunctions(device)
+    else:
+        raise UnImplementedException("Sorry, support for languages other than CUDA at not implemented yet")
+
     #inspect device properties
-    devprops = { str(k): v for (k, v) in drv.Device(device).get_attributes().items() }
-    max_threads = devprops['MAX_THREADS_PER_BLOCK']
-    cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
+    max_threads = dev.max_threads
 
     #move data to GPU
-    gpu_args = _create_gpu_args(arguments)
+    gpu_args = dev.create_gpu_args(arguments)
 
     #compute cartesian product of all tunable parameters
     for element in itertools.product(*tune_params.values()):
@@ -223,14 +228,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
         #compile kernel func
         try:
-            func = SourceModule(kernel_string, options=['-Xcompiler=-Wall'],
-                    arch='compute_' + cc, code='sm_' + cc,
-                    cache_dir=False).get_function(name)
-        except drv.CompileError, e:
+            func = dev.compile(name, kernel_string)
+        except Exception, e:
             #compiles may fail because certain kernel configurations use too
             #much shared memory for example, the desired behavior is to simply
             #skip over this configuration and try the next one
-            if "uses too much shared data" in e.stderr:
+            if "uses too much shared data" in str(e):
                 if verbose:
                     print "skipping config", instance_string, "reason: too much shared memory used"
                 continue
@@ -239,8 +242,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
         #test kernel
         try:
-            time = _benchmark(func, gpu_args, threads, grid)
-        except drv.LaunchError, e:
+            time = dev.benchmark(func, gpu_args, threads, grid)
+        except Exception, e:
             #some launches may fail because too many registers are required
             #to run the kernel given the current thread block size
             #the desired behavior is to simply skip over this configuration
@@ -250,11 +253,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                     print "skipping config", instance_string, "reason: too many resources requested for launch"
                 continue
             else:
+                print "Error while benchmarking:", instance_string
                 raise e
-        except Exception, e:
-            print "Error while benchmarking:", instance_string
-            raise e
-
 
         #print the result
         print params, kernel_name, "took:", time, " ms."
@@ -268,6 +268,17 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 
 #module private functions
+
+def _detect_language(lang, original_kernel):
+    """attempt to detect language from the kernel_string if not specified"""
+    if lang is None:
+        if "__global__" in original_kernel:
+            lang = "CUDA"
+        elif "__global" in original_kernel:
+            lang = "OpenCL"
+        else:
+            raise Exception("Failed to detect language, please set option lang")
+    return lang
 
 def _create_gpu_args(arguments):
     """ready argument list to be passed to the kernel, allocates gpu mem"""

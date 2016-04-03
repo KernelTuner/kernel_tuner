@@ -1,2 +1,3 @@
 
-from kernel_tuner import *
+
+from kernel_tuner.interface import tune_kernel
