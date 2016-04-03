@@ -97,3 +97,29 @@ def test_check_restrictions2():
     except Exception:
         assert False
 
+def test_detect_language1():
+    lang = None
+    kernel_string = "__global__ void vector_add( ... );"
+    lang = kernel_tuner._detect_language(lang, kernel_string)
+    assert lang == "CUDA"
+
+def test_detect_language2():
+    lang = None
+    kernel_string = "__global void vector_add( ... );"
+    lang = kernel_tuner._detect_language(lang, kernel_string)
+    assert lang == "OpenCL"
+
+@raises(Exception)
+def test_detect_language3():
+    lang = None
+    kernel_string = "blabla"
+    lang = kernel_tuner._detect_language(lang, kernel_string)
+
+def test_detect_language4():
+    lang = "CUDA"
+    kernel_string = "blabla"
+    try:
+        lang = kernel_tuner._detect_language(lang, kernel_string)
+        assert True
+    except Exception:
+        assert False
