@@ -87,54 +87,54 @@ install using<br>
 
 <p>The following shows a simple example use of the kernel tuner:</p>
 
-<div class="highlight highlight-source-python"><pre>    kernel_string <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"""</span></span>
-<span class="pl-s">    __global__ void vector_add(float *c, float *a, float *b, int n) {</span>
-<span class="pl-s">        int i = blockIdx.x * block_size_x + threadIdx.x;</span>
-<span class="pl-s">        if (i&lt;n) {</span>
-<span class="pl-s">            c[i] = a[i] + b[i];</span>
-<span class="pl-s">        }</span>
+<div class="highlight highlight-source-python"><pre>kernel_string <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"""</span></span>
+<span class="pl-s">__global__ void vector_add(float *c, float *a, float *b, int n) {</span>
+<span class="pl-s">    int i = blockIdx.x * block_size_x + threadIdx.x;</span>
+<span class="pl-s">    if (i&lt;n) {</span>
+<span class="pl-s">        c[i] = a[i] + b[i];</span>
 <span class="pl-s">    }</span>
-<span class="pl-s">    <span class="pl-pds">"""</span></span>
+<span class="pl-s">}</span>
+<span class="pl-s"><span class="pl-pds">"""</span></span>
 
-    size <span class="pl-k">=</span> <span class="pl-c1">10000000</span>
-    problem_size <span class="pl-k">=</span> (size, <span class="pl-c1">1</span>)
+size <span class="pl-k">=</span> <span class="pl-c1">10000000</span>
+problem_size <span class="pl-k">=</span> (size, <span class="pl-c1">1</span>)
 
-    a <span class="pl-k">=</span> numpy.random.randn(size).astype(numpy.float32)
-    b <span class="pl-k">=</span> numpy.random.randn(size).astype(numpy.float32)
-    c <span class="pl-k">=</span> numpy.zeros_like(b)
-    n <span class="pl-k">=</span> numpy.int32(size)
-    args <span class="pl-k">=</span> [c, a, b, n]
+a <span class="pl-k">=</span> numpy.random.randn(size).astype(numpy.float32)
+b <span class="pl-k">=</span> numpy.random.randn(size).astype(numpy.float32)
+c <span class="pl-k">=</span> numpy.zeros_like(b)
+n <span class="pl-k">=</span> numpy.int32(size)
+args <span class="pl-k">=</span> [c, a, b, n]
 
-    tune_params <span class="pl-k">=</span> <span class="pl-c1">dict</span>()
-    tune_params[<span class="pl-s"><span class="pl-pds">"</span>block_size_x<span class="pl-pds">"</span></span>] <span class="pl-k">=</span> [<span class="pl-c1">128</span><span class="pl-k">+</span><span class="pl-c1">64</span><span class="pl-k">*</span>i <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">15</span>)]
+tune_params <span class="pl-k">=</span> <span class="pl-c1">dict</span>()
+tune_params[<span class="pl-s"><span class="pl-pds">"</span>block_size_x<span class="pl-pds">"</span></span>] <span class="pl-k">=</span> [<span class="pl-c1">128</span><span class="pl-k">+</span><span class="pl-c1">64</span><span class="pl-k">*</span>i <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">15</span>)]
 
-    tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span class="pl-pds">"</span></span>, kernel_string, problem_size, args, tune_params)</pre></div>
+tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span class="pl-pds">"</span></span>, kernel_string, problem_size, args, tune_params)</pre></div>
 
 <p>And for OpenCL:</p>
 
-<div class="highlight highlight-source-python"><pre>    kernel_string <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"""</span></span>
-<span class="pl-s">    __kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {</span>
-<span class="pl-s">        int i = get_global_id(0);</span>
-<span class="pl-s">        if (i&lt;n) {</span>
-<span class="pl-s">            c[i] = a[i] + b[i];</span>
-<span class="pl-s">        }</span>
+<div class="highlight highlight-source-python"><pre>kernel_string <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"""</span></span>
+<span class="pl-s">__kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {</span>
+<span class="pl-s">    int i = get_global_id(0);</span>
+<span class="pl-s">    if (i&lt;n) {</span>
+<span class="pl-s">        c[i] = a[i] + b[i];</span>
 <span class="pl-s">    }</span>
-<span class="pl-s">    <span class="pl-pds">"""</span></span>
+<span class="pl-s">}</span>
+<span class="pl-s"><span class="pl-pds">"""</span></span>
 
-    size <span class="pl-k">=</span> <span class="pl-c1">10000000</span>
-    problem_size <span class="pl-k">=</span> (size, <span class="pl-c1">1</span>)
+size <span class="pl-k">=</span> <span class="pl-c1">10000000</span>
+problem_size <span class="pl-k">=</span> (size, <span class="pl-c1">1</span>)
 
-    a <span class="pl-k">=</span> numpy.random.rand(size).astype(numpy.float32)
-    b <span class="pl-k">=</span> numpy.random.rand(size).astype(numpy.float32)
-    c <span class="pl-k">=</span> numpy.zeros_like(a)
-    n <span class="pl-k">=</span> numpy.int32(size)
+a <span class="pl-k">=</span> numpy.random.rand(size).astype(numpy.float32)
+b <span class="pl-k">=</span> numpy.random.rand(size).astype(numpy.float32)
+c <span class="pl-k">=</span> numpy.zeros_like(a)
+n <span class="pl-k">=</span> numpy.int32(size)
 
-    args <span class="pl-k">=</span> [c, a, b, n]
+args <span class="pl-k">=</span> [c, a, b, n]
 
-    tune_params <span class="pl-k">=</span> <span class="pl-c1">dict</span>()
-    tune_params[<span class="pl-s"><span class="pl-pds">"</span>block_size_x<span class="pl-pds">"</span></span>] <span class="pl-k">=</span> [<span class="pl-c1">128</span><span class="pl-k">+</span><span class="pl-c1">64</span><span class="pl-k">*</span>i <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">15</span>)]
+tune_params <span class="pl-k">=</span> <span class="pl-c1">dict</span>()
+tune_params[<span class="pl-s"><span class="pl-pds">"</span>block_size_x<span class="pl-pds">"</span></span>] <span class="pl-k">=</span> [<span class="pl-c1">128</span><span class="pl-k">+</span><span class="pl-c1">64</span><span class="pl-k">*</span>i <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">15</span>)]
 
-    tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span class="pl-pds">"</span></span>, kernel_string, problem_size, args, tune_params)
+tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span class="pl-pds">"</span></span>, kernel_string, problem_size, args, tune_params)
 </pre></div>
 
 <p>More extensive examples are available in the <code>examples</code> directory</p>
