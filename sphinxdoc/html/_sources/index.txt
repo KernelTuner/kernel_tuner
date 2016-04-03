@@ -17,7 +17,7 @@ Contents:
 
 Introduction
 ============
-.. automodule:: kernel_tuner.kernel_tuner
+.. automodule:: kernel_tuner.interface
 
 
 
