@@ -176,6 +176,11 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         verbose is set to False by default.
     :type verbose: boolean
 
+    :param lang: Specifies the language used for GPU kernels. The kernel_tuner
+        automatically detects the language, but if it fails, you may specify
+        the language using this argument, currently supported: "CUDA"
+    :type lang: string
+
     :returns: A dictionary of all executed kernel configurations and their
         execution times.
     :rtype: dict( string, float )
