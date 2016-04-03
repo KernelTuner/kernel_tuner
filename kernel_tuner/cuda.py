@@ -20,6 +20,7 @@ class CudaFunctions(object):
         devprops = { str(k): v for (k, v) in drv.Device(device).get_attributes().items() }
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
         self.cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
+        self.ITERATIONS = 7
 
 
     def create_gpu_args(self, arguments):
@@ -50,11 +51,10 @@ class CudaFunctions(object):
 
     def benchmark(self, func, gpu_args, threads, grid):
         """runs the kernel and measures time repeatedly, returns average time"""
-        ITERATIONS = 7
         start = drv.Event()
         end = drv.Event()
         times = []
-        for _ in range(ITERATIONS):
+        for _ in range(self.ITERATIONS):
             context.synchronize()
             start.record()
             func(*gpu_args, block=threads, grid=grid)
