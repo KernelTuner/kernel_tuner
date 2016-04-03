@@ -19,7 +19,7 @@ class OpenCLFunctions(object):
         self.queue = cl.CommandQueue(self.ctx, properties=cl.command_queue_properties.PROFILING_ENABLE)
         self.mf = cl.mem_flags
         #inspect device properties
-        self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE
+        self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE)
 
     def create_gpu_args(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem"""

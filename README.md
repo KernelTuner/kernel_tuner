@@ -75,7 +75,7 @@ The following shows a simple example use of the kernel tuner:
 And for OpenCL:
 ```python
     kernel_string = """
-        __kernel void vector_add(__global float *c, __global const float *a, __global const float *b, int n) {
+    __kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {
         int i = get_global_id(0);
         if (i<n) {
             c[i] = a[i] + b[i];
