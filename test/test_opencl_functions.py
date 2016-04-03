@@ -6,7 +6,7 @@ from .context import opencl
 
 try:
     import pyopencl
-except:
+except Exception:
     pass
 
 @nottest
