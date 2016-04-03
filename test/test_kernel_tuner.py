@@ -105,7 +105,7 @@ def test_detect_language1():
 
 def test_detect_language2():
     lang = None
-    kernel_string = "__global void vector_add( ... );"
+    kernel_string = "__kernel void vector_add( ... );"
     lang = kernel_tuner._detect_language(lang, kernel_string)
     assert lang == "OpenCL"
 
