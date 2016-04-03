@@ -90,15 +90,6 @@ limitations under the License.
 import numpy
 import itertools
 
-#embedded in try block to be able to generate documentation
-#and run many of the tests on machines with no CUDA capable GPU
-try:
-    import pycuda.driver as drv
-    from pycuda.autoinit import context
-    from pycuda.compiler import SourceModule
-except Exception:
-    pass
-
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, device=0, grid_div_x=None, grid_div_y=None,
         restrictions=None, verbose=False, lang=None):
@@ -285,18 +276,6 @@ def _detect_language(lang, original_kernel):
             raise Exception("Failed to detect language, please set option lang")
     return lang
 
-def _create_gpu_args(arguments):
-    """ready argument list to be passed to the kernel, allocates gpu mem"""
-    gpu_args = []
-    for arg in arguments:
-        # if arg i is a numpy array copy to device
-        if isinstance(arg, numpy.ndarray):
-            gpu_args.append(drv.mem_alloc(arg.nbytes))
-            drv.memcpy_htod(gpu_args[-1], arg)
-        else: # if not an array, just pass argument along
-            gpu_args.append(arg)
-    return gpu_args
-
 def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     """compute grid dims based on problem sizes and listed grid divisors"""
     div_x = 1
@@ -324,22 +303,6 @@ def _prepare_kernel_string(original_kernel, params):
     for k, v in params.iteritems():
         kernel_string = kernel_string.replace(k, str(v))
     return kernel_string
-
-def _benchmark(func, gpu_args, threads, grid):
-    """runs the kernel and measures time repeatedly, returns average time"""
-    ITERATIONS = 7
-    start = drv.Event()
-    end = drv.Event()
-    times = []
-    for _ in range(ITERATIONS):
-        context.synchronize()
-        start.record()
-        func(*gpu_args, block=threads, grid=grid)
-        end.record()
-        context.synchronize()
-        times.append(end.time_since(start))
-    times = sorted(times)
-    return numpy.mean(times[1:-1])
 
 def _check_restrictions(restrictions, params):
     if restrictions != None:
