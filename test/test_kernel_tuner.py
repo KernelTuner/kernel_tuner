@@ -1,5 +1,4 @@
-import numpy
-from nose.tools import nottest, raises
+from nose.tools import raises
 from .context import kernel_tuner
 
 def test_get_grid_dimensions():

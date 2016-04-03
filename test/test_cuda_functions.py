@@ -1,7 +1,6 @@
 import numpy
 from nose import SkipTest
-from nose.tools import nottest, raises
-from .context import kernel_tuner
+from nose.tools import nottest
 from .context import cuda
 
 try:
@@ -64,6 +63,7 @@ def test_compile():
     dev = cuda.CudaFunctions(0)
     try:
         func = dev.compile("vector_add", kernel_string)
+        assert isinstance(func, pycuda.driver.Function)
         assert False
     except Exception, e:
         if "uses too much shared data" in str(e):
