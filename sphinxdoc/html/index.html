@@ -146,23 +146,24 @@
 <span id="introduction"></span><h1>Introduction<a class="headerlink" href="#module-kernel_tuner.interface" title="Permalink to this headline">¶</a></h1>
 <p>A simple CUDA kernel tuner in Python</p>
 <p>The goal of this project is to provide a - as simple as possible - tool
-for tuning CUDA kernels. This implies that any CUDA kernel can be tuned
-without requiring extensive changes to the original kernel code.</p>
-<p>A very common problem in CUDA programming is that some combination of
+for tuning CUDA and OpenCL kernels. This implies that any CUDA or OpenCL
+kernel can be tuned without requiring extensive changes to the original
+kernel code.</p>
+<p>A very common problem in GPU programming is that some combination of
 thread block dimensions and other kernel parameters, like tiling or
 unrolling factors, results in dramatically better performance than other
 kernel configurations. The goal of auto-tuning is to automate the
 process of finding the best performing configuration for a given device.</p>
-<p>This kernel tuner aims that you can directly use the tuned kernels
+<p>This kernel tuner aims that you can directly use the tuned kernel
 without introducing any new dependencies. The tuned kernels can
 afterwards be used independently of the programming environment, whether
 that is using C/C++/Java/Fortran or Python doesn&#8217;t matter.</p>
-<p>This module currently only contains one function which is called
-tune_kernel() to which you pass at least the kernel name, a string
+<p>The kernel_tuner module currently only contains one function which is
+called tune_kernel to which you pass at least the kernel name, a string
 containing the kernel code, the problem size, a list of kernel function
 arguments, and a dictionary of tunable parameters. There are also a lot
 of optional parameters, for a full list see the documentation of
-tune_kernel().</p>
+tune_kernel.</p>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <dl class="docutils">
@@ -178,8 +179,7 @@ tune_kernel().</p>
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>PyCuda (<a class="reference external" href="https://mathema.tician.de/software/pycuda/">https://mathema.tician.de/software/pycuda/</a>)</li>
-<li>A CUDA capable device</li>
+<li>PyCuda and/or PyOpenCL (<a class="reference external" href="https://mathema.tician.de/software/">https://mathema.tician.de/software/</a>)</li>
 </ul>
 </div></blockquote>
 </div>
