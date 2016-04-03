@@ -1,26 +1,27 @@
 """ A simple CUDA kernel tuner in Python
 
 The goal of this project is to provide a - as simple as possible - tool
-for tuning CUDA kernels. This implies that any CUDA kernel can be tuned
-without requiring extensive changes to the original kernel code.
+for tuning CUDA and OpenCL kernels. This implies that any CUDA or OpenCL
+kernel can be tuned without requiring extensive changes to the original
+kernel code.
 
-A very common problem in CUDA programming is that some combination of
+A very common problem in GPU programming is that some combination of
 thread block dimensions and other kernel parameters, like tiling or
 unrolling factors, results in dramatically better performance than other
 kernel configurations. The goal of auto-tuning is to automate the
 process of finding the best performing configuration for a given device.
 
-This kernel tuner aims that you can directly use the tuned kernels
+This kernel tuner aims that you can directly use the tuned kernel
 without introducing any new dependencies. The tuned kernels can
 afterwards be used independently of the programming environment, whether
 that is using C/C++/Java/Fortran or Python doesn't matter.
 
-This module currently only contains one function which is called
-tune_kernel() to which you pass at least the kernel name, a string
+The kernel_tuner module currently only contains one function which is
+called tune_kernel to which you pass at least the kernel name, a string
 containing the kernel code, the problem size, a list of kernel function
 arguments, and a dictionary of tunable parameters. There are also a lot
 of optional parameters, for a full list see the documentation of
-tune_kernel().
+tune_kernel.
 
 Installation
 ------------
@@ -33,8 +34,7 @@ install using
 
 Dependencies
 ------------
- * PyCuda (https://mathema.tician.de/software/pycuda/)
- * A CUDA capable device
+ * PyCuda and/or PyOpenCL (https://mathema.tician.de/software/)
 
 Example usage
 -------------
@@ -98,7 +98,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :param kernel_name: The name of the kernel in the code
     :type kernel_name: string
 
-    :param kernel_string: The CUDA kernel code as a string
+    :param kernel_string: The CUDA or OpenCL kernel code as a string
     :type kernel_string: string
 
     :param problem_size: A tuple containing the size from which the grid
@@ -122,9 +122,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             Currently the kernel tuner uses the convention that the following
             list of tuning parameters are used as thread block dimensions:
 
-                * "block_size_x"   thread block size x-dimension
-                * "block_size_y"   thread block size y-dimension
-                * "block_size_z"   thread block size z-dimension
+                * "block_size_x"   thread block (work group) x-dimension
+                * "block_size_y"   thread block (work group) y-dimension
+                * "block_size_z"   thread block (work group) z-dimension
 
             Options for changing these defaults will be added later. If you
             don't want the thread block dimensions to be compiled in, you
@@ -132,8 +132,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     :type tune_params: dict( string : [int, int, ...] )
 
-    :param device: CUDA device to use, in case you have multiple CUDA-capable
-        GPUs you may use this to select one, 0 by default.
+    :param device: CUDA/OpenCL device to use, in case you have multiple
+        CUDA-capable GPUs or OpenCL devices you may use this to select one,
+        0 by default.
     :type device: int
 
     :param grid_div_x: A list of names of the parameters whose values divide
@@ -169,7 +170,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     :param lang: Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA"
+        the language using this argument, currently supported: "CUDA", "OpenCL"
     :type lang: string
 
     :returns: A dictionary of all executed kernel configurations and their
