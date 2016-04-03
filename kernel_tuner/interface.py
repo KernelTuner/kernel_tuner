@@ -1,4 +1,4 @@
-""" A simple CUDA kernel tuner in Python
+""" A simple CUDA/OpenCL kernel tuner in Python
 
 The goal of this project is to provide a - as simple as possible - tool
 for tuning CUDA and OpenCL kernels. This implies that any CUDA or OpenCL

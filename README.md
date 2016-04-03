@@ -1,5 +1,5 @@
 
-A simple CUDA kernel tuner in Python
+A simple CUDA/OpenCL kernel tuner in Python
 ====================================
 [![Build Status](https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master)](https://travis-ci.org/benvanwerkhoven/kernel_tuner)
 [![Codacy Badge](https://api.codacy.com/project/badge/grade/016dc85044ab4d57b777449d93275608)](https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner)
