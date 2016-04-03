@@ -44,3 +44,36 @@ def test_create_gpu_args():
     gpu_args[2].free()
 
 
+def test_compile():
+
+    skip_if_no_cuda_device()
+
+    original_kernel = """
+    __global__ void vector_add(float *c, float *a, float *b, int n) {
+        __shared__ float test[shared_size];
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i<n) {
+            test[0] = a[i];
+            c[i] = test[0] + b[i];
+        }
+    }
+    """
+
+    kernel_string = original_kernel.replace("shared_size", str(100*1024*1024))
+
+    dev = cuda.CudaFunctions(0)
+    try:
+        func = dev.compile("vector_add", kernel_string)
+        assert False
+    except Exception, e:
+        if "uses too much shared data" in str(e):
+            assert True
+        else:
+            assert False
+
+    kernel_string = original_kernel.replace("shared_size", str(100))
+    try:
+        func = dev.compile("vector_add", kernel_string)
+        assert True
+    except Exception:
+        assert False
