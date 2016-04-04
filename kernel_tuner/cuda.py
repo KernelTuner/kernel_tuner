@@ -4,7 +4,6 @@ import numpy
 #embedded in try block to be able to generate documentation
 try:
     import pycuda.driver as drv
-    from pycuda.autoinit import context
     from pycuda.compiler import SourceModule
 except Exception:
     pass
@@ -16,11 +15,16 @@ class CudaFunctions(object):
 
 
     def __init__(self, device=0):
+        self.context = drv.Device(device).make_context()
+
         #inspect device properties
-        devprops = { str(k): v for (k, v) in drv.Device(device).get_attributes().items() }
+        devprops = { str(k): v for (k, v) in self.context.get_device().get_attributes().items() }
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
         self.cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
         self.ITERATIONS = 7
+
+    def __del__(self):
+        self.context.pop()
 
 
     def create_gpu_args(self, arguments):
@@ -55,11 +59,11 @@ class CudaFunctions(object):
         end = drv.Event()
         times = []
         for _ in range(self.ITERATIONS):
-            context.synchronize()
+            self.context.synchronize()
             start.record()
             func(*gpu_args, block=threads, grid=grid)
             end.record()
-            context.synchronize()
+            self.context.synchronize()
             times.append(end.time_since(start))
         times = sorted(times)
         return numpy.mean(times[1:-1])

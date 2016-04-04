@@ -1,4 +1,5 @@
 import numpy
+from nose.tools import nottest
 from .context import cuda, skip_if_no_cuda_device
 
 try:
@@ -63,3 +64,14 @@ def test_compile():
         assert True
     except Exception:
         assert False
+
+@nottest
+def test_func(a, b, block=0, grid=0):
+    pass
+
+def test_benchmark():
+    skip_if_no_cuda_device()
+    dev = cuda.CudaFunctions(0)
+    args = [1, 2]
+    time = dev.benchmark(test_func, args, (1,2), (1,2))
+    assert time > 0

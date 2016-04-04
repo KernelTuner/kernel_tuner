@@ -1,4 +1,5 @@
 import numpy
+from nose.tools import nottest
 from .context import opencl, skip_if_no_opencl
 
 try:
@@ -47,3 +48,18 @@ def test_compile():
     func = dev.compile("sum", kernel_string)
 
     assert isinstance(func, pyopencl.Kernel)
+
+
+@nottest
+def test_func(queue, a, b, block=0, grid=0):
+    profile = type('profile', (object,), {'end': 0.1, 'start': 0})
+    return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
+
+def test_benchmark():
+    skip_if_no_opencl()
+    dev = opencl.OpenCLFunctions(0)
+    args = [1, 2]
+    time = dev.benchmark(test_func, args, (1,2,3), (1,2))
+    assert time > 0
+
+
