@@ -1,7 +1,6 @@
 import numpy
 from nose import SkipTest
-from nose.tools import nottest, raises
-from .context import kernel_tuner
+from nose.tools import nottest
 from .context import opencl
 
 try:
