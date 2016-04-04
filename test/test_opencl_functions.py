@@ -1,22 +1,11 @@
 import numpy
-from nose import SkipTest
-from nose.tools import nottest
-from .context import opencl
+from .context import opencl, skip_if_no_opencl
 
 try:
     import pyopencl
 except Exception:
     pass
 
-@nottest
-def skip_if_no_opencl():
-    try:
-        import pyopencl
-    except Exception, e:
-        if "No module named pyopencl" in str(e):
-            raise SkipTest("PyOpenCL not installed")
-        else:
-            raise e
 
 def test_create_gpu_args():
 

@@ -182,14 +182,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     results = dict()
 
     lang = _detect_language(lang, original_kernel)
-    if lang == "CUDA":
-        from kernel_tuner.cuda import CudaFunctions
-        dev = CudaFunctions(device)
-    elif lang == "OpenCL":
-        from kernel_tuner.opencl import OpenCLFunctions
-        dev = OpenCLFunctions(device)
-    else:
-        raise UnImplementedException("Sorry, support for languages other than CUDA and OpenCL is not implemented yet")
+    dev = _get_device_interface(lang, device)
 
     #inspect device properties
     max_threads = dev.max_threads
@@ -314,7 +307,14 @@ def _check_restrictions(restrictions, params):
             if not eval(_prepare_kernel_string(restrict, params)):
                 raise Exception("config fails restriction")
 
-
-
-
+def _get_device_interface(lang, device):
+    if lang == "CUDA":
+        from kernel_tuner.cuda import CudaFunctions
+        dev = CudaFunctions(device)
+    elif lang == "OpenCL":
+        from kernel_tuner.opencl import OpenCLFunctions
+        dev = OpenCLFunctions(device)
+    else:
+        raise UnImplementedException("Sorry, support for languages other than CUDA and OpenCL is not implemented yet")
+    return dev
 

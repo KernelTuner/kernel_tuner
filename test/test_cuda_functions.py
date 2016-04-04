@@ -1,25 +1,11 @@
 import numpy
-from nose import SkipTest
-from nose.tools import nottest
-from .context import cuda
+from .context import cuda, skip_if_no_cuda_device
 
 try:
     import pycuda.driver
 except Exception:
     pass
 
-@nottest
-def skip_if_no_cuda_device():
-    try:
-        from pycuda.autoinit import context
-    #except pycuda.driver.RuntimeError, e:
-    except Exception, e:
-        if "No module named pycuda.autoinit" in str(e):
-            raise SkipTest("PyCuda not installed")
-        elif "no CUDA-capable device is detected" in str(e):
-            raise SkipTest("no CUDA-capable device is detected")
-        else:
-            raise e
 
 def test_create_gpu_args():
 
