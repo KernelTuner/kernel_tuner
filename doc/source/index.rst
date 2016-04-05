@@ -20,7 +20,6 @@ Introduction
 .. automodule:: kernel_tuner.interface
 
 
-
 Indices and tables
 ------------------
 

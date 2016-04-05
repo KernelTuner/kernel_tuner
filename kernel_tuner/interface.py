@@ -65,6 +65,37 @@ The following shows a simple example use of the kernel tuner:
 
     tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
 
+And for OpenCL:
+
+::
+
+    kernel_string = \"\"\"
+    __kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {
+        int i = get_global_id(0);
+        if (i<n) {
+            c[i] = a[i] + b[i];
+        }
+    }
+    \"\"\"
+
+    size = 10000000
+    problem_size = (size, 1)
+
+    a = numpy.random.rand(size).astype(numpy.float32)
+    b = numpy.random.rand(size).astype(numpy.float32)
+    c = numpy.zeros_like(a)
+    n = numpy.int32(size)
+
+    args = [c, a, b, n]
+
+    tune_params = dict()
+    tune_params["block_size_x"] = [128+64*i for i in range(15)]
+
+    tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
+
+
+More extensive examples are available in the `examples` directory
+
 
 Author
 ------
