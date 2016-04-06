@@ -4,7 +4,6 @@ import numpy
 #embedded in try block to be able to generate documentation
 try:
     import pycuda.driver as drv
-    from pycuda.autoinit import context
     from pycuda.compiler import SourceModule
 except Exception:
     pass
@@ -16,6 +15,7 @@ class CudaFunctions(object):
 
 
     def __init__(self, device=0):
+        drv.init()
         self.context = drv.Device(device).make_context()
 
         #inspect device properties
