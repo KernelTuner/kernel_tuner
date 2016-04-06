@@ -179,11 +179,19 @@ may use the built-in variables blockDim.xyz instead</p>
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default.</li>
 <li><strong>grid_div_x</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
-the grid dimensions in the x-direction. If not supplied,
-[&#8220;block_size_x&#8221;] will be used by default, if do not want this pass
-an empty list.</li>
+the grid dimensions in the x-direction. Arithmetic expressions can be
+used if necessary inside the string containing a parameter name. For
+example, in some cases you may want to divide the problem size in the
+x-dimension with the number of warps rather than the number of thread
+blocks, in such cases one could use [&#8220;block_size_x/32&#8221;]. Note that
+the product of all grid divisor expressions is computed before dividing
+the problem_size in that dimension. Also note that the grid dimensions
+will be rounded up to the nearest integer number.
+If not supplied, [&#8220;block_size_x&#8221;] will be used by default, if you do not
+want any grid x-dimension divisors pass an empty list.</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
-the grid dimensions in the y-direction, None by default</li>
+the grid dimensions in the y-direction, None by default. See grid_div_x
+for more details.</li>
 <li><strong>restrictions</strong> (<em>list</em>) &#8211; A list of strings containing boolean expression that
 limited the search space in that they must be satisfied by the kernel
 configuration. These expressions must be true for the configuration
