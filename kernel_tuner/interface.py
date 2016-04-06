@@ -172,11 +172,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         the grid dimensions in the x-direction. Arithmetic expressions can be
         used if necessary inside the string containing a parameter name. For
         example, in some cases you may want to divide the problem size in the
-        x-dimension with the number of warps rather than the number of thread
-        blocks, in such cases one could use ["block_size_x/32"]. Note that
+        x-dimension with the number of warps rather than the number of threads
+        in a blocks, in such cases one could use ["block_size_x/32"]. Note that
         the product of all grid divisor expressions is computed before dividing
-        the problem_size in that dimension. Also note that the grid dimensions
-        will be rounded up to the nearest integer number.
+        the problem_size in that dimension. Also note that the divison is treated
+        as a float divison and resulting grid dimensions will be rounded up to
+        the nearest integer number.
         If not supplied, ["block_size_x"] will be used by default, if you do not
         want any grid x-dimension divisors pass an empty list.
     :type grid_div_x: list
