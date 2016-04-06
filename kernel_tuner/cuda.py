@@ -4,6 +4,7 @@ import numpy
 #embedded in try block to be able to generate documentation
 try:
     import pycuda.driver as drv
+    from pycuda.autoinit import context
     from pycuda.compiler import SourceModule
 except Exception:
     pass
