@@ -310,10 +310,10 @@ def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     if grid_div_x is None and "block_size_x" in params:
         grid_div_x = ["block_size_x"]
     if grid_div_x is not None:
-        div_x = numpy.prod([params[i] for i in grid_div_x])
+        div_x = numpy.prod([int(eval(_prepare_kernel_string(s,params))) for s in grid_div_x])
     div_y = 1
     if grid_div_y is not None:
-        div_y = numpy.prod([params[i] for i in grid_div_y])
+        div_y = numpy.prod([int(eval(_prepare_kernel_string(s,params))) for s in grid_div_y])
     grid = (int(numpy.ceil(float(problem_size[0]) / float(div_x))),
             int(numpy.ceil(float(problem_size[1]) / float(div_y))) )
     return grid
