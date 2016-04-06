@@ -113,3 +113,9 @@ Contributing authors so far:
 
 
 
+Related work
+------------
+You may also like [CLTune](https://github.com/CNugteren/CLTune) by Cedric
+Nugteren. CLTune is a C++ library for kernel tuning and supports various
+advanced features like machine learning to optimize the time spent on tuning
+kernels.
