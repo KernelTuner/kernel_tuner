@@ -3,8 +3,10 @@ python:
   - "2.7"
 # command to install dependencies
 before_install:
+  - sudo apt-get install -qq gcc-4.8 g++-4.8
   - sudo apt-get install -qq opencl-headers
 install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
   - pip install mock
   - pip install pyopencl
 #  - pip install 
