@@ -2,17 +2,8 @@ language: python
 python:
   - "2.7"
 # command to install dependencies
-before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq gcc-4.9 g++-4.9
-  - apt-cache showpkg fglrx
-  - sudo apt-get install -qq fglrx=2:15.201-0ubuntu1 opencl-headers
 install:
   - pip install mock
-  - export CXX="g++-4.9" CC="gcc-4.9"
-  - pip install pyopencl
-#  - pip install 
 # command to run tests
 script: nosetests -v
 branches:
