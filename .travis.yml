@@ -8,6 +8,7 @@ before_install:
   - sudo apt-get install -qq gcc-4.9 g++-4.9
   - sudo apt-get install -qq opencl-headers
 install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
   - pip install mock
   - pip install pyopencl
 #  - pip install 
