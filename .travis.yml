@@ -4,6 +4,7 @@ python:
 # command to install dependencies
 install:
   - pip install mock
+  - pip install pyopencl
 #  - pip install 
 # command to run tests
 script: nosetests -v
