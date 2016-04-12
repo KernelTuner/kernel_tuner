@@ -2,7 +2,8 @@ language: python
 python:
   - "2.7"
 # command to install dependencies
-#install:
+install:
+  - pip install mock
 #  - pip install 
 # command to run tests
 script: nosetests
