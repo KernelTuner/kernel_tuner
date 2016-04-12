@@ -297,8 +297,11 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         results[instance_string] = time
 
     #finished iterating over search space
-    best_config = min(results, key=results.get)
-    print "best performing configuration: ", best_config, "took:", results[best_config], "ms."
+    if len(results) > 0:
+        best_config = min(results, key=results.get)
+        print "best performing configuration: ", best_config, "took:", results[best_config], "ms."
+    else:
+        print "no results to report"
 
     return results
 
