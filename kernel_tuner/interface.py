@@ -121,6 +121,9 @@ limitations under the License.
 import numpy
 import itertools
 
+from kernel_tuner.cuda import CudaFunctions
+from kernel_tuner.opencl import OpenCLFunctions
+
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, device=0, grid_div_x=None, grid_div_y=None,
         restrictions=None, verbose=False, lang=None):
@@ -349,10 +352,8 @@ def _check_restrictions(restrictions, params):
 
 def _get_device_interface(lang, device):
     if lang == "CUDA":
-        from kernel_tuner.cuda import CudaFunctions
         dev = CudaFunctions(device)
     elif lang == "OpenCL":
-        from kernel_tuner.opencl import OpenCLFunctions
         dev = OpenCLFunctions(device)
     else:
         raise UnImplementedException("Sorry, support for languages other than CUDA and OpenCL is not implemented yet")
