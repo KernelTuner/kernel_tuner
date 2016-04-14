@@ -120,6 +120,7 @@ limitations under the License.
 
 import numpy
 import itertools
+from collections import OrderedDict
 
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
@@ -235,7 +236,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     #compute cartesian product of all tunable parameters
     for element in itertools.product(*tune_params.values()):
-        params = dict(zip(tune_params.keys(), element))
+        params = OrderedDict(zip(tune_params.keys(), element))
         instance_string = "_".join([str(i) for i in params.values()])
 
         #check for search space restrictions
