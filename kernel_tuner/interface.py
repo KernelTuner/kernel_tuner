@@ -217,6 +217,14 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         the language using this argument, currently supported: "CUDA", "OpenCL"
     :type lang: string
 
+    :param cmem_args: CUDA-specific feature for specifying constant memory
+        arguments to the kernel may have. In OpenCL these are handled as normal
+        kernel arguments, but in CUDA you have copy to a symbol. The way you
+        specify constant memory arguments is by passing a dictionary, which
+        string keys that name the constant memory symbol and values as numpy
+        objects in the same way as normal kernel arguments.
+    :type cmem_args: dict(string, ...)
+
     :returns: A dictionary of all executed kernel configurations and their
         execution times.
     :rtype: dict( string, float )
