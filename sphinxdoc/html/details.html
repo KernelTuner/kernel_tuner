@@ -139,7 +139,7 @@
 called including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>device=0</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>verbose=False</em>, <em>lang=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>device=0</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -216,6 +216,12 @@ were skipped during the search. This could be due to several reasons:</p>
 <li><strong>lang</strong> (<em>string</em>) &#8211; Specifies the language used for GPU kernels. The kernel_tuner
 automatically detects the language, but if it fails, you may specify
 the language using this argument, currently supported: &#8220;CUDA&#8221;, &#8220;OpenCL&#8221;</li>
+<li><strong>cmem_args</strong> (<em>dict(string, ...)</em>) &#8211; CUDA-specific feature for specifying constant memory
+arguments to the kernel may have. In OpenCL these are handled as normal
+kernel arguments, but in CUDA you have copy to a symbol. The way you
+specify constant memory arguments is by passing a dictionary, which
+string keys that name the constant memory symbol and values as numpy
+objects in the same way as normal kernel arguments.</li>
 </ul>
 </td>
 </tr>
