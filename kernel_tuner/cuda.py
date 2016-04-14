@@ -23,6 +23,7 @@ class CudaFunctions(object):
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
         self.cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
         self.ITERATIONS = 7
+        self.current_module = None
 
     def __del__(self):
         self.context.pop()
@@ -44,9 +45,10 @@ class CudaFunctions(object):
     def compile(self, kernel_name, kernel_string):
         """call the CUDA compiler to compile the kernel, return the device function"""
         try:
-            func = SourceModule(kernel_string, options=['-Xcompiler=-Wall'],
+            self.current_module = SourceModule(kernel_string, options=['-Xcompiler=-Wall'],
                     arch='compute_' + self.cc, code='sm_' + self.cc,
-                    cache_dir=False).get_function(kernel_name)
+                    cache_dir=False)
+            func = self.current_module.get_function(kernel_name)
             return func
         except drv.CompileError, e:
             if "uses too much shared data" in e.stderr:
@@ -68,3 +70,9 @@ class CudaFunctions(object):
             times.append(end.time_since(start))
         times = sorted(times)
         return numpy.mean(times[1:-1])
+
+    def copy_constant_memory_args(self, cmem_args):
+        """adds constant memory arguments to the most recently compiled module"""
+        for k,v in cmem_args.iteritems():
+            symbol = self.current_module.get_global(k)[0]
+            drv.memcpy_htod(symbol, v)

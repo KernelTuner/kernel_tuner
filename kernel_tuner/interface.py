@@ -126,7 +126,7 @@ from kernel_tuner.opencl import OpenCLFunctions
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, device=0, grid_div_x=None, grid_div_y=None,
-        restrictions=None, verbose=False, lang=None):
+        restrictions=None, verbose=False, lang=None, cmem_args=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code
@@ -275,6 +275,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 continue
             else:
                 raise e
+
+        #add constant memory arguments to compiled module
+        if cmem_args is not None:
+            dev.copy_constant_memory_args(cmem_args)
 
         #test kernel
         try:
