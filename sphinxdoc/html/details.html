@@ -217,11 +217,11 @@ were skipped during the search. This could be due to several reasons:</p>
 automatically detects the language, but if it fails, you may specify
 the language using this argument, currently supported: &#8220;CUDA&#8221;, &#8220;OpenCL&#8221;</li>
 <li><strong>cmem_args</strong> (<em>dict(string, ...)</em>) &#8211; CUDA-specific feature for specifying constant memory
-arguments to the kernel may have. In OpenCL these are handled as normal
+arguments to the kernel. In OpenCL these are handled as normal
 kernel arguments, but in CUDA you have copy to a symbol. The way you
-specify constant memory arguments is by passing a dictionary, which
-string keys that name the constant memory symbol and values as numpy
-objects in the same way as normal kernel arguments.</li>
+specify constant memory arguments is by passing a dictionary with
+string containing the constant memory symbol name and numpy objects
+in the same way as normal kernel arguments.</li>
 </ul>
 </td>
 </tr>
