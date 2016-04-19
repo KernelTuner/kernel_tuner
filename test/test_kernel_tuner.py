@@ -19,21 +19,21 @@ def test_get_grid_dimensions1():
     assert isinstance(grid[0], int)
     assert isinstance(grid[1], int)
 
-    print grid
+    print(grid)
     assert grid[0] == 25
     assert grid[1] == 28
 
     grid = kernel_tuner._get_grid_dimensions(problem_size, params,
                     None, grid_div_x)
 
-    print grid
+    print(grid)
     assert grid[0] == 25
     assert grid[1] == 1024
 
     grid = kernel_tuner._get_grid_dimensions(problem_size, params,
                     grid_div_y, None)
 
-    print grid
+    print(grid)
     assert grid[0] == 1024
     assert grid[1] == 28
 
