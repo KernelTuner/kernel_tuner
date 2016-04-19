@@ -74,3 +74,20 @@ def test_benchmark(drv):
     assert drv.Event.return_value.record.call_count == 2*dev.ITERATIONS
     assert drv.Event.return_value.time_since.call_count == dev.ITERATIONS
 
+
+@patch('kernel_tuner.cuda.drv')
+def test_copy_constant_memory_args(drv):
+    drv = setup_mock(drv)
+
+    fake_array = numpy.zeros(10).astype(numpy.float32)
+    cmem_args = { 'fake_array': fake_array }
+
+    dev = cuda.CudaFunctions(0)
+    dev.current_module = Mock()
+    dev.current_module.get_global.return_value = ['get_global']
+
+    dev.copy_constant_memory_args(cmem_args)
+
+    drv.memcpy_htod.assert_called_once_with('get_global', fake_array)
+    dev.current_module.get_global.assert_called_once_with('fake_array')
+
