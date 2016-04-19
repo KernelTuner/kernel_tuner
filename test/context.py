@@ -13,7 +13,7 @@ from nose.tools import nottest
 def skip_if_no_cuda_device():
     try:
         from pycuda.autoinit import context
-    except ImportError:
+    except (ImportError, Exception) as e:
         raise SkipTest("PyCuda not installed")
 
 @nottest
