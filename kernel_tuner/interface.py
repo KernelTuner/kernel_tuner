@@ -118,6 +118,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from __future__ import print_function
+
 import numpy
 import itertools
 from collections import OrderedDict
@@ -253,7 +255,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             _check_restrictions(restrictions, params)
         except Exception, e:
             if verbose:
-                print "skipping config", instance_string, "reason:", str(e)
+                print("skipping config", instance_string, "reason:", str(e))
             parameter_space.remove(element)
 
     #iterate over parameter space
@@ -265,7 +267,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         threads = _get_thread_block_dimensions(params)
         if numpy.prod(threads) > max_threads:
             if verbose:
-                print "skipping config", instance_string, "reason: too many threads per block"
+                print("skipping config", instance_string, "reason: too many threads per block")
             continue
         grid = _get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
@@ -286,7 +288,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             #skip over this configuration and try the next one
             if "uses too much shared data" in str(e):
                 if verbose:
-                    print "skipping config", instance_string, "reason: too much shared memory used"
+                    print("skipping config", instance_string, "reason: too much shared memory used")
                 continue
             else:
                 raise e
@@ -305,22 +307,22 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             #and proceed to try the next one
             if "too many resources requested for launch" in str(e):
                 if verbose:
-                    print "skipping config", instance_string, "reason: too many resources requested for launch"
+                    print("skipping config", instance_string, "reason: too many resources requested for launch")
                 continue
             else:
-                print "Error while benchmarking:", instance_string
+                print("Error while benchmarking:", instance_string)
                 raise e
 
         #print the result
-        print params, kernel_name, "took:", time, " ms."
+        print(params, kernel_name, "took:", time, " ms.")
         results[instance_string] = time
 
     #finished iterating over search space
     if len(results) > 0:
         best_config = min(results, key=results.get)
-        print "best performing configuration: ", best_config, "took:", results[best_config], "ms."
+        print("best performing configuration: ", best_config, "took:", results[best_config], "ms.")
     else:
-        print "no results to report"
+        print("no results to report")
 
     return results
 

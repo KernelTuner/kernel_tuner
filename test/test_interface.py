@@ -59,7 +59,7 @@ def test_interface_handles_restriction(dev_interface):
     tune_params = { "block_size_x": [128, 256, 512] }
     restrict = ["block_size_x > 128", "block_size_x < 512"]
 
-    kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA")
+    kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
 
     dev.compile.assert_called_once_with("fake_kernel_256", 'fake_kernel_256')
     dev.benchmark.assert_called_once_with('compile', 'create_gpu_args', (256, 1, 1), (1, 1))
