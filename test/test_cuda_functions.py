@@ -52,7 +52,7 @@ def test_compile():
         func = dev.compile("vector_add", kernel_string)
         assert isinstance(func, pycuda.driver.Function)
         assert False
-    except Exception, e:
+    except Exception as e:
         if "uses too much shared data" in str(e):
             assert True
         else:

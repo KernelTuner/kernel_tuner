@@ -14,7 +14,7 @@ def skip_if_no_cuda_device():
     try:
         from pycuda.autoinit import context
     #except pycuda.driver.RuntimeError, e:
-    except Exception, e:
+    except Exception as e:
         if "No module named pycuda.autoinit" in str(e):
             raise SkipTest("PyCuda not installed")
         elif "no CUDA-capable device is detected" in str(e):
@@ -26,7 +26,7 @@ def skip_if_no_cuda_device():
 def skip_if_no_opencl():
     try:
         import pyopencl
-    except Exception, e:
+    except Exception as e:
         if "No module named pyopencl" in str(e):
             raise SkipTest("PyOpenCL not installed")
         else:
