@@ -2,17 +2,19 @@
 import numpy
 
 #embedded in try block to be able to generate documentation
+#and run tests without pycuda installed
 try:
     import pycuda.driver as drv
     from pycuda.compiler import SourceModule
 except Exception:
+    drv = object()
+    SourceModule = object()
     pass
 
 
 
 class CudaFunctions(object):
     """Class that groups the CUDA functions on maintains some state about the device"""
-
 
     def __init__(self, device=0):
         drv.init()
