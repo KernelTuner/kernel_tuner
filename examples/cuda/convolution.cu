@@ -13,10 +13,8 @@ __constant__ float d_filter[filter_height*filter_width];
 __global__ void convolution_kernel(float *output, float *input, float *filter) {
     int ty = threadIdx.y;
     int tx = threadIdx.x;
-    int by = blockIdx.y * block_size_y;
-    int bx = blockIdx.x * block_size_x;
-    int y = by+ty;
-    int x = bx+tx;
+    int by = blockIdx.y * block_size_y * tile_size_y;
+    int bx = blockIdx.x * block_size_x * tile_size_x;
 
     //thread-local registers to hold local sums
     float sum[tile_size_y][tile_size_x];
@@ -56,7 +54,7 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
     for (int yi=0; yi<tile_size_y; yi++) {   
         #pragma unroll
         for (int xi=0; xi<tile_size_x; xi++) {
-             output[(y+yi*block_size_x)*image_width+x+xi*block_size_x] = sum[yi][xi];
+             output[(by+yi*block_size_x)*image_width+bx+xi*block_size_x] = sum[yi][xi];
         }
     }
 
