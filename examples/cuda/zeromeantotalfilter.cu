@@ -18,7 +18,7 @@
  * This file contains CUDA kernels for applying a zero-mean total
  * filter to a PRNU pattern, as proposed by:
  * M. Chen et al. "Determining image origin and integrity using sensor
- * noise", IEEE Trans. Inf. Forensics Secur. 3 (2008) 74–90.
+ * noise", IEEE Trans. Inf. Forensics Secur. 3 (2008) 74-90.
  *
  * The Zero Mean filter ensures that even and uneven subsets of columns
  * and rows in a checkerboard pattern become zero to remove any linear

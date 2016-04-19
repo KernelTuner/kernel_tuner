@@ -33,14 +33,12 @@ def test_interface_handles_max_threads(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
 
-    tune_params = { "block_size_x": [128, 256, 512] }
+    tune_params = { "block_size_x": [256, 512] }
     dev.max_threads = 256
 
     kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    calls = [call("fake_kernel_128", 'fake_kernel_128'), call("fake_kernel_256", 'fake_kernel_256')]
-    dev.compile.assert_has_calls(calls)
-    assert dev.compile.call_count == 2
+    dev.compile.assert_called_once_with("fake_kernel_256", 'fake_kernel_256')
 
 @patch('kernel_tuner.interface.CudaFunctions')
 def test_interface_handles_compile_error(dev_interface):
