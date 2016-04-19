@@ -253,7 +253,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         instance_string = "_".join([str(i) for i in params.values()])
         try:
             _check_restrictions(restrictions, params)
-        except Exception, e:
+        except Exception as e:
             if verbose:
                 print("skipping config", instance_string, "reason:", str(e))
             parameter_space.remove(element)
@@ -282,7 +282,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #compile kernel func
         try:
             func = dev.compile(name, kernel_string)
-        except Exception, e:
+        except Exception as e:
             #compiles may fail because certain kernel configurations use too
             #much shared memory for example, the desired behavior is to simply
             #skip over this configuration and try the next one
@@ -300,7 +300,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #test kernel
         try:
             time = dev.benchmark(func, gpu_args, threads, grid)
-        except Exception, e:
+        except Exception as e:
             #some launches may fail because too many registers are required
             #to run the kernel given the current thread block size
             #the desired behavior is to simply skip over this configuration
@@ -364,7 +364,7 @@ def _get_thread_block_dimensions(params):
 def _prepare_kernel_string(original_kernel, params):
     """replace occurrences of the tuning params with their current value"""
     kernel_string = original_kernel
-    for k, v in params.iteritems():
+    for k, v in params.items():
         kernel_string = kernel_string.replace(k, str(v))
     return kernel_string
 

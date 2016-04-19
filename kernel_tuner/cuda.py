@@ -51,7 +51,7 @@ class CudaFunctions(object):
                     cache_dir=False)
             func = self.current_module.get_function(kernel_name)
             return func
-        except drv.CompileError, e:
+        except drv.CompileError as e:
             if "uses too much shared data" in e.stderr:
                 raise Exception("uses too much shared data")
             else:
@@ -74,6 +74,6 @@ class CudaFunctions(object):
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module"""
-        for k,v in cmem_args.iteritems():
+        for k,v in cmem_args.items():
             symbol = self.current_module.get_global(k)[0]
             drv.memcpy_htod(symbol, v)

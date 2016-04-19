@@ -1,4 +1,8 @@
-from mock import patch, call
+try:
+    from mock import patch, call
+except:
+    from unittest.mock import patch, call
+
 import numpy
 
 from .context import *

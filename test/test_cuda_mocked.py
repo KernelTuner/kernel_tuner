@@ -1,6 +1,10 @@
 import numpy
 from nose.tools import nottest
-from mock import patch, Mock
+
+try:
+    from mock import patch, Mock
+except:
+    from unittest.mock import patch, Mock
 
 from .context import *
 
