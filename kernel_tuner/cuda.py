@@ -9,7 +9,6 @@ try:
 except Exception:
     drv = object()
     SourceModule = object()
-    pass
 
 
 
