@@ -221,8 +221,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         arguments to the kernel. In OpenCL these are handled as normal
         kernel arguments, but in CUDA you have copy to a symbol. The way you
         specify constant memory arguments is by passing a dictionary with
-        string containing the constant memory symbol name and numpy objects
-        in the same way as normal kernel arguments.
+        strings containing the constant memory symbol name together with numpy
+        objects in the same way as normal kernel arguments.
     :type cmem_args: dict(string, ...)
 
     :returns: A dictionary of all executed kernel configurations and their
@@ -243,17 +243,23 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     gpu_args = dev.create_gpu_args(arguments)
 
     #compute cartesian product of all tunable parameters
-    for element in itertools.product(*tune_params.values()):
-        params = OrderedDict(zip(tune_params.keys(), element))
-        instance_string = "_".join([str(i) for i in params.values()])
+    parameter_space = list(itertools.product(*tune_params.values()))
 
-        #check for search space restrictions
+    #check for search space restrictions
+    for element in parameter_space[:]:
+        params = dict(zip(tune_params.keys(), element))
+        instance_string = "_".join([str(i) for i in params.values()])
         try:
             _check_restrictions(restrictions, params)
         except Exception, e:
             if verbose:
                 print "skipping config", instance_string, "reason:", str(e)
-            continue
+            parameter_space.remove(element)
+
+    #iterate over parameter space
+    for element in parameter_space:
+        params = OrderedDict(zip(tune_params.keys(), element))
+        instance_string = "_".join([str(i) for i in params.values()])
 
         #compute thread block and grid dimensions for this kernel
         threads = _get_thread_block_dimensions(params)
