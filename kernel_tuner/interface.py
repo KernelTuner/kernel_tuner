@@ -305,7 +305,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             #to run the kernel given the current thread block size
             #the desired behavior is to simply skip over this configuration
             #and proceed to try the next one
-            if "too many resources requested for launch" in str(e):
+            if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
                 if verbose:
                     print("skipping config", instance_string, "reason: too many resources requested for launch")
                 continue
