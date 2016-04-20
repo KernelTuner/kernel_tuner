@@ -43,6 +43,7 @@ install using
 
 Dependencies
 ------------
+ * Python 2.7 or Python 3.5
  * PyCuda and/or PyOpenCL (https://mathema.tician.de/software/)
 
 Example usage
@@ -108,10 +109,14 @@ The kernel tuner follows the Google Python style guide. If you want to
 contribute to the project please fork it, create a branch including
 your addition, and create a pull request.
 
+The tests use relative imports and can be run directly after making
+changes to the code. To run all tests use `nosetests` in the main directory.
+To run the examples after code changes, you need to run `pip install --upgrade .`. 
+Ensure the code is compatible with both Python 2.7 and Python 3.5.
+
 Contributing authors so far:
 * Ben van Werkhoven
-
-
+* Berend Weel
 
 Related work
 ------------
