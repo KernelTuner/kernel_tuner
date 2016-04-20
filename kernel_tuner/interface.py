@@ -34,6 +34,7 @@ install using
 
 Dependencies
 ------------
+ * Python 2.7 or Python 3.5
  * PyCuda and/or PyOpenCL (https://mathema.tician.de/software/)
 
 Example usage
@@ -94,7 +95,7 @@ And for OpenCL:
     tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
 
 
-More extensive examples are available in the `examples` directory
+More extensive examples are available in the `examples` directory directory and in the full documentation.
 
 
 Author
