@@ -11,7 +11,7 @@
 
 #define WIDTH 4096
 /*
- * Optimized CUDA kernel for matrix multiplication
+ * Optimized OpenCL kernel for matrix multiplication
  *
  * This kernel is optimized according to the directions given
  * in: "Better performance at lower occupancy" by V. Volkov,
@@ -25,22 +25,22 @@
  * The kernel computes C=A*B, where A, B, and C are square
  * matrices with height and width equal to WIDTH
  */
-__global__ void matmul_kernel(float *C, float *A, float *B) {
+__kernel void matmul_kernel(__global float *C, __global float *A, __global float *B) {
 
-    __shared__ float sA[block_size_y*tile_size_y][block_size_x];
-    __shared__ float sB[block_size_y*tile_size_y][block_size_x * tile_size_x];
+    __local float sA[block_size_y*tile_size_y][block_size_x];
+    __local float sB[block_size_y*tile_size_y][block_size_x * tile_size_x];
 
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-    int x = blockIdx.x * block_size_x * tile_size_x + threadIdx.x;
-    int y = blockIdx.y * block_size_y * tile_size_y + threadIdx.y;
+    int tx = get_local_id(0);
+    int ty = get_local_id(1);
+    int x = get_group_id(0) * block_size_x * tile_size_x + tx;
+    int y = get_group_id(1) * block_size_y * tile_size_y + ty;
     int k, kb;
 
     float sum[tile_size_y][tile_size_x];
 
     for (k = 0; k < WIDTH; k += block_size_x) {
 
-        __syncthreads ();
+        barrier(CLK_LOCAL_MEM_FENCE);
         #pragma unroll
         for (int i = 0; i < tile_size_y; i++) {
             sA[ty + block_size_y * i][tx] = A[y * WIDTH + block_size_y * i * WIDTH + k + tx];
@@ -50,7 +50,7 @@ __global__ void matmul_kernel(float *C, float *A, float *B) {
             	sB[ty + block_size_y * i][tx + j * block_size_x] = B[(k + ty + block_size_y * i) * WIDTH + x + j * block_size_x];
             }
         }
-        __syncthreads ();
+        barrier(CLK_LOCAL_MEM_FENCE);
 
         //compute
         #pragma unroll

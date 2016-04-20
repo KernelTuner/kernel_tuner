@@ -8,16 +8,14 @@
 #define input_height (image_height + border_height)
 #define input_width (image_width + border_width)
 
-__constant__ float d_filter[filter_height*filter_width];
-
-__global__ void convolution_kernel(float *output, float *input, float *filter) {
-    int ty = threadIdx.y;
-    int tx = threadIdx.x;
-    int by = blockIdx.y * block_size_y * tile_size_y;
-    int bx = blockIdx.x * block_size_x * tile_size_x;
+__kernel void convolution_kernel(__global float *output, __global float *input, __constant float *d_filter) {
+    int ty = get_local_id(1);
+    int tx = get_local_id(0);
+    int by = get_group_id(1) * block_size_y * tile_size_y;
+    int bx = get_group_id(0) * block_size_x * tile_size_x;
 
     //shared memory to hold all input data need by this thread block
-    __shared__ float sh_input[block_size_y*tile_size_y+border_height][block_size_x*tile_size_x+border_width];
+    __local float sh_input[block_size_y*tile_size_y+border_height][block_size_x*tile_size_x+border_width];
 
     //load all input data needed by this thread block into shared memory
     #pragma unroll
@@ -27,12 +25,12 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
             sh_input[i][j] = input[(by+i)*input_width + (bx+j)];
         }
     }
-    __syncthreads();
+    barrier(CLK_LOCAL_MEM_FENCE);
 
     //thread-local registers to hold local sums
     float sum[tile_size_y][tile_size_x];
     #pragma unroll
-    for (int yi=0; yi<tile_size_y; yi++) {
+    for (int yi=0; yi<tile_size_y; yi++) {   
         #pragma unroll
         for (int xi=0; xi<tile_size_x; xi++) {
              sum[yi][xi] = 0.0f;
