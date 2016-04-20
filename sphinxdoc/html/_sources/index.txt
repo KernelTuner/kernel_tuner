@@ -14,6 +14,7 @@ Contents:
    Introduction <self>
    details
    examples
+   internal
 
 Introduction
 ============

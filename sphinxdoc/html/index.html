@@ -84,6 +84,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
 </ul>
 
             
@@ -140,6 +141,11 @@
 <li class="toctree-l2"><a class="reference internal" href="examples.html#matrix-multiplication">Matrix Multiplication</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#kernel-tuner-cuda-cudafunctions">kernel_tuner.cuda.CudaFunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -180,6 +186,7 @@ tune_kernel.</p>
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
+<li>Python 2.7 or Python 3.5</li>
 <li>PyCuda and/or PyOpenCL (<a class="reference external" href="https://mathema.tician.de/software/">https://mathema.tician.de/software/</a>)</li>
 </ul>
 </div></blockquote>
@@ -237,7 +244,7 @@ tune_kernel.</p>
 <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>More extensive examples are available in the <cite>examples</cite> directory</p>
+<p>More extensive examples are available in the <cite>examples</cite> directory directory and in the full documentation.</p>
 </div>
 <div class="section" id="author">
 <h2>Author<a class="headerlink" href="#author" title="Permalink to this headline">¶</a></h2>
