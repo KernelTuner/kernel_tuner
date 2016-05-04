@@ -61,7 +61,7 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
     for (int yi=0; yi<tile_size_y; yi++) {   
         #pragma unroll
         for (int xi=0; xi<tile_size_x; xi++) {
-             output[(by+yi*block_size_x)*image_width+bx+xi*block_size_x] = sum[yi][xi];
+             output[(by+ty+yi*block_size_y) * image_width + bx+tx+xi*block_size_x] = sum[yi][xi];
         }
     }
 
