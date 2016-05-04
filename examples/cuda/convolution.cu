@@ -61,9 +61,31 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
     for (int yi=0; yi<tile_size_y; yi++) {   
         #pragma unroll
         for (int xi=0; xi<tile_size_x; xi++) {
-             output[(by+yi*block_size_x)*image_width+bx+xi*block_size_x] = sum[yi][xi];
+             output[(by+ty+yi*block_size_y) * image_width + bx+tx+xi*block_size_x] = sum[yi][xi];
         }
     }
 
 }
 
+
+
+
+
+__global__ void convolution_naive(float *output, float *input, float *filter) {
+
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int i, j;
+    float sum = 0.0;
+
+    if (y < image_height && x < image_width) {
+
+        for (j = 0; j < filter_height; j++) {
+            for (i = 0; i < filter_width; i++) {
+                sum += input[(y + j) * input_width + (x + i)] * filter[j * filter_width + i];
+            }
+        }
+
+        output[y * image_width + x] = sum;
+    }
+}

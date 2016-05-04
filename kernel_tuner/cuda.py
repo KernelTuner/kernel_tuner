@@ -127,13 +127,15 @@ class CudaFunctions(object):
         for _ in range(self.ITERATIONS):
             self.context.synchronize()
             start.record()
-            func(*gpu_args, block=threads, grid=grid)
+            self.run_kernel(func, gpu_args, threads, grid)
             end.record()
             self.context.synchronize()
             times.append(end.time_since(start))
         times = sorted(times)
         return numpy.mean(times[1:-1])
 
+    def run_kernel(self, func, gpu_args, threads, grid):
+        func(*gpu_args, block=threads, grid=grid)
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module

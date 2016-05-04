@@ -128,9 +128,12 @@ from collections import OrderedDict
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 
+#temporary
+import pycuda.driver as drv
+
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, device=0, grid_div_x=None, grid_div_y=None,
-        restrictions=None, verbose=False, lang=None, cmem_args=None):
+        restrictions=None, verbose=False, lang=None, cmem_args=None, answer=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code
@@ -297,6 +300,30 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #add constant memory arguments to compiled module
         if cmem_args is not None:
             dev.copy_constant_memory_args(cmem_args)
+
+        #check for kernel correctness
+        for result,expected in zip(gpu_args,answer):
+            if expected is not None:
+                drv.memset_d32(result, 0, expected.size)
+
+        dev.run_kernel(func, gpu_args, threads, grid)
+        correct = True
+        if answer is not None:
+            for result,expected in zip(gpu_args,answer):
+                if expected is not None:
+                    result_host = numpy.zeros_like(expected)
+                    drv.memcpy_dtoh(result_host, result)
+                    correct = correct and all(result_host.ravel()-expected.ravel() < 1e-6)
+                    from matplotlib import pyplot
+                    l = numpy.sqrt(result_host.size)
+                    result_host = result_host.reshape(l,l)
+                    f, (ax1, ax2) = pyplot.subplots(1, 2, sharex=True, sharey=True)
+                    ax1.imshow(result_host, cmap=pyplot.cm.bone)
+                    ax2.imshow(expected, cmap=pyplot.cm.bone)
+                    pyplot.show()
+
+        if not correct:
+            raise Exception("Error in:" + instance_string + " result is not correct")
 
         #test kernel
         try:
