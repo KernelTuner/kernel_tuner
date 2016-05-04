@@ -6,7 +6,7 @@ including filtering. A naive CUDA kernel for 2D Convolution would be:
 
 .. code-block:: c
 
-    __global__ void convolvution_kernel(float *output, float *input, float *filter) {
+    __global__ void convolution_kernel(float *output, float *input, float *filter) {
 
         int x = blockIdx.x * blockDim.x + threadIdx.x;
         int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -21,7 +21,7 @@ including filtering. A naive CUDA kernel for 2D Convolution would be:
                 }
             }
 
-            image[y * image_width + x] = sum;
+            output[y * image_width + x] = sum;
         }
     }
 
