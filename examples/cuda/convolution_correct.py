@@ -16,7 +16,7 @@ input = input.reshape((problem_size[0]+16), (problem_size[1]+16))
 #filter = numpy.random.randn(17*17).astype(numpy.float32)
 filter = numpy.ones(17*17).astype(numpy.float32)
 
-from matplotlib import pyplot
+#from matplotlib import pyplot
 
 input[:] = 0.0
 

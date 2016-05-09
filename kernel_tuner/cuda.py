@@ -150,3 +150,9 @@ class CudaFunctions(object):
         for k,v in cmem_args.items():
             symbol = self.current_module.get_global(k)[0]
             drv.memcpy_htod(symbol, v)
+
+    def memset(self, allocation, value, size):
+        drv.memset_d32(allocation, value, size)
+
+    def memcpy_dtoh(self, dest, src):
+        drv.memcpy_dtoh(dest, src)
