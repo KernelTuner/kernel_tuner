@@ -298,12 +298,11 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         if cmem_args is not None:
             dev.copy_constant_memory_args(cmem_args)
 
-        #check for kernel correctness
-        if answer is not None:
-            _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string)
-
-        #test kernel
+        #test kernel for correctness and benchmark
         try:
+            if answer is not None:
+                _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string)
+
             time = dev.benchmark(func, gpu_args, threads, grid)
         except Exception as e:
             #some launches may fail because too many registers are required
