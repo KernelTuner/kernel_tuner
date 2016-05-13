@@ -128,9 +128,6 @@ from collections import OrderedDict
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 
-#temporary
-import pycuda.driver as drv
-
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, device=0, grid_div_x=None, grid_div_y=None,
         restrictions=None, verbose=False, lang=None, cmem_args=None, answer=None):
@@ -403,6 +400,7 @@ def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instan
             result_host = numpy.zeros_like(expected)
             dev.memcpy_dtoh(result_host, result)
             correct = correct and all(result_host.ravel()-expected.ravel() < 1e-6)
+
             #from matplotlib import pyplot
             #l = numpy.sqrt(result_host.size)
             #result_host = result_host.reshape(l,l)

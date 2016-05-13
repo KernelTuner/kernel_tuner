@@ -24,17 +24,13 @@ for i in range(problem_size[0]):
     for j in range(problem_size[0]):
         input[i,j] = (i/50)%2 != (j/50)%2
 
-#pyplot.imshow(input, cmap=pyplot.cm.bone)
-#pyplot.show()
-#raw_input()
-
 
 cmem_args= {'d_filter': filter }
 
 args = [output, input, filter]
 tune_params = dict()
-tune_params["block_size_x"] = [16] #[16*i for i in range(1,9)]
-tune_params["block_size_y"] = [16] #[2**i for i in range(6)]
+tune_params["block_size_x"] = [16*i for i in range(1,9)]
+tune_params["block_size_y"] = [2**i for i in range(6)]
 
 tune_params["tile_size_x"] = [2**i for i in range(3)]
 tune_params["tile_size_y"] = [2**i for i in range(3)]
