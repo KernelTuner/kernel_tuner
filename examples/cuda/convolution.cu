@@ -8,6 +8,9 @@
 #define input_height (image_height + border_height)
 #define input_width (image_width + border_width)
 
+#define i_end min(block_size_y*tile_size_y+border_height, input_height)
+#define j_end min(block_size_x*tile_size_x+border_width, input_width)
+
 __constant__ float d_filter[filter_height*filter_width];
 
 __global__ void convolution_kernel(float *output, float *input, float *filter) {
@@ -21,9 +24,9 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
 
     //load all input data needed by this thread block into shared memory
     #pragma unroll
-    for (int i=ty; i<block_size_y*tile_size_y+border_height; i+=block_size_y) {
+    for (int i=ty; i<i_end; i+=block_size_y) {
         #pragma unroll
-        for (int j=tx; j<block_size_x*tile_size_x+border_width; j+=block_size_x) {
+        for (int j=tx; j<j_end; j+=block_size_x) {
             sh_input[i][j] = input[(by+i)*input_width + (bx+j)];
         }
     }
@@ -61,9 +64,39 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
     for (int yi=0; yi<tile_size_y; yi++) {   
         #pragma unroll
         for (int xi=0; xi<tile_size_x; xi++) {
-             output[(by+ty+yi*block_size_y) * image_width + bx+tx+xi*block_size_x] = sum[yi][xi];
+            #if ((image_height%(block_size_y*tile_size_y)!=0) || (image_width%(block_size_x*tile_size_x)!=0))
+            int y = by+ty+yi*block_size_y;
+            int x = bx+tx+xi*block_size_x;
+            if (y < image_height && x < image_width) {
+                output[y * image_width + x] = sum[yi][xi];
+            }
+            #else
+                output[(by+ty+yi*block_size_y) * image_width + bx+tx+xi*block_size_x] = sum[yi][xi];
+            #endif
         }
     }
 
 }
 
+
+
+
+
+__global__ void convolution_naive(float *output, float *input, float *filter) {
+
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int i, j;
+    float sum = 0.0;
+
+    if (y < image_height && x < image_width) {
+
+        for (j = 0; j < filter_height; j++) {
+            for (i = 0; i < filter_width; i++) {
+                sum += input[(y + j) * input_width + (x + i)] * filter[j * filter_width + i];
+            }
+        }
+
+        output[y * image_width + x] = sum;
+    }
+}
