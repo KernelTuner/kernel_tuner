@@ -47,7 +47,7 @@ dev = CudaFunctions(device=0)
 gpu_args = dev.create_gpu_args(args)
 defs = "#define block_size_x 16 \n #define block_size_y 16 \n #define tile_size_x 1 \n #define tile_size_y 1 \n"
 func = dev.compile("convolution_naive", defs+ kernel_string)
-func(*gpu_args, block=(16,16,1), grid=(problem_size[0]/16, problem_size[1]/16))
+func(*gpu_args, block=(16,16,1), grid=(int(numpy.ceil(problem_size[0]/16.)), int(numpy.ceil(problem_size[1]/16.))))
 output_image = numpy.zeros_like(output)
 drv.memcpy_dtoh(output_image, gpu_args[0])
 output_image = output_image.reshape(problem_size)

@@ -27,7 +27,15 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
     for (int i=ty; i<i_end; i+=block_size_y) {
         #pragma unroll
         for (int j=tx; j<j_end; j+=block_size_x) {
-            sh_input[i][j] = input[(by+i)*input_width + (bx+j)];
+            #if ((image_height%(block_size_y*tile_size_y)!=0) || (image_width%(block_size_x*tile_size_x)!=0))
+            int y = by+i;
+            int x = bx+j;
+            if (y < input_height && x < input_width) {
+                sh_input[i][j] = input[y*input_width+x];
+            }
+            #else
+                sh_input[i][j] = input[(by+i)*input_width + (bx+j)];
+            #endif
         }
     }
     __syncthreads();
