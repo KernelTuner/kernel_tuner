@@ -155,3 +155,4 @@ def test_get_device_interface2():
 def test_get_device_interface3():
     lang = "blabla"
     kernel_tuner._get_device_interface(lang, 0)
+

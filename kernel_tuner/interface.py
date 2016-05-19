@@ -388,24 +388,24 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     :rtype: list
     """
 
+    #move data to the GPU and compile the kernel
     lang = _detect_language(lang, kernel_string)
     dev = _get_device_interface(lang, device)
-
     gpu_args = dev.create_gpu_args(arguments)
     kernel_string = _prepare_kernel_string(kernel_string, params)
     func = dev.compile(kernel_name, kernel_string)
 
+    #retrieve the run configuration and run the kernel
     threads = _get_thread_block_dimensions(params)
     grid = _get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
-
     dev.run_kernel(func, gpu_args, threads, grid)
 
+    #copy data in GPU memory back to the host
     results = []
     for i, arg in enumerate(arguments):
         results.append(numpy.zeros_like(arg))
         dev.memcpy_dtoh(results[-1], gpu_args[i])
-
     return results
 
 
@@ -480,3 +480,4 @@ def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instan
     if not correct:
         raise Exception("Error " + instance_string + " failed correctness check")
     return correct
+
