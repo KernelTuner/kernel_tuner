@@ -143,10 +143,8 @@ class OpenCLFunctions(object):
         :type size: int
 
         """
-        if type(buffer) is cl.Buffer:
+        if isinstance(buffer, cl.Buffer):
             cl.enqueue_fill_buffer(self.queue, buffer, numpy.array(value), 0, size)
-        else:
-            buffer = value
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
@@ -157,10 +155,8 @@ class OpenCLFunctions(object):
         :param src: An OpenCL Buffer to copy data from
         :type src: pyopencl.Buffer
         """
-        if type(src) is cl.Buffer:
+        if isinstance(src, cl.Buffer):
             cl.enqueue_copy(self.queue, dest, src)
-        else:
-            dest = src
 
 
 

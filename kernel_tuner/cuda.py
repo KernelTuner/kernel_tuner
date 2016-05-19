@@ -193,7 +193,7 @@ class CudaFunctions(object):
         :param src: A GPU memory allocation unit
         :type src: pycuda.driver.DeviceAllocation
         """
-        if type(src) is drv.DeviceAllocation:
+        if isinstance(src, drv.DeviceAllocation):
             drv.memcpy_dtoh(dest, src)
         else:
             dest = src
