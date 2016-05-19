@@ -3,7 +3,7 @@ from nose.tools import nottest
 
 try:
     from mock import patch, Mock
-except:
+except ImportError:
     from unittest.mock import patch, Mock
 
 from .context import *

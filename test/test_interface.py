@@ -1,6 +1,6 @@
 try:
     from mock import patch, call
-except:
+except ImportError:
     from unittest.mock import patch, call
 
 import numpy
