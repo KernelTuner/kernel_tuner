@@ -13,7 +13,7 @@ output = numpy.zeros(size).astype(numpy.float32)
 input = numpy.random.randn(input_size).astype(numpy.float32)
 filter = numpy.random.randn(17*17).astype(numpy.float32)
 
-cmem_args= {'d_filter': numpy.random.randn(17*17).astype(numpy.float32) }
+cmem_args= {'d_filter': filter }
 
 args = [output, input, filter]
 tune_params = dict()

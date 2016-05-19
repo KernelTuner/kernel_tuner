@@ -25,7 +25,7 @@ benchmarked.
 import numpy
 import kernel_tuner
 
-with open('convolution.cu', 'r') as f:
+with open('convolution.cl', 'r') as f:
     kernel_string = f.read()
 
 problem_size = (4096, 4096)
@@ -34,9 +34,7 @@ input_size = ((problem_size[0]+16) * (problem_size[1]+16))
 
 output = numpy.zeros(size).astype(numpy.float32)
 input = numpy.random.randn(input_size).astype(numpy.float32)
-
 filter = numpy.random.randn(17*17).astype(numpy.float32)
-cmem_args= {'d_filter': filter }
 
 args = [output, input, filter]
 tune_params = dict()
@@ -61,5 +59,5 @@ answer = [results[0], None, None]
 #start kernel tuning with correctness verification
 kernel_tuner.tune_kernel("convolution_kernel", kernel_string,
     problem_size, args, tune_params,
-    grid_div_y=grid_div_y, grid_div_x=grid_div_x, verbose=True, cmem_args=cmem_args, answer=answer)
+    grid_div_y=grid_div_y, grid_div_x=grid_div_x, verbose=True, answer=answer)
 
