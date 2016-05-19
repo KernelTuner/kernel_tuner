@@ -13,13 +13,13 @@ from nose.tools import nottest
 def skip_if_no_cuda_device():
     try:
         from pycuda.autoinit import context
-    except (ImportError, Exception) as e:
+    except (ImportError, Exception):
         raise SkipTest("PyCuda not installed or no CUDA device detected")
 
 @nottest
 def skip_if_no_opencl():
     try:
         import pyopencl
-    except ImportError as e:
+    except ImportError:
         raise SkipTest("PyOpenCL not installed")
 

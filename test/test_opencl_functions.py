@@ -1,5 +1,4 @@
 import numpy
-from nose.tools import nottest
 from .context import opencl, skip_if_no_opencl
 
 try:

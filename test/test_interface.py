@@ -109,7 +109,7 @@ def test_check_kernel_correctness(dev_interface):
     dev.memset.assert_called_once_with('gpu_args', 0, 8)
     dev.run_kernel.assert_called_once_with('func', ['gpu_args'], 'threads', 'grid')
 
-    for name, args, kwargs in dev.mock_calls:
+    for name, args, _ in dev.mock_calls:
         if name == 'memcpy_dtoh':
             assert all(args[0] == answer[0])
             assert args[1] == 'gpu_args'
