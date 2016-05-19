@@ -130,7 +130,7 @@ from kernel_tuner.opencl import OpenCLFunctions
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, device=0, grid_div_x=None, grid_div_y=None,
-        restrictions=None, verbose=False, lang=None, cmem_args=None):
+        restrictions=None, verbose=False, lang=None, cmem_args=None, answer=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code
@@ -228,6 +228,13 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         objects in the same way as normal kernel arguments.
     :type cmem_args: dict(string, ...)
 
+    :param answer: A list of arguments, similar to what you pass to arguments,
+        that contains the expected output of the kernel after it has executed
+        and contains None for each argument that is input-only. The expected
+        output of the kernel will then be used to verify the correctness of
+        each kernel in the parameter space before it will be benchmarked.
+    :type answer: list
+
     :returns: A dictionary of all executed kernel configurations and their
         execution times.
     :rtype: dict( string, float )
@@ -298,8 +305,13 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         if cmem_args is not None:
             dev.copy_constant_memory_args(cmem_args)
 
-        #test kernel
+        #test kernel for correctness and benchmark
+        if True:
+            if answer is not None:
+                _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string)
+
         try:
+
             time = dev.benchmark(func, gpu_args, threads, grid)
         except Exception as e:
             #some launches may fail because too many registers are required
@@ -325,6 +337,75 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         print("no results to report")
 
+    return results
+
+
+
+def run_kernel(kernel_name, kernel_string, problem_size, arguments,
+        params, device=0, grid_div_x=None, grid_div_y=None,
+        lang=None, cmem_args=None):
+    """Compile and run a single kernel
+
+    Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
+    This function was added to the kernel tuner mostly for verifying kernel correctness.
+    On purpose, it is called much in the same way as `tune_kernel()`
+
+    :param kernel_name: The name of the kernel in the code
+    :type kernel_name: string
+
+    :param kernel_string: The CUDA or OpenCL kernel code as a string
+    :type kernel_string: string
+
+    :param problem_size: A tuple containing the size from which the grid
+            dimensions of the kernel will be computed. Do not divide by
+            the thread block sizes, if this is necessary use grid_div_x/y to
+            specify.
+    :type problem_size: tuple(int, int)
+
+    :param arguments: A list of kernel arguments, use numpy arrays for
+            arrays, use numpy.int32 or numpy.float32 for singulars
+    :type arguments: list
+
+    :param params: A dictionary containing the tuning parameter names as keys
+            and a single value per tuning parameter as values.
+    :type params: dict( string: int )
+
+    :param device: CUDA/OpenCL device to use, 0 by default.
+    :type device: int
+
+    :param grid_div_x: See tune_kernel()
+    :type grid_div_x: list
+
+    :param grid_div_y: See tune_kernel()
+    :type grid_div_y: list
+
+    :param cmem_args: CUDA-specific feature for specifying constant memory
+        arguments to the kernel. See tune_kernel() for details.
+    :type cmem_args: dict(string, ...)
+
+    :returns: A list of numpy arrays, similar to the arguments passed to this
+        function, containing the output after kernel execution.
+    :rtype: list
+    """
+
+    #move data to the GPU and compile the kernel
+    lang = _detect_language(lang, kernel_string)
+    dev = _get_device_interface(lang, device)
+    gpu_args = dev.create_gpu_args(arguments)
+    kernel_string = _prepare_kernel_string(kernel_string, params)
+    func = dev.compile(kernel_name, kernel_string)
+
+    #retrieve the run configuration and run the kernel
+    threads = _get_thread_block_dimensions(params)
+    grid = _get_grid_dimensions(problem_size, params,
+                       grid_div_y, grid_div_x)
+    dev.run_kernel(func, gpu_args, threads, grid)
+
+    #copy data in GPU memory back to the host
+    results = []
+    for i, arg in enumerate(arguments):
+        results.append(numpy.zeros_like(arg))
+        dev.memcpy_dtoh(results[-1], gpu_args[i])
     return results
 
 
@@ -383,4 +464,20 @@ def _get_device_interface(lang, device):
     else:
         raise UnImplementedException("Sorry, support for languages other than CUDA and OpenCL is not implemented yet")
     return dev
+
+def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string):
+    """runs the kernel once and checks the result against answer"""
+    for result, expected in zip(gpu_args, answer):
+        if expected is not None:
+            dev.memset(result, 0, expected.size)
+    dev.run_kernel(func, gpu_args, threads, grid)
+    correct = True
+    for result,expected in zip(gpu_args,answer):
+        if expected is not None:
+            result_host = numpy.zeros_like(expected)
+            dev.memcpy_dtoh(result_host, result)
+            correct = correct and all(result_host.ravel()-expected.ravel() < 1e-6)
+    if not correct:
+        raise Exception("Error " + instance_string + " failed correctness check")
+    return correct
 

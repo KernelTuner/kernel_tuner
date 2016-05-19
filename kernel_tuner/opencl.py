@@ -20,7 +20,6 @@ class OpenCLFunctions(object):
         :param iterations: The number of iterations to run the kernel during benchmarking, 7 by default.
         :type iterations: int
         """
-
         self.ITERATIONS = iterations
         #setup context and queue
         platforms = cl.get_platforms()
@@ -106,3 +105,59 @@ class OpenCLFunctions(object):
             times.append((event.profile.end - event.profile.start)*1e-6)
         times = sorted(times)
         return numpy.mean(times[1:-1])
+
+    def run_kernel(self, func, gpu_args, threads, grid):
+        """runs the OpenCL kernel passed as 'func'
+
+        :param func: An OpenCL Kernel
+        :type func: pyopencl.Kernel
+
+        :param gpu_args: A list of arguments to the kernel, order should match the
+            order in the code. Allowed values are either variables in global memory
+            or single values passed by value.
+        :type gpu_args: list( pyopencl.Buffer, numpy.int32, ...)
+
+        :param threads: A tuple listing the number of work items in each dimension of
+            the work group.
+        :type threads: tuple(int, int, int)
+
+        :param grid: A tuple listing the number of work groups in each dimension
+            of the NDRange.
+        :type grid: tuple(int, int)
+        """
+        global_size = (grid[0]*threads[0], grid[1]*threads[1], threads[2])
+        local_size = threads
+        event = func(self.queue, global_size, local_size, *gpu_args)
+        event.wait()
+
+    def memset(self, buffer, value, size):
+        """set the memory in allocation to the value in value
+
+        :param allocation: An OpenCL Buffer to fill
+        :type allocation: pyopencl.Buffer
+
+        :param value: The value to set the memory to
+        :type value: a single 32-bit float or int
+
+        :param size: The size of to the allocation unit
+        :type size: int
+
+        """
+        if isinstance(buffer, cl.Buffer):
+            cl.enqueue_fill_buffer(self.queue, buffer, numpy.array(value), 0, size)
+
+    def memcpy_dtoh(self, dest, src):
+        """perform a device to host memory copy
+
+        :param dest: A numpy array in host memory to store the data
+        :type dest: numpy.ndarray
+
+        :param src: An OpenCL Buffer to copy data from
+        :type src: pyopencl.Buffer
+        """
+        if isinstance(src, cl.Buffer):
+            cl.enqueue_copy(self.queue, dest, src)
+
+
+
+

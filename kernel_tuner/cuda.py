@@ -127,13 +127,12 @@ class CudaFunctions(object):
         for _ in range(self.ITERATIONS):
             self.context.synchronize()
             start.record()
-            func(*gpu_args, block=threads, grid=grid)
+            self.run_kernel(func, gpu_args, threads, grid)
             end.record()
             self.context.synchronize()
             times.append(end.time_since(start))
         times = sorted(times)
         return numpy.mean(times[1:-1])
-
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
@@ -148,3 +147,54 @@ class CudaFunctions(object):
         for k,v in cmem_args.items():
             symbol = self.current_module.get_global(k)[0]
             drv.memcpy_htod(symbol, v)
+
+    def run_kernel(self, func, gpu_args, threads, grid):
+        """runs the CUDA kernel passed as 'func'
+
+        :param func: A PyCuda kernel compiled for this specific kernel configuration
+        :type func: pycuda.driver.Function
+
+        :param gpu_args: A list of arguments to the kernel, order should match the
+            order in the code. Allowed values are either variables in global memory
+            or single values passed by value.
+        :type gpu_args: list( pycuda.driver.DeviceAllocation, numpy.int32, ...)
+
+        :param threads: A tuple listing the number of threads in each dimension of
+            the thread block
+        :type threads: tuple(int, int, int)
+
+        :param grid: A tuple listing the number of thread blocks in each dimension
+            of the grid
+        :type grid: tuple(int, int)
+        """
+        func(*gpu_args, block=threads, grid=grid)
+
+    def memset(self, allocation, value, size):
+        """set the memory in allocation to the value in value
+
+        :param allocation: A GPU memory allocation unit
+        :type allocation: pycuda.driver.DeviceAllocation
+
+        :param value: The value to set the memory to
+        :type value: a single 32-bit float or int
+
+        :param size: The size of to the allocation unit
+        :type size: int
+
+        """
+        drv.memset_d32(allocation, value, size)
+
+    def memcpy_dtoh(self, dest, src):
+        """perform a device to host memory copy
+
+        :param dest: A numpy array in host memory to store the data
+        :type dest: numpy.ndarray
+
+        :param src: A GPU memory allocation unit
+        :type src: pycuda.driver.DeviceAllocation
+        """
+        if isinstance(src, drv.DeviceAllocation):
+            drv.memcpy_dtoh(dest, src)
+        else:
+            dest = src
+

@@ -9,7 +9,6 @@ except Exception:
 
 
 def test_create_gpu_args():
-
     skip_if_no_opencl()
 
     size = 1000
@@ -30,7 +29,6 @@ def test_create_gpu_args():
     gpu_args[2].release()
 
 def test_compile():
-
     skip_if_no_opencl()
 
     original_kernel = """
@@ -49,17 +47,27 @@ def test_compile():
 
     assert isinstance(func, pyopencl.Kernel)
 
-
-@nottest
-def test_func(queue, a, b, block=0, grid=0):
-    profile = type('profile', (object,), {'end': 0.1, 'start': 0})
-    return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
-
 def test_benchmark():
     skip_if_no_opencl()
     dev = opencl.OpenCLFunctions(0)
     args = [1, 2]
+    def test_func(queue, a, b, block=0, grid=0):
+        profile = type('profile', (object,), {'end': 0.1, 'start': 0})
+        return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
+
     time = dev.benchmark(test_func, args, (1,2,3), (1,2))
     assert time > 0
 
+
+def test_run_kernel():
+    skip_if_no_opencl()
+
+    threads = (1, 2, 3)
+    grid = (4, 5)
+
+    def test_func(queue, global_size, local_size, arg):
+        assert all(global_size == numpy.array([4, 10, 3]))
+        return type('Event', (object,), {'wait': lambda self: 0})()
+    dev = opencl.OpenCLFunctions(0)
+    dev.run_kernel(test_func, [0], threads, grid)
 

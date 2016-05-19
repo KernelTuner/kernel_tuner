@@ -80,6 +80,38 @@ def test_interface_handles_runtime_error(dev_interface):
     dev.benchmark.assert_called_once_with('compile', 'create_gpu_args', (256, 1, 1), (1, 1))
     assert len(results) == 0
 
+@patch('kernel_tuner.interface.CudaFunctions')
+def test_run_kernel(dev_interface):
+    dev = dev_interface.return_value
+    dev_interface.configure_mock(**mock_config)
 
+    kernel_string = "__global__ void fake_kernel()"
+    size = 1280
+    problem_size = (size, 1)
+    n = numpy.int32(size)
+    args = [n]
+    tune_params = dict()
+    tune_params["block_size_x"] = 128
+    kernel_tuner.run_kernel("fake_kernel", kernel_string, problem_size, args, tune_params)
 
+    dev.compile.assert_called_once_with("fake_kernel", kernel_string)
+    dev.run_kernel.assert_called_once_with('compile', 'create_gpu_args', (128, 1, 1), (10, 1))
+    dev.memcpy_dtoh.assert_called_once_with(numpy.zeros(1), 'c')
 
+@patch('kernel_tuner.interface.CudaFunctions')
+def test_check_kernel_correctness(dev_interface):
+    dev = dev_interface.return_value
+    dev_interface.configure_mock(**mock_config)
+
+    answer = [numpy.zeros(8).astype(numpy.float32)]
+    test = kernel_tuner._check_kernel_correctness(dev, 'func', ['gpu_args'], 'threads', 'grid', answer, 'instance_string')
+
+    dev.memset.assert_called_once_with('gpu_args', 0, 8)
+    dev.run_kernel.assert_called_once_with('func', ['gpu_args'], 'threads', 'grid')
+
+    for name, args, kwargs in dev.mock_calls:
+        if name == 'memcpy_dtoh':
+            assert all(args[0] == answer[0])
+            assert args[1] == 'gpu_args'
+    assert dev.memcpy_dtoh.called == 1
+    assert test
