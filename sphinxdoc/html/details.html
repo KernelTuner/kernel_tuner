@@ -140,7 +140,7 @@
 called including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>device=0</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>device=0</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>cmem_args=None</em>, <em>answer=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -223,6 +223,11 @@ kernel arguments, but in CUDA you have copy to a symbol. The way you
 specify constant memory arguments is by passing a dictionary with
 strings containing the constant memory symbol name together with numpy
 objects in the same way as normal kernel arguments.</li>
+<li><strong>answer</strong> (<em>list</em>) &#8211; A list of arguments, similar to what you pass to arguments,
+that contains the expected output of the kernel after it has executed
+and contains None for each argument that is input-only. The expected
+output of the kernel will then be used to verify the correctness of
+each kernel in the parameter space before it will be benchmarked.</li>
 </ul>
 </td>
 </tr>

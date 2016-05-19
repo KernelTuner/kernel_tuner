@@ -247,6 +247,67 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.memcpy_dtoh">
+<code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform a device to host memory copy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> (<em>numpy.ndarray</em>) &#8211; A numpy array in host memory to store the data</li>
+<li><strong>src</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A GPU memory allocation unit</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.memset">
+<code class="descname">memset</code><span class="sig-paren">(</span><em>allocation</em>, <em>value</em>, <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.memset" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the memory in allocation to the value in value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A GPU memory allocation unit</li>
+<li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.run_kernel">
+<code class="descname">run_kernel</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the CUDA kernel passed as &#8216;func&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>func</strong> (<em>pycuda.driver.Function</em>) &#8211; A PyCuda kernel compiled for this specific kernel configuration</li>
+<li><strong>gpu_args</strong> (<em>list( pycuda.driver.DeviceAllocation, numpy.int32, ...)</em>) &#8211; A list of arguments to the kernel, order should match the
+order in the code. Allowed values are either variables in global memory
+or single values passed by value.</li>
+<li><strong>threads</strong> (<em>tuple(int, int, int)</em>) &#8211; A tuple listing the number of threads in each dimension of
+the thread block</li>
+<li><strong>grid</strong> (<em>tuple(int, int)</em>) &#8211; A tuple listing the number of thread blocks in each dimension
+of the grid</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -332,6 +393,67 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to an OpenCL kernel.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list( pyopencl.Buffer, numpy.int32, ... )</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.memcpy_dtoh">
+<code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform a device to host memory copy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> (<em>numpy.ndarray</em>) &#8211; A numpy array in host memory to store the data</li>
+<li><strong>src</strong> (<em>pyopencl.Buffer</em>) &#8211; An OpenCL Buffer to copy data from</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.memset">
+<code class="descname">memset</code><span class="sig-paren">(</span><em>buffer</em>, <em>value</em>, <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memset" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the memory in allocation to the value in value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>allocation</strong> (<em>pyopencl.Buffer</em>) &#8211; An OpenCL Buffer to fill</li>
+<li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.run_kernel">
+<code class="descname">run_kernel</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the OpenCL kernel passed as &#8216;func&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>func</strong> (<em>pyopencl.Kernel</em>) &#8211; An OpenCL Kernel</li>
+<li><strong>gpu_args</strong> (<em>list( pyopencl.Buffer, numpy.int32, ...)</em>) &#8211; A list of arguments to the kernel, order should match the
+order in the code. Allowed values are either variables in global memory
+or single values passed by value.</li>
+<li><strong>threads</strong> (<em>tuple(int, int, int)</em>) &#8211; A tuple listing the number of work items in each dimension of
+the work group.</li>
+<li><strong>grid</strong> (<em>tuple(int, int)</em>) &#8211; A tuple listing the number of work groups in each dimension
+of the NDRange.</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>

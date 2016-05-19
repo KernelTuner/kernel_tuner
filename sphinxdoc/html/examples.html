@@ -151,7 +151,7 @@
 <h2>Convolution<a class="headerlink" href="#convolution" title="Permalink to this headline">¶</a></h2>
 <p>2D Convolution is widely used in image processing for many purposes
 including filtering. A naive CUDA kernel for 2D Convolution would be:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">convolvution_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">output</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">input</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">filter</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">convolution_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">output</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">input</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">filter</span><span class="p">)</span> <span class="p">{</span>
 
     <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
     <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
@@ -166,7 +166,7 @@ including filtering. A naive CUDA kernel for 2D Convolution would be:</p>
             <span class="p">}</span>
         <span class="p">}</span>
 
-        <span class="n">image</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">image_width</span> <span class="o">+</span> <span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum</span><span class="p">;</span>
+        <span class="n">output</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">image_width</span> <span class="o">+</span> <span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum</span><span class="p">;</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
