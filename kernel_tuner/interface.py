@@ -306,11 +306,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             dev.copy_constant_memory_args(cmem_args)
 
         #test kernel for correctness and benchmark
-        if True:
+        try:
             if answer is not None:
                 _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string)
-
-        try:
 
             time = dev.benchmark(func, gpu_args, threads, grid)
         except Exception as e:
