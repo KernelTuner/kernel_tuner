@@ -242,6 +242,47 @@ execution times.</p>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="kernel_tuner.run_kernel">
+<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>device=0</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>lang=None</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile and run a single kernel</p>
+<p>Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
+This function was added to the kernel tuner mostly for verifying kernel correctness.
+On purpose, it is called much in the same way as <cite>tune_kernel()</cite></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel in the code</li>
+<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The CUDA or OpenCL kernel code as a string</li>
+<li><strong>problem_size</strong> (<em>tuple(int, int)</em>) &#8211; A tuple containing the size from which the grid
+dimensions of the kernel will be computed. Do not divide by
+the thread block sizes, if this is necessary use grid_div_x/y to
+specify.</li>
+<li><strong>arguments</strong> (<em>list</em>) &#8211; A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for singulars</li>
+<li><strong>params</strong> (<em>dict( string: int )</em>) &#8211; A dictionary containing the tuning parameter names as keys
+and a single value per tuning parameter as values.</li>
+<li><strong>device</strong> (<em>int</em>) &#8211; CUDA/OpenCL device to use, 0 by default.</li>
+<li><strong>grid_div_x</strong> (<em>list</em>) &#8211; See tune_kernel()</li>
+<li><strong>grid_div_y</strong> (<em>list</em>) &#8211; See tune_kernel()</li>
+<li><strong>cmem_args</strong> (<em>dict(string, ...)</em>) &#8211; CUDA-specific feature for specifying constant memory
+arguments to the kernel. See tune_kernel() for details.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of numpy arrays, similar to the arguments passed to this
+function, containing the output after kernel execution.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 

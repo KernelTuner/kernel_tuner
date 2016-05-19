@@ -10,3 +10,4 @@ called including all the optional arguments.
 
 .. autofunction:: kernel_tuner.tune_kernel
 
+.. autofunction:: kernel_tuner.run_kernel
