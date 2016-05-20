@@ -22,4 +22,8 @@ def skip_if_no_opencl():
         import pyopencl
     except ImportError:
         raise SkipTest("PyOpenCL not installed")
+    #this extra check was added because for some reason 'import pyopencl'
+    #does not always result in an ImportError
+    if 'namespace' in str(sys.modules['pyopencl']):
+        raise SkipTest("PyOpenCL not installed")
 
