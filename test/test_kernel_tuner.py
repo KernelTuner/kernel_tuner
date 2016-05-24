@@ -75,10 +75,9 @@ def test_prepare_kernel_string():
     kernel = "this is a weird kernel"
     params = dict()
     params["is"] = 8
-    params["weird"] = 14
 
     output = kernel_tuner._prepare_kernel_string(kernel, params)
-    expected = "#define weird 14\n#define is 8\nthis is a weird kernel"
+    expected = "#define is 8\nthis is a weird kernel"
     print(output)
     assert output == expected
 
