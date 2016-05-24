@@ -77,15 +77,26 @@ def test_prepare_kernel_string():
     params["is"] = 8
     params["weird"] = 14
 
-    new_kernel = kernel_tuner._prepare_kernel_string(kernel, params)
+    output = kernel_tuner._prepare_kernel_string(kernel, params)
+    expected = "#define weird 14\n#define is 8\nthis is a weird kernel"
+    print(output)
+    assert output == expected
+
+def test_replace_param_occurrences():
+    kernel = "this is a weird kernel"
+    params = dict()
+    params["is"] = 8
+    params["weird"] = 14
+
+    new_kernel = kernel_tuner._replace_param_occurrences(kernel, params)
     assert new_kernel == "th8 8 a 14 kernel"
 
-    new_kernel = kernel_tuner._prepare_kernel_string(kernel, dict())
+    new_kernel = kernel_tuner._replace_param_occurrences(kernel, dict())
     assert kernel == new_kernel
 
     params = dict()
     params["blablabla"] = 8
-    new_kernel = kernel_tuner._prepare_kernel_string(kernel, params)
+    new_kernel = kernel_tuner._replace_param_occurrences(kernel, params)
     assert kernel == new_kernel
 
 @raises(Exception)

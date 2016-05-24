@@ -25,7 +25,8 @@ def test_interface_calls_functions(dev_interface):
     tune_params["block_size_x"] = [128]
     kernel_tuner.tune_kernel("fake_kernel", kernel_string, problem_size, args, tune_params, verbose=True)
 
-    dev.compile.assert_called_once_with("fake_kernel_128", kernel_string.replace('fake_kernel', 'fake_kernel_128'))
+    expected = "#define block_size_x 128\n__global__ void fake_kernel_128()"
+    dev.compile.assert_called_once_with("fake_kernel_128", expected)
     dev.benchmark.assert_called_once_with('compile', 'create_gpu_args', (128, 1, 1), (10, 1))
 
 @patch('kernel_tuner.interface.CudaFunctions')
@@ -38,7 +39,7 @@ def test_interface_handles_max_threads(dev_interface):
 
     kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    dev.compile.assert_called_once_with("fake_kernel_256", 'fake_kernel_256')
+    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_x 256\nfake_kernel_256")
 
 @patch('kernel_tuner.interface.CudaFunctions')
 def test_interface_handles_compile_error(dev_interface):
@@ -50,7 +51,7 @@ def test_interface_handles_compile_error(dev_interface):
 
     kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    dev.compile.assert_called_once_with("fake_kernel_256", 'fake_kernel_256')
+    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_x 256\nfake_kernel_256")
     assert dev.benchmark.called == False
 
 @patch('kernel_tuner.interface.CudaFunctions')
@@ -63,7 +64,7 @@ def test_interface_handles_restriction(dev_interface):
 
     kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
 
-    dev.compile.assert_called_once_with("fake_kernel_256", 'fake_kernel_256')
+    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_x 256\nfake_kernel_256")
     dev.benchmark.assert_called_once_with('compile', 'create_gpu_args', (256, 1, 1), (1, 1))
 
 @patch('kernel_tuner.interface.CudaFunctions')
@@ -76,7 +77,7 @@ def test_interface_handles_runtime_error(dev_interface):
 
     results = kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    dev.compile.assert_called_once_with("fake_kernel_256", 'fake_kernel_256')
+    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_x 256\nfake_kernel_256")
     dev.benchmark.assert_called_once_with('compile', 'create_gpu_args', (256, 1, 1), (1, 1))
     assert len(results) == 0
 
@@ -94,7 +95,7 @@ def test_run_kernel(dev_interface):
     tune_params["block_size_x"] = 128
     kernel_tuner.run_kernel("fake_kernel", kernel_string, problem_size, args, tune_params)
 
-    dev.compile.assert_called_once_with("fake_kernel", kernel_string)
+    dev.compile.assert_called_once_with("fake_kernel", "#define block_size_x 128\n__global__ void fake_kernel()")
     dev.run_kernel.assert_called_once_with('compile', 'create_gpu_args', (128, 1, 1), (10, 1))
     dev.memcpy_dtoh.assert_called_once_with(numpy.zeros(1), 'c')
 
