@@ -51,7 +51,7 @@ def test_interface_handles_compile_error(dev_interface):
 
     kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    dev.compile.assert_called_once()
+    dev.compile.call_count == 1
     assert dev.benchmark.called == False
 
 @patch('kernel_tuner.interface.CudaFunctions')
@@ -64,7 +64,7 @@ def test_interface_handles_restriction(dev_interface):
 
     kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
 
-    dev.compile.assert_called_once()
+    dev.compile.call_count == 1
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1))
 
 @patch('kernel_tuner.interface.CudaFunctions')
@@ -77,7 +77,7 @@ def test_interface_handles_runtime_error(dev_interface):
 
     results = kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    dev.compile.assert_called_once()
+    dev.compile.call_count == 1
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1))
     assert len(results) == 0
 
@@ -95,7 +95,7 @@ def test_run_kernel(dev_interface):
     tune_params["block_size_x"] = 128
     kernel_tuner.run_kernel("fake_kernel", kernel_string, problem_size, args, tune_params)
 
-    dev.compile.assert_called_once()
+    dev.compile.call_count == 1
     dev.run_kernel.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1))
     dev.memcpy_dtoh.assert_called_once_with(numpy.zeros(1), 'r')
 
