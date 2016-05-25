@@ -133,18 +133,18 @@ def test_detect_language2():
     lang = kernel_tuner._detect_language(lang, kernel_string)
     assert lang == "OpenCL"
 
-@raises(Exception)
 def test_detect_language3():
     lang = None
     kernel_string = "blabla"
     lang = kernel_tuner._detect_language(lang, kernel_string)
+    assert lang == "C"
 
 def test_detect_language4():
     lang = "CUDA"
     kernel_string = "blabla"
     try:
         lang = kernel_tuner._detect_language(lang, kernel_string)
-        assert True
+        assert lang == "CUDA"
     except Exception:
         assert False
 

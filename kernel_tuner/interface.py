@@ -127,6 +127,7 @@ from collections import OrderedDict
 
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
+from kernel_tuner.c import CFunctions
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, device=0, grid_div_x=None, grid_div_y=None,
@@ -281,7 +282,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                        grid_div_y, grid_div_x)
 
         #create configuration specific kernel string
-        kernel_string = _prepare_kernel_string(original_kernel, params)
+        kernel_string = _prepare_kernel_string(original_kernel, params, grid)
 
         #rename the kernel to guarantee that PyCuda compiles a new kernel
         name = kernel_name + "_" + instance_string
@@ -390,13 +391,15 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     lang = _detect_language(lang, kernel_string)
     dev = _get_device_interface(lang, device)
     gpu_args = dev.ready_argument_list(arguments)
-    kernel_string = _prepare_kernel_string(kernel_string, params)
-    func = dev.compile(kernel_name, kernel_string)
 
-    #retrieve the run configuration and run the kernel
+    #retrieve the run configuration, compile, and run the kernel
     threads = _get_thread_block_dimensions(params)
     grid = _get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
+
+    kernel_string = _prepare_kernel_string(kernel_string, params, grid)
+    func = dev.compile(kernel_name, kernel_string)
+
     dev.run_kernel(func, gpu_args, threads, grid)
 
     #copy data in GPU memory back to the host
@@ -417,7 +420,7 @@ def _detect_language(lang, original_kernel):
         elif "__kernel" in original_kernel:
             lang = "OpenCL"
         else:
-            raise Exception("Failed to detect language, please set option lang")
+            lang = "C"
     return lang
 
 def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
@@ -441,9 +444,11 @@ def _get_thread_block_dimensions(params):
     block_size_z = params.get("block_size_z", 1)
     return (block_size_x, block_size_y, block_size_z)
 
-def _prepare_kernel_string(original_kernel, params):
+def _prepare_kernel_string(original_kernel, params, grid):
     """prepend the kernel with a series of C preprocessor defines"""
     kernel_string = original_kernel
+    kernel_string = "#define grid_size_x " + str(grid[0]) + "\n" + kernel_string
+    kernel_string = "#define grid_size_y " + str(grid[1]) + "\n" + kernel_string
     for k, v in params.items():
         kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
     return kernel_string
@@ -465,8 +470,10 @@ def _get_device_interface(lang, device):
         dev = CudaFunctions(device)
     elif lang == "OpenCL":
         dev = OpenCLFunctions(device)
+    elif lang == "C":
+        dev = CFunctions()
     else:
-        raise UnImplementedException("Sorry, support for languages other than CUDA and OpenCL is not implemented yet")
+        raise UnImplementedException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
     return dev
 
 def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string):
