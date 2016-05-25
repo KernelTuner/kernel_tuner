@@ -1,8 +1,6 @@
 from __future__ import print_function
 
 import numpy
-import ctypes as C
-from nose.tools import raises
 
 try:
     from mock import patch, Mock
