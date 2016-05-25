@@ -8,7 +8,7 @@ except Exception:
     pass
 
 
-def test_create_gpu_args():
+def test_ready_argument_list():
 
     skip_if_no_cuda_device()
 
@@ -20,7 +20,7 @@ def test_create_gpu_args():
     arguments = [c, a, b]
 
     dev = cuda.CudaFunctions(0)
-    gpu_args = dev.create_gpu_args(arguments)
+    gpu_args = dev.ready_argument_list(arguments)
 
     assert isinstance(gpu_args[0], pycuda.driver.DeviceAllocation)
     assert isinstance(gpu_args[1], numpy.int32)

@@ -250,7 +250,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     max_threads = dev.max_threads
 
     #move data to GPU
-    gpu_args = dev.create_gpu_args(arguments)
+    gpu_args = dev.ready_argument_list(arguments)
 
     #compute cartesian product of all tunable parameters
     parameter_space = list(itertools.product(*tune_params.values()))
@@ -389,7 +389,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     #move data to the GPU and compile the kernel
     lang = _detect_language(lang, kernel_string)
     dev = _get_device_interface(lang, device)
-    gpu_args = dev.create_gpu_args(arguments)
+    gpu_args = dev.ready_argument_list(arguments)
     kernel_string = _prepare_kernel_string(kernel_string, params)
     func = dev.compile(kernel_name, kernel_string)
 

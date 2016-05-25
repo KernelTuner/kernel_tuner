@@ -44,7 +44,7 @@ class CudaFunctions(object):
         self.context.pop()
 
 
-    def create_gpu_args(self, arguments):
+    def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
 
         :param arguments: List of arguments to be passed to the kernel.

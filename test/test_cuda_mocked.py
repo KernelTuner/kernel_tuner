@@ -19,7 +19,7 @@ def setup_mock(drv):
     return drv
 
 @patch('kernel_tuner.cuda.drv')
-def test_create_gpu_args(drv):
+def test_ready_argument_list(drv):
     drv = setup_mock(drv)
 
     size = 5
@@ -28,7 +28,7 @@ def test_create_gpu_args(drv):
     arguments = [a, b]
 
     dev = cuda.CudaFunctions(0)
-    gpu_args = dev.create_gpu_args(arguments)
+    gpu_args = dev.ready_argument_list(arguments)
 
     print(drv.mock_calls)
     print(gpu_args)

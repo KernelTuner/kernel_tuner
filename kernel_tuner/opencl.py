@@ -30,7 +30,7 @@ class OpenCLFunctions(object):
         #inspect device properties
         self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE)
 
-    def create_gpu_args(self, arguments):
+    def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
 
         :param arguments: List of arguments to be passed to the kernel.
