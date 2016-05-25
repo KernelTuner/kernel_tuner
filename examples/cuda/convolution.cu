@@ -8,6 +8,22 @@
 #define input_height (image_height + border_height)
 #define input_width (image_width + border_width)
 
+#ifndef block_size_x
+    #define block_size_x 16
+#endif
+#ifndef block_size_y
+    #define block_size_y 16
+#endif
+#ifndef block_size_z
+    #define block_size_z 1
+#endif
+#ifndef tile_size_x
+    #define tile_size_x 1
+#endif
+#ifndef tile_size_y
+    #define tile_size_y 1
+#endif
+
 #define i_end min(block_size_y*tile_size_y+border_height, input_height)
 #define j_end min(block_size_x*tile_size_x+border_width, input_width)
 
