@@ -6,7 +6,8 @@ try:
 except ImportError:
     from unittest.mock import patch, Mock
 
-from .context import *
+from .context import kernel_tuner
+from kernel_tuner import cuda
 
 def setup_mock(drv):
     context = Mock()

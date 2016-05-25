@@ -1,6 +1,10 @@
 from nose.tools import raises
 from .context import *
 
+import kernel_tuner.interface as kernel_tuner
+import kernel_tuner.cuda as cuda
+import kernel_tuner.opencl as opencl
+
 def test_get_grid_dimensions1():
 
     problem_size = (1024, 1024)

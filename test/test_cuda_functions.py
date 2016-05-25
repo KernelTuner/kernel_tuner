@@ -1,6 +1,8 @@
 import numpy
 from nose.tools import nottest
-from .context import cuda, skip_if_no_cuda_device
+from .context import kernel_tuner, skip_if_no_cuda_device
+
+from kernel_tuner import cuda
 
 try:
     import pycuda.driver

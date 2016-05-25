@@ -1,5 +1,7 @@
 import numpy
-from .context import opencl, skip_if_no_opencl
+from .context import kernel_tuner, skip_if_no_opencl
+
+from kernel_tuner import opencl
 
 try:
     import pyopencl

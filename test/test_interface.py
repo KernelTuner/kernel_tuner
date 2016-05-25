@@ -5,7 +5,8 @@ except ImportError:
 
 import numpy
 
-from .context import *
+from .context import kernel_tuner
+import kernel_tuner.interface as kernel_tuner
 
 mock_config = { "return_value.compile.return_value": "compile",
                 "return_value.ready_argument_list.return_value": "ready_argument_list",
