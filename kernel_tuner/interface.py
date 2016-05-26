@@ -16,12 +16,12 @@ without introducing any new dependencies. The tuned kernels can
 afterwards be used independently of the programming environment, whether
 that is using C/C++/Java/Fortran or Python doesn't matter.
 
-The kernel_tuner module currently only contains one function which is
-called tune_kernel to which you pass at least the kernel name, a string
+The kernel_tuner module currently only contains main one function which
+is called tune_kernel to which you pass at least the kernel name, a string
 containing the kernel code, the problem size, a list of kernel function
 arguments, and a dictionary of tunable parameters. There are also a lot
-of optional parameters, for a full list see the documentation of
-tune_kernel.
+of optional parameters, for a complete list see the full documentation of
+[tune_kernel](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/details.html).
 
 Installation
 ------------
@@ -130,14 +130,14 @@ from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
-        tune_params, device=0, grid_div_x=None, grid_div_y=None,
-        restrictions=None, verbose=False, lang=None, cmem_args=None, answer=None):
+        tune_params, grid_div_x=None, grid_div_y=None,
+        restrictions=None, answer=None, verbose=False, lang=None, device=0, cmem_args=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
-    :param kernel_name: The name of the kernel in the code
+    :param kernel_name: The name of the kernel in the code.
     :type kernel_name: string
 
-    :param kernel_string: The CUDA or OpenCL kernel code as a string
+    :param kernel_string: The CUDA, OpenCL, or C kernel code as a string.
     :type kernel_string: string
 
     :param problem_size: A tuple containing the size from which the grid
@@ -147,10 +147,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :type problem_size: tuple(int, int)
 
     :param arguments: A list of kernel arguments, use numpy arrays for
-            arrays, use numpy.int32 or numpy.float32 for singulars
+            arrays, use numpy.int32 or numpy.float32 for scalars.
     :type arguments: list
 
-    :param tune_params: A dictionary containing the parameter names as keys
+    :param tune_params: A dictionary containing the parameter names as keys,
             and lists of possible parameter settings as values.
             The kernel tuner will try to compile and benchmark all possible
             combinations of all possible values for all tuning parameters.
@@ -158,23 +158,18 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             possible kernel configurations.
             For each kernel configuration, each tuning parameter is
             replaced at compile-time with its current value.
-            Currently the kernel tuner uses the convention that the following
+            Currently, the kernel tuner uses the convention that the following
             list of tuning parameters are used as thread block dimensions:
 
                 * "block_size_x"   thread block (work group) x-dimension
                 * "block_size_y"   thread block (work group) y-dimension
                 * "block_size_z"   thread block (work group) z-dimension
 
-            Options for changing these defaults will be added later. If you
+            Options for changing these defaults may be added later. If you
             don't want the thread block dimensions to be compiled in, you
-            may use the built-in variables blockDim.xyz instead
-
-    :type tune_params: dict( string : [int, int, ...] )
-
-    :param device: CUDA/OpenCL device to use, in case you have multiple
-        CUDA-capable GPUs or OpenCL devices you may use this to select one,
-        0 by default.
-    :type device: int
+            may use the built-in variables blockDim.xyz in CUDA or the
+            built-in function get_local_size() in OpenCL instead.
+    :type tune_params: dict( string : [...] )
 
     :param grid_div_x: A list of names of the parameters whose values divide
         the grid dimensions in the x-direction. Arithmetic expressions can be
@@ -205,6 +200,13 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         The default is None.
     :type restrictions: list
 
+    :param answer: A list of arguments, similar to what you pass to arguments,
+        that contains the expected output of the kernel after it has executed
+        and contains None for each argument that is input-only. The expected
+        output of the kernel will then be used to verify the correctness of
+        each kernel in the parameter space before it will be benchmarked.
+    :type answer: list
+
     :param verbose: Sets whether or not to report about configurations that
         were skipped during the search. This could be due to several reasons:
 
@@ -218,23 +220,21 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     :param lang: Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA", "OpenCL"
+        the language using this argument, currently supported: "CUDA", "OpenCL", or "C"
     :type lang: string
+
+    :param device: CUDA/OpenCL device to use, in case you have multiple
+        CUDA-capable GPUs or OpenCL devices you may use this to select one,
+        0 by default. Ignored, if you are tuning host code by passing lang="C".
+    :type device: int
 
     :param cmem_args: CUDA-specific feature for specifying constant memory
         arguments to the kernel. In OpenCL these are handled as normal
-        kernel arguments, but in CUDA you have copy to a symbol. The way you
+        kernel arguments, but in CUDA you can copy to a symbol. The way you
         specify constant memory arguments is by passing a dictionary with
         strings containing the constant memory symbol name together with numpy
         objects in the same way as normal kernel arguments.
-    :type cmem_args: dict(string, ...)
-
-    :param answer: A list of arguments, similar to what you pass to arguments,
-        that contains the expected output of the kernel after it has executed
-        and contains None for each argument that is input-only. The expected
-        output of the kernel will then be used to verify the correctness of
-        each kernel in the parameter space before it will be benchmarked.
-    :type answer: list
+    :type cmem_args: dict(string: numpy object)
 
     :returns: A dictionary of all executed kernel configurations and their
         execution times.
@@ -341,8 +341,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 
 def run_kernel(kernel_name, kernel_string, problem_size, arguments,
-        params, device=0, grid_div_x=None, grid_div_y=None,
-        lang=None, cmem_args=None):
+        params, grid_div_x=None, grid_div_y=None,
+        lang=None, device=0, cmem_args=None):
     """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
@@ -369,14 +369,17 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
             and a single value per tuning parameter as values.
     :type params: dict( string: int )
 
-    :param device: CUDA/OpenCL device to use, 0 by default.
-    :type device: int
-
     :param grid_div_x: See tune_kernel()
     :type grid_div_x: list
 
     :param grid_div_y: See tune_kernel()
     :type grid_div_y: list
+
+    :param lang: Language of the kernel, supply "CUDA", "OpenCL", or "C" if not detected automatically.
+    :type lang: string
+
+    :param device: CUDA/OpenCL device to use, 0 by default.
+    :type device: int
 
     :param cmem_args: CUDA-specific feature for specifying constant memory
         arguments to the kernel. See tune_kernel() for details.
