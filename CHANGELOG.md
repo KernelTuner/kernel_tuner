@@ -4,9 +4,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- Device interface to C functions, for tuning host code
 - Correctness checks for kernels during tuning
 - Function for running a single kernel instance
-- A CHANGELOG file
+- CHANGELOG file
 - Compute Cartesian product and process restrictions before main loop
 - Python 3.5 compatible code, thanks to Berend
 - Support for constant memory arguments to CUDA kernels
