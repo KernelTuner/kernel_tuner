@@ -18,3 +18,11 @@ kernel_tuner.opencl.OpenCLFunctions
 -----------------------------------
 .. autoclass:: kernel_tuner.opencl.OpenCLFunctions
     :members:
+
+kernel_tuner.c.CFunctions
+-----------------------------------
+.. autoclass:: kernel_tuner.c.CFunctions
+    :members:
+
+
+
