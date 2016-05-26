@@ -228,26 +228,6 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</td>
 </dd></dl>
 
 <dl class="method">
-<dt id="kernel_tuner.cuda.CudaFunctions.create_gpu_args">
-<code class="descname">create_gpu_args</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.create_gpu_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<em>list(numpy objects)</em>) &#8211; List of arguments to be passed to the kernel.
-The order should match the argument list on the CUDA kernel.
-Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to an CUDA kernel.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list( pycuda.driver.DeviceAllocation, numpy.int32, ... )</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="kernel_tuner.cuda.CudaFunctions.memcpy_dtoh">
 <code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a device to host memory copy</p>
@@ -279,6 +259,26 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit</li>
 </ul>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.ready_argument_list">
+<code class="descname">ready_argument_list</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<em>list(numpy objects)</em>) &#8211; List of arguments to be passed to the kernel.
+The order should match the argument list on the CUDA kernel.
+Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to an CUDA kernel.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list( pycuda.driver.DeviceAllocation, numpy.int32, ... )</td>
 </tr>
 </tbody>
 </table>
@@ -379,26 +379,6 @@ function after compilation.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="kernel_tuner.opencl.OpenCLFunctions.create_gpu_args">
-<code class="descname">create_gpu_args</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.create_gpu_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<em>list(numpy objects)</em>) &#8211; List of arguments to be passed to the kernel.
-The order should match the argument list on the OpenCL kernel.
-Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to an OpenCL kernel.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list( pyopencl.Buffer, numpy.int32, ... )</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="kernel_tuner.opencl.OpenCLFunctions.memcpy_dtoh">
 <code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a device to host memory copy</p>
@@ -430,6 +410,26 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit</li>
 </ul>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.ready_argument_list">
+<code class="descname">ready_argument_list</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<em>list(numpy objects)</em>) &#8211; List of arguments to be passed to the kernel.
+The order should match the argument list on the OpenCL kernel.
+Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to an OpenCL kernel.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list( pyopencl.Buffer, numpy.int32, ... )</td>
 </tr>
 </tbody>
 </table>

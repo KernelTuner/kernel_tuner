@@ -140,22 +140,22 @@
 called including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>device=0</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>cmem_args=None</em>, <em>answer=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel in the code</li>
-<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The CUDA or OpenCL kernel code as a string</li>
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel in the code.</li>
+<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The CUDA, OpenCL, or C kernel code as a string.</li>
 <li><strong>problem_size</strong> (<em>tuple(int, int)</em>) &#8211; A tuple containing the size from which the grid
 dimensions of the kernel will be computed. Do not divide by
 the thread block sizes, if this is necessary use grid_div_x/y to
 specify.</li>
 <li><strong>arguments</strong> (<em>list</em>) &#8211; A list of kernel arguments, use numpy arrays for
-arrays, use numpy.int32 or numpy.float32 for singulars</li>
-<li><strong>tune_params</strong> (<em>dict( string : [int, int, ...] )</em>) &#8211; <p>A dictionary containing the parameter names as keys
+arrays, use numpy.int32 or numpy.float32 for scalars.</li>
+<li><strong>tune_params</strong> (<em>dict( string : [...] )</em>) &#8211; <p>A dictionary containing the parameter names as keys,
 and lists of possible parameter settings as values.
 The kernel tuner will try to compile and benchmark all possible
 combinations of all possible values for all tuning parameters.
@@ -163,7 +163,7 @@ This typically results in a rather large search space of all
 possible kernel configurations.
 For each kernel configuration, each tuning parameter is
 replaced at compile-time with its current value.
-Currently the kernel tuner uses the convention that the following
+Currently, the kernel tuner uses the convention that the following
 list of tuning parameters are used as thread block dimensions:</p>
 <blockquote>
 <div><ul>
@@ -172,13 +172,11 @@ list of tuning parameters are used as thread block dimensions:</p>
 <li>&#8220;block_size_z&#8221;   thread block (work group) z-dimension</li>
 </ul>
 </div></blockquote>
-<p>Options for changing these defaults will be added later. If you
+<p>Options for changing these defaults may be added later. If you
 don&#8217;t want the thread block dimensions to be compiled in, you
-may use the built-in variables blockDim.xyz instead</p>
+may use the built-in variables blockDim.xyz in CUDA or the
+built-in function get_local_size() in OpenCL instead.</p>
 </li>
-<li><strong>device</strong> (<em>int</em>) &#8211; CUDA/OpenCL device to use, in case you have multiple
-CUDA-capable GPUs or OpenCL devices you may use this to select one,
-0 by default.</li>
 <li><strong>grid_div_x</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
 the grid dimensions in the x-direction. Arithmetic expressions can be
 used if necessary inside the string containing a parameter name. For
@@ -202,6 +200,11 @@ restrictions=[&#8220;block_size_x==block_size_y*tile_size_y&#8221;] limits the
 search to configurations where the block_size_x equals the product
 of block_size_y and tile_size_y.
 The default is None.</li>
+<li><strong>answer</strong> (<em>list</em>) &#8211; A list of arguments, similar to what you pass to arguments,
+that contains the expected output of the kernel after it has executed
+and contains None for each argument that is input-only. The expected
+output of the kernel will then be used to verify the correctness of
+each kernel in the parameter space before it will be benchmarked.</li>
 <li><strong>verbose</strong> (<em>boolean</em>) &#8211; <p>Sets whether or not to report about configurations that
 were skipped during the search. This could be due to several reasons:</p>
 <blockquote>
@@ -216,18 +219,16 @@ were skipped during the search. This could be due to several reasons:</p>
 </li>
 <li><strong>lang</strong> (<em>string</em>) &#8211; Specifies the language used for GPU kernels. The kernel_tuner
 automatically detects the language, but if it fails, you may specify
-the language using this argument, currently supported: &#8220;CUDA&#8221;, &#8220;OpenCL&#8221;</li>
-<li><strong>cmem_args</strong> (<em>dict(string, ...)</em>) &#8211; CUDA-specific feature for specifying constant memory
+the language using this argument, currently supported: &#8220;CUDA&#8221;, &#8220;OpenCL&#8221;, or &#8220;C&#8221;</li>
+<li><strong>device</strong> (<em>int</em>) &#8211; CUDA/OpenCL device to use, in case you have multiple
+CUDA-capable GPUs or OpenCL devices you may use this to select one,
+0 by default. Ignored, if you are tuning host code by passing lang=&#8221;C&#8221;.</li>
+<li><strong>cmem_args</strong> (<em>dict(string: numpy object)</em>) &#8211; CUDA-specific feature for specifying constant memory
 arguments to the kernel. In OpenCL these are handled as normal
-kernel arguments, but in CUDA you have copy to a symbol. The way you
+kernel arguments, but in CUDA you can copy to a symbol. The way you
 specify constant memory arguments is by passing a dictionary with
 strings containing the constant memory symbol name together with numpy
 objects in the same way as normal kernel arguments.</li>
-<li><strong>answer</strong> (<em>list</em>) &#8211; A list of arguments, similar to what you pass to arguments,
-that contains the expected output of the kernel after it has executed
-and contains None for each argument that is input-only. The expected
-output of the kernel will then be used to verify the correctness of
-each kernel in the parameter space before it will be benchmarked.</li>
 </ul>
 </td>
 </tr>
@@ -244,7 +245,7 @@ execution times.</p>
 
 <dl class="function">
 <dt id="kernel_tuner.run_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>device=0</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>lang=None</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>lang=None</em>, <em>device=0</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compile and run a single kernel</p>
 <p>Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
 This function was added to the kernel tuner mostly for verifying kernel correctness.
@@ -264,9 +265,10 @@ specify.</li>
 arrays, use numpy.int32 or numpy.float32 for singulars</li>
 <li><strong>params</strong> (<em>dict( string: int )</em>) &#8211; A dictionary containing the tuning parameter names as keys
 and a single value per tuning parameter as values.</li>
-<li><strong>device</strong> (<em>int</em>) &#8211; CUDA/OpenCL device to use, 0 by default.</li>
 <li><strong>grid_div_x</strong> (<em>list</em>) &#8211; See tune_kernel()</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; See tune_kernel()</li>
+<li><strong>lang</strong> (<em>string</em>) &#8211; Language of the kernel, supply &#8220;CUDA&#8221;, &#8220;OpenCL&#8221;, or &#8220;C&#8221; if not detected automatically.</li>
+<li><strong>device</strong> (<em>int</em>) &#8211; CUDA/OpenCL device to use, 0 by default.</li>
 <li><strong>cmem_args</strong> (<em>dict(string, ...)</em>) &#8211; CUDA-specific feature for specifying constant memory
 arguments to the kernel. See tune_kernel() for details.</li>
 </ul>
