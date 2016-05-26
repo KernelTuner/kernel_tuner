@@ -21,7 +21,7 @@ is called tune_kernel to which you pass at least the kernel name, a string
 containing the kernel code, the problem size, a list of kernel function
 arguments, and a dictionary of tunable parameters. There are also a lot
 of optional parameters, for a complete list see the full documentation of
-[tune_kernel](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/details.html).
+tune_kernel.
 
 Installation
 ------------
