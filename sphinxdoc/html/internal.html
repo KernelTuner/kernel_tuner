@@ -87,6 +87,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Internal documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-cuda-cudafunctions">kernel_tuner.cuda.CudaFunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-c-cfunctions">kernel_tuner.c.CFunctions</a></li>
 </ul>
 </li>
 </ul>
@@ -454,6 +455,100 @@ the work group.</li>
 of the NDRange.</li>
 </ul>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="kernel-tuner-c-cfunctions">
+<h2>kernel_tuner.c.CFunctions<a class="headerlink" href="#kernel-tuner-c-cfunctions" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="kernel_tuner.c.CFunctions">
+<em class="property">class </em><code class="descclassname">kernel_tuner.c.</code><code class="descname">CFunctions</code><span class="sig-paren">(</span><em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that groups the code for running and compiling C functions</p>
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.benchmark">
+<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>c_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the kernel repeatedly, returns averaged returned value</p>
+<p>The C function tuning is a little bit more flexible than direct CUDA
+or OpenCL kernel tuning. The C function needs to measure time, or some
+other quality metric you wish to tune on, on its own and should
+therefore return a single floating-point value.</p>
+<p>Benchmark runs the C function repeatedly and returns the average of the
+values returned by the C function. The number of iterations is set
+during the creation of the CFunctions object. For all measurements the
+lowest and highest values are discarded and the rest is included in the
+average. The reason for this is to be robust against initialization
+artifacts and other exceptional cases.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>func</strong> (<em>ctypes._FuncPtr</em>) &#8211; A C function compiled for this specific configuration</li>
+<li><strong>c_args</strong> (<em>list()</em>) &#8211; A list of arguments to the function, order should match the
+order in the code. The list should be prepared using
+ready_argument_list().</li>
+<li><strong>threads</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
+interface as CudaFunctions and OpenCLFunctions.</li>
+<li><strong>grid</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
+interface as CudaFunctions and OpenCLFunctions.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average of values returned by the C function.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.compile">
+<code class="descname">compile</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>call the C compiler to compile the kernel, return the function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel to be compiled, used to lookup the
+function after compilation.</li>
+<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The C code that contains the function <cite>kernel_name</cite></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An ctypes function that can be called directly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ctypes._FuncPtr</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.ready_argument_list">
+<code class="descname">ready_argument_list</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>ready argument list to be passed to the C function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<em>list(numpy objects)</em>) &#8211; List of arguments to be passed to the C function.
+The order should match the argument list on the C function.
+Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to the C function.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list()</td>
 </tr>
 </tbody>
 </table>

@@ -89,7 +89,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#setup-kernel-arguments">Setup kernel arguments</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#setup-grid-dimensions">Setup grid dimensions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#finally">Finally</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#putting-it-all-together">Putting it all together</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#matrix-multiplication">Matrix Multiplication</a><ul>
@@ -189,7 +189,7 @@ kernel.</p>
 <p>We have to tell the kernel_tuner what values it should try for
 <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>. Therefore, we create a
 dictionary called tune_params and store a number of possible
-values for <code class="docutils literal"><span class="pre">block_size_x</span></code> and block_size_y that seem
+values for <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> that seem
 reasonable.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span> <span class="c1">#[16, 32, 48, 64, 80, 96, 112, 128]</span>
@@ -197,8 +197,7 @@ reasonable.</p>
 </pre></div>
 </div>
 <p>Say we also have two other parameters: <code class="docutils literal"><span class="pre">tile_size_x</span></code> and
-<code class="docutils literal"><span class="pre">tile_size_y</span></code>,
-(not shown in the kernel code above)
+<code class="docutils literal"><span class="pre">tile_size_y</span></code> (not shown in the kernel code above),
 which increase the amount of work per thread block by a factor of
 <code class="docutils literal"><span class="pre">tile_size_x</span></code> in the x-direction and by a factor of
 <code class="docutils literal"><span class="pre">tile_size_y</span></code> in the
@@ -247,8 +246,8 @@ created even further.</p>
 <span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>The above code tells the kernel_tuner to compute the grid x-dimension
-by taking the output image width and dividing it by the value of
+<p>The above code tells the kernel tuner to compute the grid x-dimension
+by taking the problem size in the x-direction and divide it by the value of
 each tuning parameter in the grid_div_x list. The same holds for the
 grid y-dimension.</p>
 <p>The kernel tuner currently assumes that the thread block dimensions
@@ -257,9 +256,9 @@ and &#8220;block_size_y&#8221; in the tuning parameters. If one or more of
 these values are not among the tuning parameters it will assume
 256, 1, and 1, as thread block dimensions, respectively.</p>
 </div>
-<div class="section" id="finally">
-<h3>Finally<a class="headerlink" href="#finally" title="Permalink to this headline">¶</a></h3>
-<p>Now putting it all together we finally get to call <code class="docutils literal"><span class="pre">tune_kernel()</span></code>:</p>
+<div class="section" id="putting-it-all-together">
+<h3>Putting it all together<a class="headerlink" href="#putting-it-all-together" title="Permalink to this headline">¶</a></h3>
+<p>Now putting it all together, we finally get to call <code class="docutils literal"><span class="pre">tune_kernel()</span></code>:</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
  3
