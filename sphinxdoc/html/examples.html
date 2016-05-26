@@ -325,7 +325,8 @@ the kernel_tuner repository.</p>
 <p>Matrix multiplication is one of the most well-known linear algebra
 algorithms, and frequently used to demonstrate the high-performance
 computing capabilities of GPUs. As such, an example using matrix
-multiplication could not be left out. A naive matmul kernel is:</p>
+multiplication could not be left out. A naive CUDA kernel for
+a square matrix multiplication is:</p>
 <div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">matmul_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
     <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
     <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
@@ -385,7 +386,7 @@ before moving to the next blocked iteration.</p>
 </pre></div>
 </div>
 <p>This kernel drastically reduces memory bandwidth consumption and should
-be compute bound rather than memory-bandwidth bound for combinations of
+be compute bound rather than memory-bandwidth bound for most combinations of
 matrix sizes and thread block sizes.</p>
 <p>However, there still is not too much that can be tuned in this kernel.
 In fact, because the thread block size needs to be a square, there only
@@ -397,17 +398,20 @@ tuning.</p>
 <h3>Increase work per thread<a class="headerlink" href="#increase-work-per-thread" title="Permalink to this headline">¶</a></h3>
 <p>We will use two different forms of 1xN tiling in this example:</p>
 <p>First of all, in the x-direction we will use tiling in a way that is
-similar to the convolution example. The area that is worked on by each
-thread block is increased, and as such shared memory usage is also
-increased. This means that the number of thread blocks needed to execute
-the kernel is reduced by a factor of N, where N is the tiling factor.
-While this may reduce occupancy, this optimization drastically reduces
+similar to the convolution example. The area of output data that is
+processed by a single thread block is increased by a factor of N,
+and as such shared memory usage also increases by a factor N.
+This means that the number of thread blocks needed to execute
+the kernel for this problem size is reduced by a factor of N,
+where N is the tiling factor.
+While this may reduce occupancy due to increased shared memory and
+register usage, this optimization drastically reduces
 the number of redundant instructions that were previously distributed
 across multiple thread blocks.</p>
-<p>Secondly, in the y-direction we will use a different form of tiling,
+<p>Secondly, in the y-direction we will use a different form of 1xN tiling,
 where we tile within the thread block. This too means that threads will
-compute multiple elements, but in this case, not the number of thread
-blocks, but the number of threads per block is reduced.</p>
+compute multiple elements, but in this case, not the total number of thread
+blocks is reduced, but instead the number of threads per block goes down.</p>
 <p>Note that these two different forms of tiling could have combined in
 different or even multiple ways to increase the tuning parameter space
 even further. However, for the purposes of this example, the resulting
@@ -540,12 +544,13 @@ thread in the y-direction within the thread block. This yields a
 discontinuous search space in which only part of the configurations are
 actually valid. Therefore we use the <code class="docutils literal"><span class="pre">restrictions</span></code> optional argument of
 <code class="docutils literal"><span class="pre">tune_kernel</span></code>.</p>
-<p><code class="docutils literal"><span class="pre">restrictions</span></code> expects a lists of strings that contain boolean
-expressions that may use the tuning parameters as variables. Any
+<p><code class="docutils literal"><span class="pre">restrictions</span></code> expects a list of strings that contain a boolean
+expression that may use the tuning parameters as variables. Any
 occurences of tuning parameter names will be replaced with the specific
 value of this parameter when the kernel configuration is evaluated. All
-expressions in the list passed to restrictions need to evaluate to
-<cite>True</cite> for the configuration to be considered valid by the kernel_tuner.</p>
+expressions in the list passed as restrictions need to evaluate to
+<code class="docutils literal"><span class="pre">True</span></code> for the configuration to be considered valid and therefore part
+of the parameter space.</p>
 </div>
 </div>
 </div>
