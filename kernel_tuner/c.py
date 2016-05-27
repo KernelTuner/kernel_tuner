@@ -20,6 +20,15 @@ class CFunctions(object):
         self.ITERATIONS = iterations
         self.max_threads = 1024
 
+        #test if nvcc is available, otherwise use gcc
+        self.compiler = "nvcc"
+        try:
+            subprocess.check_call([self.compiler, "--version"])
+        except OSError as e:
+            self.compiler = "gcc"
+            if e.errno != errno.ENOENT:
+                raise e
+
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the C function
 
@@ -77,12 +86,19 @@ class CFunctions(object):
 
         kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
 
+        compiler_options = ["-fPIC"]
+        if "#include <omp.h>" in kernel_string:
+            compiler_options.append("-fopenmp")
+
+        if self.compiler == "nvcc":
+            compiler_options = ["-Xcompiler=" + c for c in compiler_options]
+
         try:
             with open(source_file, 'w') as f:
                 f.write(kernel_string)
 
-            subprocess.check_call(["nvcc", "-c", source_file, "-Xcompiler=-fPIC", "-o", filename+".o"])
-            subprocess.check_call(["nvcc", filename+".o", "-shared", "-o", filename+".so"])
+            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename+".o"])
+            subprocess.check_call([self.compiler, filename+".o"] + compiler_options + [ "-shared", "-o", filename+".so"])
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
 
