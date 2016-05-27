@@ -1,7 +1,7 @@
 
 
 Tuning Host Code
-================
+----------------
 
 With the kernel tuner it is also possible to tune the host code of your GPU programs, or even just any C function for that matter.
 Tuning the host code can be useful when it contains parameters that have impact on the performance of kernel on the GPU, such as the number of
