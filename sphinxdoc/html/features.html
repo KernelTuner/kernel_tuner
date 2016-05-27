@@ -225,10 +225,15 @@ The arguments that are input are replaced by a <code class="docutils literal"><s
 Tuning the host code can be useful when it contains parameters that have impact on the performance of kernel on the GPU, such as the number of
 streams you use to execute a kernel across multiple streams. Another example is when you want to include the data transfers between
 host and device into your tuning setup, or tune for different methods of moving data between host and device.</p>
-<p>There are few differences with tuning just a single CUDA or OpenCL kernel, to list them:
-* You have to specify the lang=&#8221;C&#8221; option.
-* The C function should return a <code class="docutils literal"><span class="pre">float</span></code>
-* You have to do your own timing in C</p>
+<dl class="docutils">
+<dt>There are few differences with tuning just a single CUDA or OpenCL kernel, to list them:</dt>
+<dd><ul class="first last simple">
+<li>You have to specify the lang=&#8221;C&#8221; option.</li>
+<li>The C function should return a <code class="docutils literal"><span class="pre">float</span></code></li>
+<li>You have to do your own timing in C</li>
+</ul>
+</dd>
+</dl>
 <p>You have to specify the language as &#8220;C&#8221; because the kernel tuner will be calling a host function, this means that the kernel
 tuner will have to interface with C and in fact uses a different backend. This also means you can use this way of tuning
 without having PyCuda installed, because the C functions interface calls the CUDA compiler directly.</p>
@@ -282,12 +287,17 @@ finished.</p>
     <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lang</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>In fact, the only differences with the simple convolution example are:
-* The source file contains host code rather kernel code
-* &#8220;num_streams&#8221; is added to the tuning parameters
-* &#8220;num_streams&#8221; is added to the &#8220;grid_div_y&#8221; list
-* lang=&#8221;C&#8221; is passed to tell &#8220;convolution_streams&#8221; is a C function
-* <code class="docutils literal"><span class="pre">filter</span></code> is not passed as a constant memory argument, as this is done by the host code</p>
+<dl class="docutils">
+<dt>In fact, the only differences with the simple convolution example are:</dt>
+<dd><ul class="first last simple">
+<li>The source file contains host code rather kernel code</li>
+<li>&#8220;num_streams&#8221; is added to the tuning parameters</li>
+<li>&#8220;num_streams&#8221; is added to the &#8220;grid_div_y&#8221; list</li>
+<li>lang=&#8221;C&#8221; is passed to tell &#8220;convolution_streams&#8221; is a C function</li>
+<li><code class="docutils literal"><span class="pre">filter</span></code> is not passed as a constant memory argument, as this is done by the host code</li>
+</ul>
+</dd>
+</dl>
 <p>Most differences have been explained, but we clarify a few things below.</p>
 <p>The function that we are tuning is a C function that launches the CUDA kernel by itself, yet we supply the grid_div_x and
 grid_div_y lists. We are, however, not required to do so. The C function could just compute the grid dimensions in whatever way it sees fit. Using grid_div_y
