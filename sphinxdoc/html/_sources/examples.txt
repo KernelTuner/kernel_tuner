@@ -1,8 +1,8 @@
 .. highlight:: python
     :linenothreshold: 5
 
-Examples
-========
+Application Examples
+====================
 
 .. include:: convolution.txt
 
