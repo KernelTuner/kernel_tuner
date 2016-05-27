@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""This is the minimal example for tuning C code with the kernel tuner"""
+"""This is a simple example for tuning C code with the kernel tuner"""
 
 import numpy
 from kernel_tuner import tune_kernel
@@ -9,24 +9,28 @@ kernel_string = """
 #include "timer.h"
 
 #if vectorsize == 1
-  #define vf float
+  #define vfloat float
 #else
-  typedef float vf __attribute__ ((vector_size (vectorsize)));
+  typedef float vfloat __attribute__ ((vector_size (vectorsize)));
 #endif
 
-float vector_add(vf *c, vf *a, vf *b, int n) {
+float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
     unsigned long long start = get_time();
 
     #pragma omp parallel num_threads(nthreads)
-    for (int i = omp_get_thread_num(); i<n/vectorsize; i+=nthreads) {
-        c[i] = a[i] + b[i];
+    {
+        int id = omp_get_thread_num();
+        int block = n/(vectorsize*nthreads);
+        for (int i = id*block; i<(id+1)*block && i<(n/vectorsize); i++) {
+            c[i] = a[i] + b[i];
+        }
     }
 
     return (get_time()-start) / (CPU_MHz * 1000000);
 }
 """
 
-size = 1024*1024
+size = 128*1024*1024
 problem_size = (size, 1)
 
 a = numpy.random.randn(size).astype(numpy.float32)
@@ -37,8 +41,8 @@ n = numpy.int32(size)
 args = [c, a, b, n]
 
 tune_params = dict()
-tune_params["vectorsize"] = [1] + [2**i for i in range(2,10)]
-tune_params["nthreads"] = [i for i in range(1,33)]
+tune_params["vectorsize"] = [1] + [2**i for i in range(2,8)]
+tune_params["nthreads"] = [1, 2, 3, 4, 6, 8, 12, 16, 20, 24, 32]
 
 import subprocess
 cpu_speed = subprocess.check_output(["cat /proc/cpuinfo | grep MHz"],shell=True).split()[3]
