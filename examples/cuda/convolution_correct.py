@@ -50,10 +50,10 @@ grid_div_x = ["block_size_x", "tile_size_x"]
 grid_div_y = ["block_size_y", "tile_size_y"]
 
 #compute the answer using a naive kernel
-params = { "block_size_x": 16, "block_size_y": 16, "tile_size_x": 1, "tile_size_y": 1 }
+params = { "block_size_x": 16, "block_size_y": 16 }
 results = kernel_tuner.run_kernel("convolution_naive", kernel_string,
     problem_size, args, params,
-    grid_div_y=grid_div_y, grid_div_x=grid_div_x)
+    grid_div_y=["block_size_y"], grid_div_x=["block_size_x"])
 
 #set non-output fields to None
 answer = [results[0], None, None]
