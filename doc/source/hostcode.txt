@@ -9,9 +9,9 @@ streams you use to execute a kernel across multiple streams. Another example is 
 host and device into your tuning setup, or tune for different methods of moving data between host and device.
 
 There are few differences with tuning just a single CUDA or OpenCL kernel, to list them:
-* You have to specify the lang="C" option.
-* The C function should return a ``float``
-* You have to do your own timing in C
+    * You have to specify the lang="C" option.
+    * The C function should return a ``float``
+    * You have to do your own timing in C
 
 You have to specify the language as "C" because the kernel tuner will be calling a host function, this means that the kernel
 tuner will have to interface with C and in fact uses a different backend. This also means you can use this way of tuning
@@ -76,11 +76,11 @@ The way you use the kernel tuner to tune this CUDA program is very similar to wh
         grid_div_y=grid_div_y, grid_div_x=grid_div_x, verbose=True, lang="C")
 
 In fact, the only differences with the simple convolution example are:
-* The source file contains host code rather kernel code
-* "num_streams" is added to the tuning parameters
-* "num_streams" is added to the "grid_div_y" list
-* lang="C" is passed to tell "convolution_streams" is a C function
-* ``filter`` is not passed as a constant memory argument, as this is done by the host code
+    * The source file contains host code rather kernel code
+    * "num_streams" is added to the tuning parameters
+    * "num_streams" is added to the "grid_div_y" list
+    * lang="C" is passed to tell "convolution_streams" is a C function
+    * ``filter`` is not passed as a constant memory argument, as this is done by the host code
 
 Most differences have been explained, but we clarify a few things below.
 
