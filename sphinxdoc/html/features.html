@@ -87,9 +87,7 @@
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Application Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Feature Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-correctness">Kernel Correctness</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#tuning-host-code">Tuning Host Code</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#tuning-host-code">Tuning Host Code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tuning-the-number-of-streams">Tuning the number of streams</a></li>
 </ul>
 </li>
@@ -218,9 +216,8 @@ kernel, but only includes the kernel arguments that are actually output.
 The arguments that are input are replaced by a <code class="docutils literal"><span class="pre">None</span></code> value in the
 <code class="docutils literal"><span class="pre">answer</span></code> list.</p>
 </div>
-</div>
 <div class="section" id="tuning-host-code">
-<h1>Tuning Host Code<a class="headerlink" href="#tuning-host-code" title="Permalink to this headline">¶</a></h1>
+<h2>Tuning Host Code<a class="headerlink" href="#tuning-host-code" title="Permalink to this headline">¶</a></h2>
 <p>With the kernel tuner it is also possible to tune the host code of your GPU programs, or even just any C function for that matter.
 Tuning the host code can be useful when it contains parameters that have impact on the performance of kernel on the GPU, such as the number of
 streams you use to execute a kernel across multiple streams. Another example is when you want to include the data transfers between
@@ -240,6 +237,7 @@ of the parameter space the returned floats will be averaged for the multiple run
 CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function. In the <code class="docutils literal"><span class="pre">examples/c</span></code>
 directory we have included a file <code class="docutils literal"><span class="pre">timer.h</span></code> that contains a very simple, but accurate timing function for Intel processors. To see how
 to use that you can look at the minimal C example in <code class="docutils literal"><span class="pre">examples/c/vector_add.py</span></code>.</p>
+</div>
 <div class="section" id="tuning-the-number-of-streams">
 <h2>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Permalink to this headline">¶</a></h2>
 <p>The following describes the example in <code class="docutils literal"><span class="pre">examples/cuda/convolution_streams.py</span></code>.
