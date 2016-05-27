@@ -82,8 +82,7 @@ class CFunctions(object):
         """
         random_large_int = numpy.random.randint(low=1000000, high=1000000000)
         filename = 'temp_' + str(random_large_int)
-        source_file = filename+".cu"
-
+        source_file = filename+".cc"
         kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
 
         compiler_options = ["-fPIC"]
@@ -91,6 +90,7 @@ class CFunctions(object):
             compiler_options.append("-fopenmp")
 
         if self.compiler == "nvcc":
+            source_file = source_file[:-1] + "u"
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
 
         try:
@@ -152,8 +152,6 @@ class CFunctions(object):
             results.append(value)
         results = sorted(results)
         return numpy.mean(results[1:-1])
-
-
 
 
 def _delete_temp_file(filename):
