@@ -87,8 +87,10 @@
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Application Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Feature Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-correctness">Kernel Correctness</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#tuning-host-code">Tuning Host Code</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#tuning-the-number-of-streams">Tuning the number of streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tuning-host-code">Tuning Host Code</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#tuning-the-number-of-streams">Tuning the number of streams</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
@@ -237,9 +239,8 @@ of the parameter space the returned floats will be averaged for the multiple run
 CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function. In the <code class="docutils literal"><span class="pre">examples/c</span></code>
 directory we have included a file <code class="docutils literal"><span class="pre">timer.h</span></code> that contains a very simple, but accurate timing function for Intel processors. To see how
 to use that you can look at the minimal C example in <code class="docutils literal"><span class="pre">examples/c/vector_add.py</span></code>.</p>
-</div>
 <div class="section" id="tuning-the-number-of-streams">
-<h2>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Permalink to this headline">¶</a></h2>
+<h3>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Permalink to this headline">¶</a></h3>
 <p>The following describes the example in <code class="docutils literal"><span class="pre">examples/cuda/convolution_streams.py</span></code>.
 In this example, the same convolution kernel is used as with correctness checking and convolution application example.</p>
 <p>What is different is that we also supply the host code, which you can find in <code class="docutils literal"><span class="pre">examples/cuda/convolution_streams.cu</span></code>. It is a bit
@@ -294,6 +295,7 @@ compiled C code. This way if you don&#8217;t want to compute the grid size again
 <p>The filter is not passed separately as a constant memory argument, because the MemcpyToSymbol is now performed by the C host function itself. Since the code
 is compiled differently, we have no direct reference to the module uploaded to the device and can therefore not perform this operation from Python. If you are
 tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code, that&#8217;s the point of host code after all.</p>
+</div>
 </div>
 </div>
 
