@@ -23,7 +23,7 @@ class CFunctions(object):
         #test if nvcc is available, otherwise use gcc
         self.compiler = "nvcc"
         try:
-            subprocess.check_call([self.compiler, "--version"])
+            subprocess.check_call([self.compiler, "--version"], stdout=open(os.devnull, 'w'))
         except OSError as e:
             self.compiler = "gcc"
             if e.errno != errno.ENOENT:
