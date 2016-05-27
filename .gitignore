@@ -1,3 +1,4 @@
 *.pyc
 doc/build/*
+doc/create_doc.sh
 *coverage*
