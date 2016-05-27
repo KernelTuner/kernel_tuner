@@ -28,7 +28,7 @@ directory we have included a file ``timer.h`` that contains a very simple, but a
 to use that you can look at the minimal C example in ``examples/c/vector_add.py``. 
 
 Tuning the number of streams
-----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following describes the example in ``examples/cuda/convolution_streams.py``.
 In this example, the same convolution kernel is used as with correctness checking and convolution application example.
