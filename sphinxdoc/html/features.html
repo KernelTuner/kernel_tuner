@@ -86,7 +86,7 @@
 <li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Application Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Feature Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#kernel-correctness">Kernel Correctness</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kernel-correctness-verification">Kernel Correctness Verification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tuning-host-code">Tuning Host Code</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#tuning-the-number-of-streams">Tuning the number of streams</a></li>
 </ul>
@@ -145,8 +145,8 @@
 <div class="section" id="feature-examples">
 <h1>Feature Examples<a class="headerlink" href="#feature-examples" title="Permalink to this headline">¶</a></h1>
 <p>The examples in this section are intended to demonstrate certain features of the kernel tuner.</p>
-<div class="section" id="kernel-correctness">
-<h2>Kernel Correctness<a class="headerlink" href="#kernel-correctness" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="kernel-correctness-verification">
+<h2>Kernel Correctness Verification<a class="headerlink" href="#kernel-correctness-verification" title="Permalink to this headline">¶</a></h2>
 <p>Whenever you optimize a program for performance it is very important to
 ensure that the program is still producing the correct output. What good
 is a program that is fast but not correct?</p>
@@ -157,14 +157,14 @@ with correctness checking you need to pass the <code class="docutils literal"><s
 the kernel arguments. However, if an argument to the kernel is input-only
 you may insert <code class="docutils literal"><span class="pre">None</span></code> at that location in the list.</p>
 <p>After kernel compilation, but before benchmarking the kernel, the kernel
-tuner runs the kernel once to look at the output it produces. For each
+tuner runs the kernel once to verify the output it produces. For each
 argument in the <code class="docutils literal"><span class="pre">answer</span></code> list that is not None, it will check the results
-produced by the kernel against the expected result specified in <code class="docutils literal"><span class="pre">answer</span></code>.
-The comparison is currently implemented using numpy.allclose() with an
-maximum allowed absolute error of 1e-6.</p>
+produced by the current kernel against the expected result specified in
+<code class="docutils literal"><span class="pre">answer</span></code>. The comparison is currently implemented using numpy.allclose()
+with an maximum allowed absolute error of 1e-6.</p>
 <p>At this moment, there is no way to modify the error tolerance or way the
 results are compared by the kernel tuner, if you are interested being able
-to control these options, please notify the kernel tuner developers.</p>
+to control this, please notify the kernel tuner developers.</p>
 <p>The example in <code class="docutils literal"><span class="pre">examples/cuda/convolution_correct.py</span></code> demonstrates how
 to use the <code class="docutils literal"><span class="pre">answer</span></code> option of <code class="docutils literal"><span class="pre">tune_kernel()</span></code>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span>
@@ -210,14 +210,14 @@ to use the <code class="docutils literal"><span class="pre">answer</span></code>
     <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">cmem_args</span><span class="o">=</span><span class="n">cmem_args</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This example uses the <code class="docutils literal"><span class="pre">run_kernel()</span></code> function to run a single
-kernel and return its results, with almost the same interface as
-<code class="docutils literal"><span class="pre">tune_kernel()</span></code>. In this example we run a naive CUDA kernel whose
-results are trusted to be correct.</p>
+<p>This example uses the <code class="docutils literal"><span class="pre">run_kernel()</span></code> function of the kernel tuner
+to run a single kernel and return its results, with almost the same
+interface as <code class="docutils literal"><span class="pre">tune_kernel()</span></code>. In this example we run a naive CUDA
+kernel whose results are trusted to be correct.</p>
 <p>The <code class="docutils literal"><span class="pre">answer</span></code> list is constructed out of the results from the naive
-kernel, but only includes the kernel arguments that are actually output.
+kernel, but only includes the kernel arguments that are actually outputs.
 The arguments that are input are replaced by a <code class="docutils literal"><span class="pre">None</span></code> value in the
-<code class="docutils literal"><span class="pre">answer</span></code> list.</p>
+<code class="docutils literal"><span class="pre">answer</span></code> list before the list is passed to <code class="docutils literal"><span class="pre">tune_kernel()</span></code>.</p>
 </div>
 <div class="section" id="tuning-host-code">
 <h2>Tuning Host Code<a class="headerlink" href="#tuning-host-code" title="Permalink to this headline">¶</a></h2>
@@ -253,11 +253,11 @@ In this example, the same convolution kernel is used as with correctness checkin
 too long and complex to include here, but we will explain what it does. The idea behind the host code is that the kernel computation
 is spread across a number of CUDA streams. In this way, it is possible to overlap the data transfers from host to device with kernel execution, and with
 transfers from the device back to the host.</p>
-<p>The way we divide the computation across streams is by dividing the problem in the y-dimension into chunks, where the first chunk is larger to account for the
-overlapping border between the data need by different streams. Before a kernel in stream <cite>n</cite> can start executing it is important that the data transfers in
-streams <cite>n</cite> and <cite>n-1</cite> has finished. To ensure the latter we use CUDA Event and cudaStreamWaitEvent, which halts stream <cite>n</cite> until the transfer in stream <cite>n-1</cite> has
-finished.</p>
-<p>The way you use the kernel tuner to tune this CUDA program is very similar to when you are tuning only a single kernel, as you can see below:</p>
+<p>The way we split the computation across streams is by dividing the problem in the y-dimension into chunks. The data transferred by the first stream is slightly
+larger to account for the overlapping border between the data needed by different streams. Before the kernel in stream <cite>n</cite> can start executing the data transfers
+in streams <cite>n</cite> and <cite>n-1</cite> have to be finished. To ensure the latter, we use CUDA Events and in particular cudaStreamWaitEvent(), which halts stream <cite>n</cite> until the
+transfer in stream <cite>n-1</cite> has finished.</p>
+<p>The way you use the kernel tuner to tune this CUDA program is very similar to when you are tuning a CUDA kernel directly, as you can see below:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution_streams.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 
@@ -293,19 +293,22 @@ finished.</p>
 <li>The source file contains host code rather kernel code</li>
 <li>&#8220;num_streams&#8221; is added to the tuning parameters</li>
 <li>&#8220;num_streams&#8221; is added to the &#8220;grid_div_y&#8221; list</li>
-<li>lang=&#8221;C&#8221; is passed to tell &#8220;convolution_streams&#8221; is a C function</li>
-<li><code class="docutils literal"><span class="pre">filter</span></code> is not passed as a constant memory argument, as this is done by the host code</li>
+<li>the kernel_name &#8220;convolution_streams&#8221; is a C function</li>
+<li>lang=&#8221;C&#8221; is passed to tune_kernel()</li>
+<li><code class="docutils literal"><span class="pre">filter</span></code> is not passed as a constant memory argument</li>
 </ul>
 </dd>
 </dl>
 <p>Most differences have been explained, but we clarify a few things below.</p>
 <p>The function that we are tuning is a C function that launches the CUDA kernel by itself, yet we supply the grid_div_x and
 grid_div_y lists. We are, however, not required to do so. The C function could just compute the grid dimensions in whatever way it sees fit. Using grid_div_y
-and grid_div_x at this point is matter of convience, and to support this the values grid_size_x and grid_size_y are inserted by the kernel tuner into the
-compiled C code. This way if you don&#8217;t want to compute the grid size again in C you can just use the grid size as computed by the kernel tuner.</p>
-<p>The filter is not passed separately as a constant memory argument, because the MemcpyToSymbol is now performed by the C host function itself. Since the code
-is compiled differently, we have no direct reference to the module uploaded to the device and can therefore not perform this operation from Python. If you are
-tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code, that&#8217;s the point of host code after all.</p>
+and grid_div_x at this point is matter of choice. To support this flexibility, the values grid_size_x and grid_size_y are inserted by the kernel tuner into the
+compiled C code. This way, you don&#8217;t have to compute the grid size again in C, you can just use the grid size as computed by the kernel tuner.</p>
+<p>The filter is not passed separately as a constant memory argument, because the MemcpyToSymbol is now performed by the C host function itself. Also, because the
+code is compiled differently, we have no direct reference to the module uploaded to the device and therefore we can not perform this operation directly from
+Python. If you are tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code, that&#8217;s the point of host
+code after all. That is also why you have to do the timing yourself in C, as you may not want to include the time spent on memory allocations and other setup into your
+time measurements.</p>
 </div>
 </div>
 </div>
