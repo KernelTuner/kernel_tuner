@@ -8,10 +8,10 @@ kernel_string = """
 #include <omp.h>
 #include "timer.h"
 
-#if vectorsize == 1
+#if vecsize == 1
   #define vfloat float
 #else
-  typedef float vfloat __attribute__ ((vector_size (vectorsize)));
+  typedef float vfloat __attribute__ ((vector_size (vecsize)));
 #endif
 
 float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
@@ -19,9 +19,8 @@ float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
 
     #pragma omp parallel num_threads(nthreads)
     {
-        int id = omp_get_thread_num();
-        int block = n/(vectorsize*nthreads);
-        for (int i = id*block; i<(id+1)*block && i<(n/vectorsize); i++) {
+        int start = omp_get_thread_num()*n/vecsize/nthreads;
+        for (int i = start; i<start+n/vecsize/nthreads) && i<n/vecsize; i++) {
             c[i] = a[i] + b[i];
         }
     }
@@ -41,7 +40,7 @@ n = numpy.int32(size)
 args = [c, a, b, n]
 
 tune_params = dict()
-tune_params["vectorsize"] = [1] + [2**i for i in range(2,8)]
+tune_params["vecsize"] = [1] + [2**i for i in range(2,8)]
 tune_params["nthreads"] = [1, 2, 3, 4, 6, 8, 12, 16, 20, 24, 32]
 
 tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
