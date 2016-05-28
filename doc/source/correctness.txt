@@ -1,7 +1,7 @@
 
 
-Kernel Correctness
-------------------
+Kernel Correctness Verification
+-------------------------------
 
 Whenever you optimize a program for performance it is very important to
 ensure that the program is still producing the correct output. What good
@@ -15,15 +15,15 @@ the kernel arguments. However, if an argument to the kernel is input-only
 you may insert ``None`` at that location in the list.
 
 After kernel compilation, but before benchmarking the kernel, the kernel
-tuner runs the kernel once to look at the output it produces. For each
+tuner runs the kernel once to verify the output it produces. For each
 argument in the ``answer`` list that is not None, it will check the results
-produced by the kernel against the expected result specified in ``answer``.
-The comparison is currently implemented using numpy.allclose() with an
-maximum allowed absolute error of 1e-6. 
+produced by the current kernel against the expected result specified in
+``answer``. The comparison is currently implemented using numpy.allclose()
+with an maximum allowed absolute error of 1e-6. 
 
 At this moment, there is no way to modify the error tolerance or way the
 results are compared by the kernel tuner, if you are interested being able
-to control these options, please notify the kernel tuner developers.
+to control this, please notify the kernel tuner developers.
 
 The example in ``examples/cuda/convolution_correct.py`` demonstrates how
 to use the ``answer`` option of ``tune_kernel()``:
@@ -72,13 +72,13 @@ to use the ``answer`` option of ``tune_kernel()``:
         grid_div_y=grid_div_y, grid_div_x=grid_div_x,
         verbose=True, cmem_args=cmem_args, answer=answer)
 
-This example uses the ``run_kernel()`` function to run a single
-kernel and return its results, with almost the same interface as
-``tune_kernel()``. In this example we run a naive CUDA kernel whose
-results are trusted to be correct.
+This example uses the ``run_kernel()`` function of the kernel tuner 
+to run a single kernel and return its results, with almost the same
+interface as ``tune_kernel()``. In this example we run a naive CUDA
+kernel whose results are trusted to be correct.
 
 The ``answer`` list is constructed out of the results from the naive
-kernel, but only includes the kernel arguments that are actually output.
+kernel, but only includes the kernel arguments that are actually outputs.
 The arguments that are input are replaced by a ``None`` value in the
-``answer`` list.
+``answer`` list before the list is passed to ``tune_kernel()``.
 
