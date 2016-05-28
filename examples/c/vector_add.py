@@ -15,7 +15,7 @@ kernel_string = """
 #endif
 
 float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
-    unsigned long long start = get_time();
+    unsigned long long start = get_clock();
 
     #pragma omp parallel num_threads(nthreads)
     {
@@ -26,7 +26,7 @@ float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
         }
     }
 
-    return (get_time()-start) / (CPU_MHz * 1000000);
+    return (get_clock()-start) / (get_frequency() * 1000000);
 }
 """
 
@@ -44,8 +44,4 @@ tune_params = dict()
 tune_params["vectorsize"] = [1] + [2**i for i in range(2,8)]
 tune_params["nthreads"] = [1, 2, 3, 4, 6, 8, 12, 16, 20, 24, 32]
 
-import subprocess
-cpu_speed = subprocess.check_output(["cat /proc/cpuinfo | grep MHz"],shell=True).split()[3]
-
-tune_kernel("vector_add", kernel_string.replace("CPU_MHz", cpu_speed),
-            problem_size, args, tune_params, lang="C")
+tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
