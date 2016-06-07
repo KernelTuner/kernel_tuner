@@ -1,6 +1,12 @@
 #include <stdio.h>
 
-#define float1 float
+#if (vector<=1)
+#define floatvector float
+#elif (vector == 2)
+#define floatvector float2
+#elif (vector == 4)
+#define floatvector float4
+#endif
 
 #if use_shuffle == 1
 #define stop_loop 16
