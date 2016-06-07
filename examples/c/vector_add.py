@@ -16,11 +16,12 @@ kernel_string = """
 
 float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
     unsigned long long start = get_clock();
+    n /= vecsize;
 
     #pragma omp parallel num_threads(nthreads)
     {
-        int start = omp_get_thread_num()*n/vecsize/nthreads;
-        for (int i = start; i<start+n/vecsize/nthreads) && i<n/vecsize; i++) {
+        int start = omp_get_thread_num()*n/nthreads;
+        for (int i = start; i<start+n/nthreads && i<n; i++) {
             c[i] = a[i] + b[i];
         }
     }
@@ -29,7 +30,7 @@ float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
 }
 """
 
-size = 128*1024*1024
+size = 64*1024*1024
 problem_size = (size, 1)
 
 a = numpy.random.randn(size).astype(numpy.float32)
