@@ -536,6 +536,43 @@ function after compilation.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="kernel_tuner.c.CFunctions.memcpy_dtoh">
+<code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
+<dd><p>a simple memcpy expects a ctypes pointer, returns a numpy array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> (<em>numpy.ndarray</em>) &#8211; A numpy array to store the data</li>
+<li><strong>src</strong> (<em>ctypes.pointer</em>) &#8211; A ctypes pointer to some memory allocation</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.memset">
+<code class="descname">memset</code><span class="sig-paren">(</span><em>allocation</em>, <em>value</em>, <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memset" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the memory in allocation to the value in value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A memory allocation unit</li>
+<li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="kernel_tuner.c.CFunctions.ready_argument_list">
 <code class="descname">ready_argument_list</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>ready argument list to be passed to the C function</p>
@@ -550,6 +587,36 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to the C function.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list()</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.run_kernel">
+<code class="descname">run_kernel</code><span class="sig-paren">(</span><em>func</em>, <em>c_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the kernel once, returns whatever the kernel returns</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>func</strong> (<em>ctypes._FuncPtr</em>) &#8211; A C function compiled for this specific configuration</li>
+<li><strong>c_args</strong> (<em>list()</em>) &#8211; A list of arguments to the function, order should match the
+order in the code. The list should be prepared using
+ready_argument_list().</li>
+<li><strong>threads</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
+interface as CudaFunctions and OpenCLFunctions.</li>
+<li><strong>grid</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
+interface as CudaFunctions and OpenCLFunctions.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average of values returned by the C function.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
 </tr>
 </tbody>
 </table>
