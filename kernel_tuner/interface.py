@@ -490,7 +490,7 @@ def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instan
         if expected is not None:
             result_host = numpy.zeros_like(expected)
             dev.memcpy_dtoh(result_host, result)
-            correct = correct and all(result_host.ravel()-expected.ravel() < 1e-6)
+            correct = correct and numpy.allclose(result_host.ravel(), expected.ravel(), atol=1e-6)
     if not correct:
         raise Exception("Error " + instance_string + " failed correctness check")
     return correct
