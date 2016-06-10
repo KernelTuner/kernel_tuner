@@ -1,6 +1,10 @@
 #include <stdio.h>
 
-#if (vector<=1)
+#ifndef vector
+#define vector 1
+#endif 
+
+#if (vector==1)
 #define floatvector float
 #elif (vector == 2)
 #define floatvector float2
