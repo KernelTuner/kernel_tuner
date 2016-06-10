@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import numpy
+import ctypes as C
 
 try:
     from mock import patch, Mock
@@ -97,3 +98,30 @@ def test_compile(npct, subprocess):
     assert not os.path.isfile(filename + ".so")
 
 
+def test_memset():
+    input = [1, 2, 3, 4]
+    x = numpy.array(input).astype(numpy.float32)
+    x_c = x.ctypes.data_as(C.POINTER(C.c_float))
+
+    cfunc = CFunctions()
+    cfunc.memset(x_c, 0, 4)
+
+    output = numpy.ctypeslib.as_array(x_c, shape=(4,))
+
+    print(output)
+    assert all(output == numpy.zeros(4))
+
+def test_memcpy_dtoh():
+    input = [1, 2, 3, 4]
+    x = numpy.array(input).astype(numpy.float32)
+    x_c = x.ctypes.data_as(C.POINTER(C.c_float))
+    output = numpy.zeros_like(x)
+
+    cfunc = CFunctions()
+    cfunc.arg_mapping = { str(x_c) : (4,) }
+    cfunc.memcpy_dtoh(output, x_c)
+
+    print(input)
+    print(output)
+
+    assert all(output == input)

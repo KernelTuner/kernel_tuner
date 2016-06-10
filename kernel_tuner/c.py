@@ -40,6 +40,7 @@ class CFunctions(object):
         :returns: A list of arguments that can be passed to the C function.
         :rtype: list()
         """
+        self.arg_mapping = dict()
         ctype_args = []
         for arg in arguments:
             if isinstance(arg, numpy.ndarray):
@@ -51,6 +52,7 @@ class CFunctions(object):
                     ctype_args.append(arg.ctypes.data_as(C.POINTER(C.c_int)))
                 else:
                     raise TypeError("unknown dtype for ndarray")
+                self.arg_mapping[str(ctype_args[-1])] = arg.shape
             elif numpy.isscalar(arg):
                 if hasattr(arg, 'dtype'):
                     if str(arg.dtype).startswith('int'):
@@ -148,10 +150,62 @@ class CFunctions(object):
         """
         results = []
         for _ in range(self.ITERATIONS):
-            value = func(*c_args)
+            value = self.run_kernel(func, c_args, threads, grid)
             results.append(value)
         results = sorted(results)
         return numpy.mean(results[1:-1])
+
+
+    def run_kernel(self, func, c_args, threads, grid):
+        """runs the kernel once, returns whatever the kernel returns
+
+        :param func: A C function compiled for this specific configuration
+        :type func: ctypes._FuncPtr
+
+        :param c_args: A list of arguments to the function, order should match the
+            order in the code. The list should be prepared using
+            ready_argument_list().
+        :type c_args: list()
+
+        :param threads: Ignored, but left as argument for now to have the same
+            interface as CudaFunctions and OpenCLFunctions.
+        :type threads: any
+
+        :param grid: Ignored, but left as argument for now to have the same
+            interface as CudaFunctions and OpenCLFunctions.
+        :type grid: any
+
+        :returns: A robust average of values returned by the C function.
+        :rtype: float
+        """
+        return func(*c_args)
+
+
+    def memset(self, allocation, value, size):
+        """set the memory in allocation to the value in value
+
+        :param allocation: A memory allocation unit
+        :type allocation: pycuda.driver.DeviceAllocation
+
+        :param value: The value to set the memory to
+        :type value: a single 32-bit float or int
+
+        :param size: The size of to the allocation unit
+        :type size: int
+        """
+        C.memset(allocation, value, C.sizeof(allocation._type_) * size)
+
+
+    def memcpy_dtoh(self, dest, src):
+        """a simple memcpy expects a ctypes pointer, returns a numpy array
+
+        :param dest: A numpy array to store the data
+        :type dest: numpy.ndarray
+
+        :param src: A ctypes pointer to some memory allocation
+        :type src: ctypes.pointer
+        """
+        dest[:] = numpy.ctypeslib.as_array(src, shape=self.arg_mapping[str(src)])
 
 
 def _delete_temp_file(filename):
