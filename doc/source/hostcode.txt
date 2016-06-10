@@ -76,23 +76,23 @@ The way you use the kernel tuner to tune this CUDA program is very similar to wh
         grid_div_y=grid_div_y, grid_div_x=grid_div_x, verbose=True, lang="C")
 
 In fact, the only differences with the simple convolution example are:  
- * The source file contains host code rather kernel code
+ * The source file also contains host code 
  * "num_streams" is added to the tuning parameters
  * "num_streams" is added to the "grid_div_y" list
- * the kernel_name "convolution_streams" is a C function
- * lang="C" is passed to tune_kernel()
+ * The kernel_name "convolution_streams" is a C function
+ * lang="C" is used to tell this is a C function
  * ``filter`` is not passed as a constant memory argument
 
 Most differences have been explained, but we clarify a few things below.
 
 The function that we are tuning is a C function that launches the CUDA kernel by itself, yet we supply the grid_div_x and 
 grid_div_y lists. We are, however, not required to do so. The C function could just compute the grid dimensions in whatever way it sees fit. Using grid_div_y 
-and grid_div_x at this point is matter of choice. To support this flexibility, the values grid_size_x and grid_size_y are inserted by the kernel tuner into the 
+and grid_div_x at this point is matter of choice. To support this convenience, the values grid_size_x and grid_size_y are inserted by the kernel tuner into the 
 compiled C code. This way, you don't have to compute the grid size again in C, you can just use the grid size as computed by the kernel tuner.
 
-The filter is not passed separately as a constant memory argument, because the MemcpyToSymbol is now performed by the C host function itself. Also, because the 
+The filter is not passed separately as a constant memory argument, because the CudaMemcpyToSymbol is now performed by the C host function itself. Also, because the 
 code is compiled differently, we have no direct reference to the module uploaded to the device and therefore we can not perform this operation directly from 
-Python. If you are tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code, that's the point of host 
+Python. If you are tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code, that's the purpose of host 
 code after all. That is also why you have to do the timing yourself in C, as you may not want to include the time spent on memory allocations and other setup into your
 time measurements.
 
