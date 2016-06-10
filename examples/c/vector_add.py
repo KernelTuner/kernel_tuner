@@ -8,29 +8,25 @@ kernel_string = """
 #include <omp.h>
 #include "timer.h"
 
-#if vecsize == 1
-  #define vfloat float
-#else
-  typedef float vfloat __attribute__ ((vector_size (vecsize)));
-#endif
+typedef float vfloat __attribute__ ((vector_size (vecsize*4)));
 
 float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
     unsigned long long start = get_clock();
-    n /= vecsize;
+    int chunk = n/vecsize/nthreads;
 
     #pragma omp parallel num_threads(nthreads)
     {
-        int start = omp_get_thread_num()*n/nthreads;
-        for (int i = start; i<start+n/nthreads && i<n; i++) {
+        int offset = omp_get_thread_num()*chunk;
+        for (int i = offset; i<offset+chunk; i++) {
             c[i] = a[i] + b[i];
         }
     }
 
-    return (get_clock()-start) / (get_frequency() * 1000000);
+    return (get_clock()-start) / get_frequency() / 1000000.0;
 }
 """
 
-size = 64*1024*1024
+size = 72*1024*1024
 problem_size = (size, 1)
 
 a = numpy.random.randn(size).astype(numpy.float32)
@@ -41,7 +37,9 @@ n = numpy.int32(size)
 args = [c, a, b, n]
 
 tune_params = dict()
-tune_params["vecsize"] = [1] + [2**i for i in range(2,8)]
-tune_params["nthreads"] = [1, 2, 3, 4, 6, 8, 12, 16, 20, 24, 32]
+tune_params["vecsize"] = [2**i for i in range(8)]
+tune_params["nthreads"] = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32]
 
-tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
+answer = [a+b, None, None]
+
+tune_kernel("vector_add", kernel_string, problem_size, args, tune_params, answer=answer)
