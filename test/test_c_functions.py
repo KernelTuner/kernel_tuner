@@ -99,8 +99,8 @@ def test_compile(npct, subprocess):
 
 
 def test_memset():
-    input = [1, 2, 3, 4]
-    x = numpy.array(input).astype(numpy.float32)
+    a = [1, 2, 3, 4]
+    x = numpy.array(a).astype(numpy.float32)
     x_c = x.ctypes.data_as(C.POINTER(C.c_float))
 
     cfunc = CFunctions()
@@ -112,8 +112,8 @@ def test_memset():
     assert all(output == numpy.zeros(4))
 
 def test_memcpy_dtoh():
-    input = [1, 2, 3, 4]
-    x = numpy.array(input).astype(numpy.float32)
+    a = [1, 2, 3, 4]
+    x = numpy.array(a).astype(numpy.float32)
     x_c = x.ctypes.data_as(C.POINTER(C.c_float))
     output = numpy.zeros_like(x)
 
@@ -121,7 +121,7 @@ def test_memcpy_dtoh():
     cfunc.arg_mapping = { str(x_c) : (4,) }
     cfunc.memcpy_dtoh(output, x_c)
 
-    print(input)
+    print(a)
     print(output)
 
-    assert all(output == input)
+    assert all(output == a)
