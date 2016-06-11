@@ -10,7 +10,7 @@ nrows = numpy.int32(128*1024)
 ncols = 128*1024
 nnz = int(nrows*ncols*0.001)
 
-#generate spare matrix
+#generate sparse matrix in CSR
 rows = numpy.asarray([0]+sorted(numpy.random.rand(nrows-1)*nnz)+[nnz]).astype(numpy.int32)
 cols = (numpy.random.rand(nnz)*ncols).astype(numpy.int32)
 vals = numpy.random.randn(nnz).astype(numpy.float32)
