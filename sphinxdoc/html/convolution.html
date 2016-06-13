@@ -30,7 +30,10 @@
   
 
   
-    <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/> 
+    <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/>
+        <link rel="up" title="Application Examples" href="examples.html"/>
+        <link rel="next" title="Matrix Multiplication" href="matrix.html"/>
+        <link rel="prev" title="Application Examples" href="examples.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -79,10 +82,22 @@
           
             
             
-                <ul>
+                <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="examples.html">Application Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Convolution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setup-kernel-arguments">Setup kernel arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setup-grid-dimensions">Setup grid dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#putting-it-all-together">Putting it all together</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="matrix.html">Matrix Multiplication</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Feature Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
 </ul>
 
             
@@ -113,6 +128,8 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
+          <li><a href="examples.html">Application Examples</a> &raquo;</li>
+      
     <li>Convolution</li>
       <li class="wy-breadcrumbs-aside">
         
@@ -131,7 +148,7 @@
 <h1>Convolution<a class="headerlink" href="#convolution" title="Permalink to this headline">¶</a></h1>
 <p>2D Convolution is widely used in image processing for many purposes
 including filtering. A naive CUDA kernel for 2D Convolution would be:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">convolvution_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">output</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">input</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">filter</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">convolution_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">output</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">input</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">filter</span><span class="p">)</span> <span class="p">{</span>
 
     <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
     <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
@@ -146,7 +163,7 @@ including filtering. A naive CUDA kernel for 2D Convolution would be:</p>
             <span class="p">}</span>
         <span class="p">}</span>
 
-        <span class="n">image</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">image_width</span> <span class="o">+</span> <span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum</span><span class="p">;</span>
+        <span class="n">output</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">image_width</span> <span class="o">+</span> <span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum</span><span class="p">;</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
@@ -169,21 +186,20 @@ kernel.</p>
 <p>We have to tell the kernel_tuner what values it should try for
 <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>. Therefore, we create a
 dictionary called tune_params and store a number of possible
-values for <code class="docutils literal"><span class="pre">block_size_x</span></code> and block_size_y that seem
+values for <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> that seem
 reasonable.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span> <span class="c1">#[16, 32, 48, 64, 80, 96, 112, 128]</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>   <span class="c1">#[1, 2, 4, 8, 16, 32]</span>
 </pre></div>
 </div>
-<p>Say we also have two other parameters: <code class="docutils literal"><span class="pre">tile_size_x</span></code> and
-<code class="docutils literal"><span class="pre">tile_size_y</span></code>,
-(not shown in the kernel code above)
+<p>Let&#8217;s say we also have two other parameters (not shown in the
+kernel code above): <code class="docutils literal"><span class="pre">tile_size_x</span></code> and <code class="docutils literal"><span class="pre">tile_size_y</span></code>,
 which increase the amount of work per thread block by a factor of
 <code class="docutils literal"><span class="pre">tile_size_x</span></code> in the x-direction and by a factor of
 <code class="docutils literal"><span class="pre">tile_size_y</span></code> in the
 y-direction. We add these to the tuning parameters:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
 </pre></div>
 </div>
@@ -198,7 +214,7 @@ our kernel. To this end, we create a list of Numpy objects that
 we call args. Arrays can be passed as numpy.ndarray objects.
 Single values can be passed by value, for example as numpy.int32
 or numpy.float32.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">output</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">output</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 <span class="nb">input</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">input_size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 <span class="nb">filter</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">17</span><span class="o">*</span><span class="mi">17</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="nb">filter</span><span class="p">]</span>
@@ -213,7 +229,7 @@ with the types expected by the CUDA kernel.</p>
 <p>Remember that the kernel originally used one thread per pixel
 in the output image. We have to tell <code class="docutils literal"><span class="pre">tune_kernel()</span></code> how the
 grid dimensions are computed. Therefore we set the following:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>    <span class="c1">#output image width/height</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>    <span class="c1">#output image width/height</span>
 <span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span>
 <span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
 </pre></div>
@@ -222,13 +238,13 @@ grid dimensions are computed. Therefore we set the following:</p>
 <code class="docutils literal"><span class="pre">tile_size_y</span></code> that increase the amount of work per thread
 block, we have to decrease the number of thread blocks to be
 created even further.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>    <span class="c1">#output image width/height</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>    <span class="c1">#output image width/height</span>
 <span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
 <span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>The above code tells the kernel_tuner to compute the grid x-dimension
-by taking the output image width and dividing it by the value of
+<p>The above code tells the kernel tuner to compute the grid x-dimension
+by taking the problem size in the x-direction and divide it by the value of
 each tuning parameter in the grid_div_x list. The same holds for the
 grid y-dimension.</p>
 <p>The kernel tuner currently assumes that the thread block dimensions
@@ -237,10 +253,37 @@ and &#8220;block_size_y&#8221; in the tuning parameters. If one or more of
 these values are not among the tuning parameters it will assume
 256, 1, and 1, as thread block dimensions, respectively.</p>
 </div>
-<div class="section" id="finally">
-<h2>Finally<a class="headerlink" href="#finally" title="Permalink to this headline">¶</a></h2>
-<p>Now putting it all together we finally get to call <code class="docutils literal"><span class="pre">tune_kernel()</span></code>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span>
+<div class="section" id="putting-it-all-together">
+<h2>Putting it all together<a class="headerlink" href="#putting-it-all-together" title="Permalink to this headline">¶</a></h2>
+<p>Now putting it all together, we finally get to call <code class="docutils literal"><span class="pre">tune_kernel()</span></code>:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">import</span> <span class="nn">kernel_tuner</span>
 
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -267,9 +310,9 @@ these values are not among the tuning parameters it will assume
 
 <span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;convolution_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span>
     <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
-    <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
-</div>
+</td></tr></table></div>
 <p>You can try out this program from the <code class="docutils literal"><span class="pre">examples</span></code> directory in
 the kernel_tuner repository.</p>
 </div>
@@ -279,6 +322,15 @@ the kernel_tuner repository.</p>
            </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="matrix.html" class="btn btn-neutral float-right" title="Matrix Multiplication" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="examples.html" class="btn btn-neutral" title="Application Examples" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>

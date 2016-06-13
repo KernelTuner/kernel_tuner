@@ -1,0 +1,448 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Matrix Multiplication &mdash; kernel_tuner 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/>
+        <link rel="up" title="Application Examples" href="examples.html"/>
+        <link rel="next" title="Feature Examples" href="features.html"/>
+        <link rel="prev" title="Convolution" href="convolution.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> kernel_tuner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="examples.html">Application Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Matrix Multiplication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#increase-data-reuse">Increase data reuse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#increase-work-per-thread">Increase work per thread</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Feature Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">kernel_tuner</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="examples.html">Application Examples</a> &raquo;</li>
+      
+    <li>Matrix Multiplication</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/matrix.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="matrix-multiplication">
+<h1>Matrix Multiplication<a class="headerlink" href="#matrix-multiplication" title="Permalink to this headline">¶</a></h1>
+<p>Matrix multiplication is one of the most well-known linear algebra
+algorithms, and frequently used to demonstrate the high-performance
+computing capabilities of GPUs. As such, an example using matrix
+multiplication could not be left out. A naive CUDA kernel for
+a square matrix multiplication is:</p>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">matmul_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="kt">float</span> <span class="n">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">k</span><span class="o">&lt;</span><span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">sum</span> <span class="o">+=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">B</span><span class="p">[(</span><span class="n">y</span><span class="o">+</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">];</span>
+    <span class="p">}</span>
+
+    <span class="n">C</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This kernel simply creates a single thread per output element. Each
+thread computes the index of the element it is responsible for, and
+iterates over the corresponding row in A, and corresponding column in B.</p>
+<p>There aren&#8217;t many parameters to tune yet, and more importantly, tuning
+will not be very effective because this kernel will be limited by
+bandwidth rather than compute. There is however, a lot of opportunity
+for data reuse, which is realized by making the threads in a thread
+block collaborate.</p>
+<div class="section" id="increase-data-reuse">
+<h2>Increase data reuse<a class="headerlink" href="#increase-data-reuse" title="Permalink to this headline">¶</a></h2>
+<p>This can be solved by using a technique called loop-blocking or
+loop-tiling. We define two square data structures in <cite>shared memory</cite>,
+which will be used for storing square parts of matrix A and B. The
+threads in a thread block will collaboratively fill these two variables,
+and then proceed to perform all the computations that need this data,
+before moving to the next blocked iteration.</p>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">matmul_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">__shared__</span> <span class="kt">float</span> <span class="n">sA</span><span class="p">[</span><span class="n">block_size</span><span class="p">][</span><span class="n">block_size</span><span class="p">];</span>
+    <span class="n">__shared__</span> <span class="kt">float</span> <span class="n">sB</span><span class="p">[</span><span class="n">block_size</span><span class="p">][</span><span class="n">block_size</span><span class="p">];</span>
+
+    <span class="kt">int</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size</span> <span class="o">+</span> <span class="n">tx</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size</span> <span class="o">+</span> <span class="n">ty</span><span class="p">;</span>
+
+    <span class="kt">float</span> <span class="n">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">k</span><span class="p">,</span><span class="n">kb</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">k</span><span class="o">&lt;</span><span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span><span class="o">+=</span><span class="n">block_size</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">__synchthreads</span><span class="p">();</span>
+        <span class="n">sA</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">k</span><span class="o">+</span><span class="n">tx</span><span class="p">];</span>
+        <span class="n">sB</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">B</span><span class="p">[(</span><span class="n">k</span><span class="o">+</span><span class="n">ty</span><span class="p">)</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">];</span>
+        <span class="n">__synchthreads</span><span class="p">();</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">kb</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">kb</span><span class="o">&lt;</span><span class="n">block_size</span><span class="p">;</span> <span class="n">kb</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">sum</span> <span class="o">+=</span> <span class="n">sA</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">kb</span><span class="p">]</span> <span class="o">*</span> <span class="n">sB</span><span class="p">[</span><span class="n">kb</span><span class="p">][</span><span class="n">tx</span><span class="p">];</span>
+        <span class="p">}</span>
+
+    <span class="p">}</span>
+
+    <span class="n">C</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This kernel drastically reduces memory bandwidth consumption and should
+be compute bound rather than memory-bandwidth bound for most combinations of
+matrix sizes and thread block sizes.</p>
+<p>However, there still is not too much that can be tuned in this kernel.
+In fact, because the thread block size needs to be a square, there only
+a handful of configurations we can try. Fortunately, we can add serveral
+more optimizations to the code that also open the parameter space for
+tuning.</p>
+</div>
+<div class="section" id="increase-work-per-thread">
+<h2>Increase work per thread<a class="headerlink" href="#increase-work-per-thread" title="Permalink to this headline">¶</a></h2>
+<p>We will use two different forms of 1xN tiling in this example:</p>
+<p>First of all, in the x-direction we will use tiling in a way that is
+similar to the convolution example. The area of output data that is
+processed by a single thread block is increased by a factor of N,
+and as such shared memory usage also increases by a factor N.
+This means that the number of thread blocks needed to execute
+the kernel for this problem size is reduced by a factor of N,
+where N is the tiling factor.
+While this may reduce occupancy due to increased shared memory and
+register usage, this optimization drastically reduces
+the number of redundant instructions that were previously distributed
+across multiple thread blocks.</p>
+<p>Secondly, in the y-direction we will use a different form of 1xN tiling,
+where we tile within the thread block. This too means that threads will
+compute multiple elements, but in this case, not the total number of thread
+blocks is reduced, but instead the number of threads per block goes down.</p>
+<p>Note that these two different forms of tiling could have combined in
+different or even multiple ways to increase the tuning parameter space
+even further. However, for the purposes of this example, the resulting
+kernel is already complex enough:</p>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">matmul_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">__shared__</span> <span class="kt">float</span> <span class="n">sA</span><span class="p">[</span><span class="n">block_size_y</span><span class="o">*</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">block_size_x</span><span class="p">];</span>
+    <span class="n">__shared__</span> <span class="kt">float</span> <span class="n">sB</span><span class="p">[</span><span class="n">block_size_y</span><span class="o">*</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">block_size_x</span> <span class="o">*</span> <span class="n">tile_size_x</span><span class="p">];</span>
+
+    <span class="kt">int</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">*</span> <span class="n">tile_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">tile_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">k</span><span class="p">,</span> <span class="n">kb</span><span class="p">;</span>
+
+    <span class="kt">float</span> <span class="n">sum</span><span class="p">[</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">tile_size_x</span><span class="p">];</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span> <span class="o">+=</span> <span class="n">block_size_x</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">__syncthreads</span> <span class="p">();</span>
+        <span class="cp">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">sA</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">k</span> <span class="o">+</span> <span class="n">tx</span><span class="p">];</span>
+
+            <span class="cp">#pragma unroll</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">sB</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">tx</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">B</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">];</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">__syncthreads</span> <span class="p">();</span>
+
+        <span class="c1">//compute</span>
+        <span class="cp">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">kb</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">kb</span> <span class="o">&lt;</span> <span class="n">block_size_x</span><span class="p">;</span> <span class="n">kb</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+
+            <span class="cp">#pragma unroll</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="cp">#pragma unroll</span>
+                <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">sum</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">sA</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">kb</span><span class="p">]</span> <span class="o">*</span> <span class="n">sB</span><span class="p">[</span><span class="n">kb</span><span class="p">][</span><span class="n">tx</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">];</span>
+                    <span class="p">}</span>
+            <span class="p">}</span>
+
+        <span class="p">}</span>
+
+    <span class="p">}</span>
+
+    <span class="c1">//store result</span>
+    <span class="cp">#pragma unroll</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="cp">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">C</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">];</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="setup-tuning-parameters">
+<h2>Setup tuning parameters<a class="headerlink" href="#setup-tuning-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Now we will explain how to use the kernel_tuner to tune all the
+parameters of this highly-flexible implementation. We&#8217;ll first show the
+Python script and then explain it step-by-step.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
+<span class="n">size</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">problem_size</span><span class="p">)</span>
+
+<span class="n">A</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">C</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">]</span>
+
+<span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>
+
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+
+<span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
+
+<span class="n">restrict</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x==block_size_y*tile_size_y&quot;</span><span class="p">]</span>
+
+<span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span>
+    <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
+    <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span>
+    <span class="n">restrictions</span><span class="o">=</span><span class="n">restrict</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+<p>As usual we first setup the kernel arguments and problem size so that
+the kernel_tuner knows how to call the kernel. Then for the
+<code class="docutils literal"><span class="pre">block_size_x</span></code> we choose a range of thread block sizes that seem
+reasonable, in this case <code class="docutils literal"><span class="pre">[16,</span> <span class="pre">32,</span> <span class="pre">64]</span></code>. You typically want the total
+number of threads within a thread block to be a multiple of 32
+(warpsize) or even 64 (number of register banks on some cards). And
+because the tiling factors will increase the amount of work per thread
+block, as well as the amount of shared memory used we start a tad
+conservatively here. For <code class="docutils literal"><span class="pre">block_size_y</span></code>, and the tiling factors in both
+directions, we just pick a range of powers of two.</p>
+<p>Now let&#8217;s fast-forward to the interesting bit: Remember that the area
+operated on by the thread block should be a square. In this kernel
+however, we allow <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> to vary
+independently, while <code class="docutils literal"><span class="pre">tile_size_y</span></code> increases the amount of work per
+thread in the y-direction within the thread block. This yields a
+discontinuous search space in which only part of the configurations are
+actually valid. Therefore we use the <code class="docutils literal"><span class="pre">restrictions</span></code> optional argument of
+<code class="docutils literal"><span class="pre">tune_kernel</span></code>.</p>
+<p><code class="docutils literal"><span class="pre">restrictions</span></code> expects a list of strings that contain a boolean
+expression that may use the tuning parameters as variables. Any
+occurences of tuning parameter names will be replaced with the specific
+value of this parameter when the kernel configuration is evaluated. All
+expressions in the list passed as restrictions need to evaluate to
+<code class="docutils literal"><span class="pre">True</span></code> for the configuration to be considered valid and therefore part
+of the parameter space.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="features.html" class="btn btn-neutral float-right" title="Feature Examples" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="convolution.html" class="btn btn-neutral" title="Convolution" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Ben van Werkhoven.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

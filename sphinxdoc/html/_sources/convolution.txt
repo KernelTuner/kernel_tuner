@@ -1,3 +1,7 @@
+.. highlight:: python
+    :linenothreshold: 5
+
+
 Convolution
 -----------
 
@@ -6,7 +10,7 @@ including filtering. A naive CUDA kernel for 2D Convolution would be:
 
 .. code-block:: c
 
-    __global__ void convolvution_kernel(float *output, float *input, float *filter) {
+    __global__ void convolution_kernel(float *output, float *input, float *filter) {
 
         int x = blockIdx.x * blockDim.x + threadIdx.x;
         int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -21,7 +25,7 @@ including filtering. A naive CUDA kernel for 2D Convolution would be:
                 }
             }
 
-            image[y * image_width + x] = sum;
+            output[y * image_width + x] = sum;
         }
     }
 
@@ -47,7 +51,7 @@ kernel.
 We have to tell the kernel_tuner what values it should try for 
 ``block_size_x`` and ``block_size_y``. Therefore, we create a 
 dictionary called tune_params and store a number of possible 
-values for ``block_size_x`` and block_size_y that seem 
+values for ``block_size_x`` and ``block_size_y`` that seem 
 reasonable.
 
 ::
@@ -56,9 +60,8 @@ reasonable.
     tune_params["block_size_x"] = [16*i for i in range(1,9)] #[16, 32, 48, 64, 80, 96, 112, 128]
     tune_params["block_size_y"] = [2**i for i in range(6)]   #[1, 2, 4, 8, 16, 32]
    
-Say we also have two other parameters: ``tile_size_x`` and
-``tile_size_y``,
-(not shown in the kernel code above)
+Let's say we also have two other parameters (not shown in the
+kernel code above): ``tile_size_x`` and ``tile_size_y``,
 which increase the amount of work per thread block by a factor of
 ``tile_size_x`` in the x-direction and by a factor of
 ``tile_size_y`` in the
@@ -117,8 +120,8 @@ created even further.
     grid_div_x = ["block_size_x", "tile_size_x"]
     grid_div_y = ["block_size_y", "tile_size_y"]
 
-The above code tells the kernel_tuner to compute the grid x-dimension
-by taking the output image width and dividing it by the value of
+The above code tells the kernel tuner to compute the grid x-dimension
+by taking the problem size in the x-direction and divide it by the value of
 each tuning parameter in the grid_div_x list. The same holds for the
 grid y-dimension.
 
@@ -128,10 +131,10 @@ and "block_size_y" in the tuning parameters. If one or more of
 these values are not among the tuning parameters it will assume
 256, 1, and 1, as thread block dimensions, respectively.
 
-Finally
-~~~~~~~
+Putting it all together
+~~~~~~~~~~~~~~~~~~~~~~~
 
-Now putting it all together we finally get to call ``tune_kernel()``:
+Now putting it all together, we finally get to call ``tune_kernel()``:
 
 ::
 

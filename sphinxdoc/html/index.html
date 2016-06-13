@@ -138,13 +138,13 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Application Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#convolution">Convolution</a></li>
-<li class="toctree-l2"><a class="reference internal" href="examples.html#matrix-multiplication">Matrix Multiplication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrix.html">Matrix Multiplication</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Feature Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="features.html#kernel-correctness-verification">Kernel Correctness Verification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#tuning-host-code">Tuning Host Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a><ul>
@@ -200,7 +200,7 @@ tune_kernel.</p>
 </div>
 <div class="section" id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
-<p>The following shows a simple example use of the kernel tuner:</p>
+<p>The following shows a simple example for tuning a CUDA kernel:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">__global__ void vector_add(float *c, float *a, float *b, int n) {</span>
 <span class="s2">    int i = blockIdx.x * block_size_x + threadIdx.x;</span>
@@ -225,7 +225,7 @@ tune_kernel.</p>
 <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>And for OpenCL:</p>
+<p>The exact same Python code can be used to tune an OpenCL kernel:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">__kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {</span>
 <span class="s2">    int i = get_global_id(0);</span>
@@ -234,24 +234,39 @@ tune_kernel.</p>
 <span class="s2">    }</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
-
-<span class="n">size</span> <span class="o">=</span> <span class="mi">10000000</span>
-<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-
-<span class="n">a</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="n">b</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="n">c</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-<span class="n">n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-
-<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
-
-<span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">128</span><span class="o">+</span><span class="mi">64</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">)]</span>
-
-<span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>More extensive examples are available in the <cite>examples</cite> directory directory and in the full documentation.</p>
+<p>Or even just a C function, with slightly different tunable parameters:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;vecsize&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;nthreads&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">32</span><span class="p">]</span>
+
+<span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot; </span>
+<span class="s2">#include &lt;omp.h&gt;</span>
+<span class="s2">#include &quot;timer.h&quot;</span>
+<span class="s2">typedef float vfloat __attribute__ ((vector_size (vecsize*4)));</span>
+<span class="s2">float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {</span>
+<span class="s2">    unsigned long long start = get_clock();</span>
+<span class="s2">    int chunk = n/vecsize/nthreads;</span>
+<span class="s2">    #pragma omp parallel num_threads(nthreads)</span>
+<span class="s2">    {</span>
+<span class="s2">        int offset = omp_get_thread_num()*chunk;</span>
+<span class="s2">        for (int i = offset; i&lt;offset+chunk; i++) {</span>
+<span class="s2">            c[i] = a[i] + b[i];</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">    return (get_clock()-start) / get_frequency() / 1000000.0;</span>
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>By passing an <cite>answer</cite> list you can let de kernel tuner verify the output of each kernel it compiles and benchmarks:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>  <span class="c1"># the order matches the arguments (in args) to the kernel</span>
+<span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can find these and many - more extensive - example codes, in the <cite>examples</cite> directory
+and in the full documentation.</p>
 </div>
 <div class="section" id="author">
 <h2>Author<a class="headerlink" href="#author" title="Permalink to this headline">¶</a></h2>

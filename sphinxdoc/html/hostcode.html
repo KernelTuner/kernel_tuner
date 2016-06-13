@@ -1,0 +1,305 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tuning Host Code &mdash; kernel_tuner 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/>
+        <link rel="up" title="Feature Examples" href="features.html"/>
+        <link rel="next" title="Internal documentation" href="internal.html"/>
+        <link rel="prev" title="Kernel Correctness Verification" href="correctness.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> kernel_tuner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Application Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="features.html">Feature Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Tuning Host Code</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#tuning-the-number-of-streams">Tuning the number of streams</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">kernel_tuner</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="features.html">Feature Examples</a> &raquo;</li>
+      
+    <li>Tuning Host Code</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/hostcode.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="tuning-host-code">
+<h1>Tuning Host Code<a class="headerlink" href="#tuning-host-code" title="Permalink to this headline">¶</a></h1>
+<p>With the kernel tuner it is also possible to tune the host code of your GPU programs, or even just any C function for that matter.
+Tuning the host code can be useful when it contains parameters that have impact on the performance of kernel on the GPU, such as the number of
+streams you use to execute a kernel across multiple streams. Another example is when you want to include the data transfers between
+host and device into your tuning setup, or tune for different methods of moving data between host and device.</p>
+<dl class="docutils">
+<dt>There are few differences with tuning just a single CUDA or OpenCL kernel, to list them:</dt>
+<dd><ul class="first last simple">
+<li>You have to specify the lang=&#8221;C&#8221; option.</li>
+<li>The C function should return a <code class="docutils literal"><span class="pre">float</span></code></li>
+<li>You have to do your own timing in C</li>
+</ul>
+</dd>
+</dl>
+<p>You have to specify the language as &#8220;C&#8221; because the kernel tuner will be calling a host function, this means that the kernel
+tuner will have to interface with C and in fact uses a different backend. This also means you can use this way of tuning
+without having PyCuda installed, because the C functions interface calls the CUDA compiler directly.</p>
+<p>The C function should return a float, this is the convention used by the kernel tuner. The returned float is also the number
+that you are tuning for. Meaning that this does not necessarily needs to be time, you could also optimize a program for
+a different quality, as long as you can express that quality in a single floating-point value. When benchmarking an instance
+of the parameter space the returned floats will be averaged for the multiple runs in the same way as with direct CUDA or OpenCL kernel tuning.</p>
+<p>By itself the C language does not provide any very precise timing functions. If you are tuning the host code of a CUDA program you can use
+CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function. In the <code class="docutils literal"><span class="pre">examples/c</span></code>
+directory we have included a file <code class="docutils literal"><span class="pre">timer.h</span></code> that contains a very simple, but accurate timing function for Intel processors. To see how
+to use that you can look at the minimal C example in <code class="docutils literal"><span class="pre">examples/c/vector_add.py</span></code>.</p>
+<div class="section" id="tuning-the-number-of-streams">
+<h2>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Permalink to this headline">¶</a></h2>
+<p>The following describes the example in <code class="docutils literal"><span class="pre">examples/cuda/convolution_streams.py</span></code>.
+In this example, the same convolution kernel is used as with correctness checking and convolution application example.</p>
+<p>What is different is that we also supply the host code, which you can find in <code class="docutils literal"><span class="pre">examples/cuda/convolution_streams.cu</span></code>. It is a bit
+too long and complex to include here, but we will explain what it does. The idea behind the host code is that the kernel computation
+is spread across a number of CUDA streams. In this way, it is possible to overlap the data transfers from host to device with kernel execution, and with
+transfers from the device back to the host.</p>
+<p>The way we split the computation across streams is by dividing the problem in the y-dimension into chunks. The data transferred by the first stream is slightly
+larger to account for the overlapping border between the data needed by different streams. Before the kernel in stream <cite>n</cite> can start executing the data transfers
+in streams <cite>n</cite> and <cite>n-1</cite> have to be finished. To ensure the latter, we use CUDA Events and in particular cudaStreamWaitEvent(), which halts stream <cite>n</cite> until the
+transfer in stream <cite>n-1</cite> has finished.</p>
+<p>The way you use the kernel tuner to tune this CUDA program is very similar to when you are tuning a CUDA kernel directly, as you can see below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution_streams.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
+<span class="n">size</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">problem_size</span><span class="p">)</span>
+<span class="n">input_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">problem_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">16</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">problem_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">16</span><span class="p">)</span>
+
+<span class="n">output</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span>
+<span class="nb">input</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">input_size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span>
+<span class="nb">filter</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">17</span><span class="o">*</span><span class="mi">17</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="nb">filter</span><span class="p">]</span>
+
+<span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>
+
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;num_streams&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>
+
+<span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;num_streams&quot;</span><span class="p">]</span>
+
+<span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;convolution_streams&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span>
+    <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
+    <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lang</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>In fact, the only differences with the simple convolution example are:</dt>
+<dd><ul class="first last simple">
+<li>The source file also contains host code</li>
+<li>&#8220;num_streams&#8221; is added to the tuning parameters</li>
+<li>&#8220;num_streams&#8221; is added to the &#8220;grid_div_y&#8221; list</li>
+<li>The kernel_name &#8220;convolution_streams&#8221; is a C function</li>
+<li>lang=&#8221;C&#8221; is used to tell this is a C function</li>
+<li><code class="docutils literal"><span class="pre">filter</span></code> is not passed as a constant memory argument</li>
+</ul>
+</dd>
+</dl>
+<p>Most differences have been explained, but we clarify a few things below.</p>
+<p>The function that we are tuning is a C function that launches the CUDA kernel by itself, yet we supply the grid_div_x and
+grid_div_y lists. We are, however, not required to do so. The C function could just compute the grid dimensions in whatever way it sees fit. Using grid_div_y
+and grid_div_x at this point is matter of choice. To support this convenience, the values grid_size_x and grid_size_y are inserted by the kernel tuner into the
+compiled C code. This way, you don&#8217;t have to compute the grid size again in C, you can just use the grid size as computed by the kernel tuner.</p>
+<p>The filter is not passed separately as a constant memory argument, because the CudaMemcpyToSymbol is now performed by the C host function itself. Also, because the
+code is compiled differently, we have no direct reference to the module uploaded to the device and therefore we can not perform this operation directly from
+Python. If you are tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code, that&#8217;s the purpose of host
+code after all. That is also why you have to do the timing yourself in C, as you may not want to include the time spent on memory allocations and other setup into your
+time measurements.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="internal.html" class="btn btn-neutral float-right" title="Internal documentation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="correctness.html" class="btn btn-neutral" title="Kernel Correctness Verification" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Ben van Werkhoven.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
