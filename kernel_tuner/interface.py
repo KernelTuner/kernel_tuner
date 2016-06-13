@@ -503,7 +503,7 @@ def _get_device_interface(lang, device):
         raise UnImplementedException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
     return dev
 
-def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol):
+def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol=1e-6):
     """runs the kernel once and checks the result against answer"""
     for result, expected in zip(gpu_args, answer):
         if expected is not None:

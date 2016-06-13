@@ -11,4 +11,6 @@ branches:
   only:
     - master
 notifications:
-  email: false
+  email:
+    on_failure: change
+    on_succes: never
