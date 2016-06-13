@@ -87,7 +87,7 @@ install using<br>
 <h2>
 <a id="example-usage" class="anchor" href="#example-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example usage</h2>
 
-<p>The following shows a simple example use of the kernel tuner:</p>
+<p>The following shows a simple example for tuning a CUDA kernel:</p>
 
 <div class="highlight highlight-source-python"><pre>kernel_string <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"""</span></span>
 <span class="pl-s">__global__ void vector_add(float *c, float *a, float *b, int n) {</span>
@@ -112,7 +112,7 @@ tune_params[<span class="pl-s"><span class="pl-pds">"</span>block_size_x<span cl
 
 tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span class="pl-pds">"</span></span>, kernel_string, problem_size, args, tune_params)</pre></div>
 
-<p>And for OpenCL:</p>
+<p>The exact same Python code can be used to tune an OpenCL kernel:</p>
 
 <div class="highlight highlight-source-python"><pre>kernel_string <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"""</span></span>
 <span class="pl-s">__kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {</span>
@@ -121,25 +121,39 @@ tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span clas
 <span class="pl-s">        c[i] = a[i] + b[i];</span>
 <span class="pl-s">    }</span>
 <span class="pl-s">}</span>
-<span class="pl-s"><span class="pl-pds">"""</span></span>
+<span class="pl-s"><span class="pl-pds">"""</span></span></pre></div>
 
-size <span class="pl-k">=</span> <span class="pl-c1">10000000</span>
-problem_size <span class="pl-k">=</span> (size, <span class="pl-c1">1</span>)
+<p>Or even just a C function, with slightly different tunable parameters:</p>
 
-a <span class="pl-k">=</span> numpy.random.rand(size).astype(numpy.float32)
-b <span class="pl-k">=</span> numpy.random.rand(size).astype(numpy.float32)
-c <span class="pl-k">=</span> numpy.zeros_like(a)
-n <span class="pl-k">=</span> numpy.int32(size)
+<div class="highlight highlight-source-python"><pre>tune_params <span class="pl-k">=</span> <span class="pl-c1">dict</span>()
+tune_params[<span class="pl-s"><span class="pl-pds">"</span>vecsize<span class="pl-pds">"</span></span>] <span class="pl-k">=</span> [<span class="pl-c1">2</span><span class="pl-k">**</span>i <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">8</span>)]
+tune_params[<span class="pl-s"><span class="pl-pds">"</span>nthreads<span class="pl-pds">"</span></span>] <span class="pl-k">=</span> [<span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">3</span>, <span class="pl-c1">4</span>, <span class="pl-c1">6</span>, <span class="pl-c1">8</span>, <span class="pl-c1">12</span>, <span class="pl-c1">16</span>, <span class="pl-c1">24</span>, <span class="pl-c1">32</span>]
 
-args <span class="pl-k">=</span> [c, a, b, n]
+kernel_string <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"""</span> </span>
+<span class="pl-s">#include &lt;omp.h&gt;</span>
+<span class="pl-s">#include "timer.h"</span>
+<span class="pl-s">typedef float vfloat __attribute__ ((vector_size (vecsize*4)));</span>
+<span class="pl-s">float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {</span>
+<span class="pl-s">    unsigned long long start = get_clock();</span>
+<span class="pl-s">    int chunk = n/vecsize/nthreads;</span>
+<span class="pl-s">    #pragma omp parallel num_threads(nthreads)</span>
+<span class="pl-s">    {</span>
+<span class="pl-s">        int offset = omp_get_thread_num()*chunk;</span>
+<span class="pl-s">        for (int i = offset; i&lt;offset+chunk; i++) {</span>
+<span class="pl-s">            c[i] = a[i] + b[i];</span>
+<span class="pl-s">        }</span>
+<span class="pl-s">    }</span>
+<span class="pl-s">    return (get_clock()-start) / get_frequency() / 1000000.0;</span>
+<span class="pl-s">}</span>
+<span class="pl-s"><span class="pl-pds">"""</span></span></pre></div>
 
-tune_params <span class="pl-k">=</span> <span class="pl-c1">dict</span>()
-tune_params[<span class="pl-s"><span class="pl-pds">"</span>block_size_x<span class="pl-pds">"</span></span>] <span class="pl-k">=</span> [<span class="pl-c1">128</span><span class="pl-k">+</span><span class="pl-c1">64</span><span class="pl-k">*</span>i <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">15</span>)]
+<p>By passing an <code>answer</code> list you can let de kernel tuner verify the output of each kernel it compiles and benchmarks:</p>
 
-tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span class="pl-pds">"</span></span>, kernel_string, problem_size, args, tune_params)
-</pre></div>
+<div class="highlight highlight-source-python"><pre>answer <span class="pl-k">=</span> [a<span class="pl-k">+</span>b, <span class="pl-c1">None</span>, <span class="pl-c1">None</span>]  <span class="pl-c"># the order matches the arguments (in args) to the kernel</span>
+tune_kernel(<span class="pl-s"><span class="pl-pds">"</span>vector_add<span class="pl-pds">"</span></span>, kernel_string, problem_size, args, tune_params, <span class="pl-v">answer</span><span class="pl-k">=</span>answer)</pre></div>
 
-<p>More extensive examples are available in the <code>examples</code> directory and in the <a href="http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html">full documentation</a>.</p>
+<p>You can find these and many - more extensive - example codes, in the <code>examples</code> directory
+and in the <a href="http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html">full documentation</a>.</p>
 
 <h2>
 <a id="contribution-guide" class="anchor" href="#contribution-guide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contribution guide</h2>
