@@ -1,3 +1,7 @@
+.. highlight:: python
+    :linenothreshold: 5
+
+
 Matrix Multiplication
 ---------------------
 

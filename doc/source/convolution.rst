@@ -1,3 +1,7 @@
+.. highlight:: python
+    :linenothreshold: 5
+
+
 Convolution
 -----------
 
@@ -56,8 +60,8 @@ reasonable.
     tune_params["block_size_x"] = [16*i for i in range(1,9)] #[16, 32, 48, 64, 80, 96, 112, 128]
     tune_params["block_size_y"] = [2**i for i in range(6)]   #[1, 2, 4, 8, 16, 32]
    
-Say we also have two other parameters: ``tile_size_x`` and
-``tile_size_y`` (not shown in the kernel code above),
+Let's say we also have two other parameters (not shown in the
+kernel code above): ``tile_size_x`` and ``tile_size_y``,
 which increase the amount of work per thread block by a factor of
 ``tile_size_x`` in the x-direction and by a factor of
 ``tile_size_y`` in the

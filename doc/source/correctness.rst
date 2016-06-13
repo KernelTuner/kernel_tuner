@@ -1,3 +1,6 @@
+.. highlight:: python
+    :linenothreshold: 5
+
 
 
 Kernel Correctness Verification
