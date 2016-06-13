@@ -1,3 +1,4 @@
+#include <stdio.h>
 /**
  * The kernel is assumed to be tuned to each device by selecting
  * the best performing combination of thread block dimensions 
@@ -9,7 +10,7 @@
  * 
  */
 
-#define WIDTH 4096
+#define WIDTH 512
 /*
  * Optimized CUDA kernel for matrix multiplication
  *
@@ -34,23 +35,37 @@ __global__ void matmul_kernel(float *C, float *A, float *B) {
     int ty = threadIdx.y;
     int x = blockIdx.x * block_size_x * tile_size_x + threadIdx.x;
     int y = blockIdx.y * block_size_y * tile_size_y + threadIdx.y;
+    int bx = blockIdx.x * block_size_x * tile_size_x;
+    int by = blockIdx.y * block_size_y * tile_size_y;
     int k, kb;
 
     float sum[tile_size_y][tile_size_x];
+    #pragma unroll
+    for (int i = 0; i < tile_size_y; i++) {
+        #pragma unroll
+        for (int j = 0; j < tile_size_x; j++) {
+            sum[i][j] = 0.0f;
+        }
+    }
+
 
     for (k = 0; k < WIDTH; k += block_size_x) {
 
         __syncthreads ();
         #pragma unroll
         for (int i = 0; i < tile_size_y; i++) {
-            sA[ty + block_size_y * i][tx] = A[y * WIDTH + block_size_y * i * WIDTH + k + tx];
+            float bullshit = A[(by+ty+i*block_size_y) * WIDTH + k + tx];
+//            if (k == 0 && by == 0 && ty == 1 && x == 0) {
+//                printf("bx:%d, by:%d, tx:%d, ty:%d, ty+block_size_y*i=%d\n", bx,by,tx,ty, ty+block_size_y*i);
+//            }
+            sA[ty + block_size_y * i][tx] = A[(by+ty+i*block_size_y) * WIDTH + k + tx];
 
             #pragma unroll
             for (int j = 0; j < tile_size_x; j++) {
-            	sB[ty + block_size_y * i][tx + j * block_size_x] = B[(k + ty + block_size_y * i) * WIDTH + x + j * block_size_x];
+                sB[ty + block_size_y * i][tx + j * block_size_x] = B[(k + ty + block_size_y * i) * WIDTH + x + j * block_size_x];
             }
         }
-        __syncthreads ();
+        __syncthreads();
 
         //compute
         #pragma unroll
@@ -59,9 +74,9 @@ __global__ void matmul_kernel(float *C, float *A, float *B) {
             #pragma unroll
             for (int i = 0; i < tile_size_y; i++) {
             #pragma unroll
-            	for (int j = 0; j < tile_size_x; j++) {
-	                sum[i][j] += sA[ty + block_size_y * i][kb] * sB[kb][tx + j * block_size_x];
-	            }
+                for (int j = 0; j < tile_size_x; j++) {
+                    sum[i][j] += sA[ty + block_size_y * i][kb] * sB[kb][tx + j * block_size_x];
+                }
             }
 
         }

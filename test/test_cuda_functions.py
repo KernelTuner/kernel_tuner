@@ -53,11 +53,13 @@ def test_compile():
     try:
         func = dev.compile("vector_add", kernel_string)
         assert isinstance(func, pycuda.driver.Function)
+        print("Expected an exception because too much shared memory is requested")
         assert False
     except Exception as e:
         if "uses too much shared data" in str(e):
             assert True
         else:
+            print("Expected a different exception:" + str(e))
             assert False
 
     kernel_string = original_kernel.replace("shared_size", str(100))
@@ -65,6 +67,7 @@ def test_compile():
         func = dev.compile("vector_add", kernel_string)
         assert True
     except Exception:
+        print("Did not expect an exception")
         assert False
 
 @nottest

@@ -1,7 +1,7 @@
 /*
  * Example program to demonstrate how to use the kernel tuner to tune
  * parameters in the host code of GPU programs, such as the number of 
- * streams
+ * streams, in combination with parameters in the kernel
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,10 +17,7 @@
     #define grid_size_y 1
 #endif
 
-
 #include "convolution.cu"
-
-
 
 float convolution_streams(float *output, float *input, float *filter) {
 

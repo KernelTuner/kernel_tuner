@@ -5,11 +5,11 @@ import kernel_tuner
 with open('matmul.cu', 'r') as f:
     kernel_string = f.read()
 
-problem_size = (4096, 4096)
+problem_size = (512, 512)
 size = numpy.prod(problem_size)
 
-A = numpy.random.randn(size).astype(numpy.float32)
-B = numpy.random.randn(size).astype(numpy.float32)
+A = numpy.random.randn(*problem_size).astype(numpy.float32)
+B = numpy.random.randn(*problem_size).astype(numpy.float32)
 C = numpy.zeros_like(A)
 
 args = [C, A, B]

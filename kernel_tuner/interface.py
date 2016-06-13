@@ -149,7 +149,7 @@ from kernel_tuner.c import CFunctions
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None,
-        restrictions=None, answer=None, verbose=False, lang=None, device=0, cmem_args=None):
+        restrictions=None, answer=None, atol=1e-6, verbose=False, lang=None, device=0, cmem_args=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code.
@@ -224,6 +224,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         output of the kernel will then be used to verify the correctness of
         each kernel in the parameter space before it will be benchmarked.
     :type answer: list
+
+    :param atol: The maximum allowed absolute difference between two elements
+        in the output and the reference answer, as passed to numpy.allclose().
+        Ignored if you have not passed a reference answer. Default value is
+        1e-6, that is 0.000001.
+    :type atol: float
 
     :param verbose: Sets whether or not to report about configurations that
         were skipped during the search. This could be due to several reasons:
@@ -327,7 +333,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #test kernel for correctness and benchmark
         try:
             if answer is not None:
-                _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string)
+                _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol)
 
             time = dev.benchmark(func, gpu_args, threads, grid)
         except Exception as e:
@@ -497,7 +503,7 @@ def _get_device_interface(lang, device):
         raise UnImplementedException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
     return dev
 
-def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string):
+def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol):
     """runs the kernel once and checks the result against answer"""
     for result, expected in zip(gpu_args, answer):
         if expected is not None:
@@ -508,7 +514,7 @@ def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instan
         if expected is not None:
             result_host = numpy.zeros_like(expected)
             dev.memcpy_dtoh(result_host, result)
-            correct = correct and numpy.allclose(result_host.ravel(), expected.ravel(), atol=1e-6)
+            correct = correct and numpy.allclose(result_host.ravel(), expected.ravel(), atol=atol)
     if not correct:
         raise Exception("Error " + instance_string + " failed correctness check")
     return correct

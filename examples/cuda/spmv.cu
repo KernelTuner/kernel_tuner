@@ -5,14 +5,13 @@
 #define LDG(x) *(x)
 #endif
 
-#define warp_size 32
+#define warp_size threads_per_row
 
 
 __global__ void spmv_kernel(float *y, int *rows, int *cols, float* values, float *__restrict__ x, int nrows) {
 
-    //global warp index
-    int i = (blockIdx.x * block_size_x * threadIdx.x)/warp_size;
-    //thread index within warp
+    //global warp index and within warp
+    int i = (blockIdx.x * block_size_x + threadIdx.x)/warp_size;
     int tx = threadIdx.x & (warp_size-1);
 
     float local_y = 0.0;
@@ -22,15 +21,17 @@ __global__ void spmv_kernel(float *y, int *rows, int *cols, float* values, float
         int end = rows[i+1];
 
         //computation with somewhat improved memory access pattern
-        for (int j = start; j < end; j+=warp_size) {
+        for (int j = start; j < end; j+=threads_per_row) {
             local_y += values[j] * LDG(x + cols[j]);
         }
 
+        #if (threads_per_row == 32)
         //reduce result to single value per warp
         #pragma unroll
         for (unsigned int s=warp_size/2; s>0; s>>=1) {
             local_y += __shfl_xor(local_y, s);
         }
+        #endif
 
         //write result
         if (tx == 0) {
@@ -39,5 +40,6 @@ __global__ void spmv_kernel(float *y, int *rows, int *cols, float* values, float
 
     }
 }
+
 
 
