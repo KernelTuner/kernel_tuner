@@ -9,14 +9,13 @@ size = 80000000
 blocks = 48
 problem_size = (blocks, 1)
 
-x = numpy.random.randn(size).astype(numpy.float32) + 1.0
-sum = numpy.zeros(blocks).astype(numpy.int32)
+x = numpy.random.rand(size).astype(numpy.float32)
+sum_x = numpy.zeros(blocks).astype(numpy.int32)
 n = numpy.int32(size)
 
-args = [sum, x, n]
+args = [sum_x, x, n]
 
 tune_params = dict()
-
 tune_params["block_size_x"] = [2**i for i in range(4,11)]
 tune_params["use_shuffle"] = [0, 1]
 tune_params["vector"] = [2**i for i in range(3)]
