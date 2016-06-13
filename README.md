@@ -48,7 +48,7 @@ Dependencies
 
 Example usage
 -------------
-The following shows a simple example use of the kernel tuner:
+The following shows a simple example for tuning a CUDA kernel:
 
 ```python
 kernel_string = """
@@ -74,7 +74,7 @@ tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
 tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
 ```
-And for OpenCL:
+The exact same Python code can be used to tune an OpenCL kernel:
 ```python
 kernel_string = """
 __kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {
@@ -84,24 +84,38 @@ __kernel void vector_add(__global float *c, __global float *a, __global float *b
     }
 }
 """
-
-size = 10000000
-problem_size = (size, 1)
-
-a = numpy.random.rand(size).astype(numpy.float32)
-b = numpy.random.rand(size).astype(numpy.float32)
-c = numpy.zeros_like(a)
-n = numpy.int32(size)
-
-args = [c, a, b, n]
-
-tune_params = dict()
-tune_params["block_size_x"] = [128+64*i for i in range(15)]
-
-tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
-
 ```
-More extensive examples are available in the `examples` directory and in the [full documentation](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html).
+Or even just a C function, with slightly different tunable parameters:
+```python
+tune_params = dict()
+tune_params["vecsize"] = [2**i for i in range(8)]
+tune_params["nthreads"] = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32]
+
+kernel_string = """ 
+#include <omp.h>
+#include "timer.h"
+typedef float vfloat __attribute__ ((vector_size (vecsize*4)));
+float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
+    unsigned long long start = get_clock();
+    int chunk = n/vecsize/nthreads;
+    #pragma omp parallel num_threads(nthreads)
+    {
+       	int offset = omp_get_thread_num()*chunk;
+       	for (int i = offset; i<offset+chunk; i++) {
+            c[i] = a[i] + b[i];
+       	}
+    }
+    return (get_clock()-start) / get_frequency() / 1000000.0;
+}
+"""
+```
+By passing an `answer` list you can let de kernel tuner verify the output of each kernel it compiles and benchmarks:
+```python
+answer = [a+b, None, None]  # the order matches the arguments (in args) to the kernel
+tune_kernel("vector_add", kernel_string, problem_size, args, tune_params, answer=answer)
+```
+You can find these and many - more extensive - example codes, in the `examples` directory
+and in the [full documentation](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html).
 
 Contribution guide
 ------------------
