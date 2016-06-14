@@ -108,7 +108,7 @@ def test_check_kernel_correctness(dev_interface):
     answer = [numpy.zeros(8).astype(numpy.float32)]
     test = kernel_tuner._check_kernel_correctness(dev, 'func', ['gpu_args'], 'threads', 'grid', answer, 'instance_string')
 
-    dev.memset.assert_called_once_with('gpu_args', 0, 8)
+    dev.memset.assert_called_once_with('gpu_args', 0, answer[0].nbytes)
     dev.run_kernel.assert_called_once_with('func', ['gpu_args'], 'threads', 'grid')
 
     for name, args, _ in dev.mock_calls:

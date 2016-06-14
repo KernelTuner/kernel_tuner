@@ -190,10 +190,10 @@ class CFunctions(object):
         :param value: The value to set the memory to
         :type value: a single 32-bit float or int
 
-        :param size: The size of to the allocation unit
+        :param size: The size of to the allocation unit in bytes
         :type size: int
         """
-        C.memset(allocation, value, C.sizeof(allocation._type_) * size)
+        C.memset(allocation, value, size)
 
 
     def memcpy_dtoh(self, dest, src):

@@ -104,7 +104,7 @@ def test_memset():
     x_c = x.ctypes.data_as(C.POINTER(C.c_float))
 
     cfunc = CFunctions()
-    cfunc.memset(x_c, 0, 4)
+    cfunc.memset(x_c, 0, x.nbytes)
 
     output = numpy.ctypeslib.as_array(x_c, shape=(4,))
 

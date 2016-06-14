@@ -509,7 +509,7 @@ def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instan
     """runs the kernel once and checks the result against answer"""
     for result, expected in zip(gpu_args, answer):
         if expected is not None:
-            dev.memset(result, 0, expected.size)
+            dev.memset(result, 0, expected.nbytes)
     dev.run_kernel(func, gpu_args, threads, grid)
     correct = True
     for result,expected in zip(gpu_args,answer):
