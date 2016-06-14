@@ -275,6 +275,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     max_threads = dev.max_threads
 
     #move data to GPU
+    _check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
     #compute cartesian product of all tunable parameters
@@ -519,3 +520,7 @@ def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instan
         raise Exception("Error " + instance_string + " failed correctness check")
     return correct
 
+def _check_argument_list(args):
+    for (i, arg) in enumerate(args):
+        if not isinstance(arg, (numpy.ndarray, numpy.generic)):
+            raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")

@@ -117,3 +117,22 @@ def test_check_kernel_correctness(dev_interface):
             assert args[1] == 'gpu_args'
     assert dev.memcpy_dtoh.called == 1
     assert test
+
+def test_check_argument_list1():
+    args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
+    try:
+        kernel_tuner._check_argument_list(args)
+        print("Expected a TypeError to be raised")
+        assert False
+    except TypeError as e:
+        print(str(e))
+        assert "at position 1" in str(e)
+    except:
+        print("Expected a TypeError to be raised")
+        assert False
+
+def test_check_argument_list2():
+    args = [numpy.int32(5), numpy.float64(4.6), numpy.array([1, 2, 3])]
+    kernel_tuner._check_argument_list(args)
+    #test that no exception is raised
+    assert True
