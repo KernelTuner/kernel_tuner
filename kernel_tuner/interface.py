@@ -418,6 +418,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     #move data to the GPU and compile the kernel
     lang = _detect_language(lang, kernel_string)
     dev = _get_device_interface(lang, device)
+    _check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
     #retrieve the run configuration, compile, and run the kernel

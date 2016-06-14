@@ -127,7 +127,7 @@ def test_check_argument_list1():
     except TypeError as e:
         print(str(e))
         assert "at position 1" in str(e)
-    except:
+    except Exception:
         print("Expected a TypeError to be raised")
         assert False
 

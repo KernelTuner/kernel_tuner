@@ -3,7 +3,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+
+
+## [0.0.1] - 2016-06-14
 ### Added
+- A function to type check the arguments to the kernel
+- Example (convolution) that tunes the number of streams 
 - Device interface to C functions, for tuning host code
 - Correctness checks for kernels during tuning
 - Function for running a single kernel instance
