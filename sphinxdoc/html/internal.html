@@ -31,7 +31,7 @@
 
   
     <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/>
-        <link rel="prev" title="Feature Examples" href="features.html"/> 
+        <link rel="prev" title="Tuning Host Code" href="hostcode.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -258,7 +258,7 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</td>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A GPU memory allocation unit</li>
 <li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
-<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit in bytes</li>
 </ul>
 </td>
 </tr>
@@ -409,7 +409,7 @@ function after compilation.</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>allocation</strong> (<em>pyopencl.Buffer</em>) &#8211; An OpenCL Buffer to fill</li>
 <li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
-<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit in bytes</li>
 </ul>
 </td>
 </tr>
@@ -564,7 +564,7 @@ function after compilation.</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A memory allocation unit</li>
 <li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
-<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit in bytes</li>
 </ul>
 </td>
 </tr>
@@ -635,7 +635,7 @@ interface as CudaFunctions and OpenCLFunctions.</li>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="features.html" class="btn btn-neutral" title="Feature Examples" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="hostcode.html" class="btn btn-neutral" title="Tuning Host Code" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
