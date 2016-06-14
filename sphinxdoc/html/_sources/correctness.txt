@@ -22,9 +22,10 @@ tuner runs the kernel once to verify the output it produces. For each
 argument in the ``answer`` list that is not None, it will check the results
 produced by the current kernel against the expected result specified in
 ``answer``. The comparison is currently implemented using numpy.allclose()
-with an maximum allowed absolute error of 1e-6. 
+with an maximum allowed absolute error of 1e-6. If you want to use a 
+difference tolerance value, use the optional argument ``atol``.
 
-At this moment, there is no way to modify the error tolerance or way the
+At this moment, there is no way to modify the way the
 results are compared by the kernel tuner, if you are interested being able
 to control this, please notify the kernel tuner developers.
 

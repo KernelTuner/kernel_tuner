@@ -141,7 +141,7 @@
 called including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -206,6 +206,10 @@ that contains the expected output of the kernel after it has executed
 and contains None for each argument that is input-only. The expected
 output of the kernel will then be used to verify the correctness of
 each kernel in the parameter space before it will be benchmarked.</li>
+<li><strong>atol</strong> (<em>float</em>) &#8211; The maximum allowed absolute difference between two elements
+in the output and the reference answer, as passed to numpy.allclose().
+Ignored if you have not passed a reference answer. Default value is
+1e-6, that is 0.000001.</li>
 <li><strong>verbose</strong> (<em>boolean</em>) &#8211; <p>Sets whether or not to report about configurations that
 were skipped during the search. This could be due to several reasons:</p>
 <blockquote>

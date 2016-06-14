@@ -241,7 +241,7 @@ tune_kernel.</p>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;vecsize&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">)]</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;nthreads&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">32</span><span class="p">]</span>
 
-<span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot; </span>
+<span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">#include &lt;omp.h&gt;</span>
 <span class="s2">#include &quot;timer.h&quot;</span>
 <span class="s2">typedef float vfloat __attribute__ ((vector_size (vecsize*4)));</span>
