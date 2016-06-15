@@ -1,8 +1,9 @@
 .. toctree::
    :maxdepth: 2
 
+.. _details:
 
-Detailed documentation
+Detailed documentation 
 ======================
 
 This file provides detailed information of how the kernel tuner can be 
