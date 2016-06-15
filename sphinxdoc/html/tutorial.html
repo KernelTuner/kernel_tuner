@@ -1,0 +1,384 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tutorial &mdash; kernel_tuner 0.0.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/>
+        <link rel="next" title="Detailed documentation" href="details.html"/>
+        <link rel="prev" title="The kernel_tuner documentation" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> kernel_tuner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#tuning-a-2d-stencil-kernel">Tuning a 2D stencil kernel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#calling-tune-kernel">Calling tune_kernel()</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#putting-it-all-together">Putting it all together</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Application Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Feature Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">kernel_tuner</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/tutorial.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial will introduce you to everything you need to know to start
+tuning your own kernels.</p>
+<p>You&#8217;ve probably seen the rather minimalistic vector add examples, which are
+a little bit too simple to really show you how to tune any kernel.
+Therefore, this tutorial starts out with a little bit more complex, yet
+still quite simple, stencil kernel written in CUDA.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>If you prefer OpenCL over CUDA, don&#8217;t worry. Everything in this tutorial
+applies as much to OpenCL as it does to CUDA. But I will use CUDA code in
+the examples, and CUDA terminology in the text.</p>
+<p class="last">Here&#8217;s a quick translation guide:
+An OpenCL work item is a called a thread in CUDA, a work group is called a
+thread block, and an NDRange is called a grid. Instead of OpenCL&#8217;s
+get_local_id() and get_group_id(), CUDA uses built-in variables threadIdx
+and blockIdx.</p>
+</div>
+<div class="section" id="tuning-a-2d-stencil-kernel">
+<h2>Tuning a 2D stencil kernel<a class="headerlink" href="#tuning-a-2d-stencil-kernel" title="Permalink to this headline">¶</a></h2>
+<p>Let&#8217;s take a quick look at the kernel we are interested in tuning:</p>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#define domain_width    4096</span>
+<span class="cp">#define domain_height   2048</span>
+
+<span class="n">__global__</span> <span class="kt">void</span> <span class="nf">stencil_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">x_new</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">x_old</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">y</span><span class="o">&gt;</span><span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">y</span><span class="o">&lt;</span><span class="n">domain_height</span><span class="o">-</span><span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">x</span><span class="o">&gt;</span><span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">x</span><span class="o">&lt;</span><span class="n">domain_width</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">x_new</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">domain_width</span><span class="o">+</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="n">x_old</span><span class="p">[</span> <span class="p">(</span><span class="n">y</span>  <span class="p">)</span> <span class="o">*</span> <span class="n">domain_width</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span>  <span class="p">)</span> <span class="p">]</span> <span class="o">+</span>
+                                <span class="n">x_old</span><span class="p">[</span> <span class="p">(</span><span class="n">y</span>  <span class="p">)</span> <span class="o">*</span> <span class="n">domain_width</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">]</span> <span class="o">+</span>
+                                <span class="n">x_old</span><span class="p">[</span> <span class="p">(</span><span class="n">y</span>  <span class="p">)</span> <span class="o">*</span> <span class="n">domain_width</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="p">]</span> <span class="o">+</span>
+                                <span class="n">x_old</span><span class="p">[</span> <span class="p">(</span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">domain_width</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span>  <span class="p">)</span> <span class="p">]</span> <span class="o">+</span>
+                                <span class="n">x_old</span><span class="p">[</span> <span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">domain_width</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span>  <span class="p">)</span> <span class="p">]</span> <span class="p">)</span> <span class="o">/</span> <span class="mf">5.0f</span><span class="p">;</span>
+
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This 2D stencil kernel simply takes the average of each element in <code class="docutils literal"><span class="pre">x_old</span></code> and
+its four direct neighbors, one in every direction, and stores the new value in
+<code class="docutils literal"><span class="pre">x_new</span></code>.</p>
+<p>You may notice that it uses two undefined constants <code class="docutils literal"><span class="pre">block_size_x</span></code> and
+<code class="docutils literal"><span class="pre">block_size_y</span></code> instead of built-in variables blockDim.x or blockDim.y.
+Compiling these values in is often a good idea for performance. When you
+don&#8217;t need to change their value at runtime, the compiler can, for example,
+unroll loops that iterate over the thread block size. But how do you know
+what values for <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> will give the best
+performance?</p>
+<div class="section" id="setup-tuning-parameters">
+<h3>Setup tuning parameters<a class="headerlink" href="#setup-tuning-parameters" title="Permalink to this headline">¶</a></h3>
+<p>That&#8217;s where the kernel tuner comes in. Using the kernel tuner, you can
+specify all values that you consider possible for every tunable parameter,
+such as <code class="docutils literal"><span class="pre">block_size_x</span></code>, to the kernel. This is done using a Python
+dictionary, which contains the string of the tunable parameter in the code
+as a key. The value associated with that key is the list of possible values
+for the parameter. Let&#8217;s look at an example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>Now just in case you are not a Python guru, expression between square
+brackets <code class="docutils literal"><span class="pre">[</span> <span class="pre">]</span></code> is a list comprehension. For <code class="docutils literal"><span class="pre">block_size_x</span></code> this will
+create a list of multiples of 32 ranging from <code class="docutils literal"><span class="pre">32*1</span></code> up to <code class="docutils literal"><span class="pre">32*8</span></code>. For
+<code class="docutils literal"><span class="pre">block_size_y</span></code> this creates a list of powers of two ranging from <code class="docutils literal"><span class="pre">2**0</span> <span class="pre">=</span>
+<span class="pre">1</span></code> up to <code class="docutils literal"><span class="pre">2**5</span> <span class="pre">=</span> <span class="pre">32</span></code>.</p>
+<p>The values that we have picked here a just examples, you can basically pick
+any range you like. The kernel tuner will check the maximum number of
+threads per thread block allowed by your GPU at runtime, and automatically
+skip over kernel configurations that attempt to use more. The kernel tuner
+will do this silently unless you use the option <code class="docutils literal"><span class="pre">verbose=True</span></code>.</p>
+<p>There is of course much more that you can tune within a kernel than only the
+thread block size. Basically, you are completely free to write code that
+uses compile-time constants to change its behavior. However, the kernel tuner
+currently uses the convention that <code class="docutils literal"><span class="pre">block_size_x</span></code>, <code class="docutils literal"><span class="pre">block_size_y</span></code>, and
+<code class="docutils literal"><span class="pre">block_size_z</span></code> are used for specifying the thread block dimensions.</p>
+</div>
+<div class="section" id="calling-tune-kernel">
+<h3>Calling tune_kernel()<a class="headerlink" href="#calling-tune-kernel" title="Permalink to this headline">¶</a></h3>
+<p>Now that we&#8217;ve setup our tuning parameters it is time to learn how to call
+<code class="docutils literal"><span class="pre">tune_kernel()</span></code></p>
+<dl class="function">
+<dt id="tune_kernel">
+<code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-6</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tune_kernel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>There are a lot optional parameters, and we&#8217;re not going to cover them al
+right now, if you&#8217;re interested check out the <a class="reference internal" href="details.html#details"><span class="std std-ref">Detailed documentation</span></a>.
+Let&#8217;s start with the basics. The kernel tuner has to know at
+least the following things:</p>
+<ul class="simple">
+<li>The name of the kernel</li>
+<li>The source code that contains that kernel</li>
+<li>The problem size over which you create threads and thread blocks</li>
+<li>The arguments to use when executing the kernel</li>
+<li>The tuning parameters</li>
+</ul>
+<p>So let&#8217;s assume that our 2D stencil kernel is stored in the file
+<code class="docutils literal"><span class="pre">stencil.cu</span></code>. We can read its contents into a string, so that we can later
+pass it to the kernel tuner.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;stencil.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Now we can use Numpy to generate some random input data, and create a list
+of arguments that matches the arguments list of our <code class="docutils literal"><span class="pre">stencil_kernel</span></code> CUDA
+kernel. It is important that the order and type matches the function
+specification of our kernel.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
+<span class="n">size</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">problem_size</span><span class="p">)</span>
+
+<span class="n">x_old</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">x_new</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">x_old</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_new</span><span class="p">,</span> <span class="n">x_old</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Now we are almost ready to call tune_kernel(). However, if we do not specify
+the optional arguments <code class="docutils literal"><span class="pre">grid_div_x</span></code> and <code class="docutils literal"><span class="pre">grid_div_y</span></code> the kernel tuner
+will assume a default way for computing the number of thread blocks. The
+grid dimension in the x-direction will default to <code class="docutils literal"><span class="pre">problem_size[0]</span> <span class="pre">/</span>
+<span class="pre">block_size_x</span></code> and the y-direction will default to <code class="docutils literal"><span class="pre">1</span></code>. This is convenient
+for small 1D kernels like vector add, but for our 2D stencil kernel we need
+to specify how the tuning parameters divide our problem size.</p>
+<p>So for our 2D stencil kernel, we have a 2D domain over which we want to
+create threads and thread blocks in a way that we create one thread for each
+element in the domain. So to get to the number of thread blocks, the kernel
+tuner should just divide the problem_size in a particular dimension with the
+thread block size in that dimension. Therefore, we specify the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Note that these are lists, you can add multiple tuning parameters to the list.
+If you want to, you can even write arithmetic expressions within these strings.
+The kernel tuner will evaluate all strings and multiply them together. Then it
+will use this product to divide the problem size in that dimension <strong>rounded up</strong>.</p>
+</div>
+<div class="section" id="putting-it-all-together">
+<h3>Putting it all together<a class="headerlink" href="#putting-it-all-together" title="Permalink to this headline">¶</a></h3>
+<p>Now let&#8217;s put everything that we&#8217;ve gone through together in a Python script
+so you can try it out and see what it does.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">kernel_tuner</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;stencil.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
+<span class="n">size</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">problem_size</span><span class="p">)</span>
+
+<span class="n">x_old</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">x_new</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">x_old</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_new</span><span class="p">,</span> <span class="n">x_old</span><span class="p">]</span>
+
+<span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>
+
+<span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
+
+<span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;stencil_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span>
+    <span class="n">verbose</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="details.html" class="btn btn-neutral float-right" title="Detailed documentation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="The kernel_tuner documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Ben van Werkhoven.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
