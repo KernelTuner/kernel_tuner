@@ -1,4 +1,5 @@
 """This module contains all OpenCL specific kernel_tuner functions"""
+from __future__ import print_function
 import numpy
 
 #embedded in try block to be able to generate documentation

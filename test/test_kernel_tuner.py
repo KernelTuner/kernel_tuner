@@ -87,7 +87,7 @@ def test_get_grid_dimensions4():
 
     grid_div_x = []
     grid_div_y = []
-    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+    kernel_tuner._get_grid_dimensions(problem_size, params,
                     grid_div_y, grid_div_x)
 
 
