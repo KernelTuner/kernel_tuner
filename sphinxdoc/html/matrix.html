@@ -214,7 +214,7 @@ be compute bound rather than memory-bandwidth bound for most combinations of
 matrix sizes and thread block sizes.</p>
 <p>However, there still is not too much that can be tuned in this kernel.
 In fact, because the thread block size needs to be a square, there only
-a handful of configurations we can try. Fortunately, we can add serveral
+a handful of configurations we can try. Fortunately, we can add several
 more optimizations to the code that also open the parameter space for
 tuning.</p>
 </div>
@@ -370,7 +370,7 @@ actually valid. Therefore we use the <code class="docutils literal"><span class=
 <code class="docutils literal"><span class="pre">tune_kernel</span></code>.</p>
 <p><code class="docutils literal"><span class="pre">restrictions</span></code> expects a list of strings that contain a boolean
 expression that may use the tuning parameters as variables. Any
-occurences of tuning parameter names will be replaced with the specific
+occurrences of tuning parameter names will be replaced with the specific
 value of this parameter when the kernel configuration is evaluated. All
 expressions in the list passed as restrictions need to evaluate to
 <code class="docutils literal"><span class="pre">True</span></code> for the configuration to be considered valid and therefore part

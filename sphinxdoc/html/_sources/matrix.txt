@@ -81,7 +81,7 @@ matrix sizes and thread block sizes.
 
 However, there still is not too much that can be tuned in this kernel. 
 In fact, because the thread block size needs to be a square, there only 
-a handful of configurations we can try. Fortunately, we can add serveral 
+a handful of configurations we can try. Fortunately, we can add several 
 more optimizations to the code that also open the parameter space for 
 tuning.
 
@@ -225,7 +225,7 @@ actually valid. Therefore we use the ``restrictions`` optional argument of
 
 ``restrictions`` expects a list of strings that contain a boolean 
 expression that may use the tuning parameters as variables. Any 
-occurences of tuning parameter names will be replaced with the specific 
+occurrences of tuning parameter names will be replaced with the specific 
 value of this parameter when the kernel configuration is evaluated. All 
 expressions in the list passed as restrictions need to evaluate to 
 ``True`` for the configuration to be considered valid and therefore part

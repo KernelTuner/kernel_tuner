@@ -38,7 +38,7 @@ Setup tuning parameters
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Say we are unaware of which combination of thread block 
-dimensions gives the best perofrmance on a given GPU. We can use 
+dimensions gives the best performance on a given GPU. We can use 
 the kernel_tuner's ``tune_kernel()`` function to find the best 
 performing kernel configuration.
 

@@ -59,7 +59,7 @@ physical processes like diffusion.
 You may notice that the kernel uses two, currently undefined, constants ``block_size_x`` and 
 ``block_size_y`` instead of built-in variables blockDim.x or blockDim.y.
 Setting the thread block dimensions at compile-time is often a good idea for performance.
-If you don't need to vary the thread block size at runtime, the compiler can, for example, 
+If you don't need to vary the thread block size at run-time, the compiler can, for example, 
 unroll loops that iterate over the thread block size. But how do you know 
 what values for ``block_size_x`` and ``block_size_y`` will give the best 
 performance?
@@ -91,7 +91,7 @@ powers of 2 ranging from ``2**0 = 1`` up to ``2**5 = 32``.
 The values that we have picked here are just examples, you can basically 
 pick any range of values that you like. The kernel tuner will check the 
 maximum number of threads per thread block supported by your GPU at 
-runtime, and automatically skip over kernel configurations that attempt 
+run-time, and automatically skip over kernel configurations that attempt 
 to use more. The kernel tuner will do this silently unless you use the 
 option ``verbose=True``.
 
@@ -154,7 +154,7 @@ later pass it to the kernel tuner.
         kernel_string = f.read()
 
 Now we can use Numpy to generate some random input data, and create a 
-list of arguments that matches the argumentlist of our 
+list of arguments that matches the argument list of our 
 ``stencil_kernel`` function written in CUDA. It is important that the 
 order and type matches the function specification of our kernel.
 

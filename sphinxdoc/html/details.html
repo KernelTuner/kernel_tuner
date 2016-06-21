@@ -151,10 +151,18 @@ called including all the optional arguments.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel in the code.</li>
 <li><strong>kernel_string</strong> (<em>string</em>) &#8211; The CUDA, OpenCL, or C kernel code as a string.</li>
-<li><strong>problem_size</strong> (<em>tuple(int, int)</em>) &#8211; A tuple containing the size from which the grid
+<li><strong>problem_size</strong> (<em>tuple(int or string, int or string)</em>) &#8211; <p>A tuple containing the size from which the grid
 dimensions of the kernel will be computed. Do not divide by
 the thread block sizes, if this is necessary use grid_div_x/y to
-specify.</li>
+specify.</p>
+<p>If you want you can use a string to specify a problem
+size, within these strings you are allowed to write Python
+arithmetic and use the tuning parameter names as variables.
+The kernel tuner will replace instances of the tuning parameter
+names with their current value while iterating over the search
+space. See the reduction CUDA example for an example use of this
+feature.</p>
+</li>
 <li><strong>arguments</strong> (<em>list</em>) &#8211; A list of kernel arguments, use numpy arrays for
 arrays, use numpy.int32 or numpy.float32 for scalars.</li>
 <li><strong>tune_params</strong> (<em>dict( string : [...] )</em>) &#8211; <p>A dictionary containing the parameter names as keys,

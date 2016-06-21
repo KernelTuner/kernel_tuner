@@ -190,7 +190,7 @@ physical processes like diffusion.</p>
 <p>You may notice that the kernel uses two, currently undefined, constants <code class="docutils literal"><span class="pre">block_size_x</span></code> and
 <code class="docutils literal"><span class="pre">block_size_y</span></code> instead of built-in variables blockDim.x or blockDim.y.
 Setting the thread block dimensions at compile-time is often a good idea for performance.
-If you don&#8217;t need to vary the thread block size at runtime, the compiler can, for example,
+If you don&#8217;t need to vary the thread block size at run-time, the compiler can, for example,
 unroll loops that iterate over the thread block size. But how do you know
 what values for <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> will give the best
 performance?</p>
@@ -217,7 +217,7 @@ powers of 2 ranging from <code class="docutils literal"><span class="pre">2**0</
 <p>The values that we have picked here are just examples, you can basically
 pick any range of values that you like. The kernel tuner will check the
 maximum number of threads per thread block supported by your GPU at
-runtime, and automatically skip over kernel configurations that attempt
+run-time, and automatically skip over kernel configurations that attempt
 to use more. The kernel tuner will do this silently unless you use the
 option <code class="docutils literal"><span class="pre">verbose=True</span></code>.</p>
 <p>For each kernel that the kernel tuner benchmarks, it will prepend the
@@ -273,7 +273,7 @@ later pass it to the kernel tuner.</p>
 </pre></div>
 </div>
 <p>Now we can use Numpy to generate some random input data, and create a
-list of arguments that matches the argumentlist of our
+list of arguments that matches the argument list of our
 <code class="docutils literal"><span class="pre">stencil_kernel</span></code> function written in CUDA. It is important that the
 order and type matches the function specification of our kernel.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
