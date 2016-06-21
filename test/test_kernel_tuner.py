@@ -188,17 +188,17 @@ def test_detect_language4():
 def test_get_device_interface1():
     skip_if_no_cuda_device()
     lang = "CUDA"
-    dev = kernel_tuner._get_device_interface(lang, 0)
+    dev = kernel_tuner._get_device_interface(lang, 0, 0)
     assert isinstance(dev, cuda.CudaFunctions)
 
 def test_get_device_interface2():
     skip_if_no_opencl()
     lang = "OpenCL"
-    dev = kernel_tuner._get_device_interface(lang, 0)
+    dev = kernel_tuner._get_device_interface(lang, 0, 0)
     assert isinstance(dev, opencl.OpenCLFunctions)
 
 @raises(Exception)
 def test_get_device_interface3():
     lang = "blabla"
-    kernel_tuner._get_device_interface(lang, 0)
+    kernel_tuner._get_device_interface(lang, 0, 0)
 

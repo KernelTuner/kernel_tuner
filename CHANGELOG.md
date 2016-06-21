@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - shortened the output printed by the tune_kernel
 
 ### Added
+- support for OpenCL platform selection
 - support for using tuning parameter names in the problem size
 
 ## [0.0.1] - 2016-06-14

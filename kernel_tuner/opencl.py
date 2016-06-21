@@ -11,7 +11,7 @@ except Exception:
 class OpenCLFunctions(object):
     """Class that groups the OpenCL functions on maintains some state about the device"""
 
-    def __init__(self, device=0, iterations=7):
+    def __init__(self, device=0, platform=0, iterations=7):
         """Creates OpenCL device context and reads device properties
 
         :param device: The ID of the OpenCL device to use for benchmarking
@@ -23,8 +23,9 @@ class OpenCLFunctions(object):
         self.ITERATIONS = iterations
         #setup context and queue
         platforms = cl.get_platforms()
-        self.ctx = cl.Context(dev_type=cl.device_type.ALL,
-                properties=[(cl.context_properties.PLATFORM, platforms[device])])
+        self.ctx = cl.Context(devices=[platforms[platform].get_devices()[device]])
+        print("Using: " + self.ctx.get_info(cl.context_info.DEVICES)[0].get_info(cl.device_info.NAME))
+
         self.queue = cl.CommandQueue(self.ctx, properties=cl.command_queue_properties.PROFILING_ENABLE)
         self.mf = cl.mem_flags
         #inspect device properties

@@ -149,7 +149,7 @@ from kernel_tuner.c import CFunctions
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None,
-        restrictions=None, answer=None, atol=1e-6, verbose=False, lang=None, device=0, cmem_args=None):
+        restrictions=None, answer=None, atol=1e-6, verbose=False, lang=None, device=0, platform=0, cmem_args=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code.
@@ -257,7 +257,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     :param device: CUDA/OpenCL device to use, in case you have multiple
         CUDA-capable GPUs or OpenCL devices you may use this to select one,
-        0 by default. Ignored, if you are tuning host code by passing lang="C".
+        0 by default. Ignored if you are tuning host code by passing lang="C".
+    :type device: int
+
+    :param platform: OpenCL platform to use, in case you have multiple
+        OpenCL platforms you may use this to select one,
+        0 by default. Ignored if not using OpenCL.
     :type device: int
 
     :param cmem_args: CUDA-specific feature for specifying constant memory
@@ -277,7 +282,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     results = dict()
 
     lang = _detect_language(lang, original_kernel)
-    dev = _get_device_interface(lang, device)
+    dev = _get_device_interface(lang, device, platform)
 
     #inspect device properties
     max_threads = dev.max_threads
@@ -375,7 +380,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 def run_kernel(kernel_name, kernel_string, problem_size, arguments,
         params, grid_div_x=None, grid_div_y=None,
-        lang=None, device=0, cmem_args=None):
+        lang=None, device=0, platform=0, cmem_args=None):
     """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
@@ -414,6 +419,11 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     :param device: CUDA/OpenCL device to use, 0 by default.
     :type device: int
 
+    :param platform: OpenCL platform to use, in case you have multiple
+        OpenCL platforms you may use this to select one,
+        0 by default. Ignored if not using OpenCL.
+    :type device: int
+
     :param cmem_args: CUDA-specific feature for specifying constant memory
         arguments to the kernel. See tune_kernel() for details.
     :type cmem_args: dict(string, ...)
@@ -425,7 +435,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     #move data to the GPU and compile the kernel
     lang = _detect_language(lang, kernel_string)
-    dev = _get_device_interface(lang, device)
+    dev = _get_device_interface(lang, device, platform)
     _check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
@@ -510,11 +520,11 @@ def _check_restrictions(restrictions, params):
             if not eval(_replace_param_occurrences(restrict, params)):
                 raise Exception("config fails restriction")
 
-def _get_device_interface(lang, device):
+def _get_device_interface(lang, device, platform):
     if lang == "CUDA":
         dev = CudaFunctions(device)
     elif lang == "OpenCL":
-        dev = OpenCLFunctions(device)
+        dev = OpenCLFunctions(device, platform)
     elif lang == "C":
         dev = CFunctions()
     else:
