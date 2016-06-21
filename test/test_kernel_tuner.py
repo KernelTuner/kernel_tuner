@@ -58,6 +58,38 @@ def test_get_grid_dimensions2():
     assert grid[0] == 4
     assert grid[1] == 256
 
+def test_get_grid_dimensions3():
+
+    problem_size = ("num_blocks_x", "num_blocks_y*3")
+
+    params = dict()
+    params["num_blocks_x"] = 71
+    params["num_blocks_y"] = 57
+
+    grid_div_x = []
+    grid_div_y = []
+
+    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+                    grid_div_y, grid_div_x)
+
+    assert grid[0] == 71
+    assert grid[1] == 171
+
+
+@raises(TypeError)
+def test_get_grid_dimensions4():
+
+    problem_size = (3.8, "num_blocks_y*3")
+
+    params = dict()
+    params["num_blocks_x"] = 71
+    params["num_blocks_y"] = 57
+
+    grid_div_x = []
+    grid_div_y = []
+    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+                    grid_div_y, grid_div_x)
+
 
 def test_get_thread_block_dimensions():
 

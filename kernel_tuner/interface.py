@@ -162,7 +162,15 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             dimensions of the kernel will be computed. Do not divide by
             the thread block sizes, if this is necessary use grid_div_x/y to
             specify.
-    :type problem_size: tuple(int, int)
+
+            If you want you can use a string to specify a problem
+            size, within these strings you are allowed to write Python
+            arithmetic and use the tuning parameter names as variables.
+            The kernel tuner will replace instances of the tuning parameter
+            names with their current value while iterating over the search
+            space. See the reduction CUDA example for an example use of this
+            feature.
+    :type problem_size: tuple(int or string, int or string)
 
     :param arguments: A list of kernel arguments, use numpy arrays for
             arrays, use numpy.int32 or numpy.float32 for scalars.
@@ -454,6 +462,14 @@ def _detect_language(lang, original_kernel):
 
 def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     """compute grid dims based on problem sizes and listed grid divisors"""
+    current_problem_size = []
+    for s in problem_size:
+        if isinstance(s, basestring):
+            current_problem_size.append(int(eval(_replace_param_occurrences(s,params))))
+        elif isinstance(s, int):
+            current_problem_size.append(s)
+        else:
+            raise TypeError("Error: problem_size should only be list of string or int")
     div_x = 1
     if grid_div_x is None and "block_size_x" in params:
         grid_div_x = ["block_size_x"]
@@ -462,8 +478,8 @@ def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     div_y = 1
     if grid_div_y is not None:
         div_y = numpy.prod([int(eval(_replace_param_occurrences(s,params))) for s in grid_div_y])
-    grid = (int(numpy.ceil(float(problem_size[0]) / float(div_x))),
-            int(numpy.ceil(float(problem_size[1]) / float(div_y))) )
+    grid = (int(numpy.ceil(float(current_problem_size[0]) / float(div_x))),
+            int(numpy.ceil(float(current_problem_size[1]) / float(div_y))) )
     return grid
 
 def _get_thread_block_dimensions(params):

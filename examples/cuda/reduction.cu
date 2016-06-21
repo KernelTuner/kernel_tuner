@@ -21,7 +21,7 @@
 __global__ void sum_floats(float *sum_global, floatvector *array, int n) {
     int ti = threadIdx.x;
     int x = blockIdx.x * block_size_x + threadIdx.x;
-    int step_size = gridDim.x * block_size_x;
+    int step_size = num_blocks * block_size_x;
     float sum = 0.0f;
 
     //cooperatively iterate over input array with all thread blocks
