@@ -464,7 +464,7 @@ def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     """compute grid dims based on problem sizes and listed grid divisors"""
     current_problem_size = []
     for s in problem_size:
-        if isinstance(s, basestring):
+        if isinstance(s, str):
             current_problem_size.append(int(eval(_replace_param_occurrences(s,params))))
         elif isinstance(s, int):
             current_problem_size.append(s)
