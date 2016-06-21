@@ -359,7 +359,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 raise e
 
         #print the result
-        print(params, kernel_name, "took:", time, " ms.")
+        print("".join([k + "=" + str(v) + ", " for k,v in params.items()]) + kernel_name + " took: " + str(time) + " ms.")
         results[instance_string] = time
 
     #finished iterating over search space

@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Changed
+- shortened the output printed by the tune_kernel
+
 ### Added
 - support for using tuning parameter names in the problem size
 
