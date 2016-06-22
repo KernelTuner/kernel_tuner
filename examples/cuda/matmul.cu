@@ -10,7 +10,7 @@
  * 
  */
 
-#define WIDTH 512
+#define WIDTH 4096
 /*
  * Optimized CUDA kernel for matrix multiplication
  *
@@ -35,8 +35,6 @@ __global__ void matmul_kernel(float *C, float *A, float *B) {
     int ty = threadIdx.y;
     int x = blockIdx.x * block_size_x * tile_size_x + threadIdx.x;
     int y = blockIdx.y * block_size_y * tile_size_y + threadIdx.y;
-    int bx = blockIdx.x * block_size_x * tile_size_x;
-    int by = blockIdx.y * block_size_y * tile_size_y;
     int k, kb;
 
     float sum[tile_size_y][tile_size_x];
@@ -48,17 +46,12 @@ __global__ void matmul_kernel(float *C, float *A, float *B) {
         }
     }
 
-
     for (k = 0; k < WIDTH; k += block_size_x) {
 
         __syncthreads ();
         #pragma unroll
         for (int i = 0; i < tile_size_y; i++) {
-            float bullshit = A[(by+ty+i*block_size_y) * WIDTH + k + tx];
-//            if (k == 0 && by == 0 && ty == 1 && x == 0) {
-//                printf("bx:%d, by:%d, tx:%d, ty:%d, ty+block_size_y*i=%d\n", bx,by,tx,ty, ty+block_size_y*i);
-//            }
-            sA[ty + block_size_y * i][tx] = A[(by+ty+i*block_size_y) * WIDTH + k + tx];
+            sA[ty + block_size_y * i][tx] = A[(y+i*block_size_y) * WIDTH + k + tx];
 
             #pragma unroll
             for (int j = 0; j < tile_size_x; j++) {
