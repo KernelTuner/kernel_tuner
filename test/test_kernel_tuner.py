@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import numpy
 from nose.tools import raises
 from .context import *
 
@@ -94,6 +95,26 @@ def test_get_grid_dimensions4():
 def test_get_grid_dimensions5():
 
     problem_size = (1024, 1024)
+
+    params = dict()
+    params["block_x"] = 41
+    params["block_y"] = 37
+
+    grid_div_x = ["block_x", "block_y"]
+    grid_div_y = ["(block_y+2)/8"]
+
+    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+                    grid_div_y, grid_div_x)
+
+    print(grid)
+
+    assert grid[0] == 1
+    assert grid[1] == 256
+
+
+def test_get_grid_dimensions6():
+
+    problem_size = (numpy.int32(1024), numpy.int64(1024))
 
     params = dict()
     params["block_x"] = 41

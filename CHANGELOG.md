@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 ### Changed
 - shortened the output printed by the tune_kernel
+- allowing numpy integers for specifying problem size
 
 ### Added
 - support for OpenCL platform selection

@@ -476,7 +476,7 @@ def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     for s in problem_size:
         if isinstance(s, str):
             current_problem_size.append(int(eval(_replace_param_occurrences(s,params))))
-        elif isinstance(s, int):
+        elif isinstance(s, int) or isinstance(s, numpy.integer):
             current_problem_size.append(s)
         else:
             raise TypeError("Error: problem_size should only be list of string or int")
