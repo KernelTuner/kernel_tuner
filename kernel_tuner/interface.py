@@ -447,6 +447,10 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     kernel_string = _prepare_kernel_string(kernel_string, params, grid)
     func = dev.compile(kernel_name, kernel_string)
 
+    #add constant memory arguments to compiled module
+    if cmem_args is not None:
+        dev.copy_constant_memory_args(cmem_args)
+
     dev.run_kernel(func, gpu_args, threads, grid)
 
     #copy data in GPU memory back to the host
