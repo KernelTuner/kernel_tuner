@@ -18,6 +18,7 @@
 #define stop_loop 0
 #endif
 
+
 __global__ void sum_floats(float *sum_global, floatvector *array, int n) {
     int ti = threadIdx.x;
     int x = blockIdx.x * block_size_x + threadIdx.x;
@@ -38,6 +39,7 @@ __global__ void sum_floats(float *sum_global, floatvector *array, int n) {
     
     //reduce sum to single value (or last 32 in case of use_shuffle)
     __shared__ float sh_mem[block_size_x];
+
     sh_mem[ti] = sum;
     __syncthreads();
     #pragma unroll

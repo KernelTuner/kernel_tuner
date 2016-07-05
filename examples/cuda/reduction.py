@@ -5,8 +5,9 @@ from kernel_tuner import tune_kernel
 with open('reduction.cu', 'r') as f:
     kernel_string = f.read()
 
-tune_params = dict()
-tune_params["block_size_x"] = [2**i for i in range(5,11)]
+from collections import OrderedDict
+tune_params = OrderedDict()
+tune_params["block_size_x"] = [2**i for i in range(5,11)][::-1]
 tune_params["use_shuffle"] = [0, 1]
 tune_params["vector"] = [2**i for i in range(3)]
 tune_params["num_blocks"] = [2**i for i in range(5,11)]
