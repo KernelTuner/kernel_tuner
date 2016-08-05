@@ -136,16 +136,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
 from __future__ import print_function
 
 import numpy
 import itertools
 from collections import OrderedDict
 
-from kernel_tuner.cuda import CudaFunctions
-from kernel_tuner.opencl import OpenCLFunctions
-from kernel_tuner.c import CFunctions
+from kernel_tuner.util import *
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None,
@@ -281,14 +278,14 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     original_kernel = kernel_string
     results = dict()
 
-    lang = _detect_language(lang, original_kernel)
-    dev = _get_device_interface(lang, device, platform)
+    lang = detect_language(lang, original_kernel)
+    dev = get_device_interface(lang, device, platform)
 
     #inspect device properties
     max_threads = dev.max_threads
 
     #move data to GPU
-    _check_argument_list(arguments)
+    check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
     #compute cartesian product of all tunable parameters
@@ -299,7 +296,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         params = dict(zip(tune_params.keys(), element))
         instance_string = "_".join([str(i) for i in params.values()])
         try:
-            _check_restrictions(restrictions, params)
+            check_restrictions(restrictions, params)
         except Exception as e:
             if verbose:
                 print("skipping config", instance_string, "reason:", str(e))
@@ -311,16 +308,16 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         instance_string = "_".join([str(i) for i in params.values()])
 
         #compute thread block and grid dimensions for this kernel
-        threads = _get_thread_block_dimensions(params)
+        threads = get_thread_block_dimensions(params)
         if numpy.prod(threads) > max_threads:
             if verbose:
                 print("skipping config", instance_string, "reason: too many threads per block")
             continue
-        grid = _get_grid_dimensions(problem_size, params,
+        grid = get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
 
         #create configuration specific kernel string
-        kernel_string = _prepare_kernel_string(original_kernel, params, grid)
+        kernel_string = prepare_kernel_string(original_kernel, params, grid)
 
         #rename the kernel to guarantee that PyCuda compiles a new kernel
         name = kernel_name + "_" + instance_string
@@ -434,17 +431,17 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     """
 
     #move data to the GPU and compile the kernel
-    lang = _detect_language(lang, kernel_string)
-    dev = _get_device_interface(lang, device, platform)
-    _check_argument_list(arguments)
+    lang = detect_language(lang, kernel_string)
+    dev = get_device_interface(lang, device, platform)
+    check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
     #retrieve the run configuration, compile, and run the kernel
-    threads = _get_thread_block_dimensions(params)
-    grid = _get_grid_dimensions(problem_size, params,
+    threads = get_thread_block_dimensions(params)
+    grid = get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
 
-    kernel_string = _prepare_kernel_string(kernel_string, params, grid)
+    kernel_string = prepare_kernel_string(kernel_string, params, grid)
     func = dev.compile(kernel_name, kernel_string)
 
     #add constant memory arguments to compiled module
@@ -462,83 +459,6 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 
 #module private functions
-
-def _detect_language(lang, original_kernel):
-    """attempt to detect language from the kernel_string if not specified"""
-    if lang is None:
-        if "__global__" in original_kernel:
-            lang = "CUDA"
-        elif "__kernel" in original_kernel:
-            lang = "OpenCL"
-        else:
-            lang = "C"
-    return lang
-
-def _get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
-    """compute grid dims based on problem sizes and listed grid divisors"""
-    current_problem_size = []
-    for s in problem_size:
-        if isinstance(s, str):
-            current_problem_size.append(int(eval(_replace_param_occurrences(s,params))))
-        elif isinstance(s, int) or isinstance(s, numpy.integer):
-            current_problem_size.append(s)
-        else:
-            raise TypeError("Error: problem_size should only be list of string or int")
-    div_x = 1
-    if grid_div_x is None and "block_size_x" in params:
-        grid_div_x = ["block_size_x"]
-    if grid_div_x is not None:
-        div_x = numpy.prod([int(eval(_replace_param_occurrences(s,params))) for s in grid_div_x])
-    div_y = 1
-    if grid_div_y is not None:
-        div_y = numpy.prod([int(eval(_replace_param_occurrences(s,params))) for s in grid_div_y])
-    grid = (int(numpy.ceil(float(current_problem_size[0]) / float(div_x))),
-            int(numpy.ceil(float(current_problem_size[1]) / float(div_y))) )
-    return grid
-
-def _get_thread_block_dimensions(params):
-    """thread block size from tuning params, currently using convention"""
-    block_size_x = params.get("block_size_x", 256)
-    block_size_y = params.get("block_size_y", 1)
-    block_size_z = params.get("block_size_z", 1)
-    return (block_size_x, block_size_y, block_size_z)
-
-def _prepare_kernel_string(original_kernel, params, grid=(1,1)):
-    """prepend the kernel with a series of C preprocessor defines"""
-    kernel_string = original_kernel
-    kernel_string = "#define grid_size_x " + str(grid[0]) + "\n" + kernel_string
-    kernel_string = "#define grid_size_y " + str(grid[1]) + "\n" + kernel_string
-    for k, v in params.items():
-        kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
-    return kernel_string
-
-def _replace_param_occurrences(string, params):
-    """replace occurrences of the tuning params with their current value"""
-    for k, v in params.items():
-        string = string.replace(k, str(v))
-    return string
-
-def _check_restrictions(restrictions, params):
-    if restrictions != None:
-        for restrict in restrictions:
-            if not eval(_replace_param_occurrences(restrict, params)):
-                raise Exception("config fails restriction")
-
-def _get_device_interface(lang, device, platform):
-    if lang == "CUDA":
-        dev = CudaFunctions(device)
-    elif lang == "OpenCL":
-        dev = OpenCLFunctions(device, platform)
-    elif lang == "C":
-        dev = CFunctions()
-    else:
-        raise UnImplementedException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
-    return dev
-
-def _check_argument_list(args):
-    for (i, arg) in enumerate(args):
-        if not isinstance(arg, (numpy.ndarray, numpy.generic)):
-            raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
 def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol=1e-6):
     """runs the kernel once and checks the result against answer"""

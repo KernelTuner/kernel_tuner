@@ -7,6 +7,8 @@ from .context import *
 import kernel_tuner.interface as kernel_tuner
 import kernel_tuner.cuda as cuda
 import kernel_tuner.opencl as opencl
+from kernel_tuner.util import *
+
 
 def test_get_grid_dimensions1():
 
@@ -19,7 +21,7 @@ def test_get_grid_dimensions1():
     grid_div_x = ["block_x"]
     grid_div_y = ["block_y"]
 
-    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+    grid = get_grid_dimensions(problem_size, params,
                     grid_div_y, grid_div_x)
 
     assert len(grid) == 2
@@ -30,14 +32,14 @@ def test_get_grid_dimensions1():
     assert grid[0] == 25
     assert grid[1] == 28
 
-    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+    grid = get_grid_dimensions(problem_size, params,
                     None, grid_div_x)
 
     print(grid)
     assert grid[0] == 25
     assert grid[1] == 1024
 
-    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+    grid = get_grid_dimensions(problem_size, params,
                     grid_div_y, None)
 
     print(grid)
@@ -55,7 +57,7 @@ def test_get_grid_dimensions2():
     grid_div_x = ["block_x*8"]
     grid_div_y = ["(block_y+2)/8"]
 
-    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+    grid = get_grid_dimensions(problem_size, params,
                     grid_div_y, grid_div_x)
 
     assert grid[0] == 4
@@ -72,7 +74,7 @@ def test_get_grid_dimensions3():
     grid_div_x = []
     grid_div_y = []
 
-    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+    grid = get_grid_dimensions(problem_size, params,
                     grid_div_y, grid_div_x)
 
     assert grid[0] == 71
@@ -89,7 +91,7 @@ def test_get_grid_dimensions4():
 
     grid_div_x = []
     grid_div_y = []
-    kernel_tuner._get_grid_dimensions(problem_size, params,
+    get_grid_dimensions(problem_size, params,
                     grid_div_y, grid_div_x)
 
 def test_get_grid_dimensions5():
@@ -103,7 +105,7 @@ def test_get_grid_dimensions5():
     grid_div_x = ["block_x", "block_y"]
     grid_div_y = ["(block_y+2)/8"]
 
-    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+    grid = get_grid_dimensions(problem_size, params,
                     grid_div_y, grid_div_x)
 
     print(grid)
@@ -123,7 +125,7 @@ def test_get_grid_dimensions6():
     grid_div_x = ["block_x", "block_y"]
     grid_div_y = ["(block_y+2)/8"]
 
-    grid = kernel_tuner._get_grid_dimensions(problem_size, params,
+    grid = get_grid_dimensions(problem_size, params,
                     grid_div_y, grid_div_x)
 
     print(grid)
@@ -139,7 +141,7 @@ def test_get_thread_block_dimensions():
     params["block_size_x"] = 123
     params["block_size_y"] = 257
 
-    threads = kernel_tuner._get_thread_block_dimensions(params)
+    threads = get_thread_block_dimensions(params)
     assert len(threads) == 3
     assert isinstance(threads[0], int)
     assert isinstance(threads[1], int)
@@ -154,7 +156,7 @@ def test_prepare_kernel_string():
     params = dict()
     params["is"] = 8
 
-    output = kernel_tuner._prepare_kernel_string(kernel, params, (3,7))
+    output = prepare_kernel_string(kernel, params, (3,7))
     expected = "#define is 8\n#define grid_size_y 7\n#define grid_size_x 3\nthis is a weird kernel"
     print(output)
     assert output == expected
@@ -165,15 +167,15 @@ def test_replace_param_occurrences():
     params["is"] = 8
     params["weird"] = 14
 
-    new_kernel = kernel_tuner._replace_param_occurrences(kernel, params)
+    new_kernel = replace_param_occurrences(kernel, params)
     assert new_kernel == "th8 8 a 14 kernel"
 
-    new_kernel = kernel_tuner._replace_param_occurrences(kernel, dict())
+    new_kernel = replace_param_occurrences(kernel, dict())
     assert kernel == new_kernel
 
     params = dict()
     params["blablabla"] = 8
-    new_kernel = kernel_tuner._replace_param_occurrences(kernel, params)
+    new_kernel = replace_param_occurrences(kernel, params)
     assert kernel == new_kernel
 
 @raises(Exception)
@@ -183,7 +185,7 @@ def test_check_restrictions1():
     params["b"] = 4
     params["c"] = 1
     restrictions = ["a==b+c"]
-    kernel_tuner._check_restrictions(restrictions, params)
+    check_restrictions(restrictions, params)
     assert False
 
 def test_check_restrictions2():
@@ -194,7 +196,7 @@ def test_check_restrictions2():
     restrictions = ["a==b+c", "b==b", "a-b==c"]
     #test that the call does not return an exception
     try:
-        kernel_tuner._check_restrictions(restrictions, params)
+        check_restrictions(restrictions, params)
         assert True
     except Exception:
         assert False
@@ -202,26 +204,26 @@ def test_check_restrictions2():
 def test_detect_language1():
     lang = None
     kernel_string = "__global__ void vector_add( ... );"
-    lang = kernel_tuner._detect_language(lang, kernel_string)
+    lang = detect_language(lang, kernel_string)
     assert lang == "CUDA"
 
 def test_detect_language2():
     lang = None
     kernel_string = "__kernel void vector_add( ... );"
-    lang = kernel_tuner._detect_language(lang, kernel_string)
+    lang = detect_language(lang, kernel_string)
     assert lang == "OpenCL"
 
 def test_detect_language3():
     lang = None
     kernel_string = "blabla"
-    lang = kernel_tuner._detect_language(lang, kernel_string)
+    lang = detect_language(lang, kernel_string)
     assert lang == "C"
 
 def test_detect_language4():
     lang = "CUDA"
     kernel_string = "blabla"
     try:
-        lang = kernel_tuner._detect_language(lang, kernel_string)
+        lang = detect_language(lang, kernel_string)
         assert lang == "CUDA"
     except Exception:
         assert False
@@ -230,17 +232,41 @@ def test_detect_language4():
 def test_get_device_interface1():
     skip_if_no_cuda_device()
     lang = "CUDA"
-    dev = kernel_tuner._get_device_interface(lang, 0, 0)
+    dev = get_device_interface(lang, 0, 0)
     assert isinstance(dev, cuda.CudaFunctions)
 
 def test_get_device_interface2():
     skip_if_no_opencl()
     lang = "OpenCL"
-    dev = kernel_tuner._get_device_interface(lang, 0, 0)
+    dev = get_device_interface(lang, 0, 0)
     assert isinstance(dev, opencl.OpenCLFunctions)
 
 @raises(Exception)
 def test_get_device_interface3():
     lang = "blabla"
-    kernel_tuner._get_device_interface(lang, 0, 0)
+    get_device_interface(lang, 0, 0)
+
+def test_check_argument_list1():
+    args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
+    try:
+        check_argument_list(args)
+        print("Expected a TypeError to be raised")
+        assert False
+    except TypeError as e:
+        print(str(e))
+        assert "at position 1" in str(e)
+    except Exception:
+        print("Expected a TypeError to be raised")
+        assert False
+
+def test_check_argument_list2():
+    args = [numpy.int32(5), numpy.float64(4.6), numpy.array([1, 2, 3])]
+    check_argument_list(args)
+    #test that no exception is raised
+    assert True
+
+
+
+
+
 

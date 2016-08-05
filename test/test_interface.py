@@ -12,7 +12,7 @@ mock_config = { "return_value.compile.return_value": "compile",
                 "return_value.ready_argument_list.return_value": "ready_argument_list",
                 "return_value.max_threads": 1024 }
 
-@patch('kernel_tuner.interface.CudaFunctions')
+@patch('kernel_tuner.util.CudaFunctions')
 def test_interface_calls_functions(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
@@ -30,7 +30,7 @@ def test_interface_calls_functions(dev_interface):
     dev.compile.assert_called_once_with("fake_kernel_128", expected)
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1))
 
-@patch('kernel_tuner.interface.CudaFunctions')
+@patch('kernel_tuner.util.CudaFunctions')
 def test_interface_handles_max_threads(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
@@ -42,7 +42,7 @@ def test_interface_handles_max_threads(dev_interface):
 
     dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_x 256\n#define grid_size_y 1\n#define grid_size_x 1\nfake_kernel_256")
 
-@patch('kernel_tuner.interface.CudaFunctions')
+@patch('kernel_tuner.util.CudaFunctions')
 def test_interface_handles_compile_error(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
@@ -55,7 +55,7 @@ def test_interface_handles_compile_error(dev_interface):
     assert dev.compile.call_count == 1
     assert dev.benchmark.called == False
 
-@patch('kernel_tuner.interface.CudaFunctions')
+@patch('kernel_tuner.util.CudaFunctions')
 def test_interface_handles_restriction(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
@@ -68,7 +68,7 @@ def test_interface_handles_restriction(dev_interface):
     assert dev.compile.call_count == 1
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1))
 
-@patch('kernel_tuner.interface.CudaFunctions')
+@patch('kernel_tuner.util.CudaFunctions')
 def test_interface_handles_runtime_error(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
@@ -82,7 +82,7 @@ def test_interface_handles_runtime_error(dev_interface):
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1))
     assert len(results) == 0
 
-@patch('kernel_tuner.interface.CudaFunctions')
+@patch('kernel_tuner.util.CudaFunctions')
 def test_run_kernel(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
@@ -100,7 +100,7 @@ def test_run_kernel(dev_interface):
     dev.run_kernel.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1))
     dev.memcpy_dtoh.assert_called_once_with(numpy.zeros(1), 'r')
 
-@patch('kernel_tuner.interface.CudaFunctions')
+@patch('kernel_tuner.util.CudaFunctions')
 def test_check_kernel_correctness(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
@@ -118,21 +118,3 @@ def test_check_kernel_correctness(dev_interface):
     assert dev.memcpy_dtoh.called == 1
     assert test
 
-def test_check_argument_list1():
-    args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
-    try:
-        kernel_tuner._check_argument_list(args)
-        print("Expected a TypeError to be raised")
-        assert False
-    except TypeError as e:
-        print(str(e))
-        assert "at position 1" in str(e)
-    except Exception:
-        print("Expected a TypeError to be raised")
-        assert False
-
-def test_check_argument_list2():
-    args = [numpy.int32(5), numpy.float64(4.6), numpy.array([1, 2, 3])]
-    kernel_tuner._check_argument_list(args)
-    #test that no exception is raised
-    assert True
