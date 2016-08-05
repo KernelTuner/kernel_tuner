@@ -146,7 +146,9 @@ from kernel_tuner.util import *
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None,
-        restrictions=None, answer=None, atol=1e-6, verbose=False, lang=None, device=0, platform=0, cmem_args=None):
+        restrictions=None, answer=None, atol=1e-6, verbose=False,
+        lang=None, device=0, platform=0, cmem_args=None,
+        num_threads=1, use_noodles=False):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code.
@@ -278,15 +280,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     original_kernel = kernel_string
     results = dict()
 
-    lang = detect_language(lang, original_kernel)
-    dev = get_device_interface(lang, device, platform)
-
-    #inspect device properties
-    max_threads = dev.max_threads
-
-    #move data to GPU
+    #see if the kernel arguments have correct type
     check_argument_list(arguments)
-    gpu_args = dev.ready_argument_list(arguments)
 
     #compute cartesian product of all tunable parameters
     parameter_space = list(itertools.product(*tune_params.values()))
@@ -302,67 +297,16 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 print("skipping config", instance_string, "reason:", str(e))
             parameter_space.remove(element)
 
-    #iterate over parameter space
-    for element in parameter_space:
-        params = OrderedDict(zip(tune_params.keys(), element))
-        instance_string = "_".join([str(i) for i in params.values()])
+    #if running sequential
+    if num_threads == 1 and use_noodles == False:
+        import runners.sequential_brute_force as runner
+    else:
+        raise NotImplementedError("parallel runners will be implemented soon")
 
-        #compute thread block and grid dimensions for this kernel
-        threads = get_thread_block_dimensions(params)
-        if numpy.prod(threads) > max_threads:
-            if verbose:
-                print("skipping config", instance_string, "reason: too many threads per block")
-            continue
-        grid = get_grid_dimensions(problem_size, params,
-                       grid_div_y, grid_div_x)
-
-        #create configuration specific kernel string
-        kernel_string = prepare_kernel_string(original_kernel, params, grid)
-
-        #rename the kernel to guarantee that PyCuda compiles a new kernel
-        name = kernel_name + "_" + instance_string
-        kernel_string = kernel_string.replace(kernel_name, name)
-
-        #compile kernel func
-        try:
-            func = dev.compile(name, kernel_string)
-        except Exception as e:
-            #compiles may fail because certain kernel configurations use too
-            #much shared memory for example, the desired behavior is to simply
-            #skip over this configuration and try the next one
-            if "uses too much shared data" in str(e):
-                if verbose:
-                    print("skipping config", instance_string, "reason: too much shared memory used")
-                continue
-            else:
-                raise e
-
-        #add constant memory arguments to compiled module
-        if cmem_args is not None:
-            dev.copy_constant_memory_args(cmem_args)
-
-        #test kernel for correctness and benchmark
-        if answer is not None:
-            _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol)
-
-        try:
-            time = dev.benchmark(func, gpu_args, threads, grid)
-        except Exception as e:
-            #some launches may fail because too many registers are required
-            #to run the kernel given the current thread block size
-            #the desired behavior is to simply skip over this configuration
-            #and proceed to try the next one
-            if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
-                if verbose:
-                    print("skipping config", instance_string, "reason: too many resources requested for launch")
-                continue
-            else:
-                print("Error while benchmarking:", instance_string)
-                raise e
-
-        #print the result
-        print("".join([k + "=" + str(v) + ", " for k,v in params.items()]) + kernel_name + " took: " + str(time) + " ms.")
-        results[instance_string] = time
+    results = runner.run(kernel_name, original_kernel, problem_size, arguments,
+        tune_params, parameter_space, grid_div_x, grid_div_y,
+        answer, atol, verbose,
+        lang, device, platform, cmem_args)
 
     #finished iterating over search space
     if len(results) > 0:
@@ -457,22 +401,4 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
         dev.memcpy_dtoh(results[-1], gpu_args[i])
     return results
 
-
-#module private functions
-
-def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol=1e-6):
-    """runs the kernel once and checks the result against answer"""
-    for result, expected in zip(gpu_args, answer):
-        if expected is not None:
-            dev.memset(result, 0, expected.nbytes)
-    dev.run_kernel(func, gpu_args, threads, grid)
-    correct = True
-    for result,expected in zip(gpu_args,answer):
-        if expected is not None:
-            result_host = numpy.zeros_like(expected)
-            dev.memcpy_dtoh(result_host, result)
-            correct = correct and numpy.allclose(result_host.ravel(), expected.ravel(), atol=atol)
-    if not correct:
-        raise Exception("Error " + instance_string + " failed correctness check")
-    return correct
 

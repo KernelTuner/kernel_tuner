@@ -6,7 +6,7 @@ except ImportError:
 import numpy
 
 from .context import kernel_tuner
-import kernel_tuner.interface as kernel_tuner
+from kernel_tuner.interface import tune_kernel, run_kernel
 
 mock_config = { "return_value.compile.return_value": "compile",
                 "return_value.ready_argument_list.return_value": "ready_argument_list",
@@ -24,7 +24,7 @@ def test_interface_calls_functions(dev_interface):
     args = [n]
     tune_params = dict()
     tune_params["block_size_x"] = [128]
-    kernel_tuner.tune_kernel("fake_kernel", kernel_string, problem_size, args, tune_params, verbose=True)
+    tune_kernel("fake_kernel", kernel_string, problem_size, args, tune_params, verbose=True)
 
     expected = "#define block_size_x 128\n#define grid_size_y 1\n#define grid_size_x 10\n__global__ void fake_kernel_128()"
     dev.compile.assert_called_once_with("fake_kernel_128", expected)
@@ -38,7 +38,7 @@ def test_interface_handles_max_threads(dev_interface):
     tune_params = { "block_size_x": [256, 512] }
     dev.max_threads = 256
 
-    kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
+    tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
     dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_x 256\n#define grid_size_y 1\n#define grid_size_x 1\nfake_kernel_256")
 
@@ -50,7 +50,7 @@ def test_interface_handles_compile_error(dev_interface):
     tune_params = { "block_size_x": [256] }
     dev.compile.side_effect = Exception("uses too much shared data")
 
-    kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
+    tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
     assert dev.compile.call_count == 1
     assert dev.benchmark.called == False
@@ -63,7 +63,7 @@ def test_interface_handles_restriction(dev_interface):
     tune_params = { "block_size_x": [128, 256, 512] }
     restrict = ["block_size_x > 128", "block_size_x < 512"]
 
-    kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
+    tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
 
     assert dev.compile.call_count == 1
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1))
@@ -76,7 +76,7 @@ def test_interface_handles_runtime_error(dev_interface):
     tune_params = { "block_size_x": [256] }
     dev.benchmark.side_effect = Exception("too many resources requested for launch")
 
-    results = kernel_tuner.tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
+    results = tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
     assert dev.compile.call_count == 1
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1))
@@ -94,7 +94,7 @@ def test_run_kernel(dev_interface):
     args = [n]
     tune_params = dict()
     tune_params["block_size_x"] = 128
-    kernel_tuner.run_kernel("fake_kernel", kernel_string, problem_size, args, tune_params)
+    run_kernel("fake_kernel", kernel_string, problem_size, args, tune_params)
 
     assert dev.compile.call_count == 1
     dev.run_kernel.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1))
@@ -106,7 +106,9 @@ def test_check_kernel_correctness(dev_interface):
     dev_interface.configure_mock(**mock_config)
 
     answer = [numpy.zeros(8).astype(numpy.float32)]
-    test = kernel_tuner._check_kernel_correctness(dev, 'func', ['gpu_args'], 'threads', 'grid', answer, 'instance_string')
+    from kernel_tuner.runners import sequential_brute_force
+
+    test = sequential_brute_force._check_kernel_correctness(dev, 'func', ['gpu_args'], 'threads', 'grid', answer, 'instance_string')
 
     dev.memset.assert_called_once_with('gpu_args', 0, answer[0].nbytes)
     dev.run_kernel.assert_called_once_with('func', ['gpu_args'], 'threads', 'grid')
