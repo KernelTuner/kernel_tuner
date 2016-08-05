@@ -90,6 +90,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-cuda-cudafunctions">kernel_tuner.cuda.CudaFunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-c-cfunctions">kernel_tuner.c.CFunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.util">kernel_tuner.util</a></li>
 </ul>
 </li>
 </ul>
@@ -623,6 +624,40 @@ interface as CudaFunctions and OpenCLFunctions.</li>
 </table>
 </dd></dl>
 
+</dd></dl>
+
+</div>
+<div class="section" id="module-kernel_tuner.util">
+<span id="kernel-tuner-util"></span><h2>kernel_tuner.util<a class="headerlink" href="#module-kernel_tuner.util" title="Permalink to this headline">¶</a></h2>
+<p>Module for kernel tuner utility functions</p>
+<dl class="function">
+<dt id="kernel_tuner.util.detect_language">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">detect_language</code><span class="sig-paren">(</span><em>lang</em>, <em>original_kernel</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.detect_language" title="Permalink to this definition">¶</a></dt>
+<dd><p>attempt to detect language from the kernel_string if not specified</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_grid_dimensions">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_grid_dimensions</code><span class="sig-paren">(</span><em>problem_size</em>, <em>params</em>, <em>grid_div_y</em>, <em>grid_div_x</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_grid_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute grid dims based on problem sizes and listed grid divisors</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_thread_block_dimensions">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_thread_block_dimensions</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_thread_block_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>thread block size from tuning params, currently using convention</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.prepare_kernel_string">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_kernel_string</code><span class="sig-paren">(</span><em>original_kernel</em>, <em>params</em>, <em>grid=(1</em>, <em>1)</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepend the kernel with a series of C preprocessor defines</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.replace_param_occurrences">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">replace_param_occurrences</code><span class="sig-paren">(</span><em>string</em>, <em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.replace_param_occurrences" title="Permalink to this definition">¶</a></dt>
+<dd><p>replace occurrences of the tuning params with their current value</p>
 </dd></dl>
 
 </div>
