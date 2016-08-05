@@ -349,7 +349,6 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol)
 
         try:
-
             time = dev.benchmark(func, gpu_args, threads, grid)
         except Exception as e:
             #some launches may fail because too many registers are required
@@ -536,6 +535,11 @@ def _get_device_interface(lang, device, platform):
         raise UnImplementedException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
     return dev
 
+def _check_argument_list(args):
+    for (i, arg) in enumerate(args):
+        if not isinstance(arg, (numpy.ndarray, numpy.generic)):
+            raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
+
 def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol=1e-6):
     """runs the kernel once and checks the result against answer"""
     for result, expected in zip(gpu_args, answer):
@@ -552,7 +556,3 @@ def _check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instan
         raise Exception("Error " + instance_string + " failed correctness check")
     return correct
 
-def _check_argument_list(args):
-    for (i, arg) in enumerate(args):
-        if not isinstance(arg, (numpy.ndarray, numpy.generic)):
-            raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
