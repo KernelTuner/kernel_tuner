@@ -24,5 +24,10 @@ kernel_tuner.c.CFunctions
 .. autoclass:: kernel_tuner.c.CFunctions
     :members:
 
+kernel_tuner.util
+-----------------------------------
+.. automodule:: kernel_tuner.util
+    :members:
+
 
 
