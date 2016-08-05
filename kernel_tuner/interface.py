@@ -299,7 +299,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     #if running sequential
     if num_threads == 1 and use_noodles == False:
-        import runners.sequential_brute_force as runner
+        import kernel_tuner.runners.sequential_brute_force as runner
     else:
         raise NotImplementedError("parallel runners will be implemented soon")
 
