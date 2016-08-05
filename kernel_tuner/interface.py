@@ -504,7 +504,7 @@ def _get_thread_block_dimensions(params):
     block_size_z = params.get("block_size_z", 1)
     return (block_size_x, block_size_y, block_size_z)
 
-def _prepare_kernel_string(original_kernel, params, grid):
+def _prepare_kernel_string(original_kernel, params, grid=(1,1)):
     """prepend the kernel with a series of C preprocessor defines"""
     kernel_string = original_kernel
     kernel_string = "#define grid_size_x " + str(grid[0]) + "\n" + kernel_string
