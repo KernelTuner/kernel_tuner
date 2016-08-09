@@ -8,7 +8,14 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instanc
     for result, expected in zip(gpu_args, answer):
         if expected is not None:
             dev.memset(result, 0, expected.nbytes)
-    dev.run_kernel(func, gpu_args, threads, grid)
+    try:
+        dev.run_kernel(func, gpu_args, threads, grid)
+    except Exception as e:
+        if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
+            #ignore this error for now, it will show up when benchmarking the kernel
+            return True
+        else:
+            raise e
     correct = True
     for result,expected in zip(gpu_args,answer):
         if expected is not None:
@@ -74,3 +81,28 @@ def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
                 print("Error while benchmarking:", instance_string)
                 raise e
         return time
+
+
+def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params, problem_size, grid_div_y, grid_div_x, cmem_args, answer, atol, instance_string, verbose):
+    #setup thread block and grid dimensions
+    threads, grid = setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, instance_string, verbose)
+    if threads is None:
+        return None
+
+    #compile
+    func = compile(dev, kernel_name, original_kernel, params, grid, instance_string, verbose)
+    if func is None:
+        return None
+
+    #add constant memory arguments to compiled module
+    if cmem_args is not None:
+        dev.copy_constant_memory_args(cmem_args)
+
+    #test kernel for correctness and benchmark
+    if answer is not None:
+        check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol)
+
+    #benchmark
+    time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)
+    return time
+

@@ -148,7 +148,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None,
         restrictions=None, answer=None, atol=1e-6, verbose=False,
         lang=None, device=0, platform=0, cmem_args=None,
-        num_threads=1, use_noodles=False):
+        num_threads=1, use_noodles=False, sample=False):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code.
@@ -298,7 +298,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             parameter_space.remove(element)
 
     #if running sequential
-    if num_threads == 1 and use_noodles == False:
+    if sample == True:
+        import kernel_tuner.runners.random_sample as runner
+    elif num_threads == 1 and use_noodles == False:
         import kernel_tuner.runners.sequential_brute_force as runner
     else:
         raise NotImplementedError("parallel runners will be implemented soon")

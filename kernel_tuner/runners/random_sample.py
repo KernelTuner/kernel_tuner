@@ -85,26 +85,9 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         params = OrderedDict(zip(tune_params.keys(), element))
         instance_string = "_".join([str(i) for i in params.values()])
 
-        #setup thread block and grid dimensions
-        threads, grid = setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, instance_string, verbose)
-        if threads is None:
-            continue
-
-        #compile
-        func = compile(dev, kernel_name, original_kernel, params, grid, instance_string, verbose)
-        if func is None:
-            continue
-
-        #add constant memory arguments to compiled module
-        if cmem_args is not None:
-            dev.copy_constant_memory_args(cmem_args)
-
-        #test kernel for correctness and benchmark
-        if answer is not None:
-            check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol)
-
-        #benchmark
-        time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)
+        time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
+                        problem_size, grid_div_y, grid_div_x,
+                        cmem_args, answer, atol, instance_string, verbose)
         if time is None:
             continue
 
