@@ -106,9 +106,9 @@ def test_check_kernel_correctness(dev_interface):
     dev_interface.configure_mock(**mock_config)
 
     answer = [numpy.zeros(8).astype(numpy.float32)]
-    from kernel_tuner.runners import sequential_brute_force
+    from kernel_tuner.runners import core
 
-    test = sequential_brute_force._check_kernel_correctness(dev, 'func', ['gpu_args'], 'threads', 'grid', answer, 'instance_string')
+    test = core.check_kernel_correctness(dev, 'func', ['gpu_args'], 'threads', 'grid', answer, 'instance_string')
 
     dev.memset.assert_called_once_with('gpu_args', 0, answer[0].nbytes)
     dev.run_kernel.assert_called_once_with('func', ['gpu_args'], 'threads', 'grid')
