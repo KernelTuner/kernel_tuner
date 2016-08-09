@@ -85,31 +85,9 @@ __kernel void vector_add(__global float *c, __global float *a, __global float *b
 }
 """
 ```
-Or even just a C function, with slightly different tunable parameters:
-```python
-tune_params = dict()
-tune_params["vecsize"] = [2**i for i in range(8)]
-tune_params["nthreads"] = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32]
+Or even just a C function, see the example [here](https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py).
 
-kernel_string = """ 
-#include <omp.h>
-#include "timer.h"
-typedef float vfloat __attribute__ ((vector_size (vecsize*4)));
-float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
-    unsigned long long start = get_clock();
-    int chunk = n/vecsize/nthreads;
-    #pragma omp parallel num_threads(nthreads)
-    {
-       	int offset = omp_get_thread_num()*chunk;
-       	for (int i = offset; i<offset+chunk; i++) {
-            c[i] = a[i] + b[i];
-       	}
-    }
-    return (get_clock()-start) / get_frequency() / 1000000.0;
-}
-"""
-```
-By passing an `answer` list you can let de kernel tuner verify the output of each kernel it compiles and benchmarks:
+By passing an `answer` list you can also let de kernel tuner verify the output of each kernel it compiles and benchmarks:
 ```python
 answer = [a+b, None, None]  # the order matches the arguments (in args) to the kernel
 tune_kernel("vector_add", kernel_string, problem_size, args, tune_params, answer=answer)
