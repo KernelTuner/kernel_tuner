@@ -83,8 +83,8 @@ The exact same Python code can be used to tune an OpenCL kernel:
 Or even just a C function, see the example `here <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py>`_.
 
 You can find these and many - more extensive - example codes, in the
-`examples <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`_ 
-directory. See the `full documentation <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html>`_ 
+`examples <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`_
+directory. See the `full documentation <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html>`_
 for several highly detailed tutorial-style explanations of example
 kernels and the scripts to tune them.
 
@@ -96,8 +96,8 @@ things, such as tuning the number of streams for a kernel that uses
 CUDA Streams or OpenCL Command Queues to overlap transfers between
 host and device with kernel execution. This can be done in combination
 with tuning the parameters inside the kernel code. See the
-`convolution_streams example code<http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html>`_ 
-and the `documentation <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html>`_ 
+`convolution_streams example code <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html>`_
+and the `documentation <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html>`_
 for a detailed explanation of the kernel tuner Python script.
 
 Correctness verification
