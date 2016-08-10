@@ -4,11 +4,9 @@ import numpy
 from nose.tools import raises
 from .context import *
 
-import kernel_tuner.interface as kernel_tuner
 import kernel_tuner.cuda as cuda
 import kernel_tuner.opencl as opencl
 from kernel_tuner.util import *
-
 
 def test_get_grid_dimensions1():
 

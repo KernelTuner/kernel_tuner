@@ -140,7 +140,6 @@ from __future__ import print_function
 
 import numpy
 import itertools
-from collections import OrderedDict
 
 from kernel_tuner.util import *
 
