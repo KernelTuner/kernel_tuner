@@ -96,7 +96,7 @@ things, such as tuning the number of streams for a kernel that uses
 CUDA Streams or OpenCL Command Queues to overlap transfers between
 host and device with kernel execution. This can be done in combination
 with tuning the parameters inside the kernel code. See the
-`convolution_streams example code <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html>`_
+`convolution_streams example code <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`_
 and the `documentation <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html>`_
 for a detailed explanation of the kernel tuner Python script.
 
