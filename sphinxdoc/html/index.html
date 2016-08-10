@@ -242,37 +242,35 @@ tune_kernel.</p>
 <span class="s2">&quot;&quot;&quot;</span>
 </pre></div>
 </div>
-<p>Or even just a C function, with slightly different tunable parameters:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;vecsize&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">)]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;nthreads&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">32</span><span class="p">]</span>
-
-<span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">#include &lt;omp.h&gt;</span>
-<span class="s2">#include &quot;timer.h&quot;</span>
-<span class="s2">typedef float vfloat __attribute__ ((vector_size (vecsize*4)));</span>
-<span class="s2">float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {</span>
-<span class="s2">    unsigned long long start = get_clock();</span>
-<span class="s2">    int chunk = n/vecsize/nthreads;</span>
-<span class="s2">    #pragma omp parallel num_threads(nthreads)</span>
-<span class="s2">    {</span>
-<span class="s2">        int offset = omp_get_thread_num()*chunk;</span>
-<span class="s2">        for (int i = offset; i&lt;offset+chunk; i++) {</span>
-<span class="s2">            c[i] = a[i] + b[i];</span>
-<span class="s2">        }</span>
-<span class="s2">    }</span>
-<span class="s2">    return (get_clock()-start) / get_frequency() / 1000000.0;</span>
-<span class="s2">}</span>
-<span class="s2">&quot;&quot;&quot;</span>
-</pre></div>
+<p>Or even just a C function, see the example <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py">here</a>.</p>
+<p>You can find these and many - more extensive - example codes, in the
+<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/">examples</a>
+directory. See the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html">full documentation</a>
+for several highly detailed tutorial-style explanations of example
+kernels and the scripts to tune them.</p>
 </div>
-<p>By passing an <cite>answer</cite> list you can let de kernel tuner verify the output of each kernel it compiles and benchmarks:</p>
+<div class="section" id="tuning-host-and-kernel-code">
+<h2>Tuning host and kernel code<a class="headerlink" href="#tuning-host-and-kernel-code" title="Permalink to this headline">¶</a></h2>
+<p>It is also possible to tune for combinations of tunable parameters in
+both host and kernel code. This allows for a number of powerfull
+things, such as tuning the number of streams for a kernel that uses
+CUDA Streams or OpenCL Command Queues to overlap transfers between
+host and device with kernel execution. This can be done in combination
+with tuning the parameters inside the kernel code. See the
+<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/">convolution_streams example code</a>
+and the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html">documentation</a>
+for a detailed explanation of the kernel tuner Python script.</p>
+</div>
+<div class="section" id="correctness-verification">
+<h2>Correctness verification<a class="headerlink" href="#correctness-verification" title="Permalink to this headline">¶</a></h2>
+<p>Optionally, you can let the kernel tuner verify the output of every
+kernel it compiles and benchmarks, by passing an <cite>answer</cite> list. This
+list matches the list of arguments to the kernel, but contains the
+expected output of the kernel. Input arguments are replaced with None.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>  <span class="c1"># the order matches the arguments (in args) to the kernel</span>
 <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>You can find these and many - more extensive - example codes, in the <cite>examples</cite> directory
-and in the full documentation.</p>
 </div>
 <div class="section" id="author">
 <h2>Author<a class="headerlink" href="#author" title="Permalink to this headline">¶</a></h2>
