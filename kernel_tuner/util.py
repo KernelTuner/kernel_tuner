@@ -83,7 +83,7 @@ def check_argument_list(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
-def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol=1e-6):
+def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, verbose, atol=1e-6):
     """runs the kernel once and checks the result against answer"""
     for result, expected in zip(gpu_args, answer):
         if expected is not None:
@@ -101,9 +101,18 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instanc
         if expected is not None:
             result_host = numpy.zeros_like(expected)
             dev.memcpy_dtoh(result_host, result)
-            correct = correct and numpy.allclose(result_host.ravel(), expected.ravel(), atol=atol)
+            output_test = numpy.allclose(result_host.ravel(), expected.ravel(), atol=atol)
+            if not output_test and verbose:
+                print("Error: " + instance_string + " detected during correctness check")
+                print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
+                numpy.set_printoptions(edgeitems=500)
+                print("Kernel output:")
+                print(result_host)
+                print("Expected:")
+                print(expected)
+            correct = correct and output_test
     if not correct:
-        raise Exception("Error " + instance_string + " failed correctness check")
+        raise Exception("Error: " + instance_string + " failed correctness check")
     return correct
 
 def setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, instance_string, verbose):
@@ -180,7 +189,7 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params, p
 
     #test kernel for correctness and benchmark
     if answer is not None:
-        check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, atol)
+        check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, verbose, atol)
 
     #benchmark
     time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)

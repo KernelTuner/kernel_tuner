@@ -94,6 +94,8 @@ class CFunctions(object):
         if self.compiler == "nvcc":
             source_file = source_file[:-1] + "u"
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
+            #might be better to have an optional argument to pass the desired compute capability
+            compiler_options += ["-arch=compute_52"]
 
         try:
             with open(source_file, 'w') as f:
@@ -206,6 +208,7 @@ class CFunctions(object):
         :type src: ctypes.pointer
         """
         dest[:] = numpy.ctypeslib.as_array(src, shape=self.arg_mapping[str(src)])
+
 
 
 def _delete_temp_file(filename):
