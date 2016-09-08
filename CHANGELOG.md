@@ -4,6 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Changed
+- verbose now also prints debug output when correctness check fails
 - restructured the code to prepare for different strategies
 - shortened the output printed by the tune_kernel
 - allowing numpy integers for specifying problem size
