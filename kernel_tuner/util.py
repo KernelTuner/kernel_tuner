@@ -61,11 +61,15 @@ def replace_param_occurrences(string, params):
         string = string.replace(k, str(v))
     return string
 
-def check_restrictions(restrictions, params):
-    if restrictions != None:
-        for restrict in restrictions:
-            if not eval(replace_param_occurrences(restrict, params)):
-                raise Exception("config fails restriction")
+def check_restrictions(restrictions, element, keys, verbose):
+    params = dict(zip(keys, element))
+    for restrict in restrictions:
+        if not eval(replace_param_occurrences(restrict, params)):
+            if verbose:
+                instance_string = "_".join([str(i) for i in element])
+                print("skipping config", instance_string, "reason: config fails restriction")
+            return False
+    return True
 
 def get_device_interface(lang, device, platform):
     if lang == "CUDA":

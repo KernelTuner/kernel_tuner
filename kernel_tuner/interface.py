@@ -279,18 +279,11 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     check_argument_list(arguments)
 
     #compute cartesian product of all tunable parameters
-    parameter_space = list(itertools.product(*tune_params.values()))
+    parameter_space = itertools.product(*tune_params.values())
 
     #check for search space restrictions
-    for element in parameter_space[:]:
-        params = dict(zip(tune_params.keys(), element))
-        instance_string = "_".join([str(i) for i in params.values()])
-        try:
-            check_restrictions(restrictions, params)
-        except Exception as e:
-            if verbose:
-                print("skipping config", instance_string, "reason:", str(e))
-            parameter_space.remove(element)
+    if restrictions is not None:
+        parameter_space = filter(lambda p: check_restrictions(restrictions, p, tune_params.keys(), verbose), parameter_space)
 
     #if running sequential
     if sample == True:

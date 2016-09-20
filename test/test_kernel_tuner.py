@@ -176,15 +176,18 @@ def test_replace_param_occurrences():
     new_kernel = replace_param_occurrences(kernel, params)
     assert kernel == new_kernel
 
-@raises(Exception)
 def test_check_restrictions1():
     params = dict()
     params["a"] = 7
     params["b"] = 4
-    params["c"] = 1
+    params["c"] = 3
     restrictions = ["a==b+c"]
-    check_restrictions(restrictions, params)
-    assert False
+    #test the call returns true
+    print(params.values())
+    print(params.keys())
+    answer = check_restrictions(restrictions, params.values(), params.keys(), False)
+    print(answer)
+    assert answer == True
 
 def test_check_restrictions2():
     params = dict()
@@ -192,12 +195,25 @@ def test_check_restrictions2():
     params["b"] = 4
     params["c"] = 3
     restrictions = ["a==b+c", "b==b", "a-b==c"]
-    #test that the call does not return an exception
-    try:
-        check_restrictions(restrictions, params)
-        assert True
-    except Exception:
-        assert False
+    #test that the call returns true
+    print(params.values())
+    print(params.keys())
+    answer = check_restrictions(restrictions, params.values(), params.keys(), False)
+    print(answer)
+    assert answer == True
+
+def test_check_restrictions3():
+    params = dict()
+    params["a"] = 7
+    params["b"] = 4
+    params["c"] = 3
+    restrictions = ["a==b+c", "b!=b", "a-b==c"]
+    #test that the call returns true
+    print(params.values())
+    print(params.keys())
+    answer = check_restrictions(restrictions, params.values(), params.keys(), False)
+    print(answer)
+    assert answer == False
 
 def test_detect_language1():
     lang = None
