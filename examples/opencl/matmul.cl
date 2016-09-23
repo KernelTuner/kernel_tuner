@@ -25,6 +25,20 @@
  * The kernel computes C=A*B, where A, B, and C are square
  * matrices with height and width equal to WIDTH
  */
+#ifndef block_size_x
+#define block_size_x 16
+#endif
+#ifndef block_size_y
+#define block_size_y 16
+#endif
+#ifndef tile_size_x
+#define tile_size_x 1
+#endif
+#ifndef tile_size_y
+#define tile_size_y 1
+#endif
+
+
 __kernel void matmul_kernel(__global float *C, __global float *A, __global float *B) {
 
     __local float sA[block_size_y*tile_size_y][block_size_x];
