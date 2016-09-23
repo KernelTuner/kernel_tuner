@@ -97,12 +97,16 @@ class CFunctions(object):
             #might be better to have an optional argument to pass the desired compute capability
             compiler_options += ["-arch=compute_52"]
 
+        lib_args = []
+        if "CL/cl.h" in kernel_string:
+            lib_args = ["-lOpenCL"]
+
         try:
             with open(source_file, 'w') as f:
                 f.write(kernel_string)
 
             subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename+".o"])
-            subprocess.check_call([self.compiler, filename+".o"] + compiler_options + [ "-shared", "-o", filename+".so"])
+            subprocess.check_call([self.compiler, filename+".o"] + compiler_options + [ "-shared", "-o", filename+".so"] + lib_args)
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
 
