@@ -2,9 +2,6 @@
 import numpy
 import kernel_tuner
 
-with open('matmul.cl', 'r') as f:
-    kernel_string = f.read()
-
 problem_size = (4096, 4096)
 size = numpy.prod(problem_size)
 
@@ -25,7 +22,7 @@ grid_div_y = ["block_size_y", "tile_size_y"]
 
 restrict = ["block_size_x==block_size_y*tile_size_y"]
 
-kernel_tuner.tune_kernel("matmul_kernel", kernel_string,
+kernel_tuner.tune_kernel("matmul_kernel", "matmul.cl",
     problem_size, args, tune_params,
     grid_div_y=grid_div_y, grid_div_x=grid_div_x,
     restrictions=restrict, verbose=True)

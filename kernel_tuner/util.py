@@ -1,6 +1,7 @@
 """ Module for kernel tuner utility functions """
 from __future__ import print_function
 import numpy
+import os
 
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
@@ -26,15 +27,18 @@ def looks_like_a_filename(original_kernel):
         result = result and ".c" in original_kernel
     return result
 
+def read_file(filename):
+    if os.path.isfile(filename):
+        with open(filename, 'r') as f:
+            return f.read()
+    return None
+
 def detect_language(lang, original_kernel):
     """attempt to detect language from the kernel_string if not specified"""
-    kernel_string = original_kernel
-
-    if looks_like_a_filename(original_kernel):
-        with open(original_kernel, 'r') as f:
-            kernel_string = f.read()
-
     if lang is None:
+        kernel_string = original_kernel
+        if looks_like_a_filename(original_kernel):
+            kernel_string = read_file(original_kernel) or original_kernel
         if "__global__" in kernel_string:
             lang = "CUDA"
         elif "__kernel" in kernel_string:
@@ -157,7 +161,11 @@ def setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, inst
 
 def setup_kernel_strings(kernel_name, original_kernel, params, grid, instance_string):
         """create configuration specific kernel string"""
-        kernel_string = prepare_kernel_string(original_kernel, params, grid)
+        kernel_string = original_kernel
+        if looks_like_a_filename(original_kernel):
+            kernel_string = read_file(original_kernel) or original_kernel
+
+        kernel_string = prepare_kernel_string(kernel_string, params, grid)
         name = kernel_name + "_" + instance_string
         kernel_string = kernel_string.replace(kernel_name, name)
         return name, kernel_string
@@ -202,7 +210,9 @@ def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
         return time
 
 
-def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params, problem_size, grid_div_y, grid_div_x, cmem_args, answer, atol, instance_string, verbose):
+def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
+        problem_size, grid_div_y, grid_div_x, cmem_args, answer, atol, instance_string, verbose):
+
     #setup thread block and grid dimensions
     threads, grid = setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, instance_string, verbose)
     if threads is None:

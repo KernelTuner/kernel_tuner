@@ -3,9 +3,6 @@ import numpy
 import kernel_tuner
 from collections import OrderedDict
 
-with open('matmul.cu', 'r') as f:
-    kernel_string = f.read()
-
 problem_size = (4096, 4096)
 size = numpy.prod(problem_size)
 
@@ -28,7 +25,7 @@ restrict = ["block_size_x==block_size_y*tile_size_y"]
 
 answer = [numpy.dot(A,B), None, None]
 
-kernel_tuner.tune_kernel("matmul_kernel", kernel_string,
+kernel_tuner.tune_kernel("matmul_kernel", "matmul.cu",
     problem_size, args, tune_params,
     grid_div_y=grid_div_y, grid_div_x=grid_div_x,
     restrictions=restrict, verbose=True, answer=answer, atol=1e-3)
