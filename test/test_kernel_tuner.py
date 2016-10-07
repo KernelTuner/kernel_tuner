@@ -281,6 +281,12 @@ def test_check_argument_list2():
 
 
 
+def test_looks_like_a_filename1():
+    string = "filename.c"
+    assert looks_like_a_filename(string)
 
+def test_looks_like_a_filename2():
+    string = "__global__ void kernel_name() { //do that kernel thing! }"
+    assert not looks_like_a_filename(string)
 
 

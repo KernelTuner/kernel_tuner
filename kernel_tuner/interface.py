@@ -272,7 +272,6 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :rtype: dict( string, float )
     """
 
-    original_kernel = kernel_string
     results = dict()
 
     #see if the kernel arguments have correct type
@@ -293,7 +292,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         raise NotImplementedError("parallel runners will be implemented soon")
 
-    results = runner.run(kernel_name, original_kernel, problem_size, arguments,
+    results = runner.run(kernel_name, kernel_string, problem_size, arguments,
         tune_params, parameter_space, grid_div_x, grid_div_y,
         answer, atol, verbose,
         lang, device, platform, cmem_args)

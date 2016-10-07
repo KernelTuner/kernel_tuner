@@ -6,12 +6,38 @@ from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
 
+def looks_like_a_filename(original_kernel):
+    """ attempt to detect whether source code or a filename was passed """
+    result = False
+    if isinstance(original_kernel, str):
+        result = True
+        #test if not too long
+        if len(original_kernel) > 100:
+            result = False
+        #test if not contains special characters
+        for c in "();{}\\":
+            if c in original_kernel:
+                result = False
+        #just a safeguard for stuff that looks like code
+        for s in ["__global__ ", "__kernel ", "void ", "float "]:
+            if s in original_kernel:
+                result = False
+        #string must contain substring ".c"
+        result = result and ".c" in original_kernel
+    return result
+
 def detect_language(lang, original_kernel):
     """attempt to detect language from the kernel_string if not specified"""
+    kernel_string = original_kernel
+
+    if looks_like_a_filename(original_kernel):
+        with open(original_kernel, 'r') as f:
+            kernel_string = f.read()
+
     if lang is None:
-        if "__global__" in original_kernel:
+        if "__global__" in kernel_string:
             lang = "CUDA"
-        elif "__kernel" in original_kernel:
+        elif "__kernel" in kernel_string:
             lang = "OpenCL"
         else:
             lang = "C"
