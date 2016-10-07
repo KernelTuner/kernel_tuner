@@ -138,6 +138,7 @@ import numpy
 import itertools
 
 from kernel_tuner.util import *
+from kernel_tuner.core import get_device_interface
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None,

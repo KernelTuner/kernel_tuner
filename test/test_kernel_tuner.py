@@ -7,6 +7,8 @@ from .context import *
 import kernel_tuner.cuda as cuda
 import kernel_tuner.opencl as opencl
 from kernel_tuner.util import *
+from kernel_tuner.core import *
+
 
 def test_get_grid_dimensions1():
 

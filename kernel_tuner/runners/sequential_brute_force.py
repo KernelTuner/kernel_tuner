@@ -4,6 +4,7 @@ from __future__ import print_function
 from collections import OrderedDict
 
 from kernel_tuner.util import *
+from kernel_tuner.core import *
 
 def run(kernel_name, original_kernel, problem_size, arguments,
         tune_params, parameter_space, grid_div_x, grid_div_y,

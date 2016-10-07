@@ -8,6 +8,8 @@ import errno
 
 import numpy.ctypeslib
 
+from kernel_tuner.util import get_temp_filename
+
 class CFunctions(object):
     """Class that groups the code for running and compiling C functions"""
 
@@ -82,8 +84,7 @@ class CFunctions(object):
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
-        random_large_int = numpy.random.randint(low=1000000, high=1000000000)
-        filename = 'temp_' + str(random_large_int)
+        filename = get_temp_filename()
         source_file = filename+".cc"
         kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
 
