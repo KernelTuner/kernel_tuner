@@ -8,7 +8,7 @@ import errno
 
 import numpy.ctypeslib
 
-from kernel_tuner.util import get_temp_filename
+from kernel_tuner.util import get_temp_filename, delete_temp_file
 
 class CFunctions(object):
     """Class that groups the code for running and compiling C functions"""
@@ -112,9 +112,9 @@ class CFunctions(object):
             self.lib = numpy.ctypeslib.load_library(filename, '.')
 
         finally:
-            _delete_temp_file(source_file)
-            _delete_temp_file(filename+".o")
-            _delete_temp_file(filename+".so")
+            delete_temp_file(source_file)
+            delete_temp_file(filename+".o")
+            delete_temp_file(filename+".so")
 
         func = getattr(self.lib, kernel_name)
         func.restype = C.c_float
@@ -215,10 +215,3 @@ class CFunctions(object):
         dest[:] = numpy.ctypeslib.as_array(src, shape=self.arg_mapping[str(src)])
 
 
-
-def _delete_temp_file(filename):
-    try:
-        os.remove(filename)
-    except OSError as e:
-        if e.errno != errno.ENOENT:
-            raise e

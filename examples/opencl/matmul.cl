@@ -9,7 +9,9 @@
  * 
  */
 
+#ifndef WIDTH
 #define WIDTH 4096
+#endif
 /*
  * Optimized OpenCL kernel for matrix multiplication
  *
@@ -90,8 +92,4 @@ __kernel void matmul_kernel(__global float *C, __global float *A, __global float
             C[y * WIDTH + x + block_size_y * i * WIDTH + j * block_size_x] = sum[i][j];
         }
     }
-
 }
-
-
-

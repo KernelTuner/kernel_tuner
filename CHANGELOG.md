@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - allowing numpy integers for specifying problem size
 
 ### Added
+- support for passing a (list of) filenames instead of kernel string
 - support for OpenCL platform selection
 - support for using tuning parameter names in the problem size
 

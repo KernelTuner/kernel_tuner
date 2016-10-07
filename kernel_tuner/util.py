@@ -2,6 +2,20 @@
 from __future__ import print_function
 import numpy
 import os
+import errno
+
+def get_kernel_string(original_kernel):
+    kernel_string = original_kernel
+    if looks_like_a_filename(original_kernel):
+        kernel_string = read_file(original_kernel) or original_kernel
+    return kernel_string
+
+def delete_temp_file(filename):
+    try:
+        os.remove(filename)
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise e
 
 def get_temp_filename():
     random_large_int = numpy.random.randint(low=1000000, high=1000000000)
@@ -32,6 +46,10 @@ def read_file(filename):
         with open(filename, 'r') as f:
             return f.read()
     return None
+
+def write_file(filename, string):
+    with open(filename, 'w') as f:
+        f.write(string.encode('utf-8'))
 
 def detect_language(lang, original_kernel):
     """attempt to detect language from the kernel_string if not specified"""
@@ -76,6 +94,49 @@ def get_thread_block_dimensions(params):
     block_size_z = params.get("block_size_z", 1)
     return (block_size_x, block_size_y, block_size_z)
 
+
+def prepare_list_of_files(kernel_file_list, params, grid):
+    """ prepare the kernel string along with any additional files
+
+    The first file in the list is allowed to include or read in the others
+    The files beyond the first are considered additional files that may also contain tunable parameters
+
+    For each file beyond the first this function creates a temporary file with
+    preprocessors statements inserted. Occurences of the original filenames in the
+    first file are replaced with their temporary counterparts.
+
+    :param kernel_file_list: A list of filenames. The first file in the list is
+        allowed to read or include the other files in the list. All files may
+        will have access to the tunable parameters.
+    :type kernel_file_list: list(string)
+
+    :param params: A dictionary with the tunable parameters for this particular
+        instance.
+    :type params: dict()
+
+    :param grid: The grid dimensions for this instance. The grid dimensions are
+        also inserted into the code as if they are tunable parameters for
+        convenience.
+    :type grid: tuple()
+
+    """
+    temp_files = dict()
+
+    kernel_string = get_kernel_string(kernel_file_list[0])
+    if len(kernel_file_list) > 1:
+        for f in kernel_file_list[1:]:
+            #generate temp filename with the same extension
+            temp_file = get_temp_filename() + "." + f.split(".")[-1]
+            temp_files[f] = temp_file
+            #add preprocessor statements to the additional file
+            temp_file_string = prepare_kernel_string(get_kernel_string(f) , params, grid)
+            write_file(temp_file, temp_file_string)
+            #replace occurences of the additional file's name in the kernel_string with the name of the temp file
+            kernel_string = kernel_string.replace(f, temp_file)
+
+    return kernel_string, temp_files
+
+
 def prepare_kernel_string(original_kernel, params, grid=(1,1)):
     """prepend the kernel with a series of C preprocessor defines"""
     kernel_string = original_kernel
@@ -118,11 +179,7 @@ def setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, inst
 
 def setup_kernel_strings(kernel_name, original_kernel, params, grid, instance_string):
         """create configuration specific kernel string"""
-        kernel_string = original_kernel
-        if looks_like_a_filename(original_kernel):
-            kernel_string = read_file(original_kernel) or original_kernel
-
-        kernel_string = prepare_kernel_string(kernel_string, params, grid)
+        kernel_string = prepare_kernel_string(original_kernel, params, grid)
         name = kernel_name + "_" + instance_string
         kernel_string = kernel_string.replace(kernel_name, name)
         return name, kernel_string

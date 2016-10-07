@@ -49,44 +49,44 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instanc
         raise Exception("Error: " + instance_string + " failed correctness check")
     return correct
 
-def compile_kernel(dev, kernel_name, original_kernel, params, grid, instance_string, verbose):
-        """compile the kernel for this specific instance"""
+def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_string, verbose):
+    """compile the kernel for this specific instance"""
 
-        #prepare kernel_string for compilation
-        name, kernel_string = setup_kernel_strings(kernel_name, original_kernel, params, grid, instance_string)
+    #prepare kernel_string for compilation
+    name, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid, instance_string)
 
-        #compile kernel_string into device func
-        func = None
-        try:
-            func = dev.compile(name, kernel_string)
-        except Exception as e:
-            #compiles may fail because certain kernel configurations use too
-            #much shared memory for example, the desired behavior is to simply
-            #skip over this configuration and try the next one
-            if "uses too much shared data" in str(e):
-                if verbose:
-                    print("skipping config", instance_string, "reason: too much shared memory used")
-            else:
-                raise e
-        return func
+    #compile kernel_string into device func
+    func = None
+    try:
+        func = dev.compile(name, kernel_string)
+    except Exception as e:
+        #compiles may fail because certain kernel configurations use too
+        #much shared memory for example, the desired behavior is to simply
+        #skip over this configuration and try the next one
+        if "uses too much shared data" in str(e):
+            if verbose:
+                print("skipping config", instance_string, "reason: too much shared memory used")
+        else:
+            raise e
+    return func
 
 def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
-        """benchmark the kernel instance"""
-        time = None
-        try:
-            time = dev.benchmark(func, gpu_args, threads, grid)
-        except Exception as e:
-            #some launches may fail because too many registers are required
-            #to run the kernel given the current thread block size
-            #the desired behavior is to simply skip over this configuration
-            #and proceed to try the next one
-            if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
-                if verbose:
-                    print("skipping config", instance_string, "reason: too many resources requested for launch")
-            else:
-                print("Error while benchmarking:", instance_string)
-                raise e
-        return time
+    """benchmark the kernel instance"""
+    time = None
+    try:
+        time = dev.benchmark(func, gpu_args, threads, grid)
+    except Exception as e:
+        #some launches may fail because too many registers are required
+        #to run the kernel given the current thread block size
+        #the desired behavior is to simply skip over this configuration
+        #and proceed to try the next one
+        if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
+            if verbose:
+                print("skipping config", instance_string, "reason: too many resources requested for launch")
+        else:
+            print("Error while benchmarking:", instance_string)
+            raise e
+    return time
 
 def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
         problem_size, grid_div_y, grid_div_x, cmem_args, answer, atol, instance_string, verbose):
@@ -96,21 +96,36 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
     if threads is None:
         return None
 
-    #compile the kernel
-    func = compile_kernel(dev, kernel_name, original_kernel, params, grid, instance_string, verbose)
-    if func is None:
-        return None
+    temp_files = dict()
 
-    #add constant memory arguments to compiled module
-    if cmem_args is not None:
-        dev.copy_constant_memory_args(cmem_args)
+    try:
+        #obtain the kernel_string and prepare additional files, if any
+        if isinstance(original_kernel, list):
+            kernel_string, temp_files = prepare_list_of_files(original_kernel, params, grid)
+        else:
+            kernel_string = get_kernel_string(original_kernel)
 
-    #test kernel for correctness and benchmark
-    if answer is not None:
-        check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, verbose, atol)
+        #compile the kernel
+        func = compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_string, verbose)
+        if func is None:
+            return None
 
-    #benchmark
-    time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)
+        #add constant memory arguments to compiled module
+        if cmem_args is not None:
+            dev.copy_constant_memory_args(cmem_args)
+
+        #test kernel for correctness and benchmark
+        if answer is not None:
+            check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, verbose, atol)
+
+        #benchmark
+        time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)
+
+    #clean up any temporary files
+    finally:
+        for v in temp_files.values():
+            delete_temp_file(v)
+
     return time
 
 
