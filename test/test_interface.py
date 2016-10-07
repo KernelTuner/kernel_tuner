@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 try:
     from mock import patch
 except ImportError:
@@ -113,7 +115,7 @@ def test_check_kernel_correctness(dev_interface):
     dev.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
     dev.run_kernel.assert_called_once_with('func', answer, 'threads', 'grid')
 
-    print dev.mock_calls
+    print(dev.mock_calls)
 
     assert dev.memcpy_dtoh.called == 1
 
