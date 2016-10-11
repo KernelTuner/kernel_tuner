@@ -150,7 +150,15 @@ called including all the optional arguments.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel in the code.</li>
-<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The CUDA, OpenCL, or C kernel code as a string.</li>
+<li><strong>kernel_string</strong> (<em>string or list</em>) &#8211; <p>The CUDA, OpenCL, or C kernel code as a string.
+It is also allowed for the string to be a filename of the file
+containing the code.</p>
+<p>To support combined host and device code tuning for runtime
+compiled device code, a list of filenames can be passed instead.
+The first file in the list should be the file that contains the
+host code. The host code is allowed to include or read as a string
+any of the files in the list beyond the first.</p>
+</li>
 <li><strong>problem_size</strong> (<em>tuple(int or string, int or string)</em>) &#8211; <p>A tuple containing the size from which the grid
 dimensions of the kernel will be computed. Do not divide by
 the thread block sizes, if this is necessary use grid_div_x/y to
