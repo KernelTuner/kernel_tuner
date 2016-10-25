@@ -31,7 +31,7 @@
 
   
     <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/>
-        <link rel="next" title="Application Examples" href="examples.html"/>
+        <link rel="next" title="Convolution Example" href="convolution.html"/>
         <link rel="prev" title="Tutorial" href="tutorial.html"/> 
 
   
@@ -85,9 +85,11 @@
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Detailed documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Application Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="features.html">Feature Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix.html">Matrix Multiply Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal module documentation</a></li>
 </ul>
 
             
@@ -211,7 +213,7 @@ want any grid x-dimension divisors pass an empty list.</li>
 the grid dimensions in the y-direction, None by default. See grid_div_x
 for more details.</li>
 <li><strong>restrictions</strong> (<em>list</em>) &#8211; A list of strings containing boolean expression that
-limited the search space in that they must be satisfied by the kernel
+limit the search space in that they must be satisfied by the kernel
 configuration. These expressions must be true for the configuration
 to be part of the search space. For example:
 restrictions=[&#8220;block_size_x==block_size_y*tile_size_y&#8221;] limits the
@@ -322,7 +324,7 @@ function, containing the output after kernel execution.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="examples.html" class="btn btn-neutral float-right" title="Application Examples" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="convolution.html" class="btn btn-neutral float-right" title="Convolution Example" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="tutorial.html" class="btn btn-neutral" title="Tutorial" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Matrix Multiplication &mdash; kernel_tuner 0.0.1 documentation</title>
+  <title>Matrix Multiply Example &mdash; kernel_tuner 0.0.1 documentation</title>
   
 
   
@@ -31,9 +31,8 @@
 
   
     <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="Application Examples" href="examples.html"/>
-        <link rel="next" title="Feature Examples" href="features.html"/>
-        <link rel="prev" title="Convolution" href="convolution.html"/> 
+        <link rel="next" title="Kernel Correctness Verification" href="correctness.html"/>
+        <link rel="prev" title="Convolution Example" href="convolution.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -86,18 +85,16 @@
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="examples.html">Application Examples</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="convolution.html">Convolution</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Matrix Multiplication</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#increase-data-reuse">Increase data reuse</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#increase-work-per-thread">Increase work per thread</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Matrix Multiply Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#increase-data-reuse">Increase data reuse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#increase-work-per-thread">Increase work per thread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="features.html">Feature Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal module documentation</a></li>
 </ul>
 
             
@@ -128,9 +125,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-          <li><a href="examples.html">Application Examples</a> &raquo;</li>
-      
-    <li>Matrix Multiplication</li>
+    <li>Matrix Multiply Example</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -144,8 +139,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="matrix-multiplication">
-<h1>Matrix Multiplication<a class="headerlink" href="#matrix-multiplication" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="matrix-multiply-example">
+<h1>Matrix Multiply Example<a class="headerlink" href="#matrix-multiply-example" title="Permalink to this headline">¶</a></h1>
 <p>Matrix multiplication is one of the most well-known linear algebra
 algorithms, and frequently used to demonstrate the high-performance
 computing capabilities of GPUs. As such, an example using matrix
@@ -385,10 +380,10 @@ of the parameter space.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="features.html" class="btn btn-neutral float-right" title="Feature Examples" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="correctness.html" class="btn btn-neutral float-right" title="Kernel Correctness Verification" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="convolution.html" class="btn btn-neutral" title="Convolution" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="convolution.html" class="btn btn-neutral" title="Convolution Example" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

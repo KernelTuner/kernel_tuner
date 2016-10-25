@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Convolution &mdash; kernel_tuner 0.0.1 documentation</title>
+  <title>Convolution Example &mdash; kernel_tuner 0.0.1 documentation</title>
   
 
   
@@ -31,9 +31,8 @@
 
   
     <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="Application Examples" href="examples.html"/>
-        <link rel="next" title="Matrix Multiplication" href="matrix.html"/>
-        <link rel="prev" title="Application Examples" href="examples.html"/> 
+        <link rel="next" title="Matrix Multiply Example" href="matrix.html"/>
+        <link rel="prev" title="Detailed documentation" href="details.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -86,19 +85,17 @@
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="examples.html">Application Examples</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Convolution</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#setup-kernel-arguments">Setup kernel arguments</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#setup-grid-dimensions">Setup grid dimensions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#putting-it-all-together">Putting it all together</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Convolution Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setup-kernel-arguments">Setup kernel arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setup-grid-dimensions">Setup grid dimensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#putting-it-all-together">Putting it all together</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="matrix.html">Matrix Multiplication</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="features.html">Feature Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix.html">Matrix Multiply Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal module documentation</a></li>
 </ul>
 
             
@@ -129,9 +126,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-          <li><a href="examples.html">Application Examples</a> &raquo;</li>
-      
-    <li>Convolution</li>
+    <li>Convolution Example</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -145,8 +140,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="convolution">
-<h1>Convolution<a class="headerlink" href="#convolution" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="convolution-example">
+<h1>Convolution Example<a class="headerlink" href="#convolution-example" title="Permalink to this headline">¶</a></h1>
 <p>2D Convolution is widely used in image processing for many purposes
 including filtering. A naive CUDA kernel for 2D Convolution would be:</p>
 <div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">convolution_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">output</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">input</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">filter</span><span class="p">)</span> <span class="p">{</span>
@@ -326,10 +321,10 @@ the kernel_tuner repository.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="matrix.html" class="btn btn-neutral float-right" title="Matrix Multiplication" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="matrix.html" class="btn btn-neutral float-right" title="Matrix Multiply Example" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="examples.html" class="btn btn-neutral" title="Application Examples" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="details.html" class="btn btn-neutral" title="Detailed documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

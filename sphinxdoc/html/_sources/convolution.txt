@@ -2,8 +2,8 @@
     :linenothreshold: 5
 
 
-Convolution
------------
+Convolution Example
+-------------------
 
 2D Convolution is widely used in image processing for many purposes
 including filtering. A naive CUDA kernel for 2D Convolution would be:

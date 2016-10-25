@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Internal documentation &mdash; kernel_tuner 0.0.1 documentation</title>
+  <title>Internal module documentation &mdash; kernel_tuner 0.0.1 documentation</title>
   
 
   
@@ -84,13 +84,17 @@
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Application Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="features.html">Feature Examples</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Internal documentation</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix.html">Matrix Multiply Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Internal module documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-cuda-cudafunctions">kernel_tuner.cuda.CudaFunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-c-cfunctions">kernel_tuner.c.CFunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.core">kernel_tuner.core</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.util">kernel_tuner.util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.runners.sequential_brute_force">kernel_tuner.runners.sequential_brute_force</a></li>
 </ul>
 </li>
 </ul>
@@ -123,7 +127,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Internal documentation</li>
+    <li>Internal module documentation</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -141,9 +145,9 @@
 <ul class="simple">
 </ul>
 </div>
-<div class="section" id="internal-documentation">
-<h1>Internal documentation<a class="headerlink" href="#internal-documentation" title="Permalink to this headline">¶</a></h1>
-<p>This file provides detailed information about the objects used by
+<div class="section" id="internal-module-documentation">
+<h1>Internal module documentation<a class="headerlink" href="#internal-module-documentation" title="Permalink to this headline">¶</a></h1>
+<p>This file provides detailed information about the objects and modules used by
 the kernel tuner internally. This information should only be
 relevant for developers of the kernel tuner.</p>
 <div class="section" id="kernel-tuner-cuda-cudafunctions">
@@ -627,6 +631,28 @@ interface as CudaFunctions and OpenCLFunctions.</li>
 </dd></dl>
 
 </div>
+<div class="section" id="module-kernel_tuner.core">
+<span id="kernel-tuner-core"></span><h2>kernel_tuner.core<a class="headerlink" href="#module-kernel_tuner.core" title="Permalink to this headline">¶</a></h2>
+<p>Module for grouping the core functionality needed by most runners</p>
+<dl class="function">
+<dt id="kernel_tuner.core.benchmark">
+<code class="descclassname">kernel_tuner.core.</code><code class="descname">benchmark</code><span class="sig-paren">(</span><em>dev</em>, <em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em>, <em>instance_string</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.benchmark" title="Permalink to this definition">¶</a></dt>
+<dd><p>benchmark the kernel instance</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.core.check_kernel_correctness">
+<code class="descclassname">kernel_tuner.core.</code><code class="descname">check_kernel_correctness</code><span class="sig-paren">(</span><em>dev</em>, <em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em>, <em>answer</em>, <em>instance_string</em>, <em>verbose</em>, <em>atol=1e-06</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.check_kernel_correctness" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the kernel once and checks the result against answer</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.core.compile_kernel">
+<code class="descclassname">kernel_tuner.core.</code><code class="descname">compile_kernel</code><span class="sig-paren">(</span><em>dev</em>, <em>kernel_name</em>, <em>kernel_string</em>, <em>params</em>, <em>grid</em>, <em>instance_string</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.compile_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>compile the kernel for this specific instance</p>
+</dd></dl>
+
+</div>
 <div class="section" id="module-kernel_tuner.util">
 <span id="kernel-tuner-util"></span><h2>kernel_tuner.util<a class="headerlink" href="#module-kernel_tuner.util" title="Permalink to this headline">¶</a></h2>
 <p>Module for kernel tuner utility functions</p>
@@ -705,6 +731,51 @@ convenience.</li>
 <dt id="kernel_tuner.util.setup_kernel_strings">
 <code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_kernel_strings</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>params</em>, <em>grid</em>, <em>instance_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_kernel_strings" title="Permalink to this definition">¶</a></dt>
 <dd><p>create configuration specific kernel string</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-kernel_tuner.runners.sequential_brute_force">
+<span id="kernel-tuner-runners-sequential-brute-force"></span><h2>kernel_tuner.runners.sequential_brute_force<a class="headerlink" href="#module-kernel_tuner.runners.sequential_brute_force" title="Permalink to this headline">¶</a></h2>
+<p>The default runner for iterating through the parameter space</p>
+<dl class="function">
+<dt id="kernel_tuner.runners.sequential_brute_force.run">
+<code class="descclassname">kernel_tuner.runners.sequential_brute_force.</code><code class="descname">run</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>parameter_space</em>, <em>grid_div_x</em>, <em>grid_div_y</em>, <em>answer</em>, <em>atol</em>, <em>verbose</em>, <em>lang</em>, <em>device</em>, <em>platform</em>, <em>cmem_args</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential_brute_force.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate through the entire parameter space using a single Python process</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel in the code.</li>
+<li><strong>original_kernel</strong> (<em>string</em>) &#8211; The CUDA, OpenCL, or C kernel code as a string.</li>
+<li><strong>problem_size</strong> (<em>tuple(int or string, int or string)</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>arguments</strong> (<em>list</em>) &#8211; A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for scalars.</li>
+<li><strong>tune_params</strong> (<em>dict( string : [int, int, ...] )</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>parameter_space</strong> (<em>list( list() )</em>) &#8211; A list of lists that contains the entire parameter space
+to be searched. Each list in the list represents a single combination
+of parameters, order is imported and it determined by the order in tune_params.</li>
+<li><strong>grid_div_x</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>grid_div_y</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>answer</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>atol</strong> (<em>float</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>verbose</strong> (<em>boolean</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>lang</strong> (<em>string</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>device</strong> (<em>int</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>platform</strong> &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>cmem_args</strong> (<em>dict(string: numpy object)</em>) &#8211; See kernel_tuner.tune_kernel</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A dictionary of all executed kernel configurations and their
+execution times.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict( string, float )</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>
