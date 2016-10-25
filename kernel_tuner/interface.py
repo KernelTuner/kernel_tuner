@@ -220,7 +220,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :type grid_div_y: list
 
     :param restrictions: A list of strings containing boolean expression that
-        limited the search space in that they must be satisfied by the kernel
+        limit the search space in that they must be satisfied by the kernel
         configuration. These expressions must be true for the configuration
         to be part of the search space. For example:
         restrictions=["block_size_x==block_size_y*tile_size_y"] limits the
