@@ -4,8 +4,8 @@ from __future__ import print_function
 import numpy
 from collections import OrderedDict
 
-from kernel_tuner.util import *
-from kernel_tuner.core import *
+from kernel_tuner.util import detect_language, get_instance_string, get_config_string
+from kernel_tuner.core import get_device_interface, compile_and_benchmark
 
 def run(kernel_name, original_kernel, problem_size, arguments,
         tune_params, parameter_space, grid_div_x, grid_div_y,
@@ -76,15 +76,17 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     gpu_args = dev.ready_argument_list(arguments)
 
     #reduce parameter space to a random sample of size 10%
+    parameter_space = list(parameter_space)
     size = len(parameter_space)
-    sample_indices = numpy.random.choice(range(size), size=size//10, replace=False)
+
+    sample_indices = numpy.random.choice(range(size), size=int(numpy.ceil(size/float(10))), replace=False)
 
     #iterate over parameter space
     for i in sample_indices:
         element = parameter_space[i]
 
         params = OrderedDict(zip(tune_params.keys(), element))
-        instance_string = "_".join([str(i) for i in params.values()])
+        instance_string = get_instance_string(params)
 
         time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
                         problem_size, grid_div_y, grid_div_x,
@@ -93,7 +95,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
             continue
 
         #print the result
-        print("".join([k + "=" + str(v) + ", " for k,v in params.items()]) + kernel_name + " took: " + str(time) + " ms.")
+        print(get_config_string(params) + kernel_name + " took: " + str(time) + " ms.")
         results[instance_string] = time
 
     return results
