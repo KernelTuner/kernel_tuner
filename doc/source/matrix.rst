@@ -2,8 +2,8 @@
     :linenothreshold: 5
 
 
-Matrix Multiplication
----------------------
+Matrix Multiply Example
+-----------------------
 
 Matrix multiplication is one of the most well-known linear algebra 
 algorithms, and frequently used to demonstrate the high-performance 

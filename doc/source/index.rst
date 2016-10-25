@@ -9,13 +9,15 @@ The kernel_tuner documentation
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    Introduction <self>
    tutorial
    details
-   examples
-   features
+   convolution
+   matrix
+   correctness
+   hostcode
    internal
 
 Introduction

@@ -2,10 +2,10 @@
    :maxdepth: 2
 
 
-Internal documentation
-======================
+Internal module documentation
+=============================
 
-This file provides detailed information about the objects used by
+This file provides detailed information about the objects and modules used by
 the kernel tuner internally. This information should only be 
 relevant for developers of the kernel tuner.
 
@@ -24,10 +24,19 @@ kernel_tuner.c.CFunctions
 .. autoclass:: kernel_tuner.c.CFunctions
     :members:
 
+kernel_tuner.core
+-----------------------------------
+.. automodule:: kernel_tuner.core
+    :members:
+
 kernel_tuner.util
 -----------------------------------
 .. automodule:: kernel_tuner.util
     :members:
 
+kernel_tuner.runners.sequential_brute_force
+-------------------------------------------
+.. automodule:: kernel_tuner.runners.sequential_brute_force
+    :members:
 
 
