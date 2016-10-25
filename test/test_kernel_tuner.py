@@ -13,10 +13,7 @@ from kernel_tuner.core import *
 def test_get_grid_dimensions1():
 
     problem_size = (1024, 1024)
-
-    params = dict()
-    params["block_x"] = 41
-    params["block_y"] = 37
+    params = {"block_x": 41, "block_y": 37}
 
     grid_div_x = ["block_x"]
     grid_div_y = ["block_y"]
@@ -49,10 +46,7 @@ def test_get_grid_dimensions1():
 def test_get_grid_dimensions2():
 
     problem_size = (1024, 1024)
-
-    params = dict()
-    params["block_x"] = 41
-    params["block_y"] = 37
+    params = {"block_x": 41, "block_y": 37}
 
     grid_div_x = ["block_x*8"]
     grid_div_y = ["(block_y+2)/8"]
@@ -66,10 +60,7 @@ def test_get_grid_dimensions2():
 def test_get_grid_dimensions3():
 
     problem_size = ("num_blocks_x", "num_blocks_y*3")
-
-    params = dict()
-    params["num_blocks_x"] = 71
-    params["num_blocks_y"] = 57
+    params = {"num_blocks_x": 71, "num_blocks_y": 57}
 
     grid_div_x = []
     grid_div_y = []
@@ -84,10 +75,7 @@ def test_get_grid_dimensions3():
 def test_get_grid_dimensions4():
 
     problem_size = (3.8, "num_blocks_y*3")
-
-    params = dict()
-    params["num_blocks_x"] = 71
-    params["num_blocks_y"] = 57
+    params = {"num_blocks_x": 71, "num_blocks_y": 57}
 
     grid_div_x = []
     grid_div_y = []
@@ -97,10 +85,7 @@ def test_get_grid_dimensions4():
 def test_get_grid_dimensions5():
 
     problem_size = (1024, 1024)
-
-    params = dict()
-    params["block_x"] = 41
-    params["block_y"] = 37
+    params = {"block_x": 41, "block_y": 37}
 
     grid_div_x = ["block_x", "block_y"]
     grid_div_y = ["(block_y+2)/8"]
@@ -117,10 +102,7 @@ def test_get_grid_dimensions5():
 def test_get_grid_dimensions6():
 
     problem_size = (numpy.int32(1024), numpy.int64(1024))
-
-    params = dict()
-    params["block_x"] = 41
-    params["block_y"] = 37
+    params = {"block_x": 41, "block_y": 37}
 
     grid_div_x = ["block_x", "block_y"]
     grid_div_y = ["(block_y+2)/8"]
@@ -137,9 +119,7 @@ def test_get_grid_dimensions6():
 
 def test_get_thread_block_dimensions():
 
-    params = dict()
-    params["block_size_x"] = 123
-    params["block_size_y"] = 257
+    params = {"block_size_x": 123, "block_size_y": 257}
 
     threads = get_thread_block_dimensions(params)
     assert len(threads) == 3
@@ -178,44 +158,17 @@ def test_replace_param_occurrences():
     new_kernel = replace_param_occurrences(kernel, params)
     assert kernel == new_kernel
 
-def test_check_restrictions1():
-    params = dict()
-    params["a"] = 7
-    params["b"] = 4
-    params["c"] = 3
-    restrictions = ["a==b+c"]
-    #test the call returns true
+def test_check_restrictions():
+    params = {"a": 7, "b": 4, "c": 3}
     print(params.values())
     print(params.keys())
-    answer = check_restrictions(restrictions, params.values(), params.keys(), False)
-    print(answer)
-    assert answer == True
-
-def test_check_restrictions2():
-    params = dict()
-    params["a"] = 7
-    params["b"] = 4
-    params["c"] = 3
-    restrictions = ["a==b+c", "b==b", "a-b==c"]
-    #test that the call returns true
-    print(params.values())
-    print(params.keys())
-    answer = check_restrictions(restrictions, params.values(), params.keys(), False)
-    print(answer)
-    assert answer == True
-
-def test_check_restrictions3():
-    params = dict()
-    params["a"] = 7
-    params["b"] = 4
-    params["c"] = 3
-    restrictions = ["a==b+c", "b!=b", "a-b==c"]
-    #test that the call returns true
-    print(params.values())
-    print(params.keys())
-    answer = check_restrictions(restrictions, params.values(), params.keys(), False)
-    print(answer)
-    assert answer == False
+    restrictions = [["a==b+c"], ["a==b+c", "b==b", "a-b==c"], ["a==b+c", "b!=b", "a-b==c"]]
+    expected = [True, True, False]
+    #test the call returns expected
+    for r,e in zip(restrictions, expected):
+        answer = check_restrictions(r, params.values(), params.keys(), False)
+        print(answer)
+        assert answer == e
 
 def test_detect_language1():
     lang = None
@@ -280,7 +233,6 @@ def test_check_argument_list2():
     check_argument_list(args)
     #test that no exception is raised
     assert True
-
 
 
 def test_looks_like_a_filename1():
