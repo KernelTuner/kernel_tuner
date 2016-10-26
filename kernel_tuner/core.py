@@ -17,7 +17,7 @@ def get_device_interface(lang, device, platform):
         raise UnImplementedException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
     return dev
 
-def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, verbose, atol=1e-6):
+def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params, verbose, atol=1e-6):
     """runs the kernel once and checks the result against answer"""
     for result, expected in zip(gpu_args, answer):
         if expected is not None:
@@ -37,7 +37,7 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instanc
             dev.memcpy_dtoh(result_host, result)
             output_test = numpy.allclose(result_host.ravel(), expected.ravel(), atol=atol)
             if not output_test and verbose:
-                print("Error: " + instance_string + " detected during correctness check")
+                print("Error: " + get_config_string(params) + " detected during correctness check")
                 print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
                 numpy.set_printoptions(edgeitems=500)
                 print("Kernel output:")
@@ -46,7 +46,7 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instanc
                 print(expected)
             correct = correct and output_test
     if not correct:
-        raise Exception("Error: " + instance_string + " failed correctness check")
+        raise Exception("Error: " + get_config_string(params) + " failed correctness check")
     return correct
 
 def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_string, verbose):
@@ -116,7 +116,7 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
 
         #test kernel for correctness and benchmark
         if answer is not None:
-            check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, instance_string, verbose, atol)
+            check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params, verbose, atol)
 
         #benchmark
         time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)

@@ -108,9 +108,10 @@ def test_check_kernel_correctness(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
 
-    answer = [numpy.zeros(8).astype(numpy.float32)]
+    answer = [numpy.zeros(4).astype(numpy.float32)]
+    wrong = [numpy.array([1,2,3,4]).astype(numpy.float32)]
 
-    test = core.check_kernel_correctness(dev, 'func', answer, 'threads', 'grid', answer, 'instance_string', True)
+    test = core.check_kernel_correctness(dev, 'func', answer, 'threads', 'grid', answer, 'params', True)
 
     dev.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
     dev.run_kernel.assert_called_once_with('func', answer, 'threads', 'grid')
@@ -124,3 +125,11 @@ def test_check_kernel_correctness(dev_interface):
             assert all(args[0] == answer[0])
             assert all(args[1] == answer[0])
     assert test
+
+    try:
+        core.check_kernel_correctness(dev, 'func', wrong, 'threads', 'grid', wrong, {'0': 0}, True)
+        print("check_kernel_correctness failed to throw an exception")
+        assert False
+    except Exception as e:
+        assert True
+
