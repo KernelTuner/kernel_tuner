@@ -52,7 +52,6 @@ def read_file(filename):
     if os.path.isfile(filename):
         with open(filename, 'r') as f:
             return f.read()
-    return None
 
 def write_file(filename, string):
     with open(filename, 'w') as f:

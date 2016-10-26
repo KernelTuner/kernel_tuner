@@ -244,3 +244,17 @@ def test_looks_like_a_filename2():
     assert not looks_like_a_filename(string)
 
 
+def test_read_write_file():
+    filename = get_temp_filename()
+
+    my_string = "this is the test string"
+    try:
+        write_file(filename, my_string)
+        with open(filename, 'r') as f:
+            answer = f.read()
+        assert my_string == answer
+        answer2 = read_file(filename)
+        assert my_string == answer2
+
+    finally:
+        delete_temp_file(filename)
