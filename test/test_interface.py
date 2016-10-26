@@ -130,6 +130,6 @@ def test_check_kernel_correctness(dev_interface):
         core.check_kernel_correctness(dev, 'func', wrong, 'threads', 'grid', wrong, {'0': 0}, True)
         print("check_kernel_correctness failed to throw an exception")
         assert False
-    except Exception as e:
+    except Exception:
         assert True
 
