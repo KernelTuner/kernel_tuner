@@ -23,6 +23,6 @@ def test_random_sample():
 
     #check all returned results make sense
     for k,v in result.items():
-        assert int(k) in tune_params.values()[0]
+        assert int(k) in list(tune_params.values())[0]
         assert v == 1.0
 

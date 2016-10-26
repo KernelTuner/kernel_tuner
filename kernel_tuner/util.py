@@ -54,8 +54,14 @@ def read_file(filename):
             return f.read()
 
 def write_file(filename, string):
-    with open(filename, 'w') as f:
-        f.write(string.encode('utf-8'))
+    #ugly fix, hopefully we can find a better one
+    import sys
+    if sys.version_info[0] >= 3:
+        with open(filename, 'w', encoding="utf-8") as f:
+            f.write(string)
+    else:
+        with open(filename, 'w') as f:
+            f.write(string.encode("utf-8"))
 
 def detect_language(lang, original_kernel):
     """attempt to detect language from the kernel_string if not specified"""
