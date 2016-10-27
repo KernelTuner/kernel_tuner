@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import numpy
 from kernel_tuner import tune_kernel
 

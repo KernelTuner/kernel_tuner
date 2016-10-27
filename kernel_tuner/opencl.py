@@ -146,7 +146,7 @@ class OpenCLFunctions(object):
 
         """
         if isinstance(buffer, cl.Buffer):
-            cl.enqueue_fill_buffer(self.queue, buffer, numpy.array(value).astype(numpy.float32), 0, size/4)
+            cl.enqueue_fill_buffer(self.queue, buffer, numpy.array(value).astype(numpy.float32), 0, size//4)
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy

@@ -24,6 +24,7 @@ benchmarked.
 """
 import numpy
 import kernel_tuner
+from collections import OrderedDict
 
 with open('convolution.cl', 'r') as f:
     kernel_string = f.read()
@@ -37,7 +38,7 @@ input = numpy.random.randn(input_size).astype(numpy.float32)
 filter = numpy.random.randn(17*17).astype(numpy.float32)
 
 args = [output, input, filter]
-tune_params = dict()
+tune_params = OrderedDict()
 tune_params["block_size_x"] = [16*i for i in range(1,9)]
 tune_params["block_size_y"] = [2**i for i in range(6)]
 

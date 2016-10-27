@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import numpy
 import kernel_tuner
+from collections import OrderedDict
 
 problem_size = (4096, 4096)
 size = numpy.prod(problem_size)
@@ -10,7 +11,7 @@ B = numpy.random.randn(size).astype(numpy.float32)
 C = numpy.zeros_like(A)
 
 args = [C, A, B]
-tune_params = dict()
+tune_params = OrderedDict()
 tune_params["block_size_x"] = [16*2**i for i in range(3)]
 tune_params["block_size_y"] = [2**i for i in range(6)]
 
