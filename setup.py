@@ -1,17 +1,20 @@
 import os
 from setuptools import setup
 
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name = "kernel_tuner",
-    version = "0.0.1",
+    version = "0.1.0",
     author = "Ben van Werkhoven",
     author_email = "b.vanwerkhoven@esciencecenter.nl",
-    description = ("A simple CUDA kernel tuner in Python"),
+    description = ("A simple CUDA/OpenCL kernel tuner in Python"),
     license = "Apache 2.0",
-    keywords = "auto-tuning gpu pycuda cuda pyopencl opencl",
+    keywords = "auto-tuning gpu computing pycuda cuda pyopencl opencl",
     url = "http://benvanwerkhoven.github.io/kernel_tuner/",
     packages=['kernel_tuner', 'kernel_tuner.runners'],
     long_description=read('README.md'),
@@ -30,5 +33,7 @@ setup(
         'Topic :: System :: Distributed Computing',
         'Development Status :: 4 - Beta',
     ],
+    install_requires=required,
+
 )
 

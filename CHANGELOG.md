@@ -3,14 +3,24 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+
+
+
+
+## [0.1.0] - 2016-11-02
 ### Changed
 - verbose now also prints debug output when correctness check fails
+- restructured the utility functions into util and core
 - restructured the code to prepare for different strategies
 - shortened the output printed by the tune_kernel
 - allowing numpy integers for specifying problem size
 
 ### Added
+- a public roadmap
+- requirements.txt
+- example showing GPU code unit testing with the Kernel Tuner
 - support for passing a (list of) filenames instead of kernel string
+- runner that takes a random sample of 10 percent
 - support for OpenCL platform selection
 - support for using tuning parameter names in the problem size
 
