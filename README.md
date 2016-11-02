@@ -39,6 +39,7 @@ clone the repository
 change into the top-level directory  
     `cd kernel_tuner`  
 install using  
+    `pip install -r requirements.txt`  
     `pip install .`
 
 Dependencies
