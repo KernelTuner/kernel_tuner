@@ -34,6 +34,10 @@ The full documentation is available [here](http://benvanwerkhoven.github.io/kern
 
 Installation
 ------------
+To install from PyPi, install with:  
+    `pip install kernel_tuner`  
+  
+To install from the source:   
 clone the repository  
     `git clone git@github.com:benvanwerkhoven/kernel_tuner.git`  
 change into the top-level directory  
