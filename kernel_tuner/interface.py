@@ -1,4 +1,6 @@
-""" A simple CUDA/OpenCL kernel tuner in Python
+""" 
+A simple CUDA/OpenCL kernel tuner in Python
+===========================================
 
 The goal of this project is to provide a - as simple as possible - tool
 for tuning CUDA and OpenCL kernels. This implies that any CUDA or OpenCL
@@ -25,12 +27,13 @@ tune_kernel.
 
 Installation
 ------------
-clone the repository
-    `git clone git@github.com:benvanwerkhoven/kernel_tuner.git`
-change into the top-level directory
-    `cd kernel_tuner`
-install using
-    `pip install .`
+| clone the repository
+|  ``git clone git@github.com:benvanwerkhoven/kernel_tuner.git``
+| change into the top-level directory
+|  ``cd kernel_tuner``
+| install using
+|  ``pip install -r requirements.txt``
+|  ``pip install .``
 
 Dependencies
 ------------
@@ -87,30 +90,6 @@ You can find these and many - more extensive - example codes, in the
 directory. See the `full documentation <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html>`_
 for several highly detailed tutorial-style explanations of example
 kernels and the scripts to tune them.
-
-Tuning host and kernel code
----------------------------
-It is also possible to tune for combinations of tunable parameters in
-both host and kernel code. This allows for a number of powerfull
-things, such as tuning the number of streams for a kernel that uses
-CUDA Streams or OpenCL Command Queues to overlap transfers between
-host and device with kernel execution. This can be done in combination
-with tuning the parameters inside the kernel code. See the
-`convolution_streams example code <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`_
-and the `documentation <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html>`_
-for a detailed explanation of the kernel tuner Python script.
-
-Correctness verification
-------------------------
-Optionally, you can let the kernel tuner verify the output of every
-kernel it compiles and benchmarks, by passing an `answer` list. This
-list matches the list of arguments to the kernel, but contains the
-expected output of the kernel. Input arguments are replaced with None.
-
-::
-
-    answer = [a+b, None, None]  # the order matches the arguments (in args) to the kernel
-    tune_kernel("vector_add", kernel_string, problem_size, args, tune_params, answer=answer)
 
 Author
 ------

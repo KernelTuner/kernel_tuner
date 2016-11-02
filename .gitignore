@@ -2,3 +2,5 @@
 doc/build/*
 doc/create_doc.sh
 *coverage*
+/dist
+kernel_tuner.egg-info

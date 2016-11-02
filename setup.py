@@ -1,11 +1,11 @@
 import os
 from setuptools import setup
 
+import kernel_tuner
+from kernel_tuner import interface
+
 with open('requirements.txt') as f:
     required = f.read().splitlines()
-
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name = "kernel_tuner",
@@ -17,7 +17,7 @@ setup(
     keywords = "auto-tuning gpu computing pycuda cuda pyopencl opencl",
     url = "http://benvanwerkhoven.github.io/kernel_tuner/",
     packages=['kernel_tuner', 'kernel_tuner.runners'],
-    long_description=read('README.md'),
+    long_description=interface.__doc__,
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: Developers',
