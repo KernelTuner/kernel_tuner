@@ -38,11 +38,11 @@ To install from PyPi, install with:
     `pip install kernel_tuner`  
   
 To install from the source:   
-clone the repository  
+ * clone the repository  
     `git clone git@github.com:benvanwerkhoven/kernel_tuner.git`  
-change into the top-level directory  
+ * change into the top-level directory  
     `cd kernel_tuner`  
-install using  
+ * install using  
     `pip install -r requirements.txt`  
     `pip install .`
 
