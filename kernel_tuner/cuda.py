@@ -6,10 +6,9 @@ import numpy
 try:
     import pycuda.driver as drv
     from pycuda.compiler import SourceModule
-except Exception:
-    drv = object()
-    SourceModule = object()
-
+except ImportError:
+    drv = None
+    SourceModule = None
 
 
 class CudaFunctions(object):
@@ -29,6 +28,9 @@ class CudaFunctions(object):
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        if not drv:
+            raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
+
         drv.init()
         self.context = drv.Device(device).make_context()
 
@@ -41,7 +43,8 @@ class CudaFunctions(object):
 
 
     def __del__(self):
-        self.context.pop()
+        if hasattr(self, 'context'):
+            self.context.pop()
 
 
     def ready_argument_list(self, arguments):

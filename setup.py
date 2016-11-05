@@ -4,9 +4,6 @@ from setuptools import setup
 import kernel_tuner
 from kernel_tuner import interface
 
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
-
 setup(
     name = "kernel_tuner",
     version = "0.1.0",
@@ -33,7 +30,6 @@ setup(
         'Topic :: System :: Distributed Computing',
         'Development Status :: 4 - Beta',
     ],
-    install_requires=required,
 
 )
 

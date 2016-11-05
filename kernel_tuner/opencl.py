@@ -5,8 +5,8 @@ import numpy
 #embedded in try block to be able to generate documentation
 try:
     import pyopencl as cl
-except Exception:
-    pass
+except ImportError:
+    cl = None
 
 
 class OpenCLFunctions(object):
@@ -21,6 +21,9 @@ class OpenCLFunctions(object):
         :param iterations: The number of iterations to run the kernel during benchmarking, 7 by default.
         :type iterations: int
         """
+        if not cl:
+            raise ImportError("Error: pyopencl not installed, please install e.g. using 'pip install pyopencl'.")
+
         self.ITERATIONS = iterations
         #setup context and queue
         platforms = cl.get_platforms()
