@@ -35,7 +35,7 @@ The full documentation is available [here](http://benvanwerkhoven.github.io/kern
 Installation
 ------------
 To install from PyPi, install with:  
-    `pip install kernel_tuner`  
+ * `pip install kernel_tuner` 
   
 To install from the source:   
  * clone the repository  
@@ -43,13 +43,17 @@ To install from the source:
  * change into the top-level directory  
     `cd kernel_tuner`  
  * install using  
-    `pip install -r requirements.txt`  
     `pip install .`
 
 Dependencies
 ------------
- * Python 2.7 or Python 3.5
- * PyCuda and/or PyOpenCL (https://mathema.tician.de/software/)
+Python 2.7 or Python 3.5
+
+PyCuda and/or PyOpenCL (https://mathema.tician.de/software/)
+ * To tune CUDA kernels  
+    `pip install pycuda`
+ * To tune OpenCL kernels  
+    `pip install pyopencl`
 
 Example usage
 -------------
