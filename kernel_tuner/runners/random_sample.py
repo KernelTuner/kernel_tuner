@@ -10,7 +10,7 @@ from kernel_tuner.core import get_device_interface, compile_and_benchmark
 def run(kernel_name, original_kernel, problem_size, arguments,
         tune_params, parameter_space, grid_div_x, grid_div_y,
         answer, atol, verbose,
-        lang, device, platform, cmem_args):
+        lang, device, platform, cmem_args, compiler_options=None):
     """ Sample the parameter space using a single Python process
 
     :param kernel_name: The name of the kernel in the code.
@@ -70,7 +70,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
 
     #detect language and create device function interface
     lang = detect_language(lang, original_kernel)
-    dev = get_device_interface(lang, device, platform)
+    dev = get_device_interface(lang, device, platform, compiler_options)
 
     #move data to the GPU
     gpu_args = dev.ready_argument_list(arguments)

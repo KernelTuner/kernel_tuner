@@ -123,7 +123,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None,
         restrictions=None, answer=None, atol=1e-6, verbose=False,
         lang=None, device=0, platform=0, cmem_args=None,
-        num_threads=1, use_noodles=False, sample=False):
+        num_threads=1, use_noodles=False, sample=False, compiler_options=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code.
@@ -255,6 +255,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         objects in the same way as normal kernel arguments.
     :type cmem_args: dict(string: numpy object)
 
+    :param compiler_options: A list of strings that specifies compiler options.
+    :type compiler_options: list(string)
+
     :returns: A dictionary of all executed kernel configurations and their
         execution times.
     :rtype: dict( string, float )
@@ -283,7 +286,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     results = runner.run(kernel_name, kernel_string, problem_size, arguments,
         tune_params, parameter_space, grid_div_x, grid_div_y,
         answer, atol, verbose,
-        lang, device, platform, cmem_args)
+        lang, device, platform, cmem_args, compiler_options)
 
     #finished iterating over search space
     if len(results) > 0:

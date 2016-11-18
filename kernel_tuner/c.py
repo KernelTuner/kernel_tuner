@@ -13,7 +13,7 @@ from kernel_tuner.util import get_temp_filename, delete_temp_file
 class CFunctions(object):
     """Class that groups the code for running and compiling C functions"""
 
-    def __init__(self, iterations=7):
+    def __init__(self, iterations=7, compiler_options=None):
         """instantiate CFunctions object used for interacting with C code
 
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
@@ -21,6 +21,7 @@ class CFunctions(object):
         """
         self.ITERATIONS = iterations
         self.max_threads = 1024
+        self.compiler_options = compiler_options
 
         #test if nvcc is available, otherwise use gcc
         self.compiler = "nvcc"
@@ -97,6 +98,9 @@ class CFunctions(object):
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
             #might be better to have an optional argument to pass the desired compute capability
             compiler_options += ["-arch=compute_52"]
+
+        if self.compiler_options:
+            compiler_options += self.compiler_options
 
         lib_args = []
         if "CL/cl.h" in kernel_string:

@@ -13,7 +13,6 @@ This is the list of features that we want to have implemented by the next versio
  * Option to change defaults for 'block_size_x', and so on
  * Option to set a function that computes search space restriction, instead of a list of strings
  * Option to set compiler name, when using C backend
- * Option to set compiler options
 
 ### version 1.0.0
 

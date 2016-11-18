@@ -12,7 +12,7 @@ except ImportError:
 class OpenCLFunctions(object):
     """Class that groups the OpenCL functions on maintains some state about the device"""
 
-    def __init__(self, device=0, platform=0, iterations=7):
+    def __init__(self, device=0, platform=0, iterations=7, compiler_options=None):
         """Creates OpenCL device context and reads device properties
 
         :param device: The ID of the OpenCL device to use for benchmarking
@@ -34,6 +34,7 @@ class OpenCLFunctions(object):
         self.mf = cl.mem_flags
         #inspect device properties
         self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE)
+        self.compiler_options = compiler_options or []
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
@@ -68,7 +69,7 @@ class OpenCLFunctions(object):
         :returns: An OpenCL kernel that can be called directly.
         :rtype: pyopencl.Kernel
         """
-        prg = cl.Program(self.ctx, kernel_string).build()
+        prg = cl.Program(self.ctx, kernel_string).build(options=self.compiler_options)
         func = getattr(prg, kernel_name)
         return func
 

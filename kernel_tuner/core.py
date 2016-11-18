@@ -6,13 +6,13 @@ from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
 from kernel_tuner.util import *
 
-def get_device_interface(lang, device, platform):
+def get_device_interface(lang, device, platform, compiler_options=None):
     if lang == "CUDA":
-        dev = CudaFunctions(device)
+        dev = CudaFunctions(device, compiler_options=compiler_options)
     elif lang == "OpenCL":
-        dev = OpenCLFunctions(device, platform)
+        dev = OpenCLFunctions(device, platform, compiler_options=compiler_options)
     elif lang == "C":
-        dev = CFunctions()
+        dev = CFunctions(compiler_options=compiler_options)
     else:
         raise UnImplementedException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
     return dev
@@ -67,6 +67,7 @@ def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_strin
             if verbose:
                 print("skipping config", instance_string, "reason: too much shared memory used")
         else:
+            print("Error while compiling the following code:\n" + kernel_string + "\n")
             raise e
     return func
 

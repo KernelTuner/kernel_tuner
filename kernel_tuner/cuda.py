@@ -14,7 +14,7 @@ except ImportError:
 class CudaFunctions(object):
     """Class that groups the CUDA functions on maintains state about the device"""
 
-    def __init__(self, device=0, iterations=7):
+    def __init__(self, device=0, iterations=7, compiler_options=None):
         """instantiate CudaFunctions object used for interacting with the CUDA device
 
         Instantiating this object will inspect and store certain device properties at
@@ -40,6 +40,7 @@ class CudaFunctions(object):
         self.cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
         self.ITERATIONS = iterations
         self.current_module = None
+        self.compiler_options = compiler_options
 
 
     def __del__(self):
@@ -83,9 +84,15 @@ class CudaFunctions(object):
         :rtype: pycuda.driver.Function
         """
         try:
-            self.current_module = SourceModule(kernel_string, options=['-Xcompiler=-Wall'],
+            no_extern_c = 'extern "C"' in kernel_string
+
+            compiler_options = ['-Xcompiler=-Wall']
+            if self.compiler_options:
+                compiler_options += self.compiler_options
+
+            self.current_module = SourceModule(kernel_string, options=self.compiler_options,
                     arch='compute_' + self.cc, code='sm_' + self.cc,
-                    cache_dir=False)
+                    cache_dir=False, no_extern_c=no_extern_c)
             func = self.current_module.get_function(kernel_name)
             return func
         except drv.CompileError as e:

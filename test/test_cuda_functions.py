@@ -66,8 +66,9 @@ def test_compile():
     try:
         func = dev.compile("vector_add", kernel_string)
         assert True
-    except Exception:
-        print("Did not expect an exception")
+    except Exception as e:
+        print("Did not expect any exception:")
+        print(str(e))
         assert False
 
 @nottest

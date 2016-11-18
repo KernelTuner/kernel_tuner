@@ -4,7 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-
+- option to set compiler options
 
 
 ## [0.1.0] - 2016-11-02
