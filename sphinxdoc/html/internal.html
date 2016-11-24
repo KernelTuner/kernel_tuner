@@ -30,6 +30,9 @@
   
 
   
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="kernel_tuner 0.1.0 documentation" href="index.html"/>
         <link rel="prev" title="Tuning Host Code" href="hostcode.html"/> 
 
@@ -142,8 +145,6 @@
            <div itemprop="articleBody">
             
   <div class="toctree-wrapper compound">
-<ul class="simple">
-</ul>
 </div>
 <div class="section" id="internal-module-documentation">
 <h1>Internal module documentation<a class="headerlink" href="#internal-module-documentation" title="Permalink to this headline">¶</a></h1>
@@ -154,7 +155,7 @@ relevant for developers of the kernel tuner.</p>
 <h2>kernel_tuner.cuda.CudaFunctions<a class="headerlink" href="#kernel-tuner-cuda-cudafunctions" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="kernel_tuner.cuda.CudaFunctions">
-<em class="property">class </em><code class="descclassname">kernel_tuner.cuda.</code><code class="descname">CudaFunctions</code><span class="sig-paren">(</span><em>device=0</em>, <em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kernel_tuner.cuda.</code><code class="descname">CudaFunctions</code><span class="sig-paren">(</span><em>device=0</em>, <em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class that groups the CUDA functions on maintains state about the device</p>
 <dl class="method">
 <dt id="kernel_tuner.cuda.CudaFunctions.benchmark">
@@ -323,7 +324,7 @@ of the grid</li>
 <h2>kernel_tuner.opencl.OpenCLFunctions<a class="headerlink" href="#kernel-tuner-opencl-openclfunctions" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="kernel_tuner.opencl.OpenCLFunctions">
-<em class="property">class </em><code class="descclassname">kernel_tuner.opencl.</code><code class="descname">OpenCLFunctions</code><span class="sig-paren">(</span><em>device=0</em>, <em>platform=0</em>, <em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kernel_tuner.opencl.</code><code class="descname">OpenCLFunctions</code><span class="sig-paren">(</span><em>device=0</em>, <em>platform=0</em>, <em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class that groups the OpenCL functions on maintains some state about the device</p>
 <dl class="method">
 <dt id="kernel_tuner.opencl.OpenCLFunctions.benchmark">
@@ -474,7 +475,7 @@ of the NDRange.</li>
 <h2>kernel_tuner.c.CFunctions<a class="headerlink" href="#kernel-tuner-c-cfunctions" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="kernel_tuner.c.CFunctions">
-<em class="property">class </em><code class="descclassname">kernel_tuner.c.</code><code class="descname">CFunctions</code><span class="sig-paren">(</span><em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kernel_tuner.c.</code><code class="descname">CFunctions</code><span class="sig-paren">(</span><em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class that groups the code for running and compiling C functions</p>
 <dl class="method">
 <dt id="kernel_tuner.c.CFunctions.benchmark">
@@ -739,7 +740,7 @@ convenience.</li>
 <p>The default runner for iterating through the parameter space</p>
 <dl class="function">
 <dt id="kernel_tuner.runners.sequential_brute_force.run">
-<code class="descclassname">kernel_tuner.runners.sequential_brute_force.</code><code class="descname">run</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>parameter_space</em>, <em>grid_div_x</em>, <em>grid_div_y</em>, <em>answer</em>, <em>atol</em>, <em>verbose</em>, <em>lang</em>, <em>device</em>, <em>platform</em>, <em>cmem_args</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential_brute_force.run" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.runners.sequential_brute_force.</code><code class="descname">run</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>parameter_space</em>, <em>grid_div_x</em>, <em>grid_div_y</em>, <em>answer</em>, <em>atol</em>, <em>verbose</em>, <em>lang</em>, <em>device</em>, <em>platform</em>, <em>cmem_args</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential_brute_force.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate through the entire parameter space using a single Python process</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
