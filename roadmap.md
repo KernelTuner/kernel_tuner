@@ -13,6 +13,7 @@ This is the list of features that we want to have implemented by the next versio
  * Option to change defaults for 'block_size_x', and so on
  * Option to set a function that computes search space restriction, instead of a list of strings
  * Option to set compiler name, when using C backend
+ * Option to pass a function that generates the kernel code
 
 ### version 1.0.0
 
@@ -31,7 +32,7 @@ demand for it. If you are interesting in any of these, let us know!
 
  * Tuning compiler options in combination other parameters kernel
  * Example that tunes a kernel using thread block re-indexing
- * Example host code that runs a pipeline of kernels
+ * Example host code that tunes a pipeline of kernels
  * Example CUDA host code that uses runtime compilation
 
 
