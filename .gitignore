@@ -1,6 +1,7 @@
 *.pyc
+__pycache__
 doc/build/*
 doc/create_doc.sh
 *coverage*
 /dist
-kernel_tuner.egg-info
+*.egg-info
