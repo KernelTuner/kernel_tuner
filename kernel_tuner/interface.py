@@ -301,7 +301,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 def run_kernel(kernel_name, kernel_string, problem_size, arguments,
         params, grid_div_x=None, grid_div_y=None,
-        lang=None, device=0, platform=0, cmem_args=None):
+        lang=None, device=0, platform=0, cmem_args=None, compiler_options=None):
     """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
@@ -349,6 +349,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
         arguments to the kernel. See tune_kernel() for details.
     :type cmem_args: dict(string, ...)
 
+    :param compiler_options: A list of strings that specifies compiler options.
+    :type compiler_options: list(string)
+
     :returns: A list of numpy arrays, similar to the arguments passed to this
         function, containing the output after kernel execution.
     :rtype: list
@@ -356,7 +359,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     #move data to the GPU and compile the kernel
     lang = detect_language(lang, kernel_string)
-    dev = get_device_interface(lang, device, platform)
+    dev = get_device_interface(lang, device, platform, compiler_options)
     check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
