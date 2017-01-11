@@ -67,7 +67,7 @@ def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_strin
             if verbose:
                 print("skipping config", instance_string, "reason: too much shared memory used")
         else:
-            print("Error while compiling the following code:\n" + kernel_string + "\n")
+            print("Error while compiling:", instance_string)
             raise e
     return func
 
@@ -121,6 +121,11 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
 
         #benchmark
         time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)
+
+    except:
+        _, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid, instance_string)
+        print("Error while compiling or benchmarking the following code:\n" + kernel_string + "\n")
+        exit(1)
 
     #clean up any temporary files
     finally:
