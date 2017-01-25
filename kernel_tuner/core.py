@@ -122,10 +122,10 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
         #benchmark
         time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)
 
-    except:
+    except Exception as e:
         _, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid, instance_string)
         print("Error while compiling or benchmarking the following code:\n" + kernel_string + "\n")
-        exit(1)
+        raise e
 
     #clean up any temporary files
     finally:
