@@ -40,7 +40,7 @@ class CudaFunctions(object):
         self.cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
         self.ITERATIONS = iterations
         self.current_module = None
-        self.compiler_options = compiler_options
+        self.compiler_options = compiler_options or []
 
 
     def __del__(self):
@@ -90,7 +90,7 @@ class CudaFunctions(object):
             if self.compiler_options:
                 compiler_options += self.compiler_options
 
-            self.current_module = SourceModule(kernel_string, options=self.compiler_options,
+            self.current_module = SourceModule(kernel_string, options=self.compiler_options + ["-e", kernel_name],
                     arch='compute_' + self.cc, code='sm_' + self.cc,
                     cache_dir=False, no_extern_c=no_extern_c)
             func = self.current_module.get_function(kernel_name)
