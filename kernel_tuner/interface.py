@@ -258,12 +258,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :param compiler_options: A list of strings that specifies compiler options.
     :type compiler_options: list(string)
 
-    :returns: A dictionary of all executed kernel configurations and their
+    :returns: A list of dictionaries of all executed kernel configurations and their
         execution times.
-    :rtype: dict( string, float )
+    :rtype: list(dict())
     """
-
-    results = dict()
 
     #see if the kernel arguments have correct type
     check_argument_list(arguments)
@@ -290,8 +288,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     #finished iterating over search space
     if len(results) > 0:
-        best_config = min(results, key=results.get)
-        print("best performing configuration: ", best_config, "took:", results[best_config], "ms.")
+        best_config = min(results, key=lambda x:x['time'])
+        print("best performing configuration:", "".join([k + "=" + str(v) + ", " for k,v in best_config.items()]))
     else:
         print("no results to report")
 

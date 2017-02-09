@@ -66,7 +66,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     :rtype: dict( string, float )
     """
 
-    results = dict()
+    results = []
 
     #detect language and create device function interface
     lang = detect_language(lang, original_kernel)
@@ -80,6 +80,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     size = len(parameter_space)
 
     sample_indices = numpy.random.choice(range(size), size=int(numpy.ceil(size/float(10))), replace=False)
+    print(kernel_name)
 
     #iterate over parameter space
     for i in sample_indices:
@@ -94,9 +95,10 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         if time is None:
             continue
 
-        #print the result
-        print(get_config_string(params) + kernel_name + " took: " + str(time) + " ms.")
-        results[instance_string] = time
+        #print and append to results
+        params['time'] = time
+        print("".join([k + "=" + str(v) + ", " for k,v in params.items()]))
+        results.append(params)
 
     return results
 

@@ -65,7 +65,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     :rtype: dict( string, float )
     """
 
-    results = dict()
+    results = []
 
     #detect language and create device function interface
     lang = detect_language(lang, original_kernel)
@@ -73,6 +73,8 @@ def run(kernel_name, original_kernel, problem_size, arguments,
 
     #move data to the GPU
     gpu_args = dev.ready_argument_list(arguments)
+
+    print(kernel_name)
 
     #iterate over parameter space
     for element in parameter_space:
@@ -85,9 +87,10 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         if time is None:
             continue
 
-        #print the result
-        print("".join([k + "=" + str(v) + ", " for k,v in params.items()]) + kernel_name + " took: " + str(time) + " ms.")
-        results[instance_string] = time
+        #print and append to results
+        params['time'] = time
+        print("".join([k + "=" + str(v) + ", " for k,v in params.items()]))
+        results.append(params)
 
     return results
 

@@ -19,10 +19,9 @@ def test_random_sample():
     print(result)
 
     #check that number of benchmarked kernels is 10% (rounded up)
-    assert len(result.keys()) == 3
+    assert len(result) == 3
 
     #check all returned results make sense
-    for k,v in result.items():
-        assert int(k) in list(tune_params.values())[0]
-        assert v == 1.0
+    for v in result:
+        assert v['time'] == 1.0
 

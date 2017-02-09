@@ -3,9 +3,11 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Changed
+- changed the output format to list of dictionaries
 
+### Added
 - option to set compiler options
-
 
 ## [0.1.0] - 2016-11-02
 ### Changed
