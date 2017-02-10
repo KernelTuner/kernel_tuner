@@ -6,7 +6,7 @@ from kernel_tuner import interface
 
 setup(
     name = "kernel_tuner",
-    version = "0.1.0",
+    version = "0.1.1",
     author = "Ben van Werkhoven",
     author_email = "b.vanwerkhoven@esciencecenter.nl",
     description = ("A simple CUDA/OpenCL kernel tuner in Python"),
