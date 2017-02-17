@@ -3,12 +3,14 @@
 import numpy
 import ctypes as C
 import subprocess
+import sys
 import os
 import errno
 
 import numpy.ctypeslib
-
 from kernel_tuner.util import get_temp_filename, delete_temp_file
+
+import logging
 
 class CFunctions(object):
     """Class that groups the code for running and compiling C functions"""
@@ -85,6 +87,8 @@ class CFunctions(object):
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
+        logging.debug('compiling ' + kernel_name)
+
         filename = get_temp_filename()
         source_file = filename+".cc"
         kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
@@ -187,7 +191,19 @@ class CFunctions(object):
         :returns: A robust average of values returned by the C function.
         :rtype: float
         """
-        return func(*c_args)
+        time = func(*c_args)
+
+        #I would like to replace the following with actually capturing
+        #stderr and detecting the error directly in Python, it proved
+        #however that capturing stderr for non-Python functions from Python
+        #is a rather difficult thing to do
+        #
+        #The current, less than ideal, scheme uses the convention that a
+        #negative time indicates a 'too many resources requested for launch'
+        if time < 0.0:
+            raise Exception("too many resources requested for launch")
+
+        return time
 
 
     def memset(self, allocation, value, size):
