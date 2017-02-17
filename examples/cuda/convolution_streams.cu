@@ -23,8 +23,11 @@ extern "C" {
 
 float convolution_streams(float *output, float *input, float *filter) {
 
+    cudaSetDevice(0);
+
     float *h_output;
     float *h_input;
+    float *h_filter;
     float *d_output;
     float *d_input;
     cudaError_t err;
@@ -37,7 +40,12 @@ float convolution_streams(float *output, float *input, float *filter) {
     if (err != cudaSuccess) {
         fprintf(stderr, "Error in cudaHostAlloc: %s\n", cudaGetErrorString(err));
     }
+    err = cudaHostAlloc((void **)&h_filter, filter_width*filter_height*sizeof(float), cudaHostAllocDefault);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Error in cudaHostAlloc: %s\n", cudaGetErrorString(err));
+    }
     memcpy(h_input, input, input_width*input_height*sizeof(float));
+    memcpy(h_filter, filter, filter_width*filter_height*sizeof(float));
 
     //memcpy(h_output, output, image_width*image_height*sizeof(float));
     memset(h_output, 0, image_width*image_height*sizeof(float));
@@ -54,8 +62,6 @@ float convolution_streams(float *output, float *input, float *filter) {
     if (err != cudaSuccess) {
         fprintf(stderr, "Error in cudaMalloc: %s\n", cudaGetErrorString(err));
     }
-
-
 
     cudaStream_t stream[num_streams];
     cudaEvent_t event_htod[num_streams];
@@ -82,6 +88,13 @@ float convolution_streams(float *output, float *input, float *filter) {
         fprintf(stderr, "Error in cudaEventCreate: %s\n", cudaGetErrorString(err));
     }
 
+    //make sure there have been no errors
+    cudaDeviceSynchronize();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Error after memory setup in convolution_streams: %s\n", cudaGetErrorString(err));
+    }
+
     dim3 threads(block_size_x, block_size_y, block_size_z);
     dim3 grid(grid_size_x, grid_size_y);
 
@@ -90,18 +103,11 @@ float convolution_streams(float *output, float *input, float *filter) {
     int dps = lps * input_width;
     int border = border_height * input_width;
 
-    //make sure there have been no errors
-    cudaDeviceSynchronize();
-    err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "Error after memory setup in convolution_streams: %s\n", cudaGetErrorString(err));
-    }
-
     //start timing
     cudaDeviceSynchronize();
     cudaEventRecord(start, 0);
 
-    err = cudaMemcpyToSymbolAsync(d_filter, filter, filter_width*filter_height*sizeof(float), 0, cudaMemcpyHostToDevice, stream[0]);
+    err = cudaMemcpyToSymbolAsync(d_filter, h_filter, filter_width*filter_height*sizeof(float), 0, cudaMemcpyHostToDevice, stream[0]);
     if (err != cudaSuccess) {
         fprintf(stderr, "Error in cudaMemcpyToSymbolAsync: %s\n", cudaGetErrorString(err));
     }
@@ -155,13 +161,23 @@ float convolution_streams(float *output, float *input, float *filter) {
     cudaDeviceSynchronize();
     err = cudaGetLastError();
     if (err != cudaSuccess) {
-        fprintf(stderr, "Error at the end of convolution_streams: %s\n", cudaGetErrorString(err));
-        //exit(1);
+        //this bit is necessary because the Kernel Tuner currently can't decide whether
+        //it's OK to silently skip an error or break execution when calling C functions
+        fprintf(stderr, "going to do string cmp because of error\n");
+        fprintf(stdout, "going to do string cmp because of error\n");
+        const char *error_string = cudaGetErrorString(err);
+        if (strncmp("too many resources requested for launch", error_string, 10) == 0) {
+            return -1.0;
+        } else {
+            fprintf(stderr, "Error at the end of convolution_streams: %s\n", error_string);
+            exit(1);
+        }
     }
 
     //cleanup
     cudaFreeHost(h_output);
     cudaFreeHost(h_input);
+    cudaFreeHost(h_filter);
     cudaFree(d_output);
     cudaFree(d_input);
     for (int k=0; k<num_streams; k++) {

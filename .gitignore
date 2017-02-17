@@ -5,3 +5,5 @@ doc/create_doc.sh
 *coverage*
 /dist
 *.egg-info
+.nfs*
+*.log
