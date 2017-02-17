@@ -96,8 +96,6 @@ class CFunctions(object):
         if self.compiler == "nvcc":
             source_file = source_file[:-1] + "u"
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
-            #might be better to have an optional argument to pass the desired compute capability
-            compiler_options += ["-arch=compute_52"]
 
         if self.compiler_options:
             compiler_options += self.compiler_options
