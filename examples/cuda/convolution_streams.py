@@ -15,12 +15,10 @@ def tune():
 
     args = [output, input, filter]
     tune_params = OrderedDict()
-    tune_params["block_size_x"] = [16*i for i in range(1,9)]
-    tune_params["block_size_y"] = [2**i for i in range(6)]
-
-    tune_params["tile_size_x"] = [2**i for i in range(3)]
-    tune_params["tile_size_y"] = [2**i for i in range(3)]
-
+    tune_params["block_size_x"] = [16*i for i in range(1,17)]
+    tune_params["block_size_y"] = [2**i for i in range(5)]
+    tune_params["tile_size_x"] = [2**i for i in range(4)]
+    tune_params["tile_size_y"] = [2**i for i in range(4)]
     tune_params["num_streams"] = [2**i for i in range(6)]
 
     grid_div_x = ["block_size_x", "tile_size_x"]
@@ -40,10 +38,13 @@ def tune():
     #set non-output fields to None
     answer = [results[0], None, None]
 
+    import logging
+
     #start tuning the kernel
     return kernel_tuner.tune_kernel("convolution_streams", ['convolution_streams.cu', 'convolution.cu'],
         problem_size, args, tune_params,
-        grid_div_y=grid_div_y, grid_div_x=grid_div_x, restrictions=restrict, answer=answer, verbose=True, lang="C", compiler_options=["-arch=sm_52"])
+        grid_div_y=grid_div_y, grid_div_x=grid_div_x, restrictions=restrict, answer=answer, verbose=True, lang="C",
+        compiler_options=["-arch=sm_52"], log=logging.DEBUG)
 
 
 if __name__ == "__main__":
