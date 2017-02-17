@@ -1,6 +1,8 @@
 """ Module for grouping the core functionality needed by most runners """
 from __future__ import print_function
 
+import logging
+
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
@@ -19,6 +21,8 @@ def get_device_interface(lang, device, platform, compiler_options=None):
 
 def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params, verbose, atol=1e-6):
     """runs the kernel once and checks the result against answer"""
+    logging.debug('check_kernel_correctness')
+
     for result, expected in zip(gpu_args, answer):
         if expected is not None:
             dev.memset(result, 0, expected.nbytes)
@@ -27,8 +31,10 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params,
     except Exception as e:
         if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
             #ignore this error for now, it will show up when benchmarking the kernel
+            logging.debug('correctness check ignores runtime failure due to too many resources required')
             return True
         else:
+            logging.debug('correctness check encountered runtime failure that can not be skipped silently: ' + str(e))
             raise e
     correct = True
     for result,expected in zip(gpu_args,answer):
@@ -46,11 +52,13 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params,
                 print(expected)
             correct = correct and output_test
     if not correct:
+        logging.debug('correctness check has found a correctness issue')
         raise Exception("Error: " + get_config_string(params) + " failed correctness check")
     return correct
 
 def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_string, verbose):
     """compile the kernel for this specific instance"""
+    logging.debug('compile_kernel ' + instance_string)
 
     #prepare kernel_string for compilation
     name, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid, instance_string)
@@ -64,15 +72,21 @@ def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_strin
         #much shared memory for example, the desired behavior is to simply
         #skip over this configuration and try the next one
         if "uses too much shared data" in str(e):
+            logging.debug('compile_kernel failed due to kernel using too much shared memory')
             if verbose:
                 print("skipping config", instance_string, "reason: too much shared memory used")
         else:
+            logging.debug('compile_kernel failed due to error that can not be skipped silently: ' + str(e))
             print("Error while compiling:", instance_string)
             raise e
     return func
 
 def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
     """benchmark the kernel instance"""
+    logging.debug('benchmark ' + instance_string)
+    logging.debug('thread block dimenions x,y,z=%d,%d,%d', *threads)
+    logging.debug('grid dimenions x,y,z=%d,%d', *grid)
+
     time = None
     try:
         time = dev.benchmark(func, gpu_args, threads, grid)
@@ -82,15 +96,19 @@ def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
         #the desired behavior is to simply skip over this configuration
         #and proceed to try the next one
         if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
+            logging.debug('benchmark fails due to runtime failure too many resources required')
             if verbose:
                 print("skipping config", instance_string, "reason: too many resources requested for launch")
         else:
+            logging.debug('benchmark encountered runtime failure that can not be skipped silently: ' + str(e))
             print("Error while benchmarking:", instance_string)
             raise e
     return time
 
 def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
         problem_size, grid_div_y, grid_div_x, cmem_args, answer, atol, instance_string, verbose):
+
+    logging.debug('compile_and_benchmark ' + instance_string)
 
     #setup thread block and grid dimensions
     threads, grid = setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, instance_string, verbose)

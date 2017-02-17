@@ -115,6 +115,8 @@ from __future__ import print_function
 
 import numpy
 import itertools
+from datetime import datetime
+import logging
 
 from kernel_tuner.util import *
 from kernel_tuner.core import get_device_interface
@@ -123,7 +125,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None,
         restrictions=None, answer=None, atol=1e-6, verbose=False,
         lang=None, device=0, platform=0, cmem_args=None,
-        num_threads=1, use_noodles=False, sample=False, compiler_options=None):
+        num_threads=1, use_noodles=False, sample=False, compiler_options=None, log=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code.
@@ -262,6 +264,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         execution times.
     :rtype: list(dict())
     """
+
+    if log:
+        logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
     #see if the kernel arguments have correct type
     check_argument_list(arguments)

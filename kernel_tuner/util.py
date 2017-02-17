@@ -10,7 +10,6 @@ def get_instance_string(params):
 def get_config_string(params):
     return "".join([k + "=" + str(v) + ", " for k,v in params.items()])
 
-
 def get_kernel_string(original_kernel):
     kernel_string = original_kernel
     if looks_like_a_filename(original_kernel):

@@ -64,6 +64,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         execution times.
     :rtype: dict( string, float )
     """
+    logging.debug('sequential_brute_force runner started for ' + kernel_name)
 
     results = []
 
@@ -85,11 +86,14 @@ def run(kernel_name, original_kernel, problem_size, arguments,
                         problem_size, grid_div_y, grid_div_x,
                         cmem_args, answer, atol, instance_string, verbose)
         if time is None:
+            logging.debug('received time is None, kernel configuration was skipped silently due to compile or runtime failure')
             continue
 
         #print and append to results
         params['time'] = time
-        print("".join([k + "=" + str(v) + ", " for k,v in params.items()]))
+        output_string = "".join([k + "=" + str(v) + ", " for k,v in params.items()])
+        logging.debug(output_string)
+        print(output_string)
         results.append(params)
 
     return results
