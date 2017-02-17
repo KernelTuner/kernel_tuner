@@ -17,6 +17,8 @@
     #define grid_size_y 1
 #endif
 
+extern "C" {
+
 #include "convolution.cu"
 
 float convolution_streams(float *output, float *input, float *filter) {
@@ -36,17 +38,24 @@ float convolution_streams(float *output, float *input, float *filter) {
         fprintf(stderr, "Error in cudaHostAlloc: %s\n", cudaGetErrorString(err));
     }
     memcpy(h_input, input, input_width*input_height*sizeof(float));
-    memcpy(h_output, output, image_width*image_height*sizeof(float));
 
+    //memcpy(h_output, output, image_width*image_height*sizeof(float));
+    memset(h_output, 0, image_width*image_height*sizeof(float));
 
     err = cudaMalloc((void **)&d_output, image_width*image_height*sizeof(float));
     if (err != cudaSuccess) {
         fprintf(stderr, "Error in cudaMalloc: %s\n", cudaGetErrorString(err));
     }
+    err = cudaMemset(d_output, 0, image_width*image_height*sizeof(float));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Error in cudaMemset: %s\n", cudaGetErrorString(err));
+    }
     err = cudaMalloc((void **)&d_input, input_width*input_height*sizeof(float));
     if (err != cudaSuccess) {
         fprintf(stderr, "Error in cudaMalloc: %s\n", cudaGetErrorString(err));
     }
+
+
 
     cudaStream_t stream[num_streams];
     cudaEvent_t event_htod[num_streams];
@@ -81,6 +90,13 @@ float convolution_streams(float *output, float *input, float *filter) {
     int dps = lps * input_width;
     int border = border_height * input_width;
 
+    //make sure there have been no errors
+    cudaDeviceSynchronize();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Error after memory setup in convolution_streams: %s\n", cudaGetErrorString(err));
+    }
+
     //start timing
     cudaDeviceSynchronize();
     cudaEventRecord(start, 0);
@@ -93,7 +109,7 @@ float convolution_streams(float *output, float *input, float *filter) {
     //streamed copy of input data with strict order among streams, stream[0] also copies border
     for (int k=0; k<num_streams; k++) {
         if (k == 0) {
-            err = cudaMemcpyAsync(d_input, h_input, border + dps*sizeof(float), cudaMemcpyHostToDevice, stream[k]);
+            err = cudaMemcpyAsync(d_input, h_input, (border + dps)*sizeof(float), cudaMemcpyHostToDevice, stream[k]);
         }
         else {
             err = cudaStreamWaitEvent(stream[k], event_htod[k-1], 0);
@@ -140,7 +156,7 @@ float convolution_streams(float *output, float *input, float *filter) {
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         fprintf(stderr, "Error at the end of convolution_streams: %s\n", cudaGetErrorString(err));
-        exit(1);
+        //exit(1);
     }
 
     //cleanup
@@ -158,3 +174,6 @@ float convolution_streams(float *output, float *input, float *filter) {
     return time;
 }
 
+
+
+}
