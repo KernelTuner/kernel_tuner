@@ -163,8 +163,6 @@ float convolution_streams(float *output, float *input, float *filter) {
     if (err != cudaSuccess) {
         //this bit is necessary because the Kernel Tuner currently can't decide whether
         //it's OK to silently skip an error or break execution when calling C functions
-        fprintf(stderr, "going to do string cmp because of error\n");
-        fprintf(stdout, "going to do string cmp because of error\n");
         const char *error_string = cudaGetErrorString(err);
         if (strncmp("too many resources requested for launch", error_string, 10) == 0) {
             return -1.0;

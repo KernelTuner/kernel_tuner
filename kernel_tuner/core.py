@@ -34,7 +34,7 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params,
             logging.debug('correctness check ignores runtime failure due to too many resources required')
             return True
         else:
-            logging.debug('correctness check encountered runtime failure that can not be skipped silently: ' + str(e))
+            logging.debug('correctness check encountered runtime failure: ' + str(e))
             raise e
     correct = True
     for result,expected in zip(gpu_args,answer):
@@ -51,6 +51,7 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params,
                 print("Expected:")
                 print(expected)
             correct = correct and output_test
+            del result_host
     if not correct:
         logging.debug('correctness check has found a correctness issue')
         raise Exception("Error: " + get_config_string(params) + " failed correctness check")
@@ -76,7 +77,7 @@ def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_strin
             if verbose:
                 print("skipping config", instance_string, "reason: too much shared memory used")
         else:
-            logging.debug('compile_kernel failed due to error that can not be skipped silently: ' + str(e))
+            logging.debug('compile_kernel failed due to error: ' + str(e))
             print("Error while compiling:", instance_string)
             raise e
     return func
@@ -100,7 +101,7 @@ def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
             if verbose:
                 print("skipping config", instance_string, "reason: too many resources requested for launch")
         else:
-            logging.debug('benchmark encountered runtime failure that can not be skipped silently: ' + str(e))
+            logging.debug('benchmark encountered runtime failure: ' + str(e))
             print("Error while benchmarking:", instance_string)
             raise e
     return time
