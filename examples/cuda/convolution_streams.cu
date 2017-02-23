@@ -23,32 +23,12 @@ extern "C" {
 
 float convolution_streams(float *output, float *input, float *filter) {
 
-    cudaSetDevice(0);
-
-    float *h_output;
-    float *h_input;
-    float *h_filter;
+    float *h_output = output;
+    float *h_input = input;
+    float *h_filter = filter;
     float *d_output;
     float *d_input;
     cudaError_t err;
-
-    err = cudaHostAlloc((void **)&h_input, input_width*input_height*sizeof(float), cudaHostAllocDefault);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "Error in cudaHostAlloc: %s\n", cudaGetErrorString(err));
-    }
-    err = cudaHostAlloc((void **)&h_output, image_width*image_height*sizeof(float), cudaHostAllocDefault);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "Error in cudaHostAlloc: %s\n", cudaGetErrorString(err));
-    }
-    err = cudaHostAlloc((void **)&h_filter, filter_width*filter_height*sizeof(float), cudaHostAllocDefault);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "Error in cudaHostAlloc: %s\n", cudaGetErrorString(err));
-    }
-    memcpy(h_input, input, input_width*input_height*sizeof(float));
-    memcpy(h_filter, filter, filter_width*filter_height*sizeof(float));
-
-    //memcpy(h_output, output, image_width*image_height*sizeof(float));
-    memset(h_output, 0, image_width*image_height*sizeof(float));
 
     err = cudaMalloc((void **)&d_output, image_width*image_height*sizeof(float));
     if (err != cudaSuccess) {
@@ -157,25 +137,7 @@ float convolution_streams(float *output, float *input, float *filter) {
 
     memcpy(output, h_output, image_width*image_height*sizeof(float));
 
-    //make sure there have been no errors
-    cudaDeviceSynchronize();
-    err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        //this bit is necessary because the Kernel Tuner currently can't decide whether
-        //it's OK to silently skip an error or break execution when calling C functions
-        const char *error_string = cudaGetErrorString(err);
-        if (strncmp("too many resources requested for launch", error_string, 10) == 0) {
-            return -1.0;
-        } else {
-            fprintf(stderr, "Error at the end of convolution_streams: %s\n", error_string);
-            exit(1);
-        }
-    }
-
     //cleanup
-    cudaFreeHost(h_output);
-    cudaFreeHost(h_input);
-    cudaFreeHost(h_filter);
     cudaFree(d_output);
     cudaFree(d_input);
     for (int k=0; k<num_streams; k++) {
@@ -184,6 +146,21 @@ float convolution_streams(float *output, float *input, float *filter) {
     }
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
+
+    //make sure there have been no errors
+    cudaDeviceSynchronize();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        //this bit is necessary because the Kernel Tuner currently can't decide whether
+        //it's OK to silently skip an error or break execution when calling C functions
+        const char *error_string = cudaGetErrorString(err);
+        if (strncmp("too many resources requested for launch", error_string, 10) == 0) {
+            time = -1.0;
+        } else {
+            fprintf(stderr, "Error at the end of convolution_streams: %s\n", error_string);
+            exit(1);
+        }
+    }
 
     return time;
 }
