@@ -302,7 +302,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 
 
-def run_kernel(kernel_name, kernel_string, problem_size, arguments,
+def run_kernel(kernel_name, original_kernel, problem_size, arguments,
         params, grid_div_x=None, grid_div_y=None,
         lang=None, device=0, platform=0, cmem_args=None, compiler_options=None):
     """Compile and run a single kernel
@@ -361,7 +361,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     """
 
     #move data to the GPU and compile the kernel
-    lang = detect_language(lang, kernel_string)
+    lang = detect_language(lang, original_kernel)
     dev = get_device_interface(lang, device, platform, compiler_options)
     check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
@@ -371,8 +371,19 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     grid = get_grid_dimensions(problem_size, params,
                        grid_div_y, grid_div_x)
 
-    kernel_string = prepare_kernel_string(kernel_string, params, grid)
-    func = dev.compile(kernel_name, kernel_string)
+    temp_files = dict()
+    try:
+        #obtain the kernel_string and prepare additional files, if any
+        if isinstance(original_kernel, list):
+            kernel_string, temp_files = prepare_list_of_files(original_kernel, params, grid)
+        else:
+            kernel_string = get_kernel_string(original_kernel)
+
+        name, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid, get_instance_string(params))
+        func = dev.compile(name, kernel_string)
+    finally:
+        for v in temp_files.values():
+            delete_temp_file(v)
 
     #add constant memory arguments to compiled module
     if cmem_args is not None:
