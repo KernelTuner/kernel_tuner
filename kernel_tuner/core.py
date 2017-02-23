@@ -1,6 +1,7 @@
 """ Module for grouping the core functionality needed by most runners """
 from __future__ import print_function
 
+import resource
 import logging
 
 from kernel_tuner.cuda import CudaFunctions
@@ -110,6 +111,7 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
         problem_size, grid_div_y, grid_div_x, cmem_args, answer, atol, instance_string, verbose):
 
     logging.debug('compile_and_benchmark ' + instance_string)
+    logging.debug('Memory usage         : %2.2f MB', round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0,1) )
 
     #setup thread block and grid dimensions
     threads, grid = setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, instance_string, verbose)
