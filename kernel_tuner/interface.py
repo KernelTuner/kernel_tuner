@@ -314,8 +314,16 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     :param kernel_name: The name of the kernel in the code
     :type kernel_name: string
 
-    :param kernel_string: The CUDA or OpenCL kernel code as a string
-    :type kernel_string: string
+    :param kernel_string: The CUDA, OpenCL, or C kernel code as a string.
+            It is also allowed for the string to be a filename of the file
+            containing the code.
+
+            To support combined host and device code tuning for runtime
+            compiled device code, a list of filenames can be passed instead.
+            The first file in the list should be the file that contains the
+            host code. The host code is allowed to include or read as a string
+            any of the files in the list beyond the first.
+    :type kernel_string: string or list
 
     :param problem_size: A tuple containing the size from which the grid
             dimensions of the kernel will be computed. Do not divide by
