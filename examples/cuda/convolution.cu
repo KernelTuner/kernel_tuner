@@ -1,7 +1,12 @@
 #define image_height 4096
 #define image_width 4096
-#define filter_height 17
-#define filter_width 17
+
+#ifndef filter_height
+    #define filter_height 17
+#endif
+#ifndef filter_width
+    #define filter_width 17
+#endif
 
 #define border_height ((filter_height/2)*2)
 #define border_width ((filter_width/2)*2)
@@ -27,7 +32,7 @@
 #define i_end min(block_size_y*tile_size_y+border_height, input_height)
 #define j_end min(block_size_x*tile_size_x+border_width, input_width)
 
-__constant__ float d_filter[filter_height*filter_width];
+__constant__ float d_filter[33*33]; //large enough for the largest filter
 
 __global__ void convolution_kernel(float *output, float *input, float *filter) {
     int ty = threadIdx.y;
