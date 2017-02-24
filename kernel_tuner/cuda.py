@@ -1,5 +1,6 @@
 """This module contains all CUDA specific kernel_tuner functions"""
 import numpy
+import logging
 
 #embedded in try block to be able to generate documentation
 #and run tests without pycuda installed
@@ -154,8 +155,15 @@ class CudaFunctions(object):
             to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
+        logging.debug('copy_constant_memory_args called')
+        logging.debug('current module: ' + str(self.current_module))
         for k,v in cmem_args.items():
             symbol = self.current_module.get_global(k)[0]
+            logging.debug('copying to symbol: ' + str(symbol))
+            logging.debug('array to be copied: ')
+            logging.debug(v.nbytes)
+            logging.debug(v.dtype)
+            logging.debug(v.flags)
             drv.memcpy_htod(symbol, v)
 
     def run_kernel(self, func, gpu_args, threads, grid):
