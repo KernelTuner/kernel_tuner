@@ -2,6 +2,7 @@
 
 import numpy
 import ctypes as C
+import _ctypes
 import subprocess
 import sys
 import os
@@ -24,6 +25,7 @@ class CFunctions(object):
         self.ITERATIONS = iterations
         self.max_threads = 1024
         self.compiler_options = compiler_options
+        self.lib = None
 
         #test if nvcc is available, otherwise use gcc
         self.compiler = "nvcc"
@@ -88,6 +90,9 @@ class CFunctions(object):
         :rtype: ctypes._FuncPtr
         """
         logging.debug('compiling ' + kernel_name)
+
+        if self.lib != None:
+            self.cleanup_lib()
 
         filename = get_temp_filename()
         source_file = filename+".cc"
@@ -233,3 +238,6 @@ class CFunctions(object):
         dest[:] = numpy.ctypeslib.as_array(src, shape=self.arg_mapping[str(src)])
 
 
+    def cleanup_lib(self):
+        """ unload the previously loaded shared library """
+        _ctypes.dlclose(self.lib._handle)
