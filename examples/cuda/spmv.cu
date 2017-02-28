@@ -1,3 +1,14 @@
+#ifndef block_size_x
+    #define block_size_x 64
+#endif
+#ifndef threads_per_row
+    #define threads_per_row 32
+#endif
+#ifndef read_only
+    #define read_only 1
+#endif
+
+
 #define USE_READ_ONLY_CACHE read_only
 #if USE_READ_ONLY_CACHE == 1
 #define LDG(x) __ldg(x)
@@ -6,7 +17,6 @@
 #endif
 
 #define warp_size threads_per_row
-
 
 __global__ void spmv_kernel(float *y, int *rows, int *cols, float* values, float *__restrict__ x, int nrows) {
 
