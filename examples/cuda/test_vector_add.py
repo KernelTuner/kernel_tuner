@@ -3,8 +3,15 @@
 
 import numpy
 from kernel_tuner import run_kernel
+from nose import SkipTest
 
 def test_vector_add():
+    #Check pycuda is installed and if a CUDA capable device is present, if not skip the test
+    try:
+        import pycuda.driver as drv
+        drv.init()
+    except (ImportError, Exception):
+        raise SkipTest("PyCuda not installed or no CUDA device detected")
 
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {

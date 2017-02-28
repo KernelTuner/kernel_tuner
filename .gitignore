@@ -9,3 +9,4 @@ doc/create_doc.sh
 *.log
 *.json
 *.csv
+.cache
