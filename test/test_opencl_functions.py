@@ -1,13 +1,11 @@
 import numpy
-from .context import kernel_tuner, skip_if_no_opencl
+from .context import skip_if_no_opencl
 
 from kernel_tuner import opencl
-
 try:
     import pyopencl
 except Exception:
     pass
-
 
 def test_ready_argument_list():
     skip_if_no_opencl()

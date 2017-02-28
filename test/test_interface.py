@@ -7,7 +7,6 @@ except ImportError:
 
 import numpy
 
-from .context import kernel_tuner
 from kernel_tuner.interface import tune_kernel, run_kernel
 from kernel_tuner import core
 

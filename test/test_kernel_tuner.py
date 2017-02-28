@@ -2,7 +2,8 @@ from __future__ import print_function
 
 import numpy
 from nose.tools import raises
-from .context import *
+
+from .context import skip_if_no_cuda_device, skip_if_no_opencl
 
 import kernel_tuner.cuda as cuda
 import kernel_tuner.opencl as opencl

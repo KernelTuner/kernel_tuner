@@ -6,7 +6,7 @@ python:
 install:
   - pip install mock
 # command to run tests
-script: nosetests -v
+script: pytest -v
 branches:
   only:
     - master

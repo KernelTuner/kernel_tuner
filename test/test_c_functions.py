@@ -8,7 +8,6 @@ try:
 except ImportError:
     from unittest.mock import patch, Mock
 
-from .context import kernel_tuner
 from kernel_tuner.c import CFunctions
 
 

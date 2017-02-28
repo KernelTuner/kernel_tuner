@@ -1,6 +1,6 @@
 import numpy
 from nose.tools import nottest
-from .context import kernel_tuner, skip_if_no_cuda_device
+from .context import skip_if_no_cuda_device
 
 from kernel_tuner import cuda
 
