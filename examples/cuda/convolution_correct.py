@@ -42,17 +42,25 @@ def tune():
 
     args = [output, input, filter]
     tune_params = OrderedDict()
+    tune_params["filter_width"] = [3]
+    tune_params["filter_height"] = [3]
+
     tune_params["block_size_x"] = [16*i for i in range(1,9)]
-    tune_params["block_size_y"] = [2**i for i in range(6)]
+    tune_params["block_size_y"] = [2**i for i in range(1,6)]
 
     tune_params["tile_size_x"] = [2**i for i in range(3)]
     tune_params["tile_size_y"] = [2**i for i in range(3)]
+
+    tune_params["use_padding"] = [0,1]  #toggle the insertion of padding in shared memory
+    tune_params["read_only"] = [0,1]    #toggle using the read-only cache
 
     grid_div_x = ["block_size_x", "tile_size_x"]
     grid_div_y = ["block_size_y", "tile_size_y"]
 
     #compute the answer using a naive kernel
-    params = { "block_size_x": 32, "block_size_y": 16 }
+    params = { "block_size_x": 16, "block_size_y": 16}
+    params["filter_width"] = 3
+    params["filter_height"] = 3
     results = kernel_tuner.run_kernel("convolution_naive", kernel_string,
         problem_size, args, params,
         grid_div_y=["block_size_y"], grid_div_x=["block_size_x"])

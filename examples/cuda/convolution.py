@@ -17,6 +17,12 @@ def tune():
     tune_params["tile_size_x"] = [2**i for i in range(3)]
     tune_params["tile_size_y"] = [2**i for i in range(3)]
 
+    tune_params["use_padding"] = [0,1]  #toggle the insertion of padding in shared memory
+    tune_params["read_only"] = [0,1]    #toggle using the read-only cache
+
+    #limit the search to only use padding when its effective
+    restrict = ["use_padding==0 or (block_size_x % 32 != 0)"]
+
     problem_size = (4096, 4096)
     size = numpy.prod(problem_size)
     largest_fh = max(tune_params["filter_height"])
@@ -36,7 +42,8 @@ def tune():
     #start tuning
     return kernel_tuner.tune_kernel("convolution_kernel", kernel_string,
         problem_size, args, tune_params,
-        grid_div_y=grid_div_y, grid_div_x=grid_div_x, cmem_args=cmem_args, verbose=True, log=logging.DEBUG)
+        grid_div_y=grid_div_y, grid_div_x=grid_div_x, cmem_args=cmem_args,
+        verbose=True, restrictions=restrict)
 
 
 if __name__ == "__main__":

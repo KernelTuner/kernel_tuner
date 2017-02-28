@@ -32,7 +32,42 @@
 #define i_end min(block_size_y*tile_size_y+border_height, input_height)
 #define j_end min(block_size_x*tile_size_x+border_width, input_width)
 
+/*
+ * If requested, we can use the __ldg directive to load data through the
+ * read-only cache. 
+ */
+#define USE_READ_ONLY_CACHE read_only
+#if USE_READ_ONLY_CACHE == 1
+#define LDG(x, y) __ldg(x+y)
+#elif USE_READ_ONLY_CACHE == 0
+#define LDG(x, y) x[y]
+#endif
+
 __constant__ float d_filter[33*33]; //large enough for the largest filter
+
+/*
+ * If use_padding == 1, we introduce (only when necessary) a number of padding
+ * columns in shared memory to avoid shared memory bank conflicts
+ *
+ * padding columns are only inserted when block_size_x is not a multiple of 32 (the assumed number of memory banks)
+ * and when the width of the data needed is not a multiple of 32. The latter is because some filter_widths never
+ * cause bank conflicts.
+ * 
+ * If not passed as a tunable parameter, padding is on by default
+ */
+#define shared_mem_width (block_size_x*tile_size_x+border_width)
+#ifndef use_padding
+    #define use_padding 1
+#endif
+#if use_padding == 1
+    #if (((block_size_x % 32)!=0) && (((shared_mem_width-block_size_x)%32) != 0))
+        // next line uses &31 instead of %32, because % in C is remainder not modulo
+        #define padding_columns ((32 - (border_width + block_size_x*tile_size_x - block_size_x)) & 31)
+        #undef shared_mem_width
+        #define shared_mem_width (block_size_x*tile_size_x+border_width+padding_columns)
+    #endif
+#endif
+
 
 __global__ void convolution_kernel(float *output, float *input, float *filter) {
     int ty = threadIdx.y;
@@ -41,7 +76,7 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
     int bx = blockIdx.x * block_size_x * tile_size_x;
 
     //shared memory to hold all input data need by this thread block
-    __shared__ float sh_input[block_size_y*tile_size_y+border_height][block_size_x*tile_size_x+border_width];
+    __shared__ float sh_input[block_size_y*tile_size_y+border_height][shared_mem_width];
 
     //load all input data needed by this thread block into shared memory
     #pragma unroll
@@ -52,10 +87,10 @@ __global__ void convolution_kernel(float *output, float *input, float *filter) {
             int y = by+i;
             int x = bx+j;
             if (y < input_height && x < input_width) {
-                sh_input[i][j] = input[y*input_width+x];
+                sh_input[i][j] = LDG(input, y*input_width+x);
             }
             #else
-                sh_input[i][j] = input[(by+i)*input_width + (bx+j)];
+                sh_input[i][j] = LDG(input, (by+i)*input_width + (bx+j));
             #endif
         }
     }
