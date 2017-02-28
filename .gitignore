@@ -7,3 +7,5 @@ doc/create_doc.sh
 *.egg-info
 .nfs*
 *.log
+*.json
+*.csv
