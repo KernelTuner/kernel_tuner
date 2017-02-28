@@ -4,7 +4,6 @@ import numpy
 import ctypes as C
 import _ctypes
 import subprocess
-import sys
 import os
 import errno
 
