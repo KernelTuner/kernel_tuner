@@ -3,11 +3,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Changed
+- migrating from nosetests to pytest
+- rewrote many of the examples to save results to a json file
 
+### Added
+- seperable convolution example
 
 ## [0.1.1] - 2017-02-10
 ### Changed
-- migrating from nosetests to pytest
 - changed the output format to list of dictionaries
 
 ### Added
