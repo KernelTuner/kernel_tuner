@@ -86,8 +86,8 @@ def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_strin
 def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
     """benchmark the kernel instance"""
     logging.debug('benchmark ' + instance_string)
-    logging.debug('thread block dimenions x,y,z=%d,%d,%d', *threads)
-    logging.debug('grid dimenions x,y,z=%d,%d', *grid)
+    logging.debug('thread block dimensions x,y,z=%d,%d,%d', *threads)
+    logging.debug('grid dimensions x,y,z=%d,%d', *grid)
 
     time = None
     try:
