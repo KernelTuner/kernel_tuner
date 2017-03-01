@@ -1,8 +1,6 @@
 from __future__ import print_function
 
 import numpy
-from .context import skip_if_no_cuda_device
-
 import kernel_tuner
 
 def test_random_sample():
