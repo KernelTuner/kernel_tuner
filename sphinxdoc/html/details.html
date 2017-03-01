@@ -145,7 +145,7 @@
 called including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample=False</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample=False</em>, <em>compiler_options=None</em>, <em>log=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -274,7 +274,7 @@ execution times.</p>
 
 <dl class="function">
 <dt id="kernel_tuner.run_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compile and run a single kernel</p>
 <p>Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
 This function was added to the kernel tuner mostly for verifying kernel correctness.
@@ -285,7 +285,15 @@ On purpose, it is called much in the same way as <cite>tune_kernel()</cite></p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel in the code</li>
-<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The CUDA or OpenCL kernel code as a string</li>
+<li><strong>kernel_string</strong> (<em>string or list</em>) &#8211; <p>The CUDA, OpenCL, or C kernel code as a string.
+It is also allowed for the string to be a filename of the file
+containing the code.</p>
+<p>To support combined host and device code tuning for runtime
+compiled device code, a list of filenames can be passed instead.
+The first file in the list should be the file that contains the
+host code. The host code is allowed to include or read as a string
+any of the files in the list beyond the first.</p>
+</li>
 <li><strong>problem_size</strong> (<em>tuple(int, int)</em>) &#8211; A tuple containing the size from which the grid
 dimensions of the kernel will be computed. Do not divide by
 the thread block sizes, if this is necessary use grid_div_x/y to
