@@ -14,6 +14,7 @@ Below we list the example applications and the features they illustrate.
  - use a 2-dimensional problem domain with 2-dimensional thread blocks in a simple and clean example
 
 ### Matrix Multiplication [[CUDA](cuda/matmul.py)] [[OpenCL](opencl/matmul.py)]
+ - pass a filename instead of a string with code
  - use 2-dimensional thread blocks and tiling in both dimensions  
  - tell the Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling  
  - use the restrictions option to limit the search to only valid configurations
@@ -21,20 +22,20 @@ Below we list the example applications and the features they illustrate.
 ### Convolution
 There are several different examples centered around the convolution kernel [[CUDA](cuda/convolution.cu)] [[OpenCL](opencl/convolution.cl)] 
 
-convolution.py [[CUDA](cuda/convolution.py)] [[OpenCL](opencl/convolution.py)] 
+**convolution.py [[CUDA](cuda/convolution.py)] [[OpenCL](opencl/convolution.py)]**
  - use tunable parameters for tuning for multiple input sizes  
  - pass constant memory arguments to the kernel  
  - write output to a json file  
 
-sepconv.py [[CUDA](cuda/sepconv.py)] [[OpenCL](opencl/sepconv.py)]
+**sepconv.py [[CUDA](cuda/sepconv.py)] [[OpenCL](opencl/sepconv.py)]**
  - use the convolution kernel for separable filters  
  - write output to a csv file using Pandas
 
-convolution_correct.py [[CUDA](cuda/convolution_correct.py)] [[OpenCL](opencl/convolution_correct.py)] 
+**convolution_correct.py [[CUDA](cuda/convolution_correct.py)] [[OpenCL](opencl/convolution_correct.py)]**
  - use run_kernel to compute a reference answer  
  - verify the output of every benchmarked kernel
 
-convolution_streams.py [[CUDA](cuda/convolution_streams.py)]
+**convolution_streams.py [[CUDA](cuda/convolution_streams.py)]**
  - allocate page-locked host memory from Python
  - overlap transfers to and from the GPU with computation
  - tune parameters in the host code in combination with those in the kernel
