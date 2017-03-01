@@ -43,7 +43,7 @@ class CudaFunctions(object):
         self.ITERATIONS = iterations
         self.current_module = None
         self.compiler_options = compiler_options or []
-        print("Using: " + self.context.get_device().name())
+        print("Using: " + str(self.context.get_device().name()))
 
     def __del__(self):
         if hasattr(self, 'context'):
