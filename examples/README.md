@@ -41,7 +41,7 @@ convolution_streams.py [[CUDA](cuda/convolution_streams.py)]
  - use the lang="C" option and set compiler options
  - pass a list of filenames instead of strings with kernel code
 
-### Reduction [[CUDA](cuda/reduction.py)]
+### Reduction [[CUDA](cuda/reduction.py)] [[OpenCL](opencl/reduction.py)]
  - use vector types and shuffle instructions
  - tune the number of thread blocks the kernel is executed with
 
