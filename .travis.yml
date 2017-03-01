@@ -7,7 +7,7 @@ install:
   - pip install pytest
   - pip install mock
 # command to run tests
-script: pytest -v
+script: python -m pytest
 branches:
   only:
     - master
