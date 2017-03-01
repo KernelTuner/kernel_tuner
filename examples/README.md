@@ -42,7 +42,7 @@ convolution_streams.py [[CUDA](cuda/convolution_streams.py)]
  - pass a list of filenames instead of strings with kernel code
 
 ### Reduction [[CUDA](cuda/reduction.py)] [[OpenCL](opencl/reduction.py)]
- - use vector types and shuffle instructions
+ - use vector types and shuffle instructions (shuffle is only available in CUDA)
  - tune the number of thread blocks the kernel is executed with
 
 ### Sparse Matrix Vector Multiplication [[CUDA](cuda/spmv.py)] 
