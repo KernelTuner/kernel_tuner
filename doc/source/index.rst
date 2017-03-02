@@ -19,7 +19,7 @@ Contents:
    correctness
    hostcode
    user-api
-   internal
+   design
 
 Introduction
 ============

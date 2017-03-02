@@ -2,8 +2,8 @@
    :maxdepth: 2
 
 
-Internal module documentation
-=============================
+Design documentation
+====================
 
 This section provides detailed information about the design and internals 
 of the Kernel Tuner. This information is mostly relevant for developers.
