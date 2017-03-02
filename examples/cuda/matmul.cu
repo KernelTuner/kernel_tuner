@@ -1,4 +1,3 @@
-#include <stdio.h>
 /**
  * The kernel is assumed to be tuned to each device by selecting
  * the best performing combination of thread block dimensions 
