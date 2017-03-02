@@ -1,95 +1,7 @@
-""" 
-A simple CUDA/OpenCL kernel tuner in Python
-===========================================
+"""Kernel Tuner interface module
 
-The goal of this project is to provide a - as simple as possible - tool
-for tuning CUDA and OpenCL kernels. This implies that any CUDA or OpenCL
-kernel can be tuned without requiring extensive changes to the original
-kernel code.
-
-A very common problem in GPU programming is that some combination of
-thread block dimensions and other kernel parameters, like tiling or
-unrolling factors, results in dramatically better performance than other
-kernel configurations. The goal of auto-tuning is to automate the
-process of finding the best performing configuration for a given device.
-
-This kernel tuner aims that you can directly use the tuned kernel
-without introducing any new dependencies. The tuned kernels can
-afterwards be used independently of the programming environment, whether
-that is using C/C++/Java/Fortran or Python doesn't matter.
-
-The kernel_tuner module currently only contains main one function which
-is called tune_kernel to which you pass at least the kernel name, a string
-containing the kernel code, the problem size, a list of kernel function
-arguments, and a dictionary of tunable parameters. There are also a lot
-of optional parameters, for a complete list see the full documentation of
-tune_kernel.
-
-Installation
-------------
-| clone the repository
-|  ``git clone git@github.com:benvanwerkhoven/kernel_tuner.git``
-| change into the top-level directory
-|  ``cd kernel_tuner``
-| install using
-|  ``pip install -r requirements.txt``
-|  ``pip install .``
-
-Dependencies
-------------
- * Python 2.7 or Python 3.5
- * PyCuda and/or PyOpenCL (https://mathema.tician.de/software/)
-
-Example usage
--------------
-The following shows a simple example for tuning a CUDA kernel:
-
-::
-
-    kernel_string = \"\"\"
-    __global__ void vector_add(float *c, float *a, float *b, int n) {
-        int i = blockIdx.x * block_size_x + threadIdx.x;
-        if (i<n) {
-            c[i] = a[i] + b[i];
-        }
-    }
-    \"\"\"
-
-    size = 10000000
-    problem_size = (size, 1)
-
-    a = numpy.random.randn(size).astype(numpy.float32)
-    b = numpy.random.randn(size).astype(numpy.float32)
-    c = numpy.zeros_like(b)
-    n = numpy.int32(size)
-    args = [c, a, b, n]
-
-    tune_params = dict()
-    tune_params["block_size_x"] = [128+64*i for i in range(15)]
-
-    tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
-
-The exact same Python code can be used to tune an OpenCL kernel:
-
-::
-
-    kernel_string = \"\"\"
-    __kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {
-        int i = get_global_id(0);
-        if (i<n) {
-            c[i] = a[i] + b[i];
-        }
-    }
-    \"\"\"
-
-
-Or even just a C function, see the example `here <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py>`_.
-
-You can find these and many - more extensive - example codes, in the
-`examples <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`_
-directory. See the `full documentation <http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html>`_
-for several highly detailed tutorial-style explanations of example
-kernels and the scripts to tune them.
+This module contains the main functions that the Kernel Tuner
+offers to its users.
 
 Author
 ------
@@ -308,8 +220,19 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
-    This function was added to the kernel tuner mostly for verifying kernel correctness.
-    On purpose, it is called much in the same way as `tune_kernel()`
+    However, instead of measuring execution time run_kernel returns the output of the kernel.
+    The output is returned as a list of numpy arrays that contains the state of all the kernel arguments
+    after execution on the GPU.
+
+    To summarize what this function will do for you in one call:
+     * Compile the kernel according to the set of parameters passed
+     * Allocate GPU memory to hold all kernel arguments
+     * Move the all data to the GPU
+     * Execute the kernel on the GPU
+     * Copy all data from the GPU back to the host and return it as a list of Numpy arrays
+
+    This function was added to the Kernel Tuner mostly to allow easy testing for kernel correctness.
+    On purpose, the interface is a lot like `tune_kernel()`.
 
     :param kernel_name: The name of the kernel in the code
     :type kernel_name: string
