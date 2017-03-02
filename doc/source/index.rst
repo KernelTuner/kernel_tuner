@@ -12,17 +12,19 @@ Contents:
    :maxdepth: 1
 
    Introduction <self>
+   examples
    tutorial
-   details
    convolution
    matrix
    correctness
    hostcode
-   internal
+   user-api
+   design
 
 Introduction
 ============
-.. automodule:: kernel_tuner.interface
+
+.. include:: ../../README.rst
 
 
 Indices and tables
