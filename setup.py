@@ -4,6 +4,10 @@ from setuptools import setup
 import kernel_tuner
 from kernel_tuner import interface
 
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
 setup(
     name = "kernel_tuner",
     version = "0.1.1",
@@ -14,7 +18,7 @@ setup(
     keywords = "auto-tuning gpu computing pycuda cuda pyopencl opencl",
     url = "http://benvanwerkhoven.github.io/kernel_tuner/",
     packages=['kernel_tuner', 'kernel_tuner.runners'],
-    long_description=interface.__doc__,
+    long_description=readme(),
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: Developers',
