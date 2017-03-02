@@ -26,11 +26,11 @@ is called tune_kernel to which you pass at least the kernel name, a string
 containing the kernel code, the problem size, a list of kernel function
 arguments, and a dictionary of tunable parameters. There are also a lot
 of optional parameters, for a complete list see the full documentation of
-[tune_kernel](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/details.html).
+[tune_kernel](http://benvanwerkhoven.github.io/kernel_tuner/details.html).
 
 Documentation
 -------------
-The full documentation is available [here](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html).
+The full documentation is available [here](http://benvanwerkhoven.github.io/kernel_tuner/index.html).
 
 Installation
 ------------
@@ -96,12 +96,13 @@ __kernel void vector_add(__global float *c, __global float *a, __global float *b
 ```
 Or even just a C function, see the example [here](https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py).
 
-You can find these and many - more extensive - example codes, in the [examples](https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/) directory.
-See the [full documentation](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/index.html) for several highly detailed tutorial-style explanations of example kernels and the scripts to tune them.
+You can find these and many - more extensive - example codes, in the [examples](https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/) directory.  
+
+See the [full documentation](http://benvanwerkhoven.github.io/kernel_tuner/index.html) for several highly detailed tutorial-style explanations of example kernels and the scripts to tune them.
 
 Tuning host and kernel code
 ---------------------------
-It is also possible to tune for combinations of tunable parameters in both host and kernel code. This allows for a number of powerfull things, such as tuning the number of streams for a kernel that uses CUDA Streams or OpenCL Command Queues to overlap transfers between host and device with kernel execution. This can be done in combination with tuning the parameters inside the kernel code. See the [convolution_streams example code](https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/) and the [documentation](http://benvanwerkhoven.github.io/kernel_tuner/sphinxdoc/html/hostcode.html) for a detailed explanation of the kernel tuner Python script.
+It is also possible to tune for combinations of tunable parameters in both host and kernel code. This allows for a number of powerfull things, such as tuning the number of streams for a kernel that uses CUDA Streams or OpenCL Command Queues to overlap transfers between host and device with kernel execution. This can be done in combination with tuning the parameters inside the kernel code. See the [convolution_streams example code](https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/) and the [documentation](http://benvanwerkhoven.github.io/kernel_tuner/hostcode.html) for a detailed explanation of the kernel tuner Python script.
 
 Correctness verification
 ------------------------
