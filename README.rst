@@ -1,7 +1,7 @@
 A simple CUDA/OpenCL kernel tuner in Python
 ===========================================
 
-|Build Status| |Codacy Badge| |Codacy Badge|
+|Build Status| |Codacy Badge| |Codacy Badge2|
 
 The goal of this project is to provide a - as simple as possible - tool
 for tuning CUDA and OpenCL kernels. This implies that any CUDA or OpenCL
@@ -178,5 +178,5 @@ spent on tuning kernels.
    :target: https://travis-ci.org/benvanwerkhoven/kernel_tuner
 .. |Codacy Badge| image:: https://api.codacy.com/project/badge/grade/016dc85044ab4d57b777449d93275608
    :target: https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner
-.. |Codacy Badge| image:: https://api.codacy.com/project/badge/coverage/016dc85044ab4d57b777449d93275608
+.. |Codacy Badge2| image:: https://api.codacy.com/project/badge/coverage/016dc85044ab4d57b777449d93275608
    :target: https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner
