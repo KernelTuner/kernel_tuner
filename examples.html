@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Application Examples &mdash; kernel_tuner 0.0.1 documentation</title>
+  <title>Kernel Tuner Examples &mdash; kernel_tuner 0.1.1 documentation</title>
   
 
   
@@ -30,7 +30,12 @@
   
 
   
-    <link rel="top" title="kernel_tuner 0.0.1 documentation" href="index.html"/> 
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="kernel_tuner 0.1.1 documentation" href="index.html"/>
+        <link rel="next" title="Tutorial" href="tutorial.html"/>
+        <link rel="prev" title="The kernel_tuner documentation" href="index.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -58,7 +63,7 @@
             
             
               <div class="version">
-                0.0.1
+                0.1.1
               </div>
             
           
@@ -79,15 +84,30 @@
           
             
             
-                <ul>
+                <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Kernel Tuner Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#vector-add">Vector Add</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#stencil">Stencil</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#matrix-multiplication">Matrix Multiplication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#convolution">Convolution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#convolution-py">convolution.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sepconv-py">sepconv.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#convolution-correct-py">convolution_correct.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#convolution-streams-py">convolution_streams.py</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#reduction">Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sparse-matrix-vector-multiplication">Sparse Matrix Vector Multiplication</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="matrix.html">Matrix Multiply Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal module documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
 </ul>
 
             
@@ -118,7 +138,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Application Examples</li>
+    <li>Kernel Tuner Examples</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -132,14 +152,124 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="application-examples">
-<h1>Application Examples<a class="headerlink" href="#application-examples" title="Permalink to this headline">¶</a></h1>
-<p>The examples in this section demonstrate how the kernel tuner can be used to tune several well-known example applications.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matrix.html">Matrix Multiply Example</a></li>
+  <div class="toctree-wrapper compound">
+</div>
+<div class="section" id="kernel-tuner-examples">
+<span id="examples"></span><h1>Kernel Tuner Examples<a class="headerlink" href="#kernel-tuner-examples" title="Permalink to this headline">¶</a></h1>
+<p>Most of the examples show how to use the Kernel Tuner to tune a specific
+CUDA, OpenCL, or C kernel.</p>
+<p>Except for <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/test_vector_add.py">test_vector_add.py</a> which
+shows how to use run_kernel to implement a test that you can run with
+nosetests or pytest to test your CUDA or OpenCL kernels from Python.</p>
+<p>Below we list the example applications and the features they illustrate.</p>
+<div class="section" id="vector-add">
+<h2>Vector Add<a class="headerlink" href="#vector-add" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/vector_add.py">CUDA</a>] [<a class="reference external" href="opencl/vector_add.py">OpenCL</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py">C</a>]</dt>
+<dd><ul class="first last simple">
+<li>use the Kernel Tuner to tune a simple kernel</li>
 </ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="stencil">
+<h2>Stencil<a class="headerlink" href="#stencil" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/stencil.py">CUDA</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/stencil.py">OpenCL</a>]</dt>
+<dd><ul class="first last simple">
+<li>use a 2-dimensional problem domain with 2-dimensional thread blocks in a simple and clean example</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="matrix-multiplication">
+<h2>Matrix Multiplication<a class="headerlink" href="#matrix-multiplication" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/matmul.py">CUDA</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/matmul.py">OpenCL</a>]</dt>
+<dd><ul class="first last simple">
+<li>pass a filename instead of a string with code</li>
+<li>use 2-dimensional thread blocks and tiling in both dimensions</li>
+<li>tell the Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling</li>
+<li>use the restrictions option to limit the search to only valid configurations</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="convolution">
+<h2>Convolution<a class="headerlink" href="#convolution" title="Permalink to this headline">¶</a></h2>
+<p>There are several different examples centered around the convolution
+kernel [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/convolution.cu">CUDA</a>]
+[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/convolution.cl">OpenCL</a>]</p>
+<div class="section" id="convolution-py">
+<h3>convolution.py<a class="headerlink" href="#convolution-py" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/convolution.py">CUDA</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/convolution.py">OpenCL</a>]</dt>
+<dd><ul class="first last simple">
+<li>use tunable parameters for tuning for multiple input sizes</li>
+<li>pass constant memory arguments to the kernel</li>
+<li>write output to a json file</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="sepconv-py">
+<h3>sepconv.py<a class="headerlink" href="#sepconv-py" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/sepconv.py">CUDA</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/sepconv.py">OpenCL</a>]</dt>
+<dd><ul class="first last simple">
+<li>use the convolution kernel for separable filters</li>
+<li>write output to a csv file using Pandas</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="convolution-correct-py">
+<h3>convolution_correct.py<a class="headerlink" href="#convolution-correct-py" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/convolution_correct.py">CUDA</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/convolution_correct.py">OpenCL</a>]</dt>
+<dd><ul class="first last simple">
+<li>use run_kernel to compute a reference answer</li>
+<li>verify the output of every benchmarked kernel</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="convolution-streams-py">
+<h3>convolution_streams.py<a class="headerlink" href="#convolution-streams-py" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/convolution_streams.py">CUDA</a>]</dt>
+<dd><ul class="first last simple">
+<li>allocate page-locked host memory from Python</li>
+<li>overlap transfers to and from the GPU with computation</li>
+<li>tune parameters in the host code in combination with those in the kernel</li>
+<li>use the lang=&#8221;C&#8221; option and set compiler options</li>
+<li>pass a list of filenames instead of strings with kernel code</li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="reduction">
+<h2>Reduction<a class="headerlink" href="#reduction" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/reduction.py">CUDA</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/reduction.py">OpenCL</a>]</dt>
+<dd><ul class="first last simple">
+<li>use vector types and shuffle instructions (shuffle is only available in CUDA)</li>
+<li>tune the number of thread blocks the kernel is executed with</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="sparse-matrix-vector-multiplication">
+<h2>Sparse Matrix Vector Multiplication<a class="headerlink" href="#sparse-matrix-vector-multiplication" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/spmv.py">CUDA</a>]</dt>
+<dd><ul class="first last simple">
+<li>use scipy to compute a reference answer and verify all benchmarked kernels</li>
+<li>express that the number of thread blocks depends on the values of tunable parameters</li>
+</ul>
+</dd>
+</dl>
 </div>
 </div>
 
@@ -147,6 +277,15 @@
            </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tutorial.html" class="btn btn-neutral float-right" title="Tutorial" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="The kernel_tuner documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -175,7 +314,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.0.1',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

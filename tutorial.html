@@ -34,8 +34,8 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="kernel_tuner 0.1.1 documentation" href="index.html"/>
-        <link rel="next" title="Detailed documentation" href="details.html"/>
-        <link rel="prev" title="The kernel_tuner documentation" href="index.html"/> 
+        <link rel="next" title="Convolution Example" href="convolution.html"/>
+        <link rel="prev" title="Kernel Tuner Examples" href="examples.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -86,6 +86,7 @@
             
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#tuning-a-2d-stencil-kernel">Tuning a 2D stencil kernel</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#setup-tuning-parameters">Setup tuning parameters</a></li>
@@ -95,12 +96,12 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="details.html">Detailed documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="matrix.html">Matrix Multiply Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal module documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
 </ul>
 
             
@@ -149,7 +150,7 @@
 <h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
 <p>This tutorial will introduce you to everything you need to know to start
 tuning your own kernels.</p>
-<p>You&#8217;ve probably seen the rather minimalistic vector add examples, which are
+<p>You&#8217;ve probably seen the rather minimalistic vector add example, which is
 a bit too simplistic to fully tell you how to tune any given kernel.
 Therefore, this tutorial starts out with a little bit more complex, yet
 still quite simple, 2D stencil kernel written in CUDA.</p>
@@ -166,9 +167,22 @@ and blockIdx.</p>
 </div>
 <div class="section" id="tuning-a-2d-stencil-kernel">
 <h2>Tuning a 2D stencil kernel<a class="headerlink" href="#tuning-a-2d-stencil-kernel" title="Permalink to this headline">¶</a></h2>
-<p>Let&#8217;s take a quick look at the kernel we are interested in tuning:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#define domain_width    4096</span>
-<span class="cp">#define domain_height   2048</span>
+<p>We use a 2D stencil kernel as an example kernel to get you started with writing
+your Python scripts and start tuning with the Kernel Tuner. 2D stencil kernels
+like the one we use here are an compute-intensive part of iterative solvers
+that are used by many applications that simulate physical processes, like
+diffusion. Let&#8217;s say you have written a CUDA kernel to perform the 2D stencil
+computation on the GPU, like the one shown below.</p>
+<p>Like in any CUDA kernel, you as a programmer have to decide how to group your
+threads into thread blocks. And like in many CUDA kernels, the thread block
+size that we choose for our 2D stencil kernel is not really that important for
+the output of the kernel. However, the thread block dimensions will have an
+impact on the performance of your kernels. And the optimal setting will be
+different for different GPUs.</p>
+<p>So how do you know which thread block size to choose? Simply try them all with
+auto tuning!</p>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#define domain_width    500</span>
+<span class="cp">#define domain_height   500</span>
 
 <span class="n">__global__</span> <span class="kt">void</span> <span class="nf">stencil_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">x_new</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">x_old</span><span class="p">)</span> <span class="p">{</span>
     <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
@@ -188,27 +202,30 @@ and blockIdx.</p>
 </div>
 <p>This 2D stencil kernel assumes that a thread will be created for each element
 in the domain. Each thread then simply takes the average of the element
-corresponding with its global thread index in <code class="docutils literal"><span class="pre">x_old</span></code> and
-its four direct neighbors, one in every direction. The new value is then stored
-in <code class="docutils literal"><span class="pre">x_new</span></code>. A stencil kernel like this is often used in iterative solvers for
-physical processes like diffusion.</p>
-<p>You may notice that the kernel uses two, currently undefined, constants <code class="docutils literal"><span class="pre">block_size_x</span></code> and
-<code class="docutils literal"><span class="pre">block_size_y</span></code> instead of built-in variables blockDim.x or blockDim.y.
-Setting the thread block dimensions at compile-time is often a good idea for performance.
-If you don&#8217;t need to vary the thread block size at run-time, the compiler can, for example,
-unroll loops that iterate over the thread block size. But how do you know
-what values for <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> will give the best
-performance?</p>
+corresponding with its computed thread index in <code class="docutils literal"><span class="pre">x_old</span></code> and its four direct
+neighbors, one in every direction. The newly computed value is then stored in
+<code class="docutils literal"><span class="pre">x_new</span></code>. Iterative solvers will have to call kernels like this one many
+times, so it is important that this kernel is efficient.</p>
+<p>You may notice that the kernel uses two, currently undefined, constants
+<code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> instead of built-in variables blockDim.x
+or blockDim.y. Setting the thread block dimensions at compile-time is often a
+good idea for performance. If you don&#8217;t need to vary the thread block size at
+run-time, the compiler can, for example, unroll loops that iterate using the
+thread block size.</p>
+<p>Let&#8217;s take a look at how we can write a small Python script that uses the
+Kernel Tuner to test the performance of our kernel for different combinations
+of <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>.</p>
 <div class="section" id="setup-tuning-parameters">
 <h3>Setup tuning parameters<a class="headerlink" href="#setup-tuning-parameters" title="Permalink to this headline">¶</a></h3>
-<p>That&#8217;s where the kernel tuner comes in. Using the kernel tuner, you can
-specify all values that you consider possible for every tunable
-parameter, such as <code class="docutils literal"><span class="pre">block_size_x</span></code>, to the kernel. This is done using a
-Python dictionary, which is basically a hashmap. For every tunable
-parameter we create a dictionary entry storing the name of the parameter
-as a string, which is used as a key in the dictionary. The value
-associated with that key is a list of possible values for the tunable
-parameter. Let&#8217;s look at an example:</p>
+<p>We call parameters in the kernel, like <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>,
+tunable parameters. This is because we want to tune the performance of the
+kernel based on the values given to these parameters.</p>
+<p>To tell the Kernel Tuner about our tunable parameters we use a Python
+dictionary, which is basically a hashmap. For every tunable parameter, we
+create a key-value pair in the dictionary. The key is the name of the parameter
+as a string. The value associated with that key is a list of possible values
+for the tunable parameter.</p>
+<p>Let&#8217;s look at an example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>
@@ -220,12 +237,17 @@ brackets <code class="docutils literal"><span class="pre">[</span> <span class="
 <code class="docutils literal"><span class="pre">32*1</span></code> up to <code class="docutils literal"><span class="pre">32*8</span></code>. For <code class="docutils literal"><span class="pre">block_size_y</span></code> we creates a list of
 powers of 2 ranging from <code class="docutils literal"><span class="pre">2**0</span> <span class="pre">=</span> <span class="pre">1</span></code> up to <code class="docutils literal"><span class="pre">2**5</span> <span class="pre">=</span> <span class="pre">32</span></code>.</p>
 <p>The values that we have picked here are just examples, you can basically
-pick any range of values that you like. The kernel tuner will check the
+pick any list of values that you like. The Kernel Tuner will check the
 maximum number of threads per thread block supported by your GPU at
 run-time, and automatically skip over kernel configurations that attempt
-to use more. The kernel tuner will do this silently unless you use the
+to use more. The Kernel Tuner will do this silently, unless you use the
 option <code class="docutils literal"><span class="pre">verbose=True</span></code>.</p>
-<p>For each kernel that the kernel tuner benchmarks, it will prepend the
+<p>While the Kernel Tuner allows you to pick any value that you like, an
+experienced CUDA programmer will know that only certain values will make sense.
+For example, a thread block size that is a multiple of 32 is likely to give
+better performance, because threads in CUDA are scheduled in warps of 32
+threads.</p>
+<p>For each kernel that the Kernel Tuner benchmarks, it will prepend the
 source code with C preprocessor directives to define all tuning
 parameters and their current value, for example:</p>
 <div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#define block_size_x 32</span>
@@ -234,45 +256,50 @@ parameters and their current value, for example:</p>
 </div>
 <p>There is of course much more that you can tune within a kernel than just
 the thread block dimensions. Basically, you are completely free to write
-code that uses C preprocessor directives to change its behavior. The
-kernel tuner will then benchmark all of possible execution paths in your
-code. However, the kernel tuner currently uses the convention that
+code that uses C preprocessor directives to change its behavior. If you
+tell the Kernel Tuner about all the possible values for this parameter, it
+will then benchmark all of possible execution paths in your
+code. However, the Kernel Tuner currently uses the convention that
 <code class="docutils literal"><span class="pre">block_size_x</span></code>, <code class="docutils literal"><span class="pre">block_size_y</span></code>, and <code class="docutils literal"><span class="pre">block_size_z</span></code> are used for
 specifying the thread block dimensions.</p>
-<p>If you want to be able to compile your code when not using the kernel
-tuner, you can simply add preprocessor directives for providing default
-values to all tunable parameters, for example for our 2D stencil kernel
-you could add:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#if !defined(block_size_x)</span>
+<p>If you want to be able to compile your code when not using the Kernel
+Tuner, you can simply add preprocessor directives for providing default
+values to all tunable parameters, for example to the beginning our
+2D stencil kernel we could add:</p>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#ifndef block_size_x</span>
     <span class="cp">#define block_size_x 16</span>
+<span class="cp">#endif</span>
+<span class="cp">#ifndef block_size_y</span>
     <span class="cp">#define block_size_y 16</span>
 <span class="cp">#endif</span>
 </pre></div>
 </div>
+<p>To ensure that the kernel code can be compiled directly by any CUDA compiler,
+even when the Kernel Tuner is not used.</p>
 </div>
 <div class="section" id="calling-tune-kernel">
 <h3>Calling tune_kernel()<a class="headerlink" href="#calling-tune-kernel" title="Permalink to this headline">¶</a></h3>
-<p>Now that we&#8217;ve setup our tuning parameters it is time to learn how to call
-the kernel tuner, and most importantly <code class="docutils literal"><span class="pre">tune_kernel()</span></code>.</p>
+<p>Now that we&#8217;ve setup our tuning parameters it is time to look at how to call
+the Kernel Tuner, and most importantly <code class="docutils literal"><span class="pre">tune_kernel()</span></code>.</p>
 <dl class="function">
 <dt id="tune_kernel">
-<code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-6</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>cmem_args=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-6</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>sample=False</em>, <em>compiler_options=None</em>, <em>log=None</em><span class="sig-paren">)</span><a class="headerlink" href="#tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <p>As you can see, there are a lot optional parameters and we&#8217;re not going
 to cover all of them right now, if you&#8217;re interested check out the
-<a class="reference internal" href="details.html#details"><span class="std std-ref">Detailed documentation</span></a>. Let&#8217;s start with the basics. The kernel tuner has to
+<a class="reference internal" href="user-api.html#details"><span class="std std-ref">API Documentation</span></a>. Let&#8217;s start with the basics. The Kernel Tuner has to
 know at least the following things:</p>
 <ul class="simple">
 <li><code class="docutils literal"><span class="pre">kernel_name</span></code>: The name of the kernel</li>
 <li><code class="docutils literal"><span class="pre">kernel_string</span></code>: The source code that contains that kernel</li>
 <li><code class="docutils literal"><span class="pre">problem_size</span></code>: The domain over which you create threads and thread blocks</li>
-<li><code class="docutils literal"><span class="pre">arguments</span></code>: The arguments to use when calling the kernel function</li>
+<li><code class="docutils literal"><span class="pre">arguments</span></code>: The arguments to use when calling the kernel</li>
 <li><code class="docutils literal"><span class="pre">tune_params</span></code>: The dictionary with tunable parameters</li>
 </ul>
 <p>So let&#8217;s assume that our 2D stencil kernel is stored in the file
 <code class="docutils literal"><span class="pre">stencil.cu</span></code>. We can read its contents into a string, so that we can
-later pass it to the kernel tuner.</p>
+later pass it to the Kernel Tuner.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;stencil.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 </pre></div>
@@ -281,7 +308,7 @@ later pass it to the kernel tuner.</p>
 list of arguments that matches the argument list of our
 <code class="docutils literal"><span class="pre">stencil_kernel</span></code> function written in CUDA. It is important that the
 order and type matches the function specification of our kernel.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
 <span class="n">size</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">problem_size</span><span class="p">)</span>
 
 <span class="n">x_old</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
@@ -289,27 +316,32 @@ order and type matches the function specification of our kernel.</p>
 <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_new</span><span class="p">,</span> <span class="n">x_old</span><span class="p">]</span>
 </pre></div>
 </div>
+<p>Note that <cite>size</cite> matches the size of the domain in used in the CUDA code.
+Moreover, we use <code class="docutils literal"><span class="pre">astype</span></code> to ensure that the Numpy array consists of 32-bit floating-point values,
+as expected by our CUDA kernel.</p>
 <p>Instead of generating random data you can of course also use data from a
-file, just take a look at numpy.fromfile() or numpy.loadtxt(). The list of
-arguments that you pass to tune_kernel has to be a list of only Numpy arrays
-or Numpy scalar values.</p>
+file, Python offers many convenient functions for this, for example take
+look at numpy.fromfile() or numpy.loadtxt().</p>
+<p>The list named <cite>args</cite> will be used as the argument list that we&#8217;ll pass
+to tune_kernel. The Kernel Tuner requires that list contains only Numpy arrays
+or Numpy scalar values, and that the order of arguments matches that of the CUDA kernel.</p>
 <p>Now we are almost ready to call tune_kernel(). However, we have not told
-the kernel tuner anything about how many thread blocks should be created
-to launch the kernel. If you do not specify this the kernel tuner will
+the Kernel Tuner anything about how many thread blocks should be created
+to launch the kernel. If you do not specify this the Kernel Tuner will
 assume a default way for computing the number of thread blocks. The grid
 dimension in the x-direction will default to <code class="docutils literal"><span class="pre">problem_size[0]</span> <span class="pre">/</span>
 <span class="pre">block_size_x</span></code> and the y-direction will default to <code class="docutils literal"><span class="pre">1</span></code>. This is
 convenient for small 1D kernels like vector add, but for our 2D stencil
 kernel we need to specify how the tuning parameters divide our problem
 size.</p>
-<p>You can tell the kernel tuner how to determine the number of blocks it
+<p>You can tell the Kernel Tuner how to determine the number of blocks it
 should create through the so called grid divisor lists, which you can
 specify using the optional arguments <code class="docutils literal"><span class="pre">grid_div_x</span></code> and <code class="docutils literal"><span class="pre">grid_div_y</span></code>.
 Now let&#8217;s look at an example of how to setup these grid divisor lists.</p>
 <p>So for our 2D stencil kernel, we have a 2D domain over which we want to
 create threads and thread blocks in a way that we create one thread for
 each element in the domain. So to get to the number of thread blocks,
-the kernel tuner should just divide the problem_size in a particular
+the Kernel Tuner should just divide the problem_size in a particular
 dimension with the thread block size in that dimension. Therefore, we
 specify the following:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span>
@@ -318,7 +350,7 @@ specify the following:</p>
 </div>
 <p>Note that these are lists, you can add multiple tuning parameters to the
 list. If you want to, you can even write arithmetic expressions within
-these strings. The kernel tuner will evaluate all strings and multiply
+these strings. The Kernel Tuner will evaluate all strings and multiply
 them together. Then it will use this product to divide the problem size
 in that dimension <strong>rounded up</strong>.</p>
 </div>
@@ -362,10 +394,10 @@ so you can try it out and see what it does.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="details.html" class="btn btn-neutral float-right" title="Detailed documentation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="convolution.html" class="btn btn-neutral float-right" title="Convolution Example" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="The kernel_tuner documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral" title="Kernel Tuner Examples" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
