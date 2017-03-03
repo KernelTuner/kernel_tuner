@@ -1,0 +1,895 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Design documentation &mdash; kernel_tuner 0.1.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="kernel_tuner 0.1.1 documentation" href="index.html"/>
+        <link rel="prev" title="API Documentation" href="user-api.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> kernel_tuner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix.html">Matrix Multiply Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Design documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.runners.sequential_brute_force">kernel_tuner.runners.sequential_brute_force</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.core">kernel_tuner.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.util">kernel_tuner.util</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-cuda-cudafunctions">kernel_tuner.cuda.CudaFunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-c-cfunctions">kernel_tuner.c.CFunctions</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">kernel_tuner</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Design documentation</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/design.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="toctree-wrapper compound">
+</div>
+<div class="section" id="design-documentation">
+<h1>Design documentation<a class="headerlink" href="#design-documentation" title="Permalink to this headline">¶</a></h1>
+<p>This section provides detailed information about the design and internals
+of the Kernel Tuner. This information is mostly relevant for developers.</p>
+<p>The Kernel Tuner is designed to be extensible and eventually support
+different search and execution strategies. The current architecture of
+the Kernel Tuner can be seen as:</p>
+<a class="reference internal image-reference" href="_images/design.png"><img alt="_images/design.png" src="_images/design.png" style="width: 500pt;" /></a>
+<p>At the top we have the kernel code and the Python script that tunes it,
+which uses any of the main functions exposed in the user interface.</p>
+<p>The runners are responsible for iterating over the search space. The
+default runner is the sequential brute force runner, which does exactly
+what its name says. It iterates over the entire search space with a
+single sequential Python process. Random Sample simply takes a random
+sample of the search space.</p>
+<p>The Noodles runner is currently being developed, which is a parallel
+runner that uses the Noodles library to parallelize a brute force
+iteration over the search space, across of a number of Python processes
+on the same node or across a number of nodes in a compute cluster.</p>
+<p>Actually, there are many more runners that you could think of and we
+have plans for implementing them. At the moment the runners actually mix
+two concepts, one is using search strategies or machine learning to
+prune the search space and the other is parallel and distributed
+execution all the instances that need compiling and benchmarking. It is
+possible that when we have more runners we will also separate the two
+concepts within architecture of the kernel tuner.</p>
+<p>The core layer contains all the utility functions for doing string
+manipulations and core functionality, such as compiling and benchmarking
+kernels based on the <em>Device Function Interface</em>. Currently we have
+three different implementations of the device function interface, which
+basically abstracts the different backends into a set of simple
+functions such as <code class="docutils literal"><span class="pre">ready_argument_list</span></code> which allocates GPU memory and
+moves data to the GPU, and functions like <code class="docutils literal"><span class="pre">compile</span></code>, <code class="docutils literal"><span class="pre">benchmark</span></code>, or
+<code class="docutils literal"><span class="pre">run_kernel</span></code>. The functions in the core are basically the main
+building blocks for implementing runners.</p>
+<p>At the bottom, the three backends that we currently have are shown.
+PyCUDA and PyOpenCL are for tuning either CUDA or OpenCL kernels. The C
+Functions implementation can actually call any compiler, typically NVCC
+or GCC is used. This backend was created not just to be able to tune C
+functions, but mostly to tune C functions that also launch GPU kernels.</p>
+<p>The rest of this section contains the API documentation of the modules
+discussed above.</p>
+<div class="section" id="module-kernel_tuner.runners.sequential_brute_force">
+<span id="kernel-tuner-runners-sequential-brute-force"></span><h2>kernel_tuner.runners.sequential_brute_force<a class="headerlink" href="#module-kernel_tuner.runners.sequential_brute_force" title="Permalink to this headline">¶</a></h2>
+<p>The default runner for iterating through the parameter space</p>
+<dl class="function">
+<dt id="kernel_tuner.runners.sequential_brute_force.run">
+<code class="descclassname">kernel_tuner.runners.sequential_brute_force.</code><code class="descname">run</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>parameter_space</em>, <em>grid_div_x</em>, <em>grid_div_y</em>, <em>answer</em>, <em>atol</em>, <em>verbose</em>, <em>lang</em>, <em>device</em>, <em>platform</em>, <em>cmem_args</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential_brute_force.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate through the entire parameter space using a single Python process</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel in the code.</li>
+<li><strong>original_kernel</strong> (<em>string</em>) &#8211; The CUDA, OpenCL, or C kernel code as a string.</li>
+<li><strong>problem_size</strong> (<em>tuple(int or string, int or string)</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>arguments</strong> (<em>list</em>) &#8211; A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for scalars.</li>
+<li><strong>tune_params</strong> (<em>dict( string : [int, int, ...] )</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>parameter_space</strong> (<em>list( list() )</em>) &#8211; A list of lists that contains the entire parameter space
+to be searched. Each list in the list represents a single combination
+of parameters, order is imported and it determined by the order in tune_params.</li>
+<li><strong>grid_div_x</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>grid_div_y</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>answer</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>atol</strong> (<em>float</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>verbose</strong> (<em>boolean</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>lang</strong> (<em>string</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>device</strong> (<em>int</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>platform</strong> &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>cmem_args</strong> (<em>dict(string: numpy object)</em>) &#8211; See kernel_tuner.tune_kernel</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A dictionary of all executed kernel configurations and their
+execution times.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict( string, float )</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-kernel_tuner.core">
+<span id="kernel-tuner-core"></span><h2>kernel_tuner.core<a class="headerlink" href="#module-kernel_tuner.core" title="Permalink to this headline">¶</a></h2>
+<p>Module for grouping the core functionality needed by most runners</p>
+<dl class="function">
+<dt id="kernel_tuner.core.benchmark">
+<code class="descclassname">kernel_tuner.core.</code><code class="descname">benchmark</code><span class="sig-paren">(</span><em>dev</em>, <em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em>, <em>instance_string</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.benchmark" title="Permalink to this definition">¶</a></dt>
+<dd><p>benchmark the kernel instance</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.core.check_kernel_correctness">
+<code class="descclassname">kernel_tuner.core.</code><code class="descname">check_kernel_correctness</code><span class="sig-paren">(</span><em>dev</em>, <em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em>, <em>answer</em>, <em>params</em>, <em>verbose</em>, <em>atol=1e-06</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.check_kernel_correctness" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the kernel once and checks the result against answer</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.core.compile_kernel">
+<code class="descclassname">kernel_tuner.core.</code><code class="descname">compile_kernel</code><span class="sig-paren">(</span><em>dev</em>, <em>kernel_name</em>, <em>kernel_string</em>, <em>params</em>, <em>grid</em>, <em>instance_string</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.compile_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>compile the kernel for this specific instance</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-kernel_tuner.util">
+<span id="kernel-tuner-util"></span><h2>kernel_tuner.util<a class="headerlink" href="#module-kernel_tuner.util" title="Permalink to this headline">¶</a></h2>
+<p>Module for kernel tuner utility functions</p>
+<dl class="function">
+<dt id="kernel_tuner.util.detect_language">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">detect_language</code><span class="sig-paren">(</span><em>lang</em>, <em>original_kernel</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.detect_language" title="Permalink to this definition">¶</a></dt>
+<dd><p>attempt to detect language from the kernel_string if not specified</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_grid_dimensions">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_grid_dimensions</code><span class="sig-paren">(</span><em>problem_size</em>, <em>params</em>, <em>grid_div_y</em>, <em>grid_div_x</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_grid_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute grid dims based on problem sizes and listed grid divisors</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_thread_block_dimensions">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_thread_block_dimensions</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_thread_block_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>thread block size from tuning params, currently using convention</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.looks_like_a_filename">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">looks_like_a_filename</code><span class="sig-paren">(</span><em>original_kernel</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.looks_like_a_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>attempt to detect whether source code or a filename was passed</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.prepare_kernel_string">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_kernel_string</code><span class="sig-paren">(</span><em>original_kernel</em>, <em>params</em>, <em>grid=(1</em>, <em>1)</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepend the kernel with a series of C preprocessor defines</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.prepare_list_of_files">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_list_of_files</code><span class="sig-paren">(</span><em>kernel_file_list</em>, <em>params</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_list_of_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare the kernel string along with any additional files</p>
+<p>The first file in the list is allowed to include or read in the others
+The files beyond the first are considered additional files that may also contain tunable parameters</p>
+<p>For each file beyond the first this function creates a temporary file with
+preprocessors statements inserted. Occurences of the original filenames in the
+first file are replaced with their temporary counterparts.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kernel_file_list</strong> (<em>list(string)</em>) &#8211; A list of filenames. The first file in the list is
+allowed to read or include the other files in the list. All files may
+will have access to the tunable parameters.</li>
+<li><strong>params</strong> (<em>dict()</em>) &#8211; A dictionary with the tunable parameters for this particular
+instance.</li>
+<li><strong>grid</strong> (<em>tuple()</em>) &#8211; The grid dimensions for this instance. The grid dimensions are
+also inserted into the code as if they are tunable parameters for
+convenience.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.replace_param_occurrences">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">replace_param_occurrences</code><span class="sig-paren">(</span><em>string</em>, <em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.replace_param_occurrences" title="Permalink to this definition">¶</a></dt>
+<dd><p>replace occurrences of the tuning params with their current value</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.setup_block_and_grid">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_block_and_grid</code><span class="sig-paren">(</span><em>dev</em>, <em>problem_size</em>, <em>grid_div_y</em>, <em>grid_div_x</em>, <em>params</em>, <em>instance_string</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_block_and_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute thread block and grid dimensions for this kernel</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.setup_kernel_strings">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_kernel_strings</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>params</em>, <em>grid</em>, <em>instance_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_kernel_strings" title="Permalink to this definition">¶</a></dt>
+<dd><p>create configuration specific kernel string</p>
+</dd></dl>
+
+</div>
+<div class="section" id="kernel-tuner-cuda-cudafunctions">
+<h2>kernel_tuner.cuda.CudaFunctions<a class="headerlink" href="#kernel-tuner-cuda-cudafunctions" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="kernel_tuner.cuda.CudaFunctions">
+<em class="property">class </em><code class="descclassname">kernel_tuner.cuda.</code><code class="descname">CudaFunctions</code><span class="sig-paren">(</span><em>device=0</em>, <em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that groups the CUDA functions on maintains state about the device</p>
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.benchmark">
+<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the kernel and measures time repeatedly, returns average time</p>
+<p>Runs the kernel and measures kernel execution time repeatedly, number of
+iterations is set during the creation of CudaFunctions. Benchmark returns
+a robust average, from all measurements the fastest and slowest runs are
+discarded and the rest is included in the returned average. The reason for
+this is to be robust against initialization artifacts and other exceptional
+cases.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>func</strong> (<em>pycuda.driver.Function</em>) &#8211; A PyCuda kernel compiled for this specific kernel configuration</li>
+<li><strong>gpu_args</strong> (<em>list( pycuda.driver.DeviceAllocation, numpy.int32, ...)</em>) &#8211; A list of arguments to the kernel, order should match the
+order in the code. Allowed values are either variables in global memory
+or single values passed by value.</li>
+<li><strong>threads</strong> (<em>tuple(int, int, int)</em>) &#8211; A tuple listing the number of threads in each dimension of
+the thread block</li>
+<li><strong>grid</strong> (<em>tuple(int, int)</em>) &#8211; A tuple listing the number of thread blocks in each dimension
+of the grid</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average for the kernel execution time.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.compile">
+<code class="descname">compile</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>call the CUDA compiler to compile the kernel, return the device function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel to be compiled, used to lookup the
+function after compilation.</li>
+<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The CUDA kernel code that contains the function <cite>kernel_name</cite></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An CUDA kernel that can be called directly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">pycuda.driver.Function</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.copy_constant_memory_args">
+<code class="descname">copy_constant_memory_args</code><span class="sig-paren">(</span><em>cmem_args</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.copy_constant_memory_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds constant memory arguments to the most recently compiled module</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cmem_args</strong> (<em>dict( string: numpy.ndarray, ... )</em>) &#8211; A dictionary containing the data to be passed to the
+device constant memory. The format to be used is as follows: A
+string key is used to name the constant memory symbol to which the
+value needs to be copied. Similar to regular arguments, these need
+to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.memcpy_dtoh">
+<code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform a device to host memory copy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> (<em>numpy.ndarray</em>) &#8211; A numpy array in host memory to store the data</li>
+<li><strong>src</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A GPU memory allocation unit</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.memset">
+<code class="descname">memset</code><span class="sig-paren">(</span><em>allocation</em>, <em>value</em>, <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.memset" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the memory in allocation to the value in value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A GPU memory allocation unit</li>
+<li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit in bytes</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.ready_argument_list">
+<code class="descname">ready_argument_list</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<em>list(numpy objects)</em>) &#8211; List of arguments to be passed to the kernel.
+The order should match the argument list on the CUDA kernel.
+Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to an CUDA kernel.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list( pycuda.driver.DeviceAllocation, numpy.int32, ... )</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.run_kernel">
+<code class="descname">run_kernel</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the CUDA kernel passed as &#8216;func&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>func</strong> (<em>pycuda.driver.Function</em>) &#8211; A PyCuda kernel compiled for this specific kernel configuration</li>
+<li><strong>gpu_args</strong> (<em>list( pycuda.driver.DeviceAllocation, numpy.int32, ...)</em>) &#8211; A list of arguments to the kernel, order should match the
+order in the code. Allowed values are either variables in global memory
+or single values passed by value.</li>
+<li><strong>threads</strong> (<em>tuple(int, int, int)</em>) &#8211; A tuple listing the number of threads in each dimension of
+the thread block</li>
+<li><strong>grid</strong> (<em>tuple(int, int)</em>) &#8211; A tuple listing the number of thread blocks in each dimension
+of the grid</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="kernel-tuner-opencl-openclfunctions">
+<h2>kernel_tuner.opencl.OpenCLFunctions<a class="headerlink" href="#kernel-tuner-opencl-openclfunctions" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="kernel_tuner.opencl.OpenCLFunctions">
+<em class="property">class </em><code class="descclassname">kernel_tuner.opencl.</code><code class="descname">OpenCLFunctions</code><span class="sig-paren">(</span><em>device=0</em>, <em>platform=0</em>, <em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that groups the OpenCL functions on maintains some state about the device</p>
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.benchmark">
+<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the kernel and measures time repeatedly, returns average time</p>
+<p>Runs the kernel and measures kernel execution time repeatedly, number of
+iterations is set during the creation of OpenCLFunctions. Benchmark returns
+a robust average, from all measurements the fastest and slowest runs are
+discarded and the rest is included in the returned average. The reason for
+this is to be robust against initialization artifacts and other exceptional
+cases.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>func</strong> (<em>pyopencl.Kernel</em>) &#8211; A PyOpenCL kernel compiled for this specific kernel configuration</li>
+<li><strong>gpu_args</strong> (<em>list( pyopencl.Buffer, numpy.int32, ...)</em>) &#8211; A list of arguments to the kernel, order should match the
+order in the code. Allowed values are either variables in global memory
+or single values passed by value.</li>
+<li><strong>threads</strong> (<em>tuple(int, int, int)</em>) &#8211; A tuple listing the number of work items in each dimension of
+the work group.</li>
+<li><strong>grid</strong> (<em>tuple(int, int)</em>) &#8211; A tuple listing the number of work groups in each dimension
+of the NDRange.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average for the kernel execution time.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.compile">
+<code class="descname">compile</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>call the OpenCL compiler to compile the kernel, return the device function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel to be compiled, used to lookup the
+function after compilation.</li>
+<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The OpenCL kernel code that contains the function <cite>kernel_name</cite></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An OpenCL kernel that can be called directly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">pyopencl.Kernel</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.memcpy_dtoh">
+<code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform a device to host memory copy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> (<em>numpy.ndarray</em>) &#8211; A numpy array in host memory to store the data</li>
+<li><strong>src</strong> (<em>pyopencl.Buffer</em>) &#8211; An OpenCL Buffer to copy data from</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.memset">
+<code class="descname">memset</code><span class="sig-paren">(</span><em>buffer</em>, <em>value</em>, <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memset" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the memory in allocation to the value in value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>allocation</strong> (<em>pyopencl.Buffer</em>) &#8211; An OpenCL Buffer to fill</li>
+<li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit in bytes</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.ready_argument_list">
+<code class="descname">ready_argument_list</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<em>list(numpy objects)</em>) &#8211; List of arguments to be passed to the kernel.
+The order should match the argument list on the OpenCL kernel.
+Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to an OpenCL kernel.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list( pyopencl.Buffer, numpy.int32, ... )</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.run_kernel">
+<code class="descname">run_kernel</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the OpenCL kernel passed as &#8216;func&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>func</strong> (<em>pyopencl.Kernel</em>) &#8211; An OpenCL Kernel</li>
+<li><strong>gpu_args</strong> (<em>list( pyopencl.Buffer, numpy.int32, ...)</em>) &#8211; A list of arguments to the kernel, order should match the
+order in the code. Allowed values are either variables in global memory
+or single values passed by value.</li>
+<li><strong>threads</strong> (<em>tuple(int, int, int)</em>) &#8211; A tuple listing the number of work items in each dimension of
+the work group.</li>
+<li><strong>grid</strong> (<em>tuple(int, int)</em>) &#8211; A tuple listing the number of work groups in each dimension
+of the NDRange.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="kernel-tuner-c-cfunctions">
+<h2>kernel_tuner.c.CFunctions<a class="headerlink" href="#kernel-tuner-c-cfunctions" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="kernel_tuner.c.CFunctions">
+<em class="property">class </em><code class="descclassname">kernel_tuner.c.</code><code class="descname">CFunctions</code><span class="sig-paren">(</span><em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that groups the code for running and compiling C functions</p>
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.benchmark">
+<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>c_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the kernel repeatedly, returns averaged returned value</p>
+<p>The C function tuning is a little bit more flexible than direct CUDA
+or OpenCL kernel tuning. The C function needs to measure time, or some
+other quality metric you wish to tune on, on its own and should
+therefore return a single floating-point value.</p>
+<p>Benchmark runs the C function repeatedly and returns the average of the
+values returned by the C function. The number of iterations is set
+during the creation of the CFunctions object. For all measurements the
+lowest and highest values are discarded and the rest is included in the
+average. The reason for this is to be robust against initialization
+artifacts and other exceptional cases.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>func</strong> (<em>ctypes._FuncPtr</em>) &#8211; A C function compiled for this specific configuration</li>
+<li><strong>c_args</strong> (<em>list()</em>) &#8211; A list of arguments to the function, order should match the
+order in the code. The list should be prepared using
+ready_argument_list().</li>
+<li><strong>threads</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
+interface as CudaFunctions and OpenCLFunctions.</li>
+<li><strong>grid</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
+interface as CudaFunctions and OpenCLFunctions.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average of values returned by the C function.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.cleanup_lib">
+<code class="descname">cleanup_lib</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.cleanup_lib" title="Permalink to this definition">¶</a></dt>
+<dd><p>unload the previously loaded shared library</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.compile">
+<code class="descname">compile</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>call the C compiler to compile the kernel, return the function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; The name of the kernel to be compiled, used to lookup the
+function after compilation.</li>
+<li><strong>kernel_string</strong> (<em>string</em>) &#8211; The C code that contains the function <cite>kernel_name</cite></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An ctypes function that can be called directly.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ctypes._FuncPtr</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.memcpy_dtoh">
+<code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
+<dd><p>a simple memcpy expects a ctypes pointer, returns a numpy array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> (<em>numpy.ndarray</em>) &#8211; A numpy array to store the data</li>
+<li><strong>src</strong> (<em>ctypes.pointer</em>) &#8211; A ctypes pointer to some memory allocation</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.memset">
+<code class="descname">memset</code><span class="sig-paren">(</span><em>allocation</em>, <em>value</em>, <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memset" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the memory in allocation to the value in value</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A memory allocation unit</li>
+<li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
+<li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit in bytes</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.ready_argument_list">
+<code class="descname">ready_argument_list</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>ready argument list to be passed to the C function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<em>list(numpy objects)</em>) &#8211; List of arguments to be passed to the C function.
+The order should match the argument list on the C function.
+Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to the C function.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list()</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.run_kernel">
+<code class="descname">run_kernel</code><span class="sig-paren">(</span><em>func</em>, <em>c_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the kernel once, returns whatever the kernel returns</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>func</strong> (<em>ctypes._FuncPtr</em>) &#8211; A C function compiled for this specific configuration</li>
+<li><strong>c_args</strong> (<em>list()</em>) &#8211; A list of arguments to the function, order should match the
+order in the code. The list should be prepared using
+ready_argument_list().</li>
+<li><strong>threads</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
+interface as CudaFunctions and OpenCLFunctions.</li>
+<li><strong>grid</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
+interface as CudaFunctions and OpenCLFunctions.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average of values returned by the C function.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="user-api.html" class="btn btn-neutral" title="API Documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Ben van Werkhoven.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
