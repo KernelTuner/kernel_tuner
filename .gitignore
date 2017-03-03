@@ -10,3 +10,4 @@ doc/create_doc.sh
 *.json
 *.csv
 .cache
+*.ipynb_checkpoints
