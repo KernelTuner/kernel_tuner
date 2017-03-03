@@ -121,13 +121,14 @@ class CFunctions(object):
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
 
+            func = getattr(self.lib, kernel_name)
+            func.restype = C.c_float
+
         finally:
             delete_temp_file(source_file)
             delete_temp_file(filename+".o")
             delete_temp_file(filename+".so")
 
-        func = getattr(self.lib, kernel_name)
-        func.restype = C.c_float
 
         return func
 
