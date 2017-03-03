@@ -4,6 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Changed
+- converted the tutorial to a Jupyter Notebook
 - CUDA backend prints device in use, similar to OpenCL backend
 - migrating from nosetests to pytest
 - rewrote many of the examples to save results to json files
