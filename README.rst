@@ -41,27 +41,31 @@ install from PyPi, install with:
 
 To install from the source (and get the examples):  
 
- - clone the repository  
+- clone the repository  
  
-   - ``git clone git@github.com:benvanwerkhoven/kernel_tuner.git``  
+  - ``git clone git@github.com:benvanwerkhoven/kernel_tuner.git``  
    
- - change into the top-level directory  
- 
-   - ``cd kernel_tuner``  
+- change into the top-level directory  
+
+  - ``cd kernel_tuner``  
    
- - install using  
+- install using  
  
-   - ``pip install .``  
+  - ``pip install .``  
 
 Dependencies
 ------------
 Python 2.7 or Python 3.5
 
 PyCuda and/or PyOpenCL (https://mathema.tician.de/software/)
- - To tune CUDA kernels
-    - ``pip install pycuda`` 
- - To tune OpenCL kernels
-    - ``pip install pyopencl``
+
+- To tune CUDA kernels
+
+  - ``pip install pycuda`` 
+
+- To tune OpenCL kernels
+
+  - ``pip install pyopencl``
 
 Example usage
 -------------
@@ -163,15 +167,15 @@ the ``gh-pages`` branch.
 
 Before creating a pull request please ensure the following:
 
- * You have written unit tests to test your additions and all unit tests pass
- * The examples still work and produce the same (or better) results
- * The code is compatible with both Python 2.7 and Python 3.5
- * An entry about the change or addition is created in CHANGELOG.md
+* You have written unit tests to test your additions and all unit tests pass
+* The examples still work and produce the same (or better) results
+* The code is compatible with both Python 2.7 and Python 3.5
+* An entry about the change or addition is created in CHANGELOG.md
 
 Contributing authors so far:
 
- * Ben van Werkhoven
- * Berend Weel
+* Ben van Werkhoven
+* Berend Weel
 
 Related work
 ------------
