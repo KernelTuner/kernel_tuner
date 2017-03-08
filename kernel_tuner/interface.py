@@ -108,8 +108,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :type grid_div_x: list
 
     :param grid_div_y: A list of names of the parameters whose values divide
-        the grid dimensions in the y-direction, None by default. See grid_div_x
-        for more details.
+        the grid dimensions in the y-direction, ["block_size_y"] by default.
+        If you do not want to divide the problem_size, you should pass an empty list.
+        See grid_div_x for more details.
     :type grid_div_y: list
 
     :param restrictions: A list of strings containing boolean expression that

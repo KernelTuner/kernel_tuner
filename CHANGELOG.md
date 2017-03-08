@@ -4,6 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Changed
+- changed default for grid_div_y from None to block_size_y
 - converted the tutorial to a Jupyter Notebook
 - CUDA backend prints device in use, similar to OpenCL backend
 - migrating from nosetests to pytest

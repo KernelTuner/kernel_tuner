@@ -92,6 +92,8 @@ def get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
     if grid_div_x is not None:
         div_x = numpy.prod([int(eval(replace_param_occurrences(s,params))) for s in grid_div_x])
     div_y = 1
+    if grid_div_y is None and "block_size_y" in params:
+        grid_div_y = ["block_size_y"]
     if grid_div_y is not None:
         div_y = numpy.prod([int(eval(replace_param_occurrences(s,params))) for s in grid_div_y])
     grid = (int(numpy.ceil(float(current_problem_size[0]) / float(div_x))),
