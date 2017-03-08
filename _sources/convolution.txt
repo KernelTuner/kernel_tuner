@@ -127,7 +127,7 @@ grid y-dimension.
 
 The kernel tuner currently assumes that the thread block dimensions
 are specified through the values of "block_size_x", "block_size_y",
-and "block_size_y" in the tuning parameters. If one or more of
+and "block_size_z" in the tuning parameters. If one or more of
 these values are not among the tuning parameters it will assume
 256, 1, and 1, as thread block dimensions, respectively.
 

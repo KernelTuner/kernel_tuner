@@ -245,8 +245,9 @@ the nearest integer number.
 If not supplied, [&#8220;block_size_x&#8221;] will be used by default, if you do not
 want any grid x-dimension divisors pass an empty list.</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
-the grid dimensions in the y-direction, None by default. See grid_div_x
-for more details.</li>
+the grid dimensions in the y-direction, [&#8220;block_size_y&#8221;] by default.
+If you do not want to divide the problem_size, you should pass an empty list.
+See grid_div_x for more details.</li>
 <li><strong>restrictions</strong> (<em>list</em>) &#8211; A list of strings containing boolean expression that
 limit the search space in that they must be satisfied by the kernel
 configuration. These expressions must be true for the configuration
