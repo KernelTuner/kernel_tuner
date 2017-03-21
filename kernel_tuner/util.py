@@ -24,7 +24,7 @@ def delete_temp_file(filename):
             raise e
 
 def get_temp_filename():
-    random_large_int = numpy.random.randint(low=1000000, high=1000000000)
+    random_large_int = numpy.random.randint(low=100, high=100000000000)
     return 'temp_' + str(random_large_int)
 
 def looks_like_a_filename(original_kernel):
