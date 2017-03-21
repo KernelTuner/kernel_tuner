@@ -36,14 +36,16 @@ The full documentation is available
 Installation
 ------------
 
-install from PyPi, install with:  
- - ``pip install kernel_tuner``  
+To install from PyPi:  
 
-To install from the source (and get the examples):  
+- ``pip install kernel_tuner``  
+
+To install from the source (and get the tutorial and examples):  
 
 - clone the repository  
  
-  - ``git clone git@github.com:benvanwerkhoven/kernel_tuner.git``  
+  - With a GitHub account: ``git clone git@github.com:benvanwerkhoven/kernel_tuner.git``  
+  - Without GitHub account: ``git clone https://github.com/benvanwerkhoven/kernel_tuner.git``  
    
 - change into the top-level directory  
 
@@ -61,11 +63,13 @@ PyCuda and/or PyOpenCL (https://mathema.tician.de/software/)
 
 - To tune CUDA kernels
 
-  - ``pip install pycuda`` 
+  - Make sure you have the `CUDA Toolkit <https://developer.nvidia.com/cuda-toolkit>`_ installed 
+  - You can install PyCuda using ``pip install pycuda`` 
 
 - To tune OpenCL kernels
 
-  - ``pip install pyopencl``
+  - Make sure you have an OpenCL compiler for your intended OpenCL platform
+  - You can install PyOpenCL using ``pip install pyopencl``
 
 Example usage
 -------------
@@ -176,6 +180,18 @@ Contributing authors so far:
 
 * Ben van Werkhoven
 * Berend Weel
+
+Citation
+--------
+A scientific paper about the Kernel Tuner is in preparation, in the meantime please cite the Kernel Tuner as follows:
+
+.. code:: latex
+
+    @misc{
+      author = {Ben van Werkhoven},
+      title = {Kernel Tuner: A simple CUDA/OpenCL Kernel Tuner in Python},
+      year = {2017}
+    }
 
 Related work
 ------------
