@@ -45,13 +45,16 @@ def tune():
 
     #start tuning separable convolution (row)
     tune_params["filter_height"] = [1]
+    tune_params["tile_size_y"] = [1]
     results_row = tune_kernel("convolution_kernel", kernel_string,
         problem_size, args, tune_params,
         grid_div_y=grid_div_y, grid_div_x=grid_div_x, cmem_args=cmem_args, verbose=True, restrictions=restrict)
 
     #start tuning separable convolution (col)
     tune_params["filter_height"] = tune_params["filter_width"][:]
+    tune_params["file_size_y"] = tune_params["tile_size_x"][:]
     tune_params["filter_width"] = [1]
+    tune_params["tile_size_x"] = [1]
     results_col = tune_kernel("convolution_kernel", kernel_string,
         problem_size, args, tune_params,
         grid_div_y=grid_div_y, grid_div_x=grid_div_x, cmem_args=cmem_args, verbose=True, restrictions=restrict)
