@@ -8,13 +8,13 @@ priorities grow and shift.
 
 This is the list of features that we want to have implemented by the next version.
 
- * Option to store tuning results in a file (e.g. json, csv, ... )
  * Option to set a function that performs output verfication, instead of numpy.allclose()
  * Option to change defaults for 'block_size_x', and so on
  * Option to set a function that computes search space restriction, instead of a list of strings
  * Option to set compiler name, when using C backend
  * Option to pass a function that generates the kernel code
-
+ * Option to pass the fraction of the search space covered by sample runner
+ 
 ### version 1.0.0
 
 These functions are to be implemented by version 1.0.0, but may already be
