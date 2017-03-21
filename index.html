@@ -221,17 +221,15 @@ documentation of
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<dl class="docutils">
-<dt>install from PyPi, install with:</dt>
-<dd><ul class="first last simple">
+<p>To install from PyPi:</p>
+<ul class="simple">
 <li><code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner</span></code></li>
 </ul>
-</dd>
-</dl>
-<p>To install from the source (and get the examples):</p>
+<p>To install from the source (and get the tutorial and examples):</p>
 <ul class="simple">
 <li>clone the repository<ul>
-<li><code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">git&#64;github.com:benvanwerkhoven/kernel_tuner.git</span></code></li>
+<li>With a GitHub account: <code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">git&#64;github.com:benvanwerkhoven/kernel_tuner.git</span></code></li>
+<li>Without GitHub account: <code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/benvanwerkhoven/kernel_tuner.git</span></code></li>
 </ul>
 </li>
 <li>change into the top-level directory<ul>
@@ -250,11 +248,13 @@ documentation of
 <p>PyCuda and/or PyOpenCL (<a class="reference external" href="https://mathema.tician.de/software/">https://mathema.tician.de/software/</a>)</p>
 <ul class="simple">
 <li>To tune CUDA kernels<ul>
-<li><code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code></li>
+<li>Make sure you have the <a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA Toolkit</a> installed</li>
+<li>You can install PyCuda using <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code></li>
 </ul>
 </li>
 <li>To tune OpenCL kernels<ul>
-<li><code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyopencl</span></code></li>
+<li>Make sure you have an OpenCL compiler for your intended OpenCL platform</li>
+<li>You can install PyOpenCL using <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyopencl</span></code></li>
 </ul>
 </li>
 </ul>
@@ -356,6 +356,17 @@ the <code class="docutils literal"><span class="pre">gh-pages</span></code> bran
 <li>Ben van Werkhoven</li>
 <li>Berend Weel</li>
 </ul>
+</div>
+<div class="section" id="citation">
+<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
+<p>A scientific paper about the Kernel Tuner is in preparation, in the meantime please cite the Kernel Tuner as follows:</p>
+<div class="highlight-latex"><div class="highlight"><pre><span></span>@misc<span class="nb">{</span>
+  author = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,
+  title = <span class="nb">{</span>Kernel Tuner: A simple CUDA/OpenCL Kernel Tuner in Python<span class="nb">}</span>,
+  year = <span class="nb">{</span>2017<span class="nb">}</span>
+<span class="nb">}</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="related-work">
 <h2>Related work<a class="headerlink" href="#related-work" title="Permalink to this headline">¶</a></h2>
