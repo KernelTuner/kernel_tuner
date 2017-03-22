@@ -73,3 +73,10 @@ Sparse Matrix Vector Multiplication
 [`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/spmv.py>`__]
  -  use scipy to compute a reference answer and verify all benchmarked kernels
  -  express that the number of thread blocks depends on the values of tunable parameters
+
+Point-in-Polygon
+---------
+[`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/pnpoly.py>`__]
+ -  overlap transfers with device mapped host memory
+ -  tune on different implementations of an algorithm
+
