@@ -99,6 +99,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#reduction">Reduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#sparse-matrix-vector-multiplication">Sparse Matrix Vector Multiplication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#point-in-polygon">Point-in-Polygon</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial - Getting Started</a></li>
@@ -301,6 +302,17 @@ kernel [<a class="reference external" href="https://github.com/benvanwerkhoven/k
 <dd><ul class="first last simple">
 <li>use scipy to compute a reference answer and verify all benchmarked kernels</li>
 <li>express that the number of thread blocks depends on the values of tunable parameters</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="point-in-polygon">
+<h2>Point-in-Polygon<a class="headerlink" href="#point-in-polygon" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/pnpoly.py">CUDA</a>]</dt>
+<dd><ul class="first last simple">
+<li>overlap transfers with device mapped host memory</li>
+<li>tune on different implementations of an algorithm</li>
 </ul>
 </dd>
 </dl>
