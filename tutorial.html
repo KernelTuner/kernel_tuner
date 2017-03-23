@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Tutorial - Getting Started &mdash; kernel_tuner 0.1.1 documentation</title>
+  <title>Kernel Tuner Tutorial - Diffusion &mdash; kernel_tuner 0.1.1 documentation</title>
   
 
   
@@ -87,14 +87,14 @@
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial - Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Tuning-a-2D-stencil-kernel">Tuning a 2D stencil kernel</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Setup-tuning-parameters">Setup tuning parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Calling-tune_kernel()">Calling <code class="docutils literal"><span class="pre">tune_kernel()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Putting-it-all-together">Putting it all together</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Storing-the-results">Storing the results</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Kernel Tuner Tutorial - Diffusion</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Diffusion">Diffusion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Python-implementation">Python implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Computing-on-the-GPU">Computing on the GPU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Auto-Tuning-with-the-Kernel-Tuner">Auto-Tuning with the Kernel Tuner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Using-Shared-Memory">Using Shared Memory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Tiling-GPU-Code">Tiling GPU Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Storing-the-results">Storing the results</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
@@ -133,7 +133,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Tutorial - Getting Started</li>
+    <li>Kernel Tuner Tutorial - Diffusion</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -341,329 +341,1015 @@ div.nboutput div.output_area.stderr {
     margin-right: 4px;  /* make room for the exclamation icon */
 }
 </style>
-<div class="section" id="Tutorial---Getting-Started">
-<h1>Tutorial - Getting Started<a class="headerlink" href="#Tutorial---Getting-Started" title="Permalink to this headline">¶</a></h1>
-<p>In several steps this tutorial will teach you everything you need to
-know to start tuning even the most complex kernels.</p>
+<div class="section" id="Kernel-Tuner-Tutorial---Diffusion">
+<h1>Kernel Tuner Tutorial - Diffusion<a class="headerlink" href="#Kernel-Tuner-Tutorial---Diffusion" title="Permalink to this headline">¶</a></h1>
+<p>Welcome to the Kernel Tuner&#8217;s tutorial. This tutorial explains the
+basics of auto-tuning GPU kernels with the Kernel Tuner.</p>
+<p>You may have seen the minimalistic vector add example from the <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner">Kernel
+Tuner&#8217;s Homepage</a>.
+This tutorial uses a kernel that is quite a bit more complex, and
+discusses several code optimizations for GPU kernels.</p>
 <p>If you are reading this tutorial on the Kernel Tuner&#8217;s documentation
 pages, note that you can actually run this tutorial as a Jupyter
 Notebook. Just clone the Kernel Tuner&#8217;s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub
 repository</a>. Install
-the Kernel Tuner using <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> and Jupyter Notebooks using
-<code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">jupyter</span></code> and you&#8217;re ready to go. You can start this
-tutorial by typing <code class="docutils literal"><span class="pre">jupyter</span> <span class="pre">notebook</span></code> in the <code class="docutils literal"><span class="pre">kernel_tuner/tutorial</span></code>
-directory.</p>
-<p>You&#8217;ve probably seen the rather minimalistic vector add examples from
-the <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner">Kernel Tuner&#8217;s
-Readme</a>, which are a
-bit too simplistic to fully tell you how to tune any given kernel.
-Therefore, this tutorial starts out with a little bit more complex, yet
-still quite simple, 2D stencil kernel written in CUDA.</p>
-<blockquote>
-<div><div class="line-block">
-<div class="line">If you prefer OpenCL over CUDA, don&#8217;t worry. Everything in this
-tutorial applies as much to OpenCL as it does to CUDA. But I will
-use CUDA code in the examples, and CUDA terminology in the text.
-Here&#8217;s a quick translation guide:</div>
-<div class="line">An OpenCL work_item is a called a thread in CUDA, a work_group
-is called a thread block, and an NDRange is called a grid. Instead
-of OpenCL&#8217;s get_local_id() and get_group_id(), CUDA uses
-built-in variables threadIdx and blockIdx.</div>
-</div>
-</div></blockquote>
-<div class="section" id="Tuning-a-2D-stencil-kernel">
-<h2>Tuning a 2D stencil kernel<a class="headerlink" href="#Tuning-a-2D-stencil-kernel" title="Permalink to this headline">¶</a></h2>
-<p>We use a 2D stencil kernel as an example kernel to get you started with
-writing your Python scripts to tune using the Kernel Tuner. 2D stencil
-kernels like the one we use here are an compute-intensive part of
-iterative solvers that are used by many applications that simulate
-physical processes, like diffusion. Let&#8217;s say you have written a CUDA
-kernel to perform the 2D stencil computation on the GPU, like the one
-shown below.</p>
-<p>Like in any CUDA kernel, you as a programmer have to decide how to group
-your threads into thread blocks. And like in many CUDA kernels, the
-thread block size that we choose for our 2D stencil kernel is not really
-that important for the output of the kernel. However, the thread block
-dimensions will have an impact on the performance of your kernels. And
-the optimal setting will be different for different GPUs.</p>
-<p>So how do you know which thread block size to choose? Simply try them
-all with auto tuning!</p>
-<p>Make sure you execute the code block below, because we will need that
-later on, by selecting the cell and pressing <strong>*shift+enter*</strong>.</p>
+the Kernel Tuner and Jupyter Notebooks and you&#8217;re ready to go! You can
+start the tutorial by typing <code class="docutils literal"><span class="pre">jupyter</span> <span class="pre">notebook</span></code> in the
+<code class="docutils literal"><span class="pre">kernel_tuner/tutorial</span></code> directory.</p>
+<p>This tutorial is designed to show you the whole process of creating an
+optimized and tuned GPU application using the Kernel Tuner. We start
+with modeling a physical process, for which we create a simple numerical
+implementation in Python. Then we create a CUDA kernel that performs the
+same computation, but on the GPU. Once we have a CUDA kernel, we start
+using the Kernel Tuner for auto-tuning our GPU application. And finally,
+we&#8217;ll introduce a few code optimizations to our CUDA kernel that will
+improve performance, but also add more parameters to tune on using the
+Kernel Tuner.</p>
+<p>In this tutorial, we will use
+<a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion">diffusion</a> as an example
+application.</p>
+<div class="section" id="Diffusion">
+<h2>Diffusion<a class="headerlink" href="#Diffusion" title="Permalink to this headline">¶</a></h2>
+<p>Put simply, diffusion is the redistribution of something from a region
+of high concentration to a region of low concentration without bulk
+motion. The concept of diffusion is widely used in many fields,
+including physics, chemistry, biology, and many more.</p>
+<p>Suppose that we take a metal sheet, in which the temperature is exactly
+equal to one degree everywhere in the sheet. Now if we were to heat a
+number of points on the sheet to a very high temperature, say a thousand
+degrees, in an instant by some method. We could see the heat diffuse
+from these hotspots to the cooler areas. We are assuming that the metal
+does not melt. In addition, we will ignore any heat loss from radiation
+or other causes in this example.</p>
+<p>We can use the <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion_equation">diffusion
+equation</a> to model
+how the heat diffuses through our metal sheet:</p>
+<div class="math">
+\begin{equation*}
+\frac{\partial u}{\partial t}= D \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} \right)
+\end{equation*}</div><p>Where <span class="math">\(x\)</span> and <span class="math">\(y\)</span> represent the spatial descretization of
+our 2D domain, <span class="math">\(u\)</span> is the quantity that is being diffused,
+<span class="math">\(t\)</span> is the descretization in time, and the constant <span class="math">\(D\)</span>
+determines how fast the diffusion takes place.</p>
+<p>In this example, we will assume a very simple descretization of our
+problem. We assume that our 2D domain has <span class="math">\(nx\)</span> equi-distant grid
+points in the x-direction and <span class="math">\(ny\)</span> equi-distant grid points in the
+y-direction. Be sure to execute every cell as you read through this
+document, by selecting it and pressing <strong>shift+enter</strong>.</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [ ]:
+<span></span>In [1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">    #define domain_width    500</span>
-<span class="s2">    #define domain_height   500</span>
-
-<span class="s2">    __global__ void stencil_kernel(float *x_new, float *x_old) {</span>
-<span class="s2">        int x = blockIdx.x * block_size_x + threadIdx.x;</span>
-<span class="s2">        int y = blockIdx.y * block_size_y + threadIdx.y;</span>
-
-<span class="s2">        if (y&gt;0 &amp;&amp; y&lt;domain_height-1 &amp;&amp; x&gt;0 &amp;&amp; x&lt;domain_width-1) {</span>
-
-<span class="s2">        x_new[y*domain_width+x] = ( x_old[ (y  ) * domain_width + (x  ) ] +</span>
-<span class="s2">                                    x_old[ (y  ) * domain_width + (x-1) ] +</span>
-<span class="s2">                                    x_old[ (y  ) * domain_width + (x+1) ] +</span>
-<span class="s2">                                    x_old[ (y+1) * domain_width + (x  ) ] +</span>
-<span class="s2">                                    x_old[ (y-1) * domain_width + (x  ) ] ) / 5.0f;</span>
-
-<span class="s2">        }</span>
-<span class="s2">    }</span>
-<span class="s2">&quot;&quot;&quot;</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ok!&quot;</span><span class="p">)</span>
+<span></span><span class="n">nx</span> <span class="o">=</span> <span class="mi">1024</span>
+<span class="n">ny</span> <span class="o">=</span> <span class="mi">1024</span>
 </pre></div>
 </div>
 </div>
-<p>This 2D stencil kernel assumes that a thread will be created for each
-element in the domain. Each thread then simply takes the average of the
-element corresponding with its computed thread index in <code class="docutils literal"><span class="pre">x_old</span></code> and
-its four direct neighbors, one in every direction. The newly computed
-value is then stored in <code class="docutils literal"><span class="pre">x_new</span></code>. Iterative solvers will have to call
-kernels like this one many times, so it is important that this kernel is
-efficient.</p>
-<p>You may notice that the kernel uses two, currently undefined, constants
-<code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> instead of built-in variables
-blockDim.x or blockDim.y. Setting the thread block dimensions at
-compile-time is often a good idea for performance. If you don&#8217;t need to
-vary the thread block size at run-time, the compiler can, for example,
-unroll loops that iterate using the thread block size.</p>
-<p>Let&#8217;s take a look at how we can write a small Python script that uses
-the Kernel Tuner to test the performance of our kernel for different
-combinations of <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>.</p>
-<div class="section" id="Setup-tuning-parameters">
-<h3>Setup tuning parameters<a class="headerlink" href="#Setup-tuning-parameters" title="Permalink to this headline">¶</a></h3>
-<p>We call parameters in the kernel, like <code class="docutils literal"><span class="pre">block_size_x</span></code> and
-<code class="docutils literal"><span class="pre">block_size_y</span></code>, tunable parameters. This is because we want to tune
-the performance of the kernel based on the values given to these
-parameters.</p>
-<p>To tell the Kernel Tuner about our tunable parameters we use a Python
-dictionary, which is basically a hashmap. For every tunable parameter,
-we create a key-value pair in the dictionary. The key is the name of the
-parameter as a string. The value associated with that key is a list of
-possible values for the tunable parameter.</p>
-<p>Let&#8217;s look at an example:</p>
+<p>This results in a constant distance of <span class="math">\(\delta x\)</span> between all grid
+points in the <span class="math">\(x\)</span> dimension. Using central differences, we can
+numerically approximate the derivative for a given point <span class="math">\(x_i\)</span>:</p>
+<div class="math">
+\begin{equation*}
+\left. \frac{\partial^2 u}{\partial x^2} \right|_{x_{i}} \approx \frac{u_{x_{i+1}}-2u_{{x_i}}+u_{x_{i-1}}}{(\delta x)^2}
+\end{equation*}</div><p>We do the same for the partial derivative in <span class="math">\(y\)</span>:</p>
+<div class="math">
+\begin{equation*}
+\left. \frac{\partial^2 u}{\partial y^2} \right|_{y_{i}} \approx \frac{u_{y_{i+1}}-2u_{y_{i}}+u_{y_{i-1}}}{(\delta y)^2}
+\end{equation*}</div><p>If we combine the above equations, we can obtain a numerical estimation
+for the temperature field of our metal sheet in the next time step,
+using <span class="math">\(\delta t\)</span> as the time between time steps. But before we do,
+we also simplify the expression a little bit, because we&#8217;ll assume that
+<span class="math">\(\delta x\)</span> and <span class="math">\(\delta y\)</span> are always equal to 1.</p>
+<div class="math">
+\begin{equation*}
+u'_{x,y} = u_{x,y} + \delta t \times \left( \left( u_{x_{i+1},y}-2u_{{x_i},y}+u_{x_{i-1},y} \right) + \left( u_{x,y_{i+1}}-2u_{x,y_{i}}+u_{x,y_{i-1}} \right) \right)
+\end{equation*}</div><p>In this formula <span class="math">\(u'_{x,y}\)</span> refers to the temperature field at the
+time <span class="math">\(t + \delta t\)</span>. As a final step, we further simplify this
+equation to:</p>
+<div class="math">
+\begin{equation*}
+u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i},y}+u_{x_{i-1},y}+u_{x,y_{i-1}} \right)
+\end{equation*}</div></div>
+<div class="section" id="Python-implementation">
+<h2>Python implementation<a class="headerlink" href="#Python-implementation" title="Permalink to this headline">¶</a></h2>
+<p>We can create a Python function that implements the numerical
+approximation defined in the above equation. For simplicity we&#8217;ll use
+the assumption of a free boundary condition.</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [ ]:
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">diffuse</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.225</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">:</span><span class="n">ny</span><span class="p">]</span><span class="o">+</span><span class="n">field</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">nx</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span>
+        <span class="n">field</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">field</span>
+</pre></div>
+</div>
+</div>
+<p>To give our Python function a test run, we will now do some imports and
+generate the input data for the initial conditions of our metal sheet
+with a few very hot points. We&#8217;ll also make two plots, one after a
+thousand time steps, and a second plot after another two thousand time
+steps. Do note that the plots are using different ranges for the colors.
+Also, executing the following cell may take a little while.</p>
+<div class="nbinput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="c1">#do the imports we need</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="c1">#setup initial conditions</span>
+<span class="k">def</span> <span class="nf">get_initial_conditions</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">):</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">ny</span><span class="p">,</span> <span class="n">nx</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">field</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nx</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ny</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span><span class="n">e3</span>
+    <span class="k">return</span> <span class="n">field</span>
+<span class="n">field</span> <span class="o">=</span> <span class="n">get_initial_conditions</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+
+<span class="c1">#run the diffuse function a 1000 times and another 2000 times and make plots</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">diffuse</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2000</span><span class="p">):</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">diffuse</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>Out[3]:
+</pre></div>
+</div>
+<div class="output_area highlight-none"><div class="highlight"><pre>
+<span></span>&lt;matplotlib.image.AxesImage at 0x2aaabb96fba8&gt;
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast container">
+<div class="prompt empty container">
+</div>
+<div class="output_area container">
+<img alt="_images/tutorial_7_1.png" src="_images/tutorial_7_1.png" />
+</div>
+</div>
+<p>Now let&#8217;s take a quick look at the execution time of our diffuse
+function. Before we do, we also copy the current state of the metal
+sheet to be able to restart the computation from this state.</p>
+<div class="nbinput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="c1">#save the current field for later use</span>
+<span class="n">field_copy</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+
+<span class="c1">#run another 1000 steps of the diffuse function and measure the time</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">time</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">diffuse</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;1000 steps of diffuse took&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="p">)</span><span class="o">*</span><span class="mf">1000.0</span><span class="p">,</span> <span class="s2">&quot;ms&quot;</span><span class="p">)</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput container">
+<div class="prompt empty container">
+</div>
+<div class="output_area container">
+<div class="highlight"><pre>
+1000 steps of diffuse took 4243.472337722778 ms
+</pre></div></div>
+</div>
+<div class="nboutput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>Out[4]:
+</pre></div>
+</div>
+<div class="output_area highlight-none"><div class="highlight"><pre>
+<span></span>&lt;matplotlib.image.AxesImage at 0x2aab1c98c668&gt;
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast container">
+<div class="prompt empty container">
+</div>
+<div class="output_area container">
+<img alt="_images/tutorial_9_2.png" src="_images/tutorial_9_2.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Computing-on-the-GPU">
+<h2>Computing on the GPU<a class="headerlink" href="#Computing-on-the-GPU" title="Permalink to this headline">¶</a></h2>
+<p>The next step in this tutorial is to implement a GPU kernel that will
+allow us to run our problem on the GPU. We store the kernel code in a
+Python string, because we can directly compile and run the kernel from
+Python. In this tutorial, we&#8217;ll use the CUDA programming model to
+implement our kernels.</p>
+<blockquote>
+<div>If you prefer OpenCL over CUDA, don&#8217;t worry. Everything in this
+tutorial applies as much to OpenCL as it does to CUDA. But we will
+use CUDA for our examples, and CUDA terminology in the text.</div></blockquote>
+<div class="nbinput nblast container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">get_kernel_string</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    #define nx </span><span class="si">%d</span><span class="s2"></span>
+<span class="s2">    #define ny </span><span class="si">%d</span><span class="s2"></span>
+<span class="s2">    #define dt 0.225f</span>
+<span class="s2">    __global__ void diffuse_kernel(float *u_new, float *u) {</span>
+<span class="s2">        int x = blockIdx.x * block_size_x + threadIdx.x;</span>
+<span class="s2">        int y = blockIdx.y * block_size_y + threadIdx.y;</span>
+
+<span class="s2">        if (x&gt;0 &amp;&amp; x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y&lt;ny-1) {</span>
+<span class="s2">            u_new[y*nx+x] = u[y*nx+x] + dt * (</span>
+<span class="s2">                u[(y+1)*nx+x]+u[y*nx+x+1]-4.0f*u[y*nx+x]+u[y*nx+x-1]+u[(y-1)*nx+x]);</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">    &quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+<span class="n">kernel_string</span> <span class="o">=</span> <span class="n">get_kernel_string</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The above CUDA kernel parallelizes the work such that every grid point
+will be processed by a different CUDA thread. Therefore, the kernel is
+executed by a 2D grid of threads, which are grouped together into 2D
+thread blocks. The specific thread block dimensions we choose are not
+important for the result of the computation in this kernel. But as we
+will see will later, they will have an impact on performance.</p>
+<p>In this kernel we are using two, currently undefined, compile-time
+constants for <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>, because we will
+auto tune these parameters later. It is often needed for performance to
+fix the thread block dimensions at compile time, because the compiler
+can unroll loops that iterate using the block size, or because you need
+to allocate shared memory using the thread block dimensions.</p>
+<p>The next bit of Python code initializes PyCuda, and makes preparations
+so that we can call the CUDA kernel to do the computation on the GPU as
+we did earlier in Python.</p>
+<div class="nbinput nblast container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pycuda.driver</span> <span class="k">as</span> <span class="nn">drv</span>
+<span class="kn">from</span> <span class="nn">pycuda.compiler</span> <span class="k">import</span> <span class="n">SourceModule</span>
+
+<span class="c1">#initialize PyCuda and get compute capability needed for compilation</span>
+<span class="n">drv</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+<span class="n">context</span> <span class="o">=</span> <span class="n">drv</span><span class="o">.</span><span class="n">Device</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">make_context</span><span class="p">()</span>
+<span class="n">devprops</span> <span class="o">=</span> <span class="p">{</span> <span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">get_device</span><span class="p">()</span><span class="o">.</span><span class="n">get_attributes</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="p">}</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">devprops</span><span class="p">[</span><span class="s1">&#39;COMPUTE_CAPABILITY_MAJOR&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">devprops</span><span class="p">[</span><span class="s1">&#39;COMPUTE_CAPABILITY_MINOR&#39;</span><span class="p">])</span>
+
+<span class="c1">#allocate GPU memory</span>
+<span class="n">u_old</span> <span class="o">=</span> <span class="n">drv</span><span class="o">.</span><span class="n">mem_alloc</span><span class="p">(</span><span class="n">field_copy</span><span class="o">.</span><span class="n">nbytes</span><span class="p">)</span>
+<span class="n">u_new</span> <span class="o">=</span> <span class="n">drv</span><span class="o">.</span><span class="n">mem_alloc</span><span class="p">(</span><span class="n">field_copy</span><span class="o">.</span><span class="n">nbytes</span><span class="p">)</span>
+
+<span class="c1">#setup thread block dimensions and compile the kernel</span>
+<span class="n">threads</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">nx</span><span class="o">/</span><span class="mi">16</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">ny</span><span class="o">/</span><span class="mi">16</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">block_size_string</span> <span class="o">=</span> <span class="s2">&quot;#define block_size_x 16</span><span class="se">\n</span><span class="s2">#define block_size_y 16</span><span class="se">\n</span><span class="s2">&quot;</span>
+<span class="n">diffuse_kernel</span> <span class="o">=</span> <span class="n">SourceModule</span><span class="p">(</span><span class="n">block_size_string</span><span class="o">+</span><span class="n">kernel_string</span><span class="p">,</span>
+                              <span class="n">arch</span><span class="o">=</span><span class="s1">&#39;sm_&#39;</span><span class="o">+</span><span class="n">cc</span><span class="p">)</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;diffuse_kernel&quot;</span><span class="p">)</span>
+
+<span class="c1">#create events for measuring performance</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">drv</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">drv</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>The above code is a bit of boilerplate we need to compile a kernel using
+PyCuda. We&#8217;ve also, for the moment, fixed the thread block dimensions at
+16 by 16. These dimensions serve as our initial guess for what a good
+performing pair of thread block dimensions could look like.</p>
+<p>Now that we&#8217;ve setup everything, let&#8217;s see how long the computation
+would take using the GPU.</p>
+<div class="nbinput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="c1">#move the data to the GPU</span>
+<span class="n">drv</span><span class="o">.</span><span class="n">memcpy_htod</span><span class="p">(</span><span class="n">u_old</span><span class="p">,</span> <span class="n">field_copy</span><span class="p">)</span>
+<span class="n">drv</span><span class="o">.</span><span class="n">memcpy_htod</span><span class="p">(</span><span class="n">u_new</span><span class="p">,</span> <span class="n">field_copy</span><span class="p">)</span>
+
+<span class="c1">#call the GPU kernel a 1000 times and measure performance</span>
+<span class="n">context</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+<span class="n">start</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">500</span><span class="p">):</span>
+    <span class="n">diffuse_kernel</span><span class="p">(</span><span class="n">u_new</span><span class="p">,</span> <span class="n">u_old</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">threads</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">)</span>
+    <span class="n">diffuse_kernel</span><span class="p">(</span><span class="n">u_old</span><span class="p">,</span> <span class="n">u_new</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">threads</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">)</span>
+<span class="n">end</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
+<span class="n">context</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;1000 steps of diffuse took&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">.</span><span class="n">time_since</span><span class="p">(</span><span class="n">start</span><span class="p">),</span> <span class="s2">&quot;ms.&quot;</span><span class="p">)</span>
+
+<span class="c1">#copy the result from the GPU to Python for plotting</span>
+<span class="n">gpu_result</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">field_copy</span><span class="p">)</span>
+<span class="n">drv</span><span class="o">.</span><span class="n">memcpy_dtoh</span><span class="p">(</span><span class="n">gpu_result</span><span class="p">,</span> <span class="n">u_new</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">gpu_result</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;GPU Result&quot;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Python Result&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput container">
+<div class="prompt empty container">
+</div>
+<div class="output_area container">
+<div class="highlight"><pre>
+1000 steps of diffuse took 52.89692687988281 ms.
+</pre></div></div>
+</div>
+<div class="nboutput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>Out[7]:
+</pre></div>
+</div>
+<div class="output_area highlight-none"><div class="highlight"><pre>
+<span></span>&lt;matplotlib.text.Text at 0x2aaabbdda4e0&gt;
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast container">
+<div class="prompt empty container">
+</div>
+<div class="output_area container">
+<img alt="_images/tutorial_15_2.png" src="_images/tutorial_15_2.png" />
+</div>
+</div>
+<p>That should already be a lot faster than our previous Python
+implementation, but we can do much better if we optimize our GPU kernel.
+And that is exactly what the rest of this tutorial is about!</p>
+<div class="nbinput nblast container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="c1">#cleanup the PyCuda context</span>
+<span class="n">context</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>Also, if you think the Python boilerplate code to call a GPU kernel was
+a bit messy, we&#8217;ve got good news for you! From now on, we&#8217;ll only use
+the Kernel Tuner to compile and benchmark GPU kernels, which we can do
+with much cleaner Python code.</p>
+</div>
+<div class="section" id="Auto-Tuning-with-the-Kernel-Tuner">
+<h2>Auto-Tuning with the Kernel Tuner<a class="headerlink" href="#Auto-Tuning-with-the-Kernel-Tuner" title="Permalink to this headline">¶</a></h2>
+<p>Remember that previously we&#8217;ve set the thread block dimensions to 16 by
+16. But how do we actually know if that is the best performing setting?
+That is where auto-tuning comes into play. Basically, it is very
+difficult to provide an answer through performance modeling and as such,
+we&#8217;d rather use the Kernel Tuner to compile and benchmark all possible
+kernel configurations.</p>
+<p>But before we continue, we&#8217;ll increase the problem size, because the GPU
+is very likely underutilized.</p>
+<div class="nbinput nblast container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">nx</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">ny</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">field</span> <span class="o">=</span> <span class="n">get_initial_conditions</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+<span class="n">kernel_string</span> <span class="o">=</span> <span class="n">get_kernel_string</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The above code block has generated new initial conditions and a new
+string that contains our CUDA kernel using our new domain size.</p>
+<p>To call the Kernel Tuner, we have to specify the tunable parameters, in
+our case <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>. For this purpose, we&#8217;ll
+create an ordered dictionary to store the tunable parameters. The keys
+will be the name of the tunable parameter, and the corresponding value
+is the list of possible values for the parameter. For the purpose of
+this tutorial, we&#8217;ll use a small number of commonly used values for the
+thread block dimensions, but feel free to try more!</p>
+<div class="nbinput nblast container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="n">tune_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
-<p>Now just in case you are not a Python guru, an expression between square
-brackets <code class="docutils literal"><span class="pre">[</span> <span class="pre">]</span></code> is a list comprehension. <code class="docutils literal"><span class="pre">[32*i</span> <span class="pre">for</span> <span class="pre">i</span> <span class="pre">in</span> <span class="pre">range(1,9)]</span></code>
-will create a list of multiples of 32 ranging from <code class="docutils literal"><span class="pre">32*1</span></code> up to
-<code class="docutils literal"><span class="pre">32*8</span></code>. For <code class="docutils literal"><span class="pre">block_size_y</span></code> we creates a list of powers of 2 ranging
-from <code class="docutils literal"><span class="pre">2**0</span> <span class="pre">=</span> <span class="pre">1</span></code> up to <code class="docutils literal"><span class="pre">2**5</span> <span class="pre">=</span> <span class="pre">32</span></code>.</p>
-<p>The values that we have picked here are just examples, you can basically
-pick any list of values that you like. The Kernel Tuner will check the
-maximum number of threads per thread block supported by your GPU at
-run-time, and automatically skip over kernel configurations that attempt
-to use more. The Kernel Tuner will do this silently, unless you use the
-option <code class="docutils literal"><span class="pre">verbose=True</span></code>.</p>
-<p>While the Kernel Tuner allows you to pick any value that you like, an
-experienced CUDA programmer will know that only certain values will make
-sense. For example, a thread block size that is a multiple of 32 is
-likely to give better performance, because threads in CUDA are scheduled
-in warps of 32 threads.</p>
-<p>For each kernel that the Kernel Tuner benchmarks, it will prepend the
-source code with C preprocessor directives to define all tuning
-parameters and their current value, for example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1">#define block_size_x 32</span>
-<span class="c1">#define block_size_y 1</span>
-</pre></div>
-</div>
-<p>There is of course much more that you can tune within a kernel than just
-the thread block dimensions. Basically, you are completely free to write
-code that uses C preprocessor directives to change its behavior. If you
-tell the Kernel Tuner about all the possible values for this parameter,
-it will then benchmark all of possible execution paths in your code.
-However, the Kernel Tuner currently uses the convention that
-<code class="docutils literal"><span class="pre">block_size_x</span></code>, <code class="docutils literal"><span class="pre">block_size_y</span></code>, and <code class="docutils literal"><span class="pre">block_size_z</span></code> are used for
-specifying the thread block dimensions.</p>
-<p>If you want to be able to compile your code when not using the Kernel
-Tuner, you can simply add preprocessor directives for providing default
-values to all tunable parameters, for example to the beginning our 2D
-stencil kernel we could add:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1">#ifndef block_size_x</span>
-    <span class="c1">#define block_size_x 16</span>
-<span class="c1">#endif</span>
-<span class="c1">#ifndef block_size_y</span>
-    <span class="c1">#define block_size_y 16</span>
-<span class="c1">#endif</span>
-</pre></div>
-</div>
-<p>To ensure that the kernel code can be compiled directly by any CUDA
-compiler, even when the Kernel Tuner is not used.</p>
-</div>
-<div class="section" id="Calling-tune_kernel()">
-<h3>Calling <code class="docutils literal"><span class="pre">tune_kernel()</span></code><a class="headerlink" href="#Calling-tune_kernel()" title="Permalink to this headline">¶</a></h3>
-<p>Now that we&#8217;ve setup our tuning parameters it is time to look at how to
-call the Kernel Tuner, and most importantly <code class="docutils literal"><span class="pre">tune_kernel()</span></code>.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
-    <span class="n">grid_div_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">grid_div_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">restrictions</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-    <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">lang</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">platform</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cmem_args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-    <span class="n">sample</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">compiler_options</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>As you can see, there are a lot optional parameters and we&#8217;re not going
-to cover all of them right now, if you&#8217;re interested check out the
-Kernel Tuner&#8217;s <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html">interface
-documentation</a>.</p>
-<p>Let&#8217;s start with the basics. The Kernel Tuner has to know at least the
-following things:</p>
-<ul class="simple">
-<li><code class="docutils literal"><span class="pre">kernel_name</span></code>: The name of the kernel</li>
-<li><code class="docutils literal"><span class="pre">kernel_string</span></code>: The source code that contains that kernel</li>
-<li><code class="docutils literal"><span class="pre">problem_size</span></code>: The domain over which you create threads and thread
-blocks</li>
-<li><code class="docutils literal"><span class="pre">arguments</span></code>: The arguments to use when calling the kernel</li>
-<li><code class="docutils literal"><span class="pre">tune_params</span></code>: The dictionary with tunable parameters</li>
-</ul>
-<p>Note that, by executing the block at the top of this file we have
-already loaded the CUDA kernel code as a string and stored it as
-<code class="docutils literal"><span class="pre">kernel_string</span></code>.</p>
-<p>We can use Numpy to generate some random input data, and create a list
-of arguments that matches the argument list of our <code class="docutils literal"><span class="pre">stencil_kernel</span></code>
-function written in CUDA. It is important that the order and type
-matches the function specification of our kernel.</p>
+<p>We also have to tell the Kernel Tuner about the argument list of our
+CUDA kernel. Because the Kernel Tuner will be calling the CUDA kernel
+and measure its execution time. For this purpose we create a list in
+Python, that corresponds with the argument list of the
+<code class="docutils literal"><span class="pre">diffuse_kernel</span></code> CUDA function. This list will only be used as input
+to the kernel during tuning. The objects in the list should be Numpy
+arrays or scalars.</p>
+<p>Because you can specify the arguments as Numpy arrays, the Kernel Tuner
+will take care of allocating GPU memory and copying the data to the GPU.</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [ ]:
+<span></span>In [11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span>
-
-<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
-<span class="n">size</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">problem_size</span><span class="p">)</span>
-
-<span class="n">x_old</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="n">x_new</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">x_old</span><span class="p">)</span>
-<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_new</span><span class="p">,</span> <span class="n">x_old</span><span class="p">]</span>
+<span></span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span><span class="p">,</span> <span class="n">field</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
-<p>Note that <code class="docutils literal"><span class="pre">size</span></code> matches the size of the domain in used in the CUDA
-code. Moreover, we use <code class="docutils literal"><span class="pre">astype</span></code> to ensure that the Numpy array
-consists of 32-bit floating-point values, as expected by our CUDA
-kernel.</p>
-<p>Instead of generating random data you can of course also use data from a
-file, Python offers many convenient functions for this, for example take
-look at numpy.fromfile() or numpy.loadtxt().</p>
-<p>The list named <code class="docutils literal"><span class="pre">args</span></code> will be used as the argument list that we&#8217;ll
-pass to tune_kernel. The Kernel Tuner requires that list contains only
-Numpy arrays or Numpy scalar values, and that the order of arguments
-matches that of the CUDA kernel.</p>
-<p>Now we are almost ready to call tune_kernel(). However, we have not
-told the Kernel Tuner anything about how many thread blocks should be
-created to launch the kernel. If you do not specify this the Kernel
-Tuner will assume a default way for computing the number of thread
-blocks. The grid dimension in the x-direction will default to
-<code class="docutils literal"><span class="pre">problem_size[0]</span> <span class="pre">/</span> <span class="pre">block_size_x</span></code> and the y-direction will default to
-<code class="docutils literal"><span class="pre">1</span></code>. This is convenient for small 1D kernels like vector add, but for
-our 2D stencil kernel we need to specify how the tuning parameters
-divide our problem size.</p>
-<p>You can tell the Kernel Tuner how to determine the number of blocks it
-should create through the so called grid divisor lists, which you can
-specify using the optional arguments <code class="docutils literal"><span class="pre">grid_div_x</span></code> and <code class="docutils literal"><span class="pre">grid_div_y</span></code>.
-Now let&#8217;s look at an example of how to setup these grid divisor lists.</p>
-<p>So for our 2D stencil kernel, we have a 2D domain over which we want to
-create threads and thread blocks in a way that we create one thread for
-each element in the domain. So to get to the number of thread blocks,
-the Kernel Tuner should just divide the problem_size in a particular
-dimension with the thread block size in that dimension. Therefore, we
-specify the following:</p>
-<div class="nbinput nblast container">
+<p>We&#8217;re almost ready to call the Kernel Tuner, we just need to set how
+large the problem is we are currently working on by setting a
+<code class="docutils literal"><span class="pre">problem_size</span></code>. The Kernel Tuner knows about thread block dimensions,
+which it expects to be called <code class="docutils literal"><span class="pre">block_size_x</span></code>, <code class="docutils literal"><span class="pre">block_size_y</span></code>, and/or
+<code class="docutils literal"><span class="pre">block_size_z</span></code>. From these and the <code class="docutils literal"><span class="pre">problem_size</span></code>, the Kernel Tuner
+will compute the appropiate grid dimensions on the fly.</p>
+<p>And that&#8217;s everything the Kernel Tuner needs to know to be able to start
+tuning our kernel. Let&#8217;s give it a try by executing the next code block!</p>
+<div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [ ]:
+<span></span>In [12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span>
-<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
+<span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="k">import</span> <span class="n">tune_kernel</span>
+<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;diffuse_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>Note that these are lists, you can add multiple tuning parameters to the
-list. If you want to, you can even write arithmetic expressions within
-these strings. The Kernel Tuner will evaluate all strings and multiply
-them together. Then it will use this product to divide the problem size
-in that dimension <strong>rounded up</strong>.</p>
+<div class="nboutput nblast container">
+<div class="prompt empty container">
 </div>
-<div class="section" id="Putting-it-all-together">
-<h3>Putting it all together<a class="headerlink" href="#Putting-it-all-together" title="Permalink to this headline">¶</a></h3>
-<p>Now let&#8217;s put everything that we&#8217;ve gone through together in a Python
-script so you can try it out and see what it does.</p>
-<div class="nbinput nblast container">
+<div class="output_area container">
+<div class="highlight"><pre>
+Using: GeForce GTX TITAN X
+diffuse_kernel
+block_size_x=16, block_size_y=2, time=1.22079362869,
+block_size_x=16, block_size_y=4, time=0.776204800606,
+block_size_x=16, block_size_y=8, time=0.824883198738,
+block_size_x=16, block_size_y=16, time=0.904435193539,
+block_size_x=16, block_size_y=32, time=0.886969602108,
+block_size_x=32, block_size_y=2, time=0.727910399437,
+block_size_x=32, block_size_y=4, time=0.7514559865,
+block_size_x=32, block_size_y=8, time=0.800550401211,
+block_size_x=32, block_size_y=16, time=0.875206410885,
+block_size_x=32, block_size_y=32, time=0.794899213314,
+block_size_x=48, block_size_y=2, time=0.766489589214,
+block_size_x=48, block_size_y=4, time=0.800684797764,
+block_size_x=48, block_size_y=8, time=0.85634560585,
+block_size_x=48, block_size_y=16, time=0.970124793053,
+block_size_x=64, block_size_y=2, time=0.762688016891,
+block_size_x=64, block_size_y=4, time=0.790355205536,
+block_size_x=64, block_size_y=8, time=0.846950399876,
+block_size_x=64, block_size_y=16, time=0.917235219479,
+block_size_x=128, block_size_y=2, time=0.790752005577,
+block_size_x=128, block_size_y=4, time=0.820863986015,
+block_size_x=128, block_size_y=8, time=0.892908799648,
+best performing configuration: block_size_x=32, block_size_y=2, time=0.727910399437,
+</pre></div></div>
+</div>
+<p>Note that the Kernel Tuner prints a lot of useful information. To ensure
+you&#8217;ll be able to tell what was measured in this run the Kernel Tuner
+always prints the GPU or OpenCL Device name that is being used, as well
+as the name of the kernel. After that every line contains the
+combination of parameters and the time that was measured during
+benchmarking. The time that is being printed is in milliseconds and is
+obtained by averaging the execution time of 7 runs of the kernel.
+Finally, as a matter of convenience, the Kernel Tuner also prints the
+best performing combination of tunable parameters. However, later on in
+this tutorial we&#8217;ll explain how to analyze and store the tuning results
+using Python.</p>
+<p>Looking at the results printed above, the difference in performance
+between the different kernel configurations may seem very little.
+However, on our hardware, the performance of this kernel already varies
+in the order of 10%. Which of course can build up to large differences
+in the execution time if the kernel is to be executed thousands of
+times. We can also see that the performance of the best configuration in
+this set is 5% better than our initially guessed thread block dimensions
+of 16 by 16.</p>
+<p>In addtion, you may notice that not all possible combinations of values
+for <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> are among the results. For
+example, 128x32 is not among the results. This is because some
+configuration require more threads per thread block than allowed on our
+GPU. The Kernel Tuner checks the limitations of your GPU at runtime and
+automatically skips over configurations that use too many threads per
+block. It will also do this for kernels that cannot be compiled because
+they use too much shared memory. And likewise for kernels that use too
+many registers to be launched at runtime. If you&#8217;d like to know about
+which configurations were skipped automatically you can pass the
+optional parameter <code class="docutils literal"><span class="pre">verbose=True</span></code> to <code class="docutils literal"><span class="pre">run_kernel</span></code>.</p>
+<p>However, knowing the best performing combination of tunable parameters
+becomes even more important when we start to further optimize our CUDA
+kernel. In the next section, we&#8217;ll add a simple code optimization and
+show how this affects performance.</p>
+</div>
+<div class="section" id="Using-Shared-Memory">
+<h2>Using Shared Memory<a class="headerlink" href="#Using-Shared-Memory" title="Permalink to this headline">¶</a></h2>
+<p>Shared memory, is a special type of the memory available in CUDA. Shared
+memory can be used by threads within the same thread block to exchange
+and share values. It is in fact, one of the very few ways for threads to
+communicate on the GPU.</p>
+<p>The idea is that we&#8217;ll try improve the performance of our kernel by
+using shared memory as a software controlled cache. There are already
+caches on the GPU, but most GPUs only cache accesses to global memory in
+L2. Shared memory is closer to the multiprocessors where the thread
+blocks are executed, comparable to an L1 cache.</p>
+<p>However, because there are also hardware caches, the performance
+improvement from this step is expected to not be that great. The more
+fine-grained control that we get by using a software managed cache,
+rather than a hardware implemented cache, comes at the cost of some
+instruction overhead. In fact, performance is quite likely to degrade a
+little. However, this intermediate step is necessary for the next
+optimization step we have in mind.</p>
+<div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [ ]:
+<span></span>In [13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">kernel_tuner</span>
+<span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">#define nx </span><span class="si">%d</span><span class="s2"></span>
+<span class="s2">#define ny </span><span class="si">%d</span><span class="s2"></span>
+<span class="s2">#define dt 0.225f</span>
+<span class="s2">__global__ void diffuse_kernel(float *u_new, float *u) {</span>
 
-<span class="n">results</span> <span class="o">=</span> <span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;stencil_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span>
-        <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span>
-        <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="s2">    int tx = threadIdx.x;</span>
+<span class="s2">    int ty = threadIdx.y;</span>
+<span class="s2">    int bx = blockIdx.x * block_size_x;</span>
+<span class="s2">    int by = blockIdx.y * block_size_y;</span>
+
+<span class="s2">    __shared__ float sh_u[block_size_y+2][block_size_x+2];</span>
+
+<span class="s2">    #pragma unroll</span>
+<span class="s2">    for (int i = ty; i&lt;block_size_y+2; i+=block_size_y) {</span>
+<span class="s2">        #pragma unroll</span>
+<span class="s2">        for (int j = tx; j&lt;block_size_x+2; j+=block_size_x) {</span>
+<span class="s2">            int y = by+i-1;</span>
+<span class="s2">            int x = bx+j-1;</span>
+<span class="s2">            if (x&gt;=0 &amp;&amp; x&lt;nx &amp;&amp; y&gt;=0 &amp;&amp; y&lt;ny) {</span>
+<span class="s2">                sh_u[i][j] = u[y*nx+x];</span>
+<span class="s2">            }</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">    __syncthreads();</span>
+
+<span class="s2">    int x = bx+tx;</span>
+<span class="s2">    int y = by+ty;</span>
+<span class="s2">    if (x&gt;0 &amp;&amp; x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y&lt;ny-1) {</span>
+<span class="s2">        int i = ty+1;</span>
+<span class="s2">        int j = tx+1;</span>
+<span class="s2">        u_new[y*nx+x] = sh_u[i][j] + dt * (</span>
+<span class="s2">            sh_u[i+1][j] + sh_u[i][j+1] -4.0f * sh_u[i][j] +</span>
+<span class="s2">            sh_u[i][j-1] + sh_u[i-1][j] );</span>
+<span class="s2">    }</span>
+
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;diffuse_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>When you call <code class="docutils literal"><span class="pre">tune_kernel()</span></code> the Kernel Tuner begins with printing
-the name of the GPU it is using, just to be sure which GPU is used when
-you have multiple GPUs in your system.</p>
-<p>After that it will iterative compile and benchmark the kernel for every
-possible combination of all values of all tunable parameters. As you
-will see in the output, the Kernel Tuner will automatically skip over
-kernels that use too many threads per block. It will do that too for
-kernels that use too much shared memory or too many registers. These
-configurations are by default skipped silently, but are currently being
-printed because we have passed the <code class="docutils literal"><span class="pre">verbose=True</span></code> option.</p>
-<p>As a convenience, the Kernel Tuner also prints the best performing
-combination of tunable parameters. It is however, more useful to be able
-to load the tuning results as data.</p>
+<div class="nboutput nblast container">
+<div class="prompt empty container">
+</div>
+<div class="output_area container">
+<div class="highlight"><pre>
+Using: GeForce GTX TITAN X
+diffuse_kernel
+block_size_x=16, block_size_y=2, time=1.74879999161,
+block_size_x=16, block_size_y=4, time=1.18356480598,
+block_size_x=16, block_size_y=8, time=1.0913664341,
+block_size_x=16, block_size_y=16, time=1.07097601891,
+block_size_x=16, block_size_y=32, time=1.08856959343,
+block_size_x=32, block_size_y=2, time=1.14133119583,
+block_size_x=32, block_size_y=4, time=1.05925118923,
+block_size_x=32, block_size_y=8, time=1.0745344162,
+block_size_x=32, block_size_y=16, time=1.07378559113,
+block_size_x=32, block_size_y=32, time=1.14131839275,
+block_size_x=48, block_size_y=2, time=1.08633599281,
+block_size_x=48, block_size_y=4, time=1.10803837776,
+block_size_x=48, block_size_y=8, time=1.09987838268,
+block_size_x=48, block_size_y=16, time=1.31720318794,
+block_size_x=64, block_size_y=2, time=1.06432640553,
+block_size_x=64, block_size_y=4, time=1.04970879555,
+block_size_x=64, block_size_y=8, time=1.05619838238,
+block_size_x=64, block_size_y=16, time=1.11944961548,
+block_size_x=128, block_size_y=2, time=1.06765441895,
+block_size_x=128, block_size_y=4, time=1.05953278542,
+block_size_x=128, block_size_y=8, time=1.11917440891,
+best performing configuration: block_size_x=64, block_size_y=4, time=1.04970879555,
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Tiling-GPU-Code">
+<h2>Tiling GPU Code<a class="headerlink" href="#Tiling-GPU-Code" title="Permalink to this headline">¶</a></h2>
+<p>One very useful code optimization is called tiling, sometimes also
+called thread-block-merge. You can look at it in this way, currently we
+have many thread blocks that together work on the entire domain. If we
+were to use only half of the number of thread blocks, every thread block
+would need to double the amount of work it performs to cover the entire
+domain. However, the threads may be able to reuse part of the data and
+computation that is required to process a single output element for
+every element beyond the first.</p>
+<p>This is a code optimization because effectively we are reducing the
+total number of instructions executed by all threads in all thread
+blocks. So in a way, were are condensing the total instruction stream
+while keeping the all the really necessary compute instructions. More
+importantly, we are increasing data reuse, where previously these values
+would have been reused from the cache or in the worst-case from GPU
+memory.</p>
+<p>We can apply tiling in both the x and y-dimensions. This also introduces
+two new tunable parameters, namely the tiling factor in x and y, which
+we will call <code class="docutils literal"><span class="pre">tile_size_x</span></code> and <code class="docutils literal"><span class="pre">tile_size_y</span></code>. This is what the new
+kernel looks like:</p>
+<div class="nbinput nblast container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">#define nx </span><span class="si">%d</span><span class="s2"></span>
+<span class="s2">#define ny </span><span class="si">%d</span><span class="s2"></span>
+<span class="s2">#define dt 0.225f</span>
+<span class="s2">__global__ void diffuse_kernel(float *u_new, float *u) {</span>
+
+<span class="s2">    int tx = threadIdx.x;</span>
+<span class="s2">    int ty = threadIdx.y;</span>
+<span class="s2">    int bx = blockIdx.x * block_size_x * tile_size_x;</span>
+<span class="s2">    int by = blockIdx.y * block_size_y * tile_size_y;</span>
+
+<span class="s2">    __shared__ float sh_u[block_size_y*tile_size_y+2][block_size_x*tile_size_x+2];</span>
+
+<span class="s2">    #pragma unroll</span>
+<span class="s2">    for (int i = ty; i&lt;block_size_y*tile_size_y+2; i+=block_size_y) {</span>
+<span class="s2">        #pragma unroll</span>
+<span class="s2">        for (int j = tx; j&lt;block_size_x*tile_size_x+2; j+=block_size_x) {</span>
+<span class="s2">            int y = by+i-1;</span>
+<span class="s2">            int x = bx+j-1;</span>
+<span class="s2">            if (x&gt;=0 &amp;&amp; x&lt;nx &amp;&amp; y&gt;=0 &amp;&amp; y&lt;ny) {</span>
+<span class="s2">                sh_u[i][j] = u[y*nx+x];</span>
+<span class="s2">            }</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">    __syncthreads();</span>
+
+<span class="s2">    int y = by+ty;</span>
+<span class="s2">    int x = bx+tx;</span>
+
+<span class="s2">    #pragma unroll</span>
+<span class="s2">    for (int tj=0; tj&lt;tile_size_y; tj++) {</span>
+<span class="s2">        int i = ty+tj*block_size_y+1;</span>
+<span class="s2">        #pragma unroll</span>
+<span class="s2">        for (int ti=0; ti&lt;tile_size_x; ti++) {</span>
+<span class="s2">            int j = tx+ti*block_size_x+1;</span>
+<span class="s2">            if (x&gt;0 &amp;&amp; x+ti*block_size_x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y+tj*block_size_y&lt;ny-1) {</span>
+<span class="s2">                u_new[y*nx+x+ti*block_size_x] = sh_u[i][j] + dt * (</span>
+<span class="s2">                    sh_u[i+1][j] + sh_u[i][j+1] -4.0f * sh_u[i][j] +</span>
+<span class="s2">                    sh_u[i][j-1] + sh_u[i-1][j] );</span>
+<span class="s2">            }</span>
+<span class="s2">        }</span>
+
+<span class="s2">    }</span>
+
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We can tune our tiled kernel by adding the two new tunable parameters to
+our dictionary <code class="docutils literal"><span class="pre">tune_params</span></code>.</p>
+<p>We also need to somehow tell the Kernel Tuner to use fewer thread blocks
+to launch kernels with <code class="docutils literal"><span class="pre">tile_size_x</span></code> or <code class="docutils literal"><span class="pre">tile_size_y</span></code> larger than
+one. For this purpose the Kernel Tuner&#8217;s <code class="docutils literal"><span class="pre">tune_kernel</span></code> function
+supports two optional arguments, called grid_div_x and grid_div_y.
+These are the grid divisor lists, which are lists of strings containing
+all the tunable parameters that divide a certain grid dimension. So far,
+we have been using the default settings for these, in which case the
+Kernel Tuner only uses the block_size_x and block_size_y tunable
+parameters to divide the problem_size.</p>
+<p>Note that the Kernel Tuner will replace the values of the tunable
+parameters inside the strings and use the product of the parameters in
+the grid divisor list to compute the grid dimension rounded up. You can
+even use arithmetic operations, inside these strings as they will be
+evaluated. As such, we could have used <code class="docutils literal"><span class="pre">[&quot;block_size_x*tile_size_x&quot;]</span></code>
+to get the same result.</p>
+<p>We are now ready to call the Kernel Tuner again and tune our tiled
+kernel. Let&#8217;s execute the following code block, note that it may take a
+while as the number of kernel configurations that the Kernel Tuner will
+try has just been increased with a factor of 9!</p>
+<div class="nbinput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span>            <span class="c1">#add tile_size_x to the tune_params</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span>            <span class="c1">#add tile_size_y to the tune_params</span>
+<span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>    <span class="c1">#tile_size_x impacts grid dimensions</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>    <span class="c1">#tile_size_y impacts grid dimensions</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;diffuse_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span>
+                     <span class="n">tune_params</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast container">
+<div class="prompt empty container">
+</div>
+<div class="output_area container">
+<div class="highlight"><pre>
+Using: GeForce GTX TITAN X
+diffuse_kernel
+block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.75869438648,
+block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=2, time=1.30012800694,
+block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=4, time=1.07242240906,
+block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=1, time=1.26148481369,
+block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.994323205948,
+block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.840089607239,
+block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=1, time=1.05306241512,
+block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.864121603966,
+block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.754297602177,
+block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.19253118038,
+block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.876377606392,
+block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.714323210716,
+block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.876864004135,
+block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.693267202377,
+block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.57552639246,
+block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.765100800991,
+block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.618502402306,
+block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.652729606628,
+block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.09714562893,
+block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.82940158844,
+block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.691564798355,
+block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.784428787231,
+block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.638425600529,
+block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.560179197788,
+block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.718880009651,
+block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.576991999149,
+block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.663513600826,
+block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.07288961411,
+block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.832844805717,
+block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.703033602238,
+block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.838137602806,
+block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.653190398216,
+block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.573542404175,
+block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.689017593861,
+block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.593529617786,
+block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=4, time=0.671423995495,
+block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=1, time=1.0928511858,
+block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=2, time=0.847193586826,
+block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=4, time=0.720230400562,
+block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=1, time=0.861932814121,
+block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=2, time=0.682911992073,
+block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=4, time=0.59411200285,
+block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=1, time=0.734835195541,
+block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=2, time=0.60403200388,
+block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=4, time=0.849433600903,
+block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.15504000187,
+block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.850291192532,
+block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.703417599201,
+block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.883552002907,
+block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.677663993835,
+block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.562694394588,
+block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.760902392864,
+block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.624332797527,
+block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.676134395599,
+block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.06755838394,
+block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.804755187035,
+block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.686278402805,
+block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.799615991116,
+block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.633644795418,
+block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.541324794292,
+block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.722470402718,
+block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.584384000301,
+block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.62054400444,
+block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.08234241009,
+block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.820787215233,
+block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.685164785385,
+block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.7772351861,
+block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.620838391781,
+block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.541209614277,
+block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.703391993046,
+block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.568915200233,
+block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.620051205158,
+block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.08434560299,
+block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.831225597858,
+block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.703552007675,
+block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.835539209843,
+block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.635417604446,
+block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.54833920002,
+block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.6655616045,
+block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.577555215359,
+block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=4, time=0.732992005348,
+block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=1, time=1.153363204,
+block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=2, time=0.861247992516,
+block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=4, time=0.725759994984,
+block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=1, time=0.873977613449,
+block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=2, time=0.673971188068,
+block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=4, time=0.575302398205,
+block_size_x=32, block_size_y=32, tile_size_x=4, tile_size_y=1, time=0.729529607296,
+block_size_x=32, block_size_y=32, tile_size_x=4, tile_size_y=2, time=0.582009601593,
+block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.09857282639,
+block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.835417592525,
+block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.691046404839,
+block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.8548864007,
+block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.666271996498,
+block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.5596159935,
+block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.769407999516,
+block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.626080000401,
+block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.69834240675,
+block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.11682560444,
+block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.835084807873,
+block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.70130559206,
+block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.806355190277,
+block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.649171209335,
+block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.562969601154,
+block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.760262405872,
+block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.607097601891,
+block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.691072010994,
+block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.10769920349,
+block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.842982411385,
+block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.701324784756,
+block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.840095996857,
+block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.64813439846,
+block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.564608001709,
+block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.715417599678,
+block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.592428803444,
+block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.69175041914,
+block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.32890241146,
+block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=2, time=1.02535681725,
+block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.838815999031,
+block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=1, time=1.03490560055,
+block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.785529601574,
+block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.665996789932,
+block_size_x=48, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.855961608887,
+block_size_x=48, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.679014396667,
+block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.0746432066,
+block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.799999988079,
+block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.664096009731,
+block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.811750411987,
+block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.644652795792,
+block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.541952002048,
+block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.74149119854,
+block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.605164802074,
+block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.67789440155,
+block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.05515518188,
+block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.792774391174,
+block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.663878393173,
+block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.767833602428,
+block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.628595197201,
+block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.535833597183,
+block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.720671999454,
+block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.580422401428,
+block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.627436804771,
+block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.06224639416,
+block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.807360005379,
+block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.676217591763,
+block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.80267521143,
+block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.627046406269,
+block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.538432013988,
+block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.685139203072,
+block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.576268792152,
+block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.71904001236,
+block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.1278911829,
+block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.846054399014,
+block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.710988807678,
+block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.856633615494,
+block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.658099210262,
+block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.567564809322,
+block_size_x=64, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.697920012474,
+block_size_x=64, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.584159994125,
+block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.07586560249,
+block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.799097597599,
+block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.662227189541,
+block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.80085119009,
+block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.645254409313,
+block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.541926419735,
+block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.741100811958,
+block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.613119983673,
+block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.718118393421,
+block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.0679872036,
+block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.801331210136,
+block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.673011207581,
+block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.780038392544,
+block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.628979194164,
+block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540921604633,
+block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.721817588806,
+block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.579347193241,
+block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.722835183144,
+block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.1311040163,
+block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.841945612431,
+block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.706579208374,
+block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.833759999275,
+block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.63907841444,
+block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.561215996742,
+block_size_x=128, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.699071991444,
+block_size_x=128, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.5850943923,
+best performing configuration: block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.535833597183,
+</pre></div></div>
+</div>
+<p>We can see that the number of kernel configurations tried by the Kernel
+Tuner is growing rather quickly. Also, the best performing configuration
+quite a bit faster than the best kernel before we started optimizing. On
+our GTX Titan X, the execution time went from 0.72 ms to 0.53 ms, a
+performance improvement of 26%!</p>
+<p>Note that the thread block dimensions for this kernel configuration are
+also different. Without optimizations the best performing kernel used a
+thread block of 32x2, after we&#8217;ve added tiling the best performing
+kernel uses thread blocks of size 64x4, which is four times as many
+threads! Also the amount of work increased with tiling factors 2 in the
+x-direction and 4 in the y-direction, increasing the amount of work per
+thread block by a factor of 8. The difference in the area processed per
+thread block between the naive and the tiled kernel is a factor 32.</p>
+<p>However, there are actually several kernel configurations that come
+close. The following Python code prints all instances with an execution
+time within 5% of the best performing configuration.</p>
+<div class="nbinput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">best_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best_time</span><span class="o">*</span><span class="mf">1.05</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">i</span><span class="o">.</span><span class="n">items</span><span class="p">()]))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast container">
+<div class="prompt empty container">
+</div>
+<div class="output_area container">
+<div class="highlight"><pre>
+block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.560179197788,
+block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.541324794292,
+block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.541209614277,
+block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.54833920002,
+block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.5596159935,
+block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.541952002048,
+block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.535833597183,
+block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.538432013988,
+block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.541926419735,
+block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540921604633,
+block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.561215996742,
+</pre></div></div>
+</div>
 </div>
 <div class="section" id="Storing-the-results">
-<h3>Storing the results<a class="headerlink" href="#Storing-the-results" title="Permalink to this headline">¶</a></h3>
-<p>While it&#8217;s nice that the Kernel Tuner prints the results to stdout, it&#8217;s
-not that great if we had to parse what is printed to get the results.
-That is why the <code class="docutils literal"><span class="pre">tune_kernel()</span></code> returns a data structure that holds
-all the results.</p>
+<h2>Storing the results<a class="headerlink" href="#Storing-the-results" title="Permalink to this headline">¶</a></h2>
+<p>While it&#8217;s nice that the Kernel Tuner prints the tuning results to
+stdout, it&#8217;s not that great if we&#8217;d have to parse what is printed to get
+the results. That is why the <code class="docutils literal"><span class="pre">tune_kernel()</span></code> returns a data structure
+that holds all the results. We&#8217;ve actually already used this data in the
+above bit of Python code.</p>
 <p><code class="docutils literal"><span class="pre">tune_kernel</span></code> returns a list of dictionaries, where each benchmarked
-kernel is represented by a dictionary contain the tunable parameters for
-that particular kernel configuration and one more entry called &#8216;time&#8217;.
-The list of dictionaries format is very flexible and can easily be
-converted to easy to parse formats like json or csv for further
-analysis.</p>
+kernel is represented by a dictionary containing the tunable parameters
+for that particular kernel configuration and one more entry called
+&#8216;time&#8217;. The list of dictionaries format is very flexible and can easily
+be converted other formats that are easy to parse formats, like json or
+csv, for further analysis.</p>
 <p>You can execute the following code block to store the tuning results to
-both a json and a csv file.</p>
+both a json and a csv file (if you have Pandas installed).</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [ ]:
+<span></span>In [17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
 <span></span><span class="c1">#store output as json</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;tutorial.json&quot;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
-    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
+    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
 
 <span class="c1">#store output as csv</span>
 <span class="kn">from</span> <span class="nn">pandas</span> <span class="k">import</span> <span class="n">DataFrame</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;tutorial.csv&quot;</span><span class="p">)</span>
 </pre></div>
-</div>
 </div>
 </div>
 </div>
@@ -719,6 +1405,7 @@ both a json and a csv file.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
