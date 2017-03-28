@@ -179,7 +179,7 @@
 <p>This file provides all the details you need about how to call the Kernel Tuner&#8217;s functions, including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample=False</em>, <em>compiler_options=None</em>, <em>log=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample=False</em>, <em>compiler_options=None</em>, <em>log=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -196,17 +196,21 @@ The first file in the list should be the file that contains the
 host code. The host code is allowed to include or read as a string
 any of the files in the list beyond the first.</p>
 </li>
-<li><strong>problem_size</strong> (<em>tuple(int or string, int or string)</em>) &#8211; <p>A tuple containing the size from which the grid
-dimensions of the kernel will be computed. Do not divide by
-the thread block sizes, if this is necessary use grid_div_x/y to
-specify.</p>
-<p>If you want you can use a string to specify a problem
-size, within these strings you are allowed to write Python
-arithmetic and use the tuning parameter names as variables.
-The kernel tuner will replace instances of the tuning parameter
-names with their current value while iterating over the search
-space. See the reduction CUDA example for an example use of this
-feature.</p>
+<li><strong>problem_size</strong> (<em>string, int, or tuple(int or string, ..)</em>) &#8211; <p>An int or string, or 1,2,3-dimensional tuple
+containing the size from which the grid dimensions of the kernel
+will be computed.</p>
+<p>Do not divide the problem_size yourself by the thread block sizes.
+The Kernel Tuner does this for you based on tunable parameters,
+called &#8220;block_size_x&#8221;, &#8220;block_size_y&#8221;, and &#8220;block_size_z&#8221;.
+If more or different parameters divide the grid dimensions use
+grid_div_x/y/z options to specify this.</p>
+<p>You are allowed to use a string to specify the problem
+size. Within a string you are allowed to write Python
+arithmetic and use the names of tunable parameters as variables
+in these expressions.
+The Kernel Tuner will replace instances of the tunable parameters
+with their current value when computing the grid dimensions.
+See the reduction CUDA example for an example use of this feature.</p>
 </li>
 <li><strong>arguments</strong> (<em>list</em>) &#8211; A list of kernel arguments, use numpy arrays for
 arrays, use numpy.int32 or numpy.float32 for scalars.</li>
@@ -246,6 +250,10 @@ If not supplied, [&#8220;block_size_x&#8221;] will be used by default, if you do
 want any grid x-dimension divisors pass an empty list.</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
 the grid dimensions in the y-direction, [&#8220;block_size_y&#8221;] by default.
+If you do not want to divide the problem_size, you should pass an empty list.
+See grid_div_x for more details.</li>
+<li><strong>grid_div_z</strong> (<em>list</em>) &#8211; A list of names of the parameters whose values divide
+the grid dimensions in the z-direction, [&#8220;block_size_z&#8221;] by default.
 If you do not want to divide the problem_size, you should pass an empty list.
 See grid_div_x for more details.</li>
 <li><strong>restrictions</strong> (<em>list</em>) &#8211; A list of strings containing boolean expression that
@@ -309,7 +317,7 @@ execution times.</p>
 
 <dl class="function">
 <dt id="kernel_tuner.run_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compile and run a single kernel</p>
 <p>Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
 However, instead of measuring execution time run_kernel returns the output of the kernel.
@@ -353,6 +361,7 @@ arrays, use numpy.int32 or numpy.float32 for singulars</li>
 and a single value per tuning parameter as values.</li>
 <li><strong>grid_div_x</strong> (<em>list</em>) &#8211; See tune_kernel()</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; See tune_kernel()</li>
+<li><strong>grid_div_z</strong> (<em>list</em>) &#8211; See tune_kernel()</li>
 <li><strong>lang</strong> (<em>string</em>) &#8211; Language of the kernel, supply &#8220;CUDA&#8221;, &#8220;OpenCL&#8221;, or &#8220;C&#8221; if not detected automatically.</li>
 <li><strong>device</strong> (<em>int</em>) &#8211; CUDA/OpenCL device to use, 0 by default.</li>
 <li><strong>platform</strong> &#8211; OpenCL platform to use, in case you have multiple

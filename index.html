@@ -272,7 +272,6 @@ documentation of
 <span class="s2">&quot;&quot;&quot;</span>
 
 <span class="n">size</span> <span class="o">=</span> <span class="mi">10000000</span>
-<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
 <span class="n">a</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 <span class="n">b</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
@@ -283,7 +282,7 @@ documentation of
 <span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">128</span><span class="o">+</span><span class="mi">64</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">)]</span>
 
-<span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+<span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The exact same Python code can be used to tune an OpenCL kernel:</p>
@@ -327,7 +326,7 @@ kernel it compiles and benchmarks, by passing an <code class="docutils literal">
 list matches the list of arguments to the kernel, but contains the
 expected output of the kernel. Input arguments are replaced with None.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span>  <span class="c1"># the order matches the arguments (in args) to the kernel</span>
-<span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
+<span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

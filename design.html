@@ -228,7 +228,7 @@ discussed above.</p>
 <p>The default runner for iterating through the parameter space</p>
 <dl class="function">
 <dt id="kernel_tuner.runners.sequential_brute_force.run">
-<code class="descclassname">kernel_tuner.runners.sequential_brute_force.</code><code class="descname">run</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>parameter_space</em>, <em>grid_div_x</em>, <em>grid_div_y</em>, <em>answer</em>, <em>atol</em>, <em>verbose</em>, <em>lang</em>, <em>device</em>, <em>platform</em>, <em>cmem_args</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential_brute_force.run" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.runners.sequential_brute_force.</code><code class="descname">run</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>parameter_space</em>, <em>grid_div_x</em>, <em>grid_div_y</em>, <em>grid_div_z</em>, <em>answer</em>, <em>atol</em>, <em>verbose</em>, <em>lang</em>, <em>device</em>, <em>platform</em>, <em>cmem_args</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential_brute_force.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate through the entire parameter space using a single Python process</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -246,6 +246,7 @@ to be searched. Each list in the list represents a single combination
 of parameters, order is imported and it determined by the order in tune_params.</li>
 <li><strong>grid_div_x</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
 <li><strong>grid_div_y</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
+<li><strong>grid_div_z</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
 <li><strong>answer</strong> (<em>list</em>) &#8211; See kernel_tuner.tune_kernel</li>
 <li><strong>atol</strong> (<em>float</em>) &#8211; See kernel_tuner.tune_kernel</li>
 <li><strong>verbose</strong> (<em>boolean</em>) &#8211; See kernel_tuner.tune_kernel</li>
@@ -301,8 +302,14 @@ execution times.</p>
 
 <dl class="function">
 <dt id="kernel_tuner.util.get_grid_dimensions">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_grid_dimensions</code><span class="sig-paren">(</span><em>problem_size</em>, <em>params</em>, <em>grid_div_y</em>, <em>grid_div_x</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_grid_dimensions" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_grid_dimensions</code><span class="sig-paren">(</span><em>current_problem_size</em>, <em>params</em>, <em>grid_div_z</em>, <em>grid_div_y</em>, <em>grid_div_x</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_grid_dimensions" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute grid dims based on problem sizes and listed grid divisors</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_problem_size">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_problem_size</code><span class="sig-paren">(</span><em>problem_size</em>, <em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_problem_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute current problem size</p>
 </dd></dl>
 
 <dl class="function">
@@ -360,8 +367,8 @@ convenience.</li>
 
 <dl class="function">
 <dt id="kernel_tuner.util.setup_block_and_grid">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_block_and_grid</code><span class="sig-paren">(</span><em>dev</em>, <em>problem_size</em>, <em>grid_div_y</em>, <em>grid_div_x</em>, <em>params</em>, <em>instance_string</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_block_and_grid" title="Permalink to this definition">¶</a></dt>
-<dd><p>compute thread block and grid dimensions for this kernel</p>
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_block_and_grid</code><span class="sig-paren">(</span><em>dev</em>, <em>problem_size</em>, <em>grid_div_z</em>, <em>grid_div_y</em>, <em>grid_div_x</em>, <em>params</em>, <em>instance_string</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_block_and_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute problem size, thread block and grid dimensions for this kernel</p>
 </dd></dl>
 
 <dl class="function">
