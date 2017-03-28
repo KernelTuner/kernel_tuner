@@ -27,7 +27,6 @@ float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
 """
 
 size = 72*1024*1024
-problem_size = (size, 1)
 
 a = numpy.random.randn(size).astype(numpy.float32)
 b = numpy.random.randn(size).astype(numpy.float32)
@@ -42,4 +41,4 @@ tune_params["nthreads"] = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32]
 
 answer = [a+b, None, None]
 
-tune_kernel("vector_add", kernel_string, problem_size, args, tune_params, answer=answer)
+tune_kernel("vector_add", kernel_string, size, args, tune_params, answer=answer)

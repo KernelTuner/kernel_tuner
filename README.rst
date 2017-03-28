@@ -88,7 +88,6 @@ The following shows a simple example for tuning a CUDA kernel:
     """
 
     size = 10000000
-    problem_size = (size, 1)
 
     a = numpy.random.randn(size).astype(numpy.float32)
     b = numpy.random.randn(size).astype(numpy.float32)
@@ -99,7 +98,7 @@ The following shows a simple example for tuning a CUDA kernel:
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
+    tune_kernel("vector_add", kernel_string, size, args, tune_params)
 
 The exact same Python code can be used to tune an OpenCL kernel:
 
@@ -151,7 +150,7 @@ expected output of the kernel. Input arguments are replaced with None.
 .. code:: python
 
     answer = [a+b, None, None]  # the order matches the arguments (in args) to the kernel
-    tune_kernel("vector_add", kernel_string, problem_size, args, tune_params, answer=answer)
+    tune_kernel("vector_add", kernel_string, size, args, tune_params, answer=answer)
 
 Contribution guide
 ------------------

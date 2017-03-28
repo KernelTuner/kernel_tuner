@@ -76,28 +76,39 @@ def detect_language(lang, original_kernel):
             lang = "C"
     return lang
 
-def get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x):
-    """compute grid dims based on problem sizes and listed grid divisors"""
-    current_problem_size = []
-    for s in problem_size:
+
+def get_problem_size(problem_size, params):
+    """compute current problem size"""
+    if isinstance(problem_size, (str,int,numpy.integer)):
+        problem_size = (problem_size, )
+    current_problem_size = [1, 1, 1]
+    for i in range(len(problem_size)):
+        s = problem_size[i]
         if isinstance(s, str):
-            current_problem_size.append(int(eval(replace_param_occurrences(s,params))))
+            current_problem_size[i] = int(eval(replace_param_occurrences(s,params)))
         elif isinstance(s, int) or isinstance(s, numpy.integer):
-            current_problem_size.append(s)
+            current_problem_size[i] = s
         else:
-            raise TypeError("Error: problem_size should only be list of string or int")
-    div_x = 1
-    if grid_div_x is None and "block_size_x" in params:
-        grid_div_x = ["block_size_x"]
-    if grid_div_x is not None:
-        div_x = numpy.prod([int(eval(replace_param_occurrences(s,params))) for s in grid_div_x])
-    div_y = 1
-    if grid_div_y is None and "block_size_y" in params:
-        grid_div_y = ["block_size_y"]
-    if grid_div_y is not None:
-        div_y = numpy.prod([int(eval(replace_param_occurrences(s,params))) for s in grid_div_y])
+            raise TypeError("Error: problem_size should only contain strings or integers")
+    return current_problem_size
+
+
+def get_grid_dimensions(current_problem_size, params, grid_div_z, grid_div_y, grid_div_x):
+    """compute grid dims based on problem sizes and listed grid divisors"""
+    def get_dimension_divisor(divisor_list, default, params):
+        if divisor_list is None:
+            if default in params:
+                divisor_list = [default]
+            else:
+                return 1
+        return numpy.prod([int(eval(replace_param_occurrences(s,params))) for s in divisor_list])
+    div_x = get_dimension_divisor(grid_div_x, "block_size_x", params)
+    div_y = get_dimension_divisor(grid_div_y, "block_size_y", params)
+    div_z = get_dimension_divisor(grid_div_z, "block_size_z", params)
+
     grid = (int(numpy.ceil(float(current_problem_size[0]) / float(div_x))),
-            int(numpy.ceil(float(current_problem_size[1]) / float(div_y))) )
+            int(numpy.ceil(float(current_problem_size[1]) / float(div_y))),
+            int(numpy.ceil(float(current_problem_size[2]) / float(div_z))) )
     return grid
 
 def get_thread_block_dimensions(params):
@@ -180,14 +191,15 @@ def check_argument_list(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
-def setup_block_and_grid(dev, problem_size, grid_div_y, grid_div_x, params, instance_string, verbose):
-        """compute thread block and grid dimensions for this kernel"""
+def setup_block_and_grid(dev, problem_size, grid_div_z, grid_div_y, grid_div_x, params, instance_string, verbose):
+        """compute problem size, thread block and grid dimensions for this kernel"""
         threads = get_thread_block_dimensions(params)
         if numpy.prod(threads) > dev.max_threads:
             if verbose:
                 print("skipping config", instance_string, "reason: too many threads per block")
             return None, None
-        grid = get_grid_dimensions(problem_size, params, grid_div_y, grid_div_x)
+        current_problem_size = get_problem_size(problem_size, params)
+        grid = get_grid_dimensions(current_problem_size, params, grid_div_z, grid_div_y, grid_div_x)
         return threads, grid
 
 def setup_kernel_strings(kernel_name, original_kernel, params, grid, instance_string):

@@ -12,17 +12,16 @@ from kernel_tuner.core import *
 
 
 def test_get_grid_dimensions1():
-
-    problem_size = (1024, 1024)
+    problem_size = (1024, 1024, 1)
     params = {"block_x": 41, "block_y": 37}
 
     grid_div_x = ["block_x"]
     grid_div_y = ["block_y"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    grid_div_y, grid_div_x)
+                    None, grid_div_y, grid_div_x)
 
-    assert len(grid) == 2
+    assert len(grid) == 3
     assert isinstance(grid[0], int)
     assert isinstance(grid[1], int)
 
@@ -31,68 +30,65 @@ def test_get_grid_dimensions1():
     assert grid[1] == 28
 
     grid = get_grid_dimensions(problem_size, params,
-                    None, grid_div_x)
+                    None, None, grid_div_x)
 
     print(grid)
     assert grid[0] == 25
     assert grid[1] == 1024
 
     grid = get_grid_dimensions(problem_size, params,
-                    grid_div_y, None)
+                    None, grid_div_y, None)
 
     print(grid)
     assert grid[0] == 1024
     assert grid[1] == 28
 
 def test_get_grid_dimensions2():
-
-    problem_size = (1024, 1024)
+    problem_size = (1024, 1024, 1)
     params = {"block_x": 41, "block_y": 37}
 
     grid_div_x = ["block_x*8"]
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    grid_div_y, grid_div_x)
+                    None, grid_div_y, grid_div_x)
 
     assert grid[0] == 4
     assert grid[1] == 256
 
-def test_get_grid_dimensions3():
-
+def test_get_problem_size1():
     problem_size = ("num_blocks_x", "num_blocks_y*3")
     params = {"num_blocks_x": 71, "num_blocks_y": 57}
 
-    grid_div_x = []
-    grid_div_y = []
+    answer = get_problem_size(problem_size, params)
+    assert answer[0] == 71
+    assert answer[1] == 171
+    assert answer[2] == 1
 
-    grid = get_grid_dimensions(problem_size, params,
-                    grid_div_y, grid_div_x)
+def test_get_problem_size2():
+    problem_size = "num_blocks_x"
+    params = {"num_blocks_x": 71}
 
-    assert grid[0] == 71
-    assert grid[1] == 171
+    answer = get_problem_size(problem_size, params)
+    assert answer[0] == 71
+    assert answer[1] == 1
+    assert answer[2] == 1
 
 @raises(TypeError)
-def test_get_grid_dimensions4():
-
+def test_get_problem_size3():
     problem_size = (3.8, "num_blocks_y*3")
-    params = {"num_blocks_x": 71, "num_blocks_y": 57}
-
-    grid_div_x = []
-    grid_div_y = []
-    get_grid_dimensions(problem_size, params,
-                    grid_div_y, grid_div_x)
+    params = {"num_blocks_y": 57}
+    get_problem_size(problem_size, params)
 
 def test_get_grid_dimensions5():
-
-    problem_size = (1024, 1024)
+    problem_size = (1024, 1024, 1)
     params = {"block_x": 41, "block_y": 37}
 
     grid_div_x = ["block_x", "block_y"]
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    grid_div_y, grid_div_x)
+                    None, grid_div_y, grid_div_x)
 
     print(grid)
 
@@ -102,14 +98,14 @@ def test_get_grid_dimensions5():
 
 def test_get_grid_dimensions6():
 
-    problem_size = (numpy.int32(1024), numpy.int64(1024))
+    problem_size = (numpy.int32(1024), numpy.int64(1024), 1)
     params = {"block_x": 41, "block_y": 37}
 
     grid_div_x = ["block_x", "block_y"]
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    grid_div_y, grid_div_x)
+                    None, grid_div_y, grid_div_x)
 
     print(grid)
 

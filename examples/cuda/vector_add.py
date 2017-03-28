@@ -16,7 +16,6 @@ def tune():
     """
 
     size = 10000000
-    problem_size = (size, 1)
 
     a = numpy.random.randn(size).astype(numpy.float32)
     b = numpy.random.randn(size).astype(numpy.float32)
@@ -28,7 +27,7 @@ def tune():
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    return tune_kernel("vector_add", kernel_string, problem_size, args, tune_params)
+    return tune_kernel("vector_add", kernel_string, size, args, tune_params)
 
 
 if __name__ == "__main__":

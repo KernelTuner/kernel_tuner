@@ -4,6 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Changed
+- allow non-tuple problem_size for 1D grids
 - changed default for grid_div_y from None to block_size_y
 - converted the tutorial to a Jupyter Notebook
 - CUDA backend prints device in use, similar to OpenCL backend
@@ -11,7 +12,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - rewrote many of the examples to save results to json files
 
 ### Added
-- seperable convolution example
+- full support for 3D grids, including option for grid_div_z
+- separable convolution example
 
 ## [0.1.1] - 2017-02-10
 ### Changed

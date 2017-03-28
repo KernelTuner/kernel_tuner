@@ -12,7 +12,7 @@ def tune():
     tune_params["vector"] = [2**i for i in range(3)]
     tune_params["num_blocks"] = [2**i for i in range(5,11)]
 
-    problem_size = ("num_blocks", 1)
+    problem_size = "num_blocks"
     size = 80000000
     max_blocks = max(tune_params["num_blocks"])
 

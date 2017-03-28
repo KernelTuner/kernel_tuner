@@ -34,7 +34,7 @@ from kernel_tuner.util import *
 from kernel_tuner.core import get_device_interface
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
-        tune_params, grid_div_x=None, grid_div_y=None,
+        tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
         restrictions=None, answer=None, atol=1e-6, verbose=False,
         lang=None, device=0, platform=0, cmem_args=None,
         num_threads=1, use_noodles=False, sample=False, compiler_options=None, log=None):
@@ -54,19 +54,24 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             any of the files in the list beyond the first.
     :type kernel_string: string or list
 
-    :param problem_size: A tuple containing the size from which the grid
-            dimensions of the kernel will be computed. Do not divide by
-            the thread block sizes, if this is necessary use grid_div_x/y to
-            specify.
+    :param problem_size: An int or string, or 1,2,3-dimensional tuple
+            containing the size from which the grid dimensions of the kernel
+            will be computed.
 
-            If you want you can use a string to specify a problem
-            size, within these strings you are allowed to write Python
-            arithmetic and use the tuning parameter names as variables.
-            The kernel tuner will replace instances of the tuning parameter
-            names with their current value while iterating over the search
-            space. See the reduction CUDA example for an example use of this
-            feature.
-    :type problem_size: tuple(int or string, int or string)
+            Do not divide the problem_size yourself by the thread block sizes.
+            The Kernel Tuner does this for you based on tunable parameters,
+            called "block_size_x", "block_size_y", and "block_size_z".
+            If more or different parameters divide the grid dimensions use
+            grid_div_x/y/z options to specify this.
+
+            You are allowed to use a string to specify the problem
+            size. Within a string you are allowed to write Python
+            arithmetic and use the names of tunable parameters as variables
+            in these expressions.
+            The Kernel Tuner will replace instances of the tunable parameters
+            with their current value when computing the grid dimensions.
+            See the reduction CUDA example for an example use of this feature.
+    :type problem_size: string, int, or tuple(int or string, ..)
 
     :param arguments: A list of kernel arguments, use numpy arrays for
             arrays, use numpy.int32 or numpy.float32 for scalars.
@@ -112,6 +117,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         If you do not want to divide the problem_size, you should pass an empty list.
         See grid_div_x for more details.
     :type grid_div_y: list
+
+    :param grid_div_z: A list of names of the parameters whose values divide
+        the grid dimensions in the z-direction, ["block_size_z"] by default.
+        If you do not want to divide the problem_size, you should pass an empty list.
+        See grid_div_x for more details.
+    :type grid_div_z: list
 
     :param restrictions: A list of strings containing boolean expression that
         limit the search space in that they must be satisfied by the kernel
@@ -200,7 +211,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         raise NotImplementedError("parallel runners will be implemented soon")
 
     results = runner.run(kernel_name, kernel_string, problem_size, arguments,
-        tune_params, parameter_space, grid_div_x, grid_div_y,
+        tune_params, parameter_space, grid_div_x, grid_div_y, grid_div_z,
         answer, atol, verbose,
         lang, device, platform, cmem_args, compiler_options)
 
@@ -216,7 +227,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 
 def run_kernel(kernel_name, original_kernel, problem_size, arguments,
-        params, grid_div_x=None, grid_div_y=None,
+        params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
         lang=None, device=0, platform=0, cmem_args=None, compiler_options=None):
     """Compile and run a single kernel
 
@@ -269,6 +280,9 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     :param grid_div_y: See tune_kernel()
     :type grid_div_y: list
 
+    :param grid_div_z: See tune_kernel()
+    :type grid_div_z: list
+
     :param lang: Language of the kernel, supply "CUDA", "OpenCL", or "C" if not detected automatically.
     :type lang: string
 
@@ -299,9 +313,7 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     gpu_args = dev.ready_argument_list(arguments)
 
     #retrieve the run configuration, compile, and run the kernel
-    threads = get_thread_block_dimensions(params)
-    grid = get_grid_dimensions(problem_size, params,
-                       grid_div_y, grid_div_x)
+    threads, grid = setup_block_and_grid(dev, problem_size, grid_div_z, grid_div_y, grid_div_x, params, get_instance_string(params), False)
 
     temp_files = dict()
     try:

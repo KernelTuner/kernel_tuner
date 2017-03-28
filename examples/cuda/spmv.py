@@ -16,7 +16,8 @@ def tune():
     nrows = numpy.int32(128*1024)
     ncols = 64*1024
     nnz = int(nrows*ncols*0.001)
-    problem_size = (nrows, 1)
+    #problem_size = (nrows, 1)
+    problem_size = nrows
 
     #generate sparse matrix in CSR
     rows = numpy.asarray([0]+sorted(numpy.random.rand(nrows-1)*nnz)+[nnz]).astype(numpy.int32)

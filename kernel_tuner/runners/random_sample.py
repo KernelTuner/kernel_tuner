@@ -8,7 +8,7 @@ from kernel_tuner.util import detect_language, get_instance_string
 from kernel_tuner.core import get_device_interface, compile_and_benchmark
 
 def run(kernel_name, original_kernel, problem_size, arguments,
-        tune_params, parameter_space, grid_div_x, grid_div_y,
+        tune_params, parameter_space, grid_div_x, grid_div_y, grid_div_z,
         answer, atol, verbose,
         lang, device, platform, cmem_args, compiler_options=None):
     """ Sample the parameter space using a single Python process
@@ -90,7 +90,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         instance_string = get_instance_string(params)
 
         time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
-                        problem_size, grid_div_y, grid_div_x,
+                        problem_size, grid_div_z, grid_div_y, grid_div_x,
                         cmem_args, answer, atol, instance_string, verbose)
         if time is None:
             continue
