@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Kernel Tuner Tutorial - Diffusion &mdash; kernel_tuner 0.1.1 documentation</title>
+  <title>Kernel Tuner Tutorial - Diffusion &mdash; kernel_tuner 0.1.2 documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="kernel_tuner 0.1.1 documentation" href="index.html"/>
+    <link rel="top" title="kernel_tuner 0.1.2 documentation" href="index.html"/>
         <link rel="next" title="Convolution Example" href="convolution.html"/>
         <link rel="prev" title="Kernel Tuner Examples" href="examples.html"/> 
 
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1.1
+                0.1.2
               </div>
             
           
@@ -492,7 +492,7 @@ Also, executing the following cell may take a little while.</p>
 </pre></div>
 </div>
 <div class="output_area highlight-none"><div class="highlight"><pre>
-<span></span>&lt;matplotlib.image.AxesImage at 0x2aaabb96fba8&gt;
+<span></span>&lt;matplotlib.image.AxesImage at 0x2aaab952f240&gt;
 </pre></div>
 </div>
 </div>
@@ -531,7 +531,7 @@ sheet to be able to restart the computation from this state.</p>
 </div>
 <div class="output_area container">
 <div class="highlight"><pre>
-1000 steps of diffuse took 4243.472337722778 ms
+1000 steps of diffuse took 4164.018869400024 ms
 </pre></div></div>
 </div>
 <div class="nboutput container">
@@ -540,7 +540,7 @@ sheet to be able to restart the computation from this state.</p>
 </pre></div>
 </div>
 <div class="output_area highlight-none"><div class="highlight"><pre>
-<span></span>&lt;matplotlib.image.AxesImage at 0x2aab1c98c668&gt;
+<span></span>&lt;matplotlib.image.AxesImage at 0x2aab1c98b3c8&gt;
 </pre></div>
 </div>
 </div>
@@ -677,7 +677,7 @@ would take using the GPU.</p>
 </div>
 <div class="output_area container">
 <div class="highlight"><pre>
-1000 steps of diffuse took 52.89692687988281 ms.
+1000 steps of diffuse took 53.423038482666016 ms.
 </pre></div></div>
 </div>
 <div class="nboutput container">
@@ -686,7 +686,7 @@ would take using the GPU.</p>
 </pre></div>
 </div>
 <div class="output_area highlight-none"><div class="highlight"><pre>
-<span></span>&lt;matplotlib.text.Text at 0x2aaabbdda4e0&gt;
+<span></span>&lt;matplotlib.text.Text at 0x2aaabbdcb2e8&gt;
 </pre></div>
 </div>
 </div>
@@ -786,16 +786,25 @@ large the problem is we are currently working on by setting a
 which it expects to be called <code class="docutils literal"><span class="pre">block_size_x</span></code>, <code class="docutils literal"><span class="pre">block_size_y</span></code>, and/or
 <code class="docutils literal"><span class="pre">block_size_z</span></code>. From these and the <code class="docutils literal"><span class="pre">problem_size</span></code>, the Kernel Tuner
 will compute the appropiate grid dimensions on the fly.</p>
-<p>And that&#8217;s everything the Kernel Tuner needs to know to be able to start
-tuning our kernel. Let&#8217;s give it a try by executing the next code block!</p>
-<div class="nbinput container">
+<div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>And that&#8217;s everything the Kernel Tuner needs to know to be able to start
+tuning our kernel. Let&#8217;s give it a try by executing the next code block!</p>
+<div class="nbinput container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="k">import</span> <span class="n">tune_kernel</span>
-<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;diffuse_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -807,28 +816,28 @@ tuning our kernel. Let&#8217;s give it a try by executing the next code block!</
 <div class="highlight"><pre>
 Using: GeForce GTX TITAN X
 diffuse_kernel
-block_size_x=16, block_size_y=2, time=1.22079362869,
-block_size_x=16, block_size_y=4, time=0.776204800606,
-block_size_x=16, block_size_y=8, time=0.824883198738,
-block_size_x=16, block_size_y=16, time=0.904435193539,
-block_size_x=16, block_size_y=32, time=0.886969602108,
-block_size_x=32, block_size_y=2, time=0.727910399437,
-block_size_x=32, block_size_y=4, time=0.7514559865,
-block_size_x=32, block_size_y=8, time=0.800550401211,
-block_size_x=32, block_size_y=16, time=0.875206410885,
-block_size_x=32, block_size_y=32, time=0.794899213314,
-block_size_x=48, block_size_y=2, time=0.766489589214,
-block_size_x=48, block_size_y=4, time=0.800684797764,
-block_size_x=48, block_size_y=8, time=0.85634560585,
-block_size_x=48, block_size_y=16, time=0.970124793053,
-block_size_x=64, block_size_y=2, time=0.762688016891,
-block_size_x=64, block_size_y=4, time=0.790355205536,
-block_size_x=64, block_size_y=8, time=0.846950399876,
-block_size_x=64, block_size_y=16, time=0.917235219479,
-block_size_x=128, block_size_y=2, time=0.790752005577,
-block_size_x=128, block_size_y=4, time=0.820863986015,
-block_size_x=128, block_size_y=8, time=0.892908799648,
-best performing configuration: block_size_x=32, block_size_y=2, time=0.727910399437,
+block_size_x=16, block_size_y=2, time=1.22305920124,
+block_size_x=16, block_size_y=4, time=0.779033613205,
+block_size_x=16, block_size_y=8, time=0.824838399887,
+block_size_x=16, block_size_y=16, time=0.900499212742,
+block_size_x=16, block_size_y=32, time=0.999763202667,
+block_size_x=32, block_size_y=2, time=0.727967989445,
+block_size_x=32, block_size_y=4, time=0.752479994297,
+block_size_x=32, block_size_y=8, time=0.797900807858,
+block_size_x=32, block_size_y=16, time=0.876627194881,
+block_size_x=32, block_size_y=32, time=0.93347837925,
+block_size_x=48, block_size_y=2, time=0.766662418842,
+block_size_x=48, block_size_y=4, time=0.803033602238,
+block_size_x=48, block_size_y=8, time=0.853574407101,
+block_size_x=48, block_size_y=16, time=0.971545600891,
+block_size_x=64, block_size_y=2, time=0.763775992393,
+block_size_x=64, block_size_y=4, time=0.791257584095,
+block_size_x=64, block_size_y=8, time=0.848044800758,
+block_size_x=64, block_size_y=16, time=0.922745585442,
+block_size_x=128, block_size_y=2, time=0.792595207691,
+block_size_x=128, block_size_y=4, time=0.822137594223,
+block_size_x=128, block_size_y=8, time=0.893279993534,
+best performing configuration: block_size_x=32, block_size_y=2, time=0.727967989445,
 </pre></div></div>
 </div>
 <p>Note that the Kernel Tuner prints a lot of useful information. To ensure
@@ -860,7 +869,7 @@ block. It will also do this for kernels that cannot be compiled because
 they use too much shared memory. And likewise for kernels that use too
 many registers to be launched at runtime. If you&#8217;d like to know about
 which configurations were skipped automatically you can pass the
-optional parameter <code class="docutils literal"><span class="pre">verbose=True</span></code> to <code class="docutils literal"><span class="pre">run_kernel</span></code>.</p>
+optional parameter <code class="docutils literal"><span class="pre">verbose=True</span></code> to <code class="docutils literal"><span class="pre">tune_kernel</span></code>.</p>
 <p>However, knowing the best performing combination of tunable parameters
 becomes even more important when we start to further optimize our CUDA
 kernel. In the next section, we&#8217;ll add a simple code optimization and
@@ -886,7 +895,7 @@ little. However, this intermediate step is necessary for the next
 optimization step we have in mind.</p>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [13]:
+<span></span>In [14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -939,28 +948,28 @@ optimization step we have in mind.</p>
 <div class="highlight"><pre>
 Using: GeForce GTX TITAN X
 diffuse_kernel
-block_size_x=16, block_size_y=2, time=1.74879999161,
-block_size_x=16, block_size_y=4, time=1.18356480598,
-block_size_x=16, block_size_y=8, time=1.0913664341,
-block_size_x=16, block_size_y=16, time=1.07097601891,
-block_size_x=16, block_size_y=32, time=1.08856959343,
-block_size_x=32, block_size_y=2, time=1.14133119583,
-block_size_x=32, block_size_y=4, time=1.05925118923,
-block_size_x=32, block_size_y=8, time=1.0745344162,
-block_size_x=32, block_size_y=16, time=1.07378559113,
-block_size_x=32, block_size_y=32, time=1.14131839275,
-block_size_x=48, block_size_y=2, time=1.08633599281,
-block_size_x=48, block_size_y=4, time=1.10803837776,
-block_size_x=48, block_size_y=8, time=1.09987838268,
-block_size_x=48, block_size_y=16, time=1.31720318794,
-block_size_x=64, block_size_y=2, time=1.06432640553,
-block_size_x=64, block_size_y=4, time=1.04970879555,
-block_size_x=64, block_size_y=8, time=1.05619838238,
-block_size_x=64, block_size_y=16, time=1.11944961548,
-block_size_x=128, block_size_y=2, time=1.06765441895,
-block_size_x=128, block_size_y=4, time=1.05953278542,
-block_size_x=128, block_size_y=8, time=1.11917440891,
-best performing configuration: block_size_x=64, block_size_y=4, time=1.04970879555,
+block_size_x=16, block_size_y=2, time=1.75041918755,
+block_size_x=16, block_size_y=4, time=1.18713598251,
+block_size_x=16, block_size_y=8, time=1.09015038013,
+block_size_x=16, block_size_y=16, time=1.06844799519,
+block_size_x=16, block_size_y=32, time=1.09730558395,
+block_size_x=32, block_size_y=2, time=1.14420480728,
+block_size_x=32, block_size_y=4, time=1.05957758427,
+block_size_x=32, block_size_y=8, time=1.07508480549,
+block_size_x=32, block_size_y=16, time=1.0731967926,
+block_size_x=32, block_size_y=32, time=1.14729599953,
+block_size_x=48, block_size_y=2, time=1.08389122486,
+block_size_x=48, block_size_y=4, time=1.10700161457,
+block_size_x=48, block_size_y=8, time=1.10125439167,
+block_size_x=48, block_size_y=16, time=1.31661438942,
+block_size_x=64, block_size_y=2, time=1.0629119873,
+block_size_x=64, block_size_y=4, time=1.04807043076,
+block_size_x=64, block_size_y=8, time=1.054880023,
+block_size_x=64, block_size_y=16, time=1.12033278942,
+block_size_x=128, block_size_y=2, time=1.06672639847,
+block_size_x=128, block_size_y=4, time=1.05816960335,
+block_size_x=128, block_size_y=8, time=1.12000002861,
+best performing configuration: block_size_x=64, block_size_y=4, time=1.04807043076,
 </pre></div></div>
 </div>
 </div>
@@ -987,7 +996,7 @@ we will call <code class="docutils literal"><span class="pre">tile_size_x</span>
 kernel looks like:</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [14]:
+<span></span>In [15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -1063,7 +1072,7 @@ while as the number of kernel configurations that the Kernel Tuner will
 try has just been increased with a factor of 9!</p>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [15]:
+<span></span>In [16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -1083,192 +1092,192 @@ try has just been increased with a factor of 9!</p>
 <div class="highlight"><pre>
 Using: GeForce GTX TITAN X
 diffuse_kernel
-block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.75869438648,
-block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=2, time=1.30012800694,
-block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=4, time=1.07242240906,
-block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=1, time=1.26148481369,
-block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.994323205948,
-block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.840089607239,
-block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=1, time=1.05306241512,
-block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.864121603966,
-block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.754297602177,
-block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.19253118038,
-block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.876377606392,
-block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.714323210716,
-block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.876864004135,
-block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.693267202377,
-block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.57552639246,
-block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.765100800991,
-block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.618502402306,
-block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.652729606628,
-block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.09714562893,
-block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.82940158844,
-block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.691564798355,
-block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.784428787231,
-block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.638425600529,
-block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.560179197788,
-block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.718880009651,
-block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.576991999149,
-block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.663513600826,
-block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.07288961411,
-block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.832844805717,
-block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.703033602238,
-block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.838137602806,
-block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.653190398216,
-block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.573542404175,
-block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.689017593861,
-block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.593529617786,
-block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=4, time=0.671423995495,
-block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=1, time=1.0928511858,
-block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=2, time=0.847193586826,
-block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=4, time=0.720230400562,
-block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=1, time=0.861932814121,
-block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=2, time=0.682911992073,
-block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=4, time=0.59411200285,
-block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=1, time=0.734835195541,
-block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=2, time=0.60403200388,
-block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=4, time=0.849433600903,
-block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.15504000187,
-block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.850291192532,
-block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.703417599201,
-block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.883552002907,
-block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.677663993835,
-block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.562694394588,
-block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.760902392864,
-block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.624332797527,
-block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.676134395599,
-block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.06755838394,
-block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.804755187035,
-block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.686278402805,
-block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.799615991116,
-block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.633644795418,
-block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.541324794292,
-block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.722470402718,
-block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.584384000301,
-block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.62054400444,
-block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.08234241009,
-block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.820787215233,
-block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.685164785385,
-block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.7772351861,
-block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.620838391781,
-block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.541209614277,
-block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.703391993046,
-block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.568915200233,
-block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.620051205158,
-block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.08434560299,
-block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.831225597858,
-block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.703552007675,
-block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.835539209843,
-block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.635417604446,
-block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.54833920002,
-block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.6655616045,
-block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.577555215359,
-block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=4, time=0.732992005348,
-block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=1, time=1.153363204,
-block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=2, time=0.861247992516,
-block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=4, time=0.725759994984,
-block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=1, time=0.873977613449,
-block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=2, time=0.673971188068,
-block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=4, time=0.575302398205,
-block_size_x=32, block_size_y=32, tile_size_x=4, tile_size_y=1, time=0.729529607296,
-block_size_x=32, block_size_y=32, tile_size_x=4, tile_size_y=2, time=0.582009601593,
-block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.09857282639,
-block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.835417592525,
-block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.691046404839,
-block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.8548864007,
-block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.666271996498,
-block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.5596159935,
-block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.769407999516,
-block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.626080000401,
-block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.69834240675,
-block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.11682560444,
-block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.835084807873,
-block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.70130559206,
-block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.806355190277,
-block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.649171209335,
-block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.562969601154,
-block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.760262405872,
-block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.607097601891,
-block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.691072010994,
-block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.10769920349,
-block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.842982411385,
-block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.701324784756,
-block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.840095996857,
-block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.64813439846,
-block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.564608001709,
-block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.715417599678,
-block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.592428803444,
-block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.69175041914,
-block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.32890241146,
-block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=2, time=1.02535681725,
-block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.838815999031,
-block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=1, time=1.03490560055,
-block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.785529601574,
-block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.665996789932,
-block_size_x=48, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.855961608887,
-block_size_x=48, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.679014396667,
-block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.0746432066,
-block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.799999988079,
-block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.664096009731,
-block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.811750411987,
-block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.644652795792,
-block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.541952002048,
-block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.74149119854,
-block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.605164802074,
-block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.67789440155,
-block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.05515518188,
-block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.792774391174,
-block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.663878393173,
-block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.767833602428,
-block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.628595197201,
-block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.535833597183,
-block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.720671999454,
-block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.580422401428,
-block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.627436804771,
-block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.06224639416,
-block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.807360005379,
-block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.676217591763,
-block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.80267521143,
-block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.627046406269,
-block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.538432013988,
-block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.685139203072,
-block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.576268792152,
-block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.71904001236,
-block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.1278911829,
-block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.846054399014,
-block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.710988807678,
-block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.856633615494,
-block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.658099210262,
-block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.567564809322,
-block_size_x=64, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.697920012474,
-block_size_x=64, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.584159994125,
-block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.07586560249,
-block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.799097597599,
-block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.662227189541,
-block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.80085119009,
-block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.645254409313,
-block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.541926419735,
-block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.741100811958,
-block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.613119983673,
-block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.718118393421,
-block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.0679872036,
-block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.801331210136,
-block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.673011207581,
-block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.780038392544,
-block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.628979194164,
-block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540921604633,
-block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.721817588806,
-block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.579347193241,
-block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.722835183144,
-block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.1311040163,
-block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.841945612431,
-block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.706579208374,
-block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.833759999275,
-block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.63907841444,
-block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.561215996742,
-block_size_x=128, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.699071991444,
-block_size_x=128, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.5850943923,
-best performing configuration: block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.535833597183,
+block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.759308815,
+block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=2, time=1.29789438248,
+block_size_x=16, block_size_y=2, tile_size_x=1, tile_size_y=4, time=1.06983039379,
+block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=1, time=1.2634239912,
+block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.997139203548,
+block_size_x=16, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.843692803383,
+block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=1, time=1.05549435616,
+block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.862348806858,
+block_size_x=16, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.750636804104,
+block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.19084160328,
+block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.876377594471,
+block_size_x=16, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.714169609547,
+block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.875001597404,
+block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.691116797924,
+block_size_x=16, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.575859189034,
+block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.759679996967,
+block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.622867202759,
+block_size_x=16, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.650336003304,
+block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.09794559479,
+block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.826515209675,
+block_size_x=16, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.692665600777,
+block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.78363519907,
+block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.646092808247,
+block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.554745602608,
+block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.716115188599,
+block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.581280004978,
+block_size_x=16, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.662566399574,
+block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.07386879921,
+block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.833420813084,
+block_size_x=16, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.705055999756,
+block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.840755212307,
+block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.652575993538,
+block_size_x=16, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.569388794899,
+block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.689356791973,
+block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.597267186642,
+block_size_x=16, block_size_y=16, tile_size_x=4, tile_size_y=4, time=0.675232005119,
+block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=1, time=1.10033922195,
+block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=2, time=0.860332798958,
+block_size_x=16, block_size_y=32, tile_size_x=1, tile_size_y=4, time=0.731891202927,
+block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=1, time=0.867276787758,
+block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=2, time=0.68781440258,
+block_size_x=16, block_size_y=32, tile_size_x=2, tile_size_y=4, time=0.595276796818,
+block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=1, time=0.735436797142,
+block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=2, time=0.60216319561,
+block_size_x=16, block_size_y=32, tile_size_x=4, tile_size_y=4, time=0.852166390419,
+block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.15089921951,
+block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.852575981617,
+block_size_x=32, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.705932807922,
+block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.888671982288,
+block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.673248004913,
+block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.563417613506,
+block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.761139214039,
+block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.621254396439,
+block_size_x=32, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.676595199108,
+block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.06709122658,
+block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.804953610897,
+block_size_x=32, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.685670387745,
+block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.801798415184,
+block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.632006394863,
+block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.542387211323,
+block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.722668802738,
+block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.578745603561,
+block_size_x=32, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.618598401546,
+block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.08220798969,
+block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.821881604195,
+block_size_x=32, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.687955200672,
+block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.77759360075,
+block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.618003201485,
+block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.539891195297,
+block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.705900788307,
+block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.568556785583,
+block_size_x=32, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.624492788315,
+block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.0799423933,
+block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.832300806046,
+block_size_x=32, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.70140799284,
+block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.835481595993,
+block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.638348805904,
+block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.550105595589,
+block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.667251205444,
+block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.576044797897,
+block_size_x=32, block_size_y=16, tile_size_x=4, tile_size_y=4, time=0.732409596443,
+block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=1, time=1.15916161537,
+block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=2, time=0.869497597218,
+block_size_x=32, block_size_y=32, tile_size_x=1, tile_size_y=4, time=0.733248019218,
+block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=1, time=0.890803205967,
+block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=2, time=0.677363204956,
+block_size_x=32, block_size_y=32, tile_size_x=2, tile_size_y=4, time=0.577215993404,
+block_size_x=32, block_size_y=32, tile_size_x=4, tile_size_y=1, time=0.730982398987,
+block_size_x=32, block_size_y=32, tile_size_x=4, tile_size_y=2, time=0.58035838604,
+block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.10066559315,
+block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.837804794312,
+block_size_x=48, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.691385602951,
+block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.851040017605,
+block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.666656005383,
+block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.560505592823,
+block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.771103990078,
+block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.626163220406,
+block_size_x=48, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.694451200962,
+block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.11514236927,
+block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.837299215794,
+block_size_x=48, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.703302407265,
+block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.806828796864,
+block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.648620784283,
+block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.562521612644,
+block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.760915207863,
+block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.605760002136,
+block_size_x=48, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.690009605885,
+block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.10740480423,
+block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.841631996632,
+block_size_x=48, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.700883197784,
+block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.838195204735,
+block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.649779188633,
+block_size_x=48, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.56585599184,
+block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.7168192029,
+block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.59088640213,
+block_size_x=48, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.69627519846,
+block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.3269824028,
+block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=2, time=1.02665598392,
+block_size_x=48, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.840908801556,
+block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=1, time=1.03752319813,
+block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.788345599174,
+block_size_x=48, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.662041604519,
+block_size_x=48, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.85437438488,
+block_size_x=48, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.680422389507,
+block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.0759360075,
+block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.801996803284,
+block_size_x=64, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.666003203392,
+block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.808000004292,
+block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.643359994888,
+block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.544691193104,
+block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.741964805126,
+block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.60942081213,
+block_size_x=64, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.681350398064,
+block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.05262081623,
+block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.792108798027,
+block_size_x=64, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.66344319582,
+block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.768064010143,
+block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.625260794163,
+block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540352010727,
+block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.721862399578,
+block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.579411196709,
+block_size_x=64, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.626976013184,
+block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.06332798004,
+block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.808211183548,
+block_size_x=64, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.679372787476,
+block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.803718411922,
+block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.627136015892,
+block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.538227200508,
+block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.682188808918,
+block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.573836791515,
+block_size_x=64, block_size_y=8, tile_size_x=4, tile_size_y=4, time=0.725548803806,
+block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=1, time=1.13023357391,
+block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=2, time=0.843411195278,
+block_size_x=64, block_size_y=16, tile_size_x=1, tile_size_y=4, time=0.713843202591,
+block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=1, time=0.85886080265,
+block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=2, time=0.657920002937,
+block_size_x=64, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.565254402161,
+block_size_x=64, block_size_y=16, tile_size_x=4, tile_size_y=1, time=0.697094392776,
+block_size_x=64, block_size_y=16, tile_size_x=4, tile_size_y=2, time=0.579904007912,
+block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=1, time=1.07484800816,
+block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=2, time=0.801119995117,
+block_size_x=128, block_size_y=2, tile_size_x=1, tile_size_y=4, time=0.667347204685,
+block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=1, time=0.799059200287,
+block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=2, time=0.643820810318,
+block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.542937588692,
+block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=1, time=0.740518403053,
+block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=2, time=0.615148806572,
+block_size_x=128, block_size_y=2, tile_size_x=4, tile_size_y=4, time=0.731334400177,
+block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=1, time=1.07002239227,
+block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=2, time=0.805299210548,
+block_size_x=128, block_size_y=4, tile_size_x=1, tile_size_y=4, time=0.675923216343,
+block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=1, time=0.782060790062,
+block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=2, time=0.631142401695,
+block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540383994579,
+block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=1, time=0.723999989033,
+block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=2, time=0.578681600094,
+block_size_x=128, block_size_y=4, tile_size_x=4, tile_size_y=4, time=0.726335990429,
+block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=1, time=1.13297917843,
+block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=2, time=0.844428789616,
+block_size_x=128, block_size_y=8, tile_size_x=1, tile_size_y=4, time=0.710278391838,
+block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=1, time=0.835494399071,
+block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=2, time=0.637958395481,
+block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.567417597771,
+block_size_x=128, block_size_y=8, tile_size_x=4, tile_size_y=1, time=0.699366402626,
+block_size_x=128, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.588492810726,
+best performing configuration: block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.538227200508,
 </pre></div></div>
 </div>
 <p>We can see that the number of kernel configurations tried by the Kernel
@@ -1289,7 +1298,7 @@ close. The following Python code prints all instances with an execution
 time within 5% of the best performing configuration.</p>
 <div class="nbinput container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [16]:
+<span></span>In [17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -1305,17 +1314,18 @@ time within 5% of the best performing configuration.</p>
 </div>
 <div class="output_area container">
 <div class="highlight"><pre>
-block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.560179197788,
-block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.541324794292,
-block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.541209614277,
-block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.54833920002,
-block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.5596159935,
-block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.541952002048,
-block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.535833597183,
-block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.538432013988,
-block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.541926419735,
-block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540921604633,
-block_size_x=128, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.561215996742,
+block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.554745602608,
+block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.563417613506,
+block_size_x=32, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.542387211323,
+block_size_x=32, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.539891195297,
+block_size_x=32, block_size_y=16, tile_size_x=2, tile_size_y=4, time=0.550105595589,
+block_size_x=48, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.560505592823,
+block_size_x=48, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.562521612644,
+block_size_x=64, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.544691193104,
+block_size_x=64, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540352010727,
+block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.538227200508,
+block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.542937588692,
+block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540383994579,
 </pre></div></div>
 </div>
 </div>
@@ -1336,7 +1346,7 @@ csv, for further analysis.</p>
 both a json and a csv file (if you have Pandas installed).</p>
 <div class="nbinput nblast container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
-<span></span>In [17]:
+<span></span>In [18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
@@ -1396,7 +1406,7 @@ both a json and a csv file (if you have Pandas installed).</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.1',
+            VERSION:'0.1.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
