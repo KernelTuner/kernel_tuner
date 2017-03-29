@@ -10,7 +10,7 @@ def readme():
 
 setup(
     name = "kernel_tuner",
-    version = "0.1.1",
+    version = "0.1.2",
     author = "Ben van Werkhoven",
     author_email = "b.vanwerkhoven@esciencecenter.nl",
     description = ("A simple CUDA/OpenCL kernel tuner in Python"),

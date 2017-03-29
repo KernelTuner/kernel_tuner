@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+
+
+## [0.1.2] - 2017-03-29
 ### Changed
 - allow non-tuple problem_size for 1D grids
 - changed default for grid_div_y from None to block_size_y
