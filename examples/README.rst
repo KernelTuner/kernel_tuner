@@ -75,7 +75,7 @@ Sparse Matrix Vector Multiplication
  -  express that the number of thread blocks depends on the values of tunable parameters
 
 Point-in-Polygon
----------
+----------------
 [`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/pnpoly.py>`__]
  -  overlap transfers with device mapped host memory
  -  tune on different implementations of an algorithm
