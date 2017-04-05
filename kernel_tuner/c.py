@@ -61,12 +61,12 @@ class CFunctions(object):
                 self.arg_mapping[str(ctype_args[-1])] = arg.shape
             elif numpy.isscalar(arg):
                 if hasattr(arg, 'dtype'):
-                    map = { numpy.int32: C.c_int32,
+                    np_to_c_type_map = { numpy.int32: C.c_int32,
                             numpy.int64: C.c_int64,
                             numpy.float32: C.c_float,
                             numpy.float64: C.c_double }
-                    if type(arg) in map:
-                        ctype_args.append(map[type(arg)](arg))
+                    if type(arg) in np_to_c_type_map:
+                        ctype_args.append(np_to_c_type_map[type(arg)](arg))
                     else:
                         raise TypeError("Argument is scalar with a dtype, but does not start with int or float")
                 else:

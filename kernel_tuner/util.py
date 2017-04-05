@@ -82,8 +82,7 @@ def get_problem_size(problem_size, params):
     if isinstance(problem_size, (str,int,numpy.integer)):
         problem_size = (problem_size, )
     current_problem_size = [1, 1, 1]
-    for i in range(len(problem_size)):
-        s = problem_size[i]
+    for i, s in enumerate(problem_size):
         if isinstance(s, str):
             current_problem_size[i] = int(eval(replace_param_occurrences(s,params)))
         elif isinstance(s, int) or isinstance(s, numpy.integer):
