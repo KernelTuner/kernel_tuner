@@ -338,8 +338,11 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     #copy data in GPU memory back to the host
     results = []
     for i, arg in enumerate(arguments):
-        results.append(numpy.zeros_like(arg))
-        dev.memcpy_dtoh(results[-1], gpu_args[i])
+        if numpy.isscalar(arg):
+            results.append(arg)
+        else:
+            results.append(numpy.zeros_like(arg))
+            dev.memcpy_dtoh(results[-1], gpu_args[i])
     return results
 
 

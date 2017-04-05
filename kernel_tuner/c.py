@@ -61,14 +61,22 @@ class CFunctions(object):
                 self.arg_mapping[str(ctype_args[-1])] = arg.shape
             elif numpy.isscalar(arg):
                 if hasattr(arg, 'dtype'):
-                    if str(arg.dtype).startswith('int'):
-                        ctype_args.append(int(arg))
-                    elif str(arg.dtype).startswith('float'):
-                        ctype_args.append(float(arg))
+                    map = { numpy.int32: C.c_int32,
+                            numpy.int64: C.c_int64,
+                            numpy.float32: C.c_float,
+                            numpy.float64: C.c_double }
+                    if type(arg) in map:
+                        ctype_args.append(map[type(arg)](arg))
                     else:
                         raise TypeError("Argument is scalar with a dtype, but does not start with int or float")
                 else:
-                    ctype_args.append(arg)
+                    if isinstance(arg, int):
+                        ctype_args.append(C.c_int(arg))
+                    elif isinstance(arg, float):
+                        ctype_args.append(C.c_float(arg))
+                    else:
+                        raise TypeError("Argument is scalar without dtype, and is not instance of int or float")
+                self.arg_mapping[str(ctype_args[-1])] = ()
             else:
                 raise TypeError("Argument is not a numpy.ndarray and is not a scalar %s" % type(arg))
 
@@ -196,6 +204,9 @@ class CFunctions(object):
         :returns: A robust average of values returned by the C function.
         :rtype: float
         """
+        logging.debug("run_kernel")
+        logging.debug("arguments=" + str([str(arg) for arg in c_args]))
+
         time = func(*c_args)
 
         #I would like to replace the following with actually capturing

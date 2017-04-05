@@ -96,11 +96,11 @@ def test_run_kernel(dev_interface):
     args = [n]
     tune_params = dict()
     tune_params["block_size_x"] = 128
-    run_kernel("fake_kernel", kernel_string, problem_size, args, tune_params)
+    answer = run_kernel("fake_kernel", kernel_string, problem_size, args, tune_params)
 
     assert dev.compile.call_count == 1
     dev.run_kernel.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1, 1))
-    dev.memcpy_dtoh.assert_called_once_with(numpy.zeros(1), 'r')
+    assert answer[0] == n
 
 @patch('kernel_tuner.core.CudaFunctions')
 def test_check_kernel_correctness(dev_interface):

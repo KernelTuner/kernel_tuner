@@ -48,14 +48,14 @@ def test_ready_argument_list2():
     output_arg1 = numpy.ctypeslib.as_array(output[0], shape=arg1.shape)
 
     assert output_arg1.dtype == 'float32'
-    assert isinstance(output[1], int)
-    assert isinstance(output[2], float)
-    assert isinstance(output[3], int)
+    assert isinstance(output[1], C.c_int)
+    assert isinstance(output[2], C.c_float)
+    assert isinstance(output[3], C.c_int)
 
     assert all(output_arg1 == arg1)
-    assert output[1] == arg2
-    assert output[2] == arg3
-    assert output[3] == arg4
+    assert output[1].value == arg2
+    assert output[2].value == arg3
+    assert output[3].value == arg4
 
 
 def test_ready_argument_list3():
