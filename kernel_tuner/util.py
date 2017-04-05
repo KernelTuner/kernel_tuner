@@ -5,18 +5,27 @@ import os
 import errno
 
 def get_instance_string(params):
+    """ combine the parameters to a string mostly used for debug output
+        use of OrderedDict is advised
+    """
     return "_".join([str(i) for i in params.values()])
 
 def get_config_string(params):
+    """ return a compact string representation of a dictionary """
     return "".join([k + "=" + str(v) + ", " for k,v in params.items()])
 
 def get_kernel_string(original_kernel):
+    """ retrieves kernel string from a file if the string passed looks like filename
+        if the string does look like a filename, but the file does not exist, it
+        is assumed that the string is not a filename after all.
+    """
     kernel_string = original_kernel
     if looks_like_a_filename(original_kernel):
         kernel_string = read_file(original_kernel) or original_kernel
     return kernel_string
 
 def delete_temp_file(filename):
+    """ delete a temporary file, don't complain if is no longer exists """
     try:
         os.remove(filename)
     except OSError as e:
@@ -24,6 +33,7 @@ def delete_temp_file(filename):
             raise e
 
 def get_temp_filename():
+    """ return a string in the form of temp_X, where X is a large integer """
     random_large_int = numpy.random.randint(low=100, high=100000000000)
     return 'temp_' + str(random_large_int)
 
@@ -33,7 +43,7 @@ def looks_like_a_filename(original_kernel):
     if isinstance(original_kernel, str):
         result = True
         #test if not too long
-        if len(original_kernel) > 100:
+        if len(original_kernel) > 250:
             result = False
         #test if not contains special characters
         for c in "();{}\\":
@@ -48,13 +58,15 @@ def looks_like_a_filename(original_kernel):
     return result
 
 def read_file(filename):
+    """ return the contents of the file named filename or None if file not found """
     if os.path.isfile(filename):
         with open(filename, 'r') as f:
             return f.read()
 
 def write_file(filename, string):
-    #ugly fix, hopefully we can find a better one
+    """ dump the contents of string to a file called filename """
     import sys
+    #ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:
         with open(filename, 'w', encoding="utf-8") as f:
             f.write(string)
@@ -176,6 +188,7 @@ def replace_param_occurrences(string, params):
     return string
 
 def check_restrictions(restrictions, element, keys, verbose):
+    """ check whether a specific instance meets the search space restrictions """
     params = dict(zip(keys, element))
     for restrict in restrictions:
         if not eval(replace_param_occurrences(restrict, params)):
@@ -186,25 +199,26 @@ def check_restrictions(restrictions, element, keys, verbose):
     return True
 
 def check_argument_list(args):
+    """ raise an exception if a kernel argument is of unsupported type """
     for (i, arg) in enumerate(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
 def setup_block_and_grid(dev, problem_size, grid_div_z, grid_div_y, grid_div_x, params, instance_string, verbose):
-        """compute problem size, thread block and grid dimensions for this kernel"""
-        threads = get_thread_block_dimensions(params)
-        if numpy.prod(threads) > dev.max_threads:
-            if verbose:
-                print("skipping config", instance_string, "reason: too many threads per block")
-            return None, None
-        current_problem_size = get_problem_size(problem_size, params)
-        grid = get_grid_dimensions(current_problem_size, params, grid_div_z, grid_div_y, grid_div_x)
-        return threads, grid
+    """compute problem size, thread block and grid dimensions for this kernel"""
+    threads = get_thread_block_dimensions(params)
+    if numpy.prod(threads) > dev.max_threads:
+        if verbose:
+            print("skipping config", instance_string, "reason: too many threads per block")
+        return None, None
+    current_problem_size = get_problem_size(problem_size, params)
+    grid = get_grid_dimensions(current_problem_size, params, grid_div_z, grid_div_y, grid_div_x)
+    return threads, grid
 
 def setup_kernel_strings(kernel_name, original_kernel, params, grid, instance_string):
-        """create configuration specific kernel string"""
-        kernel_string = prepare_kernel_string(original_kernel, params, grid)
-        name = kernel_name + "_" + instance_string
-        kernel_string = kernel_string.replace(kernel_name, name)
-        return name, kernel_string
+    """create configuration specific kernel string"""
+    kernel_string = prepare_kernel_string(original_kernel, params, grid)
+    name = kernel_name + "_" + instance_string
+    kernel_string = kernel_string.replace(kernel_name, name)
+    return name, kernel_string
 
