@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>The kernel_tuner documentation &mdash; kernel_tuner 0.1.2 documentation</title>
+  <title>The kernel_tuner documentation &mdash; kernel_tuner 0.1.3 documentation</title>
   
 
   
@@ -33,8 +33,8 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="kernel_tuner 0.1.2 documentation" href="#"/>
-        <link rel="next" title="Kernel Tuner Examples" href="examples.html"/> 
+    <link rel="top" title="kernel_tuner 0.1.3 documentation" href="#"/>
+        <link rel="next" title="Installation Guide" href="install.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.2
+                0.1.3
               </div>
             
           
@@ -85,6 +85,7 @@
             
                 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Kernel Tuner Tutorial - Diffusion</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
@@ -93,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
 
             
@@ -177,6 +179,7 @@
 <div class="toctree-wrapper compound">
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Kernel Tuner Tutorial - Diffusion</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution Example</a></li>
@@ -185,6 +188,7 @@
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
 </div>
 </div>
@@ -221,43 +225,33 @@ documentation of
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>To install from PyPi:</p>
-<ul class="simple">
-<li><code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner</span></code></li>
-</ul>
-<p>To install from the source (and get the tutorial and examples):</p>
-<ul class="simple">
-<li>clone the repository<ul>
-<li>With a GitHub account: <code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">git&#64;github.com:benvanwerkhoven/kernel_tuner.git</span></code></li>
-<li>Without GitHub account: <code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/benvanwerkhoven/kernel_tuner.git</span></code></li>
-</ul>
-</li>
-<li>change into the top-level directory<ul>
-<li><code class="docutils literal"><span class="pre">cd</span> <span class="pre">kernel_tuner</span></code></li>
-</ul>
-</li>
-<li>install using<ul>
-<li><code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code></li>
-</ul>
-</li>
-</ul>
+<p>The easiest way to install the Kernel Tuner is using pip:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner
+</pre></div>
 </div>
-<div class="section" id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
-<p>Python 2.7 or Python 3.5</p>
-<p>PyCuda and/or PyOpenCL (<a class="reference external" href="https://mathema.tician.de/software/">https://mathema.tician.de/software/</a>)</p>
-<ul class="simple">
-<li>To tune CUDA kernels<ul>
-<li>Make sure you have the <a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA Toolkit</a> installed</li>
+<p>But you can also install from the git repository. This way you also get the
+examples and the tutorials:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
+<span class="nb">cd</span> kernel_tuner
+pip install -r requirements.txt
+pip install .
+</pre></div>
+</div>
+<p>To tune CUDA kernels:</p>
+<blockquote>
+<div><ul class="simple">
+<li>First, make sure you have the <a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA Toolkit</a> installed</li>
 <li>You can install PyCuda using <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code></li>
 </ul>
-</li>
-<li>To tune OpenCL kernels<ul>
-<li>Make sure you have an OpenCL compiler for your intended OpenCL platform</li>
+</div></blockquote>
+<p>To tune OpenCL kernels:</p>
+<blockquote>
+<div><ul class="simple">
+<li>First, make sure you have an OpenCL compiler for your intended OpenCL platform</li>
 <li>You can install PyOpenCL using <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyopencl</span></code></li>
 </ul>
-</li>
-</ul>
+</div></blockquote>
+<p>If you need more information about how to install the Kernel Tuner and all dependencies see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/install.html">installation guide</a></p>
 </div>
 <div class="section" id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
@@ -280,7 +274,7 @@ documentation of
 <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
 
 <span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">128</span><span class="o">+</span><span class="mi">64</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">)]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">]</span>
 
 <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
@@ -308,7 +302,7 @@ kernels and the scripts to tune them.</p>
 </div>
 <div class="section" id="tuning-host-and-kernel-code">
 <h2>Tuning host and kernel code<a class="headerlink" href="#tuning-host-and-kernel-code" title="Permalink to this headline">¶</a></h2>
-<p>It is also possible to tune for combinations of tunable parameters in
+<p>It is possible to tune for combinations of tunable parameters in
 both host and kernel code. This allows for a number of powerfull things,
 such as tuning the number of streams for a kernel that uses CUDA Streams
 or OpenCL Command Queues to overlap transfers between host and device
@@ -330,31 +324,9 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="contribution-guide">
-<h2>Contribution guide<a class="headerlink" href="#contribution-guide" title="Permalink to this headline">¶</a></h2>
-<p>The kernel tuner follows the Google Python style guide, with Sphinxdoc
-docstrings for module public functions. If you want to contribute to the
-project please fork it, create a branch including your addition, and
-create a pull request.</p>
-<p>The tests use relative imports and can be run directly after making
-changes to the code. To run all tests use <code class="docutils literal"><span class="pre">nosetests</span></code> in the main
-directory. To run the examples after code changes, you need to run
-<code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">.</span></code> in the main directory. Documentation is
-generated by typing <code class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></code> in the doc directory, the contents of
-<code class="docutils literal"><span class="pre">doc/build/html/</span></code> should then be copied to <code class="docutils literal"><span class="pre">sphinxdoc</span></code> directory of
-the <code class="docutils literal"><span class="pre">gh-pages</span></code> branch.</p>
-<p>Before creating a pull request please ensure the following:</p>
-<ul class="simple">
-<li>You have written unit tests to test your additions and all unit tests pass</li>
-<li>The examples still work and produce the same (or better) results</li>
-<li>The code is compatible with both Python 2.7 and Python 3.5</li>
-<li>An entry about the change or addition is created in CHANGELOG.md</li>
-</ul>
-<p>Contributing authors so far:</p>
-<ul class="simple">
-<li>Ben van Werkhoven</li>
-<li>Berend Weel</li>
-</ul>
+<div class="section" id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
+<p>Please see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/contributing.html">Contributions Guide</a>.</p>
 </div>
 <div class="section" id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
@@ -391,7 +363,7 @@ spent on tuning kernels.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="examples.html" class="btn btn-neutral float-right" title="Kernel Tuner Examples" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="install.html" class="btn btn-neutral float-right" title="Installation Guide" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>
@@ -423,7 +395,7 @@ spent on tuning kernels.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.2',
+            VERSION:'0.1.3',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

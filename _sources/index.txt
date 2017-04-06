@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 1
 
    Introduction <self>
+   install
    examples
    tutorial
    convolution
@@ -20,6 +21,7 @@ Contents:
    hostcode
    user-api
    design
+   contributing
 
 Introduction
 ============
