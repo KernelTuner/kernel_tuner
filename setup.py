@@ -8,9 +8,13 @@ def readme():
     with open('README.rst') as f:
         return f.read()
 
+def required():
+    with open('requirements.txt') as f:
+        return f.read().splitlines()
+
 setup(
     name = "kernel_tuner",
-    version = "0.1.2",
+    version = "0.1.3",
     author = "Ben van Werkhoven",
     author_email = "b.vanwerkhoven@esciencecenter.nl",
     description = ("A simple CUDA/OpenCL kernel tuner in Python"),
@@ -19,6 +23,7 @@ setup(
     url = "http://benvanwerkhoven.github.io/kernel_tuner/",
     packages=['kernel_tuner', 'kernel_tuner.runners'],
     long_description=readme(),
+    install_requires=required(),
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: Developers',

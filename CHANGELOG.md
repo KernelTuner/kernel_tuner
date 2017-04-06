@@ -2,9 +2,15 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## Unreleased
+
+
+## [0.1.3] - 2017-04-06
 ### Changed
 - changed how scalar arguments are handled internally
+
+### Added
+- separate install and contribution guides
 
 ## [0.1.2] - 2017-03-29
 ### Changed
