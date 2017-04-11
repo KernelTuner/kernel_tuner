@@ -218,13 +218,13 @@ See the reduction CUDA example for an example use of this feature.</p>
 arrays, use numpy.int32 or numpy.float32 for scalars.</li>
 <li><strong>tune_params</strong> (<em>dict( string : [...] )</em>) &#8211; <p>A dictionary containing the parameter names as keys,
 and lists of possible parameter settings as values.
-The kernel tuner will try to compile and benchmark all possible
+The Kernel Tuner will try to compile and benchmark all possible
 combinations of all possible values for all tuning parameters.
 This typically results in a rather large search space of all
 possible kernel configurations.
 For each kernel configuration, each tuning parameter is
 replaced at compile-time with its current value.
-Currently, the kernel tuner uses the convention that the following
+Currently, the Kernel Tuner uses the convention that the following
 list of tuning parameters are used as thread block dimensions:</p>
 <blockquote>
 <div><ul>

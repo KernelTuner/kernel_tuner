@@ -195,29 +195,26 @@
 <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 </div>
-<div class="section" id="a-simple-cuda-opencl-kernel-tuner-in-python">
-<h1>A simple CUDA/OpenCL kernel tuner in Python<a class="headerlink" href="#a-simple-cuda-opencl-kernel-tuner-in-python" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="kernel-tuner-a-simple-cuda-opencl-kernel-tuner-in-python">
+<h1>Kernel Tuner: A simple CUDA/OpenCL kernel tuner in Python<a class="headerlink" href="#kernel-tuner-a-simple-cuda-opencl-kernel-tuner-in-python" title="Permalink to this headline">¶</a></h1>
 <p><a class="reference external" href="https://travis-ci.org/benvanwerkhoven/kernel_tuner"><img alt="Build Status" src="https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master" /></a> <a class="reference external" href="https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner"><img alt="Codacy Badge" src="https://api.codacy.com/project/badge/grade/016dc85044ab4d57b777449d93275608" /></a> <a class="reference external" href="https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner"><img alt="Codacy Badge2" src="https://api.codacy.com/project/badge/coverage/016dc85044ab4d57b777449d93275608" /></a></p>
-<p>The goal of this project is to provide a - as simple as possible - tool
-for tuning CUDA and OpenCL kernels. This implies that any CUDA or OpenCL
-kernel can be tuned without requiring extensive changes to the original
-kernel code.</p>
+<p>The Kernel Tuner is a - as simple as possible - tool for testing and auto-tuning
+CUDA and OpenCL kernels. This means that any CUDA or OpenCL kernel can be tuned
+without requiring extensive changes to the original kernel code.</p>
 <p>A very common problem in GPU programming is that some combination of
 thread block dimensions and other kernel parameters, like tiling or
 unrolling factors, results in dramatically better performance than other
 kernel configurations. The goal of auto-tuning is to automate the
 process of finding the best performing configuration for a given device.</p>
-<p>This kernel tuner aims that you can directly use the tuned kernel
-without introducing any new dependencies. The tuned kernels can
-afterwards be used independently of the programming environment, whether
-that is using C/C++/Java/Fortran or Python doesn&#8217;t matter.</p>
-<p>The kernel_tuner module currently only contains main one function which
-is called tune_kernel to which you pass at least the kernel name, a
-string containing the kernel code, the problem size, a list of kernel
-function arguments, and a dictionary of tunable parameters. There are
-also a lot of optional parameters, for a complete list see the full
-documentation of
-<a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/details.html">tune_kernel</a>.</p>
+<p>The Kernel Tuner offers two main functions which are called run_kernel and
+tune_kernel. With run_kernel it&#8217;s very easy to write unit tests for your GPU
+kernels in Python. With tune_kernel you can auto-tune your kernels using only a
+simple Python script. These functions are very flexible and come with a lot of
+optional parameters, for a complete list see the <cite>documentation website
+&lt;http://benvanwerkhoven.github.io/kernel_tuner/user-api.html&gt;</cite>.</p>
+<p>The Kernel Tuner does not introduce any new dependencies in your kernels. The
+tuned kernels can afterwards be used independently of the programming environment,
+whether that is using C/C++/Java/Fortran or Python doesn&#8217;t matter.</p>
 <div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <p>The full documentation is available
@@ -233,7 +230,6 @@ documentation of
 examples and the tutorials:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
 <span class="nb">cd</span> kernel_tuner
-pip install -r requirements.txt
 pip install .
 </pre></div>
 </div>
@@ -251,7 +247,8 @@ pip install .
 <li>You can install PyOpenCL using <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyopencl</span></code></li>
 </ul>
 </div></blockquote>
-<p>If you need more information about how to install the Kernel Tuner and all dependencies see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/install.html">installation guide</a></p>
+<p>If you need more information about how to install the Kernel Tuner and all
+dependencies see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/install.html">installation guide</a></p>
 </div>
 <div class="section" id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>

@@ -92,6 +92,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#cuda-and-pycuda">CUDA and PyCUDA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#opencl-and-pyopencl">OpenCL and PyOpenCL</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installing-the-kernel-tuner">Installing the Kernel Tuner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies-for-the-tutorial">Dependencies for the Tutorial</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
@@ -185,12 +186,12 @@
 </div>
 <div class="section" id="installation-guide">
 <span id="install"></span><h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h1>
-<p>The Kernel Tuner requires several packages to be installed. First of all you need a
+<p>The Kernel Tuner requires several packages to be installed. First of all, you need a
 working Python version, several Python packages, and optionally CUDA and/or OpenCL
 installations. All of this is explained in detail in this guide.</p>
 <div class="section" id="python">
 <h2>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h2>
-<p>First of all you need a Python installation. I recommend using Python 3 and
+<p>You need a Python installation. I recommend using Python 3 and
 installing it with <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a>.</p>
 <p>Linux users could type the following to download and install Python 3 using Miniconda:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -252,7 +253,8 @@ code to run on.</p>
 </div>
 <div class="section" id="installing-the-kernel-tuner">
 <h2>Installing the Kernel Tuner<a class="headerlink" href="#installing-the-kernel-tuner" title="Permalink to this headline">¶</a></h2>
-<p>So far we&#8217;ve talked about all the dependencies, but not the Kernel Tuner itself.</p>
+<p>So far we&#8217;ve installed all the dependencies. Now we are ready to install the
+Kernel Tuner itself.</p>
 <p>The easiest way to install is using pip:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner
 </pre></div>
@@ -261,12 +263,23 @@ code to run on.</p>
 examples and the tutorials.</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
 <span class="nb">cd</span> kernel_tuner
-pip install -r requirements.txt
 pip install .
 </pre></div>
 </div>
 <p>Then go to any of the <code class="docutils literal"><span class="pre">examples/cuda</span></code> or <code class="docutils literal"><span class="pre">examples/opencl</span></code> directories
 and see if you can run the <code class="docutils literal"><span class="pre">vector_add.py</span></code> example to test your installation.</p>
+</div>
+<div class="section" id="dependencies-for-the-tutorial">
+<h2>Dependencies for the Tutorial<a class="headerlink" href="#dependencies-for-the-tutorial" title="Permalink to this headline">¶</a></h2>
+<p>Some addition Python packages are required to run the tutorial. These packages are
+actually very commonly used and chances are that you already have these installed.
+However, here is a list of the dependencies that you need to run everything in the
+tutorial:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install jupyter matplotlib pandas
+</pre></div>
+</div>
+<p>The tutorial also uses CUDA and PyCUDA. How to install these has been explained in
+the installation guide above.</p>
 </div>
 </div>
 
