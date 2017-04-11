@@ -177,6 +177,17 @@ class CFunctions(object):
         results = []
         for _ in range(self.ITERATIONS):
             value = self.run_kernel(func, c_args, threads, grid)
+
+            #I would like to replace the following with actually capturing
+            #stderr and detecting the error directly in Python, it proved
+            #however that capturing stderr for non-Python functions from Python
+            #is a rather difficult thing to do
+            #
+            #The current, less than ideal, scheme uses the convention that a
+            #negative time indicates a 'too many resources requested for launch'
+            if value < 0.0:
+                raise Exception("too many resources requested for launch")
+
             results.append(value)
         results = sorted(results)
         return numpy.mean(results[1:-1])
@@ -208,16 +219,6 @@ class CFunctions(object):
         logging.debug("arguments=" + str([str(arg) for arg in c_args]))
 
         time = func(*c_args)
-
-        #I would like to replace the following with actually capturing
-        #stderr and detecting the error directly in Python, it proved
-        #however that capturing stderr for non-Python functions from Python
-        #is a rather difficult thing to do
-        #
-        #The current, less than ideal, scheme uses the convention that a
-        #negative time indicates a 'too many resources requested for launch'
-        if time < 0.0:
-            raise Exception("too many resources requested for launch")
 
         return time
 
