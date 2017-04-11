@@ -1,7 +1,7 @@
 Installation Guide
 ==================
 
-The Kernel Tuner requires several packages to be installed. First of all you need a 
+The Kernel Tuner requires several packages to be installed. First of all, you need a 
 working Python version, several Python packages, and optionally CUDA and/or OpenCL 
 installations. All of this is explained in detail in this guide.
 
@@ -9,7 +9,7 @@ installations. All of this is explained in detail in this guide.
 Python
 ------
 
-First of all you need a Python installation. I recommend using Python 3 and 
+You need a Python installation. I recommend using Python 3 and 
 installing it with `Miniconda <https://conda.io/miniconda.html>`__.
 
 Linux users could type the following to download and install Python 3 using Miniconda:
@@ -94,7 +94,8 @@ If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.ne
 Installing the Kernel Tuner
 ---------------------------
 
-So far we've talked about all the dependencies, but not the Kernel Tuner itself.
+So far we've installed all the dependencies. Now we are ready to install the 
+Kernel Tuner itself.
 
 The easiest way to install is using pip:
 
@@ -109,13 +110,26 @@ examples and the tutorials.
 
     git clone https://github.com/benvanwerkhoven/kernel_tuner.git
     cd kernel_tuner
-    pip install -r requirements.txt
     pip install .
 
 Then go to any of the ``examples/cuda`` or ``examples/opencl`` directories
 and see if you can run the ``vector_add.py`` example to test your installation.
 
 
+Dependencies for the Tutorial
+-----------------------------
+
+Some addition Python packages are required to run the tutorial. These packages are
+actually very commonly used and chances are that you already have these installed.
+However, here is a list of the dependencies that you need to run everything in the
+tutorial:
+
+.. code-block:: bash
+
+    pip install jupyter matplotlib pandas
+
+The tutorial also uses CUDA and PyCUDA. How to install these has been explained in 
+the installation guide above.
 
 
 

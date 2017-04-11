@@ -79,13 +79,13 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     :param tune_params: A dictionary containing the parameter names as keys,
             and lists of possible parameter settings as values.
-            The kernel tuner will try to compile and benchmark all possible
+            The Kernel Tuner will try to compile and benchmark all possible
             combinations of all possible values for all tuning parameters.
             This typically results in a rather large search space of all
             possible kernel configurations.
             For each kernel configuration, each tuning parameter is
             replaced at compile-time with its current value.
-            Currently, the kernel tuner uses the convention that the following
+            Currently, the Kernel Tuner uses the convention that the following
             list of tuning parameters are used as thread block dimensions:
 
                 * "block_size_x"   thread block (work group) x-dimension

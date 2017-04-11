@@ -1,12 +1,11 @@
-A simple CUDA/OpenCL kernel tuner in Python
-===========================================
+Kernel Tuner: A simple CUDA/OpenCL kernel tuner in Python
+=========================================================
 
 |Build Status| |Codacy Badge| |Codacy Badge2|
 
-The goal of this project is to provide a - as simple as possible - tool
-for tuning CUDA and OpenCL kernels. This implies that any CUDA or OpenCL
-kernel can be tuned without requiring extensive changes to the original
-kernel code.
+The Kernel Tuner is a - as simple as possible - tool for testing and auto-tuning 
+CUDA and OpenCL kernels. This means that any CUDA or OpenCL kernel can be tuned 
+without requiring extensive changes to the original kernel code.
 
 A very common problem in GPU programming is that some combination of
 thread block dimensions and other kernel parameters, like tiling or
@@ -14,18 +13,16 @@ unrolling factors, results in dramatically better performance than other
 kernel configurations. The goal of auto-tuning is to automate the
 process of finding the best performing configuration for a given device.
 
-This kernel tuner aims that you can directly use the tuned kernel
-without introducing any new dependencies. The tuned kernels can
-afterwards be used independently of the programming environment, whether
-that is using C/C++/Java/Fortran or Python doesn't matter.
+The Kernel Tuner offers two main functions which are called run\_kernel and 
+tune\_kernel. With run\_kernel it's very easy to write unit tests for your GPU 
+kernels in Python. With tune\_kernel you can auto-tune your kernels using only a 
+simple Python script. These functions are very flexible and come with a lot of 
+optional parameters, for a complete list see the `documentation website 
+<http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`.
 
-The kernel\_tuner module currently only contains main one function which
-is called tune\_kernel to which you pass at least the kernel name, a
-string containing the kernel code, the problem size, a list of kernel
-function arguments, and a dictionary of tunable parameters. There are
-also a lot of optional parameters, for a complete list see the full
-documentation of
-`tune\_kernel <http://benvanwerkhoven.github.io/kernel_tuner/details.html>`__.
+The Kernel Tuner does not introduce any new dependencies in your kernels. The 
+tuned kernels can afterwards be used independently of the programming environment, 
+whether that is using C/C++/Java/Fortran or Python doesn't matter.
 
 Documentation
 -------------
@@ -49,7 +46,6 @@ examples and the tutorials:
 
     git clone https://github.com/benvanwerkhoven/kernel_tuner.git
     cd kernel_tuner
-    pip install -r requirements.txt
     pip install .
     
 To tune CUDA kernels:
@@ -62,7 +58,9 @@ To tune OpenCL kernels:
   - First, make sure you have an OpenCL compiler for your intended OpenCL platform
   - You can install PyOpenCL using ``pip install pyopencl``
 
-If you need more information about how to install the Kernel Tuner and all dependencies see the `installation guide <http://benvanwerkhoven.github.io/kernel_tuner/install.html>`__
+If you need more information about how to install the Kernel Tuner and all 
+dependencies see the `installation guide 
+<http://benvanwerkhoven.github.io/kernel_tuner/install.html>`__
 
 Example usage
 -------------
