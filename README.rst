@@ -18,7 +18,7 @@ tune\_kernel. With run\_kernel it's very easy to write unit tests for your GPU
 kernels in Python. With tune\_kernel you can auto-tune your kernels using only a 
 simple Python script. These functions are very flexible and come with a lot of 
 optional parameters, for a complete list see the `documentation website 
-<http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`.
+<http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
 
 The Kernel Tuner does not introduce any new dependencies in your kernels. The 
 tuned kernels can afterwards be used independently of the programming environment, 
