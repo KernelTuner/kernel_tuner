@@ -65,8 +65,9 @@ convolution\_streams.py
 Reduction
 ---------
 [`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/reduction.py>`__] [`OpenCL <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/reduction.py>`__]
- -  use vector types and shuffle instructions (shuffle is only available in CUDA)
- -  tune the number of thread blocks the kernel is executed with
+ - use vector types and shuffle instructions (shuffle is only available in CUDA)
+ - tune the number of thread blocks the kernel is executed with
+ - tune pipeline that consists of two kernels
 
 Sparse Matrix Vector Multiplication
 -----------------------------------

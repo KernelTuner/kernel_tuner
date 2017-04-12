@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import numpy
 from kernel_tuner import tune_kernel
+from kernel_tuner.util import get_config_string
 from collections import OrderedDict
+import json
 
 def tune():
     with open('reduction.cu', 'r') as f:
@@ -23,9 +25,44 @@ def tune():
 
     args = [sum_x, x, n]
 
-    return tune_kernel("sum_floats", kernel_string, problem_size,
+    #tune the first kernel
+    first_kernel = tune_kernel("sum_floats", kernel_string, problem_size,
         args, tune_params, grid_div_x=[], verbose=True)
 
+    #tune the second kernel for different input sizes
+    #depending on the number of blocks used in the first kernel
+
+    #store the parameter list used in the first kernel
+    num_blocks = tune_params["num_blocks"]
+    #fix num_blocks parameter to only 1 for the second kernel
+    tune_params["num_blocks"] = [1]
+    second_kernel = dict()
+    for nblocks in num_blocks:
+        #change the input size to nblocks
+        args = [sum_x, x, numpy.int32(nblocks)]
+        #tune the second kernel with n=nblocks
+        result = tune_kernel("sum_floats", kernel_string, problem_size,
+        args, tune_params, grid_div_x=[], verbose=True)
+        with open("reduce-kernel2-" + str(nblocks) + ".json", 'w') as fp:
+            json.dump(result, fp)
+        #only keep the best performing config
+        second_kernel[nblocks] = min(result, key=lambda x:x['time'])
+
+    #combine the results from the first kernel with best
+    #second kernel that uses the same num_blocks
+    for i, instance in enumerate(first_kernel):
+        first_kernel[i]["total"] = instance["time"] + second_kernel[instance["num_blocks"]]["time"]
+
+    best_config = min(first_kernel, key=lambda x:x['total'])
+
+    print("Best performing config: \n" + get_config_string(best_config))
+    print("uses the following config for the secondary kernel:")
+    print(get_config_string(second_kernel[best_config["num_blocks"]]))
+
+    with open("reduce.json", 'w') as fp:
+        json.dump(first_kernel, fp)
+
+    return first_kernel, second_kernel
 
 if __name__ == "__main__":
     tune()
