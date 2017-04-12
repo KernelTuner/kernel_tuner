@@ -4,7 +4,7 @@ from __future__ import print_function
 import numpy
 from collections import OrderedDict
 
-from kernel_tuner.util import detect_language, get_instance_string
+from kernel_tuner.util import detect_language, get_instance_string, get_config_string
 from kernel_tuner.core import get_device_interface, compile_and_benchmark
 
 def run(kernel_name, original_kernel, problem_size, arguments,
@@ -97,7 +97,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
 
         #print and append to results
         params['time'] = time
-        print("".join([k + "=" + str(v) + ", " for k,v in params.items()]))
+        print(get_config_string(params))
         results.append(params)
 
     return results

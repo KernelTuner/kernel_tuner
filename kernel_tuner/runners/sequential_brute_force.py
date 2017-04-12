@@ -83,7 +83,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     #iterate over parameter space
     for element in parameter_space:
         params = OrderedDict(zip(tune_params.keys(), element))
-        instance_string = "_".join([str(i) for i in params.values()])
+        instance_string = get_instance_string(params)
 
         time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
                         problem_size, grid_div_z, grid_div_y, grid_div_x,
@@ -94,7 +94,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
 
         #print and append to results
         params['time'] = time
-        output_string = "".join([k + "=" + str(v) + ", " for k,v in params.items()])
+        output_string = get_config_string(params)
         logging.debug(output_string)
         print(output_string)
         results.append(params)
