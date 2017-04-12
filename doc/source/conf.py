@@ -126,6 +126,14 @@ html_theme = "sphinx_rtd_theme"
 #html_theme_path = []
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
+html_context = {
+    "display_github": True, # Integrate GitHub
+    "github_user": "benvanwerkhoven", # Username
+    "github_repo": "kernel_tuner", # Repo name
+    "github_version": "master", # Version
+    "conf_py_path": "/doc/source/", # Path in the checkout to the docs root
+}
+
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
 #html_title = u'kernel_tuner v0.0.1'
