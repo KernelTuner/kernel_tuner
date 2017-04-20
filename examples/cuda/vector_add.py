@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """This is the minimal example from the README"""
 
+import json
 import numpy
 from kernel_tuner import tune_kernel
 
@@ -27,7 +28,12 @@ def tune():
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    return tune_kernel("vector_add", kernel_string, size, args, tune_params)
+    result = tune_kernel("vector_add", kernel_string, size, args, tune_params)
+
+    with open("vector_add.json", 'w') as fp:
+        json.dump(result, fp)
+
+    return result
 
 
 if __name__ == "__main__":
