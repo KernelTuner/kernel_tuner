@@ -103,7 +103,9 @@ class CFunctions(object):
 
         filename = get_temp_filename()
         source_file = filename+".cc"
-        kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
+
+        if not "extern \"C\"" in kernel_string:
+            kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
 
         compiler_options = ["-fPIC"]
         if "#include <omp.h>" in kernel_string:
