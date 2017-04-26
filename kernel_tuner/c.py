@@ -40,7 +40,7 @@ class CFunctions(object):
         try:
             nvcc_version = str(subprocess.check_output(["nvcc", "--version"]))
             nvcc_version = nvcc_version.splitlines()[-1].split(" ")[-1]
-            nvcc_available = True
+            self.nvcc_available = True
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise e
@@ -48,7 +48,7 @@ class CFunctions(object):
         #environment info
         env = dict()
         env["GCC Version"] = gcc_version
-        if nvcc_available:
+        if self.nvcc_available:
             env["NVCC Version"] = nvcc_version
         env["iterations"] = self.ITERATIONS
         env["compiler_options"] = compiler_options
