@@ -200,9 +200,8 @@ that you are tuning for. Meaning that this does not necessarily needs to be time
 a different quality, as long as you can express that quality in a single floating-point value. When benchmarking an instance
 of the parameter space the returned floats will be averaged for the multiple runs in the same way as with direct CUDA or OpenCL kernel tuning.</p>
 <p>By itself the C language does not provide any very precise timing functions. If you are tuning the host code of a CUDA program you can use
-CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function. In the <code class="docutils literal"><span class="pre">examples/c</span></code>
-directory we have included a file <code class="docutils literal"><span class="pre">timer.h</span></code> that contains a very simple, but accurate timing function for Intel processors. To see how
-to use that you can look at the minimal C example in <code class="docutils literal"><span class="pre">examples/c/vector_add.py</span></code>.</p>
+CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function.
+In the <a href="#id1"><span class="problematic" id="id2">`C vector add example&lt;https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py&gt;`__</span></a> we are using the <code class="docutils literal"><span class="pre">omp_get_wtime()</span></code> function from OpenMP to measure time on the CPU.</p>
 <div class="section" id="tuning-the-number-of-streams">
 <h2>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Permalink to this headline">¶</a></h2>
 <p>The following describes the example in <code class="docutils literal"><span class="pre">examples/cuda/convolution_streams.py</span></code>.
