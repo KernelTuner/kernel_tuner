@@ -4,11 +4,12 @@ import numpy
 import ctypes as C
 import _ctypes
 import subprocess
+import platform
 import os
 import errno
 
 import numpy.ctypeslib
-from kernel_tuner.util import get_temp_filename, delete_temp_file
+from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file
 
 import logging
 
@@ -26,14 +27,37 @@ class CFunctions(object):
         self.compiler_options = compiler_options
         self.lib = None
 
-        #test if nvcc is available, otherwise use gcc
-        self.compiler = "nvcc"
+        #use gcc by default
+        self.compiler = "g++"
         try:
-            subprocess.check_call([self.compiler, "--version"], stdout=open(os.devnull, 'w'))
+            gcc_version = str(subprocess.check_output([self.compiler, "--version"]))
+            gcc_version = gcc_version.splitlines()[0].split(" ")[-1]
         except OSError as e:
-            self.compiler = "gcc"
+            raise e
+
+        #check if nvcc is available
+        self.nvcc_available = False
+        try:
+            nvcc_version = str(subprocess.check_output(["nvcc", "--version"]))
+            nvcc_version = nvcc_version.splitlines()[-1].split(" ")[-1]
+            nvcc_available = True
+        except OSError as e:
             if e.errno != errno.ENOENT:
                 raise e
+
+        #environment info
+        env = dict()
+        env["GCC Version"] = gcc_version
+        if nvcc_available:
+            env["NVCC Version"] = nvcc_version
+        env["iterations"] = self.ITERATIONS
+        env["compiler_options"] = compiler_options
+        self.env = env
+        self.name = platform.processor()
+
+    def get_environment(self):
+        return self.env
+
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the C function
@@ -109,7 +133,12 @@ class CFunctions(object):
 
         compiler_options = ["-fPIC"]
         if "#include <omp.h>" in kernel_string:
+            logging.debug('set using_openmp to true')
+            self.using_openmp = True
             compiler_options.append("-fopenmp")
+
+        if ("#include <cuda" in kernel_string) or ("__global__" in kernel_string) and self.nvcc_available:
+            self.compiler = "nvcc"
 
         if self.compiler == "nvcc":
             source_file = source_file[:-1] + "u"
@@ -122,9 +151,12 @@ class CFunctions(object):
         if "CL/cl.h" in kernel_string:
             lib_args = ["-lOpenCL"]
 
+        logging.debug('using compiler ' + self.compiler)
+        logging.debug('compiler_options ' + " ".join(compiler_options))
+        logging.debug('lib_args ' + " ".join(lib_args))
+
         try:
-            with open(source_file, 'w') as f:
-                f.write(kernel_string)
+            write_file(source_file, kernel_string)
 
             subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename+".o"])
             subprocess.check_call([self.compiler, filename+".o"] + compiler_options + [ "-shared", "-o", filename+".so"] + lib_args)
@@ -254,4 +286,8 @@ class CFunctions(object):
 
     def cleanup_lib(self):
         """ unload the previously loaded shared library """
-        _ctypes.dlclose(self.lib._handle)
+        if not hasattr(self, 'using_openmp'):
+            #this if statement is necessary because shared libraries that use
+            #OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
+            logging.debug('unloading shared library')
+            _ctypes.dlclose(self.lib._handle)

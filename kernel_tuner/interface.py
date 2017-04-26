@@ -185,8 +185,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :type compiler_options: list(string)
 
     :returns: A list of dictionaries of all executed kernel configurations and their
-        execution times.
-    :rtype: list(dict())
+        execution times. And a dictionary with information about the environment
+        in which the tuning took place. This records device name, properties,
+        version info, and so on.
+    :rtype: list(dict()), dict()
     """
 
     if log:
@@ -210,7 +212,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         raise NotImplementedError("parallel runners will be implemented soon")
 
-    results = runner.run(kernel_name, kernel_string, problem_size, arguments,
+    results, env = runner.run(kernel_name, kernel_string, problem_size, arguments,
         tune_params, parameter_space, grid_div_x, grid_div_y, grid_div_z,
         answer, atol, verbose,
         lang, device, platform, cmem_args, compiler_options)
@@ -222,7 +224,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         print("no results to report")
 
-    return results
+    return results, env
 
 
 

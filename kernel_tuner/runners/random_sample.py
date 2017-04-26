@@ -75,12 +75,14 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     #move data to the GPU
     gpu_args = dev.ready_argument_list(arguments)
 
+    print("Using: " + dev.name)
+    print(kernel_name)
+
     #reduce parameter space to a random sample of size 10%
     parameter_space = list(parameter_space)
     size = len(parameter_space)
 
     sample_indices = numpy.random.choice(range(size), size=int(numpy.ceil(size/float(10))), replace=False)
-    print(kernel_name)
 
     #iterate over parameter space
     for i in sample_indices:
@@ -100,7 +102,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         print(get_config_string(params))
         results.append(params)
 
-    return results
+    return results, dev.get_environment()
 
 
 

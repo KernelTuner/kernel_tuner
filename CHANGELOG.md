@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+- device and kernel name are printed by runner
+- tune_kernel also returns a dict with environment info
+- using different timer in C vector add example
+
 
 ## [0.1.3] - 2017-04-06
 ### Changed

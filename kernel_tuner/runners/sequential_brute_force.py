@@ -78,6 +78,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     #move data to the GPU
     gpu_args = dev.ready_argument_list(arguments)
 
+    print("Using: " + dev.name)
     print(kernel_name)
 
     #iterate over parameter space
@@ -99,5 +100,5 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         print(output_string)
         results.append(params)
 
-    return results
+    return results, dev.get_environment()
 

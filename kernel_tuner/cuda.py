@@ -43,12 +43,24 @@ class CudaFunctions(object):
         self.ITERATIONS = iterations
         self.current_module = None
         self.compiler_options = compiler_options or []
-        print("Using: " + str(self.context.get_device().name()))
+
+        #collect environment information
+        env = dict()
+        env["device_name"] = self.context.get_device().name()
+        env["cuda_version"] = ".".join([str(i) for i in drv.get_version()])
+        env["compute_capability"] = self.cc
+        env["iterations"] = self.ITERATIONS
+        env["compiler_options"] = compiler_options
+        env["device_properties"] = devprops
+        self.env = env
+        self.name = env["device_name"]
 
     def __del__(self):
         if hasattr(self, 'context'):
             self.context.pop()
 
+    def get_environment(self):
+        return self.env
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem

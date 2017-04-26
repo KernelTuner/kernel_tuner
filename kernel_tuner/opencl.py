@@ -28,13 +28,29 @@ class OpenCLFunctions(object):
         #setup context and queue
         platforms = cl.get_platforms()
         self.ctx = cl.Context(devices=[platforms[platform].get_devices()[device]])
-        print("Using: " + self.ctx.get_info(cl.context_info.DEVICES)[0].get_info(cl.device_info.NAME))
 
         self.queue = cl.CommandQueue(self.ctx, properties=cl.command_queue_properties.PROFILING_ENABLE)
         self.mf = cl.mem_flags
         #inspect device properties
         self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE)
         self.compiler_options = compiler_options or []
+
+        #collect environment information
+        dev = self.ctx.devices[0]
+        env = dict()
+        env["platform_name"] = dev.platform.name
+        env["platform_version"] = dev.platform.version
+        env["device_name"] = dev.name
+        env["device_version"] = dev.version
+        env["opencl_c_version"] = dev.opencl_c_version
+        env["driver_version"] = dev.driver_version
+        env["iterations"] = self.ITERATIONS
+        env["compiler_options"] = compiler_options
+        self.env = env
+        self.name = dev.name
+
+    def get_environment(self):
+        return self.env
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem

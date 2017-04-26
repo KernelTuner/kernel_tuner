@@ -78,7 +78,7 @@ def test_interface_handles_runtime_error(dev_interface):
     tune_params = { "block_size_x": [256] }
     dev.benchmark.side_effect = Exception("too many resources requested for launch")
 
-    results = tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
+    results, _ = tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
     assert dev.compile.call_count == 1
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1))
