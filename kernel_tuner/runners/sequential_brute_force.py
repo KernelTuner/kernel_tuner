@@ -7,7 +7,7 @@ from kernel_tuner.util import *
 from kernel_tuner.core import *
 
 def run(kernel_name, original_kernel, problem_size, arguments,
-        tune_params, parameter_space, grid_div_x, grid_div_y, grid_div_z,
+        tune_params, parameter_space, grid_div,
         answer, atol, verbose,
         lang, device, platform, cmem_args, compiler_options=None):
     """ Iterate through the entire parameter space using a single Python process
@@ -33,14 +33,8 @@ def run(kernel_name, original_kernel, problem_size, arguments,
             of parameters, order is imported and it determined by the order in tune_params.
     :type parameter_space: list( list() )
 
-    :param grid_div_x: See kernel_tuner.tune_kernel
-    :type grid_div_x: list
-
-    :param grid_div_y: See kernel_tuner.tune_kernel
-    :type grid_div_y: list
-
-    :param grid_div_z: See kernel_tuner.tune_kernel
-    :type grid_div_z: list
+    :param grid_div: See kernel_tuner.tune_kernel
+    :type grid_div: tuple(list)
 
     :param answer: See kernel_tuner.tune_kernel
     :type answer: list
@@ -87,7 +81,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         instance_string = get_instance_string(params)
 
         time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
-                        problem_size, grid_div_z, grid_div_y, grid_div_x,
+                        problem_size, grid_div,
                         cmem_args, answer, atol, instance_string, verbose)
         if time is None:
             logging.debug('received time is None, kernel configuration was skipped silently due to compile or runtime failure')

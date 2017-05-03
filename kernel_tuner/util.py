@@ -104,7 +104,7 @@ def get_problem_size(problem_size, params):
     return current_problem_size
 
 
-def get_grid_dimensions(current_problem_size, params, grid_div_z, grid_div_y, grid_div_x):
+def get_grid_dimensions(current_problem_size, params, grid_div):
     """compute grid dims based on problem sizes and listed grid divisors"""
     def get_dimension_divisor(divisor_list, default, params):
         if divisor_list is None:
@@ -113,14 +113,9 @@ def get_grid_dimensions(current_problem_size, params, grid_div_z, grid_div_y, gr
             else:
                 return 1
         return numpy.prod([int(eval(replace_param_occurrences(s,params))) for s in divisor_list])
-    div_x = get_dimension_divisor(grid_div_x, "block_size_x", params)
-    div_y = get_dimension_divisor(grid_div_y, "block_size_y", params)
-    div_z = get_dimension_divisor(grid_div_z, "block_size_z", params)
-
-    grid = (int(numpy.ceil(float(current_problem_size[0]) / float(div_x))),
-            int(numpy.ceil(float(current_problem_size[1]) / float(div_y))),
-            int(numpy.ceil(float(current_problem_size[2]) / float(div_z))) )
-    return grid
+    block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i,d in enumerate(grid_div)]
+    return tuple(int(numpy.ceil(float(current_problem_size[i]) / float(d))) for i,d in enumerate(divisors))
 
 def get_thread_block_dimensions(params):
     """thread block size from tuning params, currently using convention"""
@@ -172,11 +167,12 @@ def prepare_list_of_files(kernel_file_list, params, grid):
     return kernel_string, temp_files
 
 
-def prepare_kernel_string(original_kernel, params, grid=(1,1)):
+def prepare_kernel_string(original_kernel, params, grid=(1,1,1)):
     """prepend the kernel with a series of C preprocessor defines"""
     kernel_string = original_kernel
-    kernel_string = "#define grid_size_x " + str(grid[0]) + "\n" + kernel_string
-    kernel_string = "#define grid_size_y " + str(grid[1]) + "\n" + kernel_string
+    grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
+    for i,g in enumerate(grid):
+        kernel_string = "#define " + grid_dim_names[i] + " " + str(g) + "\n" + kernel_string
     for k, v in params.items():
         kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
     return kernel_string
@@ -204,7 +200,7 @@ def check_argument_list(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
-def setup_block_and_grid(dev, problem_size, grid_div_z, grid_div_y, grid_div_x, params, instance_string, verbose):
+def setup_block_and_grid(dev, problem_size, grid_div, params, instance_string, verbose):
     """compute problem size, thread block and grid dimensions for this kernel"""
     threads = get_thread_block_dimensions(params)
     if numpy.prod(threads) > dev.max_threads:
@@ -212,7 +208,7 @@ def setup_block_and_grid(dev, problem_size, grid_div_z, grid_div_y, grid_div_x, 
             print("skipping config", instance_string, "reason: too many threads per block")
         return None, None
     current_problem_size = get_problem_size(problem_size, params)
-    grid = get_grid_dimensions(current_problem_size, params, grid_div_z, grid_div_y, grid_div_x)
+    grid = get_grid_dimensions(current_problem_size, params, grid_div)
     return threads, grid
 
 def setup_kernel_strings(kernel_name, original_kernel, params, grid, instance_string):

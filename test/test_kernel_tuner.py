@@ -15,33 +15,32 @@ def test_get_grid_dimensions1():
     problem_size = (1024, 1024, 1)
     params = {"block_x": 41, "block_y": 37}
 
-    grid_div_x = ["block_x"]
-    grid_div_y = ["block_y"]
+    grid_div = ( ["block_x"], ["block_y"], None )
 
     grid = get_grid_dimensions(problem_size, params,
-                    None, grid_div_y, grid_div_x)
+                    grid_div)
 
     assert len(grid) == 3
     assert isinstance(grid[0], int)
     assert isinstance(grid[1], int)
 
-    print(grid)
     assert grid[0] == 25
     assert grid[1] == 28
+    assert grid[2] == 1
 
     grid = get_grid_dimensions(problem_size, params,
-                    None, None, grid_div_x)
+                    (grid_div[0], None, None))
 
-    print(grid)
     assert grid[0] == 25
     assert grid[1] == 1024
+    assert grid[2] == 1
 
     grid = get_grid_dimensions(problem_size, params,
-                    None, grid_div_y, None)
+                    (None, grid_div[1], None))
 
-    print(grid)
     assert grid[0] == 1024
     assert grid[1] == 28
+    assert grid[2] == 1
 
 def test_get_grid_dimensions2():
     problem_size = (1024, 1024, 1)
@@ -51,7 +50,7 @@ def test_get_grid_dimensions2():
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    None, grid_div_y, grid_div_x)
+                    (grid_div_x, grid_div_y, None))
 
     assert grid[0] == 4
     assert grid[1] == 256
@@ -88,12 +87,11 @@ def test_get_grid_dimensions5():
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    None, grid_div_y, grid_div_x)
-
-    print(grid)
+                    (grid_div_x, grid_div_y, None))
 
     assert grid[0] == 1
     assert grid[1] == 256
+    assert grid[2] == 1
 
 
 def test_get_grid_dimensions6():
@@ -105,12 +103,11 @@ def test_get_grid_dimensions6():
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    None, grid_div_y, grid_div_x)
-
-    print(grid)
+                    (grid_div_x, grid_div_y, None))
 
     assert grid[0] == 1
     assert grid[1] == 256
+    assert grid[2] == 1
 
 
 
@@ -135,7 +132,6 @@ def test_prepare_kernel_string():
 
     output = prepare_kernel_string(kernel, params, (3,7))
     expected = "#define is 8\n#define grid_size_y 7\n#define grid_size_x 3\nthis is a weird kernel"
-    print(output)
     assert output == expected
 
 def test_replace_param_occurrences():
