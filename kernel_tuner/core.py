@@ -114,8 +114,10 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
     logging.debug('Memory usage         : %2.2f MB', round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0,1) )
 
     #setup thread block and grid dimensions
-    threads, grid = setup_block_and_grid(dev, problem_size, grid_div, params, instance_string, verbose)
-    if threads is None:
+    threads, grid = setup_block_and_grid(problem_size, grid_div, params, instance_string, verbose)
+    if numpy.prod(threads) > dev.max_threads:
+        if verbose:
+            print("skipping config", instance_string, "reason: too many threads per block")
         return None
 
     temp_files = dict()
@@ -144,14 +146,15 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
         time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)
 
     except Exception as e:
-        _, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid, instance_string)
-        print("Error while compiling or benchmarking the following code:\n" + kernel_string + "\n")
+        #dump kernel_string to temp file
+        temp_filename = get_temp_filename() + ".c"
+        write_file(temp_filename, kernel_string)
+        print("Error while compiling or benchmarking, see source files: " + temp_filename + " ".join(temp_files.values()))
         raise e
 
-    #clean up any temporary files
-    finally:
-        for v in temp_files.values():
-            delete_temp_file(v)
+    #clean up any temporary files, if no error occured
+    for v in temp_files.values():
+        delete_temp_file(v)
 
     return time
 

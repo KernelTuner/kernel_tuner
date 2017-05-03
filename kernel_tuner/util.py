@@ -200,13 +200,9 @@ def check_argument_list(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
-def setup_block_and_grid(dev, problem_size, grid_div, params, instance_string, verbose):
+def setup_block_and_grid(problem_size, grid_div, params, instance_string, verbose):
     """compute problem size, thread block and grid dimensions for this kernel"""
     threads = get_thread_block_dimensions(params)
-    if numpy.prod(threads) > dev.max_threads:
-        if verbose:
-            print("skipping config", instance_string, "reason: too many threads per block")
-        return None, None
     current_problem_size = get_problem_size(problem_size, params)
     grid = get_grid_dimensions(current_problem_size, params, grid_div)
     return threads, grid

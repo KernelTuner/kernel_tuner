@@ -315,7 +315,7 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     gpu_args = dev.ready_argument_list(arguments)
 
     #retrieve the run configuration, compile, and run the kernel
-    threads, grid = setup_block_and_grid(dev, problem_size, (grid_div_x, grid_div_y, grid_div_z), params, get_instance_string(params), False)
+    threads, grid = setup_block_and_grid(problem_size, (grid_div_x, grid_div_y, grid_div_z), params, get_instance_string(params), False)
 
     temp_files = dict()
     try:
