@@ -37,8 +37,6 @@ def run_kernel(dev, func, gpu_args, instance):
 def check_kernel_correctness(dev, func, gpu_args, instance, answer, verbose, atol=1e-6):
     """runs the kernel once and checks the result against answer"""
     logging.debug('check_kernel_correctness')
-    threads = instance["threads"]
-    grid = instance["grid"]
     params = instance["params"]
 
     #zero GPU memory for output arguments
@@ -99,7 +97,6 @@ def benchmark(dev, func, gpu_args, instance, verbose):
     logging.debug('benchmark ' + instance["name"])
     threads = instance["threads"]
     grid = instance["grid"]
-    params = instance["params"]
     logging.debug('thread block dimensions x,y,z=%d,%d,%d', *threads)
     logging.debug('grid dimensions x,y,z=%d,%d,%d', *grid)
 

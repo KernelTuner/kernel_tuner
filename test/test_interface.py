@@ -1,9 +1,9 @@
 from __future__ import print_function
 
 try:
-    from mock import patch, Mock
+    from mock import patch
 except ImportError:
-    from unittest.mock import patch, Mock
+    from unittest.mock import patch
 
 import numpy
 
