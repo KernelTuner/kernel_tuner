@@ -166,7 +166,6 @@ def prepare_list_of_files(kernel_file_list, params, grid):
 
     return kernel_string, temp_files
 
-
 def prepare_kernel_string(original_kernel, params, grid=(1,1,1)):
     """prepend the kernel with a series of C preprocessor defines"""
     kernel_string = original_kernel
@@ -199,7 +198,7 @@ def check_argument_list(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
-def setup_block_and_grid(problem_size, grid_div, params, verbose):
+def setup_block_and_grid(problem_size, grid_div, params):
     """compute problem size, thread block and grid dimensions for this kernel"""
     threads = get_thread_block_dimensions(params)
     current_problem_size = get_problem_size(problem_size, params)

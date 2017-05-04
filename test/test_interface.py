@@ -1,9 +1,9 @@
 from __future__ import print_function
 
 try:
-    from mock import patch
+    from mock import patch, Mock
 except ImportError:
-    from unittest.mock import patch
+    from unittest.mock import patch, Mock
 
 import numpy
 
@@ -110,7 +110,8 @@ def test_check_kernel_correctness(dev_interface):
     answer = [numpy.zeros(4).astype(numpy.float32)]
     wrong = [numpy.array([1,2,3,4]).astype(numpy.float32)]
 
-    test = core.check_kernel_correctness(dev, 'func', answer, 'threads', 'grid', answer, 'params', True)
+    instance = {'threads': 'threads', 'grid': 'grid', 'params': {}}
+    test = core.check_kernel_correctness(dev, 'func', answer, instance, answer, True)
 
     dev.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
     dev.run_kernel.assert_called_once_with('func', answer, 'threads', 'grid')

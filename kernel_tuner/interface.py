@@ -30,8 +30,9 @@ import itertools
 from datetime import datetime
 import logging
 
-from kernel_tuner.util import *
-from kernel_tuner.core import get_device_interface
+from kernel_tuner.util import check_argument_list, check_restrictions, get_config_string, detect_language
+
+import kernel_tuner.core as core
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
@@ -308,34 +309,40 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     :rtype: list
     """
 
-    #move data to the GPU and compile the kernel
+    #detect language and create the right device function interface
     lang = detect_language(lang, original_kernel)
-    dev = get_device_interface(lang, device, platform, compiler_options)
+    dev = core.get_device_interface(lang, device, platform, compiler_options)
+
+    #move data to the GPU
     check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
-    #retrieve the run configuration, compile, and run the kernel
-    threads, grid = setup_block_and_grid(problem_size, (grid_div_x, grid_div_y, grid_div_z), params, False)
+    grid_div = (grid_div_x, grid_div_y, grid_div_z)
 
-    temp_files = dict()
+    instance = None
     try:
-        #obtain the kernel_string and prepare additional files, if any
-        if isinstance(original_kernel, list):
-            kernel_string, temp_files = prepare_list_of_files(original_kernel, params, grid)
-        else:
-            kernel_string = get_kernel_string(original_kernel)
+        #create kernel instance
+        instance = core.create_kernel_instance(dev, kernel_name, original_kernel, problem_size, grid_div, params, False)
+        if instance is None:
+            raise Exception("cannot create kernel instance, too many threads per block")
 
-        name, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid)
-        func = dev.compile(name, kernel_string)
+        #compile the kernel
+        func = core.compile_kernel(dev, instance, False)
+        if func is None:
+            raise Exception("cannot compile kernel, too much shared memory used")
+
+        #add constant memory arguments to compiled module
+        if cmem_args is not None:
+            dev.copy_constant_memory_args(cmem_args)
     finally:
-        for v in temp_files.values():
-            delete_temp_file(v)
+        #delete temp files
+        if instance is not None:
+            for v in instance["temp_files"].values():
+                delete_temp_file(v)
 
-    #add constant memory arguments to compiled module
-    if cmem_args is not None:
-        dev.copy_constant_memory_args(cmem_args)
-
-    dev.run_kernel(func, gpu_args, threads, grid)
+    #run the kernel
+    if not core.run_kernel(dev, func, gpu_args, instance):
+        raise Exception("runtime error occured, too many resources requested")
 
     #copy data in GPU memory back to the host
     results = []
