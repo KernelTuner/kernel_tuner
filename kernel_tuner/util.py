@@ -189,8 +189,7 @@ def check_restrictions(restrictions, element, keys, verbose):
     for restrict in restrictions:
         if not eval(replace_param_occurrences(restrict, params)):
             if verbose:
-                instance_string = "_".join([str(i) for i in element])
-                print("skipping config", instance_string, "reason: config fails restriction")
+                print("skipping config", get_instance_string(params), "reason: config fails restriction")
             return False
     return True
 
@@ -200,17 +199,17 @@ def check_argument_list(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
-def setup_block_and_grid(problem_size, grid_div, params, instance_string, verbose):
+def setup_block_and_grid(problem_size, grid_div, params, verbose):
     """compute problem size, thread block and grid dimensions for this kernel"""
     threads = get_thread_block_dimensions(params)
     current_problem_size = get_problem_size(problem_size, params)
     grid = get_grid_dimensions(current_problem_size, params, grid_div)
     return threads, grid
 
-def setup_kernel_strings(kernel_name, original_kernel, params, grid, instance_string):
+def setup_kernel_strings(kernel_name, original_kernel, params, grid):
     """create configuration specific kernel string"""
     kernel_string = prepare_kernel_string(original_kernel, params, grid)
-    name = kernel_name + "_" + instance_string
+    name = kernel_name + "_" + get_instance_string(params)
     kernel_string = kernel_string.replace(kernel_name, name)
     return name, kernel_string
 

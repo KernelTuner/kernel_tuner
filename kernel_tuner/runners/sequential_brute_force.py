@@ -2,9 +2,10 @@
 from __future__ import print_function
 
 from collections import OrderedDict
+import logging
 
-from kernel_tuner.util import *
-from kernel_tuner.core import *
+from kernel_tuner.util import detect_language, get_config_string
+from kernel_tuner.core import compile_and_benchmark, get_device_interface
 
 def run(kernel_name, original_kernel, problem_size, arguments,
         tune_params, parameter_space, grid_div,
@@ -78,11 +79,10 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     #iterate over parameter space
     for element in parameter_space:
         params = OrderedDict(zip(tune_params.keys(), element))
-        instance_string = get_instance_string(params)
 
         time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
                         problem_size, grid_div,
-                        cmem_args, answer, atol, instance_string, verbose)
+                        cmem_args, answer, atol, verbose)
         if time is None:
             logging.debug('received time is None, kernel configuration was skipped silently due to compile or runtime failure')
             continue

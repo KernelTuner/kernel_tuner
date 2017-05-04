@@ -4,7 +4,7 @@ from __future__ import print_function
 import numpy
 from collections import OrderedDict
 
-from kernel_tuner.util import detect_language, get_instance_string, get_config_string
+from kernel_tuner.util import detect_language, get_config_string
 from kernel_tuner.core import get_device_interface, compile_and_benchmark
 
 def run(kernel_name, original_kernel, problem_size, arguments,
@@ -86,11 +86,10 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         element = parameter_space[i]
 
         params = OrderedDict(zip(tune_params.keys(), element))
-        instance_string = get_instance_string(params)
 
         time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
                         problem_size, grid_div,
-                        cmem_args, answer, atol, instance_string, verbose)
+                        cmem_args, answer, atol, verbose)
         if time is None:
             continue
 

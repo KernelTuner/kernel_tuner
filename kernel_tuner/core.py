@@ -58,12 +58,13 @@ def check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params,
         raise Exception("Error: " + get_config_string(params) + " failed correctness check")
     return correct
 
-def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_string, verbose):
+def compile_kernel(dev, kernel_name, kernel_string, params, grid, verbose):
     """compile the kernel for this specific instance"""
+    instance_string = get_instance_string(params)
     logging.debug('compile_kernel ' + instance_string)
 
     #prepare kernel_string for compilation
-    name, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid, instance_string)
+    name, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid)
 
     #compile kernel_string into device func
     func = None
@@ -83,8 +84,9 @@ def compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_strin
             raise e
     return func
 
-def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
+def benchmark(dev, func, gpu_args, threads, grid, params, verbose):
     """benchmark the kernel instance"""
+    instance_string = get_instance_string(params)
     logging.debug('benchmark ' + instance_string)
     logging.debug('thread block dimensions x,y,z=%d,%d,%d', *threads)
     logging.debug('grid dimensions x,y,z=%d,%d,%d', *grid)
@@ -108,13 +110,14 @@ def benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose):
     return time
 
 def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
-        problem_size, grid_div, cmem_args, answer, atol, instance_string, verbose):
+        problem_size, grid_div, cmem_args, answer, atol, verbose):
+    instance_string = get_instance_string(params)
 
     logging.debug('compile_and_benchmark ' + instance_string)
     logging.debug('Memory usage         : %2.2f MB', round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0,1) )
 
     #setup thread block and grid dimensions
-    threads, grid = setup_block_and_grid(problem_size, grid_div, params, instance_string, verbose)
+    threads, grid = setup_block_and_grid(problem_size, grid_div, params, verbose)
     if numpy.prod(threads) > dev.max_threads:
         if verbose:
             print("skipping config", instance_string, "reason: too many threads per block")
@@ -130,7 +133,7 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
             kernel_string = get_kernel_string(original_kernel)
 
         #compile the kernel
-        func = compile_kernel(dev, kernel_name, kernel_string, params, grid, instance_string, verbose)
+        func = compile_kernel(dev, kernel_name, kernel_string, params, grid, verbose)
         if func is None:
             return None
 
@@ -143,7 +146,7 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
             check_kernel_correctness(dev, func, gpu_args, threads, grid, answer, params, verbose, atol)
 
         #benchmark
-        time = benchmark(dev, func, gpu_args, threads, grid, instance_string, verbose)
+        time = benchmark(dev, func, gpu_args, threads, grid, params, verbose)
 
     except Exception as e:
         #dump kernel_string to temp file
