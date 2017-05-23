@@ -1,7 +1,8 @@
 """This module contains all CUDA specific kernel_tuner functions"""
 from __future__ import print_function
-import numpy
+
 import logging
+import numpy
 
 #embedded in try block to be able to generate documentation
 #and run tests without pycuda installed
@@ -37,10 +38,10 @@ class CudaFunctions(object):
         self.context = drv.Device(device).make_context()
 
         #inspect device properties
-        devprops = { str(k): v for (k, v) in self.context.get_device().get_attributes().items() }
+        devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
         self.cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
-        self.ITERATIONS = iterations
+        self.iterations = iterations
         self.current_module = None
         self.compiler_options = compiler_options or []
 
@@ -49,7 +50,7 @@ class CudaFunctions(object):
         env["device_name"] = self.context.get_device().name()
         env["cuda_version"] = ".".join([str(i) for i in drv.get_version()])
         env["compute_capability"] = self.cc
-        env["iterations"] = self.ITERATIONS
+        env["iterations"] = self.iterations
         env["compiler_options"] = compiler_options
         env["device_properties"] = devprops
         self.env = env
@@ -60,6 +61,7 @@ class CudaFunctions(object):
             self.context.pop()
 
     def get_environment(self):
+        """Return dictionary with information about the environment"""
         return self.env
 
     def ready_argument_list(self, arguments):
@@ -105,8 +107,8 @@ class CudaFunctions(object):
                 compiler_options += self.compiler_options
 
             self.current_module = SourceModule(kernel_string, options=self.compiler_options + ["-e", kernel_name],
-                    arch='compute_' + self.cc, code='sm_' + self.cc,
-                    cache_dir=False, no_extern_c=no_extern_c)
+                                               arch='compute_' + self.cc, code='sm_' + self.cc,
+                                               cache_dir=False, no_extern_c=no_extern_c)
             func = self.current_module.get_function(kernel_name)
             return func
         except drv.CompileError as e:
@@ -148,7 +150,7 @@ class CudaFunctions(object):
         start = drv.Event()
         end = drv.Event()
         times = []
-        for _ in range(self.ITERATIONS):
+        for _ in range(self.iterations):
             self.context.synchronize()
             start.record()
             self.run_kernel(func, gpu_args, threads, grid)
@@ -170,7 +172,7 @@ class CudaFunctions(object):
         """
         logging.debug('copy_constant_memory_args called')
         logging.debug('current module: ' + str(self.current_module))
-        for k,v in cmem_args.items():
+        for k, v in cmem_args.items():
             symbol = self.current_module.get_global(k)[0]
             logging.debug('copying to symbol: ' + str(symbol))
             logging.debug('array to be copied: ')
@@ -228,4 +230,3 @@ class CudaFunctions(object):
             drv.memcpy_dtoh(dest, src)
         else:
             dest = src
-

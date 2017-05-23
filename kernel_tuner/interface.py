@@ -25,20 +25,19 @@ limitations under the License.
 """
 from __future__ import print_function
 
-import numpy
 import itertools
 from datetime import datetime
 import logging
+import numpy
 
-from kernel_tuner.util import check_argument_list, check_restrictions, get_config_string, detect_language
-
+import kernel_tuner.util as util
 import kernel_tuner.core as core
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
-        tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-        restrictions=None, answer=None, atol=1e-6, verbose=False,
-        lang=None, device=0, platform=0, cmem_args=None,
-        num_threads=1, use_noodles=False, sample=False, compiler_options=None, log=None):
+                tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
+                restrictions=None, answer=None, atol=1e-6, verbose=False,
+                lang=None, device=0, platform=0, cmem_args=None,
+                num_threads=1, use_noodles=False, sample=False, compiler_options=None, log=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code.
@@ -196,32 +195,32 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
     #see if the kernel arguments have correct type
-    check_argument_list(arguments)
+    util.check_argument_list(arguments)
 
     #compute cartesian product of all tunable parameters
     parameter_space = itertools.product(*tune_params.values())
 
     #check for search space restrictions
     if restrictions is not None:
-        parameter_space = filter(lambda p: check_restrictions(restrictions, p, tune_params.keys(), verbose), parameter_space)
+        parameter_space = filter(lambda p: util.check_restrictions(restrictions, p, tune_params.keys(), verbose), parameter_space)
 
     #if running sequential
-    if sample == True:
+    if sample:
         import kernel_tuner.runners.random_sample as runner
-    elif num_threads == 1 and use_noodles == False:
+    elif num_threads == 1 and not use_noodles:
         import kernel_tuner.runners.sequential_brute_force as runner
     else:
         raise NotImplementedError("parallel runners will be implemented soon")
 
     results, env = runner.run(kernel_name, kernel_string, problem_size, arguments,
-        tune_params, parameter_space, (grid_div_x, grid_div_y, grid_div_z),
-        answer, atol, verbose,
-        lang, device, platform, cmem_args, compiler_options)
+                              tune_params, parameter_space, (grid_div_x, grid_div_y, grid_div_z),
+                              answer, atol, verbose,
+                              lang, device, platform, cmem_args, compiler_options)
 
     #finished iterating over search space
-    if len(results) > 0:
-        best_config = min(results, key=lambda x:x['time'])
-        print("best performing configuration:", get_config_string(best_config))
+    if results:     #checks if results is not empty
+        best_config = min(results, key=lambda x: x['time'])
+        print("best performing configuration:", util.get_config_string(best_config))
     else:
         print("no results to report")
 
@@ -230,8 +229,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 
 def run_kernel(kernel_name, original_kernel, problem_size, arguments,
-        params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-        lang=None, device=0, platform=0, cmem_args=None, compiler_options=None):
+               params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
+               lang=None, device=0, platform=0, cmem_args=None, compiler_options=None):
     """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
@@ -310,11 +309,11 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     """
 
     #detect language and create the right device function interface
-    lang = detect_language(lang, original_kernel)
+    lang = util.detect_language(lang, original_kernel)
     dev = core.get_device_interface(lang, device, platform, compiler_options)
 
     #move data to the GPU
-    check_argument_list(arguments)
+    util.check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
     grid_div = (grid_div_x, grid_div_y, grid_div_z)
@@ -338,7 +337,7 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
         #delete temp files
         if instance is not None:
             for v in instance["temp_files"].values():
-                delete_temp_file(v)
+                util.delete_temp_file(v)
 
     #run the kernel
     if not core.run_kernel(dev, func, gpu_args, instance):
@@ -352,6 +351,5 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
         else:
             results.append(numpy.zeros_like(arg))
             dev.memcpy_dtoh(results[-1], gpu_args[i])
+
     return results
-
-

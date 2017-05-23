@@ -1,16 +1,17 @@
 """ This module contains the functionality for running and compiling C functions """
 
-import numpy
-import ctypes as C
-import _ctypes
 import subprocess
 import platform
 import errno
+import logging
+import ctypes as C
+import _ctypes
 
+import numpy
 import numpy.ctypeslib
+
 from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file
 
-import logging
 
 class CFunctions(object):
     """Class that groups the code for running and compiling C functions"""
@@ -21,10 +22,12 @@ class CFunctions(object):
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
-        self.ITERATIONS = iterations
+        self.iterations = iterations
         self.max_threads = 1024
         self.compiler_options = compiler_options
         self.lib = None
+        self.using_openmp = False
+        self.arg_mapping = dict()
 
         #use gcc by default
         self.compiler = "g++"
@@ -49,12 +52,13 @@ class CFunctions(object):
         env["GCC Version"] = gcc_version
         if self.nvcc_available:
             env["NVCC Version"] = nvcc_version
-        env["iterations"] = self.ITERATIONS
+        env["iterations"] = self.iterations
         env["compiler_options"] = compiler_options
         self.env = env
         self.name = platform.processor()
 
     def get_environment(self):
+        """Return dictionary with information about the environment"""
         return self.env
 
 
@@ -69,39 +73,30 @@ class CFunctions(object):
         :returns: A list of arguments that can be passed to the C function.
         :rtype: list()
         """
-        self.arg_mapping = dict()
         ctype_args = []
+
+        dtype_map = {"int32": C.c_int32,
+                     "int64": C.c_int64,
+                     "float32": C.c_float,
+                     "float64": C.c_double}
+        np_to_c_type_map = {numpy.int32: C.c_int32,
+                            numpy.int64: C.c_int64,
+                            numpy.float32: C.c_float,
+                            numpy.float64: C.c_double}
+
         for arg in arguments:
             if isinstance(arg, numpy.ndarray):
-                if arg.dtype == 'float32':
-                    ctype_args.append(arg.ctypes.data_as(C.POINTER(C.c_float)))
-                elif arg.dtype == 'float64':
-                    ctype_args.append(arg.ctypes.data_as(C.POINTER(C.c_double)))
-                elif arg.dtype == 'int32':
-                    ctype_args.append(arg.ctypes.data_as(C.POINTER(C.c_int)))
+                dtype_str = str(arg.dtype)
+                if dtype_str in dtype_map.keys():
+                    ctype_args.append(arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str])))
                 else:
                     raise TypeError("unknown dtype for ndarray")
                 self.arg_mapping[str(ctype_args[-1])] = arg.shape
-            elif numpy.isscalar(arg):
-                if hasattr(arg, 'dtype'):
-                    np_to_c_type_map = { numpy.int32: C.c_int32,
-                            numpy.int64: C.c_int64,
-                            numpy.float32: C.c_float,
-                            numpy.float64: C.c_double }
-                    if type(arg) in np_to_c_type_map:
-                        ctype_args.append(np_to_c_type_map[type(arg)](arg))
-                    else:
-                        raise TypeError("Argument is scalar with a dtype, but does not start with int or float")
-                else:
-                    if isinstance(arg, int):
-                        ctype_args.append(C.c_int(arg))
-                    elif isinstance(arg, float):
-                        ctype_args.append(C.c_float(arg))
-                    else:
-                        raise TypeError("Argument is scalar without dtype, and is not instance of int or float")
+            elif isinstance(arg, tuple(np_to_c_type_map.keys())):
+                ctype_args.append(np_to_c_type_map[type(arg)](arg))
                 self.arg_mapping[str(ctype_args[-1])] = ()
             else:
-                raise TypeError("Argument is not a numpy.ndarray and is not a scalar %s" % type(arg))
+                raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
 
         return ctype_args
 
@@ -136,8 +131,9 @@ class CFunctions(object):
             self.using_openmp = True
             compiler_options.append("-fopenmp")
 
-        if ("#include <cuda" in kernel_string) or ("__global__" in kernel_string) and self.nvcc_available:
-            self.compiler = "nvcc"
+        if ("#include <cuda" in kernel_string) or ("__global__" in kernel_string):
+            if self.nvcc_available:
+                self.compiler = "nvcc"
 
         if self.compiler == "nvcc":
             source_file = source_file[:-1] + "u"
@@ -158,7 +154,7 @@ class CFunctions(object):
             write_file(source_file, kernel_string)
 
             subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename+".o"])
-            subprocess.check_call([self.compiler, filename+".o"] + compiler_options + [ "-shared", "-o", filename+".so"] + lib_args)
+            subprocess.check_call([self.compiler, filename+".o"] + compiler_options + ["-shared", "-o", filename+".so"] + lib_args)
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
 
@@ -208,7 +204,7 @@ class CFunctions(object):
         :rtype: float
         """
         results = []
-        for _ in range(self.ITERATIONS):
+        for _ in range(self.iterations):
             value = self.run_kernel(func, c_args, threads, grid)
 
             #I would like to replace the following with actually capturing
@@ -285,7 +281,7 @@ class CFunctions(object):
 
     def cleanup_lib(self):
         """ unload the previously loaded shared library """
-        if not hasattr(self, 'using_openmp'):
+        if not self.using_openmp:
             #this if statement is necessary because shared libraries that use
             #OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
             logging.debug('unloading shared library')

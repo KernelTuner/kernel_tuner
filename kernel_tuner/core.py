@@ -3,13 +3,15 @@ from __future__ import print_function
 
 import resource
 import logging
+import numpy
 
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
-from kernel_tuner.util import *
+import kernel_tuner.util as util
 
 def get_device_interface(lang, device, platform, compiler_options=None):
+    """ Instantiate the device functions interface, based on language """
     if lang == "CUDA":
         dev = CudaFunctions(device, compiler_options=compiler_options)
     elif lang == "OpenCL":
@@ -17,10 +19,11 @@ def get_device_interface(lang, device, platform, compiler_options=None):
     elif lang == "C":
         dev = CFunctions(compiler_options=compiler_options)
     else:
-        raise UnImplementedException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+        raise Exception("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
     return dev
 
 def run_kernel(dev, func, gpu_args, instance):
+    """ Run a compiled kernel instance on a device """
     threads = instance["threads"]
     grid = instance["grid"]
     try:
@@ -50,13 +53,13 @@ def check_kernel_correctness(dev, func, gpu_args, instance, answer, verbose, ato
 
     #check correctness of each output argument
     correct = True
-    for result,expected in zip(gpu_args,answer):
+    for result, expected in zip(gpu_args, answer):
         if expected is not None:
             result_host = numpy.zeros_like(expected)
             dev.memcpy_dtoh(result_host, result)
             output_test = numpy.allclose(result_host.ravel(), expected.ravel(), atol=atol)
             if not output_test and verbose:
-                print("Error: " + get_config_string(params) + " detected during correctness check")
+                print("Error: " + util.get_config_string(params) + " detected during correctness check")
                 print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
                 numpy.set_printoptions(edgeitems=50)
                 print("Kernel output:")
@@ -67,7 +70,7 @@ def check_kernel_correctness(dev, func, gpu_args, instance, answer, verbose, ato
             del result_host
     if not correct:
         logging.debug('correctness check has found a correctness issue')
-        raise Exception("Error: " + get_config_string(params) + " failed correctness check")
+        raise Exception("Error: " + util.get_config_string(params) + " failed correctness check")
     return correct
 
 def compile_kernel(dev, instance, verbose):
@@ -120,10 +123,10 @@ def benchmark(dev, func, gpu_args, instance, verbose):
 
 def create_kernel_instance(dev, kernel_name, original_kernel, problem_size, grid_div, params, verbose):
     """create kernel instance from kernel strings, parameters, problem size, grid divisors, and so on"""
-    instance_string = get_instance_string(params)
+    instance_string = util.get_instance_string(params)
 
     #setup thread block and grid dimensions
-    threads, grid = setup_block_and_grid(problem_size, grid_div, params)
+    threads, grid = util.setup_block_and_grid(problem_size, grid_div, params)
     if numpy.prod(threads) > dev.max_threads:
         if verbose:
             print("skipping config", instance_string, "reason: too many threads per block")
@@ -132,12 +135,12 @@ def create_kernel_instance(dev, kernel_name, original_kernel, problem_size, grid
     temp_files = dict()
     #obtain the kernel_string and prepare additional files, if any
     if isinstance(original_kernel, list):
-        kernel_string, temp_files = prepare_list_of_files(original_kernel, params, grid)
+        kernel_string, temp_files = util.prepare_list_of_files(original_kernel, params, grid)
     else:
-        kernel_string = get_kernel_string(original_kernel)
+        kernel_string = util.get_kernel_string(original_kernel)
 
     #prepare kernel_string for compilation
-    name, kernel_string = setup_kernel_strings(kernel_name, kernel_string, params, grid)
+    name, kernel_string = util.setup_kernel_strings(kernel_name, kernel_string, params, grid)
 
     #collect everything we know about this instance in a dict and return it
     instance = dict()
@@ -151,11 +154,14 @@ def create_kernel_instance(dev, kernel_name, original_kernel, problem_size, grid
 
 
 def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
-        problem_size, grid_div, cmem_args, answer, atol, verbose):
-    instance_string = get_instance_string(params)
+                          problem_size, grid_div, cmem_args, answer, atol, verbose):
+    """ Compile and benchmark a kernel instance based on kernel strings and parameters """
+
+    instance_string = util.get_instance_string(params)
 
     logging.debug('compile_and_benchmark ' + instance_string)
-    logging.debug('Memory usage         : %2.2f MB', round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0,1) )
+    mem_usage = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0, 1)
+    logging.debug('Memory usage : %2.2f MB', mem_usage)
 
     instance = create_kernel_instance(dev, kernel_name, original_kernel, problem_size, grid_div, params, verbose)
     if instance is None:
@@ -180,15 +186,13 @@ def compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
 
     except Exception as e:
         #dump kernel_string to temp file
-        temp_filename = get_temp_filename() + ".c"
-        write_file(temp_filename, instance["kernel_string"])
+        temp_filename = util.get_temp_filename() + ".c"
+        util.write_file(temp_filename, instance["kernel_string"])
         print("Error while compiling or benchmarking, see source files: " + temp_filename + " ".join(instance["temp_files"].values()))
         raise e
 
     #clean up any temporary files, if no error occured
     for v in instance["temp_files"].values():
-        delete_temp_file(v)
+        util.delete_temp_file(v)
 
     return time
-
-

@@ -24,7 +24,7 @@ class OpenCLFunctions(object):
         if not cl:
             raise ImportError("Error: pyopencl not installed, please install e.g. using 'pip install pyopencl'.")
 
-        self.ITERATIONS = iterations
+        self.iterations = iterations
         #setup context and queue
         platforms = cl.get_platforms()
         self.ctx = cl.Context(devices=[platforms[platform].get_devices()[device]])
@@ -44,12 +44,13 @@ class OpenCLFunctions(object):
         env["device_version"] = dev.version
         env["opencl_c_version"] = dev.opencl_c_version
         env["driver_version"] = dev.driver_version
-        env["iterations"] = self.ITERATIONS
+        env["iterations"] = self.iterations
         env["compiler_options"] = compiler_options
         self.env = env
         self.name = dev.name
 
     def get_environment(self):
+        """Return dictionary with information about the environment"""
         return self.env
 
     def ready_argument_list(self, arguments):
@@ -121,7 +122,7 @@ class OpenCLFunctions(object):
         global_size = (grid[0]*threads[0], grid[1]*threads[1], threads[2])
         local_size = threads
         times = []
-        for _ in range(self.ITERATIONS):
+        for _ in range(self.iterations):
             event = func(self.queue, global_size, local_size, *gpu_args)
             event.wait()
             times.append((event.profile.end - event.profile.start)*1e-6)

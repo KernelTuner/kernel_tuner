@@ -74,9 +74,9 @@ def test_benchmark(drv):
     time = dev.benchmark(test_func, args, (1,2), (1,2))
     assert time > 0
 
-    assert dev.context.synchronize.call_count == 2*dev.ITERATIONS
-    assert drv.Event.return_value.record.call_count == 2*dev.ITERATIONS
-    assert drv.Event.return_value.time_since.call_count == dev.ITERATIONS
+    assert dev.context.synchronize.call_count == 2*dev.iterations
+    assert drv.Event.return_value.record.call_count == 2*dev.iterations
+    assert drv.Event.return_value.time_since.call_count == dev.iterations
 
 
 @patch('kernel_tuner.cuda.drv')

@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import numpy
 import ctypes as C
+from nose.tools import raises
 
 try:
     from mock import patch, Mock
@@ -38,8 +39,7 @@ def test_ready_argument_list2():
     arg1 = numpy.array([1, 2, 3]).astype(numpy.float32)
     arg2 = numpy.int32(7)
     arg3 = numpy.float32(6.0)
-    arg4 = int(9)
-    arguments = [arg1, arg2, arg3, arg4]
+    arguments = [arg1, arg2, arg3]
 
     cfunc = CFunctions()
     output = cfunc.ready_argument_list(arguments)
@@ -48,15 +48,12 @@ def test_ready_argument_list2():
     output_arg1 = numpy.ctypeslib.as_array(output[0], shape=arg1.shape)
 
     assert output_arg1.dtype == 'float32'
-    assert isinstance(output[1], C.c_int)
+    assert isinstance(output[1], C.c_int32)
     assert isinstance(output[2], C.c_float)
-    assert isinstance(output[3], C.c_int)
 
     assert all(output_arg1 == arg1)
     assert output[1].value == arg2
     assert output[2].value == arg3
-    assert output[3].value == arg4
-
 
 def test_ready_argument_list3():
     arg1 = Mock()
@@ -67,6 +64,12 @@ def test_ready_argument_list3():
         assert False
     except Exception:
         assert True
+
+@raises(TypeError)
+def test_ready_argument_list4():
+    arg1 = int(9)
+    cfunc = CFunctions()
+    cfunc.ready_argument_list([arg1])
 
 
 @patch('kernel_tuner.c.subprocess')

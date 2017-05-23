@@ -81,8 +81,8 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         params = OrderedDict(zip(tune_params.keys(), element))
 
         time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
-                        problem_size, grid_div,
-                        cmem_args, answer, atol, verbose)
+                                     problem_size, grid_div,
+                                     cmem_args, answer, atol, verbose)
         if time is None:
             logging.debug('received time is None, kernel configuration was skipped silently due to compile or runtime failure')
             continue
@@ -95,4 +95,3 @@ def run(kernel_name, original_kernel, problem_size, arguments,
         results.append(params)
 
     return results, dev.get_environment()
-

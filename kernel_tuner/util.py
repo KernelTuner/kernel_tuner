@@ -1,8 +1,9 @@
 """ Module for kernel tuner utility functions """
 from __future__ import print_function
-import numpy
+
 import os
 import errno
+import numpy
 
 def get_instance_string(params):
     """ combine the parameters to a string mostly used for debug output
@@ -12,7 +13,7 @@ def get_instance_string(params):
 
 def get_config_string(params):
     """ return a compact string representation of a dictionary """
-    return "".join([k + "=" + str(v) + ", " for k,v in params.items()])
+    return "".join([k + "=" + str(v) + ", " for k, v in params.items()])
 
 def get_kernel_string(original_kernel):
     """ retrieves kernel string from a file if the string passed looks like filename
@@ -91,13 +92,13 @@ def detect_language(lang, original_kernel):
 
 def get_problem_size(problem_size, params):
     """compute current problem size"""
-    if isinstance(problem_size, (str,int,numpy.integer)):
+    if isinstance(problem_size, (str, int, numpy.integer)):
         problem_size = (problem_size, )
     current_problem_size = [1, 1, 1]
     for i, s in enumerate(problem_size):
         if isinstance(s, str):
-            current_problem_size[i] = int(eval(replace_param_occurrences(s,params)))
-        elif isinstance(s, int) or isinstance(s, numpy.integer):
+            current_problem_size[i] = int(eval(replace_param_occurrences(s, params)))
+        elif isinstance(s, (int, numpy.integer)):
             current_problem_size[i] = s
         else:
             raise TypeError("Error: problem_size should only contain strings or integers")
@@ -112,10 +113,10 @@ def get_grid_dimensions(current_problem_size, params, grid_div):
                 divisor_list = [default]
             else:
                 return 1
-        return numpy.prod([int(eval(replace_param_occurrences(s,params))) for s in divisor_list])
+        return numpy.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
     block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
-    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i,d in enumerate(grid_div)]
-    return tuple(int(numpy.ceil(float(current_problem_size[i]) / float(d))) for i,d in enumerate(divisors))
+    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
+    return tuple(int(numpy.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
 
 def get_thread_block_dimensions(params):
     """thread block size from tuning params, currently using convention"""
@@ -159,18 +160,18 @@ def prepare_list_of_files(kernel_file_list, params, grid):
             temp_file = get_temp_filename() + "." + f.split(".")[-1]
             temp_files[f] = temp_file
             #add preprocessor statements to the additional file
-            temp_file_string = prepare_kernel_string(get_kernel_string(f) , params, grid)
+            temp_file_string = prepare_kernel_string(get_kernel_string(f), params, grid)
             write_file(temp_file, temp_file_string)
             #replace occurences of the additional file's name in the kernel_string with the name of the temp file
             kernel_string = kernel_string.replace(f, temp_file)
 
     return kernel_string, temp_files
 
-def prepare_kernel_string(original_kernel, params, grid=(1,1,1)):
+def prepare_kernel_string(original_kernel, params, grid=(1, 1, 1)):
     """prepend the kernel with a series of C preprocessor defines"""
     kernel_string = original_kernel
     grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
-    for i,g in enumerate(grid):
+    for i, g in enumerate(grid):
         kernel_string = "#define " + grid_dim_names[i] + " " + str(g) + "\n" + kernel_string
     for k, v in params.items():
         kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
@@ -211,4 +212,3 @@ def setup_kernel_strings(kernel_name, original_kernel, params, grid):
     name = kernel_name + "_" + get_instance_string(params)
     kernel_string = kernel_string.replace(kernel_name, name)
     return name, kernel_string
-
