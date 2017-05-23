@@ -104,17 +104,18 @@ The exact same Python code can be used to tune an OpenCL kernel:
     }
     """
 
-Or even just a C function, see the example
-`here <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py>`__.
+The Kernel Tuner will detect the kernel language and select the right compiler and 
+runtime. For every kernel in the parameter space, the Kernel Tuner will insert C 
+preprocessor defines for the tunable parameters, compile, and benchmark the kernel. The 
+timing results will be printed to the console, but are also returned by tune_kernel to 
+allow further analysis. Note that this is just the default behavior, what and how 
+tune_kernel does exactly is controlled through its many `optional arguments 
+<http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel>`__.
 
-You can find these and many - more extensive - example codes, in the
-`examples <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`__
-directory.
-
-See the `full
-documentation <http://benvanwerkhoven.github.io/kernel_tuner/index.html>`__
-for several highly detailed tutorial-style explanations of example
-kernels and the scripts to tune them.
+You can find many - more extensive - example codes, in the
+`examples directory <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`__
+and in the `Kernel Tuner
+documentation pages <http://benvanwerkhoven.github.io/kernel_tuner/index.html>`__.
 
 Tuning host and kernel code
 ---------------------------
