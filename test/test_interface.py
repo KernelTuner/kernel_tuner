@@ -126,10 +126,14 @@ def test_check_kernel_correctness(dev_interface):
             assert all(args[1] == answer[0])
     assert test
 
+    #the following call to check_kernel_correctness is expected to fail because
+    #the answer is non-zero, while the memcpy_dtoh function on the Mocked object
+    #obviously does not result in the result_host array containing anything
+    #non-zero
     try:
-        core.check_kernel_correctness(dev, 'func', wrong, 'threads', 'grid', wrong, {'0': 0}, True)
+        core.check_kernel_correctness(dev, 'func', wrong, instance, wrong, True)
         print("check_kernel_correctness failed to throw an exception")
         assert False
-    except Exception:
+    except Exception as e:
         assert True
 
