@@ -11,6 +11,8 @@ This is the list of features that we want to have implemented by the next versio
  * Option to set a function that performs output verfication, instead of numpy.allclose()
  * Option to change defaults for 'block_size_x', and so on
  * Option to set a function that computes search space restriction, instead of a list of strings
+ * Option to set function that computes grid dimensions instead of grid divisor lists
+ * Option to set dynamically allocated shared memory for CUDA backend
  * Option to set compiler name, when using C backend
  * Option to pass a function that generates the kernel code
  * Option to pass the fraction of the search space covered by sample runner
