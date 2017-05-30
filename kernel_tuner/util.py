@@ -13,7 +13,7 @@ def get_instance_string(params):
 
 def get_config_string(params):
     """ return a compact string representation of a dictionary """
-    return "".join([k + "=" + str(v) + ", " for k, v in params.items()])
+    return ", ".join([k + "=" + str(v) for k, v in params.items()])
 
 def get_kernel_string(original_kernel):
     """ retrieves kernel string from a file if the string passed looks like filename
