@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>The kernel_tuner documentation &mdash; kernel_tuner 0.1.3 documentation</title>
+  <title>The kernel_tuner documentation &mdash; kernel_tuner 0.1.4 documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="kernel_tuner 0.1.3 documentation" href="#"/>
+    <link rel="top" title="kernel_tuner 0.1.4 documentation" href="#"/>
         <link rel="next" title="Installation Guide" href="install.html"/> 
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.1.3
+                0.1.4
               </div>
             
           
@@ -286,15 +286,16 @@ dependencies see the <a class="reference external" href="http://benvanwerkhoven.
 <span class="s2">&quot;&quot;&quot;</span>
 </pre></div>
 </div>
-<p>Or even just a C function, see the example
-<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py">here</a>.</p>
-<p>You can find these and many - more extensive - example codes, in the
-<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/">examples</a>
-directory.</p>
-<p>See the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/index.html">full
-documentation</a>
-for several highly detailed tutorial-style explanations of example
-kernels and the scripts to tune them.</p>
+<p>The Kernel Tuner will detect the kernel language and select the right compiler and
+runtime. For every kernel in the parameter space, the Kernel Tuner will insert C
+preprocessor defines for the tunable parameters, compile, and benchmark the kernel. The
+timing results will be printed to the console, but are also returned by tune_kernel to
+allow further analysis. Note that this is just the default behavior, what and how
+tune_kernel does exactly is controlled through its many <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">optional arguments</a>.</p>
+<p>You can find many - more extensive - example codes, in the
+<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/">examples directory</a>
+and in the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/index.html">Kernel Tuner
+documentation pages</a>.</p>
 </div>
 <div class="section" id="tuning-host-and-kernel-code">
 <h2>Tuning host and kernel code<a class="headerlink" href="#tuning-host-and-kernel-code" title="Permalink to this headline">¶</a></h2>
@@ -391,7 +392,7 @@ spent on tuning kernels.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.3',
+            VERSION:'0.1.4',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
