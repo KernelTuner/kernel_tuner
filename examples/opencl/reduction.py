@@ -25,7 +25,7 @@ def tune():
     args = [sum_x, x, n]
 
     #tune the first kernel
-    first_kernel = tune_kernel("sum_floats", kernel_string, problem_size,
+    first_kernel, _ = tune_kernel("sum_floats", kernel_string, problem_size,
         args, tune_params, grid_div_x=[], verbose=True)
 
     #tune the second kernel for different input sizes
@@ -40,7 +40,7 @@ def tune():
         #change the input size to nblocks
         args = [sum_x, x, numpy.int32(nblocks)]
         #tune the second kernel with n=nblocks
-        result = tune_kernel("sum_floats", kernel_string, problem_size,
+        result, _ = tune_kernel("sum_floats", kernel_string, problem_size,
         args, tune_params, grid_div_x=[], verbose=True)
         with open("reduce-kernel2-" + str(nblocks) + ".json", 'w') as fp:
             json.dump(result, fp)
