@@ -30,7 +30,7 @@ implemented in earlier versions.
 ### Low priority
 
 These are the things that we would like to implement, but we currently have no
-demand for it. If you are interesting in any of these, let us know!
+demand for it. If you are interested in any of these, let us know!
 
  * Tuning compiler options in combination other parameters kernel
  * Example that tunes a kernel using thread block re-indexing
