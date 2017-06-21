@@ -5,10 +5,10 @@ from nose.tools import raises
 
 from .context import skip_if_no_cuda_device, skip_if_no_opencl
 
+import kernel_tuner.core as core
 import kernel_tuner.cuda as cuda
 import kernel_tuner.opencl as opencl
 from kernel_tuner.util import *
-from kernel_tuner.core import *
 
 
 def test_get_grid_dimensions1():
@@ -194,19 +194,21 @@ def test_detect_language4():
 def test_get_device_interface1():
     skip_if_no_cuda_device()
     lang = "CUDA"
-    dev = get_device_interface(lang, 0, 0)
-    assert isinstance(dev, cuda.CudaFunctions)
+    dev = core.DeviceInterface(0, 0, "", lang=lang)
+    assert isinstance(dev, core.DeviceInterface)
+    assert isinstance(dev.dev, cuda.CudaFunctions)
 
 def test_get_device_interface2():
     skip_if_no_opencl()
     lang = "OpenCL"
-    dev = get_device_interface(lang, 0, 0)
-    assert isinstance(dev, opencl.OpenCLFunctions)
+    dev = core.DeviceInterface(0, 0, "", lang=lang)
+    assert isinstance(dev, core.DeviceInterface)
+    assert isinstance(dev.dev, opencl.OpenCLFunctions)
 
 @raises(Exception)
 def test_get_device_interface3():
     lang = "blabla"
-    get_device_interface(lang, 0, 0)
+    core.DeviceInterface(0, 0, "", lang=lang)
 
 def test_check_argument_list1():
     args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]

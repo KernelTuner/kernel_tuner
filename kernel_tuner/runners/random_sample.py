@@ -4,13 +4,13 @@ from __future__ import print_function
 from collections import OrderedDict
 import numpy
 
-from kernel_tuner.util import detect_language, get_config_string
-from kernel_tuner.core import get_device_interface, compile_and_benchmark
+from kernel_tuner.util import get_config_string
+from kernel_tuner.core import DeviceInterface
 
 def run(kernel_name, original_kernel, problem_size, arguments,
         tune_params, parameter_space, grid_div,
         answer, atol, verbose,
-        lang, device, platform, cmem_args, compiler_options=None):
+        lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7):
     """ Sample the parameter space using a single Python process
 
     :param kernel_name: The name of the kernel in the code.
@@ -66,14 +66,14 @@ def run(kernel_name, original_kernel, problem_size, arguments,
     results = []
 
     #detect language and create device function interface
-    lang = detect_language(lang, original_kernel)
-    dev = get_device_interface(lang, device, platform, compiler_options)
+    dev = DeviceInterface(device, platform, original_kernel, lang=lang, compiler_options=compiler_options, iterations=iterations)
 
     #move data to the GPU
     gpu_args = dev.ready_argument_list(arguments)
 
-    print("Using: " + dev.name)
-    print(kernel_name)
+    if not quiet:
+        print("Using: " + dev.name)
+        print(kernel_name)
 
     #reduce parameter space to a random sample of size 10%
     parameter_space = list(parameter_space)
@@ -87,7 +87,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
 
         params = OrderedDict(zip(tune_params.keys(), element))
 
-        time = compile_and_benchmark(dev, gpu_args, kernel_name, original_kernel, params,
+        time = dev.compile_and_benchmark(gpu_args, kernel_name, original_kernel, params,
                                      problem_size, grid_div,
                                      cmem_args, answer, atol, verbose)
         if time is None:

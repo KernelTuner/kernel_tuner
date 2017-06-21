@@ -309,8 +309,7 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     """
 
     #detect language and create the right device function interface
-    lang = util.detect_language(lang, original_kernel)
-    dev = core.get_device_interface(lang, device, platform, compiler_options)
+    dev = core.DeviceInterface(device, platform, original_kernel, lang=lang, compiler_options=compiler_options)
 
     #move data to the GPU
     util.check_argument_list(arguments)
@@ -321,12 +320,12 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     instance = None
     try:
         #create kernel instance
-        instance = core.create_kernel_instance(dev, kernel_name, original_kernel, problem_size, grid_div, params, False)
+        instance = dev.create_kernel_instance(kernel_name, original_kernel, problem_size, grid_div, params, False)
         if instance is None:
             raise Exception("cannot create kernel instance, too many threads per block")
 
         #compile the kernel
-        func = core.compile_kernel(dev, instance, False)
+        func = dev.compile_kernel(instance, False)
         if func is None:
             raise Exception("cannot compile kernel, too much shared memory used")
 
@@ -340,7 +339,7 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
                 util.delete_temp_file(v)
 
     #run the kernel
-    if not core.run_kernel(dev, func, gpu_args, instance):
+    if not dev.run_kernel(func, gpu_args, instance):
         raise Exception("runtime error occured, too many resources requested")
 
     #copy data in GPU memory back to the host

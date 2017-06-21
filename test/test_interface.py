@@ -103,24 +103,26 @@ def test_run_kernel(dev_interface):
     assert answer[0] == n
 
 @patch('kernel_tuner.core.CudaFunctions')
-def test_check_kernel_correctness(dev_interface):
-    dev = dev_interface.return_value
-    dev_interface.configure_mock(**mock_config)
+def test_check_kernel_correctness(dev_func_interface):
+    dev_func_interface.configure_mock(**mock_config)
+
+    dev = core.DeviceInterface(0, 0, "", lang="CUDA")
+    dfi = dev.dev
 
     answer = [numpy.zeros(4).astype(numpy.float32)]
     wrong = [numpy.array([1,2,3,4]).astype(numpy.float32)]
 
     instance = {'threads': 'threads', 'grid': 'grid', 'params': {}}
-    test = core.check_kernel_correctness(dev, 'func', answer, instance, answer, True)
+    test = dev.check_kernel_correctness('func', answer, instance, answer, True)
 
-    dev.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
-    dev.run_kernel.assert_called_once_with('func', answer, 'threads', 'grid')
+    dfi.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
+    dfi.run_kernel.assert_called_once_with('func', answer, 'threads', 'grid')
 
-    print(dev.mock_calls)
+    print(dfi.mock_calls)
 
-    assert dev.memcpy_dtoh.called == 1
+    assert dfi.memcpy_dtoh.called == 1
 
-    for name, args, _ in dev.mock_calls:
+    for name, args, _ in dfi.mock_calls:
         if name == 'memcpy_dtoh':
             assert all(args[0] == answer[0])
             assert all(args[1] == answer[0])
@@ -131,7 +133,7 @@ def test_check_kernel_correctness(dev_interface):
     #obviously does not result in the result_host array containing anything
     #non-zero
     try:
-        core.check_kernel_correctness(dev, 'func', wrong, instance, wrong, True)
+        dev.check_kernel_correctness('func', wrong, instance, wrong, True)
         print("check_kernel_correctness failed to throw an exception")
         assert False
     except Exception as e:

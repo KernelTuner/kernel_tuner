@@ -57,11 +57,6 @@ class CFunctions(object):
         self.env = env
         self.name = platform.processor()
 
-    def get_environment(self):
-        """Return dictionary with information about the environment"""
-        return self.env
-
-
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the C function
 
