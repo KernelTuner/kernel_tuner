@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import os
 import errno
+import tempfile
 import numpy
 
 def get_instance_string(params):
@@ -35,8 +36,8 @@ def delete_temp_file(filename):
 
 def get_temp_filename():
     """ return a string in the form of temp_X, where X is a large integer """
-    random_large_int = numpy.random.randint(low=100, high=100000000000)
-    return 'temp_' + str(random_large_int)
+    file = tempfile.mkstemp(prefix="temp_", dir=os.getcwd())
+    return file[1]
 
 def looks_like_a_filename(original_kernel):
     """ attempt to detect whether source code or a filename was passed """
