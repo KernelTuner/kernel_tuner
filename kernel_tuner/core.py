@@ -193,7 +193,7 @@ class DeviceInterface(object):
 
         except Exception as e:
             #dump kernel_string to temp file
-            temp_filename = util.get_temp_filename() + ".c"
+            temp_filename = util.get_temp_filename(suffix=".c")
             util.write_file(temp_filename, instance["kernel_string"])
             print("Error while compiling or benchmarking, see source files: " + temp_filename + " ".join(instance["temp_files"].values()))
             raise e

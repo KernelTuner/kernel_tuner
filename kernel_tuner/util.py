@@ -34,9 +34,9 @@ def delete_temp_file(filename):
         if e.errno != errno.ENOENT:
             raise e
 
-def get_temp_filename():
+def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
-    file = tempfile.mkstemp(prefix="temp_", dir=os.getcwd())
+    file = tempfile.mkstemp(suffix=suffix, prefix="temp_", dir=os.getcwd())
     return file[1]
 
 def looks_like_a_filename(original_kernel):
@@ -158,7 +158,7 @@ def prepare_list_of_files(kernel_file_list, params, grid):
     if len(kernel_file_list) > 1:
         for f in kernel_file_list[1:]:
             #generate temp filename with the same extension
-            temp_file = get_temp_filename() + "." + f.split(".")[-1]
+            temp_file = get_temp_filename(suffix="." + f.split(".")[-1])
             temp_files[f] = temp_file
             #add preprocessor statements to the additional file
             temp_file_string = prepare_kernel_string(get_kernel_string(f), params, grid)
