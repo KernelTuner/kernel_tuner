@@ -114,8 +114,7 @@ class CFunctions(object):
         if self.lib != None:
             self.cleanup_lib()
 
-        filename = get_temp_filename()
-        source_file = filename+".cc"
+        suffix = ".cc"
 
         if not "extern \"C\"" in kernel_string:
             kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
@@ -131,7 +130,7 @@ class CFunctions(object):
                 self.compiler = "nvcc"
 
         if self.compiler == "nvcc":
-            source_file = source_file[:-1] + "u"
+            suffix = suffix[:-1] + "u"
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
 
         if self.compiler_options:
@@ -144,6 +143,9 @@ class CFunctions(object):
         logging.debug('using compiler ' + self.compiler)
         logging.debug('compiler_options ' + " ".join(compiler_options))
         logging.debug('lib_args ' + " ".join(lib_args))
+
+        source_file = get_temp_filename(suffix=suffix)
+        filename = ".".join(source_file.split(".")[:-1])
 
         try:
             write_file(source_file, kernel_string)
