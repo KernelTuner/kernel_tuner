@@ -36,7 +36,7 @@ def delete_temp_file(filename):
 
 def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
-    file = tempfile.mkstemp(suffix=suffix, prefix="temp_", dir=os.getcwd())
+    file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd()) # or "" for Python 2 compatibility
     return file[1]
 
 def looks_like_a_filename(original_kernel):
