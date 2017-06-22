@@ -11,6 +11,7 @@ Before creating a pull request please ensure the following:
 * You have written unit tests to test your additions and all unit tests pass
 * The examples still work and produce the same (or better) results
 * The code is compatible with both Python 2.7 and Python 3.5
+* You have run `pylint` to check your code
 * An entry about the change or addition is created in CHANGELOG.md
 * Any matching entries in the roadmap.md are updated/removed
 
