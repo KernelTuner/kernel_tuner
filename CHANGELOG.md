@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+- option to pass a fraction to the sample runner
 
 ## [0.1.4] - 2017-06-14
 ### Changed
