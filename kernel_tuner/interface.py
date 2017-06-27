@@ -184,6 +184,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :param compiler_options: A list of strings that specifies compiler options.
     :type compiler_options: list(string)
 
+    :param sample: Benchmark only a sample fraction of the search space, False by
+        default. To enable sampling, pass a value between 0 and 1.
+    :type sample: float
+
     :returns: A list of dictionaries of all executed kernel configurations and their
         execution times. And a dictionary with information about the environment
         in which the tuning took place. This records device name, properties,
@@ -215,7 +219,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     results, env = runner.run(kernel_name, kernel_string, problem_size, arguments,
                               tune_params, parameter_space, (grid_div_x, grid_div_y, grid_div_z),
                               answer, atol, verbose,
-                              lang, device, platform, cmem_args, compiler_options)
+                              lang, device, platform, cmem_args, compiler_options, sample_fraction=sample)
 
     #finished iterating over search space
     if results:     #checks if results is not empty

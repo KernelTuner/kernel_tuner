@@ -15,7 +15,6 @@ This is the list of features that we want to have implemented by the next versio
  * Option to set dynamically allocated shared memory for CUDA backend
  * Option to set compiler name, when using C backend
  * Option to pass a function that generates the kernel code
- * Option to pass the fraction of the search space covered by sample runner
  
 ### version 1.0.0
 
