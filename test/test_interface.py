@@ -5,6 +5,7 @@ try:
 except ImportError:
     from unittest.mock import patch
 
+from nose.tools import nottest
 import numpy
 
 from kernel_tuner.interface import tune_kernel, run_kernel
@@ -14,19 +15,23 @@ mock_config = { "return_value.compile.return_value": "compile",
                 "return_value.ready_argument_list.return_value": "ready_argument_list",
                 "return_value.max_threads": 1024 }
 
+@nottest
+def get_fake_kernel():
+    kernel_string = "__global__ void fake_kernel()"
+    size = 1280
+    n = numpy.int32(size)
+    args = [n]
+    tune_params = {"block_size_x": [128]}
+    return "fake_kernel", kernel_string, size, args, tune_params
+
+
 @patch('kernel_tuner.core.CudaFunctions')
 def test_interface_calls_functions(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
 
-    kernel_string = "__global__ void fake_kernel()"
-    size = 1280
-    problem_size = (size, 1)
-    n = numpy.int32(size)
-    args = [n]
-    tune_params = dict()
-    tune_params["block_size_x"] = [128]
-    tune_kernel("fake_kernel", kernel_string, problem_size, args, tune_params, verbose=True)
+    kernel_name, kernel_string, size, args, tune_params = get_fake_kernel()
+    tune_kernel(kernel_name, kernel_string, size, args, tune_params, verbose=True)
 
     expected = "#define block_size_x 128\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 10\n__global__ void fake_kernel_128()"
     dev.compile.assert_called_once_with("fake_kernel_128", expected)
@@ -89,18 +94,12 @@ def test_run_kernel(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
 
-    kernel_string = "__global__ void fake_kernel()"
-    size = 1280
-    problem_size = (size, 1)
-    n = numpy.int32(size)
-    args = [n]
-    tune_params = dict()
-    tune_params["block_size_x"] = 128
-    answer = run_kernel("fake_kernel", kernel_string, problem_size, args, tune_params)
+    kernel_name, kernel_string, size, args, tune_params = get_fake_kernel()
+    answer = run_kernel(kernel_name, kernel_string, size, args, {"block_size_x": 128})
 
     assert dev.compile.call_count == 1
     dev.run_kernel.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1, 1))
-    assert answer[0] == n
+    assert answer[0] == size
 
 @patch('kernel_tuner.core.CudaFunctions')
 def test_check_kernel_correctness(dev_func_interface):
@@ -139,3 +138,30 @@ def test_check_kernel_correctness(dev_func_interface):
     except Exception as e:
         assert True
 
+
+
+
+@patch('kernel_tuner.interface.sys')
+def test_interface_noodles_checks_version(sysmock):
+    sysmock.version_info = [2, 7]
+
+    kernel_name, kernel_string, size, args, tune_params = get_fake_kernel()
+    try:
+        tune_kernel(kernel_name, kernel_string, size, args, tune_params,
+                    use_noodles=True, num_threads=4)
+        assert False
+    except ValueError as ve:
+        assert True
+
+@patch('kernel_tuner.interface.importlib')
+def test_interface_noodles_checks_noodles(importlibmock):
+    importlibmock.util.find_spec.return_value = None
+
+    kernel_name, kernel_string, size, args, tune_params = get_fake_kernel()
+
+    try:
+        tune_kernel(kernel_name, kernel_string, size, args, tune_params,
+                    use_noodles=True, num_threads=4)
+        assert False
+    except ValueError as ve:
+        assert True

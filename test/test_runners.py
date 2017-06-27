@@ -1,7 +1,11 @@
 from __future__ import print_function
 
 import numpy
+import sys
+from nose import SkipTest
+
 import kernel_tuner
+from .context import skip_if_no_cuda_device
 
 def test_random_sample():
 
@@ -22,3 +26,39 @@ def test_random_sample():
     for v in result:
         assert v['time'] == 1.0
 
+
+def test_noodles_runner():
+
+    skip_if_no_cuda_device()
+
+    if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 5):
+        raise SkipTest("Noodles runner test requires Python 3.5 or newer")
+
+    import importlib.util
+    noodles_installed = importlib.util.find_spec("noodles") is not None
+
+    if not noodles_installed:
+        raise SkipTest("Noodles runner test requires Noodles")
+
+    kernel_string = """
+    __global__ void vector_add(float *c, float *a, float *b, int n) {
+        int i = blockIdx.x * block_size_x + threadIdx.x;
+        if (i<n) {
+            c[i] = a[i] + b[i];
+        }
+    }
+    """
+
+    size = 100
+    a = numpy.random.randn(size).astype(numpy.float32)
+    b = numpy.random.randn(size).astype(numpy.float32)
+    c = numpy.zeros_like(b)
+    n = numpy.int32(size)
+
+    args = [c, a, b, n]
+    tune_params = {"block_size_x": [128+64*i for i in range(15)]}
+
+    result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, size, args, tune_params,
+                            use_noodles=True, num_threads=4)
+
+    assert len(result) == len(tune_params["block_size_x"])

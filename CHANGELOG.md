@@ -7,6 +7,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - option to pass a fraction to the sample runner
 
+### Added
+- parallel tuning on single node using Noodles runner
+
 ## [0.1.4] - 2017-06-14
 ### Changed
 - device and kernel name are printed by runner

@@ -25,13 +25,16 @@ limitations under the License.
 """
 from __future__ import print_function
 
+import importlib
 import itertools
 from datetime import datetime
 import logging
+import sys
 import numpy
 
 import kernel_tuner.util as util
 import kernel_tuner.core as core
+
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
@@ -171,7 +174,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :param platform: OpenCL platform to use, in case you have multiple
         OpenCL platforms you may use this to select one,
         0 by default. Ignored if not using OpenCL.
-    :type device: int
+    :type platform: int
 
     :param cmem_args: CUDA-specific feature for specifying constant memory
         arguments to the kernel. In OpenCL these are handled as normal
@@ -187,6 +190,18 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     :param sample: Benchmark only a sample fraction of the search space, False by
         default. To enable sampling, pass a value between 0 and 1.
     :type sample: float
+
+    :param use_noodles: Use Noodles workflow engine to tune in parallel using
+        multiple threads, False by Default.
+        Requires Noodles to be installed, use 'pip install noodles'.
+        Note that Noodles requires Python 3.5 or newer.
+        You can configure the number of threads to use with the option num_threads.
+    :type use_noodles: bool
+
+    :param num_threads: The number of threads to use when using the Noodles
+        workflow engine for tuning using multiple threads, 1 by default.
+        Requires Noodles, see 'use_noodles' option.
+    :type num_threads: int
 
     :returns: A list of dictionaries of all executed kernel configurations and their
         execution times. And a dictionary with information about the environment
@@ -208,13 +223,26 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     if restrictions is not None:
         parameter_space = filter(lambda p: util.check_restrictions(restrictions, p, tune_params.keys(), verbose), parameter_space)
 
-    #if running sequential
+    #select runner based on user options
     if sample:
         import kernel_tuner.runners.random_sample as runner
     elif num_threads == 1 and not use_noodles:
         import kernel_tuner.runners.sequential_brute_force as runner
+    elif num_threads > 1 and not use_noodles:
+        raise ValueError("Using multiple threads requires the Noodles runner, use use_noodles=True")
+    elif use_noodles:
+        #check if Python version matches required by Noodles
+        if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 5):
+            raise ValueError("Using multiple threads requires Noodles, Noodles requires Python 3.5 or higher")
+        #check if noodles is installed in a way that works with Python 3.4 or newer
+        noodles_installed = importlib.util.find_spec("noodles") is not None
+        if not noodles_installed:
+            raise ValueError("Using multiple threads requires Noodles, please use 'pip install noodles'")
+        #import the NoodlesRunner
+        from kernel_tuner.runners.noodles import NoodlesRunner
+        runner = NoodlesRunner(num_threads)
     else:
-        raise NotImplementedError("parallel runners will be implemented soon")
+        raise ValueError("Somehow no runner was selected, this should not happen, please file a bug report")
 
     results, env = runner.run(kernel_name, kernel_string, problem_size, arguments,
                               tune_params, parameter_space, (grid_div_x, grid_div_y, grid_div_z),

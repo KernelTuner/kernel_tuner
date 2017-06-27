@@ -21,7 +21,6 @@ This is the list of features that we want to have implemented by the next versio
 These functions are to be implemented by version 1.0.0, but may already be
 implemented in earlier versions.
 
- * Tuning kernels in parallel on a single node
  * Tuning kernels in parallel on a set of nodes in a GPU clusters
  * Tuning kernels using machine learning or search strategies
  * Store tuning results in a database and provide an API for analysis
@@ -33,7 +32,6 @@ demand for it. If you are interested in any of these, let us know!
 
  * Tuning compiler options in combination other parameters kernel
  * Example that tunes a kernel using thread block re-indexing
- * Example host code that tunes a pipeline of kernels
  * Example CUDA host code that uses runtime compilation
 
 
