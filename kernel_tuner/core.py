@@ -12,10 +12,36 @@ import kernel_tuner.util as util
 
 
 class DeviceInterface(object):
-    """Class that groups the CUDA functions on maintains state about the device"""
+    """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
     def __init__(self, device, platform, original_kernel, lang=None, compiler_options=None, iterations=7):
-        """ Instantiate the device interface, based on language """
+        """ Instantiate the DeviceInterface, based on language in kernel source
+
+        :param device: CUDA/OpenCL device to use, in case you have multiple
+            CUDA-capable GPUs or OpenCL devices you may use this to select one,
+            0 by default. Ignored if you are tuning host code by passing lang="C".
+        :type device: int
+
+        :param platform: OpenCL platform to use, in case you have multiple
+            OpenCL platforms you may use this to select one,
+            0 by default. Ignored if not using OpenCL.
+        :type device: int
+
+        :param original_kernel: The source of the kernel as passed to tune_kernel
+        :type original_kernel: kernel source as a string or a list of strings denoting filenames
+
+        :param lang: Specifies the language used for GPU kernels. The kernel_tuner
+            automatically detects the language, but if it fails, you may specify
+            the language using this argument, currently supported: "CUDA", "OpenCL", or "C"
+        :type lang: string
+
+        :param compiler_options: The compiler options to use when compiling kernels for this device.
+        :type compiler_options: list of strings
+
+        :param iterations: Number of iterations to be used when benchmarking using this device.
+        :type iterations: int
+
+        """
         lang = util.detect_language(lang, original_kernel)
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations)
@@ -129,7 +155,7 @@ class DeviceInterface(object):
         return time
 
     def create_kernel_instance(self, kernel_name, original_kernel, problem_size, grid_div, params, verbose):
-        """create kernel instance from kernel strings, parameters, problem size, grid divisors, and so on"""
+        """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
         instance_string = util.get_instance_string(params)
 
         #setup thread block and grid dimensions
