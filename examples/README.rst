@@ -81,3 +81,11 @@ Point-in-Polygon
  -  overlap transfers with device mapped host memory
  -  tune on different implementations of an algorithm
 
+ExpDist
+-------
+[`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/expdist.py>`__]
+ -  in-thread block 2D reduction using CUB library
+ -  C++ in CUDA kernel code
+ -  tune multiple kernels in pipeline
+ -  tune in parallel using multiple threads
+
