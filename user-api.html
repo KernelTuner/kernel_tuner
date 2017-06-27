@@ -293,7 +293,7 @@ the language using this argument, currently supported: &#8220;CUDA&#8221;, &#822
 <li><strong>device</strong> (<em>int</em>) &#8211; CUDA/OpenCL device to use, in case you have multiple
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default. Ignored if you are tuning host code by passing lang=&#8221;C&#8221;.</li>
-<li><strong>platform</strong> &#8211; OpenCL platform to use, in case you have multiple
+<li><strong>platform</strong> (<em>int</em>) &#8211; OpenCL platform to use, in case you have multiple
 OpenCL platforms you may use this to select one,
 0 by default. Ignored if not using OpenCL.</li>
 <li><strong>cmem_args</strong> (<em>dict(string: numpy object)</em>) &#8211; CUDA-specific feature for specifying constant memory
@@ -303,6 +303,16 @@ specify constant memory arguments is by passing a dictionary with
 strings containing the constant memory symbol name together with numpy
 objects in the same way as normal kernel arguments.</li>
 <li><strong>compiler_options</strong> (<em>list(string)</em>) &#8211; A list of strings that specifies compiler options.</li>
+<li><strong>sample</strong> (<em>float</em>) &#8211; Benchmark only a sample fraction of the search space, False by
+default. To enable sampling, pass a value between 0 and 1.</li>
+<li><strong>use_noodles</strong> (<em>bool</em>) &#8211; Use Noodles workflow engine to tune in parallel using
+multiple threads, False by Default.
+Requires Noodles to be installed, use &#8216;pip install noodles&#8217;.
+Note that Noodles requires Python 3.5 or newer.
+You can configure the number of threads to use with the option num_threads.</li>
+<li><strong>num_threads</strong> (<em>int</em>) &#8211; The number of threads to use when using the Noodles
+workflow engine for tuning using multiple threads, 1 by default.
+Requires Noodles, see &#8216;use_noodles&#8217; option.</li>
 </ul>
 </td>
 </tr>

@@ -61,9 +61,10 @@ kernel_tuner.runners.sequential_brute_force
 .. automodule:: kernel_tuner.runners.sequential_brute_force
     :members:
 
-kernel_tuner.core
+kernel_tuner.core.DeviceInterface
 -----------------------------------
-.. automodule:: kernel_tuner.core
+.. autoclass:: kernel_tuner.core.DeviceInterface
+    :special-members: __init__
     :members:
 
 kernel_tuner.util
@@ -74,15 +75,18 @@ kernel_tuner.util
 kernel_tuner.cuda.CudaFunctions
 -------------------------------
 .. autoclass:: kernel_tuner.cuda.CudaFunctions
+    :special-members: __init__
     :members:
 
 kernel_tuner.opencl.OpenCLFunctions
 -----------------------------------
 .. autoclass:: kernel_tuner.opencl.OpenCLFunctions
+    :special-members: __init__
     :members:
 
 kernel_tuner.c.CFunctions
 -----------------------------------
 .. autoclass:: kernel_tuner.c.CFunctions
+    :special-members: __init__
     :members:
 

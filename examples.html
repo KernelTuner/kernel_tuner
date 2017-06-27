@@ -101,6 +101,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#reduction">Reduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#sparse-matrix-vector-multiplication">Sparse Matrix Vector Multiplication</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#point-in-polygon">Point-in-Polygon</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#expdist">ExpDist</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Kernel Tuner Tutorial - Diffusion</a></li>
@@ -316,6 +317,19 @@ kernel [<a class="reference external" href="https://github.com/benvanwerkhoven/k
 <dd><ul class="first last simple">
 <li>overlap transfers with device mapped host memory</li>
 <li>tune on different implementations of an algorithm</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="expdist">
+<h2>ExpDist<a class="headerlink" href="#expdist" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/expdist.py">CUDA</a>]</dt>
+<dd><ul class="first last simple">
+<li>in-thread block 2D reduction using CUB library</li>
+<li>C++ in CUDA kernel code</li>
+<li>tune multiple kernels in pipeline</li>
+<li>tune in parallel using multiple threads</li>
 </ul>
 </dd>
 </dl>

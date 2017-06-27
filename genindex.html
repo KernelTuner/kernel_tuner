@@ -143,7 +143,8 @@
 <h1 id="index">Index</h1>
 
 <div class="genindex-jumpbox">
- <a href="#B"><strong>B</strong></a>
+ <a href="#_"><strong>_</strong></a>
+ | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#G"><strong>G</strong></a>
@@ -158,16 +159,40 @@
  | <a href="#W"><strong>W</strong></a>
  
 </div>
-<h2 id="B">B</h2>
+<h2 id="_">_</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="design.html#kernel_tuner.core.benchmark">benchmark() (in module kernel_tuner.core)</a>
+  <dt><a href="design.html#kernel_tuner.c.CFunctions.__init__">__init__() (kernel_tuner.c.CFunctions method)</a>
   </dt>
 
       <dd><dl>
         
-  <dt><a href="design.html#kernel_tuner.c.CFunctions.benchmark">(kernel_tuner.c.CFunctions method)</a>
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.__init__">(kernel_tuner.core.DeviceInterface method)</a>
+  </dt>
+
+        
+  <dt><a href="design.html#kernel_tuner.cuda.CudaFunctions.__init__">(kernel_tuner.cuda.CudaFunctions method)</a>
+  </dt>
+
+        
+  <dt><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.__init__">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+  </dt>
+
+      </dl></dd>
+  </dl></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="design.html#kernel_tuner.c.CFunctions.benchmark">benchmark() (kernel_tuner.c.CFunctions method)</a>
+  </dt>
+
+      <dd><dl>
+        
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.benchmark">(kernel_tuner.core.DeviceInterface method)</a>
   </dt>
 
         
@@ -194,7 +219,7 @@
   </dt>
 
       
-  <dt><a href="design.html#kernel_tuner.core.check_kernel_correctness">check_kernel_correctness() (in module kernel_tuner.core)</a>
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.check_kernel_correctness">check_kernel_correctness() (kernel_tuner.core.DeviceInterface method)</a>
   </dt>
 
       
@@ -222,19 +247,25 @@
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="design.html#kernel_tuner.core.compile_and_benchmark">compile_and_benchmark() (in module kernel_tuner.core)</a>
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.compile_and_benchmark">compile_and_benchmark() (kernel_tuner.core.DeviceInterface method)</a>
   </dt>
 
       
-  <dt><a href="design.html#kernel_tuner.core.compile_kernel">compile_kernel() (in module kernel_tuner.core)</a>
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.compile_kernel">compile_kernel() (kernel_tuner.core.DeviceInterface method)</a>
   </dt>
 
       
-  <dt><a href="design.html#kernel_tuner.cuda.CudaFunctions.copy_constant_memory_args">copy_constant_memory_args() (kernel_tuner.cuda.CudaFunctions method)</a>
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.copy_constant_memory_args">copy_constant_memory_args() (kernel_tuner.core.DeviceInterface method)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="design.html#kernel_tuner.cuda.CudaFunctions.copy_constant_memory_args">(kernel_tuner.cuda.CudaFunctions method)</a>
+  </dt>
+
+      </dl></dd>
       
-  <dt><a href="design.html#kernel_tuner.core.create_kernel_instance">create_kernel_instance() (in module kernel_tuner.core)</a>
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.create_kernel_instance">create_kernel_instance() (kernel_tuner.core.DeviceInterface method)</a>
   </dt>
 
       
@@ -257,6 +288,10 @@
   <dt><a href="design.html#kernel_tuner.util.detect_language">detect_language() (in module kernel_tuner.util)</a>
   </dt>
 
+      
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface">DeviceInterface (class in kernel_tuner.core)</a>
+  </dt>
+
   </dl></td>
 </tr></table>
 
@@ -268,25 +303,9 @@
   </dt>
 
       
-  <dt><a href="design.html#kernel_tuner.core.get_device_interface">get_device_interface() (in module kernel_tuner.core)</a>
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.get_environment">get_environment() (kernel_tuner.core.DeviceInterface method)</a>
   </dt>
 
-      
-  <dt><a href="design.html#kernel_tuner.c.CFunctions.get_environment">get_environment() (kernel_tuner.c.CFunctions method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="design.html#kernel_tuner.cuda.CudaFunctions.get_environment">(kernel_tuner.cuda.CudaFunctions method)</a>
-  </dt>
-
-        
-  <dt><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.get_environment">(kernel_tuner.opencl.OpenCLFunctions method)</a>
-  </dt>
-
-      </dl></dd>
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="design.html#kernel_tuner.util.get_grid_dimensions">get_grid_dimensions() (in module kernel_tuner.util)</a>
   </dt>
@@ -295,6 +314,8 @@
   <dt><a href="design.html#kernel_tuner.util.get_instance_string">get_instance_string() (in module kernel_tuner.util)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
   </dt>
@@ -318,15 +339,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="design.html#module-kernel_tuner.core">kernel_tuner.core (module)</a>
+  <dt><a href="design.html#module-kernel_tuner.runners.sequential_brute_force">kernel_tuner.runners.sequential_brute_force (module)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="design.html#module-kernel_tuner.runners.sequential_brute_force">kernel_tuner.runners.sequential_brute_force (module)</a>
-  </dt>
-
       
   <dt><a href="design.html#module-kernel_tuner.util">kernel_tuner.util (module)</a>
   </dt>
@@ -352,6 +369,10 @@
   </dt>
 
       <dd><dl>
+        
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.memcpy_dtoh">(kernel_tuner.core.DeviceInterface method)</a>
+  </dt>
+
         
   <dt><a href="design.html#kernel_tuner.cuda.CudaFunctions.memcpy_dtoh">(kernel_tuner.cuda.CudaFunctions method)</a>
   </dt>
@@ -419,6 +440,10 @@
 
       <dd><dl>
         
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.ready_argument_list">(kernel_tuner.core.DeviceInterface method)</a>
+  </dt>
+
+        
   <dt><a href="design.html#kernel_tuner.cuda.CudaFunctions.ready_argument_list">(kernel_tuner.cuda.CudaFunctions method)</a>
   </dt>
 
@@ -443,11 +468,11 @@
 
       <dd><dl>
         
-  <dt><a href="design.html#kernel_tuner.core.run_kernel">(in module kernel_tuner.core)</a>
+  <dt><a href="design.html#kernel_tuner.c.CFunctions.run_kernel">(kernel_tuner.c.CFunctions method)</a>
   </dt>
 
         
-  <dt><a href="design.html#kernel_tuner.c.CFunctions.run_kernel">(kernel_tuner.c.CFunctions method)</a>
+  <dt><a href="design.html#kernel_tuner.core.DeviceInterface.run_kernel">(kernel_tuner.core.DeviceInterface method)</a>
   </dt>
 
         
