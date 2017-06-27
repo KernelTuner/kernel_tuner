@@ -1,7 +1,5 @@
 #module private functions
-import sys
 import subprocess
-import pprint
 
 from collections import OrderedDict
 
@@ -10,22 +8,22 @@ from noodles.run.runners import run_parallel_with_display, run_parallel
 from noodles.display import NCDisplay
 from noodles.interface import AnnotatedValue
 
-from kernel_tuner.util import *
-from kernel_tuner.core import *
+from kernel_tuner.util import get_instance_string
+from kernel_tuner.core import DeviceInterface
 
 class RefCopy:
-        def __init__(self, obj):
-            self.obj = obj
+    def __init__(self, obj):
+        self.obj = obj
 
-        def __deepcopy__(self, _):
-            return self.obj
+    def __deepcopy__(self, _):
+        return self.obj
 
 
 class NoodlesRunner:
     def run(self, kernel_name, original_kernel, problem_size, arguments,
-        tune_params, parameter_space, grid_div,
-        answer, atol, verbose,
-        lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=None):
+            tune_params, parameter_space, grid_div,
+            answer, atol, verbose,
+            lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=None):
         """ Iterate through the entire parameter space using a multiple Python processes
 
         :param kernel_name: The name of the kernel in the code.
@@ -80,7 +78,7 @@ class NoodlesRunner:
             execution times.
         :rtype: dict( string, float )
         """
-        workflow = self._parameter_sweep(lang, device, arguments, verbose,
+        workflow = self._parameter_sweep(lang, device, arguments,
                                          RefCopy(cmem_args), RefCopy(answer),
                                          RefCopy(tune_params),
                                          RefCopy(parameter_space),
@@ -121,19 +119,18 @@ class NoodlesRunner:
         return serial.pickle() + serial.base()
 
 
-    def error_filter(self, type, value=None, tb=None):
-        if type is subprocess.CalledProcessError:
+    def error_filter(self, errortype, value=None, tb=None):
+        if errortype is subprocess.CalledProcessError:
             return value.stderr
         elif "cuCtxSynchronize" in str(value):
             return value
-        else:
-            return None
+        return None
 
 
     @schedule_hint(display="Batching ... ",
                    ignore_error=True,
                    confirm=True)
-    def _parameter_sweep(self, lang, device, arguments, verbose, cmem_args,
+    def _parameter_sweep(self, lang, device, arguments, cmem_args,
                          answer, tune_params, parameter_space, problem_size,
                          grid_div, original_kernel, kernel_name,
                          atol, platform, compiler_options, iterations):
@@ -145,7 +142,7 @@ class NoodlesRunner:
 
             time = self.run_single(lang, device, kernel_name, original_kernel, params,
                                    problem_size, grid_div,
-                                   cmem_args, answer, atol, instance_string, verbose,
+                                   cmem_args, answer, atol, instance_string,
                                    platform, arguments, compiler_options, iterations)
 
             params['time'] = time
@@ -159,7 +156,7 @@ class NoodlesRunner:
                    confirm=True)
     def run_single(self, lang, device, kernel_name, original_kernel, params,
                    problem_size, grid_div, cmem_args, answer,
-                   atol, instance_string, verbose, platform, arguments,
+                   atol, instance_string, platform, arguments,
                    compiler_options, iterations):
 
         #detect language and create high-level device interface

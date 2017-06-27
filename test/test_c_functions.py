@@ -18,7 +18,7 @@ def test_ready_argument_list1():
     arg3 = numpy.array([7, 8, 9]).astype(numpy.int32)
     arguments = [arg1, arg2, arg3]
 
-    cfunc = CFunctions();
+    cfunc = CFunctions()
 
     output = cfunc.ready_argument_list(arguments)
     print(output)

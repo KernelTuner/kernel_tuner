@@ -94,7 +94,7 @@ def test_run_kernel(dev_interface):
     dev = dev_interface.return_value
     dev_interface.configure_mock(**mock_config)
 
-    kernel_name, kernel_string, size, args, tune_params = get_fake_kernel()
+    kernel_name, kernel_string, size, args, _ = get_fake_kernel()
     answer = run_kernel(kernel_name, kernel_string, size, args, {"block_size_x": 128})
 
     assert dev.compile.call_count == 1
@@ -135,7 +135,7 @@ def test_check_kernel_correctness(dev_func_interface):
         dev.check_kernel_correctness('func', wrong, instance, wrong, True)
         print("check_kernel_correctness failed to throw an exception")
         assert False
-    except Exception as e:
+    except Exception:
         assert True
 
 
@@ -150,7 +150,7 @@ def test_interface_noodles_checks_version(sysmock):
         tune_kernel(kernel_name, kernel_string, size, args, tune_params,
                     use_noodles=True, num_threads=4)
         assert False
-    except ValueError as ve:
+    except ValueError:
         assert True
 
 @patch('kernel_tuner.interface.importlib')
