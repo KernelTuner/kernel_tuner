@@ -1,4 +1,3 @@
-#module private functions
 import subprocess
 
 from collections import OrderedDict
@@ -18,6 +17,12 @@ class RefCopy:
     def __deepcopy__(self, _):
         return self.obj
 
+def _error_filter(errortype, value=None, tb=None):
+    if errortype is subprocess.CalledProcessError:
+        return value.stderr
+    elif "cuCtxSynchronize" in str(value):
+        return value
+    return None
 
 class NoodlesRunner:
     def run(self, kernel_name, original_kernel, problem_size, arguments,
@@ -87,7 +92,7 @@ class NoodlesRunner:
                                          platform, compiler_options, iterations)
 
         if verbose:
-            with NCDisplay(self.error_filter) as display:
+            with NCDisplay(_error_filter) as display:
                 answer = run_parallel_with_display(workflow, self.max_threads, display)
         else:
             answer = run_parallel(workflow, self.max_threads)
@@ -96,35 +101,13 @@ class NoodlesRunner:
             print("Tuning did not return any results, did an error occur?")
             return None
 
-        # Filter out null times
+        # Filter out None times
         answer = [d for d in answer if d['time']]
 
         return answer, {}
 
     def __init__(self, max_threads=1):
-        self._max_threads = max_threads
-
-
-    @property
-    def max_threads(self):
-        return self._max_threads
-
-
-    @max_threads.setter
-    def set_max_threads(self, max_threads):
-        self._max_threads = max_threads
-
-
-    def my_registry(self):
-        return serial.pickle() + serial.base()
-
-
-    def error_filter(self, errortype, value=None, tb=None):
-        if errortype is subprocess.CalledProcessError:
-            return value.stderr
-        elif "cuCtxSynchronize" in str(value):
-            return value
-        return None
+        self.max_threads = max_threads
 
 
     @schedule_hint(display="Batching ... ",
@@ -134,6 +117,7 @@ class NoodlesRunner:
                          answer, tune_params, parameter_space, problem_size,
                          grid_div, original_kernel, kernel_name,
                          atol, platform, compiler_options, iterations):
+        """Build a Noodles workflow by sweeping the parameter space"""
         results = []
         for element in parameter_space:
             params = dict(OrderedDict(zip(tune_params.keys(), element)))
@@ -151,13 +135,14 @@ class NoodlesRunner:
         return gather(*results)
 
 
-    @schedule_hint(display="Testing {instance_string} ... ",
+    @schedule_hint(display="Benchmarking {instance_string} ... ",
                    ignore_error=True,
                    confirm=True)
     def run_single(self, lang, device, kernel_name, original_kernel, params,
                    problem_size, grid_div, cmem_args, answer,
                    atol, instance_string, platform, arguments,
                    compiler_options, iterations):
+        """Benchmark a single kernel instance in the parameter space"""
 
         #detect language and create high-level device interface
         dev = DeviceInterface(device, platform, original_kernel, lang=lang, compiler_options=compiler_options, iterations=iterations)

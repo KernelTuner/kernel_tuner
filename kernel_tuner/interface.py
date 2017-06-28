@@ -237,7 +237,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #check if noodles is installed in a way that works with Python 3.4 or newer
         noodles_installed = importlib.util.find_spec("noodles") is not None
         if not noodles_installed:
-            raise ValueError("Using multiple threads requires Noodles, please use 'pip install noodles'")
+            raise ValueError("Using multiple threads requires Noodles, please install using 'pip install noodles'")
         #import the NoodlesRunner
         from kernel_tuner.runners.noodles import NoodlesRunner
         runner = NoodlesRunner(num_threads)
