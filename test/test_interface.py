@@ -163,5 +163,5 @@ def test_interface_noodles_checks_noodles(importlibmock):
         tune_kernel(kernel_name, kernel_string, size, args, tune_params,
                     use_noodles=True, num_threads=4)
         assert False
-    except ValueError as ve:
+    except ValueError:
         assert True
