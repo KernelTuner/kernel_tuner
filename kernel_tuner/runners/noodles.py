@@ -124,7 +124,7 @@ class NoodlesRunner:
 
             instance_string = get_instance_string(params)
 
-            time = self.run_single(lang, device, kernel_name, original_kernel, params,
+            time = self._run_single(lang, device, kernel_name, original_kernel, params,
                                    problem_size, grid_div,
                                    cmem_args, answer, atol, instance_string,
                                    platform, arguments, compiler_options, iterations)
@@ -138,7 +138,7 @@ class NoodlesRunner:
     @schedule_hint(display="Benchmarking {instance_string} ... ",
                    ignore_error=True,
                    confirm=True)
-    def run_single(self, lang, device, kernel_name, original_kernel, params,
+    def _run_single(self, lang, device, kernel_name, original_kernel, params,
                    problem_size, grid_div, cmem_args, answer,
                    atol, instance_string, platform, arguments,
                    compiler_options, iterations):
