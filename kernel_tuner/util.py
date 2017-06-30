@@ -106,8 +106,11 @@ def get_problem_size(problem_size, params):
     return current_problem_size
 
 
-def get_grid_dimensions(current_problem_size, params, grid_div):
+def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names=None):
     """compute grid dims based on problem sizes and listed grid divisors"""
+    if not block_size_names:
+        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+
     def get_dimension_divisor(divisor_list, default, params):
         if divisor_list is None:
             if default in params:
@@ -115,15 +118,17 @@ def get_grid_dimensions(current_problem_size, params, grid_div):
             else:
                 return 1
         return numpy.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
-    block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
     return tuple(int(numpy.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
 
-def get_thread_block_dimensions(params):
+def get_thread_block_dimensions(params, block_size_names=None):
     """thread block size from tuning params, currently using convention"""
-    block_size_x = params.get("block_size_x", 256)
-    block_size_y = params.get("block_size_y", 1)
-    block_size_z = params.get("block_size_z", 1)
+    if not block_size_names:
+        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+
+    block_size_x = params.get(block_size_names[0], 256)
+    block_size_y = params.get(block_size_names[1], 1)
+    block_size_z = params.get(block_size_names[2], 1)
     return (block_size_x, block_size_y, block_size_z)
 
 
