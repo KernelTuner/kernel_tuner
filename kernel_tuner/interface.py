@@ -40,7 +40,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                 restrictions=None, answer=None, atol=1e-6, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None,
-                num_threads=1, use_noodles=False, sample=False, compiler_options=None, log=None):
+                num_threads=1, use_noodles=False, sample=False, compiler_options=None, log=None, block_size_names=None):
     """ Tune a CUDA kernel given a set of tunable parameters
 
     :param kernel_name: The name of the kernel in the code.
@@ -247,7 +247,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     results, env = runner.run(kernel_name, kernel_string, problem_size, arguments,
                               tune_params, parameter_space, (grid_div_x, grid_div_y, grid_div_z),
                               answer, atol, verbose,
-                              lang, device, platform, cmem_args, compiler_options, sample_fraction=sample)
+                              lang, device, platform, cmem_args, compiler_options, sample_fraction=sample, block_size_names=block_size_names)
 
     #finished iterating over search space
     if results:     #checks if results is not empty

@@ -154,12 +154,12 @@ class DeviceInterface(object):
                 raise e
         return time
 
-    def create_kernel_instance(self, kernel_name, original_kernel, problem_size, grid_div, params, verbose):
+    def create_kernel_instance(self, kernel_name, original_kernel, problem_size, grid_div, params, verbose, block_size_names=None):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
         instance_string = util.get_instance_string(params)
 
         #setup thread block and grid dimensions
-        threads, grid = util.setup_block_and_grid(problem_size, grid_div, params)
+        threads, grid = util.setup_block_and_grid(problem_size, grid_div, params, block_size_names)
         if numpy.prod(threads) > self.dev.max_threads:
             if verbose:
                 print("skipping config", instance_string, "reason: too many threads per block")
@@ -187,7 +187,7 @@ class DeviceInterface(object):
 
 
     def compile_and_benchmark(self, gpu_args, kernel_name, original_kernel, params,
-                              problem_size, grid_div, cmem_args, answer, atol, verbose):
+                              problem_size, grid_div, cmem_args, answer, atol, verbose, block_size_names=None):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
 
         instance_string = util.get_instance_string(params)
@@ -196,7 +196,7 @@ class DeviceInterface(object):
         mem_usage = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0, 1)
         logging.debug('Memory usage : %2.2f MB', mem_usage)
 
-        instance = self.create_kernel_instance(kernel_name, original_kernel, problem_size, grid_div, params, verbose)
+        instance = self.create_kernel_instance(kernel_name, original_kernel, problem_size, grid_div, params, verbose, block_size_names)
         if instance is None:
             return None
 

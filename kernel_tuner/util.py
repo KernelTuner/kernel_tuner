@@ -205,11 +205,11 @@ def check_argument_list(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
-def setup_block_and_grid(problem_size, grid_div, params):
+def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     """compute problem size, thread block and grid dimensions for this kernel"""
-    threads = get_thread_block_dimensions(params)
+    threads = get_thread_block_dimensions(params, block_size_names)
     current_problem_size = get_problem_size(problem_size, params)
-    grid = get_grid_dimensions(current_problem_size, params, grid_div)
+    grid = get_grid_dimensions(current_problem_size, params, grid_div, block_size_names)
     return threads, grid
 
 def setup_kernel_strings(kernel_name, original_kernel, params, grid):

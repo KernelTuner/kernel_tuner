@@ -10,7 +10,7 @@ from kernel_tuner.core import DeviceInterface
 def run(kernel_name, original_kernel, problem_size, arguments,
         tune_params, parameter_space, grid_div,
         answer, atol, verbose,
-        lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=0.1):
+        lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=0.1, block_size_names=None):
     """ Sample the parameter space using a single Python process
 
     :param kernel_name: The name of the kernel in the code.

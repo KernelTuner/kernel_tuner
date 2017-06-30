@@ -28,7 +28,7 @@ class NoodlesRunner:
     def run(self, kernel_name, original_kernel, problem_size, arguments,
             tune_params, parameter_space, grid_div,
             answer, atol, verbose,
-            lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=None):
+            lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=None, block_size_names=None):
         """ Iterate through the entire parameter space using a multiple Python processes
 
         :param kernel_name: The name of the kernel in the code.

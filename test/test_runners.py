@@ -7,6 +7,7 @@ from nose import SkipTest
 import kernel_tuner
 from .context import skip_if_no_cuda_device
 
+
 def test_random_sample():
 
     kernel_string = "float test_kernel(float *a) { return 1.0f; }"
@@ -62,3 +63,35 @@ def test_noodles_runner():
                             use_noodles=True, num_threads=4)
 
     assert len(result) == len(tune_params["block_size_x"])
+
+
+
+
+def test_sequential_runner_alt_block_size_names():
+
+    skip_if_no_cuda_device()
+
+    kernel_string = """
+    __global__ void vector_add(float *c, float *a, float *b, int n) {
+        int i = blockIdx.x * block_dim_x + threadIdx.x;
+        if (i<n) {
+            c[i] = a[i] + b[i];
+        }
+    }
+    """
+
+    size = 100
+    a = numpy.random.randn(size).astype(numpy.float32)
+    b = numpy.random.randn(size).astype(numpy.float32)
+    c = numpy.zeros_like(b)
+    n = numpy.int32(size)
+
+    args = [c, a, b, n]
+    tune_params = {"block_dim_x": [128+64*i for i in range(15)]}
+
+    answer = [a+b, None, None, None]
+
+    result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, size, args, tune_params,
+                            answer=answer)
+
+    assert len(result) == len(tune_params["block_dim_x"])

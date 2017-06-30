@@ -10,7 +10,7 @@ from kernel_tuner.core import DeviceInterface
 def run(kernel_name, original_kernel, problem_size, arguments,
         tune_params, parameter_space, grid_div,
         answer, atol, verbose,
-        lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=None):
+        lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=None, block_size_names=None):
     """ Iterate through the entire parameter space using a single Python process
 
     :param kernel_name: The name of the kernel in the code.
@@ -82,7 +82,7 @@ def run(kernel_name, original_kernel, problem_size, arguments,
 
         time = dev.compile_and_benchmark(gpu_args, kernel_name, original_kernel, params,
                                      problem_size, grid_div,
-                                     cmem_args, answer, atol, verbose)
+                                     cmem_args, answer, atol, verbose, block_size_names)
         if time is None:
             logging.debug('received time is None, kernel configuration was skipped silently due to compile or runtime failure')
             continue
