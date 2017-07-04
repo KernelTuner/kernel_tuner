@@ -11,3 +11,4 @@ doc/create_doc.sh
 *.csv
 .cache
 *.ipynb_checkpoints
+examples/cuda/output

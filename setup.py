@@ -21,7 +21,7 @@ setup(
     license = "Apache 2.0",
     keywords = "auto-tuning gpu computing pycuda cuda pyopencl opencl",
     url = "http://benvanwerkhoven.github.io/kernel_tuner/",
-    packages=['kernel_tuner', 'kernel_tuner.runners'],
+    packages=['kernel_tuner', 'kernel_tuner.runners', 'kernel_tuner.strategies'],
     long_description=readme(),
     install_requires=required(),
     classifiers=[

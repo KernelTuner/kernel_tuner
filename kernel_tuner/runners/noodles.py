@@ -1,6 +1,8 @@
 import subprocess
-
+import random
 from collections import OrderedDict
+
+import numpy
 
 from noodles import schedule_hint, gather, lift
 from noodles.run.runners import run_parallel_with_display, run_parallel
@@ -24,74 +26,40 @@ def _error_filter(errortype, value=None, tb=None):
         return value
     return None
 
+def _chunk_list(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
 class NoodlesRunner:
-    def run(self, kernel_name, original_kernel, problem_size, arguments,
-            tune_params, parameter_space, grid_div,
-            answer, atol, verbose,
-            lang, device, platform, cmem_args, compiler_options=None, quiet=False, iterations=7, sample_fraction=None, block_size_names=None):
-        """ Iterate through the entire parameter space using a multiple Python processes
 
-        :param kernel_name: The name of the kernel in the code.
-        :type kernel_name: string
+    def __init__(self, device_options, max_threads=1):
+        self.device_options = device_options
+        self.device_options["quiet"] = True
+        self.max_threads = max_threads
 
-        :param original_kernel: The CUDA, OpenCL, or C kernel code as a string.
-        :type original_kernel: string
+    def run(self, parameter_space, kernel_options, tuning_options):
+        """ Tune all instances in parameter_space using a multiple threads
 
-        :param problem_size: See kernel_tuner.tune_kernel
-        :type problem_size: tuple(int or string, int or string)
+        :param parameter_space: The parameter space as an iterable.
+        :type parameter_space: iterable
 
-        :param arguments: A list of kernel arguments, use numpy arrays for
-                arrays, use numpy.int32 or numpy.float32 for scalars.
-        :type arguments: list
+        :param kernel_options: A dictionary with all options for the kernel.
+        :type kernel_options: kernel_tuner.interface.Options
 
-        :param tune_params: See kernel_tuner.tune_kernel
-        :type tune_params: dict( string : [int, int, ...] )
+        :param tuning_options: A dictionary with all options regarding the tuning
+            process.
+        :type tuning_options: kernel_tuner.interface.Options
 
-        :param parameter_space: A list of lists that contains the entire parameter space
-                to be searched. Each list in the list represents a single combination
-                of parameters, order is imported and it determined by the order in tune_params.
-        :type parameter_space: list( list() )
+        :returns: A list of dictionaries for executed kernel configurations and their
+            execution times. And a dictionary that contains a information
+            about the hardware/software environment on which the tuning took place.
+        :rtype: list(dict()), dict()
 
-        :param grid_div_x: See kernel_tuner.tune_kernel
-        :type grid_div_x: list
-
-        :param grid_div_y: See kernel_tuner.tune_kernel
-        :type grid_div_y: list
-
-        :param answer: See kernel_tuner.tune_kernel
-        :type answer: list
-
-        :param atol: See kernel_tuner.tune_kernel
-        :type atol: float
-
-        :param verbose: See kernel_tuner.tune_kernel
-        :type verbose: boolean
-
-        :param lang: See kernel_tuner.tune_kernel
-        :type lang: string
-
-        :param device: See kernel_tuner.tune_kernel
-        :type device: int
-
-        :param platform: See kernel_tuner.tune_kernel
-        :type device: int
-
-        :param cmem_args: See kernel_tuner.tune_kernel
-        :type cmem_args: dict(string: numpy object)
-
-        :returns: A dictionary of all executed kernel configurations and their
-            execution times.
-        :rtype: dict( string, float )
         """
-        workflow = self._parameter_sweep(lang, device, arguments,
-                                         RefCopy(cmem_args), RefCopy(answer),
-                                         RefCopy(tune_params),
-                                         RefCopy(parameter_space),
-                                         problem_size, grid_div,
-                                         original_kernel, kernel_name, atol,
-                                         platform, compiler_options, iterations)
-
-        if verbose:
+        workflow = self._parameter_sweep(parameter_space, kernel_options, self.device_options,
+                                         tuning_options)
+        if tuning_options.verbose:
             with NCDisplay(_error_filter) as display:
                 answer = run_parallel_with_display(workflow, self.max_threads, display)
         else:
@@ -102,59 +70,65 @@ class NoodlesRunner:
             return None
 
         # Filter out None times
-        answer = [d for d in answer if d['time']]
+        result = []
+        for chunk in answer:
+            result += [d for d in chunk if d['time']]
 
-        return answer, {}
+        for i,d in enumerate(result):
+            result[i]['time'] = d['time'].value
 
-    def __init__(self, max_threads=1):
-        self.max_threads = max_threads
+        return result, {}
 
 
     @schedule_hint(display="Batching ... ",
                    ignore_error=True,
                    confirm=True)
-    def _parameter_sweep(self, lang, device, arguments, cmem_args,
-                         answer, tune_params, parameter_space, problem_size,
-                         grid_div, original_kernel, kernel_name,
-                         atol, platform, compiler_options, iterations):
+    def _parameter_sweep(self, parameter_space, kernel_options, device_options, tuning_options):
         """Build a Noodles workflow by sweeping the parameter space"""
         results = []
-        for element in parameter_space:
-            params = dict(OrderedDict(zip(tune_params.keys(), element)))
 
-            instance_string = get_instance_string(params)
+        #randomize parameter space to do pseudo load balancing
+        parameter_space = list(parameter_space)
+        random.shuffle(parameter_space)
 
-            time = self._run_single(lang, device, kernel_name, original_kernel, params,
-                                   problem_size, grid_div,
-                                   cmem_args, answer, atol, instance_string,
-                                   platform, arguments, compiler_options, iterations)
+        #split parameter space into chunks
+        work_per_thread = int(numpy.ceil( len(parameter_space) / float(self.max_threads)))
+        chunks = _chunk_list(parameter_space, work_per_thread)
 
-            params['time'] = time
-            results.append(lift(params))
+        for chunk in chunks:
+
+            chunked_result = self._run_chunk(chunk, kernel_options, device_options, tuning_options)
+
+            results.append(lift(chunked_result))
 
         return gather(*results)
 
 
-    @schedule_hint(display="Benchmarking {instance_string} ... ",
-                   ignore_error=True,
+    @schedule_hint(ignore_error=True,
                    confirm=True)
-    def _run_single(self, lang, device, kernel_name, original_kernel, params,
-                   problem_size, grid_div, cmem_args, answer,
-                   atol, instance_string, platform, arguments,
-                   compiler_options, iterations):
+    def _run_chunk(self, chunk, kernel_options, device_options, tuning_options):
         """Benchmark a single kernel instance in the parameter space"""
 
         #detect language and create high-level device interface
-        dev = DeviceInterface(device, platform, original_kernel, lang=lang, compiler_options=compiler_options, iterations=iterations)
+        dev = DeviceInterface(kernel_options.kernel_string, **device_options, iterations=tuning_options.iterations)
 
         #move data to the GPU
-        gpu_args = dev.ready_argument_list(arguments)
+        gpu_args = dev.ready_argument_list(kernel_options.arguments)
 
-        try:
-            time = dev.compile_and_benchmark(gpu_args, kernel_name, original_kernel, params,
-                                             problem_size, grid_div,
-                                             cmem_args, answer, atol, False)
+        results = []
 
-            return AnnotatedValue(time, None)
-        except Exception as e:
-            return AnnotatedValue(None, str(e))
+        for element in chunk:
+            params = dict(OrderedDict(zip(tuning_options.tune_params.keys(), element)))
+
+            instance_string = get_instance_string(params)
+
+            try:
+                time = dev.compile_and_benchmark(gpu_args, params, kernel_options, tuning_options)
+
+                params['time'] = AnnotatedValue(time, None)
+                results.append(params)
+            except Exception as e:
+                params['time'] = AnnotatedValue(None, str(e))
+                results.append(params)
+
+        return results

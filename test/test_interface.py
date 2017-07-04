@@ -110,9 +110,10 @@ def test_check_kernel_correctness(dev_func_interface):
 
     answer = [numpy.zeros(4).astype(numpy.float32)]
     wrong = [numpy.array([1,2,3,4]).astype(numpy.float32)]
+    atol = 1e-6
 
-    instance = {'threads': 'threads', 'grid': 'grid', 'params': {}}
-    test = dev.check_kernel_correctness('func', answer, instance, answer, True)
+    instance = core.KernelInstance("name", "kernel_string", "temp_files", "threads", "grid", {})
+    test = dev.check_kernel_correctness('func', answer, instance, answer, atol, True)
 
     dfi.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
     dfi.run_kernel.assert_called_once_with('func', answer, 'threads', 'grid')
@@ -132,14 +133,11 @@ def test_check_kernel_correctness(dev_func_interface):
     #obviously does not result in the result_host array containing anything
     #non-zero
     try:
-        dev.check_kernel_correctness('func', wrong, instance, wrong, True)
+        dev.check_kernel_correctness('func', wrong, instance, wrong, atol, True)
         print("check_kernel_correctness failed to throw an exception")
         assert False
     except Exception:
         assert True
-
-
-
 
 @patch('kernel_tuner.interface.sys')
 def test_interface_noodles_checks_version(sysmock):

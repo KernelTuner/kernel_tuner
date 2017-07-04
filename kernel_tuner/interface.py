@@ -25,8 +25,8 @@ limitations under the License.
 """
 from __future__ import print_function
 
+from collections import OrderedDict
 import importlib
-import itertools
 from datetime import datetime
 import logging
 import sys
@@ -35,18 +35,20 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
+from kernel_tuner.strategies import brute_force, random_sample
 
-def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
-                tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-                restrictions=None, answer=None, atol=1e-6, verbose=False,
-                lang=None, device=0, platform=0, cmem_args=None,
-                num_threads=1, use_noodles=False, sample=False, compiler_options=None, log=None, block_size_names=None):
-    """ Tune a CUDA kernel given a set of tunable parameters
+class Options(OrderedDict):
+    """read-only class for passing options around"""
+    __getattr__ = OrderedDict.__getitem__
+    def __add__(a, b):
+        return Options(a, **b)
+    def __deepcopy__(self, _):
+        return self
 
-    :param kernel_name: The name of the kernel in the code.
-    :type kernel_name: string
 
-    :param kernel_string: The CUDA, OpenCL, or C kernel code as a string.
+_kernel_options = Options([
+    ("kernel_name", ("""The name of the kernel in the code.""", "string")),
+    ("kernel_string" , ("""The CUDA, OpenCL, or C kernel code as a string.
             It is also allowed for the string to be a filename of the file
             containing the code.
 
@@ -54,10 +56,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             compiled device code, a list of filenames can be passed instead.
             The first file in the list should be the file that contains the
             host code. The host code is allowed to include or read as a string
-            any of the files in the list beyond the first.
-    :type kernel_string: string or list
-
-    :param problem_size: An int or string, or 1,2,3-dimensional tuple
+            any of the files in the list beyond the first.""", "string or list")),
+    ("problem_size", ("""An int or string, or 1,2,3-dimensional tuple
             containing the size from which the grid dimensions of the kernel
             will be computed.
 
@@ -73,14 +73,49 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             in these expressions.
             The Kernel Tuner will replace instances of the tunable parameters
             with their current value when computing the grid dimensions.
-            See the reduction CUDA example for an example use of this feature.
-    :type problem_size: string, int, or tuple(int or string, ..)
+            See the reduction CUDA example for an example use of this feature.""",
+            "string, int, or tuple(int or string, ..)")),
+    ("arguments", ("""A list of kernel arguments, use numpy arrays for
+            arrays, use numpy.int32 or numpy.float32 for scalars.""", "list")),
+    ("grid_div_x", ("""A list of names of the parameters whose values divide
+            the grid dimensions in the x-direction.
+            The product of all grid divisor expressions is computed before dividing
+            the problem_size in that dimension. Also note that the divison is treated
+            as a float divison and resulting grid dimensions will be rounded up to
+            the nearest integer number.
 
-    :param arguments: A list of kernel arguments, use numpy arrays for
-            arrays, use numpy.int32 or numpy.float32 for scalars.
-    :type arguments: list
+            Arithmetic expressions can be
+            used if necessary inside the string containing a parameter name. For
+            example, in some cases you may want to divide the problem size in the
+            x-dimension with the number of warps rather than the number of threads
+            in a block, in such cases one could use ["block_size_x/32"].
 
-    :param tune_params: A dictionary containing the parameter names as keys,
+            If not supplied, ["block_size_x"] will be used by default, if you do not
+            want any grid x-dimension divisors pass an empty list.""", "list")),
+    ("grid_div_y", ("""A list of names of the parameters whose values divide
+            the grid dimensions in the y-direction, ["block_size_y"] by default.
+            If you do not want to divide the problem_size, you should pass an empty list.
+            See grid_div_x for more details.""", "list")),
+    ("grid_div_z", ("""A list of names of the parameters whose values divide
+            the grid dimensions in the z-direction, ["block_size_z"] by default.
+            If you do not want to divide the problem_size, you should pass an empty list.
+            See grid_div_x for more details.""", "list")),
+    ("cmem_args", ("""CUDA-specific feature for specifying constant memory
+            arguments to the kernel. In OpenCL these are handled as normal
+            kernel arguments, but in CUDA you can copy to a symbol. The way you
+            specify constant memory arguments is by passing a dictionary with
+            strings containing the constant memory symbol name together with numpy
+            objects in the same way as normal kernel arguments.""",
+            "dict(string: numpy object)")),
+    ("block_size_names", ("""A list of strings that replace the defaults for the names
+            that denote the thread block dimensions. If not passed, the behavior
+            defaults to ``["block_size_x", "block_size_y", "block_size_z"]``""",
+            "list(string)"))
+    ])
+
+
+_tuning_options = Options([
+    ("tune_params", ("""A dictionary containing the parameter names as keys,
             and lists of possible parameter settings as values.
             The Kernel Tuner will try to compile and benchmark all possible
             combinations of all possible values for all tuning parameters.
@@ -98,59 +133,41 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             Options for changing these defaults may be added later. If you
             don't want the thread block dimensions to be compiled in, you
             may use the built-in variables blockDim.xyz in CUDA or the
-            built-in function get_local_size() in OpenCL instead.
-    :type tune_params: dict( string : [...] )
-
-    :param grid_div_x: A list of names of the parameters whose values divide
-        the grid dimensions in the x-direction. Arithmetic expressions can be
-        used if necessary inside the string containing a parameter name. For
-        example, in some cases you may want to divide the problem size in the
-        x-dimension with the number of warps rather than the number of threads
-        in a block, in such cases one could use ["block_size_x/32"]. Note that
-        the product of all grid divisor expressions is computed before dividing
-        the problem_size in that dimension. Also note that the divison is treated
-        as a float divison and resulting grid dimensions will be rounded up to
-        the nearest integer number.
-        If not supplied, ["block_size_x"] will be used by default, if you do not
-        want any grid x-dimension divisors pass an empty list.
-    :type grid_div_x: list
-
-    :param grid_div_y: A list of names of the parameters whose values divide
-        the grid dimensions in the y-direction, ["block_size_y"] by default.
-        If you do not want to divide the problem_size, you should pass an empty list.
-        See grid_div_x for more details.
-    :type grid_div_y: list
-
-    :param grid_div_z: A list of names of the parameters whose values divide
-        the grid dimensions in the z-direction, ["block_size_z"] by default.
-        If you do not want to divide the problem_size, you should pass an empty list.
-        See grid_div_x for more details.
-    :type grid_div_z: list
-
-    :param restrictions: A list of strings containing boolean expression that
+            built-in function get_local_size() in OpenCL instead.""",
+            "dict( string : [...]")),
+    ("restrictions", ("""A list of strings containing boolean expression that
         limit the search space in that they must be satisfied by the kernel
         configuration. These expressions must be true for the configuration
         to be part of the search space. For example:
         restrictions=["block_size_x==block_size_y*tile_size_y"] limits the
         search to configurations where the block_size_x equals the product
         of block_size_y and tile_size_y.
-        The default is None.
-    :type restrictions: list
-
-    :param answer: A list of arguments, similar to what you pass to arguments,
+        The default is None.""", "list")),
+    ("answer", ("""A list of arguments, similar to what you pass to arguments,
         that contains the expected output of the kernel after it has executed
         and contains None for each argument that is input-only. The expected
         output of the kernel will then be used to verify the correctness of
-        each kernel in the parameter space before it will be benchmarked.
-    :type answer: list
-
-    :param atol: The maximum allowed absolute difference between two elements
+        each kernel in the parameter space before it will be benchmarked.""",
+        "list")),
+    ("atol", ("""The maximum allowed absolute difference between two elements
         in the output and the reference answer, as passed to numpy.allclose().
         Ignored if you have not passed a reference answer. Default value is
-        1e-6, that is 0.000001.
-    :type atol: float
-
-    :param verbose: Sets whether or not to report about configurations that
+        1e-6, that is 0.000001.""", "float")),
+    ("sample_fraction", ("""Benchmark only a sample fraction of the search space, False by
+        default. To enable sampling, pass a value between 0 and 1.""", "float")),
+    ("use_noodles", ("""Use Noodles workflow engine to tune in parallel using
+        multiple threads, False by Default.
+        Requires Noodles to be installed, use 'pip install noodles'.
+        Note that Noodles requires Python 3.5 or newer.
+        You can configure the number of threads to use with the option
+        num_threads.""", "boolean")),
+    ("num_threads", ("""The number of threads to use when using the Noodles
+        workflow engine for tuning using multiple threads, 1 by default.
+        Requires Noodles, see 'use_noodles' option.""", "int")),
+    ("iterations", ("""The number of times a kernel should be executed and
+        its execution time measured when benchmarking a kernel, 7 by default.""",
+        "int")),
+    ("verbose", ("""Sets whether or not to report about configurations that
         were skipped during the search. This could be due to several reasons:
 
             * kernel configuration fails one or more restrictions
@@ -158,57 +175,56 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             * too much shared memory used by the kernel
             * too many resources requested for launch
 
-        verbose is set to False by default.
-    :type verbose: boolean
+        verbose is False by default.""", "bool")),
+    ])
 
-    :param lang: Specifies the language used for GPU kernels. The kernel_tuner
+_device_options = Options([
+    ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA", "OpenCL", or "C"
-    :type lang: string
-
-    :param device: CUDA/OpenCL device to use, in case you have multiple
+        the language using this argument, currently supported: "CUDA",
+        "OpenCL", or "C".""", "string")),
+    ("device", ("""CUDA/OpenCL device to use, in case you have multiple
         CUDA-capable GPUs or OpenCL devices you may use this to select one,
-        0 by default. Ignored if you are tuning host code by passing lang="C".
-    :type device: int
-
-    :param platform: OpenCL platform to use, in case you have multiple
+        0 by default. Ignored if you are tuning host code by passing
+        lang="C".""", "int")),
+    ("platform", ("""OpenCL platform to use, in case you have multiple
         OpenCL platforms you may use this to select one,
-        0 by default. Ignored if not using OpenCL.
-    :type platform: int
+        0 by default. Ignored if not using OpenCL. """, "int")),
+    ("quiet", ("""Control whether or not to print to the console which
+        device is being used, False by default""", "boolean")),
+    ("compiler_options", ("""A list of strings that specify compiler
+        options.""", "list(string)"))
+    ])
 
-    :param cmem_args: CUDA-specific feature for specifying constant memory
-        arguments to the kernel. In OpenCL these are handled as normal
-        kernel arguments, but in CUDA you can copy to a symbol. The way you
-        specify constant memory arguments is by passing a dictionary with
-        strings containing the constant memory symbol name together with numpy
-        objects in the same way as normal kernel arguments.
-    :type cmem_args: dict(string: numpy object)
 
-    :param compiler_options: A list of strings that specifies compiler options.
-    :type compiler_options: list(string)
 
-    :param sample: Benchmark only a sample fraction of the search space, False by
-        default. To enable sampling, pass a value between 0 and 1.
-    :type sample: float
+def _get_docstring(opts):
+    docstr = ""
+    for k, v in opts.items():
+        docstr += "    :param " + k + ": " + v[0] + "\n"
+        docstr += "    :type "  + k + ": " + v[1] + "\n\n"
+    return docstr
 
-    :param use_noodles: Use Noodles workflow engine to tune in parallel using
-        multiple threads, False by Default.
-        Requires Noodles to be installed, use 'pip install noodles'.
-        Note that Noodles requires Python 3.5 or newer.
-        You can configure the number of threads to use with the option num_threads.
-    :type use_noodles: bool
+_tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameters
 
-    :param num_threads: The number of threads to use when using the Noodles
-        workflow engine for tuning using multiple threads, 1 by default.
-        Requires Noodles, see 'use_noodles' option.
-    :type num_threads: int
+%s
 
     :returns: A list of dictionaries of all executed kernel configurations and their
         execution times. And a dictionary with information about the environment
         in which the tuning took place. This records device name, properties,
         version info, and so on.
     :rtype: list(dict()), dict()
-    """
+
+""" % _get_docstring(_kernel_options) + _get_docstring(_tuning_options) + _get_docstring(_device_options)
+
+#"""
+
+def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
+                tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
+                restrictions=None, answer=None, atol=1e-6, verbose=False,
+                lang=None, device=0, platform=0, cmem_args=None,
+                num_threads=1, use_noodles=False, sample_fraction=False, compiler_options=None, log=None,
+                iterations=7, block_size_names=None, quiet=False):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -216,18 +232,22 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #see if the kernel arguments have correct type
     util.check_argument_list(arguments)
 
-    #compute cartesian product of all tunable parameters
-    parameter_space = itertools.product(*tune_params.values())
+    #sort all the options into separate dicts
+    opts = locals()
+    kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
+    tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
+    device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
-    #check for search space restrictions
-    if restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(restrictions, p, tune_params.keys(), verbose), parameter_space)
+    #select strategy based on user options
+    if sample_fraction:
+        strategy = random_sample
+    else:
+        strategy = brute_force
 
     #select runner based on user options
-    if sample:
-        import kernel_tuner.runners.random_sample as runner
-    elif num_threads == 1 and not use_noodles:
-        import kernel_tuner.runners.sequential_brute_force as runner
+    if num_threads == 1 and not use_noodles:
+        from kernel_tuner.runners.sequential import SequentialRunner
+        runner = SequentialRunner(kernel_options, device_options, iterations)
     elif num_threads > 1 and not use_noodles:
         raise ValueError("Using multiple threads requires the Noodles runner, use use_noodles=True")
     elif use_noodles:
@@ -237,17 +257,14 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         #check if noodles is installed in a way that works with Python 3.4 or newer
         noodles_installed = importlib.util.find_spec("noodles") is not None
         if not noodles_installed:
-            raise ValueError("Using multiple threads requires Noodles, please install using 'pip install noodles'")
+            raise ValueError("Using multiple threads requires Noodles, please use 'pip install noodles'")
         #import the NoodlesRunner
         from kernel_tuner.runners.noodles import NoodlesRunner
-        runner = NoodlesRunner(num_threads)
+        runner = NoodlesRunner(device_options, num_threads)
     else:
         raise ValueError("Somehow no runner was selected, this should not happen, please file a bug report")
 
-    results, env = runner.run(kernel_name, kernel_string, problem_size, arguments,
-                              tune_params, parameter_space, (grid_div_x, grid_div_y, grid_div_z),
-                              answer, atol, verbose,
-                              lang, device, platform, cmem_args, compiler_options, sample_fraction=sample, block_size_names=block_size_names)
+    results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
     #finished iterating over search space
     if results:     #checks if results is not empty
@@ -259,11 +276,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     return results, env
 
 
+tune_kernel.__doc__ = _tune_kernel_docstring
 
-def run_kernel(kernel_name, original_kernel, problem_size, arguments,
-               params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-               lang=None, device=0, platform=0, cmem_args=None, compiler_options=None):
-    """Compile and run a single kernel
+
+_run_kernel_docstring = """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
     However, instead of measuring execution time run_kernel returns the output of the kernel.
@@ -280,79 +296,39 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     This function was added to the Kernel Tuner mostly to allow easy testing for kernel correctness.
     On purpose, the interface is a lot like `tune_kernel()`.
 
-    :param kernel_name: The name of the kernel in the code
-    :type kernel_name: string
-
-    :param kernel_string: The CUDA, OpenCL, or C kernel code as a string.
-            It is also allowed for the string to be a filename of the file
-            containing the code.
-
-            To support combined host and device code tuning for runtime
-            compiled device code, a list of filenames can be passed instead.
-            The first file in the list should be the file that contains the
-            host code. The host code is allowed to include or read as a string
-            any of the files in the list beyond the first.
-    :type kernel_string: string or list
-
-    :param problem_size: A tuple containing the size from which the grid
-            dimensions of the kernel will be computed. Do not divide by
-            the thread block sizes, if this is necessary use grid_div_x/y to
-            specify.
-    :type problem_size: tuple(int, int)
-
-    :param arguments: A list of kernel arguments, use numpy arrays for
-            arrays, use numpy.int32 or numpy.float32 for singulars
-    :type arguments: list
+%s
 
     :param params: A dictionary containing the tuning parameter names as keys
             and a single value per tuning parameter as values.
     :type params: dict( string: int )
 
-    :param grid_div_x: See tune_kernel()
-    :type grid_div_x: list
-
-    :param grid_div_y: See tune_kernel()
-    :type grid_div_y: list
-
-    :param grid_div_z: See tune_kernel()
-    :type grid_div_z: list
-
-    :param lang: Language of the kernel, supply "CUDA", "OpenCL", or "C" if not detected automatically.
-    :type lang: string
-
-    :param device: CUDA/OpenCL device to use, 0 by default.
-    :type device: int
-
-    :param platform: OpenCL platform to use, in case you have multiple
-        OpenCL platforms you may use this to select one,
-        0 by default. Ignored if not using OpenCL.
-    :type device: int
-
-    :param cmem_args: CUDA-specific feature for specifying constant memory
-        arguments to the kernel. See tune_kernel() for details.
-    :type cmem_args: dict(string, ...)
-
-    :param compiler_options: A list of strings that specifies compiler options.
-    :type compiler_options: list(string)
-
     :returns: A list of numpy arrays, similar to the arguments passed to this
         function, containing the output after kernel execution.
     :rtype: list
-    """
+""" % _get_docstring(_kernel_options) + _get_docstring(_device_options)
+
+
+def run_kernel(kernel_name, kernel_string, problem_size, arguments,
+               params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
+               lang=None, device=0, platform=0, cmem_args=None, compiler_options=None,
+               block_size_names=None, quiet=False):
+
+    #sort options into separate dicts
+    opts = locals()
+    kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
+    device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
     #detect language and create the right device function interface
-    dev = core.DeviceInterface(device, platform, original_kernel, lang=lang, compiler_options=compiler_options)
+    dev = core.DeviceInterface(kernel_string, **device_options, iterations=1)
 
     #move data to the GPU
     util.check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
-    grid_div = (grid_div_x, grid_div_y, grid_div_z)
-
     instance = None
     try:
         #create kernel instance
-        instance = dev.create_kernel_instance(kernel_name, original_kernel, problem_size, grid_div, params, False)
+        instance = dev.create_kernel_instance(kernel_options, params, False)
         if instance is None:
             raise Exception("cannot create kernel instance, too many threads per block")
 
@@ -367,7 +343,7 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
     finally:
         #delete temp files
         if instance is not None:
-            for v in instance["temp_files"].values():
+            for v in instance.temp_files.values():
                 util.delete_temp_file(v)
 
     #run the kernel
@@ -384,3 +360,6 @@ def run_kernel(kernel_name, original_kernel, problem_size, arguments,
             dev.memcpy_dtoh(results[-1], gpu_args[i])
 
     return results
+
+
+run_kernel.__doc__ = _run_kernel_docstring

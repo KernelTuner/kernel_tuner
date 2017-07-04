@@ -16,7 +16,7 @@ def test_random_sample():
     tune_params = {"block_size_x": range(1,25)}
     print(tune_params)
 
-    result, _ = kernel_tuner.tune_kernel("test_kernel", kernel_string, (1,1), [a], tune_params, sample=0.1)
+    result, _ = kernel_tuner.tune_kernel("test_kernel", kernel_string, (1,1), [a], tune_params, sample_fraction=0.1)
 
     print(result)
 

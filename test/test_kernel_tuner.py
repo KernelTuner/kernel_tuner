@@ -194,21 +194,21 @@ def test_detect_language4():
 def test_get_device_interface1():
     skip_if_no_cuda_device()
     lang = "CUDA"
-    dev = core.DeviceInterface(0, 0, "", lang=lang)
+    dev = core.DeviceInterface("", 0, 0, lang=lang)
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, cuda.CudaFunctions)
 
 def test_get_device_interface2():
     skip_if_no_opencl()
     lang = "OpenCL"
-    dev = core.DeviceInterface(0, 0, "", lang=lang)
+    dev = core.DeviceInterface("", 0, 0, lang=lang)
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, opencl.OpenCLFunctions)
 
 @raises(Exception)
 def test_get_device_interface3():
     lang = "blabla"
-    core.DeviceInterface(0, 0, "", lang=lang)
+    core.DeviceInterface("", 0, 0, lang=lang)
 
 def test_check_argument_list1():
     args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
