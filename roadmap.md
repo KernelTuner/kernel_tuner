@@ -9,7 +9,6 @@ priorities grow and shift.
 This is the list of features that we want to have implemented by the next version.
 
  * Option to set a function that performs output verfication, instead of numpy.allclose()
- * Option to change defaults for 'block_size_x', and so on
  * Option to set a function that computes search space restriction, instead of a list of strings
  * Option to set function that computes grid dimensions instead of grid divisor lists
  * Option to set dynamically allocated shared memory for CUDA backend

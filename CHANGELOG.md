@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - parallel tuning on single node using Noodles runner
+- option to pass new defaults for block dimensions
 
 ## [0.1.4] - 2017-06-14
 ### Changed
