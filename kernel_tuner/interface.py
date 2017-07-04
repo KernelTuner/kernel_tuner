@@ -39,7 +39,10 @@ from kernel_tuner.strategies import brute_force, random_sample
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
-    __getattr__ = OrderedDict.__getitem__
+    def __getattr__(self, name):
+        if not name.startswith('_'):
+            return self[name]
+        return super(Options, self).__getattr__(name)
     def __deepcopy__(self, _):
         return self
 
@@ -317,7 +320,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
     #detect language and create the right device function interface
-    dev = core.DeviceInterface(kernel_string, **device_options, iterations=1)
+    dev = core.DeviceInterface(kernel_string, iterations=1, **device_options)
 
     #move data to the GPU
     util.check_argument_list(arguments)

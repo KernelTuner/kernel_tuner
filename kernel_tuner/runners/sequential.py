@@ -13,7 +13,7 @@ class SequentialRunner(object):
     def __init__(self, kernel_options, device_options, iterations):
 
         #detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_options.kernel_string, **device_options, iterations=iterations)
+        self.dev = DeviceInterface(kernel_options.kernel_string, iterations=iterations, **device_options)
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)

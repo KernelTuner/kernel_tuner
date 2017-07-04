@@ -109,7 +109,7 @@ class NoodlesRunner:
         """Benchmark a single kernel instance in the parameter space"""
 
         #detect language and create high-level device interface
-        dev = DeviceInterface(kernel_options.kernel_string, **device_options, iterations=tuning_options.iterations)
+        dev = DeviceInterface(kernel_options.kernel_string, iterations=tuning_options.iterations, **device_options)
 
         #move data to the GPU
         gpu_args = dev.ready_argument_list(kernel_options.arguments)
