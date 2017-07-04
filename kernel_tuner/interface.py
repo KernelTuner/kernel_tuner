@@ -40,15 +40,13 @@ from kernel_tuner.strategies import brute_force, random_sample
 class Options(OrderedDict):
     """read-only class for passing options around"""
     __getattr__ = OrderedDict.__getitem__
-    def __add__(a, b):
-        return Options(a, **b)
     def __deepcopy__(self, _):
         return self
 
 
 _kernel_options = Options([
     ("kernel_name", ("""The name of the kernel in the code.""", "string")),
-    ("kernel_string" , ("""The CUDA, OpenCL, or C kernel code as a string.
+    ("kernel_string", ("""The CUDA, OpenCL, or C kernel code as a string.
             It is also allowed for the string to be a filename of the file
             containing the code.
 

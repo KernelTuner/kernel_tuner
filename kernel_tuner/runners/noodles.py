@@ -9,7 +9,6 @@ from noodles.run.runners import run_parallel_with_display, run_parallel
 from noodles.display import NCDisplay
 from noodles.interface import AnnotatedValue
 
-from kernel_tuner.util import get_instance_string
 from kernel_tuner.core import DeviceInterface
 
 class RefCopy:
@@ -74,7 +73,7 @@ class NoodlesRunner:
         for chunk in answer:
             result += [d for d in chunk if d['time']]
 
-        for i,d in enumerate(result):
+        for i, d in enumerate(result):
             result[i]['time'] = d['time'].value
 
         return result, {}
@@ -92,7 +91,7 @@ class NoodlesRunner:
         random.shuffle(parameter_space)
 
         #split parameter space into chunks
-        work_per_thread = int(numpy.ceil( len(parameter_space) / float(self.max_threads)))
+        work_per_thread = int(numpy.ceil(len(parameter_space) / float(self.max_threads)))
         chunks = _chunk_list(parameter_space, work_per_thread)
 
         for chunk in chunks:
@@ -119,8 +118,6 @@ class NoodlesRunner:
 
         for element in chunk:
             params = dict(OrderedDict(zip(tuning_options.tune_params.keys(), element)))
-
-            instance_string = get_instance_string(params)
 
             try:
                 time = dev.compile_and_benchmark(gpu_args, params, kernel_options, tuning_options)

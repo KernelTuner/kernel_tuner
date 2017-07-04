@@ -1,9 +1,7 @@
 """ The default runner for iterating through the parameter space """
 from __future__ import print_function
 
-from collections import OrderedDict
 import itertools
-import logging
 
 from kernel_tuner import util
 
