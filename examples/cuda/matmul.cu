@@ -47,7 +47,7 @@ __global__ void matmul_kernel(float *C, float *A, float *B) {
 
     for (k = 0; k < WIDTH; k += block_size_x) {
 
-        __syncthreads ();
+        __syncthreads();
         #pragma unroll
         for (int i = 0; i < tile_size_y; i++) {
             sA[ty + block_size_y * i][tx] = A[(y+i*block_size_y) * WIDTH + k + tx];
