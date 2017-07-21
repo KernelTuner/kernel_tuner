@@ -68,6 +68,7 @@ Reduction
  - use vector types and shuffle instructions (shuffle is only available in CUDA)
  - tune the number of thread blocks the kernel is executed with
  - tune pipeline that consists of two kernels
+ - tune with custom output verification function
 
 Sparse Matrix Vector Multiplication
 -----------------------------------

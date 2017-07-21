@@ -131,6 +131,7 @@ _tuning_options = Options([
             combinations of all possible values for all tuning parameters.
             This typically results in a rather large search space of all
             possible kernel configurations.
+
             For each kernel configuration, each tuning parameter is
             replaced at compile-time with its current value.
             Currently, the Kernel Tuner uses the convention that the following
@@ -163,6 +164,18 @@ _tuning_options = Options([
         in the output and the reference answer, as passed to numpy.allclose().
         Ignored if you have not passed a reference answer. Default value is
         1e-6, that is 0.000001.""", "float")),
+    ("verify", ("""Python function used for output verification. By default,
+        numpy.allclose is used for output verification, if this does not suit
+        your application, you can pass a different function here.
+
+        The function is expected to have two positional arguments. The first
+        is the reference result, the second is the output computed by the
+        kernel being verified. The types of these arguments depends on the
+        type of the output arguments you are verifying. The function may also
+        have an optional argument named atol, to which the value will be
+        passed that was specified using the atol option to tune_kernel.
+        The function should return True when the output passes the test, and
+        False when the output fails the test.""", "func(ref, ans, atol=None)")),
     ("sample_fraction", ("""Benchmark only a sample fraction of the search space, False by
         default. To enable sampling, pass a value between 0 and 1.""", "float")),
     ("use_noodles", ("""Use Noodles workflow engine to tune in parallel using
@@ -231,7 +244,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-                restrictions=None, answer=None, atol=1e-6, verbose=False,
+                restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None,
                 num_threads=1, use_noodles=False, sample_fraction=False, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False):

@@ -11,7 +11,7 @@ from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
 import kernel_tuner.util as util
 
-KernelInstance = namedtuple("KernelInstance", ["name", "kernel_string", "temp_files", "threads", "grid", "params"])
+KernelInstance = namedtuple("KernelInstance", ["name", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
 
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
@@ -85,27 +85,48 @@ class DeviceInterface(object):
                 raise e
         return time
 
-    def check_kernel_correctness(self, func, gpu_args, instance, answer, atol, verbose):
+    def check_kernel_correctness(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
         logging.debug('check_kernel_correctness')
         params = instance.params
 
         #zero GPU memory for output arguments
-        for result, expected in zip(gpu_args, answer):
-            if expected is not None:
-                self.dev.memset(result, 0, expected.nbytes)
+        for i, arg in enumerate(instance.arguments):
+            if answer[i] is not None:
+                self.dev.memset(gpu_args[i], 0, arg.nbytes)
 
         #run the kernel
         if not self.run_kernel(func, gpu_args, instance):
             return True #runtime failure occured that should be ignored, skip correctness check
 
+        def _ravel(a):
+            if hasattr(a, 'ravel') and len(a.shape) > 1:
+                return a.ravel()
+            return a
+
+        def _flatten(a):
+            if hasattr(a, 'flatten'):
+                return a.flatten()
+            return a
+
         #check correctness of each output argument
         correct = True
-        for result, expected in zip(gpu_args, answer):
+        for i, arg in enumerate(instance.arguments):
+            expected = answer[i]
             if expected is not None:
-                result_host = numpy.zeros_like(expected)
-                self.dev.memcpy_dtoh(result_host, result)
-                output_test = numpy.allclose(result_host.ravel(), expected.ravel(), atol=atol)
+                result_host = numpy.zeros_like(arg)
+                self.dev.memcpy_dtoh(result_host, gpu_args[i])
+
+                result_host = _ravel(result_host)
+                expected = _flatten(expected)
+                if verify is None:
+                    output_test = numpy.allclose(expected, result_host, atol=atol)
+                else:
+                    try:
+                        output_test = verify(expected, result_host, atol=atol)
+                    except TypeError:
+                        output_test = verify(expected, result_host)
+
                 if not output_test and verbose:
                     print("Error: " + util.get_config_string(params) + " detected during correctness check")
                     print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
@@ -148,7 +169,7 @@ class DeviceInterface(object):
 
             #test kernel for correctness and benchmark
             if tuning_options.answer is not None:
-                self.check_kernel_correctness(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, verbose)
+                self.check_kernel_correctness(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
 
             #benchmark
             time = self.benchmark(func, gpu_args, instance, verbose)
@@ -219,7 +240,7 @@ class DeviceInterface(object):
         name, kernel_string = util.setup_kernel_strings(kernel_options.kernel_name, kernel_string, params, grid)
 
         #collect everything we know about this instance and return it
-        return KernelInstance(name, kernel_string, temp_files, threads, grid, params)
+        return KernelInstance(name, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
 
     def get_environment(self):
         """Return dictionary with information about the environment"""

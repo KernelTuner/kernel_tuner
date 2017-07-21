@@ -6,11 +6,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - option to pass a fraction to the sample runner
+- fixed a bug in memset for OpenCL backend
 
 ### Added
 - parallel tuning on single node using Noodles runner
 - option to pass new defaults for block dimensions
 - option to pass a Python function as code generator
+- option to pass custom function for output verification
 
 ## [0.1.4] - 2017-06-14
 ### Changed

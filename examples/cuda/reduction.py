@@ -25,9 +25,14 @@ def tune():
 
     args = [sum_x, x, n]
 
+    #prepare output verification with custom function
+    reference = [numpy.sum(x), None, None]
+    def verify_partial_reduce(cpu_result, gpu_result, atol=None):
+        return numpy.isclose(cpu_result, numpy.sum(gpu_result), atol=atol)
+
     #tune the first kernel
     first_kernel, _ = tune_kernel("sum_floats", kernel_string, problem_size,
-        args, tune_params, grid_div_x=[], verbose=True)
+        args, tune_params, grid_div_x=[], verbose=True, answer=reference, verify=verify_partial_reduce)
 
     #tune the second kernel for different input sizes
     #depending on the number of blocks used in the first kernel
