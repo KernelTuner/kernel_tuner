@@ -1,4 +1,4 @@
-""" The default runner for iterating through the parameter space """
+""" Iterate over a random sample of the parameter space """
 from __future__ import print_function
 
 import itertools

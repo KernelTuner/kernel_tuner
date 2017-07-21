@@ -1,4 +1,4 @@
-""" The default runner for iterating through the parameter space """
+""" The default runner for sequentially tuning the parameter space """
 from __future__ import print_function
 
 from collections import OrderedDict
@@ -9,8 +9,22 @@ from kernel_tuner.core import DeviceInterface
 
 
 class SequentialRunner(object):
+    """ SequentialRunner is used for tuning with a single process/thread """
 
     def __init__(self, kernel_options, device_options, iterations):
+        """ Instantiate the SequentialRunner
+
+        :param kernel_options: A dictionary with all options for the kernel.
+        :type kernel_options: kernel_tuner.interface.Options
+
+        :param device_options: A dictionary with all options for the device
+            on which the kernel should be tuned.
+        :type device_options: kernel_tuner.interface.Options
+
+        :param iterations: The number of iterations used for benchmarking
+            each kernel instance.
+        :type iterations: int
+        """
 
         #detect language and create high-level device interface
         self.dev = DeviceInterface(kernel_options.kernel_string, iterations=iterations, **device_options)
@@ -29,13 +43,14 @@ class SequentialRunner(object):
         :type kernel_options: kernel_tuner.interface.Options
 
         :param tuning_options: A dictionary with all options regarding the tuning
-        process.
+            process.
         :type tuning_options: kernel_tuner.iterface.Options
 
         :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
+            execution times. And a dictionary that contains a information
+            about the hardware/software environment on which the tuning took place.
         :rtype: list(dict()), dict()
+
         """
         logging.debug('sequential runner started for ' + kernel_options.kernel_name)
 

@@ -1,3 +1,4 @@
+""" The Noodles runner allows tuning in parallel using multiple processes/threads """
 import subprocess
 import random
 from collections import OrderedDict
@@ -10,13 +11,6 @@ from noodles.display import NCDisplay
 from noodles.interface import AnnotatedValue
 
 from kernel_tuner.core import DeviceInterface
-
-class RefCopy:
-    def __init__(self, obj):
-        self.obj = obj
-
-    def __deepcopy__(self, _):
-        return self.obj
 
 def _error_filter(errortype, value=None, tb=None):
     if errortype is subprocess.CalledProcessError:

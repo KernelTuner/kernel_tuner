@@ -1,4 +1,4 @@
-""" The default runner for iterating through the parameter space """
+""" The default strategy that iterates through the whole parameter space """
 from __future__ import print_function
 
 import itertools

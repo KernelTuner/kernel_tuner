@@ -56,9 +56,20 @@ functions, but mostly to tune C functions that also launch GPU kernels.
 The rest of this section contains the API documentation of the modules 
 discussed above.
 
-kernel_tuner.runners.sequential_brute_force
+kernel_tuner.strategies.brute_force
 -------------------------------------------
-.. automodule:: kernel_tuner.runners.sequential_brute_force
+.. automodule:: kernel_tuner.strategies.brute_force
+    :members:
+
+kernel_tuner.strategies.random_sample
+-------------------------------------------
+.. automodule:: kernel_tuner.strategies.random_sample
+    :members:
+
+kernel_tuner.runners.sequential.SequentialRunner
+------------------------------------------------
+.. autoclass:: kernel_tuner.runners.sequential.SequentialRunner
+    :special-members: __init__
     :members:
 
 kernel_tuner.core.DeviceInterface
