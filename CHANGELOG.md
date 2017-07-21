@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+
+## [0.1.5] - 2017-07-21
 ### Changed
 - option to pass a fraction to the sample runner
 - fixed a bug in memset for OpenCL backend
