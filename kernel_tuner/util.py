@@ -6,15 +6,68 @@ import errno
 import tempfile
 import numpy
 
+def check_argument_list(args):
+    """ raise an exception if a kernel argument is of unsupported type """
+    for (i, arg) in enumerate(args):
+        if not isinstance(arg, (numpy.ndarray, numpy.generic)):
+            raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
+
+def check_restrictions(restrictions, element, keys, verbose):
+    """ check whether a specific instance meets the search space restrictions """
+    params = dict(zip(keys, element))
+    for restrict in restrictions:
+        if not eval(replace_param_occurrences(restrict, params)):
+            if verbose:
+                print("skipping config", get_instance_string(params), "reason: config fails restriction")
+            return False
+    return True
+
+def delete_temp_file(filename):
+    """ delete a temporary file, don't complain if is no longer exists """
+    try:
+        os.remove(filename)
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise e
+
+def detect_language(lang, original_kernel):
+    """attempt to detect language from the kernel_string if not specified"""
+    if lang is None:
+        kernel_string = original_kernel
+        if looks_like_a_filename(original_kernel):
+            kernel_string = read_file(original_kernel) or original_kernel
+        if "__global__" in kernel_string:
+            lang = "CUDA"
+        elif "__kernel" in kernel_string:
+            lang = "OpenCL"
+        else:
+            lang = "C"
+    return lang
+
+def get_config_string(params):
+    """ return a compact string representation of a dictionary """
+    return ", ".join([k + "=" + str(v) for k, v in params.items()])
+
+def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names=None):
+    """compute grid dims based on problem sizes and listed grid divisors"""
+    if not block_size_names:
+        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+
+    def get_dimension_divisor(divisor_list, default, params):
+        if divisor_list is None:
+            if default in params:
+                divisor_list = [default]
+            else:
+                return 1
+        return numpy.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
+    return tuple(int(numpy.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
+
 def get_instance_string(params):
     """ combine the parameters to a string mostly used for debug output
         use of OrderedDict is advised
     """
     return "_".join([str(i) for i in params.values()])
-
-def get_config_string(params):
-    """ return a compact string representation of a dictionary """
-    return ", ".join([k + "=" + str(v) for k, v in params.items()])
 
 def get_kernel_string(original_kernel):
     """ retrieves kernel string from a file if the string passed looks like filename
@@ -26,18 +79,34 @@ def get_kernel_string(original_kernel):
         kernel_string = read_file(original_kernel) or original_kernel
     return kernel_string
 
-def delete_temp_file(filename):
-    """ delete a temporary file, don't complain if is no longer exists """
-    try:
-        os.remove(filename)
-    except OSError as e:
-        if e.errno != errno.ENOENT:
-            raise e
+def get_problem_size(problem_size, params):
+    """compute current problem size"""
+    if isinstance(problem_size, (str, int, numpy.integer)):
+        problem_size = (problem_size, )
+    current_problem_size = [1, 1, 1]
+    for i, s in enumerate(problem_size):
+        if isinstance(s, str):
+            current_problem_size[i] = int(eval(replace_param_occurrences(s, params)))
+        elif isinstance(s, (int, numpy.integer)):
+            current_problem_size[i] = s
+        else:
+            raise TypeError("Error: problem_size should only contain strings or integers")
+    return current_problem_size
 
 def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
     file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd()) # or "" for Python 2 compatibility
     return file[1]
+
+def get_thread_block_dimensions(params, block_size_names=None):
+    """thread block size from tuning params, currently using convention"""
+    if not block_size_names:
+        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+
+    block_size_x = params.get(block_size_names[0], 256)
+    block_size_y = params.get(block_size_names[1], 1)
+    block_size_z = params.get(block_size_names[2], 1)
+    return (block_size_x, block_size_y, block_size_z)
 
 def looks_like_a_filename(original_kernel):
     """ attempt to detect whether source code or a filename was passed """
@@ -59,78 +128,15 @@ def looks_like_a_filename(original_kernel):
         result = result and ".c" in original_kernel
     return result
 
-def read_file(filename):
-    """ return the contents of the file named filename or None if file not found """
-    if os.path.isfile(filename):
-        with open(filename, 'r') as f:
-            return f.read()
-
-def write_file(filename, string):
-    """ dump the contents of string to a file called filename """
-    import sys
-    #ugly fix, hopefully we can find a better one
-    if sys.version_info[0] >= 3:
-        with open(filename, 'w', encoding="utf-8") as f:
-            f.write(string)
-    else:
-        with open(filename, 'w') as f:
-            f.write(string.encode("utf-8"))
-
-def detect_language(lang, original_kernel):
-    """attempt to detect language from the kernel_string if not specified"""
-    if lang is None:
-        kernel_string = original_kernel
-        if looks_like_a_filename(original_kernel):
-            kernel_string = read_file(original_kernel) or original_kernel
-        if "__global__" in kernel_string:
-            lang = "CUDA"
-        elif "__kernel" in kernel_string:
-            lang = "OpenCL"
-        else:
-            lang = "C"
-    return lang
-
-
-def get_problem_size(problem_size, params):
-    """compute current problem size"""
-    if isinstance(problem_size, (str, int, numpy.integer)):
-        problem_size = (problem_size, )
-    current_problem_size = [1, 1, 1]
-    for i, s in enumerate(problem_size):
-        if isinstance(s, str):
-            current_problem_size[i] = int(eval(replace_param_occurrences(s, params)))
-        elif isinstance(s, (int, numpy.integer)):
-            current_problem_size[i] = s
-        else:
-            raise TypeError("Error: problem_size should only contain strings or integers")
-    return current_problem_size
-
-
-def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names=None):
-    """compute grid dims based on problem sizes and listed grid divisors"""
-    if not block_size_names:
-        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
-
-    def get_dimension_divisor(divisor_list, default, params):
-        if divisor_list is None:
-            if default in params:
-                divisor_list = [default]
-            else:
-                return 1
-        return numpy.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
-    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
-    return tuple(int(numpy.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
-
-def get_thread_block_dimensions(params, block_size_names=None):
-    """thread block size from tuning params, currently using convention"""
-    if not block_size_names:
-        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
-
-    block_size_x = params.get(block_size_names[0], 256)
-    block_size_y = params.get(block_size_names[1], 1)
-    block_size_z = params.get(block_size_names[2], 1)
-    return (block_size_x, block_size_y, block_size_z)
-
+def prepare_kernel_string(original_kernel, params, grid=(1, 1, 1)):
+    """prepend the kernel with a series of C preprocessor defines"""
+    kernel_string = original_kernel
+    grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
+    for i, g in enumerate(grid):
+        kernel_string = "#define " + grid_dim_names[i] + " " + str(g) + "\n" + kernel_string
+    for k, v in params.items():
+        kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
+    return kernel_string
 
 def prepare_list_of_files(kernel_file_list, params, grid):
     """ prepare the kernel string along with any additional files
@@ -173,37 +179,17 @@ def prepare_list_of_files(kernel_file_list, params, grid):
 
     return kernel_string, temp_files
 
-def prepare_kernel_string(original_kernel, params, grid=(1, 1, 1)):
-    """prepend the kernel with a series of C preprocessor defines"""
-    kernel_string = original_kernel
-    grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
-    for i, g in enumerate(grid):
-        kernel_string = "#define " + grid_dim_names[i] + " " + str(g) + "\n" + kernel_string
-    for k, v in params.items():
-        kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
-    return kernel_string
+def read_file(filename):
+    """ return the contents of the file named filename or None if file not found """
+    if os.path.isfile(filename):
+        with open(filename, 'r') as f:
+            return f.read()
 
 def replace_param_occurrences(string, params):
     """replace occurrences of the tuning params with their current value"""
     for k, v in params.items():
         string = string.replace(k, str(v))
     return string
-
-def check_restrictions(restrictions, element, keys, verbose):
-    """ check whether a specific instance meets the search space restrictions """
-    params = dict(zip(keys, element))
-    for restrict in restrictions:
-        if not eval(replace_param_occurrences(restrict, params)):
-            if verbose:
-                print("skipping config", get_instance_string(params), "reason: config fails restriction")
-            return False
-    return True
-
-def check_argument_list(args):
-    """ raise an exception if a kernel argument is of unsupported type """
-    for (i, arg) in enumerate(args):
-        if not isinstance(arg, (numpy.ndarray, numpy.generic)):
-            raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
 
 def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     """compute problem size, thread block and grid dimensions for this kernel"""
@@ -218,3 +204,14 @@ def setup_kernel_strings(kernel_name, original_kernel, params, grid):
     name = kernel_name + "_" + get_instance_string(params)
     kernel_string = kernel_string.replace(kernel_name, name)
     return name, kernel_string
+
+def write_file(filename, string):
+    """ dump the contents of string to a file called filename """
+    import sys
+    #ugly fix, hopefully we can find a better one
+    if sys.version_info[0] >= 3:
+        with open(filename, 'w', encoding="utf-8") as f:
+            f.write(string)
+    else:
+        with open(filename, 'w') as f:
+            f.write(string.encode("utf-8"))
