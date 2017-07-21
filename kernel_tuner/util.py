@@ -113,7 +113,7 @@ def get_thread_block_dimensions(params, block_size_names=None):
     block_size_x = params.get(block_size_names[0], 256)
     block_size_y = params.get(block_size_names[1], 1)
     block_size_z = params.get(block_size_names[2], 1)
-    return (block_size_x, block_size_y, block_size_z)
+    return (int(block_size_x), int(block_size_y), int(block_size_z))
 
 def looks_like_a_filename(original_kernel):
     """ attempt to detect whether source code or a filename was passed """
