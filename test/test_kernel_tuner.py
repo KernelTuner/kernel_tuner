@@ -229,6 +229,22 @@ def test_check_argument_list2():
     #test that no exception is raised
     assert True
 
+def test_get_kernel_string_func():
+    #test whether passing a function instead of string works
+    def gen_kernel(params):
+        return "__global__ void kernel_name() { %s }" % params["block_size_x"]
+    params = {"block_size_x": "//do that kernel thing!"}
+    expected = "__global__ void kernel_name() { //do that kernel thing! }"
+    answer = get_kernel_string(gen_kernel, params)
+    assert answer == expected
+
+def test_get_kernel_string_filename_not_found():
+    #when the string looks like a filename, but the file does not exist
+    #assume the string is not a filename after all
+    bogus_filename = "filename_3456789.cu"
+    answer = get_kernel_string(bogus_filename)
+    assert answer == bogus_filename
+
 
 def test_looks_like_a_filename1():
     string = "filename.c"
@@ -237,7 +253,6 @@ def test_looks_like_a_filename1():
 def test_looks_like_a_filename2():
     string = "__global__ void kernel_name() { //do that kernel thing! }"
     assert not looks_like_a_filename(string)
-
 
 def test_read_write_file():
     filename = get_temp_filename()
@@ -253,3 +268,4 @@ def test_read_write_file():
 
     finally:
         delete_temp_file(filename)
+

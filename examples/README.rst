@@ -89,3 +89,8 @@ ExpDist
  -  tune multiple kernels in pipeline
  -  tune in parallel using multiple threads
 
+Code Generator
+--------------
+[`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/vector_add_codegen.py>`__] [`OpenCL <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/vector_add.py>`__] [`C <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add_codegen.py>`__]
+ - use a Python function as a code generator
+

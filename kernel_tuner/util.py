@@ -30,12 +30,12 @@ def delete_temp_file(filename):
         if e.errno != errno.ENOENT:
             raise e
 
-def detect_language(lang, original_kernel):
+def detect_language(lang, kernel_source):
     """attempt to detect language from the kernel_string if not specified"""
     if lang is None:
-        kernel_string = original_kernel
-        if looks_like_a_filename(original_kernel):
-            kernel_string = read_file(original_kernel) or original_kernel
+        if callable(kernel_source):
+            raise TypeError("Please specify language when using a code generator function")
+        kernel_string = get_kernel_string(kernel_source)
         if "__global__" in kernel_string:
             lang = "CUDA"
         elif "__kernel" in kernel_string:
@@ -69,14 +69,21 @@ def get_instance_string(params):
     """
     return "_".join([str(i) for i in params.values()])
 
-def get_kernel_string(original_kernel):
+def get_kernel_string(kernel_source, params=None):
     """ retrieves kernel string from a file if the string passed looks like filename
         if the string does look like a filename, but the file does not exist, it
         is assumed that the string is not a filename after all.
     """
-    kernel_string = original_kernel
-    if looks_like_a_filename(original_kernel):
-        kernel_string = read_file(original_kernel) or original_kernel
+    kernel_string = None
+    if callable(kernel_source):
+        kernel_string = kernel_source(params)
+    elif isinstance(kernel_source, str):
+        if looks_like_a_filename(kernel_source):
+            kernel_string = read_file(kernel_source) or kernel_source
+        else:
+            kernel_string = kernel_source
+    else:
+        raise TypeError("Error kernel_source is not a string nor a callable function")
     return kernel_string
 
 def get_problem_size(problem_size, params):
@@ -128,9 +135,8 @@ def looks_like_a_filename(original_kernel):
         result = result and ".c" in original_kernel
     return result
 
-def prepare_kernel_string(original_kernel, params, grid=(1, 1, 1)):
+def prepare_kernel_string(kernel_string, params, grid=(1, 1, 1)):
     """prepend the kernel with a series of C preprocessor defines"""
-    kernel_string = original_kernel
     grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
     for i, g in enumerate(grid):
         kernel_string = "#define " + grid_dim_names[i] + " " + str(g) + "\n" + kernel_string
@@ -165,14 +171,14 @@ def prepare_list_of_files(kernel_file_list, params, grid):
     """
     temp_files = dict()
 
-    kernel_string = get_kernel_string(kernel_file_list[0])
+    kernel_string = get_kernel_string(kernel_file_list[0], params)
     if len(kernel_file_list) > 1:
         for f in kernel_file_list[1:]:
             #generate temp filename with the same extension
             temp_file = get_temp_filename(suffix="." + f.split(".")[-1])
             temp_files[f] = temp_file
             #add preprocessor statements to the additional file
-            temp_file_string = prepare_kernel_string(get_kernel_string(f), params, grid)
+            temp_file_string = prepare_kernel_string(get_kernel_string(f, params), params, grid)
             write_file(temp_file, temp_file_string)
             #replace occurences of the additional file's name in the kernel_string with the name of the temp file
             kernel_string = kernel_string.replace(f, temp_file)

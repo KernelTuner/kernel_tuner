@@ -44,6 +44,8 @@ class DeviceInterface(object):
         :type iterations: int
 
         """
+        logging.debug('DeviceInterface instantiated, lang=%s', lang)
+
         lang = util.detect_language(lang, original_kernel)
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations)
@@ -211,7 +213,7 @@ class DeviceInterface(object):
         if isinstance(original_kernel, list):
             kernel_string, temp_files = util.prepare_list_of_files(original_kernel, params, grid)
         else:
-            kernel_string = util.get_kernel_string(original_kernel)
+            kernel_string = util.get_kernel_string(original_kernel, params)
 
         #prepare kernel_string for compilation
         name, kernel_string = util.setup_kernel_strings(kernel_options.kernel_name, kernel_string, params, grid)

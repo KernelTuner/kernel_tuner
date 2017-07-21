@@ -239,6 +239,11 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
+    logging.debug('tune_kernel called')
+    logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
+    logging.debug('tuning_options: %s', util.get_config_string(tuning_options))
+    logging.debug('device_options: %s', util.get_config_string(device_options))
+
     #select strategy based on user options
     if sample_fraction:
         strategy = random_sample
