@@ -400,7 +400,7 @@ the language using this argument, currently supported: &#8220;CUDA&#8221;, &#822
 
 <dl class="method">
 <dt id="kernel_tuner.core.DeviceInterface.check_kernel_correctness">
-<code class="descname">check_kernel_correctness</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>instance</em>, <em>answer</em>, <em>atol</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.check_kernel_correctness" title="Permalink to this definition">¶</a></dt>
+<code class="descname">check_kernel_correctness</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>instance</em>, <em>answer</em>, <em>atol</em>, <em>verify</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.check_kernel_correctness" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel once and checks the result against answer</p>
 </dd></dl>
 
@@ -903,7 +903,7 @@ function after compilation.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>allocation</strong> (<em>pyopencl.Buffer</em>) &#8211; An OpenCL Buffer to fill</li>
-<li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
+<li><strong>value</strong> (<em>a single 32-bit int</em>) &#8211; The value to set the memory to</li>
 <li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit in bytes</li>
 </ul>
 </td>

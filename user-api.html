@@ -181,7 +181,7 @@
 <p>This file provides all the details you need about how to call the Kernel Tuner&#8217;s functions, including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>block_size_names=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verify=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>block_size_names=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -259,8 +259,8 @@ and lists of possible parameter settings as values.
 The Kernel Tuner will try to compile and benchmark all possible
 combinations of all possible values for all tuning parameters.
 This typically results in a rather large search space of all
-possible kernel configurations.
-For each kernel configuration, each tuning parameter is
+possible kernel configurations.</p>
+<p>For each kernel configuration, each tuning parameter is
 replaced at compile-time with its current value.
 Currently, the Kernel Tuner uses the convention that the following
 list of tuning parameters are used as thread block dimensions:</p>
@@ -293,6 +293,18 @@ each kernel in the parameter space before it will be benchmarked.</li>
 in the output and the reference answer, as passed to numpy.allclose().
 Ignored if you have not passed a reference answer. Default value is
 1e-6, that is 0.000001.</li>
+<li><strong>verify</strong> (<em>func(ref, ans, atol=None)</em>) &#8211; <p>Python function used for output verification. By default,
+numpy.allclose is used for output verification, if this does not suit
+your application, you can pass a different function here.</p>
+<p>The function is expected to have two positional arguments. The first
+is the reference result, the second is the output computed by the
+kernel being verified. The types of these arguments depends on the
+type of the output arguments you are verifying. The function may also
+have an optional argument named atol, to which the value will be
+passed that was specified using the atol option to tune_kernel.
+The function should return True when the output passes the test, and
+False when the output fails the test.</p>
+</li>
 <li><strong>sample_fraction</strong> (<em>float</em>) &#8211; Benchmark only a sample fraction of the search space, False by
 default. To enable sampling, pass a value between 0 and 1.</li>
 <li><strong>use_noodles</strong> (<em>boolean</em>) &#8211; Use Noodles workflow engine to tune in parallel using
