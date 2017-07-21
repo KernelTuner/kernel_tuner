@@ -57,7 +57,16 @@ _kernel_options = Options([
             compiled device code, a list of filenames can be passed instead.
             The first file in the list should be the file that contains the
             host code. The host code is allowed to include or read as a string
-            any of the files in the list beyond the first.""", "string or list")),
+            any of the files in the list beyond the first.
+
+            Another alternative is to pass a function instead, or instead
+            of the first item in the list of filenames. The purpose of this
+            is to support the use of code generating functions that generate
+            the kernel code based on the specific parameters. This function
+            should take one positional argument, which will be used to pass
+            a dict containing the parameters. The function should return a
+            string with the source code for the kernel.""",
+            "string or list and/or callable")),
     ("problem_size", ("""An int or string, or 1,2,3-dimensional tuple
             containing the size from which the grid dimensions of the kernel
             will be computed.
