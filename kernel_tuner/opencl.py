@@ -156,14 +156,14 @@ class OpenCLFunctions(object):
         :type allocation: pyopencl.Buffer
 
         :param value: The value to set the memory to
-        :type value: a single 32-bit float or int
+        :type value: a single 32-bit int
 
         :param size: The size of to the allocation unit in bytes
         :type size: int
 
         """
         if isinstance(buffer, cl.Buffer):
-            cl.enqueue_fill_buffer(self.queue, buffer, numpy.array(value).astype(numpy.float32), 0, size//4)
+            cl.enqueue_fill_buffer(self.queue, buffer, numpy.uint32(value), 0, size)
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
