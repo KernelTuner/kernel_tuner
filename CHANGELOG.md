@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+
+### Added
+- support for dynamic parallelism when using PyCUDA
+
 
 ## [0.1.5] - 2017-07-21
 ### Changed

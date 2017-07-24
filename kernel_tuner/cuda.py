@@ -8,7 +8,7 @@ import numpy
 #and run tests without pycuda installed
 try:
     import pycuda.driver as drv
-    from pycuda.compiler import SourceModule
+    from pycuda.compiler import DynamicSourceModule
 except ImportError:
     drv = None
     SourceModule = None
@@ -102,7 +102,7 @@ class CudaFunctions(object):
             if self.compiler_options:
                 compiler_options += self.compiler_options
 
-            self.current_module = SourceModule(kernel_string, options=self.compiler_options + ["-e", kernel_name],
+            self.current_module = DynamicSourceModule(kernel_string, options=self.compiler_options + ["-e", kernel_name],
                                                arch='compute_' + self.cc, code='sm_' + self.cc,
                                                cache_dir=False, no_extern_c=no_extern_c)
             func = self.current_module.get_function(kernel_name)

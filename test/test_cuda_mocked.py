@@ -38,7 +38,7 @@ def test_ready_argument_list(drv):
 
     assert isinstance(gpu_args[0], numpy.int32)
 
-@patch('kernel_tuner.cuda.SourceModule')
+@patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
 def test_compile(drv, src_mod):
     drv = setup_mock(drv)
