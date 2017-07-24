@@ -8,7 +8,6 @@ import numpy
 from noodles import schedule_hint, gather, lift
 from noodles.run.runners import run_parallel_with_display, run_parallel
 from noodles.display import NCDisplay
-from noodles.interface import AnnotatedValue
 
 from kernel_tuner.core import DeviceInterface
 
@@ -67,9 +66,6 @@ class NoodlesRunner:
         for chunk in answer:
             result += [d for d in chunk if d['time']]
 
-        for i, d in enumerate(result):
-            result[i]['time'] = d['time'].value
-
         return result, {}
 
 
@@ -116,10 +112,10 @@ class NoodlesRunner:
             try:
                 time = dev.compile_and_benchmark(gpu_args, params, kernel_options, tuning_options)
 
-                params['time'] = AnnotatedValue(time, None)
+                params['time'] = time
                 results.append(params)
             except Exception as e:
-                params['time'] = AnnotatedValue(None, str(e))
+                params['time'] = None
                 results.append(params)
 
         return results
