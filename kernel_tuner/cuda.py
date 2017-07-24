@@ -11,7 +11,7 @@ try:
     from pycuda.compiler import DynamicSourceModule
 except ImportError:
     drv = None
-    SourceModule = None
+    DynamicSourceModule = None
 
 
 class CudaFunctions(object):
