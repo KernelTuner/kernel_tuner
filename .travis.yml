@@ -4,6 +4,9 @@ python:
   - "3.5"
   - "3.6"
 # command to install dependencies
+before_install:
+  - sudo apt-get build-dep python-scipy
+  - sudo apt-get install -qq python-numpy python-scipy
 install:
   - pip install pytest
   - pip install mock
