@@ -35,7 +35,7 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
-from kernel_tuner.strategies import brute_force, random_sample
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
@@ -187,6 +187,8 @@ _tuning_options = Options([
     ("num_threads", ("""The number of threads to use when using the Noodles
         workflow engine for tuning using multiple threads, 1 by default.
         Requires Noodles, see 'use_noodles' option.""", "int")),
+    ("use_diffevo", ("""Set whether to use the differential evolution
+        strategy for optimizing the search through the parameter space""", "bool")),
     ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""",
         "int")),
@@ -247,7 +249,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None,
                 num_threads=1, use_noodles=False, sample_fraction=False, compiler_options=None, log=None,
-                iterations=7, block_size_names=None, quiet=False):
+                iterations=7, block_size_names=None, quiet=False, use_diffevo=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -267,10 +269,14 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     logging.debug('device_options: %s', util.get_config_string(device_options))
 
     #select strategy based on user options
+    strategy = brute_force
+    if sample_fraction and use_diffevo:
+        raise ValueError("It's not possible to use both sample and differential evolution strategies")
+
     if sample_fraction:
         strategy = random_sample
-    else:
-        strategy = brute_force
+    if use_diffevo:
+        strategy = diff_evo
 
     #select runner based on user options
     if num_threads == 1 and not use_noodles:

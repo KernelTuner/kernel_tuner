@@ -1,6 +1,7 @@
 """ Module for kernel tuner utility functions """
 from __future__ import print_function
 
+from collections import OrderedDict
 import os
 import errno
 import tempfile
@@ -14,7 +15,7 @@ def check_argument_list(args):
 
 def check_restrictions(restrictions, element, keys, verbose):
     """ check whether a specific instance meets the search space restrictions """
-    params = dict(zip(keys, element))
+    params = OrderedDict(zip(keys, element))
     for restrict in restrictions:
         if not eval(replace_param_occurrences(restrict, params)):
             if verbose:

@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy
 import sys
 from nose import SkipTest
+from nose.tools import nottest
 
 import kernel_tuner
 from .context import skip_if_no_cuda_device
@@ -66,32 +67,56 @@ def test_noodles_runner():
 
 
 
+@nottest
+def get_vector_add_args():
+    size = int(1e6)
+    a = numpy.random.randn(size).astype(numpy.float32)
+    b = numpy.random.randn(size).astype(numpy.float32)
+    c = numpy.zeros_like(b).astype(numpy.float32)
+    n = numpy.int32(size)
+    return c, a, b, n
+
+def test_diff_evo():
+
+    skip_if_no_cuda_device()
+    kernel_string = """
+    __global__ void vector_add(float *c, float *a, float *b, int n) {
+        int i = blockIdx.x * block_size_x + threadIdx.x;
+        if (i<n) {
+            c[i] = a[i] + b[i];
+        }
+    } """
+
+    args = get_vector_add_args()
+    tune_params = {"block_size_x": [128+64*i for i in range(5)]}
+
+    result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, args[-1], args, tune_params,
+                            use_diffevo=True, verbose=True)
+
+    print(result)
+    assert len(result) > 0
 
 def test_sequential_runner_alt_block_size_names():
 
     skip_if_no_cuda_device()
-
-    kernel_string = """
+    kernel_string = """ //vector_add test kernel with custrom block_size name
     __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_dim_x + threadIdx.x;
         if (i<n) {
             c[i] = a[i] + b[i];
         }
-    }
-    """
+    } """
 
-    size = 100
-    a = numpy.random.randn(size).astype(numpy.float32)
-    b = numpy.random.randn(size).astype(numpy.float32)
-    c = numpy.zeros_like(b)
-    n = numpy.int32(size)
-
+    c, a, b, n = get_vector_add_args()
     args = [c, a, b, n]
-    tune_params = {"block_dim_x": [128+64*i for i in range(15)]}
+    tune_params = {"block_dim_x": [128+64*i for i in range(5)]}
 
     answer = [a+b, None, None, None]
 
-    result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, size, args, tune_params,
-                            answer=answer)
+    block_size_names = ["block_dim_x", "block_dim_y", "block_dim_z"]
+
+    result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, int(n), args,
+                            tune_params, grid_div_x=["block_dim_x"], answer=answer,
+                            block_size_names=block_size_names)
 
     assert len(result) == len(tune_params["block_dim_x"])
