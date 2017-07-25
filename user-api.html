@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Documentation &mdash; kernel_tuner 0.1.4 documentation</title>
+  <title>API Documentation &mdash; kernel_tuner 0.1.5 documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="kernel_tuner 0.1.4 documentation" href="index.html"/>
+    <link rel="top" title="kernel_tuner 0.1.5 documentation" href="index.html"/>
         <link rel="next" title="Design documentation" href="design.html"/>
         <link rel="prev" title="Tuning Host Code" href="hostcode.html"/> 
 
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1.4
+                0.1.5
               </div>
             
           
@@ -181,7 +181,7 @@
 <p>This file provides all the details you need about how to call the Kernel Tuner&#8217;s functions, including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verify=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>block_size_names=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verify=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>block_size_names=None</em>, <em>quiet=False</em>, <em>use_diffevo=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -316,6 +316,8 @@ num_threads.</li>
 <li><strong>num_threads</strong> (<em>int</em>) &#8211; The number of threads to use when using the Noodles
 workflow engine for tuning using multiple threads, 1 by default.
 Requires Noodles, see &#8216;use_noodles&#8217; option.</li>
+<li><strong>use_diffevo</strong> (<em>bool</em>) &#8211; Set whether to use the differential evolution
+strategy for optimizing the search through the parameter space</li>
 <li><strong>iterations</strong> (<em>int</em>) &#8211; The number of times a kernel should be executed and
 its execution time measured when benchmarking a kernel, 7 by default.</li>
 <li><strong>verbose</strong> (<em>bool</em>) &#8211; <p>Sets whether or not to report about configurations that
@@ -527,7 +529,7 @@ function, containing the output after kernel execution.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.4',
+            VERSION:'0.1.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
