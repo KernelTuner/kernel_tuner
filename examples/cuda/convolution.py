@@ -10,10 +10,8 @@ def tune():
 
     #setup tunable parameters
     tune_params = OrderedDict()
-    #tune_params["filter_height"] = [i for i in range(3,35,2)]
-    tune_params["filter_height"] = [17]
-    #tune_params["filter_width"] = [i for i in range(3,35,2)]
-    tune_params["filter_width"] = [17]
+    tune_params["filter_height"] = [i for i in range(3,35,2)]
+    tune_params["filter_width"] = [i for i in range(3,35,2)]
     tune_params["block_size_x"] = [16*i for i in range(1,9)]
     tune_params["block_size_y"] = [2**i for i in range(6)]
     tune_params["tile_size_x"] = [i for i in range(1,9)]
@@ -59,6 +57,6 @@ def tune():
 if __name__ == "__main__":
     results = tune()
     import json
-    with open("convolution_17x17.json", 'w') as fp:
+    with open("convolution.json", 'w') as fp:
         json.dump(results, fp)
 
