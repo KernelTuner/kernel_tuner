@@ -1,8 +1,6 @@
 """ The differential evolution strategy that optimizes the search through the parameter space """
 from __future__ import print_function
 
-import itertools
-
 import numpy
 from scipy.optimize import differential_evolution
 from kernel_tuner import util
@@ -38,7 +36,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     for k, v in tuning_options.tune_params.items():
         sorted_values = numpy.sort(v)
         param_names.append(k)
-        bounds.append((v[0], v[-1]))
+        bounds.append((sorted_values[0], sorted_values[-1]))
 
     #call the differential evolution optimizer
     opt_result = differential_evolution(_cost_func, bounds, [kernel_options, tuning_options, runner, results],
