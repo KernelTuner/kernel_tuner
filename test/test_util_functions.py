@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import random
+
 import numpy
 from nose.tools import raises
 
@@ -268,4 +270,33 @@ def test_read_write_file():
 
     finally:
         delete_temp_file(filename)
+
+
+def test_get_bounds():
+
+    tune_params = OrderedDict()
+    tune_params['x'] = [0, 1, 2, 3, 4]
+    tune_params['y'] = [i for i in range(0, 10000, 100)]
+    tune_params['z'] = [-11.2, 55.67, 123.27]
+
+    for k in tune_params.keys():
+        random.shuffle(tune_params[k])
+
+    expected = [(0, 4), (0, 9900), (-11.2, 123.27)]
+    answer = get_bounds(tune_params)
+    assert answer == expected
+
+
+def test_snap_to_nearest_config():
+
+    tune_params = OrderedDict()
+    tune_params['x'] = [0, 1, 2, 3, 4, 5]
+    tune_params['y'] = [0, 1, 2, 3, 4, 5]
+    tune_params['z'] = [0, 1, 2, 3, 4, 5]
+
+    x = [-5.7, 3.14, 1e6]
+    expected = [0, 3, 5]
+
+    answer = snap_to_nearest_config(x, tune_params)
+    assert answer == expected
 

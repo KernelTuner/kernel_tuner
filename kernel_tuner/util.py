@@ -45,6 +45,14 @@ def detect_language(lang, kernel_source):
             lang = "C"
     return lang
 
+def get_bounds(tune_params):
+    """ create a bounds array from the tunable parameters """
+    bounds = []
+    for values in tune_params.values():
+        sorted_values = numpy.sort(values)
+        bounds.append((sorted_values[0], sorted_values[-1]))
+    return bounds
+
 def get_config_string(params):
     """ return a compact string representation of a dictionary """
     return ", ".join([k + "=" + str(v) for k, v in params.items()])
@@ -212,8 +220,17 @@ def setup_kernel_strings(kernel_name, original_kernel, params, grid):
     kernel_string = kernel_string.replace(kernel_name, name)
     return name, kernel_string
 
+def snap_to_nearest_config(x, tune_params):
+    """helper func that for each param selects the closest actual value"""
+    params = []
+    for i, k in enumerate(tune_params.keys()):
+        values = numpy.array(tune_params[k])
+        idx = numpy.abs(values-x[i]).argmin()
+        params.append(values[idx])
+    return params
+
 def write_file(filename, string):
-    """ dump the contents of string to a file called filename """
+    """dump the contents of string to a file called filename"""
     import sys
     #ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:

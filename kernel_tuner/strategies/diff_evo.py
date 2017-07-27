@@ -29,14 +29,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
-    #build a bounds array as needed for the optimizer
     results = []
-    bounds = []
-    param_names = []
-    for k, v in tuning_options.tune_params.items():
-        sorted_values = numpy.sort(v)
-        param_names.append(k)
-        bounds.append((sorted_values[0], sorted_values[-1]))
+
+    #build a bounds array as needed for the optimizer
+    bounds = util.get_bounds(tuning_options.tune_params)
 
     #call the differential evolution optimizer
     opt_result = differential_evolution(_cost_func, bounds, [kernel_options, tuning_options, runner, results],
@@ -44,27 +40,17 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     if tuning_options.verbose:
         print(opt_result.message)
-        print('best config:', _snap_to_nearest_config(opt_result.x, tuning_options.tune_params))
+        print('best config:', util.snap_to_nearest_config(opt_result.x, tuning_options.tune_params))
 
     return results, runner.dev.get_environment()
 
 
 
-def _snap_to_nearest_config(x, tune_params):
-    """ Helper func that for each param selects the closest actual value """
-    params = []
-    for i, k in enumerate(tune_params.keys()):
-        values = numpy.array(tune_params[k])
-        idx = numpy.abs(values-x[i]).argmin()
-        params.append(values[idx])
-    return params
-
-
 def _cost_func(x, kernel_options, tuning_options, runner, results):
-    """ cost function used by the differential evolution optimizer """
+    """ Cost function used by the differential evolution optimizer """
 
     #snap values in x to nearest actual value for each parameter
-    params = _snap_to_nearest_config(x, tuning_options.tune_params)
+    params = util.snap_to_nearest_config(x, tuning_options.tune_params)
 
     #check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:

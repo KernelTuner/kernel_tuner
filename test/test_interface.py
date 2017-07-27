@@ -9,7 +9,6 @@ from nose.tools import nottest
 import numpy
 
 from kernel_tuner.interface import tune_kernel, run_kernel
-from kernel_tuner import core
 
 mock_config = { "return_value.compile.return_value": "compile",
                 "return_value.ready_argument_list.return_value": "ready_argument_list",
@@ -100,44 +99,6 @@ def test_run_kernel(dev_interface):
     assert dev.compile.call_count == 1
     dev.run_kernel.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1, 1))
     assert answer[0] == size
-
-@patch('kernel_tuner.core.CudaFunctions')
-def test_check_kernel_correctness(dev_func_interface):
-    dev_func_interface.configure_mock(**mock_config)
-
-    dev = core.DeviceInterface(0, 0, "", lang="CUDA")
-    dfi = dev.dev
-
-    answer = [numpy.zeros(4).astype(numpy.float32)]
-    wrong = [numpy.array([1,2,3,4]).astype(numpy.float32)]
-    atol = 1e-6
-
-    instance = core.KernelInstance("name", "kernel_string", "temp_files", "threads", "grid", {}, answer)
-    test = dev.check_kernel_correctness('func', answer, instance, answer, atol, None, True)
-
-    dfi.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
-    dfi.run_kernel.assert_called_once_with('func', answer, 'threads', 'grid')
-
-    print(dfi.mock_calls)
-
-    assert dfi.memcpy_dtoh.called == 1
-
-    for name, args, _ in dfi.mock_calls:
-        if name == 'memcpy_dtoh':
-            assert all(args[0] == answer[0])
-            assert all(args[1] == answer[0])
-    assert test
-
-    #the following call to check_kernel_correctness is expected to fail because
-    #the answer is non-zero, while the memcpy_dtoh function on the Mocked object
-    #obviously does not result in the result_host array containing anything
-    #non-zero
-    try:
-        dev.check_kernel_correctness('func', wrong, instance, wrong, atol, None, True)
-        print("check_kernel_correctness failed to throw an exception")
-        assert False
-    except Exception:
-        assert True
 
 @patch('kernel_tuner.interface.sys')
 def test_interface_noodles_checks_version(sysmock):
