@@ -13,15 +13,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type runner: kernel_tuner.runner
 
     :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
+    :type kernel_options: kernel_tuner.interface.Options
 
     :param device_options: A dictionary with all options for the device
         on which the kernel should be tuned.
-    :type device_options: dict
+    :type device_options: kernel_tuner.interface.Options
 
     :param tuning_options: A dictionary with all options regarding the tuning
         process.
-    :type tuning_options: dict
+    :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
         execution times. And a dictionary that contains a information

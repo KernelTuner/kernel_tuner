@@ -91,27 +91,30 @@ def test_diff_evo():
     tune_params = {"block_size_x": [128+64*i for i in range(5)]}
 
     result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, args[-1], args, tune_params,
-                            use_diffevo=True, verbose=True)
+                            method="diff_evo", verbose=True)
 
     print(result)
     assert len(result) > 0
 
+
 def test_sequential_runner_alt_block_size_names():
 
     skip_if_no_cuda_device()
-    kernel_string = """ //vector_add test kernel with custrom block_size name
-    __global__ void vector_add(float *c, float *a, float *b, int n) {
+
+    kernel_string = """__global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_dim_x + threadIdx.x;
         if (i<n) {
             c[i] = a[i] + b[i];
         }
-    } """
+    }
+    """
 
     c, a, b, n = get_vector_add_args()
     args = [c, a, b, n]
     tune_params = {"block_dim_x": [128+64*i for i in range(5)]}
 
-    answer = [a+b, None, None, None]
+    ref = (a+b).astype(numpy.float32)
+    answer = [ref, None, None, None]
 
     block_size_names = ["block_dim_x", "block_dim_y", "block_dim_z"]
 

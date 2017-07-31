@@ -54,7 +54,7 @@ def test_benchmark():
         profile = type('profile', (object,), {'end': 0.1, 'start': 0})
         return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
 
-    time = dev.benchmark(test_func, args, (1,2,3), (1,2))
+    time = dev.benchmark(test_func, args, (1,2,3), (1,2,3))
     assert time > 0
 
 
@@ -62,7 +62,7 @@ def test_run_kernel():
     skip_if_no_opencl()
 
     threads = (1, 2, 3)
-    grid = (4, 5)
+    grid = (4, 5, 1)
 
     def test_func(queue, global_size, local_size, arg):
         assert all(global_size == numpy.array([4, 10, 3]))

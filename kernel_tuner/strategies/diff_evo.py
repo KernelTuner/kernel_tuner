@@ -5,6 +5,8 @@ import numpy
 from scipy.optimize import differential_evolution
 from kernel_tuner import util
 
+import kernel_tuner.strategies.minimize as minimize
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -12,15 +14,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type runner: kernel_tuner.runner
 
     :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
+    :type kernel_options: kernel_tuner.interface.Options
 
     :param device_options: A dictionary with all options for the device
         on which the kernel should be tuned.
-    :type device_options: dict
+    :type device_options: kernel_tuner.interface.Options
 
     :param tuning_options: A dictionary with all options regarding the tuning
         process.
-    :type tuning_options: dict
+    :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
         execution times. And a dictionary that contains a information
@@ -32,7 +34,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     results = []
 
     #build a bounds array as needed for the optimizer
-    bounds = util.get_bounds(tuning_options.tune_params)
+    bounds = minimize.get_bounds(tuning_options.tune_params)
 
     #call the differential evolution optimizer
     opt_result = differential_evolution(_cost_func, bounds, [kernel_options, tuning_options, runner, results],
@@ -40,7 +42,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     if tuning_options.verbose:
         print(opt_result.message)
-        print('best config:', util.snap_to_nearest_config(opt_result.x, tuning_options.tune_params))
+        print('best config:', minimize.snap_to_nearest_config(opt_result.x, tuning_options.tune_params))
 
     return results, runner.dev.get_environment()
 
@@ -50,7 +52,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     """ Cost function used by the differential evolution optimizer """
 
     #snap values in x to nearest actual value for each parameter
-    params = util.snap_to_nearest_config(x, tuning_options.tune_params)
+    params = minimize.snap_to_nearest_config(x, tuning_options.tune_params)
 
     #check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:

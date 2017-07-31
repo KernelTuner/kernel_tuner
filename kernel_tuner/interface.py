@@ -35,7 +35,7 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
@@ -177,7 +177,7 @@ _tuning_options = Options([
         The function should return True when the output passes the test, and
         False when the output fails the test.""", "func(ref, ans, atol=None)")),
     ("sample_fraction", ("""Benchmark only a sample fraction of the search space, False by
-        default. To enable sampling, pass a value between 0 and 1.""", "float")),
+        default. To enable sampling, pass a value between 0 and 1. """, "float")),
     ("use_noodles", ("""Use Noodles workflow engine to tune in parallel using
         multiple threads, False by Default.
         Requires Noodles to be installed, use 'pip install noodles'.
@@ -187,8 +187,48 @@ _tuning_options = Options([
     ("num_threads", ("""The number of threads to use when using the Noodles
         workflow engine for tuning using multiple threads, 1 by default.
         Requires Noodles, see 'use_noodles' option.""", "int")),
-    ("use_diffevo", ("""Set whether to use the differential evolution
-        strategy for optimizing the search through the parameter space""", "bool")),
+    ("strategy", ("""Specify the strategy to use for searching through the
+        parameter space, choose from:
+
+            * "brute_force" (default),
+            * "random_sample", specify: *sample_fraction*,
+            * "minimize" or "basinhopping", specify: *method*,
+            * "diff_evo", specify: *method*.
+
+        "brute_force" is the default and iterates over the entire search
+        space.
+
+        "random_sample" can be used to only benchmark a fraction of the
+        search space, specify a *sample_fraction* in the interval [0, 1].
+
+        "minimize" and "basinhopping" strategies use minimizers to
+        limit the search through the parameter space, select any of the
+        methods: "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B",
+        "TNC", "COBYLA", or "SLSQP". It is also possible to pass a
+        function that implements a custom minimization strategy.
+
+        "diff_evo" uses differential evolution and supports the following
+        evolution strategies, which can be passed using the *method* argument:
+        "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
+        "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin".
+        The default is "best1bin".
+
+        """, "")),
+    ("method", ("""Specify a method for the strategy that searches through
+        the parameter space during tuning.
+
+        When using strategy="minimize" or strategy="basinhopping", the
+        following options are supported:
+        "brute_force" (default), "random_sample", "diff_evo",
+        "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B",
+        "TNC", "COBYLA", or "SLSQP". It is also possible to pass a function
+        that implements a custom minimization strategy.
+
+        When using strategy="diff_evo", the following options are supported:
+        "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
+        "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin".
+
+        """, "string or callable")),
     ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""",
         "int")),
@@ -249,7 +289,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None,
                 num_threads=1, use_noodles=False, sample_fraction=False, compiler_options=None, log=None,
-                iterations=7, block_size_names=None, quiet=False, use_diffevo=None):
+                iterations=7, block_size_names=None, quiet=False, strategy=None, method=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -269,14 +309,35 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     logging.debug('device_options: %s', util.get_config_string(device_options))
 
     #select strategy based on user options
-    strategy = brute_force
-    if sample_fraction and use_diffevo:
-        raise ValueError("It's not possible to use both sample and differential evolution strategies")
+    if sample_fraction and not strategy in [None, 'sample_fraction']:
+        raise ValueError("It's not possible to use both sample_fraction in combination with other strategies. " \
+                         'Please set strategy=None or strategy="random_sample", when using sample_fraction')
 
-    if sample_fraction:
-        strategy = random_sample
-    if use_diffevo:
-        strategy = diff_evo
+    if strategy in [None, 'sample_fraction', 'brute_force']:
+        if sample_fraction:
+            use_strategy = random_sample
+        else:
+            use_strategy = brute_force
+    elif strategy in ["minimize", "basinhopping"]:
+        if method:
+            if not (method in ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B",
+                               "TNC", "COBYLA", "SLSQP"] or callable(method)):
+                raise ValueError("method option not recognized")
+        else:
+            method = "L-BFGS-B"
+        if strategy == "minimize":
+            use_strategy = minimize
+        else:
+            use_strategy = basinhopping
+    elif strategy == "diff_evo":
+        use_strategy = diff_evo
+        if method:
+            if not method in ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
+                              "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]:
+                raise ValueError("method option not recognized")
+    else:
+        raise ValueError("strategy option not recognized")
+    strategy = use_strategy
 
     #select runner based on user options
     if num_threads == 1 and not use_noodles:
@@ -298,6 +359,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         raise ValueError("Somehow no runner was selected, this should not happen, please file a bug report")
 
+    #call the strategy to execute the tuning process
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
     #finished iterating over search space
