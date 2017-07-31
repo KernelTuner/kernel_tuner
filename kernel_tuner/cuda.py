@@ -205,13 +205,13 @@ class CudaFunctions(object):
         :type allocation: pycuda.driver.DeviceAllocation
 
         :param value: The value to set the memory to
-        :type value: a single 32-bit float or int
+        :type value: a single 8-bit unsigned int
 
         :param size: The size of to the allocation unit in bytes
         :type size: int
 
         """
-        drv.memset_d8(allocation, value, size)
+        drv.memset_d8(allocation, int(value), int(size))
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
