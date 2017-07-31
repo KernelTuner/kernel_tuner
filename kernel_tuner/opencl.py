@@ -115,7 +115,7 @@ class OpenCLFunctions(object):
         :returns: A robust average for the kernel execution time.
         :rtype: float
         """
-        global_size = (grid[0]*threads[0], grid[1]*threads[1], threads[2])
+        global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
         local_size = threads
         times = []
         for _ in range(self.iterations):
@@ -144,7 +144,7 @@ class OpenCLFunctions(object):
             of the NDRange.
         :type grid: tuple(int, int)
         """
-        global_size = (grid[0]*threads[0], grid[1]*threads[1], threads[2])
+        global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
         local_size = threads
         event = func(self.queue, global_size, local_size, *gpu_args)
         event.wait()
