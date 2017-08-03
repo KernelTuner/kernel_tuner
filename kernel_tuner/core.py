@@ -273,5 +273,6 @@ class DeviceInterface(object):
 
 
     def __del__(self):
-        del self.dev
+        if hasattr(self, 'dev'):
+            del self.dev
 

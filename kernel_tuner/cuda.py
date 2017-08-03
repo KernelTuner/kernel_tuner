@@ -57,10 +57,10 @@ class CudaFunctions(object):
         self.name = env["device_name"]
         self.allocations = []
 
-
     def __del__(self):
         for gpu_mem in self.allocations:
-            gpu_mem.free()
+            if hasattr(gpu_mem, 'free'): #if needed for when using mocks during testing
+                gpu_mem.free()
         if hasattr(self, 'context'):
             self.context.pop()
 

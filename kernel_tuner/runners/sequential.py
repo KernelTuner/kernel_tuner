@@ -76,4 +76,5 @@ class SequentialRunner(object):
         return results, self.dev.get_environment()
 
     def __del__(self):
-        del self.dev
+        if hasattr(self, 'dev'):
+            del self.dev

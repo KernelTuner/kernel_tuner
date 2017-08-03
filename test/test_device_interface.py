@@ -21,11 +21,11 @@ def test_check_kernel_correctness(dev_func_interface):
     wrong = [numpy.array([1,2,3,4]).astype(numpy.float32)]
     atol = 1e-6
 
-    instance = core.KernelInstance("name", "kernel_string", "temp_files", "threads", "grid", {}, answer)
+    instance = core.KernelInstance("name", "kernel_string", "temp_files", (256,1,1), (1,1,1), {}, answer)
     test = dev.check_kernel_correctness('func', answer, instance, answer, atol, None, True)
 
     dfi.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
-    dfi.run_kernel.assert_called_once_with('func', answer, 'threads', 'grid')
+    dfi.run_kernel.assert_called_once_with('func', answer, (256,1,1), (1,1,1))
 
     print(dfi.mock_calls)
 

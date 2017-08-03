@@ -28,9 +28,6 @@ def test_ready_argument_list():
     assert isinstance(gpu_args[1], numpy.int32)
     assert isinstance(gpu_args[2], pycuda.driver.DeviceAllocation)
 
-    gpu_args[0].free()
-    gpu_args[2].free()
-
 
 def test_compile():
 
