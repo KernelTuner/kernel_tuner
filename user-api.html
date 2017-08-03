@@ -181,7 +181,7 @@
 <p>This file provides all the details you need about how to call the Kernel Tuner&#8217;s functions, including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verify=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>block_size_names=None</em>, <em>quiet=False</em>, <em>use_diffevo=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verify=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>block_size_names=None</em>, <em>quiet=False</em>, <em>strategy=None</em>, <em>method=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -316,8 +316,43 @@ num_threads.</li>
 <li><strong>num_threads</strong> (<em>int</em>) &#8211; The number of threads to use when using the Noodles
 workflow engine for tuning using multiple threads, 1 by default.
 Requires Noodles, see &#8216;use_noodles&#8217; option.</li>
-<li><strong>use_diffevo</strong> (<em>bool</em>) &#8211; Set whether to use the differential evolution
-strategy for optimizing the search through the parameter space</li>
+<li><strong>strategy</strong> &#8211; <p>Specify the strategy to use for searching through the
+parameter space, choose from:</p>
+<blockquote>
+<div><ul>
+<li>&#8220;brute_force&#8221; (default),</li>
+<li>&#8220;random_sample&#8221;, specify: <em>sample_fraction</em>,</li>
+<li>&#8220;minimize&#8221; or &#8220;basinhopping&#8221;, specify: <em>method</em>,</li>
+<li>&#8220;diff_evo&#8221;, specify: <em>method</em>.</li>
+</ul>
+</div></blockquote>
+<p>&#8220;brute_force&#8221; is the default and iterates over the entire search
+space.</p>
+<p>&#8220;random_sample&#8221; can be used to only benchmark a fraction of the
+search space, specify a <em>sample_fraction</em> in the interval [0, 1].</p>
+<p>&#8220;minimize&#8221; and &#8220;basinhopping&#8221; strategies use minimizers to
+limit the search through the parameter space, select any of the
+methods: &#8220;Nelder-Mead&#8221;, &#8220;Powell&#8221;, &#8220;CG&#8221;, &#8220;BFGS&#8221;, &#8220;L-BFGS-B&#8221;,
+&#8220;TNC&#8221;, &#8220;COBYLA&#8221;, or &#8220;SLSQP&#8221;. It is also possible to pass a
+function that implements a custom minimization strategy.</p>
+<p>&#8220;diff_evo&#8221; uses differential evolution and supports the following
+evolution strategies, which can be passed using the <em>method</em> argument:
+&#8220;best1bin&#8221;, &#8220;best1exp&#8221;, &#8220;rand1exp&#8221;, &#8220;randtobest1exp&#8221;, &#8220;best2exp&#8221;,
+&#8220;rand2exp&#8221;, &#8220;randtobest1bin&#8221;, &#8220;best2bin&#8221;, &#8220;rand2bin&#8221;, &#8220;rand1bin&#8221;.
+The default is &#8220;best1bin&#8221;.</p>
+</li>
+<li><strong>method</strong> (<em>string or callable</em>) &#8211; <p>Specify a method for the strategy that searches through
+the parameter space during tuning.</p>
+<p>When using strategy=&#8221;minimize&#8221; or strategy=&#8221;basinhopping&#8221;, the
+following options are supported:
+&#8220;brute_force&#8221; (default), &#8220;random_sample&#8221;, &#8220;diff_evo&#8221;,
+&#8220;Nelder-Mead&#8221;, &#8220;Powell&#8221;, &#8220;CG&#8221;, &#8220;BFGS&#8221;, &#8220;L-BFGS-B&#8221;,
+&#8220;TNC&#8221;, &#8220;COBYLA&#8221;, or &#8220;SLSQP&#8221;. It is also possible to pass a function
+that implements a custom minimization strategy.</p>
+<p>When using strategy=&#8221;diff_evo&#8221;, the following options are supported:
+&#8220;best1bin&#8221;, &#8220;best1exp&#8221;, &#8220;rand1exp&#8221;, &#8220;randtobest1exp&#8221;, &#8220;best2exp&#8221;,
+&#8220;rand2exp&#8221;, &#8220;randtobest1bin&#8221;, &#8220;best2bin&#8221;, &#8220;rand2bin&#8221;, &#8220;rand1bin&#8221;.</p>
+</li>
 <li><strong>iterations</strong> (<em>int</em>) &#8211; The number of times a kernel should be executed and
 its execution time measured when benchmarking a kernel, 7 by default.</li>
 <li><strong>verbose</strong> (<em>bool</em>) &#8211; <p>Sets whether or not to report about configurations that

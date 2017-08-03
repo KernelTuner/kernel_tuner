@@ -243,10 +243,10 @@ discussed above.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>kernel_options</strong> (<em>dict</em>) &#8211; A dictionary with all options for the kernel.</li>
-<li><strong>device_options</strong> (<em>dict</em>) &#8211; A dictionary with all options for the device
+<li><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the kernel.</li>
+<li><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the device
 on which the kernel should be tuned.</li>
-<li><strong>tuning_options</strong> (<em>dict</em>) &#8211; A dictionary with all options regarding the tuning
+<li><strong>tuning_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options regarding the tuning
 process.</li>
 </ul>
 </td>
@@ -279,10 +279,10 @@ about the hardware/software environment on which the tuning took place.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>kernel_options</strong> (<em>dict</em>) &#8211; A dictionary with all options for the kernel.</li>
-<li><strong>device_options</strong> (<em>dict</em>) &#8211; A dictionary with all options for the device
+<li><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the kernel.</li>
+<li><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the device
 on which the kernel should be tuned.</li>
-<li><strong>tuning_options</strong> (<em>dict</em>) &#8211; A dictionary with all options regarding the tuning
+<li><strong>tuning_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options regarding the tuning
 process.</li>
 </ul>
 </td>
@@ -734,7 +734,7 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</td>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) &#8211; A GPU memory allocation unit</li>
-<li><strong>value</strong> (<em>a single 32-bit float or int</em>) &#8211; The value to set the memory to</li>
+<li><strong>value</strong> (<em>a single 8-bit unsigned int</em>) &#8211; The value to set the memory to</li>
 <li><strong>size</strong> (<em>int</em>) &#8211; The size of to the allocation unit in bytes</li>
 </ul>
 </td>
