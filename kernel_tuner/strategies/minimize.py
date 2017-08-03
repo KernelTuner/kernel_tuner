@@ -39,7 +39,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     #scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
 
-    bounds, x0, eps = get_bounds_x0_eps(tuning_options)
+    bounds, x0, _ = get_bounds_x0_eps(tuning_options)
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
 

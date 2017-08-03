@@ -1,10 +1,7 @@
 """ The strategy that uses the basinhopping global optimization method """
 from __future__ import print_function
 
-import numpy
 import scipy.optimize
-from kernel_tuner import util
-
 
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, setup_method_arguments, setup_method_options
 
