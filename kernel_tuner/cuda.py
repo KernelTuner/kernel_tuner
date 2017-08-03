@@ -55,8 +55,12 @@ class CudaFunctions(object):
         env["device_properties"] = devprops
         self.env = env
         self.name = env["device_name"]
+        self.allocations = []
+
 
     def __del__(self):
+        for gpu_mem in self.allocations:
+            gpu_mem.free()
         if hasattr(self, 'context'):
             self.context.pop()
 
@@ -75,7 +79,9 @@ class CudaFunctions(object):
         for arg in arguments:
             # if arg i is a numpy array copy to device
             if isinstance(arg, numpy.ndarray):
-                gpu_args.append(drv.mem_alloc(arg.nbytes))
+                alloc = drv.mem_alloc(arg.nbytes)
+                self.allocations.append(alloc)
+                gpu_args.append(alloc)
                 drv.memcpy_htod(gpu_args[-1], arg)
             else: # if not an array, just pass argument along
                 gpu_args.append(arg)

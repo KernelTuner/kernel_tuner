@@ -74,3 +74,6 @@ class SequentialRunner(object):
             results.append(params)
 
         return results, self.dev.get_environment()
+
+    def __del__(self):
+        del self.dev

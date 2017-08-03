@@ -256,6 +256,10 @@ class DeviceInterface(object):
 
     def run_kernel(self, func, gpu_args, instance):
         """ Run a compiled kernel instance on a device """
+        logging.debug('run_kernel %s', instance.name)
+        logging.debug('thread block dims (%d, %d, %d)', *instance.threads)
+        logging.debug('grid dims (%d, %d, %d)', *instance.grid)
+
         try:
             self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid)
         except Exception as e:
@@ -267,4 +271,7 @@ class DeviceInterface(object):
                 raise e
         return True
 
+
+    def __del__(self):
+        del self.dev
 
