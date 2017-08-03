@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - support for dynamic parallelism when using PyCUDA
 - option to use differential evolution optimization
+- global optimization strategies basinhopping, minimize
 
 ## [0.1.5] - 2017-07-21
 ### Changed

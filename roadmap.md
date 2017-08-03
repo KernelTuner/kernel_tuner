@@ -19,7 +19,6 @@ These functions are to be implemented by version 1.0.0, but may already be
 implemented in earlier versions.
 
  * Tuning kernels in parallel on a set of nodes in a GPU clusters
- * Multiple machine learning or search strategies to choose from
  * Store tuning results in a database and provide an API for analysis
 
 ### Low priority
