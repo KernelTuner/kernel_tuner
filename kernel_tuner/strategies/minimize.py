@@ -37,19 +37,19 @@ def tune(runner, kernel_options, device_options, tuning_options):
     method = tuning_options.method
 
     #scale variables in x to make 'eps' relevant for multiple variables
-    tuning_options["scaling"] = scaling
+    tuning_options["scaling"] = True
 
     bounds, x0, eps = get_bounds_x0_eps(tuning_options)
     kwargs = setup_method_arguments(method, bounds)
-    kwargs.update(setup_method_options(method, tuning_options))
+    options = setup_method_options(method, tuning_options)
 
     #not all methods support 'disp' option
     if not method in ['TNC']:
-        kwargs['disp'] = tuning_options.verbose
+        options['disp'] = tuning_options.verbose
 
     args = (kernel_options, tuning_options, runner, results, cache)
 
-    opt_result = scipy.optimize.minimize(_cost_func, x0, args=args, method=method, **kwargs)
+    opt_result = scipy.optimize.minimize(_cost_func, x0, args=args, method=method, options=options, **kwargs)
 
     if tuning_options.verbose:
         print(opt_result.message)
@@ -70,9 +70,9 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
 
     #snap values in x to nearest actual value for each parameter unscale x if needed
     if tuning_options.scaling:
-        params = util.unscale_and_snap_to_nearest(x, tuning_options.tune_params, tuning_options.eps)
+        params = unscale_and_snap_to_nearest(x, tuning_options.tune_params, tuning_options.eps)
     else:
-        params = util.snap_to_nearest_config(x, tuning_options.tune_params)
+        params = snap_to_nearest_config(x, tuning_options.tune_params)
 
     logging.debug('params ' + str(params))
 
@@ -166,9 +166,9 @@ def setup_method_options(method, tuning_options):
 
     #pass eps to methods that support it
     if method in ["CG", "BFGS", "L-BFGS-B", "TNC", "SLSQP"]:
-        kwargs['eps'] = eps
+        kwargs['eps'] = tuning_options.eps
     elif method == "COBYLA":
-        kwargs['rhobeg'] = eps
+        kwargs['rhobeg'] = tuning_options.eps
 
     return kwargs
 
