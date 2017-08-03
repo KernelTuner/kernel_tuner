@@ -219,7 +219,6 @@ _tuning_options = Options([
 
         When using strategy="minimize" or strategy="basinhopping", the
         following options are supported:
-        "brute_force" (default), "random_sample", "diff_evo",
         "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B",
         "TNC", "COBYLA", or "SLSQP". It is also possible to pass a function
         that implements a custom minimization strategy.
