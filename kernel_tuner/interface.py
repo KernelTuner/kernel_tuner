@@ -368,6 +368,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         print("no results to report")
 
+    del runner.dev
+
     return results, env
 
 
