@@ -195,8 +195,8 @@
 <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 </div>
-<div class="section" id="kernel-tuner-a-simple-cuda-opencl-kernel-tuner-in-python">
-<h1>Kernel Tuner: A simple CUDA/OpenCL kernel tuner in Python<a class="headerlink" href="#kernel-tuner-a-simple-cuda-opencl-kernel-tuner-in-python" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="kernel-tuner-a-simple-cuda-opencl-auto-tuner-in-python">
+<h1>Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python<a class="headerlink" href="#kernel-tuner-a-simple-cuda-opencl-auto-tuner-in-python" title="Permalink to this headline">¶</a></h1>
 <p><a class="reference external" href="https://travis-ci.org/benvanwerkhoven/kernel_tuner"><img alt="Build Status" src="https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master" /></a> <a class="reference external" href="https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner"><img alt="Codacy Badge" src="https://api.codacy.com/project/badge/grade/016dc85044ab4d57b777449d93275608" /></a> <a class="reference external" href="https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner"><img alt="Codacy Badge2" src="https://api.codacy.com/project/badge/coverage/016dc85044ab4d57b777449d93275608" /></a></p>
 <p>The Kernel Tuner is a - as simple as possible - tool for testing and auto-tuning
 CUDA and OpenCL kernels. This means that any CUDA or OpenCL kernel can be tuned
@@ -310,6 +310,12 @@ and the
 <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/hostcode.html">documentation</a>
 for a detailed explanation of the kernel tuner Python script.</p>
 </div>
+<div class="section" id="search-strategies-for-tuning">
+<h2>Search strategies for tuning<a class="headerlink" href="#search-strategies-for-tuning" title="Permalink to this headline">¶</a></h2>
+<p>Kernel Tuner supports several strategies: brute_force (default), random_sample, minimize, basinhopping, and diff_evo (differential
+evolution). Using different strategies is easy, you only need to specify to <code class="docutils literal"><span class="pre">tune_kernel</span></code> which strategy you would like to use, for example: <code class="docutils literal"><span class="pre">strategy=&quot;basinhopping&quot;,</span> <span class="pre">method=&quot;TNC&quot;</span></code>. For a full overview of the supported search strategies and methods please see the
+<a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html">user api</a>.</p>
+</div>
 <div class="section" id="correctness-verification">
 <h2>Correctness verification<a class="headerlink" href="#correctness-verification" title="Permalink to this headline">¶</a></h2>
 <p>Optionally, you can let the kernel tuner verify the output of every
@@ -330,8 +336,8 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 <p>A scientific paper about the Kernel Tuner is in preparation, in the meantime please cite the Kernel Tuner as follows:</p>
 <div class="highlight-latex"><div class="highlight"><pre><span></span>@misc<span class="nb">{</span>
   author = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,
-  title = <span class="nb">{</span>Kernel Tuner: A simple CUDA/OpenCL Kernel Tuner in Python<span class="nb">}</span>,
-  year = <span class="nb">{</span>2017<span class="nb">}</span>
+  title = <span class="nb">{</span>Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python<span class="nb">}</span>,
+  year = <span class="nb">{</span>2018<span class="nb">}</span>
 <span class="nb">}</span>
 </pre></div>
 </div>
