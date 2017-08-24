@@ -13,10 +13,10 @@ def tune():
     tune_params["block_size_x"] = [2**i for i in range(5,11)]
     tune_params["use_shuffle"] = [0, 1]
     tune_params["vector"] = [2**i for i in range(3)]
-    tune_params["num_blocks"] = [2**i for i in range(5,11)]
+    tune_params["num_blocks"] = [2**i for i in range(5,16)]
 
     problem_size = "num_blocks"
-    size = 80000000
+    size = 800000000
     max_blocks = max(tune_params["num_blocks"])
 
     x = numpy.random.rand(size).astype(numpy.float32)
@@ -43,6 +43,7 @@ def tune():
     tune_params["num_blocks"] = [1]
     second_kernel = dict()
     for nblocks in num_blocks:
+        print('nblocks:', nblocks)
         #change the input size to nblocks
         args = [sum_x, x, numpy.int32(nblocks)]
         #tune the second kernel with n=nblocks
@@ -58,7 +59,10 @@ def tune():
     for i, instance in enumerate(first_kernel):
         first_kernel[i]["total"] = instance["time"] + second_kernel[instance["num_blocks"]]["time"]
 
+    first_config = min(first_kernel, key=lambda x:x['time'])
     best_config = min(first_kernel, key=lambda x:x['total'])
+
+    print("Best performing config first kernel only: \n" + get_config_string(first_config))
 
     print("Best performing config: \n" + get_config_string(best_config))
     print("uses the following config for the secondary kernel:")
