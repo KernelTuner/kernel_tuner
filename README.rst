@@ -1,4 +1,4 @@
-Kernel Tuner: A simple CUDA/OpenCL kernel tuner in Python
+Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python
 =========================================================
 
 |Build Status| |Codacy Badge| |Codacy Badge2|
@@ -131,6 +131,13 @@ and the
 `documentation <http://benvanwerkhoven.github.io/kernel_tuner/hostcode.html>`__
 for a detailed explanation of the kernel tuner Python script.
 
+Search strategies for tuning
+----------------------------
+
+Kernel Tuner supports several strategies: brute_force (default), random_sample, minimize, basinhopping, and diff_evo (differential
+evolution). Using different strategies is easy, you only need to specify to ``tune_kernel`` which strategy you would like to use, for example: ``strategy="basinhopping", method="TNC"``. For a full overview of the supported search strategies and methods please see the
+`user api <http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
+
 Correctness verification
 ------------------------
 
@@ -157,8 +164,8 @@ A scientific paper about the Kernel Tuner is in preparation, in the meantime ple
 
     @misc{
       author = {Ben van Werkhoven},
-      title = {Kernel Tuner: A simple CUDA/OpenCL Kernel Tuner in Python},
-      year = {2017}
+      title = {Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python},
+      year = {2018}
     }
 
 Related work
