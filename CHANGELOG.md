@@ -4,6 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [0.1.6] - 2017-08-17
 ### Changed
 - actively freeing GPU memory after tuning
 - bugfix for 3D grids when using OpenCL
