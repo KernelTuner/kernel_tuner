@@ -5,6 +5,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 
 ### Changed
+- actively freeing GPU memory after tuning
+- bugfix for 3D grids when using OpenCL
 
 ### Added
 - support for dynamic parallelism when using PyCUDA
