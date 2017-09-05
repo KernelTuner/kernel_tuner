@@ -8,7 +8,7 @@ priorities grow and shift.
 
 This is the list of features that we want to have implemented by the next version.
 
- * Option to set a function that computes search space restriction, instead of a list of strings
+ * Option to set function that computes search space restriction, instead of a list of strings
  * Option to set function that computes grid dimensions instead of grid divisor lists
  * Option to set dynamically allocated shared memory for CUDA backend
  * Option to set compiler name, when using C backend
@@ -18,7 +18,7 @@ This is the list of features that we want to have implemented by the next versio
 These functions are to be implemented by version 1.0.0, but may already be
 implemented in earlier versions.
 
- * Tuning kernels in parallel on a set of nodes in a GPU clusters
+ * Tuning kernels in parallel on a set of nodes in a GPU cluster
  * Store tuning results in a database and provide an API for analysis
 
 ### Low priority
