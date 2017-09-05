@@ -151,11 +151,13 @@
  | <a href="#K"><strong>K</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
@@ -303,6 +305,14 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="design.html#kernel_tuner.strategies.minimize.get_bounds">get_bounds() (in module kernel_tuner.strategies.minimize)</a>
+  </dt>
+
+      
+  <dt><a href="design.html#kernel_tuner.strategies.minimize.get_bounds_x0_eps">get_bounds_x0_eps() (in module kernel_tuner.strategies.minimize)</a>
+  </dt>
+
+      
   <dt><a href="design.html#kernel_tuner.util.get_config_string">get_config_string() (in module kernel_tuner.util)</a>
   </dt>
 
@@ -314,12 +324,12 @@
   <dt><a href="design.html#kernel_tuner.util.get_grid_dimensions">get_grid_dimensions() (in module kernel_tuner.util)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="design.html#kernel_tuner.util.get_instance_string">get_instance_string() (in module kernel_tuner.util)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
   </dt>
@@ -343,11 +353,23 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="design.html#module-kernel_tuner.strategies.basinhopping">kernel_tuner.strategies.basinhopping (module)</a>
+  </dt>
+
+      
   <dt><a href="design.html#module-kernel_tuner.strategies.brute_force">kernel_tuner.strategies.brute_force (module)</a>
+  </dt>
+
+      
+  <dt><a href="design.html#module-kernel_tuner.strategies.diff_evo">kernel_tuner.strategies.diff_evo (module)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="design.html#module-kernel_tuner.strategies.minimize">kernel_tuner.strategies.minimize (module)</a>
+  </dt>
+
       
   <dt><a href="design.html#module-kernel_tuner.strategies.random_sample">kernel_tuner.strategies.random_sample (module)</a>
   </dt>
@@ -409,6 +431,16 @@
   </dl></td>
 </tr></table>
 
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="design.html#kernel_tuner.runners.noodles.NoodlesRunner">NoodlesRunner (class in kernel_tuner.runners.noodles)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
@@ -467,9 +499,15 @@
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner.run">run() (kernel_tuner.runners.sequential.SequentialRunner method)</a>
+  <dt><a href="design.html#kernel_tuner.runners.noodles.NoodlesRunner.run">run() (kernel_tuner.runners.noodles.NoodlesRunner method)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner.run">(kernel_tuner.runners.sequential.SequentialRunner method)</a>
+  </dt>
+
+      </dl></dd>
       
   <dt><a href="user-api.html#kernel_tuner.run_kernel">run_kernel() (in module kernel_tuner)</a>
   </dt>
@@ -502,8 +540,6 @@
   <dt><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner">SequentialRunner (class in kernel_tuner.runners.sequential)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="design.html#kernel_tuner.util.setup_block_and_grid">setup_block_and_grid() (in module kernel_tuner.util)</a>
   </dt>
@@ -513,16 +549,42 @@
   </dt>
 
   </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="design.html#kernel_tuner.strategies.minimize.setup_method_arguments">setup_method_arguments() (in module kernel_tuner.strategies.minimize)</a>
+  </dt>
+
+      
+  <dt><a href="design.html#kernel_tuner.strategies.minimize.setup_method_options">setup_method_options() (in module kernel_tuner.strategies.minimize)</a>
+  </dt>
+
+      
+  <dt><a href="design.html#kernel_tuner.strategies.minimize.snap_to_nearest_config">snap_to_nearest_config() (in module kernel_tuner.strategies.minimize)</a>
+  </dt>
+
+  </dl></td>
 </tr></table>
 
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="design.html#kernel_tuner.strategies.brute_force.tune">tune() (in module kernel_tuner.strategies.brute_force)</a>
+  <dt><a href="design.html#kernel_tuner.strategies.basinhopping.tune">tune() (in module kernel_tuner.strategies.basinhopping)</a>
   </dt>
 
       <dd><dl>
+        
+  <dt><a href="design.html#kernel_tuner.strategies.brute_force.tune">(in module kernel_tuner.strategies.brute_force)</a>
+  </dt>
+
+        
+  <dt><a href="design.html#kernel_tuner.strategies.diff_evo.tune">(in module kernel_tuner.strategies.diff_evo)</a>
+  </dt>
+
+        
+  <dt><a href="design.html#kernel_tuner.strategies.minimize.tune">(in module kernel_tuner.strategies.minimize)</a>
+  </dt>
+
         
   <dt><a href="design.html#kernel_tuner.strategies.random_sample.tune">(in module kernel_tuner.strategies.random_sample)</a>
   </dt>
@@ -532,6 +594,16 @@
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="user-api.html#kernel_tuner.tune_kernel">tune_kernel() (in module kernel_tuner)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="design.html#kernel_tuner.strategies.minimize.unscale_and_snap_to_nearest">unscale_and_snap_to_nearest() (in module kernel_tuner.strategies.minimize)</a>
   </dt>
 
   </dl></td>

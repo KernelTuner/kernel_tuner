@@ -95,14 +95,30 @@
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Design documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.strategies.brute_force">kernel_tuner.strategies.brute_force</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.strategies.random_sample">kernel_tuner.strategies.random_sample</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-runners-sequential-sequentialrunner">kernel_tuner.runners.sequential.SequentialRunner</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-core-deviceinterface">kernel_tuner.core.DeviceInterface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.util">kernel_tuner.util</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-cuda-cudafunctions">kernel_tuner.cuda.CudaFunctions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#kernel-tuner-c-cfunctions">kernel_tuner.c.CFunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#strategies">Strategies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.brute_force">kernel_tuner.strategies.brute_force</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.random_sample">kernel_tuner.strategies.random_sample</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.minimize">kernel_tuner.strategies.minimize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.basinhopping">kernel_tuner.strategies.basinhopping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.diff_evo">kernel_tuner.strategies.diff_evo</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#runners">Runners</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-runners-sequential-sequentialrunner">kernel_tuner.runners.sequential.SequentialRunner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-runners-noodles-noodlesrunner">kernel_tuner.runners.noodles.NoodlesRunner</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#device-interfaces">Device Interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-core-deviceinterface">kernel_tuner.core.DeviceInterface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-cuda-cudafunctions">kernel_tuner.cuda.CudaFunctions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-c-cfunctions">kernel_tuner.c.CFunctions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#util-functions">Util Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.util">kernel_tuner.util</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
@@ -189,32 +205,33 @@
 <div class="section" id="design-documentation">
 <h1>Design documentation<a class="headerlink" href="#design-documentation" title="Permalink to this headline">¶</a></h1>
 <p>This section provides detailed information about the design and internals
-of the Kernel Tuner. This information is mostly relevant for developers.</p>
-<p>The Kernel Tuner is designed to be extensible and eventually support
+of the Kernel Tuner. <strong>This information is mostly relevant for developers.</strong></p>
+<p>The Kernel Tuner is designed to be extensible and support
 different search and execution strategies. The current architecture of
 the Kernel Tuner can be seen as:</p>
 <a class="reference internal image-reference" href="_images/design.png"><img alt="_images/design.png" src="_images/design.png" style="width: 500pt;" /></a>
 <p>At the top we have the kernel code and the Python script that tunes it,
 which uses any of the main functions exposed in the user interface.</p>
-<p>The runners are responsible for iterating over the search space. The
-default runner is the sequential brute force runner, which does exactly
-what its name says. It iterates over the entire search space with a
-single sequential Python process. Random Sample simply takes a random
-sample of the search space.</p>
-<p>The Noodles runner is currently being developed, which is a parallel
-runner that uses the Noodles library to parallelize a brute force
-iteration over the search space, across of a number of Python processes
-on the same node or across a number of nodes in a compute cluster.</p>
-<p>Actually, there are many more runners that you could think of and we
-have plans for implementing them. At the moment the runners actually mix
-two concepts, one is using search strategies or machine learning to
-prune the search space and the other is parallel and distributed
-execution all the instances that need compiling and benchmarking. It is
-possible that when we have more runners we will also separate the two
-concepts within architecture of the kernel tuner.</p>
-<p>The core layer contains all the utility functions for doing string
-manipulations and core functionality, such as compiling and benchmarking
-kernels based on the <em>Device Function Interface</em>. Currently we have
+<p>The strategies are responsible for iterating over and searching through
+the search space. The default strategy is <code class="docutils literal"><span class="pre">brute_force</span></code>, which
+iterates over all valid kernel configurations in the search space.
+<code class="docutils literal"><span class="pre">random_sample</span></code> simply takes a random sample of the search space. More
+advanced strategies currently implemented in Kernel Tuner are
+<code class="docutils literal"><span class="pre">minimize</span></code>, <code class="docutils literal"><span class="pre">basinhopping</span></code>, and differential evolution
+(<code class="docutils literal"><span class="pre">diff_evo</span></code>). How to use these is explained in the <a class="reference internal" href="user-api.html"><span class="doc">API Documentation</span></a>,
+see the options <code class="docutils literal"><span class="pre">strategy</span></code> and <code class="docutils literal"><span class="pre">method</span></code>.</p>
+<p>The runners are responsible for compiling and benchmarking the kernel
+configurations selected by the strategy. The default runner is the
+sequential runner, which does exactly what its name says. It compiles
+and benchmarks configurations using a single sequential Python process.
+The Noodles runner is a parallel runner that uses the Noodles library to
+parallelize a brute force or random sample iteration over the search
+space across of a number of Python processes on the same node or across
+a number of nodes in a compute cluster.</p>
+<p>The runners are implemented on top of a high-level <em>Device Interface</em>,
+which wraps all the functionality for compiling and benchmarking
+kernel configurations based on the low-level <em>Device Function Interface</em>.
+Currently, we have
 three different implementations of the device function interface, which
 basically abstracts the different backends into a set of simple
 functions such as <code class="docutils literal"><span class="pre">ready_argument_list</span></code> which allocates GPU memory and
@@ -227,9 +244,12 @@ Functions implementation can actually call any compiler, typically NVCC
 or GCC is used. This backend was created not just to be able to tune C
 functions, but mostly to tune C functions that also launch GPU kernels.</p>
 <p>The rest of this section contains the API documentation of the modules
-discussed above.</p>
+discussed above. For the documentation of the user API see the
+<a class="reference internal" href="user-api.html"><span class="doc">API Documentation</span></a>.</p>
+<div class="section" id="strategies">
+<h2>Strategies<a class="headerlink" href="#strategies" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="module-kernel_tuner.strategies.brute_force">
-<span id="kernel-tuner-strategies-brute-force"></span><h2>kernel_tuner.strategies.brute_force<a class="headerlink" href="#module-kernel_tuner.strategies.brute_force" title="Permalink to this headline">¶</a></h2>
+<span id="kernel-tuner-strategies-brute-force"></span><h3>kernel_tuner.strategies.brute_force<a class="headerlink" href="#module-kernel_tuner.strategies.brute_force" title="Permalink to this headline">¶</a></h3>
 <p>The default strategy that iterates through the whole parameter space</p>
 <dl class="function">
 <dt id="kernel_tuner.strategies.brute_force.tune">
@@ -265,7 +285,7 @@ about the hardware/software environment on which the tuning took place.</p>
 
 </div>
 <div class="section" id="module-kernel_tuner.strategies.random_sample">
-<span id="kernel-tuner-strategies-random-sample"></span><h2>kernel_tuner.strategies.random_sample<a class="headerlink" href="#module-kernel_tuner.strategies.random_sample" title="Permalink to this headline">¶</a></h2>
+<span id="kernel-tuner-strategies-random-sample"></span><h3>kernel_tuner.strategies.random_sample<a class="headerlink" href="#module-kernel_tuner.strategies.random_sample" title="Permalink to this headline">¶</a></h3>
 <p>Iterate over a random sample of the parameter space</p>
 <dl class="function">
 <dt id="kernel_tuner.strategies.random_sample.tune">
@@ -300,8 +320,155 @@ about the hardware/software environment on which the tuning took place.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-kernel_tuner.strategies.minimize">
+<span id="kernel-tuner-strategies-minimize"></span><h3>kernel_tuner.strategies.minimize<a class="headerlink" href="#module-kernel_tuner.strategies.minimize" title="Permalink to this headline">¶</a></h3>
+<p>The strategy that uses a minimizer method for searching through the parameter space</p>
+<dl class="function">
+<dt id="kernel_tuner.strategies.minimize.get_bounds">
+<code class="descclassname">kernel_tuner.strategies.minimize.</code><code class="descname">get_bounds</code><span class="sig-paren">(</span><em>tune_params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.get_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a bounds array from the tunable parameters</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.strategies.minimize.get_bounds_x0_eps">
+<code class="descclassname">kernel_tuner.strategies.minimize.</code><code class="descname">get_bounds_x0_eps</code><span class="sig-paren">(</span><em>tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.get_bounds_x0_eps" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute bounds, x0 (the initial guess), and eps</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.strategies.minimize.setup_method_arguments">
+<code class="descclassname">kernel_tuner.strategies.minimize.</code><code class="descname">setup_method_arguments</code><span class="sig-paren">(</span><em>method</em>, <em>bounds</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.setup_method_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare method specific arguments</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.strategies.minimize.setup_method_options">
+<code class="descclassname">kernel_tuner.strategies.minimize.</code><code class="descname">setup_method_options</code><span class="sig-paren">(</span><em>method</em>, <em>tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.setup_method_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare method specific options</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.strategies.minimize.snap_to_nearest_config">
+<code class="descclassname">kernel_tuner.strategies.minimize.</code><code class="descname">snap_to_nearest_config</code><span class="sig-paren">(</span><em>x</em>, <em>tune_params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.snap_to_nearest_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper func that for each param selects the closest actual value</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.strategies.minimize.tune">
+<code class="descclassname">kernel_tuner.strategies.minimize.</code><code class="descname">tune</code><span class="sig-paren">(</span><em>runner</em>, <em>kernel_options</em>, <em>device_options</em>, <em>tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.tune" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the best performing kernel configuration in the parameter space</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Params runner:</th><td class="field-body"><p class="first">A runner from kernel_tuner.runners</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the kernel.</li>
+<li><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the device
+on which the kernel should be tuned.</li>
+<li><strong>tuning_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options regarding the tuning
+process.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of dictionaries for executed kernel configurations and their
+execution times. And a dictionary that contains a information
+about the hardware/software environment on which the tuning took place.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list(dict()), dict()</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.strategies.minimize.unscale_and_snap_to_nearest">
+<code class="descclassname">kernel_tuner.strategies.minimize.</code><code class="descname">unscale_and_snap_to_nearest</code><span class="sig-paren">(</span><em>x</em>, <em>tune_params</em>, <em>eps</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.unscale_and_snap_to_nearest" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper func that snaps a scaled variable to the nearest config</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-kernel_tuner.strategies.basinhopping">
+<span id="kernel-tuner-strategies-basinhopping"></span><h3>kernel_tuner.strategies.basinhopping<a class="headerlink" href="#module-kernel_tuner.strategies.basinhopping" title="Permalink to this headline">¶</a></h3>
+<p>The strategy that uses the basinhopping global optimization method</p>
+<dl class="function">
+<dt id="kernel_tuner.strategies.basinhopping.tune">
+<code class="descclassname">kernel_tuner.strategies.basinhopping.</code><code class="descname">tune</code><span class="sig-paren">(</span><em>runner</em>, <em>kernel_options</em>, <em>device_options</em>, <em>tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.basinhopping.tune" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the best performing kernel configuration in the parameter space</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Params runner:</th><td class="field-body"><p class="first">A runner from kernel_tuner.runners</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_options</strong> (<em>dict</em>) &#8211; A dictionary with all options for the kernel.</li>
+<li><strong>device_options</strong> (<em>dict</em>) &#8211; A dictionary with all options for the device
+on which the kernel should be tuned.</li>
+<li><strong>tuning_options</strong> (<em>dict</em>) &#8211; A dictionary with all options regarding the tuning
+process.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of dictionaries for executed kernel configurations and their
+execution times. And a dictionary that contains a information
+about the hardware/software environment on which the tuning took place.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list(dict()), dict()</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-kernel_tuner.strategies.diff_evo">
+<span id="kernel-tuner-strategies-diff-evo"></span><h3>kernel_tuner.strategies.diff_evo<a class="headerlink" href="#module-kernel_tuner.strategies.diff_evo" title="Permalink to this headline">¶</a></h3>
+<p>The differential evolution strategy that optimizes the search through the parameter space</p>
+<dl class="function">
+<dt id="kernel_tuner.strategies.diff_evo.tune">
+<code class="descclassname">kernel_tuner.strategies.diff_evo.</code><code class="descname">tune</code><span class="sig-paren">(</span><em>runner</em>, <em>kernel_options</em>, <em>device_options</em>, <em>tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.tune" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the best performing kernel configuration in the parameter space</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Params runner:</th><td class="field-body"><p class="first">A runner from kernel_tuner.runners</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the kernel.</li>
+<li><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the device
+on which the kernel should be tuned.</li>
+<li><strong>tuning_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options regarding the tuning
+process.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of dictionaries for executed kernel configurations and their
+execution times. And a dictionary that contains a information
+about the hardware/software environment on which the tuning took place.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list(dict()), dict()</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="runners">
+<h2>Runners<a class="headerlink" href="#runners" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="kernel-tuner-runners-sequential-sequentialrunner">
-<h2>kernel_tuner.runners.sequential.SequentialRunner<a class="headerlink" href="#kernel-tuner-runners-sequential-sequentialrunner" title="Permalink to this headline">¶</a></h2>
+<h3>kernel_tuner.runners.sequential.SequentialRunner<a class="headerlink" href="#kernel-tuner-runners-sequential-sequentialrunner" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.runners.sequential.SequentialRunner">
 <em class="property">class </em><code class="descclassname">kernel_tuner.runners.sequential.</code><code class="descname">SequentialRunner</code><span class="sig-paren">(</span><em>kernel_options</em>, <em>device_options</em>, <em>iterations</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner" title="Permalink to this definition">¶</a></dt>
@@ -358,8 +525,47 @@ about the hardware/software environment on which the tuning took place.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="kernel-tuner-runners-noodles-noodlesrunner">
+<h3>kernel_tuner.runners.noodles.NoodlesRunner<a class="headerlink" href="#kernel-tuner-runners-noodles-noodlesrunner" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="kernel_tuner.runners.noodles.NoodlesRunner">
+<em class="property">class </em><code class="descclassname">kernel_tuner.runners.noodles.</code><code class="descname">NoodlesRunner</code><span class="sig-paren">(</span><em>device_options</em>, <em>max_threads=1</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.noodles.NoodlesRunner" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="kernel_tuner.runners.noodles.NoodlesRunner.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>parameter_space</em>, <em>kernel_options</em>, <em>tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.noodles.NoodlesRunner.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tune all instances in parameter_space using a multiple threads</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>parameter_space</strong> (<em>iterable</em>) &#8211; The parameter space as an iterable.</li>
+<li><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options for the kernel.</li>
+<li><strong>tuning_options</strong> (<em>kernel_tuner.interface.Options</em>) &#8211; A dictionary with all options regarding the tuning
+process.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of dictionaries for executed kernel configurations and their
+execution times. And a dictionary that contains a information
+about the hardware/software environment on which the tuning took place.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list(dict()), dict()</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="device-interfaces">
+<h2>Device Interfaces<a class="headerlink" href="#device-interfaces" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="kernel-tuner-core-deviceinterface">
-<h2>kernel_tuner.core.DeviceInterface<a class="headerlink" href="#kernel-tuner-core-deviceinterface" title="Permalink to this headline">¶</a></h2>
+<h3>kernel_tuner.core.DeviceInterface<a class="headerlink" href="#kernel-tuner-core-deviceinterface" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.core.DeviceInterface">
 <em class="property">class </em><code class="descclassname">kernel_tuner.core.</code><code class="descname">DeviceInterface</code><span class="sig-paren">(</span><em>original_kernel</em>, <em>device=0</em>, <em>platform=0</em>, <em>lang=None</em>, <em>quiet=False</em>, <em>compiler_options=None</em>, <em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface" title="Permalink to this definition">¶</a></dt>
@@ -455,152 +661,8 @@ the language using this argument, currently supported: &#8220;CUDA&#8221;, &#822
 </dd></dl>
 
 </div>
-<div class="section" id="module-kernel_tuner.util">
-<span id="kernel-tuner-util"></span><h2>kernel_tuner.util<a class="headerlink" href="#module-kernel_tuner.util" title="Permalink to this headline">¶</a></h2>
-<p>Module for kernel tuner utility functions</p>
-<dl class="function">
-<dt id="kernel_tuner.util.check_argument_list">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">check_argument_list</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_list" title="Permalink to this definition">¶</a></dt>
-<dd><p>raise an exception if a kernel argument is of unsupported type</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.check_restrictions">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">check_restrictions</code><span class="sig-paren">(</span><em>restrictions</em>, <em>element</em>, <em>keys</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_restrictions" title="Permalink to this definition">¶</a></dt>
-<dd><p>check whether a specific instance meets the search space restrictions</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.delete_temp_file">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">delete_temp_file</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.delete_temp_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>delete a temporary file, don&#8217;t complain if is no longer exists</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.detect_language">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">detect_language</code><span class="sig-paren">(</span><em>lang</em>, <em>kernel_source</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.detect_language" title="Permalink to this definition">¶</a></dt>
-<dd><p>attempt to detect language from the kernel_string if not specified</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.get_config_string">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_config_string</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_config_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>return a compact string representation of a dictionary</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.get_grid_dimensions">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_grid_dimensions</code><span class="sig-paren">(</span><em>current_problem_size</em>, <em>params</em>, <em>grid_div</em>, <em>block_size_names=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_grid_dimensions" title="Permalink to this definition">¶</a></dt>
-<dd><p>compute grid dims based on problem sizes and listed grid divisors</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.get_instance_string">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_instance_string</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_instance_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>combine the parameters to a string mostly used for debug output
-use of OrderedDict is advised</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.get_kernel_string">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_kernel_string</code><span class="sig-paren">(</span><em>kernel_source</em>, <em>params=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_kernel_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>retrieves kernel string from a file if the string passed looks like filename
-if the string does look like a filename, but the file does not exist, it
-is assumed that the string is not a filename after all.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.get_problem_size">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_problem_size</code><span class="sig-paren">(</span><em>problem_size</em>, <em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_problem_size" title="Permalink to this definition">¶</a></dt>
-<dd><p>compute current problem size</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.get_temp_filename">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_temp_filename</code><span class="sig-paren">(</span><em>suffix=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_temp_filename" title="Permalink to this definition">¶</a></dt>
-<dd><p>return a string in the form of temp_X, where X is a large integer</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.get_thread_block_dimensions">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_thread_block_dimensions</code><span class="sig-paren">(</span><em>params</em>, <em>block_size_names=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_thread_block_dimensions" title="Permalink to this definition">¶</a></dt>
-<dd><p>thread block size from tuning params, currently using convention</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.looks_like_a_filename">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">looks_like_a_filename</code><span class="sig-paren">(</span><em>original_kernel</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.looks_like_a_filename" title="Permalink to this definition">¶</a></dt>
-<dd><p>attempt to detect whether source code or a filename was passed</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.prepare_kernel_string">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_kernel_string</code><span class="sig-paren">(</span><em>kernel_string</em>, <em>params</em>, <em>grid=(1</em>, <em>1</em>, <em>1)</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>prepend the kernel with a series of C preprocessor defines</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.prepare_list_of_files">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_list_of_files</code><span class="sig-paren">(</span><em>kernel_file_list</em>, <em>params</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_list_of_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>prepare the kernel string along with any additional files</p>
-<p>The first file in the list is allowed to include or read in the others
-The files beyond the first are considered additional files that may also contain tunable parameters</p>
-<p>For each file beyond the first this function creates a temporary file with
-preprocessors statements inserted. Occurences of the original filenames in the
-first file are replaced with their temporary counterparts.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>kernel_file_list</strong> (<em>list(string)</em>) &#8211; A list of filenames. The first file in the list is
-allowed to read or include the other files in the list. All files may
-will have access to the tunable parameters.</li>
-<li><strong>params</strong> (<em>dict()</em>) &#8211; A dictionary with the tunable parameters for this particular
-instance.</li>
-<li><strong>grid</strong> (<em>tuple()</em>) &#8211; The grid dimensions for this instance. The grid dimensions are
-also inserted into the code as if they are tunable parameters for
-convenience.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.read_file">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">read_file</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.read_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>return the contents of the file named filename or None if file not found</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.replace_param_occurrences">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">replace_param_occurrences</code><span class="sig-paren">(</span><em>string</em>, <em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.replace_param_occurrences" title="Permalink to this definition">¶</a></dt>
-<dd><p>replace occurrences of the tuning params with their current value</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.setup_block_and_grid">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_block_and_grid</code><span class="sig-paren">(</span><em>problem_size</em>, <em>grid_div</em>, <em>params</em>, <em>block_size_names=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_block_and_grid" title="Permalink to this definition">¶</a></dt>
-<dd><p>compute problem size, thread block and grid dimensions for this kernel</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.setup_kernel_strings">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_kernel_strings</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>params</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_kernel_strings" title="Permalink to this definition">¶</a></dt>
-<dd><p>create configuration specific kernel string</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.write_file">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">write_file</code><span class="sig-paren">(</span><em>filename</em>, <em>string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.write_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>dump the contents of string to a file called filename</p>
-</dd></dl>
-
-</div>
 <div class="section" id="kernel-tuner-cuda-cudafunctions">
-<h2>kernel_tuner.cuda.CudaFunctions<a class="headerlink" href="#kernel-tuner-cuda-cudafunctions" title="Permalink to this headline">¶</a></h2>
+<h3>kernel_tuner.cuda.CudaFunctions<a class="headerlink" href="#kernel-tuner-cuda-cudafunctions" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.cuda.CudaFunctions">
 <em class="property">class </em><code class="descclassname">kernel_tuner.cuda.</code><code class="descname">CudaFunctions</code><span class="sig-paren">(</span><em>device=0</em>, <em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions" title="Permalink to this definition">¶</a></dt>
@@ -791,7 +853,7 @@ of the grid</li>
 
 </div>
 <div class="section" id="kernel-tuner-opencl-openclfunctions">
-<h2>kernel_tuner.opencl.OpenCLFunctions<a class="headerlink" href="#kernel-tuner-opencl-openclfunctions" title="Permalink to this headline">¶</a></h2>
+<h3>kernel_tuner.opencl.OpenCLFunctions<a class="headerlink" href="#kernel-tuner-opencl-openclfunctions" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.opencl.OpenCLFunctions">
 <em class="property">class </em><code class="descclassname">kernel_tuner.opencl.</code><code class="descname">OpenCLFunctions</code><span class="sig-paren">(</span><em>device=0</em>, <em>platform=0</em>, <em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions" title="Permalink to this definition">¶</a></dt>
@@ -960,7 +1022,7 @@ of the NDRange.</li>
 
 </div>
 <div class="section" id="kernel-tuner-c-cfunctions">
-<h2>kernel_tuner.c.CFunctions<a class="headerlink" href="#kernel-tuner-c-cfunctions" title="Permalink to this headline">¶</a></h2>
+<h3>kernel_tuner.c.CFunctions<a class="headerlink" href="#kernel-tuner-c-cfunctions" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.c.CFunctions">
 <em class="property">class </em><code class="descclassname">kernel_tuner.c.</code><code class="descname">CFunctions</code><span class="sig-paren">(</span><em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions" title="Permalink to this definition">¶</a></dt>
@@ -1139,6 +1201,154 @@ interface as CudaFunctions and OpenCLFunctions.</li>
 
 </dd></dl>
 
+</div>
+</div>
+<div class="section" id="util-functions">
+<h2>Util Functions<a class="headerlink" href="#util-functions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-kernel_tuner.util">
+<span id="kernel-tuner-util"></span><h3>kernel_tuner.util<a class="headerlink" href="#module-kernel_tuner.util" title="Permalink to this headline">¶</a></h3>
+<p>Module for kernel tuner utility functions</p>
+<dl class="function">
+<dt id="kernel_tuner.util.check_argument_list">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">check_argument_list</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>raise an exception if a kernel argument is of unsupported type</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.check_restrictions">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">check_restrictions</code><span class="sig-paren">(</span><em>restrictions</em>, <em>element</em>, <em>keys</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_restrictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>check whether a specific instance meets the search space restrictions</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.delete_temp_file">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">delete_temp_file</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.delete_temp_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>delete a temporary file, don&#8217;t complain if is no longer exists</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.detect_language">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">detect_language</code><span class="sig-paren">(</span><em>lang</em>, <em>kernel_source</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.detect_language" title="Permalink to this definition">¶</a></dt>
+<dd><p>attempt to detect language from the kernel_string if not specified</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_config_string">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_config_string</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_config_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a compact string representation of a dictionary</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_grid_dimensions">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_grid_dimensions</code><span class="sig-paren">(</span><em>current_problem_size</em>, <em>params</em>, <em>grid_div</em>, <em>block_size_names=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_grid_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute grid dims based on problem sizes and listed grid divisors</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_instance_string">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_instance_string</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_instance_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>combine the parameters to a string mostly used for debug output
+use of OrderedDict is advised</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_kernel_string">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_kernel_string</code><span class="sig-paren">(</span><em>kernel_source</em>, <em>params=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_kernel_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>retrieves kernel string from a file if the string passed looks like filename
+if the string does look like a filename, but the file does not exist, it
+is assumed that the string is not a filename after all.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_problem_size">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_problem_size</code><span class="sig-paren">(</span><em>problem_size</em>, <em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_problem_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute current problem size</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_temp_filename">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_temp_filename</code><span class="sig-paren">(</span><em>suffix=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_temp_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a string in the form of temp_X, where X is a large integer</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.get_thread_block_dimensions">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_thread_block_dimensions</code><span class="sig-paren">(</span><em>params</em>, <em>block_size_names=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_thread_block_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>thread block size from tuning params, currently using convention</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.looks_like_a_filename">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">looks_like_a_filename</code><span class="sig-paren">(</span><em>original_kernel</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.looks_like_a_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>attempt to detect whether source code or a filename was passed</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.prepare_kernel_string">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_kernel_string</code><span class="sig-paren">(</span><em>kernel_string</em>, <em>params</em>, <em>grid=(1</em>, <em>1</em>, <em>1)</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepend the kernel with a series of C preprocessor defines</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.prepare_list_of_files">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_list_of_files</code><span class="sig-paren">(</span><em>kernel_file_list</em>, <em>params</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_list_of_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare the kernel string along with any additional files</p>
+<p>The first file in the list is allowed to include or read in the others
+The files beyond the first are considered additional files that may also contain tunable parameters</p>
+<p>For each file beyond the first this function creates a temporary file with
+preprocessors statements inserted. Occurences of the original filenames in the
+first file are replaced with their temporary counterparts.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kernel_file_list</strong> (<em>list(string)</em>) &#8211; A list of filenames. The first file in the list is
+allowed to read or include the other files in the list. All files may
+will have access to the tunable parameters.</li>
+<li><strong>params</strong> (<em>dict()</em>) &#8211; A dictionary with the tunable parameters for this particular
+instance.</li>
+<li><strong>grid</strong> (<em>tuple()</em>) &#8211; The grid dimensions for this instance. The grid dimensions are
+also inserted into the code as if they are tunable parameters for
+convenience.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.read_file">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">read_file</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.read_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the contents of the file named filename or None if file not found</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.replace_param_occurrences">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">replace_param_occurrences</code><span class="sig-paren">(</span><em>string</em>, <em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.replace_param_occurrences" title="Permalink to this definition">¶</a></dt>
+<dd><p>replace occurrences of the tuning params with their current value</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.setup_block_and_grid">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_block_and_grid</code><span class="sig-paren">(</span><em>problem_size</em>, <em>grid_div</em>, <em>params</em>, <em>block_size_names=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_block_and_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute problem size, thread block and grid dimensions for this kernel</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.setup_kernel_strings">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_kernel_strings</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>params</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_kernel_strings" title="Permalink to this definition">¶</a></dt>
+<dd><p>create configuration specific kernel string</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="kernel_tuner.util.write_file">
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">write_file</code><span class="sig-paren">(</span><em>filename</em>, <em>string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.write_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>dump the contents of string to a file called filename</p>
+</dd></dl>
+
+</div>
 </div>
 </div>
 
