@@ -6,9 +6,9 @@ Design documentation
 ====================
 
 This section provides detailed information about the design and internals 
-of the Kernel Tuner. This information is mostly relevant for developers.
+of the Kernel Tuner. **This information is mostly relevant for developers.**
 
-The Kernel Tuner is designed to be extensible and eventually support 
+The Kernel Tuner is designed to be extensible and support 
 different search and execution strategies. The current architecture of 
 the Kernel Tuner can be seen as:
 
@@ -18,28 +18,28 @@ the Kernel Tuner can be seen as:
 At the top we have the kernel code and the Python script that tunes it, 
 which uses any of the main functions exposed in the user interface.
 
-The runners are responsible for iterating over the search space. The 
-default runner is the sequential brute force runner, which does exactly 
-what its name says. It iterates over the entire search space with a 
-single sequential Python process. Random Sample simply takes a random 
-sample of the search space.
+The strategies are responsible for iterating over and searching through 
+the search space. The default strategy is ``brute_force``, which 
+iterates over all valid kernel configurations in the search space. 
+``random_sample`` simply takes a random sample of the search space. More 
+advanced strategies currently implemented in Kernel Tuner are 
+``minimize``, ``basinhopping``, and differential evolution 
+(``diff_evo``). How to use these is explained in the :doc:`user-api`,
+see the options ``strategy`` and ``method``.
 
-The Noodles runner is currently being developed, which is a parallel 
-runner that uses the Noodles library to parallelize a brute force 
-iteration over the search space, across of a number of Python processes 
-on the same node or across a number of nodes in a compute cluster.
+The runners are responsible for compiling and benchmarking the kernel 
+configurations selected by the strategy. The default runner is the 
+sequential runner, which does exactly what its name says. It compiles 
+and benchmarks configurations using a single sequential Python process.
+The Noodles runner is a parallel runner that uses the Noodles library to 
+parallelize a brute force or random sample iteration over the search 
+space across of a number of Python processes on the same node or across 
+a number of nodes in a compute cluster.
 
-Actually, there are many more runners that you could think of and we 
-have plans for implementing them. At the moment the runners actually mix 
-two concepts, one is using search strategies or machine learning to 
-prune the search space and the other is parallel and distributed 
-execution all the instances that need compiling and benchmarking. It is 
-possible that when we have more runners we will also separate the two 
-concepts within architecture of the kernel tuner.
-
-The core layer contains all the utility functions for doing string 
-manipulations and core functionality, such as compiling and benchmarking 
-kernels based on the *Device Function Interface*. Currently we have 
+The runners are implemented on top of a high-level *Device Interface*,
+which wraps all the functionality for compiling and benchmarking
+kernel configurations based on the low-level *Device Function Interface*.
+Currently, we have 
 three different implementations of the device function interface, which 
 basically abstracts the different backends into a set of simple 
 functions such as ``ready_argument_list`` which allocates GPU memory and 
@@ -54,50 +54,89 @@ or GCC is used. This backend was created not just to be able to tune C
 functions, but mostly to tune C functions that also launch GPU kernels.
 
 The rest of this section contains the API documentation of the modules 
-discussed above.
+discussed above. For the documentation of the user API see the 
+:doc:`user-api`.
+
+
+
+Strategies
+----------
 
 kernel_tuner.strategies.brute_force
--------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. automodule:: kernel_tuner.strategies.brute_force
     :members:
 
 kernel_tuner.strategies.random_sample
--------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. automodule:: kernel_tuner.strategies.random_sample
     :members:
 
+kernel_tuner.strategies.minimize
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.minimize
+    :members:
+
+kernel_tuner.strategies.basinhopping
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.basinhopping
+    :members:
+
+kernel_tuner.strategies.diff_evo
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.diff_evo
+    :members:
+
+
+Runners
+-------
+
 kernel_tuner.runners.sequential.SequentialRunner
-------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.runners.sequential.SequentialRunner
     :special-members: __init__
     :members:
 
+kernel_tuner.runners.noodles.NoodlesRunner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.runners.noodles.NoodlesRunner
+    :special-members: __init__
+    :members:
+
+
+Device Interfaces
+-----------------
+
 kernel_tuner.core.DeviceInterface
------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.core.DeviceInterface
     :special-members: __init__
     :members:
 
-kernel_tuner.util
------------------------------------
-.. automodule:: kernel_tuner.util
-    :members:
-
 kernel_tuner.cuda.CudaFunctions
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.cuda.CudaFunctions
     :special-members: __init__
     :members:
 
 kernel_tuner.opencl.OpenCLFunctions
------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.opencl.OpenCLFunctions
     :special-members: __init__
     :members:
 
 kernel_tuner.c.CFunctions
------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.c.CFunctions
     :special-members: __init__
+    :members:
+
+
+Util Functions
+--------------
+
+kernel_tuner.util
+~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.util
     :members:
 
