@@ -44,7 +44,7 @@ after you've made changes use:
     pytest -v
 
 Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
-are not installed/present. The same holds for thats that require PyOpenCL.
+are not installed/present. The same holds for tests that require PyOpenCL.
 
 Contributions you make to the Kernel Tuner should not break any of the tests 
 even if you can not run them locally.
@@ -58,9 +58,9 @@ Building documentation
 Documentation is located in the ``doc/`` directory. This is where you can type 
 ``make html`` to generate the html pages in the ``doc/build/html`` directory.
 
-The source files used for building the documentation is located in 
+The source files used for building the documentation are located in 
 ``doc/source``. The tutorials should be included in the ``tutorials/`` directory 
-and a symlink can be used to add them to the source files for building 
+and a symlink can be used to add them to the source file directory before building 
 documentation.
 
 To update the documentation pages hosted on the GitHub the generated contents of 
