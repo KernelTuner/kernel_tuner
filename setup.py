@@ -1,9 +1,6 @@
 import os
 from setuptools import setup
 
-import kernel_tuner
-from kernel_tuner import interface
-
 def readme():
     with open('README.rst') as f:
         return f.read()
