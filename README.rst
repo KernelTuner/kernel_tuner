@@ -3,26 +3,9 @@ Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python
 
 |Build Status| |Codacy Badge| |Codacy Badge2|
 
-The Kernel Tuner is a - as simple as possible - tool for testing and auto-tuning 
-CUDA and OpenCL kernels. This means that any CUDA or OpenCL kernel can be tuned 
-without requiring extensive changes to the original kernel code.
+Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.
 
-A very common problem in GPU programming is that some combination of
-thread block dimensions and other kernel parameters, like tiling or
-unrolling factors, results in dramatically better performance than other
-kernel configurations. The goal of auto-tuning is to automate the
-process of finding the best performing configuration for a given device.
-
-The Kernel Tuner offers two main functions which are called run\_kernel and 
-tune\_kernel. With run\_kernel it's very easy to write unit tests for your GPU 
-kernels in Python. With tune\_kernel you can auto-tune your kernels using only a 
-simple Python script. These functions are very flexible and come with a lot of 
-optional parameters, for a complete list see the `documentation website 
-<http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
-
-The Kernel Tuner does not introduce any new dependencies in your kernels. The 
-tuned kernels can afterwards be used independently of the programming environment, 
-whether that is using C/C++/Java/Fortran or Python doesn't matter.
+Kernel Tuner provides a comprehensive solution for auto-tuning GPU programs, supporting auto-tuning of user-defined parameters in both host and device code, supporting output verification of all benchmarked kernels during tuning, as well as many optimization strategies to speed up the tuning process.
 
 Documentation
 -------------
