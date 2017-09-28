@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-The kernel_tuner documentation
+The Kernel Tuner documentation
 ==============================
 
 Contents:
@@ -13,9 +13,9 @@ Contents:
 
    Introduction <self>
    install
-   examples
-   tutorial
    convolution
+   diffusion
+   examples
    matrix
    correctness
    hostcode

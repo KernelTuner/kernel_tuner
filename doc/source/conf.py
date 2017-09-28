@@ -50,7 +50,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'kernel_tuner'
+project = u'Kernel Tuner'
 copyright = u'2016, Ben van Werkhoven'
 author = u'Ben van Werkhoven'
 
@@ -240,7 +240,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'kernel_tuner.tex', u'kernel\\_tuner Documentation',
+    (master_doc, 'kernel_tuner.tex', u'Kernel Tuner Documentation',
      u'Ben van Werkhoven', 'manual'),
 ]
 
@@ -270,7 +270,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'kernel_tuner', u'kernel_tuner Documentation',
+    (master_doc, 'kernel_tuner', u'Kernel Tuner Documentation',
      [author], 1)
 ]
 
@@ -284,8 +284,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'kernel_tuner', u'kernel_tuner Documentation',
-     author, 'kernel_tuner', 'One line description of project.',
+    (master_doc, 'kernel_tuner', u'Kernel Tuner Documentation',
+     author, 'kernel_tuner', 'A simple CUDA/OpenCL Auto-Tuner in Python',
      'Miscellaneous'),
 ]
 
