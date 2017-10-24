@@ -181,7 +181,7 @@
 <p>This file provides all the details you need about how to call the Kernel Tuner&#8217;s functions, including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verify=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>block_size_names=None</em>, <em>quiet=False</em>, <em>strategy=None</em>, <em>method=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verify=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler=None</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>block_size_names=None</em>, <em>quiet=False</em>, <em>strategy=None</em>, <em>method=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -379,6 +379,8 @@ OpenCL platforms you may use this to select one,
 0 by default. Ignored if not using OpenCL.</li>
 <li><strong>quiet</strong> (<em>boolean</em>) &#8211; Control whether or not to print to the console which
 device is being used, False by default</li>
+<li><strong>compiler</strong> (<em>string</em>) &#8211; A string containing your preferred compiler,
+only effective with lang=&#8221;C&#8221;.</li>
 <li><strong>compiler_options</strong> (<em>list(string)</em>) &#8211; A list of strings that specify compiler
 options.</li>
 </ul>
@@ -399,7 +401,7 @@ version info, and so on.</p>
 
 <dl class="function">
 <dt id="kernel_tuner.run_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>compiler_options=None</em>, <em>block_size_names=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>compiler=None</em>, <em>compiler_options=None</em>, <em>block_size_names=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compile and run a single kernel</p>
 <p>Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
 However, instead of measuring execution time run_kernel returns the output of the kernel.
@@ -504,6 +506,8 @@ OpenCL platforms you may use this to select one,
 0 by default. Ignored if not using OpenCL.</li>
 <li><strong>quiet</strong> (<em>boolean</em>) &#8211; Control whether or not to print to the console which
 device is being used, False by default</li>
+<li><strong>compiler</strong> (<em>string</em>) &#8211; A string containing your preferred compiler,
+only effective with lang=&#8221;C&#8221;.</li>
 <li><strong>compiler_options</strong> (<em>list(string)</em>) &#8211; A list of strings that specify compiler
 options.</li>
 </ul>

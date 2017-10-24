@@ -568,11 +568,11 @@ about the hardware/software environment on which the tuning took place.</p>
 <h3>kernel_tuner.core.DeviceInterface<a class="headerlink" href="#kernel-tuner-core-deviceinterface" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.core.DeviceInterface">
-<em class="property">class </em><code class="descclassname">kernel_tuner.core.</code><code class="descname">DeviceInterface</code><span class="sig-paren">(</span><em>original_kernel</em>, <em>device=0</em>, <em>platform=0</em>, <em>lang=None</em>, <em>quiet=False</em>, <em>compiler_options=None</em>, <em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kernel_tuner.core.</code><code class="descname">DeviceInterface</code><span class="sig-paren">(</span><em>original_kernel</em>, <em>device=0</em>, <em>platform=0</em>, <em>lang=None</em>, <em>quiet=False</em>, <em>compiler=None</em>, <em>compiler_options=None</em>, <em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class that offers a High-Level Device Interface to the rest of the Kernel Tuner</p>
 <dl class="method">
 <dt id="kernel_tuner.core.DeviceInterface.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>original_kernel</em>, <em>device=0</em>, <em>platform=0</em>, <em>lang=None</em>, <em>quiet=False</em>, <em>compiler_options=None</em>, <em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>original_kernel</em>, <em>device=0</em>, <em>platform=0</em>, <em>lang=None</em>, <em>quiet=False</em>, <em>compiler=None</em>, <em>compiler_options=None</em>, <em>iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiate the DeviceInterface, based on language in kernel source</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1025,11 +1025,11 @@ of the NDRange.</li>
 <h3>kernel_tuner.c.CFunctions<a class="headerlink" href="#kernel-tuner-c-cfunctions" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.c.CFunctions">
-<em class="property">class </em><code class="descclassname">kernel_tuner.c.</code><code class="descname">CFunctions</code><span class="sig-paren">(</span><em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">kernel_tuner.c.</code><code class="descname">CFunctions</code><span class="sig-paren">(</span><em>iterations=7</em>, <em>compiler_options=None</em>, <em>compiler=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class that groups the code for running and compiling C functions</p>
 <dl class="method">
 <dt id="kernel_tuner.c.CFunctions.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>iterations=7</em>, <em>compiler_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>iterations=7</em>, <em>compiler_options=None</em>, <em>compiler=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>instantiate CFunctions object used for interacting with C code</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1240,7 +1240,7 @@ interface as CudaFunctions and OpenCLFunctions.</li>
 
 <dl class="function">
 <dt id="kernel_tuner.util.get_grid_dimensions">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_grid_dimensions</code><span class="sig-paren">(</span><em>current_problem_size</em>, <em>params</em>, <em>grid_div</em>, <em>block_size_names=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_grid_dimensions" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">get_grid_dimensions</code><span class="sig-paren">(</span><em>current_problem_size</em>, <em>params</em>, <em>grid_div</em>, <em>block_size_names</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_grid_dimensions" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute grid dims based on problem sizes and listed grid divisors</p>
 </dd></dl>
 
@@ -1254,9 +1254,35 @@ use of OrderedDict is advised</p>
 <dl class="function">
 <dt id="kernel_tuner.util.get_kernel_string">
 <code class="descclassname">kernel_tuner.util.</code><code class="descname">get_kernel_string</code><span class="sig-paren">(</span><em>kernel_source</em>, <em>params=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_kernel_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>retrieves kernel string from a file if the string passed looks like filename
-if the string does look like a filename, but the file does not exist, it
-is assumed that the string is not a filename after all.</p>
+<dd><p>retrieve the kernel source and return as a string</p>
+<p>This function processes the passed kernel_source argument, which could be
+a function, a string with a filename, or just a string with code already.</p>
+<p>If kernel_source is a function, the function is called with instance
+parameters in &#8216;params&#8217; as the only argument.</p>
+<p>If kernel_source looks like filename, the file is read in, but if
+the file does not exist, it is assumed that the string is not a filename
+after all.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_source</strong> (<em>string or callable</em>) &#8211; One of the sources for the kernel, could be a
+function that generates the kernel code, a string containing a filename
+that points to the kernel source, or just a string that contains the code.</li>
+<li><strong>params</strong> &#8211; Dictionary containing the tunable parameters for this specific
+kernel instance, only needed when kernel_source is a generator.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A string containing the kernel code.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -1285,13 +1311,50 @@ is assumed that the string is not a filename after all.</p>
 
 <dl class="function">
 <dt id="kernel_tuner.util.prepare_kernel_string">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_kernel_string</code><span class="sig-paren">(</span><em>kernel_string</em>, <em>params</em>, <em>grid=(1</em>, <em>1</em>, <em>1)</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>prepend the kernel with a series of C preprocessor defines</p>
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_kernel_string</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>params</em>, <em>grid</em>, <em>threads</em>, <em>block_size_names</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare kernel string for compilation</p>
+<p>Prepends the kernel with a series of C preprocessor defines specific
+to this kernel instance:</p>
+<blockquote>
+<div><ul class="simple">
+<li>the thread block dimensions</li>
+<li>the grid dimensions</li>
+<li>tunable parameters</li>
+</ul>
+</div></blockquote>
+<p>Additionally the name of kernel is replace with an instance specific name. This
+is done to prevent that the kernel compilation could be skipped by PyCUDA and/or PyOpenCL,
+which may use caching to save compilation time. This feature could lead to strange bugs
+in the source code if the name of the kernel is also used for other stuff.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kernel_name</strong> (<em>string</em>) &#8211; Name of the kernel.</li>
+<li><strong>kernel_string</strong> (<em>string</em>) &#8211; One of the source files of the kernel as a string containing code.</li>
+<li><strong>params</strong> (<em>dict</em>) &#8211; A dictionary containing the tunable parameters specific to this instance.</li>
+<li><strong>grid</strong> (<em>tuple(x,y,z)</em>) &#8211; A tuple with the grid dimensions for this specific instance.</li>
+<li><strong>threads</strong> (<em>tuple(x,y,z)</em>) &#8211; A tuple with the thread block dimensions for this specific instance.</li>
+<li><strong>block_size_names</strong> (<em>tuple(string)</em>) &#8211; A tuple with the names of the thread block dimensions used
+in the code. By default this is [&#8220;block_size_x&#8221;, ...], but the user
+may supply different names if they prefer.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A string containing the source code made specific to this kernel instance.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="kernel_tuner.util.prepare_list_of_files">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_list_of_files</code><span class="sig-paren">(</span><em>kernel_file_list</em>, <em>params</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_list_of_files" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">kernel_tuner.util.</code><code class="descname">prepare_list_of_files</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_file_list</em>, <em>params</em>, <em>grid</em>, <em>threads</em>, <em>block_size_names</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_list_of_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>prepare the kernel string along with any additional files</p>
 <p>The first file in the list is allowed to include or read in the others
 The files beyond the first are considered additional files that may also contain tunable parameters</p>
@@ -1334,12 +1397,6 @@ convenience.</li>
 <dt id="kernel_tuner.util.setup_block_and_grid">
 <code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_block_and_grid</code><span class="sig-paren">(</span><em>problem_size</em>, <em>grid_div</em>, <em>params</em>, <em>block_size_names=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_block_and_grid" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute problem size, thread block and grid dimensions for this kernel</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.setup_kernel_strings">
-<code class="descclassname">kernel_tuner.util.</code><code class="descname">setup_kernel_strings</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>original_kernel</em>, <em>params</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_kernel_strings" title="Permalink to this definition">¶</a></dt>
-<dd><p>create configuration specific kernel string</p>
 </dd></dl>
 
 <dl class="function">
