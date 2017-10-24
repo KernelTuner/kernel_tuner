@@ -10,6 +10,7 @@ import kernel_tuner.cuda as cuda
 import kernel_tuner.opencl as opencl
 from kernel_tuner.util import *
 
+block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 def test_get_grid_dimensions1():
     problem_size = (1024, 1024, 1)
@@ -18,7 +19,7 @@ def test_get_grid_dimensions1():
     grid_div = ( ["block_x"], ["block_y"], None )
 
     grid = get_grid_dimensions(problem_size, params,
-                    grid_div)
+                    grid_div, block_size_names)
 
     assert len(grid) == 3
     assert isinstance(grid[0], int)
@@ -29,14 +30,14 @@ def test_get_grid_dimensions1():
     assert grid[2] == 1
 
     grid = get_grid_dimensions(problem_size, params,
-                    (grid_div[0], None, None))
+                    (grid_div[0], None, None), block_size_names)
 
     assert grid[0] == 25
     assert grid[1] == 1024
     assert grid[2] == 1
 
     grid = get_grid_dimensions(problem_size, params,
-                    (None, grid_div[1], None))
+                    (None, grid_div[1], None), block_size_names)
 
     assert grid[0] == 1024
     assert grid[1] == 28
@@ -50,7 +51,7 @@ def test_get_grid_dimensions2():
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    (grid_div_x, grid_div_y, None))
+                    (grid_div_x, grid_div_y, None), block_size_names)
 
     assert grid[0] == 4
     assert grid[1] == 256
@@ -87,7 +88,7 @@ def test_get_grid_dimensions5():
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    (grid_div_x, grid_div_y, None))
+                    (grid_div_x, grid_div_y, None), block_size_names)
 
     assert grid[0] == 1
     assert grid[1] == 256
@@ -103,7 +104,7 @@ def test_get_grid_dimensions6():
     grid_div_y = ["(block_y+2)/8"]
 
     grid = get_grid_dimensions(problem_size, params,
-                    (grid_div_x, grid_div_y, None))
+                    (grid_div_x, grid_div_y, None), block_size_names)
 
     assert grid[0] == 1
     assert grid[1] == 256
@@ -130,8 +131,14 @@ def test_prepare_kernel_string():
     params = dict()
     params["is"] = 8
 
-    output = prepare_kernel_string(kernel, params, (3,7))
-    expected = "#define is 8\n#define grid_size_y 7\n#define grid_size_x 3\nthis is a weird kernel"
+    name, output = prepare_kernel_string("this", kernel, params, (3,7), (1,2,3), block_size_names)
+    expected = "#define is 8\n" \
+               "#define block_size_z 3\n" \
+               "#define block_size_y 2\n" \
+               "#define block_size_x 1\n" \
+               "#define grid_size_y 7\n" \
+               "#define grid_size_x 3\n" \
+               "this_8 is a weird kernel"
     assert output == expected
 
 def test_replace_param_occurrences():

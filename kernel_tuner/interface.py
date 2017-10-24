@@ -256,6 +256,8 @@ _device_options = Options([
         0 by default. Ignored if not using OpenCL. """, "int")),
     ("quiet", ("""Control whether or not to print to the console which
         device is being used, False by default""", "boolean")),
+    ("compiler", ("""A string containing your preferred compiler,
+        only effective with lang="C". """, "string")),
     ("compiler_options", ("""A list of strings that specify compiler
         options.""", "list(string)"))
     ])
@@ -287,7 +289,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None,
-                num_threads=1, use_noodles=False, sample_fraction=False, compiler_options=None, log=None,
+                num_threads=1, use_noodles=False, sample_fraction=False, compiler=None, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False, strategy=None, method=None):
 
     if log:
@@ -407,7 +409,7 @@ _run_kernel_docstring = """Compile and run a single kernel
 
 def run_kernel(kernel_name, kernel_string, problem_size, arguments,
                params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-               lang=None, device=0, platform=0, cmem_args=None, compiler_options=None,
+               lang=None, device=0, platform=0, cmem_args=None, compiler=None, compiler_options=None,
                block_size_names=None, quiet=False):
 
     #sort options into separate dicts

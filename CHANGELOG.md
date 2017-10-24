@@ -4,6 +4,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+- bugfix install when scipy not present
+- bugfix for GPU cleanup when using Noodles runner
+- reworked the way strings are handled internally
+
+### Added
+- option to set compiler name, when using C backend
+
 ## [0.1.6] - 2017-08-17
 ### Changed
 - actively freeing GPU memory after tuning

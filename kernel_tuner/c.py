@@ -16,7 +16,7 @@ from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file
 class CFunctions(object):
     """Class that groups the code for running and compiling C functions"""
 
-    def __init__(self, iterations=7, compiler_options=None):
+    def __init__(self, iterations=7, compiler_options=None, compiler=None):
         """instantiate CFunctions object used for interacting with C code
 
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
@@ -25,15 +25,14 @@ class CFunctions(object):
         self.iterations = iterations
         self.max_threads = 1024
         self.compiler_options = compiler_options
+        self.compiler = compiler or "g++"  # use gcc by default
         self.lib = None
         self.using_openmp = False
         self.arg_mapping = dict()
 
-        #use gcc by default
-        self.compiler = "g++"
         try:
-            gcc_version = str(subprocess.check_output([self.compiler, "--version"]))
-            gcc_version = gcc_version.splitlines()[0].split(" ")[-1]
+            cc_version = str(subprocess.check_output([self.compiler, "--version"]))
+            cc_version = cc_version.splitlines()[0].split(" ")[-1]
         except OSError as e:
             raise e
 
@@ -49,7 +48,7 @@ class CFunctions(object):
 
         #environment info
         env = dict()
-        env["GCC Version"] = gcc_version
+        env["CC Version"] = cc_version
         if self.nvcc_available:
             env["NVCC Version"] = nvcc_version
         env["iterations"] = self.iterations

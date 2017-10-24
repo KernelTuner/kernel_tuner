@@ -16,7 +16,7 @@ KernelInstance = namedtuple("KernelInstance", ["name", "kernel_string", "temp_fi
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, original_kernel, device=0, platform=0, lang=None, quiet=False, compiler_options=None, iterations=7):
+    def __init__(self, original_kernel, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param original_kernel: The source of the kernel as passed to tune_kernel
@@ -52,7 +52,7 @@ class DeviceInterface(object):
         elif lang == "OpenCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations)
         elif lang == "C":
-            dev = CFunctions(compiler_options=compiler_options, iterations=iterations)
+            dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         else:
             raise Exception("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
         self.lang = lang
@@ -221,6 +221,10 @@ class DeviceInterface(object):
         instance_string = util.get_instance_string(params)
         grid_div = (kernel_options.grid_div_x, kernel_options.grid_div_y, kernel_options.grid_div_z)
 
+        #insert default block_size_names if needed
+        if not kernel_options.block_size_names:
+            kernel_options.block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+
         #setup thread block and grid dimensions
         threads, grid = util.setup_block_and_grid(kernel_options.problem_size, grid_div, params, kernel_options.block_size_names)
         if numpy.prod(threads) > self.dev.max_threads:
@@ -230,14 +234,10 @@ class DeviceInterface(object):
 
         #obtain the kernel_string and prepare additional files, if any
         temp_files = dict()
-        original_kernel = kernel_options.kernel_string
-        if isinstance(original_kernel, list):
-            kernel_string, temp_files = util.prepare_list_of_files(original_kernel, params, grid)
-        else:
-            kernel_string = util.get_kernel_string(original_kernel, params)
-
-        #prepare kernel_string for compilation
-        name, kernel_string = util.setup_kernel_strings(kernel_options.kernel_name, kernel_string, params, grid)
+        kernel_source = kernel_options.kernel_string
+        if not isinstance(kernel_source, list):
+            kernel_source = [kernel_source]
+        name, kernel_string, temp_files = util.prepare_list_of_files(kernel_options.kernel_name, kernel_source, params, grid, threads, kernel_options.block_size_names)
 
         #collect everything we know about this instance and return it
         return KernelInstance(name, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)

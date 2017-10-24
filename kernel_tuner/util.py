@@ -5,6 +5,7 @@ from collections import OrderedDict
 import os
 import errno
 import tempfile
+import logging
 import numpy
 
 def check_argument_list(args):
@@ -49,11 +50,8 @@ def get_config_string(params):
     """ return a compact string representation of a dictionary """
     return ", ".join([k + "=" + str(v) for k, v in params.items()])
 
-def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names=None):
+def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """compute grid dims based on problem sizes and listed grid divisors"""
-    if not block_size_names:
-        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
-
     def get_dimension_divisor(divisor_list, default, params):
         if divisor_list is None:
             if default in params:
@@ -71,10 +69,32 @@ def get_instance_string(params):
     return "_".join([str(i) for i in params.values()])
 
 def get_kernel_string(kernel_source, params=None):
-    """ retrieves kernel string from a file if the string passed looks like filename
-        if the string does look like a filename, but the file does not exist, it
-        is assumed that the string is not a filename after all.
+    """ retrieve the kernel source and return as a string
+
+        This function processes the passed kernel_source argument, which could be
+        a function, a string with a filename, or just a string with code already.
+
+        If kernel_source is a function, the function is called with instance
+        parameters in 'params' as the only argument.
+
+        If kernel_source looks like filename, the file is read in, but if
+        the file does not exist, it is assumed that the string is not a filename
+        after all.
+
+        :param kernel_source: One of the sources for the kernel, could be a
+            function that generates the kernel code, a string containing a filename
+            that points to the kernel source, or just a string that contains the code.
+        :type kernel_source: string or callable
+
+        :param params: Dictionary containing the tunable parameters for this specific
+            kernel instance, only needed when kernel_source is a generator.
+        :type param: dict
+
+        :returns: A string containing the kernel code.
+        :rtype: string
     """
+    logging.debug('get_kernel_string called with %s', str(kernel_source))
+
     kernel_string = None
     if callable(kernel_source):
         kernel_string = kernel_source(params)
@@ -136,16 +156,59 @@ def looks_like_a_filename(original_kernel):
         result = result and any([s in original_kernel for s in (".c", ".opencl")])
     return result
 
-def prepare_kernel_string(kernel_string, params, grid=(1, 1, 1)):
-    """prepend the kernel with a series of C preprocessor defines"""
+def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names):
+    """ prepare kernel string for compilation
+
+        Prepends the kernel with a series of C preprocessor defines specific
+        to this kernel instance:
+            * the thread block dimensions
+            * the grid dimensions
+            * tunable parameters
+
+        Additionally the name of kernel is replace with an instance specific name. This
+        is done to prevent that the kernel compilation could be skipped by PyCUDA and/or PyOpenCL,
+        which may use caching to save compilation time. This feature could lead to strange bugs
+        in the source code if the name of the kernel is also used for other stuff.
+
+        :param kernel_name: Name of the kernel.
+        :type kernel_name: string
+
+        :param kernel_string: One of the source files of the kernel as a string containing code.
+        :type kernel_string: string
+
+        :param params: A dictionary containing the tunable parameters specific to this instance.
+        :type params: dict
+
+        :param grid: A tuple with the grid dimensions for this specific instance.
+        :type grid: tuple(x,y,z)
+
+        :param threads: A tuple with the thread block dimensions for this specific instance.
+        :type threads: tuple(x,y,z)
+
+        :param block_size_names: A tuple with the names of the thread block dimensions used
+            in the code. By default this is ["block_size_x", ...], but the user
+            may supply different names if they prefer.
+        :type block_size_names: tuple(string)
+
+        :returns: A string containing the source code made specific to this kernel instance.
+        :rtype: string
+
+    """
+    logging.debug('prepare_kernel_string called for %s', kernel_name)
+
     grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
     for i, g in enumerate(grid):
         kernel_string = "#define " + grid_dim_names[i] + " " + str(g) + "\n" + kernel_string
+    for i, g in enumerate(threads):
+        kernel_string = "#define " + block_size_names[i] + " " + str(g) + "\n" + kernel_string
     for k, v in params.items():
-        kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
-    return kernel_string
+        if k not in block_size_names:
+            kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
+    name = kernel_name + "_" + get_instance_string(params)
+    kernel_string = kernel_string.replace(kernel_name, name)
+    return name, kernel_string
 
-def prepare_list_of_files(kernel_file_list, params, grid):
+def prepare_list_of_files(kernel_name, kernel_file_list, params, grid, threads, block_size_names):
     """ prepare the kernel string along with any additional files
 
     The first file in the list is allowed to include or read in the others
@@ -173,18 +236,20 @@ def prepare_list_of_files(kernel_file_list, params, grid):
     temp_files = dict()
 
     kernel_string = get_kernel_string(kernel_file_list[0], params)
+    name, kernel_string = prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names)
+
     if len(kernel_file_list) > 1:
         for f in kernel_file_list[1:]:
             #generate temp filename with the same extension
             temp_file = get_temp_filename(suffix="." + f.split(".")[-1])
             temp_files[f] = temp_file
             #add preprocessor statements to the additional file
-            temp_file_string = prepare_kernel_string(get_kernel_string(f, params), params, grid)
+            _, temp_file_string = prepare_kernel_string(kernel_name, get_kernel_string(f, params), params, grid, threads, block_size_names)
             write_file(temp_file, temp_file_string)
-            #replace occurences of the additional file's name in the kernel_string with the name of the temp file
+            #replace occurences of the additional file's name in the first kernel_string with the name of the temp file
             kernel_string = kernel_string.replace(f, temp_file)
 
-    return kernel_string, temp_files
+    return name, kernel_string, temp_files
 
 def read_file(filename):
     """ return the contents of the file named filename or None if file not found """
@@ -204,13 +269,6 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     current_problem_size = get_problem_size(problem_size, params)
     grid = get_grid_dimensions(current_problem_size, params, grid_div, block_size_names)
     return threads, grid
-
-def setup_kernel_strings(kernel_name, original_kernel, params, grid):
-    """create configuration specific kernel string"""
-    kernel_string = prepare_kernel_string(original_kernel, params, grid)
-    name = kernel_name + "_" + get_instance_string(params)
-    kernel_string = kernel_string.replace(kernel_name, name)
-    return name, kernel_string
 
 def write_file(filename, string):
     """dump the contents of string to a file called filename"""

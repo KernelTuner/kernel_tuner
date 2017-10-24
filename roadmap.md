@@ -11,7 +11,6 @@ This is the list of features that we want to have implemented by the next versio
  * Option to set function that computes search space restriction, instead of a list of strings
  * Option to set function that computes grid dimensions instead of grid divisor lists
  * Option to set dynamically allocated shared memory for CUDA backend
- * Option to set compiler name, when using C backend
  
 ### version 1.0.0
 
