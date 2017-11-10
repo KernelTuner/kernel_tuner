@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+
+## [0.1.7] - 2017-10-11
 ### Changed
 - bugfix install when scipy not present
 - bugfix for GPU cleanup when using Noodles runner

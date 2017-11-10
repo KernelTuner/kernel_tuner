@@ -11,7 +11,7 @@ def required():
 
 setup(
     name = "kernel_tuner",
-    version = "0.1.6",
+    version = "0.1.7",
     author = "Ben van Werkhoven",
     author_email = "b.vanwerkhoven@esciencecenter.nl",
     description = ("A simple CUDA/OpenCL kernel tuner in Python"),
