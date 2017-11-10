@@ -71,27 +71,27 @@ def get_instance_string(params):
 def get_kernel_string(kernel_source, params=None):
     """ retrieve the kernel source and return as a string
 
-        This function processes the passed kernel_source argument, which could be
-        a function, a string with a filename, or just a string with code already.
+    This function processes the passed kernel_source argument, which could be
+    a function, a string with a filename, or just a string with code already.
 
-        If kernel_source is a function, the function is called with instance
-        parameters in 'params' as the only argument.
+    If kernel_source is a function, the function is called with instance
+    parameters in 'params' as the only argument.
 
-        If kernel_source looks like filename, the file is read in, but if
-        the file does not exist, it is assumed that the string is not a filename
-        after all.
+    If kernel_source looks like filename, the file is read in, but if
+    the file does not exist, it is assumed that the string is not a filename
+    after all.
 
-        :param kernel_source: One of the sources for the kernel, could be a
-            function that generates the kernel code, a string containing a filename
-            that points to the kernel source, or just a string that contains the code.
-        :type kernel_source: string or callable
+    :param kernel_source: One of the sources for the kernel, could be a
+        function that generates the kernel code, a string containing a filename
+        that points to the kernel source, or just a string that contains the code.
+    :type kernel_source: string or callable
 
-        :param params: Dictionary containing the tunable parameters for this specific
-            kernel instance, only needed when kernel_source is a generator.
-        :type param: dict
+    :param params: Dictionary containing the tunable parameters for this specific
+        kernel instance, only needed when kernel_source is a generator.
+    :type param: dict
 
-        :returns: A string containing the kernel code.
-        :rtype: string
+    :returns: A string containing the kernel code.
+    :rtype: string
     """
     logging.debug('get_kernel_string called with %s', str(kernel_source))
 
@@ -159,39 +159,40 @@ def looks_like_a_filename(original_kernel):
 def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names):
     """ prepare kernel string for compilation
 
-        Prepends the kernel with a series of C preprocessor defines specific
-        to this kernel instance:
-            * the thread block dimensions
-            * the grid dimensions
-            * tunable parameters
+    Prepends the kernel with a series of C preprocessor defines specific
+    to this kernel instance:
 
-        Additionally the name of kernel is replace with an instance specific name. This
-        is done to prevent that the kernel compilation could be skipped by PyCUDA and/or PyOpenCL,
-        which may use caching to save compilation time. This feature could lead to strange bugs
-        in the source code if the name of the kernel is also used for other stuff.
+     * the thread block dimensions
+     * the grid dimensions
+     * tunable parameters
 
-        :param kernel_name: Name of the kernel.
-        :type kernel_name: string
+    Additionally the name of kernel is replace with an instance specific name. This
+    is done to prevent that the kernel compilation could be skipped by PyCUDA and/or PyOpenCL,
+    which may use caching to save compilation time. This feature could lead to strange bugs
+    in the source code if the name of the kernel is also used for other stuff.
 
-        :param kernel_string: One of the source files of the kernel as a string containing code.
-        :type kernel_string: string
+    :param kernel_name: Name of the kernel.
+    :type kernel_name: string
 
-        :param params: A dictionary containing the tunable parameters specific to this instance.
-        :type params: dict
+    :param kernel_string: One of the source files of the kernel as a string containing code.
+    :type kernel_string: string
 
-        :param grid: A tuple with the grid dimensions for this specific instance.
-        :type grid: tuple(x,y,z)
+    :param params: A dictionary containing the tunable parameters specific to this instance.
+    :type params: dict
 
-        :param threads: A tuple with the thread block dimensions for this specific instance.
-        :type threads: tuple(x,y,z)
+    :param grid: A tuple with the grid dimensions for this specific instance.
+    :type grid: tuple(x,y,z)
 
-        :param block_size_names: A tuple with the names of the thread block dimensions used
-            in the code. By default this is ["block_size_x", ...], but the user
-            may supply different names if they prefer.
-        :type block_size_names: tuple(string)
+    :param threads: A tuple with the thread block dimensions for this specific instance.
+    :type threads: tuple(x,y,z)
 
-        :returns: A string containing the source code made specific to this kernel instance.
-        :rtype: string
+    :param block_size_names: A tuple with the names of the thread block dimensions used
+        in the code. By default this is ["block_size_x", ...], but the user
+        may supply different names if they prefer.
+    :type block_size_names: tuple(string)
+
+    :returns: A string containing the source code made specific to this kernel instance.
+    :rtype: string
 
     """
     logging.debug('prepare_kernel_string called for %s', kernel_name)
