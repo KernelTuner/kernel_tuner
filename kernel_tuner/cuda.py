@@ -8,9 +8,15 @@ import numpy
 #and run tests without pycuda installed
 try:
     import pycuda.driver as drv
-    from pycuda.compiler import SourceModule, DynamicSourceModule
 except ImportError:
     drv = None
+try:
+    from pycuda.compiler import SourceModule
+except ImportError:
+    SourceModule = None
+try:
+    from pycuda.compiler import DynamicSourceModule
+except ImportError:
     DynamicSourceModule = None
 
 
