@@ -165,6 +165,7 @@ class CFunctions(object):
             delete_temp_file(source_file)
             delete_temp_file(filename+".o")
             delete_temp_file(filename+".so")
+            delete_temp_file(filename+".dylib")
 
 
         return func
