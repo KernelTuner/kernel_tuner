@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import numpy
 from nose.tools import raises
+import warnings
 
 from .context import skip_if_no_cuda_device, skip_if_no_opencl
 
@@ -235,6 +236,83 @@ def test_check_argument_list2():
     check_argument_list(args)
     #test that no exception is raised
     assert True
+
+
+def test_check_tune_params_list():
+    tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
+                            "grid_size_y"], [1, 2, 3, 4]))
+    try:
+        check_tune_params_list(tune_params)
+        print("Expected a ValueError to be raised")
+        assert False
+    except ValueError as e:
+        print(str(e))
+        assert "Tune parameter grid_size_y with value 4 has a forbidden name!" == str(e)
+    except Exception:
+        print("Expected a ValueError to be raised")
+        assert False
+
+
+def test_check_tune_params_list2():
+    tune_params = dict(zip(["once_upon_a_time", "in_the_west"], [1, 2]))
+    try:
+        check_tune_params_list(tune_params)
+        print("Expected a ValueError to be raised")
+        assert False
+    except ValueError as e:
+        print(str(e))
+        assert "Tune parameter once_upon_a_time with value 1 has a forbidden name: not allowed to use time in tune parameter names!" == str(e)
+    except Exception:
+        print("Expected a ValueError to be raised")
+        assert False
+
+
+def test_check_tune_params_list3():
+    tune_params = dict(zip(["rock", "paper", "scissors"], [1, 2, 3]))
+    check_tune_params_list(tune_params)
+    # test that no exception is raised
+    assert True
+
+
+def test_check_block_size_params_names_list():
+    block_size_names = ["block_size_a", "block_size_b"]
+    tune_params = dict(zip(["hyper", "ultra", "mega", "turbo"], [1, 2, 3, 4]))
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        # Trigger a warning.
+        check_block_size_params_names_list(block_size_names, tune_params)
+        # Verify some things
+        assert len(w) == 2
+        assert issubclass(w[0].category, UserWarning)
+        assert issubclass(w[1].category, UserWarning)
+        assert "Block size name block_size_a is not specified in the tunable parameters list!" == str(w[0].message)
+        assert "Block size name block_size_b is not specified in the tunable parameters list!" == str(w[1].message)
+
+
+def test_check_block_size_params_names_list2():
+    block_size_names = ["block_size_a", "block_size_b"]
+    tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        # Trigger a warning.
+        check_block_size_params_names_list(block_size_names, tune_params)
+        # test that no warning is raised
+        assert len(w) == 0
+
+
+def test_check_block_size_params_names_list3():
+    block_size_names = None
+    tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        # Trigger a warning.
+        check_block_size_params_names_list(block_size_names, tune_params)
+        # test that no warning is raised
+        assert len(w) == 0
+
 
 def test_get_kernel_string_func():
     #test whether passing a function instead of string works
