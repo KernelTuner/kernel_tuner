@@ -218,14 +218,13 @@ def test_get_device_interface3():
     core.DeviceInterface("", 0, 0, lang=lang)
 
 def test_check_argument_list1():
-    kernel_name = "test_kernel"
     kernel_string = """__kernel void test_kernel(int number, char * message, int * numbers) {
     numbers[get_global_id(0)] = numbers[get_global_id(0)] * number;
     }
     """
     args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
     try:
-        check_argument_list(kernel_name, kernel_string, args)
+        check_argument_list(kernel_string, args)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as e:
@@ -236,13 +235,12 @@ def test_check_argument_list1():
         assert False
 
 def test_check_argument_list2():
-    kernel_name = "test_kernel"
     kernel_string = """__kernel void test_kernel(int number, double factors, int * numbers) {
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
     args = [numpy.int32(5), numpy.float64(4.6), numpy.int32([1, 2, 3])]
-    check_argument_list(kernel_name, kernel_string, args)
+    check_argument_list(kernel_string, args)
     #test that no exception is raised
     assert True
 
