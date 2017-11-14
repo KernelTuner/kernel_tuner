@@ -26,7 +26,7 @@ You can install the packages required to run the tests using:
 
 .. code-block:: bash
 
-    pip install -r requirements-dev.txt
+    pip install .[dev]
 
 After this command you should be able to run the tests and build the documentation.
 See below on how to do that.

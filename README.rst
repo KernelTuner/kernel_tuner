@@ -18,31 +18,22 @@ Installation
 
 The easiest way to install the Kernel Tuner is using pip:
 
-.. code-block:: bash
-
-    pip install kernel_tuner
-
-But you can also install from the git repository. This way you also get the
-examples and the tutorials:
-
-.. code-block:: bash
-
-    git clone https://github.com/benvanwerkhoven/kernel_tuner.git
-    cd kernel_tuner
-    pip install .
-    
 To tune CUDA kernels:
 
   - First, make sure you have the `CUDA Toolkit <https://developer.nvidia.com/cuda-toolkit>`_ installed
-  - You can install PyCuda using ``pip install pycuda``
+  - Then type: ``pip install kernel_tuner[cuda]``
 
 To tune OpenCL kernels:
 
   - First, make sure you have an OpenCL compiler for your intended OpenCL platform
-  - You can install PyOpenCL using ``pip install pyopencl``
+  - Then type: ``pip install kernel_tuner[opencl]``
 
-If you need more information about how to install the Kernel Tuner and all 
-dependencies see the `installation guide 
+Or both:
+
+  - ``pip install kernel_tuner[cuda,opencl]``
+
+More information about how to install Kernel Tuner and its
+dependencies can be found in the `installation guide 
 <http://benvanwerkhoven.github.io/kernel_tuner/install.html>`__
 
 Example usage

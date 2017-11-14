@@ -4,6 +4,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+- the install procedure now uses extras, e.g. [cuda,opencl]
+
+
 
 ## [0.1.7] - 2017-10-11
 ### Changed

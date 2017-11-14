@@ -25,23 +25,25 @@ is developed to be fully compatible with Python 3.5 and newer, and also Python 2
 Installing Python Packages
 --------------------------
 
-Note that when you are using a native Python installation, the `pip` commands used to 
-install dependencies probably require `sudo` rights. 
+Note that when you are using a native Python installation, the `pip` command used 
+Kernel Tuner and its dependencies probably require `sudo` rights. 
 
 Sudo rights are typically not required when using Miniconda or virtual environments.
+You could also use the `--user` option of `pip` to install into your home directory,
+this requires that your home directory is on your `$PYTHONPATH` environment variable.
 
-The following command will install all required dependencies:
+The following command will install Kernel Tuner together with the required dependencies:
 
 .. code-block:: bash
 
-    pip install -r requirements.txt
+    pip install kernel_tuner
 
 There are also optional dependencies, explained below.
 
 CUDA and PyCUDA
 ---------------
 
-Installing CUDA and PyCUDA is optional, because you may want to only use the Kernel 
+Installing CUDA and PyCUDA is optional, because you may want to only use Kernel 
 Tuner for tuning OpenCL or C kernels.
 
 If you want to use the Kernel Tuner to tune 
@@ -50,21 +52,26 @@ CUDA kernels you will first need to install the CUDA toolkit
 
 It's very important that you install the CUDA toolkit before trying to install PyCuda.
 
-You can install PyCuda using:
+You can install PyCuda manually using:
 
 .. code-block:: bash
 
     pip install pycuda
 
+Or you could install Kernel Tuner and PyCUDA together if you haven't done so already:
+
+.. code-block:: bash
+
+    pip install kernel_tuner[cuda]
+
 If you run into trouble with installing PyCuda, make sure you have CUDA installed first.
-Also make sure that the Python package Numpy is already installed (this should be the case
-because it is also a requirement for the Kernel Tuner).
+Also make sure that the Python package Numpy is already installed, e.g. using `pip install numpy`.
 
-If you retry the ``pip install pycuda`` command you may need to use the 
-``--no-cache-dir`` option to ensure the pycuda installation really starts over.
+If you retry the ``pip install pycuda`` command, you may need to use the 
+``--no-cache-dir`` option to ensure the pycuda installation really starts over and not continues
+from an installation that is failing.
 
-If this fails, I recommend to see the PyCuda 
-installation guide (https://wiki.tiker.net/PyCuda/Installation)
+If this fails, I recommend to see the PyCuda installation guide (https://wiki.tiker.net/PyCuda/Installation)
 
 
 OpenCL and PyOpenCL
@@ -88,22 +95,19 @@ After you've installed your OpenCL compiler of choice you can install PyOpenCL u
 
     pip install pyopencl
 
+Or you could install Kernel Tuner and PyOpenCL together if you haven't done so already:
+
+.. code-block:: bash
+
+    pip install kernel_tuner[opencl]
+
 If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.net/PyOpenCL/Installation)
 
 
 Installing the Kernel Tuner
 ---------------------------
 
-So far we've installed all the dependencies. Now we are ready to install the 
-Kernel Tuner itself.
-
-The easiest way to install is using pip:
-
-.. code-block:: bash
-
-    pip install kernel_tuner
-
-But you can also install from the git repository. This way you also get the 
+You can also install from the git repository. This way you also get the 
 examples and the tutorials.
 
 .. code-block:: bash
@@ -112,8 +116,19 @@ examples and the tutorials.
     cd kernel_tuner
     pip install .
 
-Then go to any of the ``examples/cuda`` or ``examples/opencl`` directories
-and see if you can run the ``vector_add.py`` example to test your installation.
+You can install Kernel Tuner with several optional dependencies, the full list is:
+
+  - `cuda`: install pycuda along with kernel_tuner
+  - `opencl`: install pycuda along with kernel_tuner
+  - `doc`: installs packages required to build the documentation
+  - `tutorial`: install packages required to run the tutorials
+  - `dev`: install everything you need to start development on Kernel Tuner
+
+For example, use:
+```
+pip install .[dev,cuda,opencl]
+```
+To install Kernel Tuner along with all the packages required for development.
 
 
 Dependencies for the Tutorial
@@ -121,15 +136,20 @@ Dependencies for the Tutorial
 
 Some addition Python packages are required to run the tutorial. These packages are
 actually very commonly used and chances are that you already have these installed.
-However, here is a list of the dependencies that you need to run everything in the
-tutorial:
+
+However, to install Kernel Tuner along with the dependencies to run the tutorials,
+you could use:
+
+.. code-block:: bash
+
+    pip install kernel_tuner[tutorial,cuda]
+
+Or if you have already installed Kernel Tuner and PyCUDA, just use:
 
 .. code-block:: bash
 
     pip install jupyter matplotlib pandas
 
-The tutorial also uses CUDA and PyCUDA. How to install these has been explained in 
-the installation guide above.
 
 
 
