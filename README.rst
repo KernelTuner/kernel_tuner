@@ -30,7 +30,7 @@ To tune OpenCL kernels:
 
 Or both:
 
-  - ``pip install kernel_tuner[cuda,opencl]``
+- ``pip install kernel_tuner[cuda,opencl]``
 
 More information about how to install Kernel Tuner and its
 dependencies can be found in the `installation guide 
