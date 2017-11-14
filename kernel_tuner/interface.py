@@ -345,7 +345,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #select runner based on user options
     if num_threads == 1 and not use_noodles:
         from kernel_tuner.runners.sequential import SequentialRunner
-        runner = SequentialRunner(kernel_options, device_options, iterations, times)
+        runner = SequentialRunner(kernel_options, device_options, iterations)
     elif num_threads > 1 and not use_noodles:
         raise ValueError("Using multiple threads requires the Noodles runner, use use_noodles=True")
     elif use_noodles:
