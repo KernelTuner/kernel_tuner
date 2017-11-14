@@ -8,31 +8,54 @@ matrix:
   include:
     - os: linux
       language: python
-      python:
-        - "2.7"
-        - "3.5"
-        - "3.6"
+      python: "2.7"
       addons:
         apt:
           packages:
-            - build-dep
             - python-numpy
             - python-scipy
-      before_install:
-        - sudo apt-get build-dep python-scipy
+    - os: linux
+      language: python
+      python: "3.5"
+      addons:
+        apt:
+          packages:
+            - python-numpy
+            - python-scipy
+    - os: linux
+      language: python
+      python: "3.6"
+      addons:
+        apt:
+          packages:
+            - python-numpy
+            - python-scipy
     - os: osx
       env:
-        - MCONDA_PYTHON_MAJOR=2 MCONDA_PYTHON_VERSION=2.7
-        - MCONDA_PYTHON_MAJOR=3 MCONDA_PYTHON_VERSION=3.5
-        - MCONDA_PYTHON_MAJOR=3 MCONDA_PYTHON_VERSION=3.6
-      before_install:
-        - wget "http://repo.continuum.io/miniconda/Miniconda$MCONDA_PYTHON_MAJOR-$MCONDA_VERSION-$MCONDA_OSX.sh" -O miniconda.sh;
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - hash -r
-        - conda update -yq conda
-        - conda install python=$MCONDA_PYTHON_VERSION
-        - conda install -y numpy scipy
+        - MCONDA_PYTHON_MAJOR=2
+        - MCONDA_PYTHON_VERSION=2.7
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.5
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.6
+
+before_install:
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      sudo apt-get build-dep python-scipy
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      wget "http://repo.continuum.io/miniconda/Miniconda$MCONDA_PYTHON_MAJOR-$MCONDA_VERSION-$MCONDA_OSX.sh" -O miniconda.sh;
+      bash miniconda.sh -b -p $HOME/miniconda
+      export PATH="$HOME/miniconda/bin:$PATH"
+      hash -r
+      conda update -yq conda
+      conda install python=$MCONDA_PYTHON_VERSION
+      conda install -y numpy scipy
+    fi
 
 install:
   - pip install pytest
