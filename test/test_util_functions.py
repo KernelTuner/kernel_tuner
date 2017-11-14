@@ -239,7 +239,7 @@ def test_check_argument_list2():
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.char(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.ulong([3, 2, 111])]
+    args = [numpy.char(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
     check_argument_list(kernel_string, args)
     #test that no exception is raised
     assert True
@@ -249,7 +249,7 @@ def test_check_argument_list3():
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.ushort(42), numpy.float16([3, 4, 6]), numpy.int32(300)]
+    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32(300)]
     try:
         check_argument_list(kernel_string, args)
         print("Expected a TypeError to be raised")
