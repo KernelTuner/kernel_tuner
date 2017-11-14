@@ -16,7 +16,7 @@ mock_config = { "return_value.compile.return_value": "compile",
 
 @nottest
 def get_fake_kernel():
-    kernel_string = "__global__ void fake_kernel()"
+    kernel_string = "__global__ void fake_kernel(int number)"
     size = 1280
     n = numpy.int32(size)
     args = [n]
