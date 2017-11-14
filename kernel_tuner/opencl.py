@@ -84,8 +84,6 @@ class OpenCLFunctions(object):
         """
         prg = cl.Program(self.ctx, kernel_string).build(options=self.compiler_options)
         func = getattr(prg, kernel_name)
-        print(func.get_work_group_info(cl.kernel_work_group_info.WORK_GROUP_SIZE,
-                                       cl.get_platforms()[0].get_devices()[0]))
         return func
 
     def benchmark(self, func, gpu_args, threads, grid):
