@@ -300,6 +300,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #see if the kernel arguments have correct type
     util.check_argument_list(arguments)
 
+    # check for forbidden names in tune parameters
+    util.check_tune_params_list(tune_params)
+
+    # check whether block_size_names are used as expected
+    util.check_block_size_params_names_list(block_size_names, tune_params)
+
     #sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
