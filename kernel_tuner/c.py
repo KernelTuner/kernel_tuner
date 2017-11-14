@@ -227,7 +227,10 @@ class CFunctions(object):
         if times:
             return time
         else:
-            return numpy.mean(time[1:-1])
+            if self.iterations > 4:
+                return numpy.mean(time[1:-1])
+            else:
+                return numpy.mean(time)
 
 
     def run_kernel(self, func, c_args, threads, grid):

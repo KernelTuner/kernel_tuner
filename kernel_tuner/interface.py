@@ -309,6 +309,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
 
+    if iterations < 1:
+        raise ValueError("Iterations should be at least one!")
+
     #sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
