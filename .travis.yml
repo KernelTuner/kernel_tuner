@@ -8,9 +8,7 @@ before_install:
   - sudo apt-get build-dep python-scipy
   - sudo apt-get install -qq python-numpy python-scipy
 install:
-  - pip install pytest
-  - pip install mock
-  - pip install -r requirements.txt
+  - pip install .[dev]
 # command to run tests
 script: python -m pytest
 branches:
