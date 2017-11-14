@@ -239,7 +239,7 @@ def test_check_argument_list2():
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.char(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
+    args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
     check_argument_list(kernel_string, args)
     #test that no exception is raised
     assert True
