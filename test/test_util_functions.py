@@ -244,6 +244,18 @@ def test_check_argument_list2():
     #test that no exception is raised
     assert True
 
+def test_check_argument_list3():
+    kernel_string = """__kernel void test_kernel(const ushort number, half * factors, long * numbers) {
+        numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
+        }
+        """
+    args = [numpy.ushort(42), numpy.float16([3, 4, 6]), numpy.int32(300)]
+    try:
+        check_argument_list(kernel_string, args)
+    except TypeError as error:
+        assert True
+    assert False
+
 def test_get_kernel_string_func():
     #test whether passing a function instead of string works
     def gen_kernel(params):
