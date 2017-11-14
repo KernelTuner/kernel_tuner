@@ -34,7 +34,7 @@ def test_interface_calls_functions(dev_interface):
 
     expected = "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 128\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 10\n__global__ void fake_kernel_128()"
     dev.compile.assert_called_once_with("fake_kernel_128", expected)
-    dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1, 1), tune_params.times)
+    dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1, 1), False)
 
 @patch('kernel_tuner.core.CudaFunctions')
 def test_interface_handles_max_threads(dev_interface):
@@ -72,7 +72,7 @@ def test_interface_handles_restriction(dev_interface):
     tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
 
     assert dev.compile.call_count == 1
-    dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1))
+    dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1), False)
 
 @patch('kernel_tuner.core.CudaFunctions')
 def test_interface_handles_runtime_error(dev_interface):
@@ -85,7 +85,7 @@ def test_interface_handles_runtime_error(dev_interface):
     results, _ = tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
     assert dev.compile.call_count == 1
-    dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1), tune_params.times)
+    dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1), False)
     assert len(results) == 0
 
 @patch('kernel_tuner.core.CudaFunctions')
