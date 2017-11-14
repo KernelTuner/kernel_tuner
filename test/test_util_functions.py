@@ -235,11 +235,11 @@ def test_check_argument_list1():
         assert False
 
 def test_check_argument_list2():
-    kernel_string = """__kernel void test_kernel(int number, double factors, int * numbers) {
+    kernel_string = """__kernel void test_kernel(char number, double factors, int * numbers, const unsigned long * moreNumbers) {
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.int32(5), numpy.float64(4.6), numpy.int32([1, 2, 3])]
+    args = [numpy.char(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.ulong([3, 2, 111])]
     check_argument_list(kernel_string, args)
     #test that no exception is raised
     assert True
