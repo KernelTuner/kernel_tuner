@@ -252,9 +252,14 @@ def test_check_argument_list3():
     args = [numpy.ushort(42), numpy.float16([3, 4, 6]), numpy.int32(300)]
     try:
         check_argument_list(kernel_string, args)
-    except TypeError as error:
-        assert True
-    assert False
+        print("Expected a TypeError to be raised")
+        assert False
+    except TypeError as expected_error:
+        print(str(expected_error))
+        assert "at position 2" in str(expected_error)
+    except Exception:
+        print("Expected a TypeError to be raised")
+        assert False
 
 def test_get_kernel_string_func():
     #test whether passing a function instead of string works
