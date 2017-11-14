@@ -56,6 +56,8 @@ install:
   - conda update -yq conda
   - conda install -y python=$MCONDA_PYTHON_VERSION
   - conda install -y numpy scipy
+  # Install openCL
+  - conda install -c conda-forge pyopencl 
 
   - pip install .[dev]
 
