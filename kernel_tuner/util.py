@@ -27,13 +27,13 @@ def check_argument_list(kernel_string, args):
                 raise TypeError("Argument at position " + str(i) + " of type: " + str(
                     type(arg)) + " should be of type numpy.ndarray(byte).")
             # CUDA/OpenCL/C ushort arrays
-            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and not arg.dtype == "ushort":
+            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and not arg.dtype == "uint16":
                 raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(ushort).")
+                    type(arg)) + " should be of type numpy.ndarray(uint16).")
             # CUDA/OpenCL/C short arrays
-            elif "short" in kernel_argument and not arg.dtype == "short":
+            elif "short" in kernel_argument and not arg.dtype == "int16":
                 raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(short).")
+                    type(arg)) + " should be of type numpy.ndarray(int16).")
             # CUDA/OpenCL/C uint arrays
             elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and not arg.dtype == "uint32":
                 raise TypeError("Argument at position " + str(i) + " of type: " + str(
