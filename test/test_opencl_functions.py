@@ -54,9 +54,19 @@ def test_benchmark():
         profile = type('profile', (object,), {'end': 0.1, 'start': 0})
         return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
 
-    time = dev.benchmark(test_func, args, (1,2,3), (1,2,3))
+    time = dev.benchmark(test_func, args, (1,2,3), (1,2,3), False)
     assert time > 0
 
+def test_benchmark_times():
+    skip_if_no_opencl()
+    dev = opencl.OpenCLFunctions(0)
+    args = [1, 2]
+    def test_func(queue, a, b, block=0, grid=0):
+        profile = type('profile', (object,), {'end': 0.1, 'start': 0})
+        return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
+
+    time = dev.benchmark(test_func, args, (1,2,3), (1,2,3), True)
+    assert len(time) == 7
 
 def test_run_kernel():
     skip_if_no_opencl()

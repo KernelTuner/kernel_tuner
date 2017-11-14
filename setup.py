@@ -1,26 +1,23 @@
-import os
+
 from setuptools import setup
+
 
 def readme():
     with open('README.rst') as f:
         return f.read()
 
-def required():
-    with open('requirements.txt') as f:
-        return f.read().splitlines()
 
 setup(
-    name = "kernel_tuner",
-    version = "0.1.7",
-    author = "Ben van Werkhoven",
-    author_email = "b.vanwerkhoven@esciencecenter.nl",
-    description = ("A simple CUDA/OpenCL kernel tuner in Python"),
-    license = "Apache 2.0",
-    keywords = "auto-tuning gpu computing pycuda cuda pyopencl opencl",
-    url = "http://benvanwerkhoven.github.io/kernel_tuner/",
+    name="kernel_tuner",
+    version="0.1.7",
+    author="Ben van Werkhoven",
+    author_email="b.vanwerkhoven@esciencecenter.nl",
+    description=("A simple CUDA/OpenCL kernel tuner in Python"),
+    license="Apache 2.0",
+    keywords="auto-tuning gpu computing pycuda cuda pyopencl opencl",
+    url="http://benvanwerkhoven.github.io/kernel_tuner/",
     packages=['kernel_tuner', 'kernel_tuner.runners', 'kernel_tuner.strategies'],
     long_description=readme(),
-    install_requires=required(),
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: Developers',
@@ -36,6 +33,21 @@ setup(
         'Topic :: System :: Distributed Computing',
         'Development Status :: 4 - Beta',
     ],
-
+    install_requires=[
+        'numpy>=1.13.3',
+        'scipy>=0.18.1'],
+    extras_require={
+        'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx'],
+        'cuda': ['pycuda'],
+        'opencl': ['pyopencl'],
+        'cuda_opencl': ['pycuda', 'pyopencl'],
+        'tutorial': ['jupyter', 'matplotlib', 'pandas'],
+        'dev': [
+            'numpy>=1.13.3', 'scipy>=0.18.1', 'mock>=2.0.0',
+            'nose>=1.3.7', 'pytest>=3.0.3', 'Sphinx>=1.4.8',
+            'sphinx-rtd-theme>=0.1.9', 'nbsphinx>=0.2.13',
+            'jupyter>=1.0.0', 'matplotlib>=1.5.3', 'pandas>=0.19.1',
+            'pylint>=1.7.1']
+    },
 )
 

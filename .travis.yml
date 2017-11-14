@@ -6,42 +6,42 @@ env:
 
 matrix:
   include:
-    # - os: linux
-    #   language: python
-    #   python: "2.7"
-    #   addons:
-    #     apt:
-    #       packages:
-    #         - python-numpy
-    #         - python-scipy
-    # - os: linux
-    #   language: python
-    #   python: "3.5"
-    #   addons:
-    #     apt:
-    #       packages:
-    #         - python-numpy
-    #         - python-scipy
-    # - os: linux
-    #   language: python
-    #   python: "3.6"
-    #   addons:
-    #     apt:
-    #       packages:
-    #         - python-numpy
-    #         - python-scipy
+    - os: linux
+      language: python
+      python: "2.7"
+      addons:
+        apt:
+          packages:
+            - python-numpy
+            - python-scipy
+    - os: linux
+      language: python
+      python: "3.5"
+      addons:
+        apt:
+          packages:
+            - python-numpy
+            - python-scipy
+    - os: linux
+      language: python
+      python: "3.6"
+      addons:
+        apt:
+          packages:
+            - python-numpy
+            - python-scipy
     - os: osx
       env:
         - MCONDA_PYTHON_MAJOR=2
         - MCONDA_PYTHON_VERSION=2.7
-    # - os: osx
-    #   env:
-    #     - MCONDA_PYTHON_MAJOR=3
-    #     - MCONDA_PYTHON_VERSION=3.5
-    # - os: osx
-    #   env:
-    #     - MCONDA_PYTHON_MAJOR=3
-    #     - MCONDA_PYTHON_VERSION=3.6
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.5
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.6
 
 before_install:
   - |
@@ -58,9 +58,7 @@ before_install:
     fi
 
 install:
-  - pip install pytest nose
-  - pip install mock
-  - pip install -r requirements.txt
+  - pip install .[dev]
 # command to run tests
 script: python -m pytest
 branches:
