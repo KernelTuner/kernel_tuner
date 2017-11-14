@@ -16,7 +16,7 @@ KernelInstance = namedtuple("KernelInstance", ["name", "kernel_string", "temp_fi
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, original_kernel, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7):
+    def __init__(self, original_kernel, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7, times=False):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param original_kernel: The source of the kernel as passed to tune_kernel
@@ -43,6 +43,9 @@ class DeviceInterface(object):
         :param iterations: Number of iterations to be used when benchmarking using this device.
         :type iterations: int
 
+        :param times: Return the execution time of all iterations.
+        :type times: bool
+
         """
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
@@ -61,7 +64,7 @@ class DeviceInterface(object):
         if not quiet:
             print("Using: " + self.dev.name)
 
-    def benchmark(self, func, gpu_args, instance, verbose):
+    def benchmark(self, func, gpu_args, instance, times, verbose):
         """benchmark the kernel instance"""
         logging.debug('benchmark ' + instance.name)
         logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
@@ -69,7 +72,7 @@ class DeviceInterface(object):
 
         time = None
         try:
-            time = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid)
+            time = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid, times)
         except Exception as e:
             #some launches may fail because too many registers are required
             #to run the kernel given the current thread block size
@@ -172,7 +175,7 @@ class DeviceInterface(object):
                 self.check_kernel_correctness(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
 
             #benchmark
-            time = self.benchmark(func, gpu_args, instance, verbose)
+            time = self.benchmark(func, gpu_args, instance, tuning_options.times, verbose)
 
         except Exception as e:
             #dump kernel_string to temp file

@@ -231,6 +231,8 @@ _tuning_options = Options([
     ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""",
         "int")),
+    ("times", ("""Returns the execution time of all iterations of a
+        kernel execution. False by default.""", "bool")),
     ("verbose", ("""Sets whether or not to report about configurations that
         were skipped during the search. This could be due to several reasons:
 
@@ -290,7 +292,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None,
                 num_threads=1, use_noodles=False, sample_fraction=False, compiler=None, compiler_options=None, log=None,
-                iterations=7, block_size_names=None, quiet=False, strategy=None, method=None):
+                iterations=7, times=False, block_size_names=None, quiet=False, strategy=None, method=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -343,7 +345,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #select runner based on user options
     if num_threads == 1 and not use_noodles:
         from kernel_tuner.runners.sequential import SequentialRunner
-        runner = SequentialRunner(kernel_options, device_options, iterations)
+        runner = SequentialRunner(kernel_options, device_options, iterations, times)
     elif num_threads > 1 and not use_noodles:
         raise ValueError("Using multiple threads requires the Noodles runner, use use_noodles=True")
     elif use_noodles:
