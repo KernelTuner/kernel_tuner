@@ -3,10 +3,23 @@ python:
   - "2.7"
   - "3.5"
   - "3.6"
+os:
+  - linux
+  - osx
 # command to install dependencies
-before_install:
-  - sudo apt-get build-dep python-scipy
-  - sudo apt-get install -qq python-numpy python-scipy
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - build-dep
+            - python-numpy
+            - python-scipy
+      before_install:
+        - sudo apt-get build-dep python-scipy
+    - os: osx
+
 install:
   - pip install pytest
   - pip install mock
