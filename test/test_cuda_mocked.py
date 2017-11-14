@@ -71,7 +71,7 @@ def test_benchmark(drv):
 
     dev = cuda.CudaFunctions(0)
     args = [1, 2]
-    time = dev.benchmark(test_func, args, (1,2), (1,2))
+    time = dev.benchmark(test_func, args, (1,2), (1,2), False)
     assert time > 0
 
     assert dev.context.synchronize.call_count == 2*dev.iterations

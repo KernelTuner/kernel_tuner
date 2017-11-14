@@ -86,7 +86,7 @@ class OpenCLFunctions(object):
         func = getattr(prg, kernel_name)
         return func
 
-    def benchmark(self, func, gpu_args, threads, grid):
+    def benchmark(self, func, gpu_args, threads, grid, times):
         """runs the kernel and measures time repeatedly, returns average time
 
         Runs the kernel and measures kernel execution time repeatedly, number of
@@ -112,18 +112,25 @@ class OpenCLFunctions(object):
             of the NDRange.
         :type grid: tuple(int, int)
 
-        :returns: A robust average for the kernel execution time.
+        :param times: Return the execution time of all iterations.
+        :type times: bool
+
+        :returns: All execution times, if times=True, or a robust average for the
+            kernel execution time.
         :rtype: float
         """
         global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
         local_size = threads
-        times = []
+        time = []
         for _ in range(self.iterations):
             event = func(self.queue, global_size, local_size, *gpu_args)
             event.wait()
-            times.append((event.profile.end - event.profile.start)*1e-6)
-        times = sorted(times)
-        return numpy.mean(times[1:-1])
+            time.append((event.profile.end - event.profile.start)*1e-6)
+        time = sorted(time)
+        if times:
+            return time
+        else:
+            return numpy.mean(time[1:-1])
 
     def run_kernel(self, func, gpu_args, threads, grid):
         """runs the OpenCL kernel passed as 'func'

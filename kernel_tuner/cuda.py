@@ -134,7 +134,7 @@ class CudaFunctions(object):
                 raise e
 
 
-    def benchmark(self, func, gpu_args, threads, grid):
+    def benchmark(self, func, gpu_args, threads, grid, times):
         """runs the kernel and measures time repeatedly, returns average time
 
         Runs the kernel and measures kernel execution time repeatedly, number of
@@ -160,21 +160,28 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
 
-        :returns: A robust average for the kernel execution time.
+        :param times: Return the execution time of all iterations.
+        :type times: bool
+
+        :returns: All execution times, if times=True, or a robust average for the
+            kernel execution time.
         :rtype: float
         """
         start = drv.Event()
         end = drv.Event()
-        times = []
+        time = []
         for _ in range(self.iterations):
             self.context.synchronize()
             start.record()
             self.run_kernel(func, gpu_args, threads, grid)
             end.record()
             self.context.synchronize()
-            times.append(end.time_since(start))
-        times = sorted(times)
-        return numpy.mean(times[1:-1])
+            time.append(end.time_since(start))
+        time = sorted(time)
+        if times:
+            return time
+        else:
+            return numpy.mean(time[1:-1])
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
