@@ -7,12 +7,34 @@ import errno
 import tempfile
 import logging
 import numpy
+import warnings
+
 
 def check_argument_list(args):
     """ raise an exception if a kernel argument is of unsupported type """
     for (i, arg) in enumerate(args):
         if not isinstance(arg, (numpy.ndarray, numpy.generic)):
             raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
+
+
+def check_tune_params_list(tune_params):
+    """ raise an exception if a tune parameter has a forbidden name """
+    forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z")
+    forbidden_name_substr = ("time", "times")
+    for i, (name, param) in enumerate(tune_params.items()):
+        if name in forbidden_names:
+            raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
+        for forbidden_substr in forbidden_name_substr:
+            if forbidden_substr in name:
+                raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name: not allowed to use " + forbidden_substr + " in tune parameter names!")
+
+
+def check_block_size_params_names_list(block_size_names, tune_params):
+    if block_size_names is not None:
+        for name in block_size_names:
+            if name not in tune_params:
+                warnings.warn("Block size name " + name + " is not specified in the tunable parameters list!", UserWarning)
+
 
 def check_restrictions(restrictions, element, keys, verbose):
     """ check whether a specific instance meets the search space restrictions """
