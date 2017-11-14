@@ -166,7 +166,7 @@ class OpenCLFunctions(object):
             try:
               cl.enqueue_fill_buffer(self.queue, buffer, numpy.uint32(value), 0, size)
             except:
-              src=numpy.zeros(size/4, dtype='uint32')+numpy.uint32(value)
+              src=numpy.zeros(size, dtype='uint8')+numpy.uint8(value)
               cl.enqueue_copy(self.queue, buffer, src)
 
     def memcpy_dtoh(self, dest, src):
