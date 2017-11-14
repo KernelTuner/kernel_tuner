@@ -84,4 +84,4 @@ def test_benchmark_times():
     dev = cuda.CudaFunctions(0)
     args = [1, 2]
     time = dev.benchmark(test_func, args, (1,2), (1,2), True)
-    assert time.length == 7
+    assert len(time) == 7

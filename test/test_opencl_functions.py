@@ -66,7 +66,7 @@ def test_benchmark_times():
         return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
 
     time = dev.benchmark(test_func, args, (1,2,3), (1,2,3), True)
-    assert time.length == 7
+    assert len(time) == 7
 
 def test_run_kernel():
     skip_if_no_opencl()
