@@ -9,6 +9,7 @@ import logging
 import numpy
 import warnings
 
+default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 def check_argument_list(args):
     """ raise an exception if a kernel argument is of unsupported type """
@@ -28,12 +29,28 @@ def check_tune_params_list(tune_params):
             if forbidden_substr in name:
                 raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name: not allowed to use " + forbidden_substr + " in tune parameter names!")
 
+def check_block_size_names(block_size_names):
+    if block_size_names is not None:
+        #do some type checks for the user input
+        if not isinstance(block_size_names, list):
+            raise ValueError("block_size_names should be a list of strings!")
+        if len(block_size_names) > 3:
+            raise ValueError("block_size_names should not contain more than 3 names!")
+        if not all([isinstance(name, "".__class__) for name in block_size_names]):
+            raise ValueError("block_size_names should contain only strings!")
+        #ensure there is always at least three names
+        for i,name in enumerate(default_block_size_names):
+            if len(block_size_names) < i+1:
+                block_size_names.append(default_block_size_names[i])
 
 def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:
         for name in block_size_names:
             if name not in tune_params.keys():
                 warnings.warn("Block size name " + name + " is not specified in the tunable parameters list!", UserWarning)
+    else: #if default block size names are used
+        if not any([k in default_block_size_names for k in tune_params.keys()]):
+            warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
 
 
 def check_restrictions(restrictions, element, keys, verbose):
@@ -151,7 +168,7 @@ def get_temp_filename(suffix=None):
 def get_thread_block_dimensions(params, block_size_names=None):
     """thread block size from tuning params, currently using convention"""
     if not block_size_names:
-        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+        block_size_names = default_block_size_names
 
     block_size_x = params.get(block_size_names[0], 256)
     block_size_y = params.get(block_size_names[1], 1)

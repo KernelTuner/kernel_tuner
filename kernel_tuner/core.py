@@ -227,7 +227,7 @@ class DeviceInterface(object):
 
         #insert default block_size_names if needed
         if not kernel_options.block_size_names:
-            kernel_options.block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+            kernel_options.block_size_names = util.default_block_size_names
 
         #setup thread block and grid dimensions
         threads, grid = util.setup_block_and_grid(kernel_options.problem_size, grid_div, params, kernel_options.block_size_names)

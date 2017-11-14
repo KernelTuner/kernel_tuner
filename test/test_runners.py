@@ -116,7 +116,7 @@ def test_sequential_runner_alt_block_size_names():
     ref = (a+b).astype(numpy.float32)
     answer = [ref, None, None, None]
 
-    block_size_names = ["block_dim_x", "block_dim_y", "block_dim_z"]
+    block_size_names = ["block_dim_x"]
 
     result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, int(n), args,
                             tune_params, grid_div_x=["block_dim_x"], answer=answer,

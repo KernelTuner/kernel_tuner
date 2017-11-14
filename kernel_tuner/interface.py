@@ -303,6 +303,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params)
 
+    # check for types and length of block_size_names
+    util.check_block_size_names(block_size_names)
+
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
 

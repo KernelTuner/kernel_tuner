@@ -303,8 +303,23 @@ def test_check_block_size_params_names_list2():
 
 
 def test_check_block_size_params_names_list3():
+    """check that a warning is issued when none of the default names are used and no alternative names are specified"""
     block_size_names = None
     tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        # Trigger a warning.
+        check_block_size_params_names_list(block_size_names, tune_params)
+        # test that a warning is raised
+        assert len(w) == 1
+        assert issubclass(w[0].category, UserWarning)
+        assert "None of the tunable parameters specify thread block dimensions!" == str(w[0].message)
+
+def test_check_block_size_params_names_list4():
+    """check that no error is raised when any of the default block size names is being used"""
+    block_size_names = None
+    tune_params = dict(zip(["block_size_x", "several_other_things"], [[1,2,3,4], [2,4]]))
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
