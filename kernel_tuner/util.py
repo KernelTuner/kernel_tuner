@@ -16,101 +16,83 @@ def check_argument_list(kernel_string, args):
         if "*" in kernel_argument:
             # Corresponding argument should be a NumPy array
             if not isinstance(arg, numpy.ndarray):
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray.")
+                raise TypeError("Argument at position " + str(i) + " of type: "
+                    + str(type(arg)) + " does not match " + kernel_argument + ".")
             # CUDA/OpenCL/C uchar arrays
-            if ("uchar" in kernel_argument or "unsigned char" in kernel_argument) and not arg.dtype == "ubyte":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(ubyte).")
+            if ("uchar" in kernel_argument or "unsigned char" in kernel_argument) and arg.dtype == "ubyte":
+                continue
             # CUDA/OpenCL/C char arrays
-            elif "char" in kernel_argument and not arg.dtype == "byte":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(byte).")
+            elif "char" in kernel_argument and arg.dtype == "byte":
+                continue
             # CUDA/OpenCL/C ushort arrays
-            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and not arg.dtype == "uint16":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(uint16).")
+            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and arg.dtype == "uint16":
+                continue
             # CUDA/OpenCL/C short arrays
-            elif "short" in kernel_argument and not arg.dtype == "int16":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(int16).")
+            elif "short" in kernel_argument and arg.dtype == "int16":
+                continue
             # CUDA/OpenCL/C uint arrays
-            elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and not arg.dtype == "uint32":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(uint32).")
+            elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and arg.dtype == "uint32":
+                continue
             # CUDA/OpenCL/C int arrays
-            elif "int" in kernel_argument and not arg.dtype == "int32":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(int32).")
+            elif "int" in kernel_argument and arg.dtype == "int32":
+                continue
             # CUDA/OpenCL/C ulong arrays
-            elif ("ulong" in kernel_argument or "unsigned long" in kernel_argument) and not arg.dtype == "uint64":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(uint64).")
+            elif ("ulong" in kernel_argument or "unsigned long" in kernel_argument) and arg.dtype == "uint64":
+                continue
             # CUDA/OpenCL/C long arrays
-            elif "long" in kernel_argument and not arg.dtype == "int64":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(int64).")
+            elif "long" in kernel_argument and arg.dtype == "int64":
+                continue
             # OpenCL/C half arrays
-            elif "half" in kernel_argument and not arg.dtype == "float16":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(float16).")
+            elif "half" in kernel_argument and arg.dtype == "float16":
+                continue
             # CUDA/OpenCL/C float arrays
-            elif "float" in kernel_argument and not arg.dtype == "float32":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(float32).")
+            elif "float" in kernel_argument and arg.dtype == "float32":
+                continue
             # CUDA/OpenCL/C double array
-            elif "double" in kernel_argument and not arg.dtype == "float64":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy.ndarray(float64).")
+            elif "double" in kernel_argument and arg.dtype == "float64":
+                continue
+            raise TypeError("Argument at position " + str(i) + " of type: "
+                + str(type(arg)) + " does not match " + kernel_argument + ".")
         else:
             # NumPy scalar
             if not isinstance(arg, numpy.generic):
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy scalar.")
+                raise TypeError("Argument at position " + str(i) + " of type: "
+                    + str(type(arg)) + " does not match " + kernel_argument + ".")
             # CUDA/OpenCL/C uchar
-            if ("uchar" in kernel_argument or "unsigned char" in kernel_argument) and not arg.dtype == "ubyte":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(ubyte).")
+            if ("uchar" in kernel_argument or "unsigned char" in kernel_argument) and arg.dtype == "ubyte":
+                continue
             # CUDA/OpenCL/C char
-            elif "char" in kernel_argument and not arg.dtype == "byte":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(byte).")
+            elif "char" in kernel_argument and arg.dtype == "byte":
+                continue
             # CUDA/OpenCL/C ushort
-            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and not arg.dtype == "ushort":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(ushort).")
+            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and arg.dtype == "ushort":
+                continue
             # CUDA/OpenCL/C short
-            elif "short" in kernel_argument and not arg.dtype == "short":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(short).")
+            elif "short" in kernel_argument and arg.dtype == "short":
+                continue
             # CUDA/OpenCL/C uint
-            elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and not arg.dtype == "uint32":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(uint32).")
+            elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and arg.dtype == "uint32":
+                continue
             # CUDA/OpenCL/C int
-            elif "int" in kernel_argument and not arg.dtype == "int32":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(int32).")
+            elif "int" in kernel_argument and arg.dtype == "int32":
+                continue
             # CUDA/OpenCL/C ulong
-            elif ("ulong" in kernel_argument or "unsigned long" in kernel_argument) and not arg.dtype == "uint64":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(uint64).")
+            elif ("ulong" in kernel_argument or "unsigned long" in kernel_argument) and arg.dtype == "uint64":
+                continue
             # CUDA/OpenCL/C long
-            elif "long" in kernel_argument and not arg.dtype == "int64":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(int64).")
+            elif "long" in kernel_argument and arg.dtype == "int64":
+                continue
             # OpenCL/C half
-            elif "half" in kernel_argument and not arg.dtype == "float16":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(float16).")
+            elif "half" in kernel_argument and arg.dtype == "float16":
+                continue
             # CUDA/OpenCL/C float
-            elif "float" in kernel_argument and not arg.dtype == "float32":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(float32).")
+            elif "float" in kernel_argument and arg.dtype == "float32":
+                continue
             # CUDA/OpenCL/C double
-            elif "double" in kernel_argument and not arg.dtype == "float64":
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(
-                    type(arg)) + " should be of type numpy(float64).")
+            elif "double" in kernel_argument and arg.dtype == "float64":
+                continue
+            raise TypeError("Argument at position " + str(i) + " of type: "
+                + str(type(arg)) + " does not match " + kernel_argument + ".")
 
 def check_restrictions(restrictions, element, keys, verbose):
     """ check whether a specific instance meets the search space restrictions """
