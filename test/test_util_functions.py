@@ -237,37 +237,38 @@ def test_check_argument_list2():
     #test that no exception is raised
     assert True
 
+
 def test_check_tune_params_list():
-    tune_params = ["one_thing", "led_to_another", "and_before_you_know_it",
-                   "grid_size_y"]
+    tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
+                            "grid_size_y"], [1, 2, 3, 4]))
     try:
         check_tune_params_list(tune_params)
         print("Expected a ValueError to be raised")
         assert False
     except ValueError as e:
         print(str(e))
-        assert "at position 1" in str(e)
+        assert "Tune parameter grid_size_y with value 4 has a forbidden name!" == str(e)
     except Exception:
         print("Expected a ValueError to be raised")
         assert False
 
 
 def test_check_tune_params_list2():
-    tune_params = ["once_upon_a_time", "in_the_west"]
+    tune_params = dict(zip(["once_upon_a_time", "in_the_west"], [1, 2]))
     try:
         check_tune_params_list(tune_params)
         print("Expected a ValueError to be raised")
         assert False
     except ValueError as e:
         print(str(e))
-        assert "at position 1" in str(e)
+        assert "Tune parameter once_upon_a_time with value 1 has a forbidden name: not allowed to use time in tune parameter names!" == str(e)
     except Exception:
         print("Expected a ValueError to be raised")
         assert False
 
 
 def test_check_tune_params_list3():
-    tune_params = ["rock", "paper", "scissors"]
+    tune_params = dict(zip(["rock", "paper", "scissors"], [1, 2, 3]))
     check_tune_params_list(tune_params)
     # test that no exception is raised
     assert True
@@ -275,7 +276,7 @@ def test_check_tune_params_list3():
 
 def test_check_block_size_params_names_list():
     block_size_names = ["block_size_a", "block_size_b"]
-    tune_params = ["hyper", "ultra", "mega", "turbo"]
+    tune_params = dict(zip(["hyper", "ultra", "mega", "turbo"], [1, 2, 3, 4]))
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
@@ -291,7 +292,7 @@ def test_check_block_size_params_names_list():
 
 def test_check_block_size_params_names_list2():
     block_size_names = ["block_size_a", "block_size_b"]
-    tune_params = ["block_size_a", "block_size_b", "many_other_things"]
+    tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
@@ -303,7 +304,7 @@ def test_check_block_size_params_names_list2():
 
 def test_check_block_size_params_names_list3():
     block_size_names = None
-    tune_params = ["block_size_a", "block_size_b", "many_other_things"]
+    tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")

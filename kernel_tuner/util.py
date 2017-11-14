@@ -32,7 +32,7 @@ def check_tune_params_list(tune_params):
 def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:
         for name in block_size_names:
-            if name not in tune_params:
+            if name not in tune_params.keys():
                 warnings.warn("Block size name " + name + " is not specified in the tunable parameters list!", UserWarning)
 
 
