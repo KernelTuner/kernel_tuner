@@ -118,11 +118,11 @@ examples and the tutorials.
 
 You can install Kernel Tuner with several optional dependencies, the full list is:
 
-  - `cuda`: install pycuda along with kernel_tuner
-  - `opencl`: install pycuda along with kernel_tuner
-  - `doc`: installs packages required to build the documentation
-  - `tutorial`: install packages required to run the tutorials
-  - `dev`: install everything you need to start development on Kernel Tuner
+- `cuda`: install pycuda along with kernel_tuner
+- `opencl`: install pycuda along with kernel_tuner
+- `doc`: installs packages required to build the documentation
+- `tutorial`: install packages required to run the tutorials
+- `dev`: install everything you need to start development on Kernel Tuner
 
 For example, use:
 ```
