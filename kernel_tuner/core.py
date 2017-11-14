@@ -16,7 +16,7 @@ KernelInstance = namedtuple("KernelInstance", ["name", "kernel_string", "temp_fi
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, original_kernel, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7, times=False):
+    def __init__(self, original_kernel, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param original_kernel: The source of the kernel as passed to tune_kernel
