@@ -46,7 +46,7 @@ class CudaFunctions(object):
         #inspect device properties
         devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
-        self.cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
+        self.cc = str(devprops.get('COMPUTE_CAPABILITY_MAJOR','0')) + str(devprops.get('COMPUTE_CAPABILITY_MINOR','0'))
         self.iterations = iterations
         self.current_module = None
         self.compiler_options = compiler_options or []
@@ -119,8 +119,9 @@ class CudaFunctions(object):
             else:
                 source_mod = SourceModule
 
-            self.current_module = source_mod(kernel_string, options=self.compiler_options + ["-e", kernel_name],
-                                               arch='compute_' + self.cc, code='sm_' + self.cc,
+            self.current_module = source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
+                                               arch=('compute_' + self.cc) if self.cc != "00" else None, 
+                                               code=('sm_' + self.cc) if self.cc != "00" else None,
                                                cache_dir=False, no_extern_c=no_extern_c)
 
 
