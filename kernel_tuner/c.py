@@ -149,8 +149,12 @@ class CFunctions(object):
         try:
             write_file(source_file, kernel_string)
 
-            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename+".o"])
-            subprocess.check_call([self.compiler, filename+".o"] + compiler_options + ["-shared", "-o", filename+".so"] + lib_args)
+            lib_extension = ".so"
+            if platform.system() == "Darwin":
+                lib_extension = ".dylib"
+
+            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
+            subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
 
@@ -165,7 +169,7 @@ class CFunctions(object):
 
         return func
 
-    def benchmark(self, func, c_args, threads, grid):
+    def benchmark(self, func, c_args, threads, grid, times):
         """runs the kernel repeatedly, returns averaged returned value
 
         The C function tuning is a little bit more flexible than direct CUDA
@@ -196,10 +200,14 @@ class CFunctions(object):
             interface as CudaFunctions and OpenCLFunctions.
         :type grid: any
 
-        :returns: A robust average of values returned by the C function.
+        :param times: Return the execution time of all iterations.
+        :type times: bool
+
+        :returns: All execution times, if times=True, or a robust average for the
+            kernel execution time.
         :rtype: float
         """
-        results = []
+        time = []
         for _ in range(self.iterations):
             value = self.run_kernel(func, c_args, threads, grid)
 
@@ -213,9 +221,12 @@ class CFunctions(object):
             if value < 0.0:
                 raise Exception("too many resources requested for launch")
 
-            results.append(value)
-        results = sorted(results)
-        return numpy.mean(results[1:-1])
+            time.append(value)
+        time = sorted(time)
+        if times:
+            return time
+        else:
+            return numpy.mean(time[1:-1])
 
 
     def run_kernel(self, func, c_args, threads, grid):

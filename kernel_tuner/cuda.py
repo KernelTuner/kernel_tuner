@@ -8,9 +8,15 @@ import numpy
 #and run tests without pycuda installed
 try:
     import pycuda.driver as drv
-    from pycuda.compiler import SourceModule, DynamicSourceModule
 except ImportError:
     drv = None
+try:
+    from pycuda.compiler import SourceModule
+except ImportError:
+    SourceModule = None
+try:
+    from pycuda.compiler import DynamicSourceModule
+except ImportError:
     DynamicSourceModule = None
 
 
@@ -40,7 +46,7 @@ class CudaFunctions(object):
         #inspect device properties
         devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
-        self.cc = str(devprops['COMPUTE_CAPABILITY_MAJOR']) + str(devprops['COMPUTE_CAPABILITY_MINOR'])
+        self.cc = str(devprops.get('COMPUTE_CAPABILITY_MAJOR','0')) + str(devprops.get('COMPUTE_CAPABILITY_MINOR','0'))
         self.iterations = iterations
         self.current_module = None
         self.compiler_options = compiler_options or []
@@ -113,8 +119,9 @@ class CudaFunctions(object):
             else:
                 source_mod = SourceModule
 
-            self.current_module = source_mod(kernel_string, options=self.compiler_options + ["-e", kernel_name],
-                                               arch='compute_' + self.cc, code='sm_' + self.cc,
+            self.current_module = source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
+                                               arch=('compute_' + self.cc) if self.cc != "00" else None, 
+                                               code=('sm_' + self.cc) if self.cc != "00" else None,
                                                cache_dir=False, no_extern_c=no_extern_c)
 
 
@@ -127,7 +134,7 @@ class CudaFunctions(object):
                 raise e
 
 
-    def benchmark(self, func, gpu_args, threads, grid):
+    def benchmark(self, func, gpu_args, threads, grid, times):
         """runs the kernel and measures time repeatedly, returns average time
 
         Runs the kernel and measures kernel execution time repeatedly, number of
@@ -153,21 +160,28 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
 
-        :returns: A robust average for the kernel execution time.
+        :param times: Return the execution time of all iterations.
+        :type times: bool
+
+        :returns: All execution times, if times=True, or a robust average for the
+            kernel execution time.
         :rtype: float
         """
         start = drv.Event()
         end = drv.Event()
-        times = []
+        time = []
         for _ in range(self.iterations):
             self.context.synchronize()
             start.record()
             self.run_kernel(func, gpu_args, threads, grid)
             end.record()
             self.context.synchronize()
-            times.append(end.time_since(start))
-        times = sorted(times)
-        return numpy.mean(times[1:-1])
+            time.append(end.time_since(start))
+        time = sorted(time)
+        if times:
+            return time
+        else:
+            return numpy.mean(time[1:-1])
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
