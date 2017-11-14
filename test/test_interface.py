@@ -44,9 +44,10 @@ def test_interface_handles_max_threads(dev_interface):
     tune_params = { "block_size_x": [256, 512] }
     dev.max_threads = 256
 
-    tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
+    kernel_string = "__global__ void fake_kernel(int number)"
+    tune_kernel("fake_kernel", kernel_string, (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 256\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 1\nfake_kernel_256")
+    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 256\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 1\nfake_kernel_256(int number)")
 
 @patch('kernel_tuner.core.CudaFunctions')
 def test_interface_handles_compile_error(dev_interface):
@@ -69,7 +70,8 @@ def test_interface_handles_restriction(dev_interface):
     tune_params = { "block_size_x": [128, 256, 512] }
     restrict = ["block_size_x > 128", "block_size_x < 512"]
 
-    tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
+    kernel_string = "__global__ void fake_kernel(int number)"
+    tune_kernel("fake_kernel", kernel_string, (1,1), [numpy.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
 
     assert dev.compile.call_count == 1
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1), False)
@@ -82,7 +84,8 @@ def test_interface_handles_runtime_error(dev_interface):
     tune_params = { "block_size_x": [256] }
     dev.benchmark.side_effect = Exception("too many resources requested for launch")
 
-    results, _ = tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
+    kernel_string = "__global__ void fake_kernel(int number)"
+    results, _ = tune_kernel("fake_kernel",kernel_string, (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
     assert dev.compile.call_count == 1
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1), False)
