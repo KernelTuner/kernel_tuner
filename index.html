@@ -208,32 +208,28 @@
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>The easiest way to install the Kernel Tuner is using pip:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner
-</pre></div>
-</div>
-<p>But you can also install from the git repository. This way you also get the
-examples and the tutorials:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
-<span class="nb">cd</span> kernel_tuner
-pip install .
-</pre></div>
-</div>
 <p>To tune CUDA kernels:</p>
 <blockquote>
 <div><ul class="simple">
 <li>First, make sure you have the <a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA Toolkit</a> installed</li>
-<li>You can install PyCuda using <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code></li>
+<li>Then type: <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda]</span></code></li>
 </ul>
 </div></blockquote>
 <p>To tune OpenCL kernels:</p>
 <blockquote>
 <div><ul class="simple">
 <li>First, make sure you have an OpenCL compiler for your intended OpenCL platform</li>
-<li>You can install PyOpenCL using <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyopencl</span></code></li>
+<li>Then type: <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[opencl]</span></code></li>
 </ul>
 </div></blockquote>
-<p>If you need more information about how to install the Kernel Tuner and all
-dependencies see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/install.html">installation guide</a></p>
+<p>Or both:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda,opencl]</span></code></li>
+</ul>
+</div></blockquote>
+<p>More information about how to install Kernel Tuner and its
+dependencies can be found in the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/install.html">installation guide</a></p>
 </div>
 <div class="section" id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>

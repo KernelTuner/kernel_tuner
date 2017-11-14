@@ -591,6 +591,7 @@ automatically detects the language, but if it fails, you may specify
 the language using this argument, currently supported: &#8220;CUDA&#8221;, &#8220;OpenCL&#8221;, or &#8220;C&#8221;</li>
 <li><strong>compiler_options</strong> (<em>list of strings</em>) &#8211; The compiler options to use when compiling kernels for this device.</li>
 <li><strong>iterations</strong> (<em>int</em>) &#8211; Number of iterations to be used when benchmarking using this device.</li>
+<li><strong>times</strong> (<em>bool</em>) &#8211; Return the execution time of all iterations.</li>
 </ul>
 </td>
 </tr>
@@ -600,7 +601,7 @@ the language using this argument, currently supported: &#8220;CUDA&#8221;, &#822
 
 <dl class="method">
 <dt id="kernel_tuner.core.DeviceInterface.benchmark">
-<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>instance</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>instance</em>, <em>times</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>benchmark the kernel instance</p>
 </dd></dl>
 
@@ -691,7 +692,7 @@ source module for copying data to constant memory before kernel launch.</p>
 
 <dl class="method">
 <dt id="kernel_tuner.cuda.CudaFunctions.benchmark">
-<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em>, <em>times</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel and measures time repeatedly, returns average time</p>
 <p>Runs the kernel and measures kernel execution time repeatedly, number of
 iterations is set during the creation of CudaFunctions. Benchmark returns
@@ -712,10 +713,12 @@ or single values passed by value.</li>
 the thread block</li>
 <li><strong>grid</strong> (<em>tuple(int, int)</em>) &#8211; A tuple listing the number of thread blocks in each dimension
 of the grid</li>
+<li><strong>times</strong> (<em>bool</em>) &#8211; Return the execution time of all iterations.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average for the kernel execution time.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">All execution times, if times=True, or a robust average for the
+kernel execution time.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
@@ -878,7 +881,7 @@ of the grid</li>
 
 <dl class="method">
 <dt id="kernel_tuner.opencl.OpenCLFunctions.benchmark">
-<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>gpu_args</em>, <em>threads</em>, <em>grid</em>, <em>times</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel and measures time repeatedly, returns average time</p>
 <p>Runs the kernel and measures kernel execution time repeatedly, number of
 iterations is set during the creation of OpenCLFunctions. Benchmark returns
@@ -899,10 +902,12 @@ or single values passed by value.</li>
 the work group.</li>
 <li><strong>grid</strong> (<em>tuple(int, int)</em>) &#8211; A tuple listing the number of work groups in each dimension
 of the NDRange.</li>
+<li><strong>times</strong> (<em>bool</em>) &#8211; Return the execution time of all iterations.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average for the kernel execution time.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">All execution times, if times=True, or a robust average for the
+kernel execution time.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
@@ -1043,7 +1048,7 @@ of the NDRange.</li>
 
 <dl class="method">
 <dt id="kernel_tuner.c.CFunctions.benchmark">
-<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>c_args</em>, <em>threads</em>, <em>grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="descname">benchmark</code><span class="sig-paren">(</span><em>func</em>, <em>c_args</em>, <em>threads</em>, <em>grid</em>, <em>times</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel repeatedly, returns averaged returned value</p>
 <p>The C function tuning is a little bit more flexible than direct CUDA
 or OpenCL kernel tuning. The C function needs to measure time, or some
@@ -1068,10 +1073,12 @@ ready_argument_list().</li>
 interface as CudaFunctions and OpenCLFunctions.</li>
 <li><strong>grid</strong> (<em>any</em>) &#8211; Ignored, but left as argument for now to have the same
 interface as CudaFunctions and OpenCLFunctions.</li>
+<li><strong>times</strong> (<em>bool</em>) &#8211; Return the execution time of all iterations.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A robust average of values returned by the C function.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">All execution times, if times=True, or a robust average for the
+kernel execution time.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>

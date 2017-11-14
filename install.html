@@ -203,34 +203,39 @@ is developed to be fully compatible with Python 3.5 and newer, and also Python 2
 </div>
 <div class="section" id="installing-python-packages">
 <h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Permalink to this headline">¶</a></h2>
-<p>Note that when you are using a native Python installation, the <cite>pip</cite> commands used to
-install dependencies probably require <cite>sudo</cite> rights.</p>
-<p>Sudo rights are typically not required when using Miniconda or virtual environments.</p>
-<p>The following command will install all required dependencies:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install -r requirements.txt
+<p>Note that when you are using a native Python installation, the <cite>pip</cite> command used
+Kernel Tuner and its dependencies probably require <cite>sudo</cite> rights.</p>
+<p>Sudo rights are typically not required when using Miniconda or virtual environments.
+You could also use the <cite>&#8211;user</cite> option of <cite>pip</cite> to install into your home directory,
+this requires that your home directory is on your <cite>$PYTHONPATH</cite> environment variable.</p>
+<p>The following command will install Kernel Tuner together with the required dependencies:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner
 </pre></div>
 </div>
 <p>There are also optional dependencies, explained below.</p>
 </div>
 <div class="section" id="cuda-and-pycuda">
 <h2>CUDA and PyCUDA<a class="headerlink" href="#cuda-and-pycuda" title="Permalink to this headline">¶</a></h2>
-<p>Installing CUDA and PyCUDA is optional, because you may want to only use the Kernel
+<p>Installing CUDA and PyCUDA is optional, because you may want to only use Kernel
 Tuner for tuning OpenCL or C kernels.</p>
 <p>If you want to use the Kernel Tuner to tune
 CUDA kernels you will first need to install the CUDA toolkit
 (<a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">https://developer.nvidia.com/cuda-toolkit</a>).</p>
 <p>It&#8217;s very important that you install the CUDA toolkit before trying to install PyCuda.</p>
-<p>You can install PyCuda using:</p>
+<p>You can install PyCuda manually using:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install pycuda
 </pre></div>
 </div>
+<p>Or you could install Kernel Tuner and PyCUDA together if you haven&#8217;t done so already:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>cuda<span class="o">]</span>
+</pre></div>
+</div>
 <p>If you run into trouble with installing PyCuda, make sure you have CUDA installed first.
-Also make sure that the Python package Numpy is already installed (this should be the case
-because it is also a requirement for the Kernel Tuner).</p>
-<p>If you retry the <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code> command you may need to use the
-<code class="docutils literal"><span class="pre">--no-cache-dir</span></code> option to ensure the pycuda installation really starts over.</p>
-<p>If this fails, I recommend to see the PyCuda
-installation guide (<a class="reference external" href="https://wiki.tiker.net/PyCuda/Installation">https://wiki.tiker.net/PyCuda/Installation</a>)</p>
+Also make sure that the Python package Numpy is already installed, e.g. using <cite>pip install numpy</cite>.</p>
+<p>If you retry the <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code> command, you may need to use the
+<code class="docutils literal"><span class="pre">--no-cache-dir</span></code> option to ensure the pycuda installation really starts over and not continues
+from an installation that is failing.</p>
+<p>If this fails, I recommend to see the PyCuda installation guide (<a class="reference external" href="https://wiki.tiker.net/PyCuda/Installation">https://wiki.tiker.net/PyCuda/Installation</a>)</p>
 </div>
 <div class="section" id="opencl-and-pyopencl">
 <h2>OpenCL and PyOpenCL<a class="headerlink" href="#opencl-and-pyopencl" title="Permalink to this headline">¶</a></h2>
@@ -249,37 +254,50 @@ code to run on.</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install pyopencl
 </pre></div>
 </div>
+<p>Or you could install Kernel Tuner and PyOpenCL together if you haven&#8217;t done so already:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>opencl<span class="o">]</span>
+</pre></div>
+</div>
 <p>If this fails, please see the PyOpenCL installation guide (<a class="reference external" href="https://wiki.tiker.net/PyOpenCL/Installation">https://wiki.tiker.net/PyOpenCL/Installation</a>)</p>
 </div>
 <div class="section" id="installing-the-kernel-tuner">
 <h2>Installing the Kernel Tuner<a class="headerlink" href="#installing-the-kernel-tuner" title="Permalink to this headline">¶</a></h2>
-<p>So far we&#8217;ve installed all the dependencies. Now we are ready to install the
-Kernel Tuner itself.</p>
-<p>The easiest way to install is using pip:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner
-</pre></div>
-</div>
-<p>But you can also install from the git repository. This way you also get the
+<p>You can also install from the git repository. This way you also get the
 examples and the tutorials.</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
 <span class="nb">cd</span> kernel_tuner
 pip install .
 </pre></div>
 </div>
-<p>Then go to any of the <code class="docutils literal"><span class="pre">examples/cuda</span></code> or <code class="docutils literal"><span class="pre">examples/opencl</span></code> directories
-and see if you can run the <code class="docutils literal"><span class="pre">vector_add.py</span></code> example to test your installation.</p>
+<p>You can install Kernel Tuner with several optional dependencies, the full list is:</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>cuda</cite>: install pycuda along with kernel_tuner</li>
+<li><cite>opencl</cite>: install pycuda along with kernel_tuner</li>
+<li><cite>doc</cite>: installs packages required to build the documentation</li>
+<li><cite>tutorial</cite>: install packages required to run the tutorials</li>
+<li><cite>dev</cite>: install everything you need to start development on Kernel Tuner</li>
+</ul>
+</div></blockquote>
+<p>For example, use:
+<code class="docutils literal"><span class="pre">`</span>
+<span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.[dev,cuda,opencl]</span>
+<span class="pre">`</span></code>
+To install Kernel Tuner along with all the packages required for development.</p>
 </div>
 <div class="section" id="dependencies-for-the-tutorial">
 <h2>Dependencies for the Tutorial<a class="headerlink" href="#dependencies-for-the-tutorial" title="Permalink to this headline">¶</a></h2>
 <p>Some addition Python packages are required to run the tutorial. These packages are
-actually very commonly used and chances are that you already have these installed.
-However, here is a list of the dependencies that you need to run everything in the
-tutorial:</p>
+actually very commonly used and chances are that you already have these installed.</p>
+<p>However, to install Kernel Tuner along with the dependencies to run the tutorials,
+you could use:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>tutorial,cuda<span class="o">]</span>
+</pre></div>
+</div>
+<p>Or if you have already installed Kernel Tuner and PyCUDA, just use:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install jupyter matplotlib pandas
 </pre></div>
 </div>
-<p>The tutorial also uses CUDA and PyCUDA. How to install these has been explained in
-the installation guide above.</p>
 </div>
 </div>
 
