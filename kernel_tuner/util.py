@@ -8,7 +8,7 @@ import tempfile
 import logging
 import numpy
 
-def check_argument_list(kernel_name, kernel_string, args):
+def check_argument_list(kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
     kernel_arguments = kernel_string[kernel_string.find("(") + 1:kernel_string.find(")")].split(",")
     for (i, arg) in enumerate(args):
