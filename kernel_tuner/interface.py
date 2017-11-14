@@ -298,7 +298,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
     #see if the kernel arguments have correct type
-    util.check_argument_list(arguments)
+    util.check_argument_list(kernel_string, arguments)
 
     #sort all the options into separate dicts
     opts = locals()
@@ -423,7 +423,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     dev = core.DeviceInterface(kernel_string, iterations=1, **device_options)
 
     #move data to the GPU
-    util.check_argument_list(arguments)
+    util.check_argument_list(kernel_string, arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
     instance = None
