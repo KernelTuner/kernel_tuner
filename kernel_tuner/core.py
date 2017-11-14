@@ -78,7 +78,8 @@ class DeviceInterface(object):
             #to run the kernel given the current thread block size
             #the desired behavior is to simply skip over this configuration
             #and proceed to try the next one
-            if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
+            skippable_exceptions = ["too many resources requested for launch", "OUT_OF_RESOURCES", "INVALID_WORK_GROUP_SIZE"]
+            if any([skip_str in str(e) for skip_str in skippable_exceptions]):
                 logging.debug('benchmark fails due to runtime failure too many resources required')
                 if verbose:
                     print("skipping config", instance.name, "reason: too many resources requested for launch")

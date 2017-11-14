@@ -149,8 +149,12 @@ class CFunctions(object):
         try:
             write_file(source_file, kernel_string)
 
-            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename+".o"])
-            subprocess.check_call([self.compiler, filename+".o"] + compiler_options + ["-shared", "-o", filename+".so"] + lib_args)
+            lib_extension = ".so"
+            if platform.system() == "Darwin":
+                lib_extension = ".dylib"
+
+            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
+            subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
 
