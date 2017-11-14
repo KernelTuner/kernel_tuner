@@ -47,7 +47,7 @@ def test_interface_handles_max_threads(dev_interface):
     kernel_string = "__global__ void fake_kernel(int number)"
     tune_kernel("fake_kernel", kernel_string, (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 256\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 1\nfake_kernel_256(int number)")
+    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 256\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 1\n__global__ void fake_kernel_256(int number)")
 
 @patch('kernel_tuner.core.CudaFunctions')
 def test_interface_handles_compile_error(dev_interface):
@@ -57,7 +57,8 @@ def test_interface_handles_compile_error(dev_interface):
     tune_params = { "block_size_x": [256] }
     dev.compile.side_effect = Exception("uses too much shared data")
 
-    tune_kernel("fake_kernel", "fake_kernel", (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
+    kernel_string = "__global__ void fake_kernel(int number)"
+    tune_kernel("fake_kernel", kernel_string, (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
     assert dev.compile.call_count == 1
     assert dev.benchmark.called == False
