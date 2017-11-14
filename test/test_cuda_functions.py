@@ -76,5 +76,5 @@ def test_benchmark():
     skip_if_no_cuda_device()
     dev = cuda.CudaFunctions(0)
     args = [1, 2]
-    time = dev.benchmark(test_func, args, (1,2), (1,2))
+    time = dev.benchmark(test_func, args, (1,2), (1,2), False)
     assert time > 0
