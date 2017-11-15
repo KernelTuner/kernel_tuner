@@ -94,6 +94,9 @@ class DeviceInterface(object):
         logging.debug('check_kernel_correctness')
         params = instance.params
 
+        if len(instance.arguments) != len(answer):
+            raise TypeError("The length of argument list and provided results do not match.")
+
         #zero GPU memory for output arguments
         for i, arg in enumerate(instance.arguments):
             if answer[i] is not None:
