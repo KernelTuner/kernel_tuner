@@ -297,9 +297,6 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    #see if the kernel arguments have correct type
-    util.check_argument_list(kernel_string, arguments)
-
     #sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
@@ -310,6 +307,12 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
     logging.debug('tuning_options: %s', util.get_config_string(tuning_options))
     logging.debug('device_options: %s', util.get_config_string(device_options))
+
+    # see if the kernel arguments have correct type
+    if callable(kernel_string):
+        util.check_argument_list(kernel_string(tuning_options), arguments)
+    else:
+        util.check_argument_list(kernel_string, arguments)
 
     #select strategy based on user options
     if sample_fraction and not strategy in [None, 'sample_fraction']:
