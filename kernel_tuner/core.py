@@ -94,6 +94,9 @@ class DeviceInterface(object):
         logging.debug('check_kernel_correctness')
         params = instance.params
 
+        if len(instance.arguments) != len(answer):
+            raise TypeError("The length of argument list and provided results do not match.")
+
         #zero GPU memory for output arguments
         for i, arg in enumerate(instance.arguments):
             if answer[i] is not None:
@@ -118,6 +121,26 @@ class DeviceInterface(object):
         for i, arg in enumerate(instance.arguments):
             expected = answer[i]
             if expected is not None:
+                if verify is not None:
+                    if not isinstance(expected, numpy.ndarray):
+                        raise TypeError("Element " + str(i) + " of the expected results list should be a numpy.ndarray")
+                else:
+                    if isinstance(expected, numpy.ndarray) and isinstance(arg, numpy.ndarray):
+                        if expected.dtype != arg.dtype:
+                            raise TypeError("Element " + str(i)
+                                            + " of the expected results list is not the same as the kernel output: "
+                                            + str(expected.dtype) + " != " + str(arg.dtype) + ".")
+                        if expected.size != arg.size:
+                            raise TypeError("Element " + str(i)
+                                            + " of the expected results list has a different size than "
+                                            + "the kernel output: "
+                                            + str(expected.size) + " != " + str(arg.size) + ".")
+                    elif isinstance(expected, numpy.numeric) and isinstance(arg, numpy.numeric):
+                        if expected.dtype != arg.dtype:
+                            raise TypeError("Element " + str(i)
+                                            + " of the expected results list is not the same as the kernel output: "
+                                            + str(expected.dtype) + " != " + str(arg.dtype) + ".")
+
                 result_host = numpy.zeros_like(arg)
                 self.dev.memcpy_dtoh(result_host, gpu_args[i])
 
