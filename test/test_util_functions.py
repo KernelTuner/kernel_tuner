@@ -299,11 +299,6 @@ def test_check_argument_list5():
             numpy.array([1,2,3]).astype(numpy.float32),
             numpy.int32(6), numpy.int32(7)]
 
-    #print what check_argument_list is doing as well
-    kernel_arguments = kernel_string[kernel_string.find("(") + 1:kernel_string.find(")")].split(",")
-
-    print(kernel_arguments)
-
     try:
         check_argument_list(kernel_name, kernel_string, args)
 
