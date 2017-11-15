@@ -75,7 +75,6 @@ script:
     if [[ "$GH_PAGES_BUILD" == true ]]; then
       echo "building gh-pages documentation"
       cd doc
-      pandoc --help
       bash ./deploy.sh
     else
       python -m pytest

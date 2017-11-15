@@ -37,7 +37,7 @@ setup(
         'numpy>=1.13.3',
         'scipy>=0.18.1'],
     extras_require={
-        'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx', 'pandoc'],
+        'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx'],
         'cuda': ['pycuda'],
         'opencl': ['pyopencl'],
         'cuda_opencl': ['pycuda', 'pyopencl'],
