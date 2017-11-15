@@ -306,6 +306,20 @@ def test_check_argument_list5():
         print("Expected no TypeError to be raised")
         assert False
 
+def test_check_argument_list6():
+    kernel_name = "test_kernel"
+    kernel_string = """// This is where we define test_kernel
+        #define SUM(A, B) (A + B)
+        __kernel void test_kernel
+        (char number, double factors, int * numbers, const unsigned long * moreNumbers) {
+        numbers[get_global_id(0)] = SUM(numbers[get_global_id(0)] * factors[get_global_id(0)], number);
+        }
+        // /test_kernel
+        """
+    args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
+    check_argument_list(kernel_name, kernel_string, args)
+    #test that no exception is raised
+    assert True
 
 def test_check_tune_params_list():
     tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
