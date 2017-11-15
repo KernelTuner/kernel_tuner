@@ -168,14 +168,15 @@ def detect_language(lang, kernel_source):
     return lang
 
 
-def get_config_string(params):
+def get_config_string(params, units={}):
     """ return a compact string representation of a dictionary """
     compact_str_items = []
     # first make a list of compact strings for each parameter
     for k, v in params.items():
         unit = ""
-        if "time" in k:
-            unit = "ms"
+        for u_k, u_v in units.items():
+            if k == u_k:
+                unit = u_v
         compact_str_items.append(k + "=" + str(v) + unit)
     # and finally join them
     compact_str = ", ".join(compact_str_items)

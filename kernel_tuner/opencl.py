@@ -190,3 +190,5 @@ class OpenCLFunctions(object):
         """
         if isinstance(src, cl.Buffer):
             cl.enqueue_copy(self.queue, dest, src)
+
+    units = {'time': 'ms'}
