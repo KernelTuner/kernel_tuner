@@ -5,7 +5,6 @@ try:
 except ImportError:
     from unittest.mock import patch
 
-from nose.tools import nottest
 import numpy
 
 from kernel_tuner.interface import tune_kernel, run_kernel
@@ -14,7 +13,6 @@ mock_config = { "return_value.compile.return_value": "compile",
                 "return_value.ready_argument_list.return_value": "ready_argument_list",
                 "return_value.max_threads": 1024 }
 
-@nottest
 def get_fake_kernel():
     kernel_string = "__global__ void fake_kernel()"
     size = 1280

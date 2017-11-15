@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import numpy
 import ctypes as C
-from nose.tools import raises
+from pytest import raises
 
 try:
     from mock import patch, Mock
@@ -65,11 +65,11 @@ def test_ready_argument_list3():
     except Exception:
         assert True
 
-@raises(TypeError)
 def test_ready_argument_list4():
-    arg1 = int(9)
-    cfunc = CFunctions()
-    cfunc.ready_argument_list([arg1])
+    with raises(TypeError):
+        arg1 = int(9)
+        cfunc = CFunctions()
+        cfunc.ready_argument_list([arg1])
 
 
 @patch('kernel_tuner.c.subprocess')

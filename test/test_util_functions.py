@@ -1,10 +1,10 @@
 from __future__ import print_function
 
 import numpy
-from nose.tools import raises
 import warnings
+from pytest import raises
 
-from .context import skip_if_no_cuda_device, skip_if_no_opencl
+from .context import skip_if_no_cuda, skip_if_no_opencl
 
 import kernel_tuner.core as core
 import kernel_tuner.cuda as cuda
@@ -75,11 +75,11 @@ def test_get_problem_size2():
     assert answer[1] == 1
     assert answer[2] == 1
 
-@raises(TypeError)
 def test_get_problem_size3():
-    problem_size = (3.8, "num_blocks_y*3")
-    params = {"num_blocks_y": 57}
-    get_problem_size(problem_size, params)
+    with raises(TypeError):
+        problem_size = (3.8, "num_blocks_y*3")
+        params = {"num_blocks_y": 57}
+        get_problem_size(problem_size, params)
 
 def test_get_grid_dimensions5():
     problem_size = (1024, 1024, 1)
@@ -198,25 +198,24 @@ def test_detect_language4():
     except Exception:
         assert False
 
-
+@skip_if_no_cuda
 def test_get_device_interface1():
-    skip_if_no_cuda_device()
     lang = "CUDA"
     dev = core.DeviceInterface("", 0, 0, lang=lang)
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, cuda.CudaFunctions)
 
+@skip_if_no_opencl
 def test_get_device_interface2():
-    skip_if_no_opencl()
     lang = "OpenCL"
     dev = core.DeviceInterface("", 0, 0, lang=lang)
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, opencl.OpenCLFunctions)
 
-@raises(Exception)
 def test_get_device_interface3():
-    lang = "blabla"
-    core.DeviceInterface("", 0, 0, lang=lang)
+    with raises(Exception):
+        lang = "blabla"
+        core.DeviceInterface("", 0, 0, lang=lang)
 
 def test_check_argument_list1():
     args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
