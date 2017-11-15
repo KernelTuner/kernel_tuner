@@ -39,6 +39,10 @@ matrix:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.6
         - GH_PAGES_BUILD=true
+      addons:
+        apt:
+          packages:
+            - pandoc
 
 env:
   global:
