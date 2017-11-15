@@ -6,7 +6,7 @@ CUDA, OpenCL, or C kernel.
 
 Except for `test\_vector\_add.py <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/test_vector_add.py>`__ which
 shows how to use run\_kernel to implement a test that you can run with
-nosetests or pytest to test your CUDA or OpenCL kernels from Python.
+pytest to test your CUDA or OpenCL kernels from Python.
 
 Below we list the example applications and the features they illustrate.
 

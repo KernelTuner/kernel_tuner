@@ -130,7 +130,10 @@ class OpenCLFunctions(object):
         if times:
             return time
         else:
-            return numpy.mean(time[1:-1])
+            if self.iterations > 4:
+                return numpy.mean(time[1:-1])
+            else:
+                return numpy.mean(time)
 
     def run_kernel(self, func, gpu_args, threads, grid):
         """runs the OpenCL kernel passed as 'func'

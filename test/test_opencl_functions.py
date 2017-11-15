@@ -7,8 +7,8 @@ try:
 except Exception:
     pass
 
+@skip_if_no_opencl
 def test_ready_argument_list():
-    skip_if_no_opencl()
 
     size = 1000
     a = numpy.int32(75)
@@ -27,8 +27,8 @@ def test_ready_argument_list():
     gpu_args[0].release()
     gpu_args[2].release()
 
+@skip_if_no_opencl
 def test_compile():
-    skip_if_no_opencl()
 
     original_kernel = """
     __kernel void sum(__global const float *a_g, __global const float *b_g, __global float *res_g) {
@@ -39,15 +39,15 @@ def test_compile():
     }
     """
 
-    kernel_string = original_kernel.replace("shared_size", str(100*1024*1024))
+    kernel_string = original_kernel.replace("shared_size", str(1024))
 
     dev = opencl.OpenCLFunctions(0)
     func = dev.compile("sum", kernel_string)
 
     assert isinstance(func, pyopencl.Kernel)
 
+@skip_if_no_opencl
 def test_benchmark():
-    skip_if_no_opencl()
     dev = opencl.OpenCLFunctions(0)
     args = [1, 2]
     def test_func(queue, a, b, block=0, grid=0):
@@ -57,8 +57,8 @@ def test_benchmark():
     time = dev.benchmark(test_func, args, (1,2,3), (1,2,3), False)
     assert time > 0
 
+@skip_if_no_opencl
 def test_benchmark_times():
-    skip_if_no_opencl()
     dev = opencl.OpenCLFunctions(0)
     args = [1, 2]
     def test_func(queue, a, b, block=0, grid=0):
@@ -68,8 +68,8 @@ def test_benchmark_times():
     time = dev.benchmark(test_func, args, (1,2,3), (1,2,3), True)
     assert len(time) == 7
 
+@skip_if_no_opencl
 def test_run_kernel():
-    skip_if_no_opencl()
 
     threads = (1, 2, 3)
     grid = (4, 5, 1)

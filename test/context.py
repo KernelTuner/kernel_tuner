@@ -1,23 +1,33 @@
 import sys
-from nose import SkipTest
-from nose.tools import nottest
+import pytest
 
-@nottest
-def skip_if_no_cuda_device():
-    try:
-        import pycuda.driver as drv
-        drv.init()
-    except (ImportError, Exception):
-        raise SkipTest("PyCuda not installed or no CUDA device detected")
+try:
+    import pycuda.driver as drv
+    drv.init()
+    cuda_present=True
+except:
+    cuda_present=False
 
-@nottest
-def skip_if_no_opencl():
-    try:
-        import pyopencl
-    except ImportError:
-        raise SkipTest("PyOpenCL not installed")
-    #this extra check was added because for some reason 'import pyopencl'
-    #does not always result in an ImportError
+try:
+    import pyopencl
+    opencl_present=True
     if 'namespace' in str(sys.modules['pyopencl']):
-        raise SkipTest("PyOpenCL not installed")
+        opencl_present=False
+    if len(pyopencl.get_platforms())==0:
+        opencl_present=False
+except:
+    opencl_present=False
+
+try:
+    import noodles
+    noodles_present=True
+except:
+    noodles_present=False
+
+skip_if_no_cuda=pytest.mark.skipif(not cuda_present,
+                    reason="PyCuda not installed or no CUDA device detected")
+skip_if_no_opencl=pytest.mark.skipif(not opencl_present,
+                    reason="PyCuda not installed or no CUDA device detected")
+skip_if_no_noodles=pytest.mark.skipif(not noodles_present,
+                    reason="PyCuda not installed or no CUDA device detected")
 

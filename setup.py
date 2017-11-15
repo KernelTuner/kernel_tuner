@@ -37,14 +37,15 @@ setup(
         'numpy>=1.13.3',
         'scipy>=0.18.1'],
     extras_require={
-        'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx'],
+        'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx',
+                'noodles', 'ipython'],
         'cuda': ['pycuda'],
         'opencl': ['pyopencl'],
         'cuda_opencl': ['pycuda', 'pyopencl'],
         'tutorial': ['jupyter', 'matplotlib', 'pandas'],
         'dev': [
             'numpy>=1.13.3', 'scipy>=0.18.1', 'mock>=2.0.0',
-            'nose>=1.3.7', 'pytest>=3.0.3', 'Sphinx>=1.4.8',
+            'pytest>=3.0.3', 'Sphinx>=1.4.8',
             'sphinx-rtd-theme>=0.1.9', 'nbsphinx>=0.2.13',
             'jupyter>=1.0.0', 'matplotlib>=1.5.3', 'pandas>=0.19.1',
             'pylint>=1.7.1']

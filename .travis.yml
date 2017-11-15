@@ -1,21 +1,19 @@
 sudo: false
+language: generic
 
 matrix:
   include:
     - os: linux
-      language: python
       env:
         - MCONDA_PYTHON_MAJOR=2
         - MCONDA_PYTHON_VERSION=2.7
 
     - os: linux
-      language: python
       env:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.5
 
     - os: linux
-      language: python
       env:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.6
@@ -34,6 +32,17 @@ matrix:
       env:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.6
+
+    # build the documentation and deploy to the gh-pages branch
+    - os: linux
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.6
+        - GH_PAGES_BUILD=true
+      addons:
+        apt:
+          packages:
+            - pandoc
 
 env:
   global:
@@ -54,18 +63,29 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no --set auto_update_conda False
   - conda update -yq conda
-  - conda install -y python=$MCONDA_PYTHON_VERSION
-  - conda install -y numpy scipy
-
+  - conda install -y python=$MCONDA_PYTHON_VERSION numpy scipy
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       conda install -c conda-forge pyopencl
     fi
-
-  - pip install .[dev]
+  - |
+    if [[ "$GH_PAGES_BUILD" == true ]]; then
+      echo "installing documentation dependencies"
+      pip install .[doc]
+    else
+      pip install .[dev]
+    fi
 
 # command to run tests
-script: python -m pytest
+script: 
+  - |
+    if [[ "$GH_PAGES_BUILD" == true ]]; then
+      echo "building gh-pages documentation"
+      cd doc
+      bash ./deploy.sh
+    else
+      python -m pytest
+    fi
 branches:
   only:
     - master
