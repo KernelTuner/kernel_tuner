@@ -1,10 +1,10 @@
 from __future__ import print_function
 
 import numpy
-from nose.tools import raises
 import warnings
+from pytest import raises
 
-from .context import skip_if_no_cuda_device, skip_if_no_opencl
+from .context import skip_if_no_cuda, skip_if_no_opencl
 
 import kernel_tuner.core as core
 import kernel_tuner.cuda as cuda
@@ -75,11 +75,11 @@ def test_get_problem_size2():
     assert answer[1] == 1
     assert answer[2] == 1
 
-@raises(TypeError)
 def test_get_problem_size3():
-    problem_size = (3.8, "num_blocks_y*3")
-    params = {"num_blocks_y": 57}
-    get_problem_size(problem_size, params)
+    with raises(TypeError):
+        problem_size = (3.8, "num_blocks_y*3")
+        params = {"num_blocks_y": 57}
+        get_problem_size(problem_size, params)
 
 def test_get_grid_dimensions5():
     problem_size = (1024, 1024, 1)
@@ -95,7 +95,6 @@ def test_get_grid_dimensions5():
     assert grid[1] == 256
     assert grid[2] == 1
 
-
 def test_get_grid_dimensions6():
 
     problem_size = (numpy.int32(1024), numpy.int64(1024), 1)
@@ -110,8 +109,6 @@ def test_get_grid_dimensions6():
     assert grid[0] == 1
     assert grid[1] == 256
     assert grid[2] == 1
-
-
 
 def test_get_thread_block_dimensions():
 
@@ -198,30 +195,33 @@ def test_detect_language4():
     except Exception:
         assert False
 
-
+@skip_if_no_cuda
 def test_get_device_interface1():
-    skip_if_no_cuda_device()
     lang = "CUDA"
     dev = core.DeviceInterface("", 0, 0, lang=lang)
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, cuda.CudaFunctions)
 
+@skip_if_no_opencl
 def test_get_device_interface2():
-    skip_if_no_opencl()
     lang = "OpenCL"
     dev = core.DeviceInterface("", 0, 0, lang=lang)
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, opencl.OpenCLFunctions)
 
-@raises(Exception)
 def test_get_device_interface3():
-    lang = "blabla"
-    core.DeviceInterface("", 0, 0, lang=lang)
+    with raises(Exception):
+        lang = "blabla"
+        core.DeviceInterface("", 0, 0, lang=lang)
 
 def test_check_argument_list1():
+    kernel_string = """__kernel void test_kernel(int number, char * message, int * numbers) {
+    numbers[get_global_id(0)] = numbers[get_global_id(0)] * number;
+    }
+    """
     args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
     try:
-        check_argument_list(args)
+        check_argument_list(kernel_string, args)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as e:
@@ -232,11 +232,48 @@ def test_check_argument_list1():
         assert False
 
 def test_check_argument_list2():
-    args = [numpy.int32(5), numpy.float64(4.6), numpy.array([1, 2, 3])]
-    check_argument_list(args)
+    kernel_string = """__kernel void test_kernel(char number, double factors, int * numbers, const unsigned long * moreNumbers) {
+        numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
+        }
+        """
+    args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
+    check_argument_list(kernel_string, args)
     #test that no exception is raised
     assert True
 
+def test_check_argument_list3():
+    kernel_string = """__kernel void test_kernel(__global const ushort number, __global half * factors, __global long * numbers) {
+        numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
+        }
+        """
+    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32([300])]
+    try:
+        check_argument_list(kernel_string, args)
+        print("Expected a TypeError to be raised")
+        assert False
+    except TypeError as expected_error:
+        print(str(expected_error))
+        assert "at position 2" in str(expected_error)
+    except Exception:
+        print("Expected a TypeError to be raised")
+        assert False
+
+def test_check_argument_list4():
+    kernel_string = """__kernel void test_kernel(__global const ushort number, __global half * factors, __global long * numbers) {
+        numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
+        }
+        """
+    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int64([300]), numpy.ubyte(32)]
+    try:
+        check_argument_list(kernel_string, args)
+        print("Expected a TypeError to be raised")
+        assert False
+    except TypeError as expected_error:
+        print(str(expected_error))
+        assert "do not match in size" in str(expected_error)
+    except Exception:
+        print("Expected a TypeError to be raised")
+        assert False
 
 def test_check_tune_params_list():
     tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
@@ -252,7 +289,6 @@ def test_check_tune_params_list():
         print("Expected a ValueError to be raised")
         assert False
 
-
 def test_check_tune_params_list2():
     tune_params = dict(zip(["once_upon_a_time", "in_the_west"], [1, 2]))
     try:
@@ -266,13 +302,11 @@ def test_check_tune_params_list2():
         print("Expected a ValueError to be raised")
         assert False
 
-
 def test_check_tune_params_list3():
     tune_params = dict(zip(["rock", "paper", "scissors"], [1, 2, 3]))
     check_tune_params_list(tune_params)
     # test that no exception is raised
     assert True
-
 
 def test_check_block_size_params_names_list():
     block_size_names = ["block_size_a", "block_size_b"]
@@ -289,7 +323,6 @@ def test_check_block_size_params_names_list():
         assert "Block size name block_size_a is not specified in the tunable parameters list!" == str(w[0].message)
         assert "Block size name block_size_b is not specified in the tunable parameters list!" == str(w[1].message)
 
-
 def test_check_block_size_params_names_list2():
     block_size_names = ["block_size_a", "block_size_b"]
     tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
@@ -300,7 +333,6 @@ def test_check_block_size_params_names_list2():
         check_block_size_params_names_list(block_size_names, tune_params)
         # test that no warning is raised
         assert len(w) == 0
-
 
 def test_check_block_size_params_names_list3():
     """check that a warning is issued when none of the default names are used and no alternative names are specified"""
@@ -328,7 +360,6 @@ def test_check_block_size_params_names_list4():
         # test that no warning is raised
         assert len(w) == 0
 
-
 def test_get_kernel_string_func():
     #test whether passing a function instead of string works
     def gen_kernel(params):
@@ -344,7 +375,6 @@ def test_get_kernel_string_filename_not_found():
     bogus_filename = "filename_3456789.cu"
     answer = get_kernel_string(bogus_filename)
     assert answer == bogus_filename
-
 
 def test_looks_like_a_filename1():
     string = "filename.c"

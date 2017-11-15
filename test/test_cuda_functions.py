@@ -1,6 +1,6 @@
 import numpy
-from nose.tools import nottest
-from .context import skip_if_no_cuda_device
+import pytest
+from .context import skip_if_no_cuda
 
 from kernel_tuner import cuda
 
@@ -9,10 +9,8 @@ try:
 except Exception:
     pass
 
-
+@skip_if_no_cuda
 def test_ready_argument_list():
-
-    skip_if_no_cuda_device()
 
     size = 1000
     a = numpy.int32(75)
@@ -28,10 +26,8 @@ def test_ready_argument_list():
     assert isinstance(gpu_args[1], numpy.int32)
     assert isinstance(gpu_args[2], pycuda.driver.DeviceAllocation)
 
-
+@skip_if_no_cuda
 def test_compile():
-
-    skip_if_no_cuda_device()
 
     original_kernel = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
@@ -68,20 +64,19 @@ def test_compile():
         print(str(e))
         assert False
 
-@nottest
-def test_func(a, b, block=0, grid=0):
+def dummy_func(a, b, block=0, grid=0):
     pass
 
+@skip_if_no_cuda
 def test_benchmark():
-    skip_if_no_cuda_device()
     dev = cuda.CudaFunctions(0)
     args = [1, 2]
-    time = dev.benchmark(test_func, args, (1,2), (1,2), False)
+    time = dev.benchmark(dummy_func, args, (1,2), (1,2), False)
     assert time > 0
 
+@skip_if_no_cuda
 def test_benchmark_times():
-    skip_if_no_cuda_device()
     dev = cuda.CudaFunctions(0)
     args = [1, 2]
-    time = dev.benchmark(test_func, args, (1,2), (1,2), True)
+    time = dev.benchmark(dummy_func, args, (1,2), (1,2), True)
     assert len(time) == 7
