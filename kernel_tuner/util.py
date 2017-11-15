@@ -11,9 +11,9 @@ import warnings
 
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
-def check_argument_list(kernel_string, args):
+def check_argument_list(kernel_name, kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
-    kernel_arguments = kernel_string[kernel_string.find("(") + 1:kernel_string.find(")")].split(",")
+    kernel_arguments = kernel_string[kernel_string.find(kernel_name + "(") + 1:kernel_string.find(")")].split(",")
     if len(kernel_arguments) != len(args):
         raise TypeError("Kernel and host argument lists do not match in size.")
     for (i, arg) in enumerate(args):
