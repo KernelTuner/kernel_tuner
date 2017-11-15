@@ -297,8 +297,23 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    #see if the kernel arguments have correct type
-    util.check_argument_list(arguments)
+    # see if the kernel arguments have correct type
+    if not callable(kernel_string):
+        util.check_argument_list(util.get_kernel_string(kernel_string), arguments)
+    else:
+        logging.debug("Checking of arguments list not supported yet for code generators.")
+
+    # check for forbidden names in tune parameters
+    util.check_tune_params_list(tune_params)
+
+    # check for types and length of block_size_names
+    util.check_block_size_names(block_size_names)
+
+    # check whether block_size_names are used as expected
+    util.check_block_size_params_names_list(block_size_names, tune_params)
+
+    if iterations < 1:
+        raise ValueError("Iterations should be at least one!")
 
     #sort all the options into separate dicts
     opts = locals()
@@ -368,7 +383,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #finished iterating over search space
     if results:     #checks if results is not empty
         best_config = min(results, key=lambda x: x['time'])
-        print("best performing configuration:", util.get_config_string(best_config))
+        print("best performing configuration:", util.get_config_string(best_config, units=runner.dev.dev.units))
     else:
         print("no results to report")
 
@@ -423,7 +438,6 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     dev = core.DeviceInterface(kernel_string, iterations=1, **device_options)
 
     #move data to the GPU
-    util.check_argument_list(arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
     instance = None
@@ -432,6 +446,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
         instance = dev.create_kernel_instance(kernel_options, params, False)
         if instance is None:
             raise Exception("cannot create kernel instance, too many threads per block")
+
+        # see if the kernel arguments have correct type
+        util.check_argument_list(instance.kernel_string, arguments)
 
         #compile the kernel
         func = dev.compile_kernel(instance, False)

@@ -7,12 +7,133 @@ import errno
 import tempfile
 import logging
 import numpy
+import warnings
 
-def check_argument_list(args):
-    """ raise an exception if a kernel argument is of unsupported type """
+default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+
+def check_argument_list(kernel_string, args):
+    """ raise an exception if a kernel arguments do not match host arguments """
+    kernel_arguments = kernel_string[kernel_string.find("(") + 1:kernel_string.find(")")].split(",")
+    if len(kernel_arguments) != len(args):
+        raise TypeError("Kernel and host argument lists do not match in size.")
     for (i, arg) in enumerate(args):
-        if not isinstance(arg, (numpy.ndarray, numpy.generic)):
-            raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
+        kernel_argument = kernel_arguments[i]
+        if "*" in kernel_argument:
+            # Corresponding argument should be a NumPy array
+            if not isinstance(arg, numpy.ndarray):
+                raise TypeError("Argument at position " + str(i) + " of type: "
+                    + str(type(arg)) + " does not match " + kernel_argument + ".")
+            # CUDA/OpenCL/C uchar arrays
+            if ("uchar" in kernel_argument or "unsigned char" in kernel_argument) and arg.dtype == "ubyte":
+                continue
+            # CUDA/OpenCL/C char arrays
+            elif "char" in kernel_argument and arg.dtype == "byte":
+                continue
+            # CUDA/OpenCL/C ushort arrays
+            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and arg.dtype == "uint16":
+                continue
+            # CUDA/OpenCL/C short arrays
+            elif "short" in kernel_argument and arg.dtype == "int16":
+                continue
+            # CUDA/OpenCL/C uint arrays
+            elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and arg.dtype == "uint32":
+                continue
+            # CUDA/OpenCL/C int arrays
+            elif "int" in kernel_argument and arg.dtype == "int32":
+                continue
+            # CUDA/OpenCL/C ulong arrays
+            elif ("ulong" in kernel_argument or "unsigned long" in kernel_argument) and arg.dtype == "uint64":
+                continue
+            # CUDA/OpenCL/C long arrays
+            elif "long" in kernel_argument and arg.dtype == "int64":
+                continue
+            # OpenCL/C half arrays
+            elif "half" in kernel_argument and arg.dtype == "float16":
+                continue
+            # CUDA/OpenCL/C float arrays
+            elif "float" in kernel_argument and arg.dtype == "float32":
+                continue
+            # CUDA/OpenCL/C double array
+            elif "double" in kernel_argument and arg.dtype == "float64":
+                continue
+            raise TypeError("Argument at position " + str(i) + " of type: "
+                + str(type(arg)) + " does not match " + kernel_argument + ".")
+        else:
+            # NumPy scalar
+            if not isinstance(arg, numpy.generic):
+                raise TypeError("Argument at position " + str(i) + " of type: "
+                    + str(type(arg)) + " does not match " + kernel_argument + ".")
+            # CUDA/OpenCL/C uchar
+            if ("uchar" in kernel_argument or "unsigned char" in kernel_argument) and arg.dtype == "ubyte":
+                continue
+            # CUDA/OpenCL/C char
+            elif "char" in kernel_argument and arg.dtype == "byte":
+                continue
+            # CUDA/OpenCL/C ushort
+            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and arg.dtype == "ushort":
+                continue
+            # CUDA/OpenCL/C short
+            elif "short" in kernel_argument and arg.dtype == "short":
+                continue
+            # CUDA/OpenCL/C uint
+            elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and arg.dtype == "uint32":
+                continue
+            # CUDA/OpenCL/C int
+            elif "int" in kernel_argument and arg.dtype == "int32":
+                continue
+            # CUDA/OpenCL/C ulong
+            elif ("ulong" in kernel_argument or "unsigned long" in kernel_argument) and arg.dtype == "uint64":
+                continue
+            # CUDA/OpenCL/C long
+            elif "long" in kernel_argument and arg.dtype == "int64":
+                continue
+            # OpenCL/C half
+            elif "half" in kernel_argument and arg.dtype == "float16":
+                continue
+            # CUDA/OpenCL/C float
+            elif "float" in kernel_argument and arg.dtype == "float32":
+                continue
+            # CUDA/OpenCL/C double
+            elif "double" in kernel_argument and arg.dtype == "float64":
+                continue
+            raise TypeError("Argument at position " + str(i) + " of type: "
+                + str(type(arg)) + " does not match " + kernel_argument + ".")
+
+
+def check_tune_params_list(tune_params):
+    """ raise an exception if a tune parameter has a forbidden name """
+    forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z")
+    forbidden_name_substr = ("time", "times")
+    for i, (name, param) in enumerate(tune_params.items()):
+        if name in forbidden_names:
+            raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
+        for forbidden_substr in forbidden_name_substr:
+            if forbidden_substr in name:
+                raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name: not allowed to use " + forbidden_substr + " in tune parameter names!")
+
+def check_block_size_names(block_size_names):
+    if block_size_names is not None:
+        #do some type checks for the user input
+        if not isinstance(block_size_names, list):
+            raise ValueError("block_size_names should be a list of strings!")
+        if len(block_size_names) > 3:
+            raise ValueError("block_size_names should not contain more than 3 names!")
+        if not all([isinstance(name, "".__class__) for name in block_size_names]):
+            raise ValueError("block_size_names should contain only strings!")
+        #ensure there is always at least three names
+        for i,name in enumerate(default_block_size_names):
+            if len(block_size_names) < i+1:
+                block_size_names.append(default_block_size_names[i])
+
+def check_block_size_params_names_list(block_size_names, tune_params):
+    if block_size_names is not None:
+        for name in block_size_names:
+            if name not in tune_params.keys():
+                warnings.warn("Block size name " + name + " is not specified in the tunable parameters list!", UserWarning)
+    else: #if default block size names are used
+        if not any([k in default_block_size_names for k in tune_params.keys()]):
+            warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
+
 
 def check_restrictions(restrictions, element, keys, verbose):
     """ check whether a specific instance meets the search space restrictions """
@@ -46,9 +167,21 @@ def detect_language(lang, kernel_source):
             lang = "C"
     return lang
 
-def get_config_string(params):
+
+def get_config_string(params, units={}):
     """ return a compact string representation of a dictionary """
-    return ", ".join([k + "=" + str(v) for k, v in params.items()])
+    compact_str_items = []
+    # first make a list of compact strings for each parameter
+    for k, v in params.items():
+        unit = ""
+        for u_k, u_v in units.items():
+            if k == u_k:
+                unit = u_v
+        compact_str_items.append(k + "=" + str(v) + unit)
+    # and finally join them
+    compact_str = ", ".join(compact_str_items)
+    return compact_str
+
 
 def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """compute grid dims based on problem sizes and listed grid divisors"""
@@ -129,7 +262,7 @@ def get_temp_filename(suffix=None):
 def get_thread_block_dimensions(params, block_size_names=None):
     """thread block size from tuning params, currently using convention"""
     if not block_size_names:
-        block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+        block_size_names = default_block_size_names
 
     block_size_x = params.get(block_size_names[0], 256)
     block_size_y = params.get(block_size_names[1], 1)

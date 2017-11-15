@@ -1,9 +1,9 @@
 Contribution guide
 ==================
 
-The kernel tuner follows the Google Python style guide, with Sphinxdoc 
-docstrings for module public functions. If you want to contribute to the project 
-please fork it, create a branch including your changes and additions, and create 
+The kernel tuner follows the Google Python style guide, with Sphinxdoc
+docstrings for module public functions. If you want to contribute to the project
+please fork it, create a branch including your changes and additions, and create
 a pull request.
 
 Before creating a pull request please ensure the following:
@@ -15,8 +15,8 @@ Before creating a pull request please ensure the following:
 * An entry about the change or addition is created in CHANGELOG.md
 * Any matching entries in the roadmap.md are updated/removed
 
-If you are in doubt on where to put your additions to the Kernel Tuner, please 
-have look at the `design documentation 
+If you are in doubt on where to put your additions to the Kernel Tuner, please
+have look at the `design documentation
 <http://benvanwerkhoven.github.io/kernel_tuner/design.html>`__.
 
 Development setup
@@ -26,43 +26,38 @@ You can install the packages required to run the tests using:
 
 .. code-block:: bash
 
-    pip install -r requirements-dev.txt
+    pip install -e .[dev]
 
 After this command you should be able to run the tests and build the documentation.
-See below on how to do that.
+See below on how to do that. The ``-e`` flag installs the package in *development mode*.
+This means files are not copied, but linked to, such that your installation tracks
+changes in the source files.
 
 Running tests
 -------------
 
-To run the tests you can use ``pytest -v`` in the top-level directory. Note that 
-pytest tests against the installed package. To update the installed package 
-after you've made changes use:
-
-.. code-block:: bash
-
-    pip install --upgrade .
-    pytest -v
+To run the tests you can use ``pytest -v`` in the top-level directory.
 
 Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
 are not installed/present. The same holds for tests that require PyOpenCL.
 
-Contributions you make to the Kernel Tuner should not break any of the tests 
+Contributions you make to the Kernel Tuner should not break any of the tests
 even if you can not run them locally.
 
-The examples can be seen as *integration tests* for the Kernel Tuner. Note that 
+The examples can be seen as *integration tests* for the Kernel Tuner. Note that
 these will also use the installed package.
 
 Building documentation
 ----------------------
 
-Documentation is located in the ``doc/`` directory. This is where you can type 
+Documentation is located in the ``doc/`` directory. This is where you can type
 ``make html`` to generate the html pages in the ``doc/build/html`` directory.
 
-The source files used for building the documentation are located in 
-``doc/source``. The tutorials should be included in the ``tutorials/`` directory 
-and a symlink can be used to add them to the source file directory before building 
+The source files used for building the documentation are located in
+``doc/source``. The tutorials should be included in the ``tutorials/`` directory
+and a symlink can be used to add them to the source file directory before building
 documentation.
 
-To update the documentation pages hosted on the GitHub the generated contents of 
-``doc/build/html`` should be copied to the top-level directory of the 
+To update the documentation pages hosted on the GitHub the generated contents of
+``doc/build/html`` should be copied to the top-level directory of the
 ``gh-pages`` branch.
