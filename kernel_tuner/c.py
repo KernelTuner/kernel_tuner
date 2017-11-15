@@ -149,8 +149,12 @@ class CFunctions(object):
         try:
             write_file(source_file, kernel_string)
 
-            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename+".o"])
-            subprocess.check_call([self.compiler, filename+".o"] + compiler_options + ["-shared", "-o", filename+".so"] + lib_args)
+            lib_extension = ".so"
+            if platform.system() == "Darwin":
+                lib_extension = ".dylib"
+
+            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
+            subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
 
@@ -161,6 +165,7 @@ class CFunctions(object):
             delete_temp_file(source_file)
             delete_temp_file(filename+".o")
             delete_temp_file(filename+".so")
+            delete_temp_file(filename+".dylib")
 
 
         return func
@@ -222,7 +227,10 @@ class CFunctions(object):
         if times:
             return time
         else:
-            return numpy.mean(time[1:-1])
+            if self.iterations > 4:
+                return numpy.mean(time[1:-1])
+            else:
+                return numpy.mean(time)
 
 
     def run_kernel(self, func, c_args, threads, grid):

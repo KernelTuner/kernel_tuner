@@ -1,19 +1,70 @@
-language: python
-python:
-  - "2.7"
-  - "3.5"
-  - "3.6"
-# command to install dependencies
-before_install:
-  - sudo apt-get build-dep python-scipy
-  - sudo apt-get install -qq python-numpy python-scipy
+sudo: false
+
+matrix:
+  include:
+    - os: linux
+      language: python
+      env:
+        - MCONDA_PYTHON_MAJOR=2
+        - MCONDA_PYTHON_VERSION=2.7
+
+    - os: linux
+      language: python
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.5
+
+    - os: linux
+      language: python
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.6
+
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=2
+        - MCONDA_PYTHON_VERSION=2.7
+
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.5
+
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.6
+
+env:
+  global:
+    - MCONDA_VERSION="latest"
+    - MCONDA_LINUX="Linux-x86_64"
+    - MCONDA_OSX="MacOSX-x86_64"
+
 install:
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      export MCONDA_OS=$MCONDA_LINUX
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      export MCONDA_OS=$MCONDA_OSX
+    fi
+    wget "http://repo.continuum.io/miniconda/Miniconda$MCONDA_PYTHON_MAJOR-$MCONDA_VERSION-$MCONDA_OS.sh" -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no --set auto_update_conda False
+  - conda update -yq conda
+  - conda install -y python=$MCONDA_PYTHON_VERSION
+  - conda install -y numpy scipy
+
   - pip install .[dev]
+
 # command to run tests
 script: python -m pytest
 branches:
   only:
     - master
+
 notifications:
   email:
     on_failure: change

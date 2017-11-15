@@ -297,6 +297,24 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
+    # see if the kernel arguments have correct type
+    if not callable(kernel_string):
+        util.check_argument_list(util.get_kernel_string(kernel_string), arguments)
+    else:
+        logging.debug("Checking of arguments list not supported yet for code generators.")
+
+    # check for forbidden names in tune parameters
+    util.check_tune_params_list(tune_params)
+
+    # check for types and length of block_size_names
+    util.check_block_size_names(block_size_names)
+
+    # check whether block_size_names are used as expected
+    util.check_block_size_params_names_list(block_size_names, tune_params)
+
+    if iterations < 1:
+        raise ValueError("Iterations should be at least one!")
+
     #sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
@@ -307,12 +325,6 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
     logging.debug('tuning_options: %s', util.get_config_string(tuning_options))
     logging.debug('device_options: %s', util.get_config_string(device_options))
-
-    # see if the kernel arguments have correct type
-    if not callable(kernel_string):
-        util.check_argument_list(util.get_kernel_string(kernel_string), arguments)
-    else:
-        logging.debug("Checking of arguments list not supported yet for code generators.")
 
     #select strategy based on user options
     if sample_fraction and not strategy in [None, 'sample_fraction']:

@@ -78,7 +78,8 @@ class DeviceInterface(object):
             #to run the kernel given the current thread block size
             #the desired behavior is to simply skip over this configuration
             #and proceed to try the next one
-            if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
+            skippable_exceptions = ["too many resources requested for launch", "OUT_OF_RESOURCES", "INVALID_WORK_GROUP_SIZE"]
+            if any([skip_str in str(e) for skip_str in skippable_exceptions]):
                 logging.debug('benchmark fails due to runtime failure too many resources required')
                 if verbose:
                     print("skipping config", instance.name, "reason: too many resources requested for launch")
@@ -226,7 +227,7 @@ class DeviceInterface(object):
 
         #insert default block_size_names if needed
         if not kernel_options.block_size_names:
-            kernel_options.block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+            kernel_options.block_size_names = util.default_block_size_names
 
         #setup thread block and grid dimensions
         threads, grid = util.setup_block_and_grid(kernel_options.problem_size, grid_div, params, kernel_options.block_size_names)
