@@ -1,39 +1,44 @@
 sudo: false
+language: generic
 
 matrix:
   include:
-    - os: linux
-      language: python
-      env:
-        - MCONDA_PYTHON_MAJOR=2
-        - MCONDA_PYTHON_VERSION=2.7
+    # - os: linux
+    #   env:
+    #     - MCONDA_PYTHON_MAJOR=2
+    #     - MCONDA_PYTHON_VERSION=2.7
 
-    - os: linux
-      language: python
-      env:
-        - MCONDA_PYTHON_MAJOR=3
-        - MCONDA_PYTHON_VERSION=3.5
+    # - os: linux
+    #   env:
+    #     - MCONDA_PYTHON_MAJOR=3
+    #     - MCONDA_PYTHON_VERSION=3.5
 
+    # - os: linux
+    #   env:
+    #     - MCONDA_PYTHON_MAJOR=3
+    #     - MCONDA_PYTHON_VERSION=3.6
+
+    # - os: osx
+    #   env:
+    #     - MCONDA_PYTHON_MAJOR=2
+    #     - MCONDA_PYTHON_VERSION=2.7
+
+    # - os: osx
+    #   env:
+    #     - MCONDA_PYTHON_MAJOR=3
+    #     - MCONDA_PYTHON_VERSION=3.5
+
+    # - os: osx
+    #   env:
+    #     - MCONDA_PYTHON_MAJOR=3
+    #     - MCONDA_PYTHON_VERSION=3.6
+
+    # build the documentation and deploy to the gh-pages branch
     - os: linux
-      language: python
       env:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.6
-
-    - os: osx
-      env:
-        - MCONDA_PYTHON_MAJOR=2
-        - MCONDA_PYTHON_VERSION=2.7
-
-    - os: osx
-      env:
-        - MCONDA_PYTHON_MAJOR=3
-        - MCONDA_PYTHON_VERSION=3.5
-
-    - os: osx
-      env:
-        - MCONDA_PYTHON_MAJOR=3
-        - MCONDA_PYTHON_VERSION=3.6
+        - GH_PAGES_BUILD=true
 
 env:
   global:
@@ -58,9 +63,22 @@ install:
   - conda install -y numpy scipy
 
   - pip install .[dev]
+  - |
+    if [[ "$GH_PAGES_BUILD" == true ]]; then
+      echo "installing documentation dependencies"
+      pip install .[doc]
+    fi
 
 # command to run tests
-script: python -m pytest
+script: 
+  - |
+    if [[ "$GH_PAGES_BUILD" == true ]]; then
+      echo "building gh-pages documentation"
+      cd doc
+      bash ./deploy.sh
+    else
+      python -m pytest
+    fi
 branches:
   only:
     - master
