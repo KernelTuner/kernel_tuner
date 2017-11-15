@@ -249,7 +249,7 @@ def test_check_argument_list3():
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int64([300])]
+    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32([300])]
     try:
         check_argument_list(kernel_string, args)
         print("Expected a TypeError to be raised")
