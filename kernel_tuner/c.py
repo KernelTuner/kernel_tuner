@@ -297,3 +297,5 @@ class CFunctions(object):
             #OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
             logging.debug('unloading shared library')
             _ctypes.dlclose(self.lib._handle)
+
+    units = {}

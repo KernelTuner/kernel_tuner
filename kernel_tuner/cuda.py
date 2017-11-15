@@ -256,3 +256,5 @@ class CudaFunctions(object):
             drv.memcpy_dtoh(dest, src)
         else:
             dest = src
+
+    units = {'time': 'ms'}

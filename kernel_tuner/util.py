@@ -167,9 +167,21 @@ def detect_language(lang, kernel_source):
             lang = "C"
     return lang
 
-def get_config_string(params):
+
+def get_config_string(params, units={}):
     """ return a compact string representation of a dictionary """
-    return ", ".join([k + "=" + str(v) for k, v in params.items()])
+    compact_str_items = []
+    # first make a list of compact strings for each parameter
+    for k, v in params.items():
+        unit = ""
+        for u_k, u_v in units.items():
+            if k == u_k:
+                unit = u_v
+        compact_str_items.append(k + "=" + str(v) + unit)
+    # and finally join them
+    compact_str = ", ".join(compact_str_items)
+    return compact_str
+
 
 def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """compute grid dims based on problem sizes and listed grid divisors"""

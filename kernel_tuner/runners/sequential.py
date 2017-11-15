@@ -68,7 +68,7 @@ class SequentialRunner(object):
 
             #print and append to results
             params['time'] = time
-            output_string = get_config_string(params)
+            output_string = get_config_string(params, self.dev.dev.units)
             logging.debug(output_string)
             print(output_string)
             results.append(params)
