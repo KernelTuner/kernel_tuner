@@ -423,7 +423,6 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     dev = core.DeviceInterface(kernel_string, iterations=1, **device_options)
 
     #move data to the GPU
-    util.check_argument_list(kernel_string, arguments)
     gpu_args = dev.ready_argument_list(arguments)
 
     instance = None
@@ -432,6 +431,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
         instance = dev.create_kernel_instance(kernel_options, params, False)
         if instance is None:
             raise Exception("cannot create kernel instance, too many threads per block")
+
+        # see if the kernel arguments have correct type
+        util.check_argument_list(instance.kernel_string, arguments)
 
         #compile the kernel
         func = dev.compile_kernel(instance, False)
