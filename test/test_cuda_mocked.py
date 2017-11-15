@@ -1,5 +1,4 @@
 import numpy
-from nose.tools import nottest
 
 try:
     from mock import patch, Mock
@@ -59,8 +58,7 @@ def test_compile(drv, src_mod):
     assert optional_args['arch'] == 'compute_55'
 
 
-@nottest
-def test_func(a, b, block=0, grid=0):
+def dummy_func(a, b, block=0, grid=0):
     pass
 
 @patch('kernel_tuner.cuda.drv')
@@ -71,7 +69,7 @@ def test_benchmark(drv):
 
     dev = cuda.CudaFunctions(0)
     args = [1, 2]
-    time = dev.benchmark(test_func, args, (1,2), (1,2), False)
+    time = dev.benchmark(dummy_func, args, (1,2), (1,2), False)
     assert time > 0
 
     assert dev.context.synchronize.call_count == 2*dev.iterations

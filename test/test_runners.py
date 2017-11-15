@@ -2,12 +2,9 @@ from __future__ import print_function
 
 import numpy
 import sys
-from nose import SkipTest
-from nose.tools import nottest
 
 import kernel_tuner
-from .context import skip_if_no_cuda_device
-
+from .context import skip_if_no_cuda, skip_if_no_noodles
 
 def test_random_sample():
 
@@ -29,18 +26,9 @@ def test_random_sample():
         assert v['time'] == 1.0
 
 
+@skip_if_no_noodles
+@skip_if_no_cuda
 def test_noodles_runner():
-
-    skip_if_no_cuda_device()
-
-    if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 5):
-        raise SkipTest("Noodles runner test requires Python 3.5 or newer")
-
-    import importlib.util
-    noodles_installed = importlib.util.find_spec("noodles") is not None
-
-    if not noodles_installed:
-        raise SkipTest("Noodles runner test requires Noodles")
 
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
@@ -67,7 +55,6 @@ def test_noodles_runner():
 
 
 
-@nottest
 def get_vector_add_args():
     size = int(1e6)
     a = numpy.random.randn(size).astype(numpy.float32)
@@ -76,9 +63,9 @@ def get_vector_add_args():
     n = numpy.int32(size)
     return c, a, b, n
 
+@skip_if_no_cuda
 def test_diff_evo():
 
-    skip_if_no_cuda_device()
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_size_x + threadIdx.x;
@@ -97,9 +84,8 @@ def test_diff_evo():
     assert len(result) > 0
 
 
+@skip_if_no_cuda
 def test_sequential_runner_alt_block_size_names():
-
-    skip_if_no_cuda_device()
 
     kernel_string = """__global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_dim_x + threadIdx.x;
