@@ -310,7 +310,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     # see if the kernel arguments have correct type
     if callable(kernel_string):
-        util.check_argument_list(kernel_string(tuning_options), arguments)
+        util.check_argument_list(util.get_kernel_string(kernel_string, tune_params), arguments)
     else:
         util.check_argument_list(kernel_string, arguments)
 
