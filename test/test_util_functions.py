@@ -275,6 +275,37 @@ def test_check_argument_list4():
         print("Expected a TypeError to be raised")
         assert False
 
+def test_check_argument_list5():
+    kernel_string = """ //more complicated test function(because I can)
+
+        __device__ float some_lame_device_function(float *a) {
+            return a[0];
+        }
+
+        __global__ void my_test_kernel(double *a,
+                                       float *b, int c,
+                                       int d) {
+
+            a[threadIdx.x] = b[blockIdx.x]*c*d;
+        }
+        """
+    args = [numpy.array([1,2,3]).astype(numpy.float64),
+            numpy.array([1,2,3]).astype(numpy.float32),
+            numpy.int32(6), numpy.int32(7)]
+
+    #print what check_argument_list is doing as well
+    kernel_arguments = kernel_string[kernel_string.find("(") + 1:kernel_string.find(")")].split(",")
+
+    print(kernel_arguments)
+
+    try:
+        check_argument_list(kernel_string, args)
+
+    except TypeError as expected_error:
+        print("Expected no TypeError to be raised")
+        assert False
+
+
 def test_check_tune_params_list():
     tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
                             "grid_size_y"], [1, 2, 3, 4]))
