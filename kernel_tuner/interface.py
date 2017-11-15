@@ -311,6 +311,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     # see if the kernel arguments have correct type
     if not callable(kernel_string):
         util.check_argument_list(util.get_kernel_string(kernel_string), arguments)
+    else:
+        logging.debug("Checking of arguments list not supported yet for code generators.")
 
     #select strategy based on user options
     if sample_fraction and not strategy in [None, 'sample_fraction']:
