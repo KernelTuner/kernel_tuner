@@ -234,7 +234,8 @@ def test_check_argument_list1():
 
 def test_check_argument_list2():
     kernel_name = "test_kernel"
-    kernel_string = """__kernel void test_kernel(char number, double factors, int * numbers, const unsigned long * moreNumbers) {
+    kernel_string = """__kernel void test_kernel
+        (char number, double factors, int * numbers, const unsigned long * moreNumbers) {
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
@@ -245,7 +246,7 @@ def test_check_argument_list2():
 
 def test_check_argument_list3():
     kernel_name = "test_kernel"
-    kernel_string = """__kernel void test_kernel(__global const ushort number, __global half * factors, __global long * numbers) {
+    kernel_string = """__kernel void test_kernel (__global const ushort number, __global half * factors, __global long * numbers) {
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
