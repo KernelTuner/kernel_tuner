@@ -57,6 +57,11 @@ install:
   - conda install -y python=$MCONDA_PYTHON_VERSION
   - conda install -y numpy scipy
 
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      conda install -c conda-forge pyopencl
+    fi
+
   - pip install .[dev]
 
 # command to run tests
