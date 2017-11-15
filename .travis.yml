@@ -63,14 +63,14 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no --set auto_update_conda False
   - conda update -yq conda
-  - conda install -y python=$MCONDA_PYTHON_VERSION
-  - conda install -y numpy scipy
+  - conda install -y python=$MCONDA_PYTHON_VERSION numpy scipy
 
-  - pip install .[dev]
   - |
     if [[ "$GH_PAGES_BUILD" == true ]]; then
       echo "installing documentation dependencies"
       pip install .[doc]
+    else
+      pip install .[dev]
     fi
 
 # command to run tests
