@@ -245,11 +245,11 @@ def test_check_argument_list2():
     assert True
 
 def test_check_argument_list3():
-    kernel_string = """__kernel void test_kernel(const ushort number, half * factors, long * numbers) {
+    kernel_string = """__kernel void test_kernel(__global const ushort number, __global half * factors, __global long * numbers) {
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32(300)]
+    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32([300])]
     try:
         check_argument_list(kernel_string, args)
         print("Expected a TypeError to be raised")
@@ -257,6 +257,23 @@ def test_check_argument_list3():
     except TypeError as expected_error:
         print(str(expected_error))
         assert "at position 2" in str(expected_error)
+    except Exception:
+        print("Expected a TypeError to be raised")
+        assert False
+
+def test_check_argument_list4():
+    kernel_string = """__kernel void test_kernel(__global const ushort number, __global half * factors, __global long * numbers) {
+        numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
+        }
+        """
+    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32([300]), numpy.ubyte(32)]
+    try:
+        check_argument_list(kernel_string, args)
+        print("Expected a TypeError to be raised")
+        assert False
+    except TypeError as expected_error:
+        print(str(expected_error))
+        assert "do not match in size" in str(expected_error)
     except Exception:
         print("Expected a TypeError to be raised")
         assert False
