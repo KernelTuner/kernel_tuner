@@ -3,35 +3,35 @@ language: generic
 
 matrix:
   include:
-    # - os: linux
-    #   env:
-    #     - MCONDA_PYTHON_MAJOR=2
-    #     - MCONDA_PYTHON_VERSION=2.7
+    - os: linux
+      env:
+        - MCONDA_PYTHON_MAJOR=2
+        - MCONDA_PYTHON_VERSION=2.7
 
-    # - os: linux
-    #   env:
-    #     - MCONDA_PYTHON_MAJOR=3
-    #     - MCONDA_PYTHON_VERSION=3.5
+    - os: linux
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.5
 
-    # - os: linux
-    #   env:
-    #     - MCONDA_PYTHON_MAJOR=3
-    #     - MCONDA_PYTHON_VERSION=3.6
+    - os: linux
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.6
 
-    # - os: osx
-    #   env:
-    #     - MCONDA_PYTHON_MAJOR=2
-    #     - MCONDA_PYTHON_VERSION=2.7
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=2
+        - MCONDA_PYTHON_VERSION=2.7
 
-    # - os: osx
-    #   env:
-    #     - MCONDA_PYTHON_MAJOR=3
-    #     - MCONDA_PYTHON_VERSION=3.5
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.5
 
-    # - os: osx
-    #   env:
-    #     - MCONDA_PYTHON_MAJOR=3
-    #     - MCONDA_PYTHON_VERSION=3.6
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.6
 
     # build the documentation and deploy to the gh-pages branch
     - os: linux
