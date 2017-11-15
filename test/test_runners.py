@@ -109,3 +109,27 @@ def test_sequential_runner_alt_block_size_names():
                             block_size_names=block_size_names)
 
     assert len(result) == len(tune_params["block_dim_x"])
+
+@skip_if_no_cuda
+def test_sequential_runner_not_matching_answer1():
+    kernel_string = """__global__ void vector_add(float *c, float *a, float *b, int n) {
+            int i = blockIdx.x * block_size_x + threadIdx.x;
+            if (i<n) {
+                c[i] = a[i] + b[i];
+            }
+        } """
+    args = get_vector_add_args()
+    answer = [args[1] + arg[2]]
+    tune_params = {"block_size_x": [128 + 64 * i for i in range(5)]}
+
+    try:
+        result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, args[-1], args, tune_params,
+                                         method="diff_evo", verbose=True, answer=answer)
+        print("Expected a TypeError to be raised")
+        assert False
+    except TypeError as expected_error:
+        print(str(expected_error))
+        assert "The length of argument list and provided results do not match." == str(expected_error)
+    except Exception:
+        print("Expected a TypeError to be raised")
+        assert False
