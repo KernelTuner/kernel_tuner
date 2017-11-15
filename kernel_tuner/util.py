@@ -13,8 +13,8 @@ default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 def check_argument_list(kernel_name, kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
-    kernel_start = kernel_string.find(kernel_name + "(")
-    kernel_start = kernel_start + len(kernel_name) + 1
+    kernel_start = kernel_string.find(kernel_name)
+    kernel_start = kernel_string.find("(", kernel_start) + 1
     kernel_end = kernel_string.find(")", kernel_start)
     kernel_arguments = kernel_string[kernel_start:kernel_end].split(",")
     if len(kernel_arguments) != len(args):
