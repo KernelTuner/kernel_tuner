@@ -97,7 +97,7 @@ def test_sequential_runner_alt_block_size_names():
 
     c, a, b, n = get_vector_add_args()
     args = [c, a, b, n]
-    tune_params = {"block_dim_x": [128+64*i for i in range(5)]}
+    tune_params = {"block_dim_x": [128+64*i for i in range(5)], "block_size_y" : [1], "block_size_z": [1]}
 
     ref = (a+b).astype(numpy.float32)
     answer = [ref, None, None, None]
