@@ -39,6 +39,8 @@ matrix:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.6
         - GH_PAGES_BUILD=true
+        - ENCRYPTION_LABEL=0a439a1e79c8
+        - COMMIT_AUTHOR_EMAIL="deploy_build@travis-ci.com"
       addons:
         apt:
           packages:
