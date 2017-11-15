@@ -119,7 +119,7 @@ def test_sequential_runner_not_matching_answer1():
             }
         } """
     args = get_vector_add_args()
-    answer = [args[1] + arg[2]]
+    answer = [args[1] + args[2]]
     tune_params = {"block_size_x": [128 + 64 * i for i in range(5)]}
 
     try:
