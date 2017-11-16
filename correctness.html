@@ -219,9 +219,6 @@ produced by the current kernel against the expected result specified in
 <code class="docutils literal"><span class="pre">answer</span></code>. The comparison is currently implemented using numpy.allclose()
 with an maximum allowed absolute error of 1e-6. If you want to use a
 difference tolerance value, use the optional argument <code class="docutils literal"><span class="pre">atol</span></code>.</p>
-<p>At this moment, there is no way to modify the way the
-results are compared by the kernel tuner, if you are interested being able
-to control this, please notify the kernel tuner developers.</p>
 <p>The example in <code class="docutils literal"><span class="pre">examples/cuda/convolution_correct.py</span></code> demonstrates how
 to use the <code class="docutils literal"><span class="pre">answer</span></code> option of <code class="docutils literal"><span class="pre">tune_kernel()</span></code>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span>
@@ -275,6 +272,36 @@ kernel whose results are trusted to be correct.</p>
 kernel, but only includes the kernel arguments that are actually outputs.
 The arguments that are input are replaced by a <code class="docutils literal"><span class="pre">None</span></code> value in the
 <code class="docutils literal"><span class="pre">answer</span></code> list before the list is passed to <code class="docutils literal"><span class="pre">tune_kernel()</span></code>.</p>
+<p>There are cases, however, where simply comparing the results computed on the device to precomputed values is not enough,
+and more flexibility is necessary.
+In this case, it is possible to use the <code class="docutils literal"><span class="pre">verify</span></code> option of <code class="docutils literal"><span class="pre">tune_kernel()</span></code> and specify a <code class="docutils literal"><span class="pre">callable</span></code> object that
+implements a user-defined correctness check.
+This function should accept three parameters: <code class="docutils literal"><span class="pre">cpu_result</span></code>, <code class="docutils literal"><span class="pre">gpu_result</span></code>, and <code class="docutils literal"><span class="pre">atol</span></code>.
+Although the name of the parameters can be different, their semantic is position dependent and reflected in the names
+used in the documentation.</p>
+<p>The example in <code class="docutils literal"><span class="pre">examples/cuda/reduction.py</span></code> demonstrates how to use the <code class="docutils literal"><span class="pre">verify</span></code> option of <code class="docutils literal"><span class="pre">tune_kernel()</span></code>;
+what follows is a snippet from the example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># gpu_result</span>
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">sum_x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
+<span class="c1"># cpu_result</span>
+<span class="n">reference</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span>
+<span class="c1"># custom verify function</span>
+<span class="k">def</span> <span class="nf">verify_partial_reduce</span><span class="p">(</span><span class="n">cpu_result</span><span class="p">,</span> <span class="n">gpu_result</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">cpu_result</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gpu_result</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">)</span>
+<span class="c1"># call to tune_kernel()</span>
+<span class="n">first_kernel</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;sum_floats&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">reference</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="n">verify_partial_reduce</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The first argument, <code class="docutils literal"><span class="pre">cpu_result</span></code>, is mapped to the NumPy array provided to the <code class="docutils literal"><span class="pre">answer</span></code> option; in this example it
+is mapped to <code class="docutils literal"><span class="pre">reference</span></code>.
+The second argument, <code class="docutils literal"><span class="pre">gpu_result</span></code>, is mapped to the NumPy array provided to the <code class="docutils literal"><span class="pre">arguments</span></code> option of
+<code class="docutils literal"><span class="pre">tune_kernel()</span></code>; in this example it is mapped to <code class="docutils literal"><span class="pre">args</span></code>.
+The third argument, <code class="docutils literal"><span class="pre">atol</span></code>, is set to <code class="docutils literal"><span class="pre">None</span></code>; the default maximum allowed absolute error of 1e-6 is then used.</p>
+<p>In the example, the user-defined <code class="docutils literal"><span class="pre">verify</span></code> function is used to compare the partial results, computed on the GPU,
+to the final result, computed on the CPU.
+The same could not be achieved just by using the <code class="docutils literal"><span class="pre">answer</span></code> option, because the number of elements in <code class="docutils literal"><span class="pre">args[0]</span></code> does
+not necessarily match the number of elements in <code class="docutils literal"><span class="pre">reference[0]</span></code> in this example.</p>
 </div>
 
 
