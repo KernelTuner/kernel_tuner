@@ -323,9 +323,9 @@ def test_check_argument_list6():
 
 def test_check_argument_list7():
     kernel_name = "test_kernel"
-    kernel_string = """// In this file we define test_kernel
-        #define SUM(A, B) (A + B)
-        __kernel void another_kernel (double number, double factors, int * numbers, const unsigned long * moreNumbers) 
+    kernel_string = """#define SUM(A, B) (A + B)
+        // In this file we define test_kernel
+        __kernel void another_kernel (char number, double factors, int * numbers, const unsigned long * moreNumbers) 
         __kernel void test_kernel
         (double number, double factors, int * numbers, const unsigned long * moreNumbers) {
         numbers[get_global_id(0)] = SUM(numbers[get_global_id(0)] * factors[get_global_id(0)], number);
