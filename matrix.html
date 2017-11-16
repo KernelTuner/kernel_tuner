@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
@@ -113,8 +119,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Kernel Tuner</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
       </nav>
 
 
@@ -123,23 +131,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Matrix Multiply Example</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Matrix Multiply Example</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/matrix.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/matrix.rst" class="fa fa-github"> Edit on GitHub</a>
+            
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -202,7 +229,7 @@ a square matrix multiplication is:</p>
 <p>This kernel simply creates a single thread per output element. Each
 thread computes the index of the element it is responsible for, and
 iterates over the corresponding row in A, and corresponding column in B.</p>
-<p>There aren&#8217;t many parameters to tune yet, and more importantly, tuning
+<p>There aren’t many parameters to tune yet, and more importantly, tuning
 will not be very effective because this kernel will be limited by
 bandwidth rather than compute. There is however, a lot of opportunity
 for data reuse, which is realized by making the threads in a thread
@@ -334,7 +361,7 @@ kernel is already complex enough:</p>
 <div class="section" id="setup-tuning-parameters">
 <h2>Setup tuning parameters<a class="headerlink" href="#setup-tuning-parameters" title="Permalink to this headline">¶</a></h2>
 <p>Now we will explain how to use the kernel_tuner to tune all the
-parameters of this highly-flexible implementation. We&#8217;ll first show the
+parameters of this highly-flexible implementation. We’ll first show the
 Python script and then explain it step-by-step.</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
@@ -395,7 +422,7 @@ because the tiling factors will increase the amount of work per thread
 block, as well as the amount of shared memory used we start a tad
 conservatively here. For <code class="docutils literal"><span class="pre">block_size_y</span></code>, and the tiling factors in both
 directions, we just pick a range of powers of two.</p>
-<p>Now let&#8217;s fast-forward to the interesting bit: Remember that the area
+<p>Now let’s fast-forward to the interesting bit: Remember that the area
 operated on by the thread block should be a square. In this kernel
 however, we allow <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code> to vary
 independently, while <code class="docutils literal"><span class="pre">tile_size_y</span></code> increases the amount of work per
@@ -415,15 +442,18 @@ of the parameter space.</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="correctness.html" class="btn btn-neutral float-right" title="Kernel Correctness Verification" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="correctness.html" class="btn btn-neutral float-right" title="Kernel Correctness Verification" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="examples.html" class="btn btn-neutral" title="Kernel Tuner Examples" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral" title="Kernel Tuner Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -457,13 +487,14 @@ of the parameter space.</p>
             VERSION:'0.1.7',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

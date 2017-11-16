@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
@@ -117,8 +123,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Kernel Tuner</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
       </nav>
 
 
@@ -127,23 +135,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Tutorial: From physics to tuned GPU kernels</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Tutorial: From physics to tuned GPU kernels</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/diffusion.ipynb" class="fa fa-github"> Edit on GitHub</a>
+            
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/diffusion.ipynb" class="fa fa-github"> Edit on GitHub</a>
+            
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -309,7 +336,11 @@ div.nboutput div.output_area.stderr {
 .ansi-white-intense-fg { color: #A1A6B2; }
 .ansi-white-intense-bg { background-color: #A1A6B2; }
 
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
 .ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
 
 /* CSS overrides for sphinx_rtd_theme */
 
@@ -355,17 +386,17 @@ application.</p>
 create a simple numerical implementation in Python. Then we create a
 CUDA kernel that performs the same computation, but on the GPU. Once we
 have a CUDA kernel, we start using the Kernel Tuner for auto-tuning our
-GPU application. And finally, we&#8217;ll introduce a few code optimizations
+GPU application. And finally, we’ll introduce a few code optimizations
 to our CUDA kernel that will improve performance, but also add more
 parameters to tune on using the Kernel Tuner.</p>
 <div class="admonition note">
-<strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner&#8217;s
+<strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s
 documentation pages, note that you can actually run this tutorial as a
-Jupyter Notebook. Just clone the Kernel Tuner&#8217;s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub
+Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub
 repository</a>. Install
-using <em>pip install .[tutorial,cuda]</em> and you&#8217;re ready to go! You can
-start the tutorial by typing &#8220;jupyter notebook&#8221; in the
-&#8220;kernel_tuner/tutorial&#8221; directory.</div>
+using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can
+start the tutorial by typing “jupyter notebook” in the
+“kernel_tuner/tutorial” directory.</div>
 <div class="section" id="Diffusion">
 <h2>Diffusion<a class="headerlink" href="#Diffusion" title="Permalink to this headline">¶</a></h2>
 <p>Put simply, diffusion is the redistribution of something from a region
@@ -394,7 +425,7 @@ problem. We assume that our 2D domain has <span class="math">\(nx\)</span> equi-
 points in the x-direction and <span class="math">\(ny\)</span> equi-distant grid points in the
 y-direction. Be sure to execute every cell as you read through this
 document, by selecting it and pressing <strong>shift+enter</strong>.</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [1]:
 </pre></div>
@@ -418,7 +449,7 @@ numerically approximate the derivative for a given point <span class="math">\(x_
 \end{equation*}</div><p>If we combine the above equations, we can obtain a numerical estimation
 for the temperature field of our metal sheet in the next time step,
 using <span class="math">\(\delta t\)</span> as the time between time steps. But before we do,
-we also simplify the expression a little bit, because we&#8217;ll assume that
+we also simplify the expression a little bit, because we’ll assume that
 <span class="math">\(\delta x\)</span> and <span class="math">\(\delta y\)</span> are always equal to 1.</p>
 <div class="math">
 \begin{equation*}
@@ -433,9 +464,9 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 <div class="section" id="Python-implementation">
 <h2>Python implementation<a class="headerlink" href="#Python-implementation" title="Permalink to this headline">¶</a></h2>
 <p>We can create a Python function that implements the numerical
-approximation defined in the above equation. For simplicity we&#8217;ll use
+approximation defined in the above equation. For simplicity we’ll use
 the assumption of a free boundary condition.</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [2]:
 </pre></div>
@@ -451,11 +482,11 @@ the assumption of a free boundary condition.</p>
 </div>
 <p>To give our Python function a test run, we will now do some imports and
 generate the input data for the initial conditions of our metal sheet
-with a few very hot points. We&#8217;ll also make two plots, one after a
+with a few very hot points. We’ll also make two plots, one after a
 thousand time steps, and a second plot after another two thousand time
 steps. Do note that the plots are using different ranges for the colors.
 Also, executing the following cell may take a little while.</p>
-<div class="nbinput container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [3]:
 </pre></div>
@@ -469,7 +500,7 @@ Also, executing the following cell may take a little while.</p>
 <span class="c1">#setup initial conditions</span>
 <span class="k">def</span> <span class="nf">get_initial_conditions</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">):</span>
     <span class="n">field</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">ny</span><span class="p">,</span> <span class="n">nx</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="n">field</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nx</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ny</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span><span class="n">e3</span>
+    <span class="n">field</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nx</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ny</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">1e3</span>
     <span class="k">return</span> <span class="n">field</span>
 <span class="n">field</span> <span class="o">=</span> <span class="n">get_initial_conditions</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
 
@@ -484,7 +515,7 @@ Also, executing the following cell may take a little while.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput container">
+<div class="nboutput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>Out[3]:
 </pre></div>
@@ -494,17 +525,17 @@ Also, executing the following cell may take a little while.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <img alt="_images/diffusion_7_1.png" src="_images/diffusion_7_1.png" />
 </div>
 </div>
-<p>Now let&#8217;s take a quick look at the execution time of our diffuse
+<p>Now let’s take a quick look at the execution time of our diffuse
 function. Before we do, we also copy the current state of the metal
 sheet to be able to restart the computation from this state.</p>
-<div class="nbinput container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [4]:
 </pre></div>
@@ -524,15 +555,15 @@ sheet to be able to restart the computation from this state.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput container">
-<div class="prompt empty container">
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <div class="highlight"><pre>
 1000 steps of diffuse took 4164.018869400024 ms
 </pre></div></div>
 </div>
-<div class="nboutput container">
+<div class="nboutput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>Out[4]:
 </pre></div>
@@ -542,10 +573,10 @@ sheet to be able to restart the computation from this state.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <img alt="_images/diffusion_9_2.png" src="_images/diffusion_9_2.png" />
 </div>
 </div>
@@ -555,13 +586,13 @@ sheet to be able to restart the computation from this state.</p>
 <p>The next step in this tutorial is to implement a GPU kernel that will
 allow us to run our problem on the GPU. We store the kernel code in a
 Python string, because we can directly compile and run the kernel from
-Python. In this tutorial, we&#8217;ll use the CUDA programming model to
+Python. In this tutorial, we’ll use the CUDA programming model to
 implement our kernels.</p>
 <blockquote>
-<div>If you prefer OpenCL over CUDA, don&#8217;t worry. Everything in this
+<div>If you prefer OpenCL over CUDA, don’t worry. Everything in this
 tutorial applies as much to OpenCL as it does to CUDA. But we will
 use CUDA for our examples, and CUDA terminology in the text.</div></blockquote>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [5]:
 </pre></div>
@@ -601,7 +632,7 @@ to allocate shared memory using the thread block dimensions.</p>
 <p>The next bit of Python code initializes PyCuda, and makes preparations
 so that we can call the CUDA kernel to do the computation on the GPU as
 we did earlier in Python.</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [6]:
 </pre></div>
@@ -634,12 +665,12 @@ we did earlier in Python.</p>
 </div>
 </div>
 <p>The above code is a bit of boilerplate we need to compile a kernel using
-PyCuda. We&#8217;ve also, for the moment, fixed the thread block dimensions at
+PyCuda. We’ve also, for the moment, fixed the thread block dimensions at
 16 by 16. These dimensions serve as our initial guess for what a good
 performing pair of thread block dimensions could look like.</p>
-<p>Now that we&#8217;ve setup everything, let&#8217;s see how long the computation
+<p>Now that we’ve setup everything, let’s see how long the computation
 would take using the GPU.</p>
-<div class="nbinput container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [7]:
 </pre></div>
@@ -670,15 +701,15 @@ would take using the GPU.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput container">
-<div class="prompt empty container">
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <div class="highlight"><pre>
 1000 steps of diffuse took 53.423038482666016 ms.
 </pre></div></div>
 </div>
-<div class="nboutput container">
+<div class="nboutput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>Out[7]:
 </pre></div>
@@ -688,17 +719,17 @@ would take using the GPU.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <img alt="_images/diffusion_15_2.png" src="_images/diffusion_15_2.png" />
 </div>
 </div>
 <p>That should already be a lot faster than our previous Python
 implementation, but we can do much better if we optimize our GPU kernel.
 And that is exactly what the rest of this tutorial is about!</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [8]:
 </pre></div>
@@ -710,21 +741,21 @@ And that is exactly what the rest of this tutorial is about!</p>
 </div>
 </div>
 <p>Also, if you think the Python boilerplate code to call a GPU kernel was
-a bit messy, we&#8217;ve got good news for you! From now on, we&#8217;ll only use
+a bit messy, we’ve got good news for you! From now on, we’ll only use
 the Kernel Tuner to compile and benchmark GPU kernels, which we can do
 with much cleaner Python code.</p>
 </div>
 <div class="section" id="Auto-Tuning-with-the-Kernel-Tuner">
 <h2>Auto-Tuning with the Kernel Tuner<a class="headerlink" href="#Auto-Tuning-with-the-Kernel-Tuner" title="Permalink to this headline">¶</a></h2>
-<p>Remember that previously we&#8217;ve set the thread block dimensions to 16 by
+<p>Remember that previously we’ve set the thread block dimensions to 16 by
 16. But how do we actually know if that is the best performing setting?
 That is where auto-tuning comes into play. Basically, it is very
 difficult to provide an answer through performance modeling and as such,
-we&#8217;d rather use the Kernel Tuner to compile and benchmark all possible
+we’d rather use the Kernel Tuner to compile and benchmark all possible
 kernel configurations.</p>
-<p>But before we continue, we&#8217;ll increase the problem size, because the GPU
+<p>But before we continue, we’ll increase the problem size, because the GPU
 is very likely underutilized.</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [9]:
 </pre></div>
@@ -740,13 +771,13 @@ is very likely underutilized.</p>
 <p>The above code block has generated new initial conditions and a new
 string that contains our CUDA kernel using our new domain size.</p>
 <p>To call the Kernel Tuner, we have to specify the tunable parameters, in
-our case <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>. For this purpose, we&#8217;ll
+our case <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>. For this purpose, we’ll
 create an ordered dictionary to store the tunable parameters. The keys
 will be the name of the tunable parameter, and the corresponding value
 is the list of possible values for the parameter. For the purpose of
-this tutorial, we&#8217;ll use a small number of commonly used values for the
+this tutorial, we’ll use a small number of commonly used values for the
 thread block dimensions, but feel free to try more!</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [10]:
 </pre></div>
@@ -768,7 +799,7 @@ to the kernel during tuning. The objects in the list should be Numpy
 arrays or scalars.</p>
 <p>Because you can specify the arguments as Numpy arrays, the Kernel Tuner
 will take care of allocating GPU memory and copying the data to the GPU.</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [11]:
 </pre></div>
@@ -778,13 +809,13 @@ will take care of allocating GPU memory and copying the data to the GPU.</p>
 </pre></div>
 </div>
 </div>
-<p>We&#8217;re almost ready to call the Kernel Tuner, we just need to set how
+<p>We’re almost ready to call the Kernel Tuner, we just need to set how
 large the problem is we are currently working on by setting a
 <code class="docutils literal"><span class="pre">problem_size</span></code>. The Kernel Tuner knows about thread block dimensions,
 which it expects to be called <code class="docutils literal"><span class="pre">block_size_x</span></code>, <code class="docutils literal"><span class="pre">block_size_y</span></code>, and/or
 <code class="docutils literal"><span class="pre">block_size_z</span></code>. From these and the <code class="docutils literal"><span class="pre">problem_size</span></code>, the Kernel Tuner
 will compute the appropiate grid dimensions on the fly.</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [12]:
 </pre></div>
@@ -794,9 +825,9 @@ will compute the appropiate grid dimensions on the fly.</p>
 </pre></div>
 </div>
 </div>
-<p>And that&#8217;s everything the Kernel Tuner needs to know to be able to start
-tuning our kernel. Let&#8217;s give it a try by executing the next code block!</p>
-<div class="nbinput container">
+<p>And that’s everything the Kernel Tuner needs to know to be able to start
+tuning our kernel. Let’s give it a try by executing the next code block!</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [13]:
 </pre></div>
@@ -807,10 +838,10 @@ tuning our kernel. Let&#8217;s give it a try by executing the next code block!</
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <div class="highlight"><pre>
 Using: GeForce GTX TITAN X
 diffuse_kernel
@@ -839,7 +870,7 @@ best performing configuration: block_size_x=32, block_size_y=2, time=0.727967989
 </pre></div></div>
 </div>
 <p>Note that the Kernel Tuner prints a lot of useful information. To ensure
-you&#8217;ll be able to tell what was measured in this run the Kernel Tuner
+you’ll be able to tell what was measured in this run the Kernel Tuner
 always prints the GPU or OpenCL Device name that is being used, as well
 as the name of the kernel. After that every line contains the
 combination of parameters and the time that was measured during
@@ -847,7 +878,7 @@ benchmarking. The time that is being printed is in milliseconds and is
 obtained by averaging the execution time of 7 runs of the kernel.
 Finally, as a matter of convenience, the Kernel Tuner also prints the
 best performing combination of tunable parameters. However, later on in
-this tutorial we&#8217;ll explain how to analyze and store the tuning results
+this tutorial we’ll explain how to analyze and store the tuning results
 using Python.</p>
 <p>Looking at the results printed above, the difference in performance
 between the different kernel configurations may seem very little.
@@ -865,12 +896,12 @@ GPU. The Kernel Tuner checks the limitations of your GPU at runtime and
 automatically skips over configurations that use too many threads per
 block. It will also do this for kernels that cannot be compiled because
 they use too much shared memory. And likewise for kernels that use too
-many registers to be launched at runtime. If you&#8217;d like to know about
+many registers to be launched at runtime. If you’d like to know about
 which configurations were skipped automatically you can pass the
 optional parameter <code class="docutils literal"><span class="pre">verbose=True</span></code> to <code class="docutils literal"><span class="pre">tune_kernel</span></code>.</p>
 <p>However, knowing the best performing combination of tunable parameters
 becomes even more important when we start to further optimize our CUDA
-kernel. In the next section, we&#8217;ll add a simple code optimization and
+kernel. In the next section, we’ll add a simple code optimization and
 show how this affects performance.</p>
 </div>
 <div class="section" id="Using-Shared-Memory">
@@ -879,7 +910,7 @@ show how this affects performance.</p>
 memory can be used by threads within the same thread block to exchange
 and share values. It is in fact, one of the very few ways for threads to
 communicate on the GPU.</p>
-<p>The idea is that we&#8217;ll try improve the performance of our kernel by
+<p>The idea is that we’ll try improve the performance of our kernel by
 using shared memory as a software controlled cache. There are already
 caches on the GPU, but most GPUs only cache accesses to global memory in
 L2. Shared memory is closer to the multiprocessors where the thread
@@ -891,7 +922,7 @@ rather than a hardware implemented cache, comes at the cost of some
 instruction overhead. In fact, performance is quite likely to degrade a
 little. However, this intermediate step is necessary for the next
 optimization step we have in mind.</p>
-<div class="nbinput container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [14]:
 </pre></div>
@@ -939,10 +970,10 @@ optimization step we have in mind.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <div class="highlight"><pre>
 Using: GeForce GTX TITAN X
 diffuse_kernel
@@ -992,7 +1023,7 @@ memory.</p>
 two new tunable parameters, namely the tiling factor in x and y, which
 we will call <code class="docutils literal"><span class="pre">tile_size_x</span></code> and <code class="docutils literal"><span class="pre">tile_size_y</span></code>. This is what the new
 kernel looks like:</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [15]:
 </pre></div>
@@ -1051,7 +1082,7 @@ kernel looks like:</p>
 our dictionary <code class="docutils literal"><span class="pre">tune_params</span></code>.</p>
 <p>We also need to somehow tell the Kernel Tuner to use fewer thread blocks
 to launch kernels with <code class="docutils literal"><span class="pre">tile_size_x</span></code> or <code class="docutils literal"><span class="pre">tile_size_y</span></code> larger than
-one. For this purpose the Kernel Tuner&#8217;s <code class="docutils literal"><span class="pre">tune_kernel</span></code> function
+one. For this purpose the Kernel Tuner’s <code class="docutils literal"><span class="pre">tune_kernel</span></code> function
 supports two optional arguments, called grid_div_x and grid_div_y.
 These are the grid divisor lists, which are lists of strings containing
 all the tunable parameters that divide a certain grid dimension. So far,
@@ -1065,10 +1096,10 @@ even use arithmetic operations, inside these strings as they will be
 evaluated. As such, we could have used <code class="docutils literal"><span class="pre">[&quot;block_size_x*tile_size_x&quot;]</span></code>
 to get the same result.</p>
 <p>We are now ready to call the Kernel Tuner again and tune our tiled
-kernel. Let&#8217;s execute the following code block, note that it may take a
+kernel. Let’s execute the following code block, note that it may take a
 while as the number of kernel configurations that the Kernel Tuner will
 try has just been increased with a factor of 9!</p>
-<div class="nbinput container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [16]:
 </pre></div>
@@ -1083,10 +1114,10 @@ try has just been increased with a factor of 9!</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <div class="highlight"><pre>
 Using: GeForce GTX TITAN X
 diffuse_kernel
@@ -1285,7 +1316,7 @@ our GTX Titan X, the execution time went from 0.72 ms to 0.53 ms, a
 performance improvement of 26%!</p>
 <p>Note that the thread block dimensions for this kernel configuration are
 also different. Without optimizations the best performing kernel used a
-thread block of 32x2, after we&#8217;ve added tiling the best performing
+thread block of 32x2, after we’ve added tiling the best performing
 kernel uses thread blocks of size 64x4, which is four times as many
 threads! Also the amount of work increased with tiling factors 2 in the
 x-direction and 4 in the y-direction, increasing the amount of work per
@@ -1294,23 +1325,23 @@ thread block between the naive and the tiled kernel is a factor 32.</p>
 <p>However, there are actually several kernel configurations that come
 close. The following Python code prints all instances with an execution
 time within 5% of the best performing configuration.</p>
-<div class="nbinput container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3"><div class="highlight"><pre>
-<span></span><span class="n">best_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+<span></span><span class="n">best_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
     <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best_time</span><span class="o">*</span><span class="mf">1.05</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">i</span><span class="o">.</span><span class="n">items</span><span class="p">()]))</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast container">
-<div class="prompt empty container">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area container">
+<div class="output_area docutils container">
 <div class="highlight"><pre>
 block_size_x=16, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.554745602608,
 block_size_x=32, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.563417613506,
@@ -1329,20 +1360,20 @@ block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540383994
 </div>
 <div class="section" id="Storing-the-results">
 <h2>Storing the results<a class="headerlink" href="#Storing-the-results" title="Permalink to this headline">¶</a></h2>
-<p>While it&#8217;s nice that the Kernel Tuner prints the tuning results to
-stdout, it&#8217;s not that great if we&#8217;d have to parse what is printed to get
+<p>While it’s nice that the Kernel Tuner prints the tuning results to
+stdout, it’s not that great if we’d have to parse what is printed to get
 the results. That is why the <code class="docutils literal"><span class="pre">tune_kernel()</span></code> returns a data structure
-that holds all the results. We&#8217;ve actually already used this data in the
+that holds all the results. We’ve actually already used this data in the
 above bit of Python code.</p>
 <p><code class="docutils literal"><span class="pre">tune_kernel</span></code> returns a list of dictionaries, where each benchmarked
 kernel is represented by a dictionary containing the tunable parameters
 for that particular kernel configuration and one more entry called
-&#8216;time&#8217;. The list of dictionaries format is very flexible and can easily
+‘time’. The list of dictionaries format is very flexible and can easily
 be converted other formats that are easy to parse formats, like json or
 csv, for further analysis.</p>
 <p>You can execute the following code block to store the tuning results to
 both a json and a csv file (if you have Pandas installed).</p>
-<div class="nbinput nblast container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none"><div class="highlight"><pre>
 <span></span>In [18]:
 </pre></div>
@@ -1351,11 +1382,11 @@ both a json and a csv file (if you have Pandas installed).</p>
 <span></span><span class="c1">#store output as json</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;tutorial.json&quot;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
-    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
+    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fp</span><span class="p">)</span>
 
 <span class="c1">#store output as csv</span>
 <span class="kn">from</span> <span class="nn">pandas</span> <span class="k">import</span> <span class="n">DataFrame</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;tutorial.csv&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1365,15 +1396,18 @@ both a json and a csv file (if you have Pandas installed).</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="examples.html" class="btn btn-neutral float-right" title="Kernel Tuner Examples" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Kernel Tuner Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="convolution.html" class="btn btn-neutral" title="Getting Started" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="convolution.html" class="btn btn-neutral" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1407,13 +1441,14 @@ both a json and a csv file (if you have Pandas installed).</p>
             VERSION:'0.1.7',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

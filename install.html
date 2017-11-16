@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#python">Python</a></li>
@@ -116,8 +122,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Kernel Tuner</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
       </nav>
 
 
@@ -126,23 +134,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Installation Guide</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Installation Guide</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/install.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/install.rst" class="fa fa-github"> Edit on GitHub</a>
+            
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -206,7 +233,7 @@ is developed to be fully compatible with Python 3.5 and newer, and also Python 2
 <p>Note that when you are using a native Python installation, the <cite>pip</cite> command used
 Kernel Tuner and its dependencies probably require <cite>sudo</cite> rights.</p>
 <p>Sudo rights are typically not required when using Miniconda or virtual environments.
-You could also use the <cite>&#8211;user</cite> option of <cite>pip</cite> to install into your home directory,
+You could also use the <cite>–user</cite> option of <cite>pip</cite> to install into your home directory,
 this requires that your home directory is on your <cite>$PYTHONPATH</cite> environment variable.</p>
 <p>The following command will install Kernel Tuner together with the required dependencies:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner
@@ -221,12 +248,12 @@ Tuner for tuning OpenCL or C kernels.</p>
 <p>If you want to use the Kernel Tuner to tune
 CUDA kernels you will first need to install the CUDA toolkit
 (<a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">https://developer.nvidia.com/cuda-toolkit</a>).</p>
-<p>It&#8217;s very important that you install the CUDA toolkit before trying to install PyCuda.</p>
+<p>It’s very important that you install the CUDA toolkit before trying to install PyCuda.</p>
 <p>You can install PyCuda manually using:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install pycuda
 </pre></div>
 </div>
-<p>Or you could install Kernel Tuner and PyCUDA together if you haven&#8217;t done so already:</p>
+<p>Or you could install Kernel Tuner and PyCUDA together if you haven’t done so already:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>cuda<span class="o">]</span>
 </pre></div>
 </div>
@@ -239,7 +266,7 @@ from an installation that is failing.</p>
 </div>
 <div class="section" id="opencl-and-pyopencl">
 <h2>OpenCL and PyOpenCL<a class="headerlink" href="#opencl-and-pyopencl" title="Permalink to this headline">¶</a></h2>
-<p>Before we can install PyOpenCL you&#8217;ll need an OpenCL compiler. There are several
+<p>Before we can install PyOpenCL you’ll need an OpenCL compiler. There are several
 OpenCL compilers available depending on the OpenCL platform you want to your
 code to run on.</p>
 <ul class="simple">
@@ -250,11 +277,11 @@ code to run on.</p>
 <li><a class="reference external" href="https://www.freedesktop.org/wiki/Software/Beignet/">Beignet</a></li>
 </ul>
 <p>You can also look at this <a class="reference external" href="https://wiki.tiker.net/OpenCLHowTo">OpenCL Installation Guide</a> for PyOpenCL.</p>
-<p>After you&#8217;ve installed your OpenCL compiler of choice you can install PyOpenCL using:</p>
+<p>After you’ve installed your OpenCL compiler of choice you can install PyOpenCL using:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install pyopencl
 </pre></div>
 </div>
-<p>Or you could install Kernel Tuner and PyOpenCL together if you haven&#8217;t done so already:</p>
+<p>Or you could install Kernel Tuner and PyOpenCL together if you haven’t done so already:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>opencl<span class="o">]</span>
 </pre></div>
 </div>
@@ -270,15 +297,13 @@ pip install .
 </pre></div>
 </div>
 <p>You can install Kernel Tuner with several optional dependencies, the full list is:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li><cite>cuda</cite>: install pycuda along with kernel_tuner</li>
 <li><cite>opencl</cite>: install pycuda along with kernel_tuner</li>
 <li><cite>doc</cite>: installs packages required to build the documentation</li>
 <li><cite>tutorial</cite>: install packages required to run the tutorials</li>
 <li><cite>dev</cite>: install everything you need to start development on Kernel Tuner</li>
 </ul>
-</div></blockquote>
 <p>For example, use:
 <code class="docutils literal"><span class="pre">`</span>
 <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.[dev,cuda,opencl]</span>
@@ -303,15 +328,18 @@ you could use:</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="convolution.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="convolution.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="The Kernel Tuner documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral" title="The Kernel Tuner documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -345,13 +373,14 @@ you could use:</p>
             VERSION:'0.1.7',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

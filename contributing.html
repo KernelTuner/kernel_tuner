@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -43,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -83,7 +86,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
@@ -112,8 +118,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Kernel Tuner</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
       </nav>
 
 
@@ -122,23 +130,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Contribution guide</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Contribution guide</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/contributing.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/contributing.rst" class="fa fa-github"> Edit on GitHub</a>
+            
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -200,21 +227,17 @@ have look at the <a class="reference external" href="http://benvanwerkhoven.gith
 <div class="section" id="development-setup">
 <h2>Development setup<a class="headerlink" href="#development-setup" title="Permalink to this headline">¶</a></h2>
 <p>You can install the packages required to run the tests using:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install .<span class="o">[</span>dev<span class="o">]</span>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install -e .<span class="o">[</span>dev<span class="o">]</span>
 </pre></div>
 </div>
 <p>After this command you should be able to run the tests and build the documentation.
-See below on how to do that.</p>
+See below on how to do that. The <code class="docutils literal"><span class="pre">-e</span></code> flag installs the package in <em>development mode</em>.
+This means files are not copied, but linked to, such that your installation tracks
+changes in the source files.</p>
 </div>
 <div class="section" id="running-tests">
 <h2>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this headline">¶</a></h2>
-<p>To run the tests you can use <code class="docutils literal"><span class="pre">pytest</span> <span class="pre">-v</span></code> in the top-level directory. Note that
-pytest tests against the installed package. To update the installed package
-after you&#8217;ve made changes use:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install --upgrade .
-pytest -v
-</pre></div>
-</div>
+<p>To run the tests you can use <code class="docutils literal"><span class="pre">pytest</span> <span class="pre">-v</span></code> in the top-level directory.</p>
 <p>Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
 are not installed/present. The same holds for tests that require PyOpenCL.</p>
 <p>Contributions you make to the Kernel Tuner should not break any of the tests
@@ -238,13 +261,16 @@ documentation.</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="design.html" class="btn btn-neutral" title="Design documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="design.html" class="btn btn-neutral" title="Design documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -278,13 +304,14 @@ documentation.</p>
             VERSION:'0.1.7',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

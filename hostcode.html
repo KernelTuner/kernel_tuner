@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
@@ -111,8 +117,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Kernel Tuner</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
       </nav>
 
 
@@ -121,23 +129,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Tuning Host Code</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Tuning Host Code</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/hostcode.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/hostcode.rst" class="fa fa-github"> Edit on GitHub</a>
+            
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -186,13 +213,13 @@ host and device into your tuning setup, or tune for different methods of moving 
 <dl class="docutils">
 <dt>There are few differences with tuning just a single CUDA or OpenCL kernel, to list them:</dt>
 <dd><ul class="first last simple">
-<li>You have to specify the lang=&#8221;C&#8221; option</li>
+<li>You have to specify the lang=”C” option</li>
 <li>The C function should return a <code class="docutils literal"><span class="pre">float</span></code></li>
 <li>You have to do your own timing and error handling in C</li>
 </ul>
 </dd>
 </dl>
-<p>You have to specify the language as &#8220;C&#8221; because the Kernel Tuner will be calling a host function. This means that the Kernel
+<p>You have to specify the language as “C” because the Kernel Tuner will be calling a host function. This means that the Kernel
 Tuner will have to interface with C and in fact uses a different backend. This also means you can use this way of tuning
 without having PyCuda installed, because the C functions interface calls the CUDA compiler directly.</p>
 <p>The C function should return a float, this is the convention used by the Kernel Tuner. The returned float is also the number
@@ -248,10 +275,10 @@ transfer in stream <cite>n-1</cite> has finished.</p>
 <dt>In fact, the only differences with the simple convolution example are:</dt>
 <dd><ul class="first last simple">
 <li>The source file also contains host code</li>
-<li>&#8220;num_streams&#8221; is added to the tuning parameters</li>
-<li>&#8220;num_streams&#8221; is added to the &#8220;grid_div_y&#8221; list</li>
-<li>The kernel_name &#8220;convolution_streams&#8221; is a C function</li>
-<li>lang=&#8221;C&#8221; is used to tell this is a C function</li>
+<li>“num_streams” is added to the tuning parameters</li>
+<li>“num_streams” is added to the “grid_div_y” list</li>
+<li>The kernel_name “convolution_streams” is a C function</li>
+<li>lang=”C” is used to tell this is a C function</li>
 <li><code class="docutils literal"><span class="pre">filter</span></code> is not passed as a constant memory argument</li>
 </ul>
 </dd>
@@ -260,26 +287,29 @@ transfer in stream <cite>n-1</cite> has finished.</p>
 <p>The function that we are tuning is a C function that launches the CUDA kernel by itself, yet we supply the grid_div_x and
 grid_div_y lists. We are, however, not required to do so. The C function could just compute the grid dimensions in whatever way it sees fit. Using grid_div_y
 and grid_div_x at this point is matter of choice. To support this convenience, the values grid_size_x and grid_size_y are inserted by the Kernel Tuner into the
-compiled C code. This way, you don&#8217;t have to compute the grid size in C, you can just use the grid dimensions as computed by the Kernel Tuner.</p>
+compiled C code. This way, you don’t have to compute the grid size in C, you can just use the grid dimensions as computed by the Kernel Tuner.</p>
 <p>The filter is not passed separately as a constant memory argument, because the CudaMemcpyToSymbol operation is now performed by the C host function. Also,
 because the code is compiled differently, we have no direct reference to the compiled module that is uploaded to the device and therefore we can not perform this
 operation directly from Python. If you are tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code,
-that&#8217;s the purpose of host code after all. That is also why you have to do the timing yourself in C, as you may not want to include the time spent on memory
+that’s the purpose of host code after all. That is also why you have to do the timing yourself in C, as you may not want to include the time spent on memory
 allocations and other setup into your time measurements.</p>
 </div>
 </div>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="user-api.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="user-api.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="correctness.html" class="btn btn-neutral" title="Kernel Correctness Verification" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="correctness.html" class="btn btn-neutral" title="Kernel Correctness Verification" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -313,13 +343,14 @@ allocations and other setup into your time measurements.</p>
             VERSION:'0.1.7',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

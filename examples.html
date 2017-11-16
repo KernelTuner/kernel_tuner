@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -44,6 +46,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -84,7 +87,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
@@ -125,8 +131,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Kernel Tuner</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
       </nav>
 
 
@@ -135,23 +143,42 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Kernel Tuner Examples</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Kernel Tuner Examples</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
-            <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/examples.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/examples.rst" class="fa fa-github"> Edit on GitHub</a>
+            
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -199,7 +226,7 @@
 CUDA, OpenCL, or C kernel.</p>
 <p>Except for <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/test_vector_add.py">test_vector_add.py</a> which
 shows how to use run_kernel to implement a test that you can run with
-nosetests or pytest to test your CUDA or OpenCL kernels from Python.</p>
+pytest to test your CUDA or OpenCL kernels from Python.</p>
 <p>Below we list the example applications and the features they illustrate.</p>
 <div class="section" id="vector-add">
 <h2>Vector Add<a class="headerlink" href="#vector-add" title="Permalink to this headline">¶</a></h2>
@@ -281,7 +308,7 @@ kernel [<a class="reference external" href="https://github.com/benvanwerkhoven/k
 <li>allocate page-locked host memory from Python</li>
 <li>overlap transfers to and from the GPU with computation</li>
 <li>tune parameters in the host code in combination with those in the kernel</li>
-<li>use the lang=&#8221;C&#8221; option and set compiler options</li>
+<li>use the lang=”C” option and set compiler options</li>
 <li>pass a list of filenames instead of strings with kernel code</li>
 </ul>
 </dd>
@@ -350,15 +377,18 @@ kernel [<a class="reference external" href="https://github.com/benvanwerkhoven/k
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="matrix.html" class="btn btn-neutral float-right" title="Matrix Multiply Example" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="matrix.html" class="btn btn-neutral float-right" title="Matrix Multiply Example" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="diffusion.html" class="btn btn-neutral" title="Tutorial: From physics to tuned GPU kernels" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="diffusion.html" class="btn btn-neutral" title="Tutorial: From physics to tuned GPU kernels" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -392,13 +422,14 @@ kernel [<a class="reference external" href="https://github.com/benvanwerkhoven/k
             VERSION:'0.1.7',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
