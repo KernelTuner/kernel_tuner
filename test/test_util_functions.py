@@ -215,13 +215,14 @@ def test_get_device_interface3():
         core.DeviceInterface("", 0, 0, lang=lang)
 
 def test_check_argument_list1():
+    kernel_name = "test_kernel"
     kernel_string = """__kernel void test_kernel(int number, char * message, int * numbers) {
     numbers[get_global_id(0)] = numbers[get_global_id(0)] * number;
     }
     """
     args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
     try:
-        check_argument_list(kernel_string, args)
+        check_argument_list(kernel_name, kernel_string, args)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as e:
@@ -232,23 +233,26 @@ def test_check_argument_list1():
         assert False
 
 def test_check_argument_list2():
-    kernel_string = """__kernel void test_kernel(char number, double factors, int * numbers, const unsigned long * moreNumbers) {
+    kernel_name = "test_kernel"
+    kernel_string = """__kernel void test_kernel
+        (char number, double factors, int * numbers, const unsigned long * moreNumbers) {
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
     args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
-    check_argument_list(kernel_string, args)
+    check_argument_list(kernel_name, kernel_string, args)
     #test that no exception is raised
     assert True
 
 def test_check_argument_list3():
-    kernel_string = """__kernel void test_kernel(__global const ushort number, __global half * factors, __global long * numbers) {
+    kernel_name = "test_kernel"
+    kernel_string = """__kernel void test_kernel (__global const ushort number, __global half * factors, __global long * numbers) {
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
     args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32([300])]
     try:
-        check_argument_list(kernel_string, args)
+        check_argument_list(kernel_name, kernel_string, args)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as expected_error:
@@ -259,13 +263,14 @@ def test_check_argument_list3():
         assert False
 
 def test_check_argument_list4():
+    kernel_name = "test_kernel"
     kernel_string = """__kernel void test_kernel(__global const ushort number, __global half * factors, __global long * numbers) {
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
     args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int64([300]), numpy.ubyte(32)]
     try:
-        check_argument_list(kernel_string, args)
+        check_argument_list(kernel_name, kernel_string, args)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as expected_error:
@@ -274,6 +279,66 @@ def test_check_argument_list4():
     except Exception:
         print("Expected a TypeError to be raised")
         assert False
+
+def test_check_argument_list5():
+    kernel_name = "my_test_kernel"
+    kernel_string = """ //more complicated test function(because I can)
+
+        __device__ float some_lame_device_function(float *a) {
+            return a[0];
+        }
+
+        __global__ void my_test_kernel(double *a,
+                                       float *b, int c,
+                                       int d) {
+
+            a[threadIdx.x] = b[blockIdx.x]*c*d;
+        }
+        """
+    args = [numpy.array([1,2,3]).astype(numpy.float64),
+            numpy.array([1,2,3]).astype(numpy.float32),
+            numpy.int32(6), numpy.int32(7)]
+
+    try:
+        check_argument_list(kernel_name, kernel_string, args)
+
+    except TypeError as expected_error:
+        print("Expected no TypeError to be raised")
+        assert False
+
+def test_check_argument_list6():
+    kernel_name = "test_kernel"
+    kernel_string = """// This is where we define test_kernel
+        #define SUM(A, B) (A + B)
+        __kernel void test_kernel
+        (char number, double factors, int * numbers, const unsigned long * moreNumbers) {
+        numbers[get_global_id(0)] = SUM(numbers[get_global_id(0)] * factors[get_global_id(0)], number);
+        }
+        // /test_kernel
+        """
+    args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
+    check_argument_list(kernel_name, kernel_string, args)
+    #test that no exception is raised
+    assert True
+
+def test_check_argument_list7():
+    kernel_name = "test_kernel"
+    kernel_string = """#define SUM(A, B) (A + B)
+        // In this file we define test_kernel
+        __kernel void another_kernel (char number, double factors, int * numbers, const unsigned long * moreNumbers) 
+        __kernel void test_kernel
+        (double number, double factors, int * numbers, const unsigned long * moreNumbers) {
+        numbers[get_global_id(0)] = SUM(numbers[get_global_id(0)] * factors[get_global_id(0)], number);
+        }
+        // /test_kernel
+        """
+    args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
+    try:
+        check_argument_list(kernel_name, kernel_string, args)
+        print("Expected a TypeError to be raised.")
+        assert False
+    except TypeError as expected_error:
+        assert True
 
 def test_check_tune_params_list():
     tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
