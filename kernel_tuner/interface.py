@@ -381,12 +381,13 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
     #finished iterating over search space
-    if results:     #checks if results is not empty
-        best_config = min(results, key=lambda x: x['time'])
-        units = getattr(runner, "units", None)
-        print("best performing configuration:", util.get_config_string(best_config, units=units))
-    else:
-        print("no results to report")
+    if not device_options.quiet:
+        if results:     #checks if results is not empty
+            best_config = min(results, key=lambda x: x['time'])
+            units = getattr(runner, "units", None)
+            print("best performing configuration:", util.get_config_string(best_config, units=units))
+        else:
+            print("no results to report")
 
     del runner.dev
 
