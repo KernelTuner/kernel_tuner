@@ -5,9 +5,12 @@ from collections import OrderedDict
 
 import numpy
 
-from noodles import schedule_hint, gather, lift
-from noodles.run.runners import run_parallel_with_display, run_parallel
-from noodles.display import NCDisplay
+try:
+    from noodles import schedule_hint, gather, lift
+    from noodles.run.runners import run_parallel_with_display, run_parallel
+    from noodles.display import NCDisplay
+except ImportError:
+    schedule_hint, gather, lift, run_parallel_with_display, run_parallel, NCDisplay = None, None, None, None, None, None
 
 from kernel_tuner.core import DeviceInterface
 

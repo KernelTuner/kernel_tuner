@@ -38,7 +38,7 @@ setup(
         'scipy>=0.18.1'],
     extras_require={
         'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx',
-                'noodles', 'ipython'],
+                'ipython'],
         'cuda': ['pycuda'],
         'opencl': ['pyopencl'],
         'cuda_opencl': ['pycuda', 'pyopencl'],
