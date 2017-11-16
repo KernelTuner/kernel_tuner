@@ -383,7 +383,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #finished iterating over search space
     if results:     #checks if results is not empty
         best_config = min(results, key=lambda x: x['time'])
-        print("best performing configuration:", util.get_config_string(best_config))
+        units = getattr(runner, "units", None)
+        print("best performing configuration:", util.get_config_string(best_config, units=units))
     else:
         print("no results to report")
 

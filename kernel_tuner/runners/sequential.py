@@ -28,6 +28,7 @@ class SequentialRunner(object):
 
         #detect language and create high-level device interface
         self.dev = DeviceInterface(kernel_options.kernel_string, iterations=iterations, **device_options)
+        self.units = self.dev.units
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -68,7 +69,7 @@ class SequentialRunner(object):
 
             #print and append to results
             params['time'] = time
-            output_string = get_config_string(params)
+            output_string = get_config_string(params, self.units)
             logging.debug(output_string)
             print(output_string)
             results.append(params)
