@@ -231,10 +231,12 @@ is developed to be fully compatible with Python 3.5 and newer, and also Python 2
 <div class="section" id="installing-python-packages">
 <h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Permalink to this headline">¶</a></h2>
 <p>Note that when you are using a native Python installation, the <cite>pip</cite> command used
-Kernel Tuner and its dependencies probably require <cite>sudo</cite> rights.</p>
+Kernel Tuner and its dependencies require <cite>sudo</cite> rights for system wide installation.</p>
 <p>Sudo rights are typically not required when using Miniconda or virtual environments.
-You could also use the <cite>–user</cite> option of <cite>pip</cite> to install into your home directory,
-this requires that your home directory is on your <cite>$PYTHONPATH</cite> environment variable.</p>
+You could also use e.g. the <cite>–user</cite> or <cite>–prefix</cite> option of <cite>pip</cite> to install into
+your home directory,
+this requires that your home directory is on your <cite>$PYTHONPATH</cite> environment variable
+(see for further details the pip documentation).</p>
 <p>The following command will install Kernel Tuner together with the required dependencies:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner
 </pre></div>
@@ -247,7 +249,10 @@ this requires that your home directory is on your <cite>$PYTHONPATH</cite> envir
 Tuner for tuning OpenCL or C kernels.</p>
 <p>If you want to use the Kernel Tuner to tune
 CUDA kernels you will first need to install the CUDA toolkit
-(<a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">https://developer.nvidia.com/cuda-toolkit</a>).</p>
+(<a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">https://developer.nvidia.com/cuda-toolkit</a>). A recent version of the
+CUDA toolkit (and the PyCUDA Python bindings for CUDA) are
+recommended (older version may work, but may not support all features of
+the Kernel Tuner).</p>
 <p>It’s very important that you install the CUDA toolkit before trying to install PyCuda.</p>
 <p>You can install PyCuda manually using:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install pycuda
@@ -277,6 +282,8 @@ code to run on.</p>
 <li><a class="reference external" href="https://www.freedesktop.org/wiki/Software/Beignet/">Beignet</a></li>
 </ul>
 <p>You can also look at this <a class="reference external" href="https://wiki.tiker.net/OpenCLHowTo">OpenCL Installation Guide</a> for PyOpenCL.</p>
+<p>As with the CUDA toolkit, recent versions of one or more of the above OpenCL SDK’s and
+PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
 <p>After you’ve installed your OpenCL compiler of choice you can install PyOpenCL using:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install pyopencl
 </pre></div>
