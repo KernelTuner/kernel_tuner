@@ -26,11 +26,13 @@ Installing Python Packages
 --------------------------
 
 Note that when you are using a native Python installation, the `pip` command used 
-Kernel Tuner and its dependencies probably require `sudo` rights. 
+Kernel Tuner and its dependencies require `sudo` rights for system wide installation. 
 
 Sudo rights are typically not required when using Miniconda or virtual environments.
-You could also use the `--user` option of `pip` to install into your home directory,
-this requires that your home directory is on your `$PYTHONPATH` environment variable.
+You could also use e.g. the `--user` or `--prefix` option of `pip` to install into 
+your home directory,
+this requires that your home directory is on your `$PYTHONPATH` environment variable
+(see for further details the pip documentation).
 
 The following command will install Kernel Tuner together with the required dependencies:
 
@@ -44,11 +46,14 @@ CUDA and PyCUDA
 ---------------
 
 Installing CUDA and PyCUDA is optional, because you may want to only use Kernel 
-Tuner for tuning OpenCL or C kernels.
+Tuner for tuning OpenCL or C kernels. 
 
 If you want to use the Kernel Tuner to tune 
 CUDA kernels you will first need to install the CUDA toolkit 
-(https://developer.nvidia.com/cuda-toolkit).
+(https://developer.nvidia.com/cuda-toolkit). A recent version of the 
+CUDA toolkit (and the PyCUDA Python bindings for CUDA) are 
+recommended (older version may work, but may not support all features of 
+the Kernel Tuner). 
 
 It's very important that you install the CUDA toolkit before trying to install PyCuda.
 
@@ -88,6 +93,9 @@ code to run on.
 * `Beignet <https://www.freedesktop.org/wiki/Software/Beignet/>`__
 
 You can also look at this `OpenCL Installation Guide <https://wiki.tiker.net/OpenCLHowTo>`__ for PyOpenCL.
+
+As with the CUDA toolkit, recent versions of one or more of the above OpenCL SDK's and 
+PyOpenCL are recommended to support all features of the Kernel Tuner.
 
 After you've installed your OpenCL compiler of choice you can install PyOpenCL using:
 
