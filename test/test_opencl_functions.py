@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from .context import skip_if_no_opencl
 
 from kernel_tuner import opencl
@@ -7,13 +7,14 @@ try:
 except Exception:
     pass
 
+
 @skip_if_no_opencl
 def test_ready_argument_list():
 
     size = 1000
-    a = numpy.int32(75)
-    b = numpy.random.randn(size).astype(numpy.float32)
-    c = numpy.zeros_like(b)
+    a = np.int32(75)
+    b = np.random.randn(size).astype(np.float32)
+    c = np.zeros_like(b)
 
     arguments = [c, a, b]
 
@@ -21,11 +22,12 @@ def test_ready_argument_list():
     gpu_args = dev.ready_argument_list(arguments)
 
     assert isinstance(gpu_args[0], pyopencl.Buffer)
-    assert isinstance(gpu_args[1], numpy.int32)
+    assert isinstance(gpu_args[1], np.int32)
     assert isinstance(gpu_args[2], pyopencl.Buffer)
 
     gpu_args[0].release()
     gpu_args[2].release()
+
 
 @skip_if_no_opencl
 def test_compile():
@@ -46,27 +48,34 @@ def test_compile():
 
     assert isinstance(func, pyopencl.Kernel)
 
-@skip_if_no_opencl
-def test_benchmark():
+
+def fun_test(queue, a, b, block=0, grid=0):
+    profile = type('profile', (object,), {'end': 0.1, 'start': 0})
+    return type(
+        'Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
+
+
+def create_benchmark_args():
     dev = opencl.OpenCLFunctions(0)
     args = [1, 2]
-    def test_func(queue, a, b, block=0, grid=0):
-        profile = type('profile', (object,), {'end': 0.1, 'start': 0})
-        return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
+    times = tuple(range(1, 4))
 
-    time = dev.benchmark(test_func, args, (1,2,3), (1,2,3), False)
+    return dev, args, times
+
+
+@skip_if_no_opencl
+def test_benchmark():
+    dev, args, times = create_benchmark_args()
+    time = dev.benchmark(fun_test, args, times, times, False)
     assert time > 0
+
 
 @skip_if_no_opencl
 def test_benchmark_times():
-    dev = opencl.OpenCLFunctions(0)
-    args = [1, 2]
-    def test_func(queue, a, b, block=0, grid=0):
-        profile = type('profile', (object,), {'end': 0.1, 'start': 0})
-        return type('Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
-
-    time = dev.benchmark(test_func, args, (1,2,3), (1,2,3), True)
+    dev, args, times = create_benchmark_args()
+    time = dev.benchmark(fun_test, args, times, times, True)
     assert len(time) == 7
+
 
 @skip_if_no_opencl
 def test_run_kernel():
@@ -75,8 +84,7 @@ def test_run_kernel():
     grid = (4, 5, 1)
 
     def test_func(queue, global_size, local_size, arg):
-        assert all(global_size == numpy.array([4, 10, 3]))
+        assert all(global_size == np.array([4, 10, 3]))
         return type('Event', (object,), {'wait': lambda self: 0})()
     dev = opencl.OpenCLFunctions(0)
     dev.run_kernel(test_func, [0], threads, grid)
-

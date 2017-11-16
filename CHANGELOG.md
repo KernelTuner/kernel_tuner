@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - bugfix for when using iterations smaller than 3
 - the install procedure now uses extras, e.g. [cuda,opencl]
+- option quiet makes tune_kernel completely quiet
+
+### Added
+- checking correct types on argument list and answers
 
 ## [0.1.7] - 2017-10-11
 ### Changed
