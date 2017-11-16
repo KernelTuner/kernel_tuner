@@ -60,6 +60,7 @@ class DeviceInterface(object):
             raise Exception("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
         self.lang = lang
         self.dev = dev
+        self.units = dev.units
         self.name = dev.name
         if not quiet:
             print("Using: " + self.dev.name)

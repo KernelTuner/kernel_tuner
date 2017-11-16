@@ -124,7 +124,7 @@ def test_sequential_runner_not_matching_answer1():
 
     try:
         result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, args[-1], args, tune_params,
-                                         method="diff_evo", verbose=True, answer=answer)
+                                         verbose=True, answer=answer)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as expected_error:
@@ -148,7 +148,7 @@ def test_sequential_runner_not_matching_answer2():
 
     try:
         result, _ = kernel_tuner.tune_kernel("vector_add", kernel_string, args[-1], args, tune_params,
-                                         method="diff_evo", verbose=True, answer=answer)
+                                         verbose=True, answer=answer)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as expected_error:
