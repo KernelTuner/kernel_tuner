@@ -554,39 +554,6 @@ about the hardware/software environment on which the tuning took place.</p>
 </div>
 <div class="section" id="kernel-tuner-runners-noodles-noodlesrunner">
 <h3>kernel_tuner.runners.noodles.NoodlesRunner<a class="headerlink" href="#kernel-tuner-runners-noodles-noodlesrunner" title="Permalink to this headline">¶</a></h3>
-<dl class="class">
-<dt id="kernel_tuner.runners.noodles.NoodlesRunner">
-<em class="property">class </em><code class="descclassname">kernel_tuner.runners.noodles.</code><code class="descname">NoodlesRunner</code><span class="sig-paren">(</span><em>device_options</em>, <em>max_threads=1</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.noodles.NoodlesRunner" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="kernel_tuner.runners.noodles.NoodlesRunner.run">
-<code class="descname">run</code><span class="sig-paren">(</span><em>parameter_space</em>, <em>kernel_options</em>, <em>tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.noodles.NoodlesRunner.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tune all instances in parameter_space using a multiple threads</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>parameter_space</strong> (<em>iterable</em>) – The parameter space as an iterable.</li>
-<li><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</li>
-<li><strong>tuning_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options regarding the tuning
-process.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of dictionaries for executed kernel configurations and their
-execution times. And a dictionary that contains a information
-about the hardware/software environment on which the tuning took place.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list(dict()), dict()</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 </div>
 <div class="section" id="device-interfaces">
