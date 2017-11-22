@@ -16,5 +16,6 @@ answer = [numpy.dot(A,B), None, None]
 params = {"block_size_x": 16, "block_size_y": 32}
 
 results = kernel_tuner.run_kernel("matmul_kernel", "matmul_naive.cu",
-                                   problem_size, args, params)  
+                                   problem_size, args, params)
+
 # answer = run_kernel("matmul_kernel", [get_kernel_path()+"matmul_naive.cu"], problem_size, args, params, lang="C", compiler_options=cp)
