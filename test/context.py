@@ -5,7 +5,7 @@ try:
     import pycuda.driver as drv
     drv.init()
     cuda_present=True
-except:
+except Exception:
     cuda_present=False
 
 try:
@@ -15,13 +15,13 @@ try:
         opencl_present=False
     if len(pyopencl.get_platforms())==0:
         opencl_present=False
-except:
+except Exception:
     opencl_present=False
 
 try:
     import noodles
     noodles_present=True
-except:
+except ImportError:
     noodles_present=False
 
 skip_if_no_cuda=pytest.mark.skipif(not cuda_present,
