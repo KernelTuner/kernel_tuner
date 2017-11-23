@@ -120,7 +120,7 @@ class CudaFunctions(object):
                 source_mod = SourceModule
 
             self.current_module = source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
-                                               arch=('compute_' + self.cc) if self.cc != "00" else None, 
+                                               arch=('compute_' + self.cc) if self.cc != "00" else None,
                                                code=('sm_' + self.cc) if self.cc != "00" else None,
                                                cache_dir=False, no_extern_c=no_extern_c)
 

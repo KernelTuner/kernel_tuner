@@ -129,7 +129,7 @@ def test_prepare_kernel_string():
     params = dict()
     params["is"] = 8
 
-    name, output = prepare_kernel_string("this", kernel, params, (3,7), (1,2,3), block_size_names)
+    _, output = prepare_kernel_string("this", kernel, params, (3,7), (1,2,3), block_size_names)
     expected = "#define is 8\n" \
                "#define block_size_z 3\n" \
                "#define block_size_y 2\n" \
@@ -302,7 +302,7 @@ def test_check_argument_list5():
     try:
         check_argument_list(kernel_name, kernel_string, args)
 
-    except TypeError as expected_error:
+    except TypeError:
         print("Expected no TypeError to be raised")
         assert False
 

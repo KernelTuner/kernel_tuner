@@ -122,7 +122,7 @@ def check_tune_params_list(tune_params):
     """ raise an exception if a tune parameter has a forbidden name """
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z")
     forbidden_name_substr = ("time", "times")
-    for i, (name, param) in enumerate(tune_params.items()):
+    for name, param in tune_params.items():
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
         for forbidden_substr in forbidden_name_substr:

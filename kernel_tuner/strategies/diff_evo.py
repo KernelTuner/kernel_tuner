@@ -1,7 +1,6 @@
 """ The differential evolution strategy that optimizes the search through the parameter space """
 from __future__ import print_function
 
-import numpy
 from scipy.optimize import differential_evolution
 from kernel_tuner import util
 
