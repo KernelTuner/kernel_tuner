@@ -299,7 +299,11 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     # see if the kernel arguments have correct type
     if not callable(kernel_string):
-        util.check_argument_list(kernel_name, util.get_kernel_string(kernel_string), arguments)
+        if isinstance(kernel_string, list):
+            for file in kernel_string:
+                util.check_argument_list(kernel_name, util.get_kernel_string(file), arguments)
+        else:
+            util.check_argument_list(kernel_name, util.get_kernel_string(kernel_string), arguments)
     else:
         logging.debug("Checking of arguments list not supported yet for code generators.")
 
