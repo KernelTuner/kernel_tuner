@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+
+## [0.1.8] - 2017-11-23
 ### Changed
 - bugfix for when using iterations smaller than 3
 - the install procedure now uses extras, e.g. [cuda,opencl]
