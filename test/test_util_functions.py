@@ -337,7 +337,7 @@ def test_check_argument_list7():
         check_argument_list(kernel_name, kernel_string, args)
         print("Expected a TypeError to be raised.")
         assert False
-    except TypeError as expected_error:
+    except TypeError:
         assert True
 
 def test_check_tune_params_list():
