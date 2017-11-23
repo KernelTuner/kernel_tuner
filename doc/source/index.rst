@@ -16,7 +16,7 @@ Contents:
    convolution
    diffusion
    examples
-   matrix
+   matrix_multiplication
    correctness
    hostcode
    user-api
