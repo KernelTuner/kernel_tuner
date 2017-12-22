@@ -1,4 +1,4 @@
-Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python
+Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner
 =========================================================
 
 |Build Status| |Codacy Badge| |Codacy Badge2|
@@ -136,9 +136,9 @@ A scientific paper about the Kernel Tuner is in preparation, in the meantime ple
 
 .. code:: latex
 
-    @misc{
+    @misc{vanwerkhoven2018kerneltuner,
       author = {Ben van Werkhoven},
-      title = {Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python},
+      title = {Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner},
       year = {2018}
     }
 
