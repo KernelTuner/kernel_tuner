@@ -8,8 +8,7 @@ priorities grow and shift.
 
 This is the list of features that we want to have implemented by the next version.
 
- * Option to set function that computes search space restriction, instead of a list of strings
- * Option to set function that computes grid dimensions instead of grid divisor lists
+ * A test_kernel function to perform parameterized testing without tuning
  * Option to set dynamically allocated shared memory for CUDA backend
  
 ### version 1.0.0
@@ -26,8 +25,10 @@ implemented in earlier versions.
 These are the things that we would like to implement, but we currently have no
 demand for it. If you are interested in any of these, let us know!
 
+ * Option to set function that computes search space restriction, instead of a list of strings
+ * Option to set function that computes grid dimensions instead of grid divisor lists
  * Provide API for analysis of tuning results
- * Tuning compiler options in combination with other parameters kernel
+ * Tuning compiler options in combination with other parameters
  * Example that tunes a kernel using thread block re-indexing
  * Example CUDA host code that uses runtime compilation
 
