@@ -65,7 +65,8 @@ def check_argument_list(kernel_name, kernel_string, args):
             # it is the right one
             return
     for errors in collected_errors:
-        raise TypeError(errors[0])
+        warnings.warn(errors[0], UserWarning)
+        #raise TypeError(errors[0])
 
 def check_tune_params_list(tune_params):
     """ raise an exception if a tune parameter has a forbidden name """

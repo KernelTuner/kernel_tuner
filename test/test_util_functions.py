@@ -214,6 +214,22 @@ def test_get_device_interface3():
         lang = "blabla"
         core.DeviceInterface("", 0, 0, lang=lang)
 
+def assert_user_warning(f, args, substring=None):
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        f(*args)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, UserWarning)
+        if substring:
+            assert substring in str(w[-1].message)
+
+def assert_no_user_warning(f, args):
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        f(*args)
+        assert len(w) == 0
+
+
 def test_check_argument_list1():
     kernel_name = "test_kernel"
     kernel_string = """__kernel void test_kernel(int number, char * message, int * numbers) {
@@ -240,9 +256,7 @@ def test_check_argument_list2():
         }
         """
     args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
-    check_argument_list(kernel_name, kernel_string, args)
-    #test that no exception is raised
-    assert True
+    assert_no_user_warning(check_argument_list, [kernel_name, kernel_string, args])
 
 def test_check_argument_list3():
     kernel_name = "test_kernel"
@@ -251,16 +265,7 @@ def test_check_argument_list3():
         }
         """
     args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32([300])]
-    try:
-        check_argument_list(kernel_name, kernel_string, args)
-        print("Expected a TypeError to be raised")
-        assert False
-    except TypeError as expected_error:
-        print(str(expected_error))
-        assert "at position 2" in str(expected_error)
-    except Exception:
-        print("Expected a TypeError to be raised")
-        assert False
+    assert_user_warning(check_argument_list, [kernel_name, kernel_string, args], "at position 2")
 
 def test_check_argument_list4():
     kernel_name = "test_kernel"
@@ -269,16 +274,7 @@ def test_check_argument_list4():
         }
         """
     args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int64([300]), numpy.ubyte(32)]
-    try:
-        check_argument_list(kernel_name, kernel_string, args)
-        print("Expected a TypeError to be raised")
-        assert False
-    except TypeError as expected_error:
-        print(str(expected_error))
-        assert "do not match in size" in str(expected_error)
-    except Exception:
-        print("Expected a TypeError to be raised")
-        assert False
+    assert_user_warning(check_argument_list, [kernel_name, kernel_string, args], "do not match in size")
 
 def test_check_argument_list5():
     kernel_name = "my_test_kernel"
@@ -298,13 +294,7 @@ def test_check_argument_list5():
     args = [numpy.array([1,2,3]).astype(numpy.float64),
             numpy.array([1,2,3]).astype(numpy.float32),
             numpy.int32(6), numpy.int32(7)]
-
-    try:
-        check_argument_list(kernel_name, kernel_string, args)
-
-    except TypeError:
-        print("Expected no TypeError to be raised")
-        assert False
+    assert_no_user_warning(check_argument_list, [kernel_name, kernel_string, args])
 
 def test_check_argument_list6():
     kernel_name = "test_kernel"
@@ -333,12 +323,7 @@ def test_check_argument_list7():
         // /test_kernel
         """
     args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
-    try:
-        check_argument_list(kernel_name, kernel_string, args)
-        print("Expected a TypeError to be raised.")
-        assert False
-    except TypeError:
-        assert True
+    assert_user_warning(check_argument_list, [kernel_name, kernel_string, args])
 
 def test_check_tune_params_list():
     tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
