@@ -69,7 +69,9 @@ class CFunctions(object):
         """
         ctype_args = []
 
-        dtype_map = {"int32": C.c_int32,
+        dtype_map = {"int8": C.c_char,
+                     "int16": C.c_short,
+                     "int32": C.c_int32,
                      "int64": C.c_int64,
                      "float32": C.c_float,
                      "float64": C.c_double}
