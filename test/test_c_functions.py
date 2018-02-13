@@ -9,7 +9,7 @@ try:
 except ImportError:
     from unittest.mock import patch, Mock
 
-from kernel_tuner.c import CFunctions
+from kernel_tuner.c import CFunctions, Argument
 
 
 def test_ready_argument_list1():
@@ -120,7 +120,7 @@ def test_memcpy_dtoh():
     output = numpy.zeros_like(x)
 
     cfunc = CFunctions()
-    cfunc.arg_mapping = { str(x_c) : (4,) }
+    cfunc.arg_mapping = { str(x_c) : Argument(str(x.dtype), (4,)) }
     cfunc.memcpy_dtoh(output, x_c)
 
     print(a)

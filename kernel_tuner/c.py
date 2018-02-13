@@ -1,5 +1,6 @@
 """ This module contains the functionality for running and compiling C functions """
 
+from collections import namedtuple
 import subprocess
 import platform
 import errno
@@ -11,6 +12,15 @@ import numpy
 import numpy.ctypeslib
 
 from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file
+
+dtype_map = {"int8": C.c_int8,
+             "int16": C.c_int16,
+             "int32": C.c_int32,
+             "int64": C.c_int64,
+             "float32": C.c_float,
+             "float64": C.c_double}
+
+Argument = namedtuple("Argument", ["type", "shape"])
 
 
 class CFunctions(object):
@@ -67,33 +77,23 @@ class CFunctions(object):
         :returns: A list of arguments that can be passed to the C function.
         :rtype: list()
         """
-        ctype_args = []
+        ctype_args = [None for _ in arguments]
+        self.arg_mapping = dict()
 
-        dtype_map = {"int8": C.c_char,
-                     "int16": C.c_short,
-                     "int32": C.c_int32,
-                     "int64": C.c_int64,
-                     "float32": C.c_float,
-                     "float64": C.c_double}
-        np_to_c_type_map = {numpy.int32: C.c_int32,
-                            numpy.int64: C.c_int64,
-                            numpy.float32: C.c_float,
-                            numpy.float64: C.c_double}
-
-        for arg in arguments:
+        for i, arg in enumerate(arguments):
+            if not isinstance(arg, (numpy.ndarray, numpy.generic)):
+                raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
+            dtype_str = str(arg.dtype)
+            arg_info = Argument(dtype_str, arg.shape)
             if isinstance(arg, numpy.ndarray):
-                dtype_str = str(arg.dtype)
                 if dtype_str in dtype_map.keys():
-                    ctype_args.append(arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str])))
+                    ctype_args[i] = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
-                self.arg_mapping[str(ctype_args[-1])] = arg.shape
-            elif isinstance(arg, tuple(np_to_c_type_map.keys())):
-                ctype_args.append(np_to_c_type_map[type(arg)](arg))
-                self.arg_mapping[str(ctype_args[-1])] = ()
-            else:
-                raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
-
+                self.arg_mapping[str(ctype_args[i])] = arg_info
+            elif isinstance(arg, numpy.generic):
+                ctype_args[i] = dtype_map[dtype_str](arg)
+                self.arg_mapping[str(i)] = arg_info
         return ctype_args
 
 
@@ -169,8 +169,8 @@ class CFunctions(object):
             delete_temp_file(filename+".so")
             delete_temp_file(filename+".dylib")
 
-
         return func
+
 
     def benchmark(self, func, c_args, threads, grid, times):
         """runs the kernel repeatedly, returns averaged returned value
@@ -289,7 +289,8 @@ class CFunctions(object):
         :param src: A ctypes pointer to some memory allocation
         :type src: ctypes.pointer
         """
-        dest[:] = numpy.ctypeslib.as_array(src, shape=self.arg_mapping[str(src)])
+        arginfo = self.arg_mapping[str(src)]
+        dest[:] = numpy.ctypeslib.as_array(src, shape=arginfo.shape)
 
 
     def cleanup_lib(self):
