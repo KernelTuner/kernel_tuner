@@ -393,10 +393,10 @@ applications and are the main operation in convolutional neural networks
 used for deep learning. A convolution operation computes the linear
 combination of the weights in a <em>convolution filter</em> and a range of
 pixels from the input image for each output pixel. A 2D convolution of
-an input image <span class="math">\(I\)</span> of size <span class="math">\((w\times h)\)</span> and a convolution
-filter <span class="math">\(F\)</span> of size <span class="math">\((F_w\times F_h)\)</span> computes an output
-image <span class="math">\(O\)</span> of size <span class="math">\(((w-F_w)\times (h-F_h))\)</span>:</p>
-<div class="math">
+an input image <span class="math notranslate">\(I\)</span> of size <span class="math notranslate">\((w\times h)\)</span> and a convolution
+filter <span class="math notranslate">\(F\)</span> of size <span class="math notranslate">\((F_w\times F_h)\)</span> computes an output
+image <span class="math notranslate">\(O\)</span> of size <span class="math notranslate">\(((w-F_w)\times (h-F_h))\)</span>:</p>
+<div class="math notranslate">
 \begin{equation}\nonumber
 O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 \end{equation}</div><p>A naive CUDA kernel for 2D Convolution parallelizes the operation by
@@ -407,11 +407,11 @@ around the term <em>kernel</em>, we refer to the convolution filter as a
 code blocks in this tutorial by selecting them and pressing
 <strong>shift+enter</strong>:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">naive_kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">    __global__ void convolution_kernel(float *output, float *input, float *filter) {</span>
 
@@ -438,15 +438,15 @@ code blocks in this tutorial by selecting them and pressing
 </div>
 <div class="section" id="Implement-a-test">
 <h2>Implement a test<a class="headerlink" href="#Implement-a-test" title="Permalink to this headline">¶</a></h2>
-<p>We will start with using Kernel Tuner’s <code class="docutils literal"><span class="pre">run_kernel</span></code> function to call
+<p>We will start with using Kernel Tuner’s <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> function to call
 our naive 2D convolution kernel. But first we will have to create some
 input data, which we will do as follows:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="k">import</span> <span class="n">run_kernel</span>
 
@@ -466,8 +466,8 @@ input data, which we will do as follows:</p>
 </div>
 <p>Now that we have our input and output data structures created, we can
 look at how to run our naive kernel on this data, by calling
-<code class="docutils literal"><span class="pre">run_kernel</span></code>. The run_kernel function has the following signature:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">run_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<code class="docutils literal notranslate"><span class="pre">run_kernel</span></code>. The run_kernel function has the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">run_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The ellipsis here indicate that there are many more optional arguments,
@@ -481,13 +481,13 @@ three dimensions * <strong>arguments</strong> a list of arguments used to call t
 kernel * <strong>params</strong> a dictionary with the tunable parameters</p>
 <p>The <strong>kernel_name</strong> is simply a string with the name of the kernel in
 the code. The <strong>kernel_source</strong> can be a string containing the code,
-which we have already defined above as <code class="docutils literal"><span class="pre">naive_kernel_string</span></code>.</p>
+which we have already defined above as <code class="docutils literal notranslate"><span class="pre">naive_kernel_string</span></code>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">kernel_name</span> <span class="o">=</span> <span class="s2">&quot;convolution_kernel&quot;</span>
 <span class="n">kernel_source</span> <span class="o">=</span> <span class="n">naive_kernel_string</span>
 </pre></div>
@@ -495,19 +495,19 @@ which we have already defined above as <code class="docutils literal"><span clas
 </div>
 <p>The <strong>problem_size</strong> is what is used by Kernel Tuner to determine the
 grid dimensions of the kernel. Our naive kernel needs one thread for
-each pixel in the output image. As defined above, our <code class="docutils literal"><span class="pre">output_size</span></code> is
-<span class="math">\(4096 \times 4096\)</span>.</p>
+each pixel in the output image. As defined above, our <code class="docutils literal notranslate"><span class="pre">output_size</span></code> is
+<span class="math notranslate">\(4096 \times 4096\)</span>.</p>
 <p>Kernel Tuner computes the grid dimensions of a kernel by dividing the
 <strong>problem_size</strong> in each dimension with the <strong>grid divisors</strong> in that
 dimension. The grid divisors are, by default, simply the thread block
 dimensions. So for our naive kernel we do not need to specify any grid
 divisor lists.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="n">output_size</span>
 </pre></div>
 </div>
@@ -517,7 +517,7 @@ on the GPU. <strong>arguments</strong> should be specified as a list of Numpy ob
 (arrays and/or scalars) that correspond with the function arguments of
 our CUDA kernel. Our naive convolution kernel has the following
 signature:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="n">void</span> <span class="n">convolution_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">output</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="nb">input</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="nb">filter</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="n">void</span> <span class="n">convolution_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">output</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="nb">input</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="nb">filter</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
 </pre></div>
 </div>
 <p>Therefore, our list of Numpy objects should contain the output image,
@@ -525,11 +525,11 @@ the input image, and the convolution filter, and exactly in that order,
 matching the type (32-bit floating-point arrays) and dimensions that are
 expected by the kernel.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span><span class="n">output_image</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span> <span class="n">conv_filter</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -537,14 +537,14 @@ expected by the kernel.</p>
 <p>The final required argument is <strong>params</strong>, which is a dictionary with
 the user-defined parameters of the kernel. Remember that the user, is
 you! You can specify anything here and Kernel Tuner will insert a
-C-preprocessor <code class="docutils literal"><span class="pre">#define</span></code> statement into the kernel with the value that
+C-preprocessor <code class="docutils literal notranslate"><span class="pre">#define</span></code> statement into the kernel with the value that
 you specify. For example, if you were to create a dictionary like so:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;I_like_convolutions&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;I_like_convolutions&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">}</span>
 </pre></div>
 </div>
 <p>Kernel Tuner will insert the following line into our naive convolution
 kernel:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1">#define I_like_convolutions 42</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define I_like_convolutions 42</span>
 </pre></div>
 </div>
 <p>While we do like convolutions, this definition won’t have much effect on
@@ -555,21 +555,21 @@ preprocessor token.</p>
 You may have noticed that we are about to call a CUDA kernel but we
 haven’t specified any thread block dimensions yet. When using Kernel
 Tuner, thread block dimensions are basically just parameters to the
-kernel. Therefore, the parameters with the names <code class="docutils literal"><span class="pre">&quot;block_size_x&quot;</span></code>,
-<code class="docutils literal"><span class="pre">&quot;block_size_y&quot;</span></code>, and <code class="docutils literal"><span class="pre">&quot;block_size_z&quot;</span></code> will be interpreted by Kernel
+kernel. Therefore, the parameters with the names <code class="docutils literal notranslate"><span class="pre">&quot;block_size_x&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;block_size_y&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;block_size_z&quot;</span></code> will be interpreted by Kernel
 Tuner as the thread block dimensions in x,y, and z.</p>
 <p>Note that these are just the defaults, if you prefer to name your thread
-block dimensions differently, please use the <code class="docutils literal"><span class="pre">block_size_names=</span></code>
+block dimensions differently, please use the <code class="docutils literal notranslate"><span class="pre">block_size_names=</span></code>
 option.</p>
 <p>Let’s continue with the creation of our <strong>params</strong> dictionary such that
 we can run our naive convolution kernel. As thread block dimensions we
-will just select the trusty old <span class="math">\(16 \times 16\)</span>:</p>
+will just select the trusty old <span class="math notranslate">\(16 \times 16\)</span>:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
@@ -583,11 +583,11 @@ filter_width. We also insert those values using the parameters using
 Kernel Tuner. Note that this is not required, we could also have
 specified these at runtime as arguments to the kernel.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;filter_height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -598,11 +598,11 @@ specified these at runtime as arguments to the kernel.</p>
 </div>
 <p>Now we have setup everything that should allow us to call run_kernel:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">answer</span> <span class="o">=</span> <span class="n">run_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_source</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done&quot;</span><span class="p">)</span>
 </pre></div>
@@ -613,8 +613,8 @@ contents of the <strong>arguments</strong> list to GPU memory, compile the kerne
 specified in <strong>kernel_source</strong>, and run the kernel name
 <strong>kernel_name</strong> with the thread block dimensions specified in
 <strong>params</strong> and the grid dimensions derived from the <strong>problem_size</strong>.
-After executing the kernel, <code class="docutils literal"><span class="pre">run_kernel</span></code> will also retrieve the
-results from GPU memory, and free GPU memory. The <code class="docutils literal"><span class="pre">run_kernel</span></code>
+After executing the kernel, <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> will also retrieve the
+results from GPU memory, and free GPU memory. The <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code>
 function returns the data retrieved from the GPU in a list that we have
 named <strong>answer</strong> in the above example.</p>
 <p>The <strong>answer</strong> list contains Numpy objects (arrays and/or scalars) in
@@ -634,11 +634,11 @@ long to include here, so instead we just read it in from a file, you may
 need to adjust the path a little bit depending on where you’ve stored
 the Kernel Tuner’s source code and where this notebook is executing.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;../examples/cuda/convolution.cu&quot;</span>
 
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -646,10 +646,10 @@ the Kernel Tuner’s source code and where this notebook is executing.</p>
 </pre></div>
 </div>
 </div>
-<p>Tuning a kernel with Kernel Tuner is done using the <code class="docutils literal"><span class="pre">tune_kernel</span></code>
+<p>Tuning a kernel with Kernel Tuner is done using the <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>
 function. The interface should look familiar, because it’s exactly like
-<code class="docutils literal"><span class="pre">run_kernel</span></code>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<code class="docutils literal notranslate"><span class="pre">run_kernel</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The only difference is that the <strong>params</strong> dictionary is replaced by a
@@ -662,11 +662,11 @@ complete API documentation of tune_kernel can be found
 <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">here</a>.</p>
 <p>We could create a <strong>tune_params</strong> dictionary in the following way:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">]</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
@@ -675,11 +675,11 @@ complete API documentation of tune_kernel can be found
 </div>
 <p>Let’s just try that out and see what happens:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="k">import</span> <span class="n">tune_kernel</span>
 <span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">convolution_kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
@@ -696,19 +696,19 @@ documentation of
 <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">tune_kernel</a>.</p>
 <p>Some combinations of values are illegal and will be skipped
 automatically. For example, using thread block dimensions of
-<span class="math">\(128 \times 16 = 2048\)</span>, which is more than the limit of 1024 that
+<span class="math notranslate">\(128 \times 16 = 2048\)</span>, which is more than the limit of 1024 that
 is currently the limit in all CUDA devices. Configurations that fail for
 other (to be expected) reasons like using too much shared memory, or
 requiring more registers than available on the device will also be
 skipped silently by Kernel Tuner, unless you specify “verbose=True” as
-an optional argument to <code class="docutils literal"><span class="pre">tune_kernel</span></code>. Note that other errors, like an
+an optional argument to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. Note that other errors, like an
 out-of-bounds memory access will not be ignored.</p>
-<p>The <code class="docutils literal"><span class="pre">tune_kernel</span></code> functions returns two things. The first is the
+<p>The <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> functions returns two things. The first is the
 results, which is a list of records that show the execution time of each
 benchmarked kernel and the parameters used to compile and run that
 specific kernel. Secondly, tune_kernel returns a dictionary that
 describes the environment in which the tuning took place. That means all
-the inputs to <code class="docutils literal"><span class="pre">tune_kernel</span></code> are recorded, but also the software
+the inputs to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> are recorded, but also the software
 versions of your CUDA installation, OS and so on, along with GPU device
 information. This second dictionary can be stored along with the results
 so that you can always find out under what circumstances those results
@@ -722,11 +722,11 @@ factors in the x and y dimensions. Tiling factors indicate that the
 amount of work performed by the thread block in a particular dimension
 is increased with a certain factor.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
 </pre></div>
@@ -751,11 +751,11 @@ size in a certain dimension to obtain the grid size in that dimension.</p>
 <p>So to mimick the default behavior that we have been assuming so far we
 would need to specify:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span>
 <span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
 </pre></div>
@@ -765,11 +765,11 @@ would need to specify:</p>
 as the tiling factor is increased, the number of thread blocks in that
 dimension should be decreased correspondingly.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
 <span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
 </pre></div>
@@ -779,11 +779,11 @@ dimension should be decreased correspondingly.</p>
 space. Note that this may take a bit longer since we have just increased
 our parameter space with a factor of 9.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_source</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
                            <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">)</span>
 </pre></div>

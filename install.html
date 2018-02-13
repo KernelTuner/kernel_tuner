@@ -221,7 +221,7 @@ installations. All of this is explained in detail in this guide.</p>
 <p>You need a Python installation. I recommend using Python 3 and
 installing it with <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a>.</p>
 <p>Linux users could type the following to download and install Python 3 using Miniconda:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 </pre></div>
 </div>
@@ -238,7 +238,7 @@ your home directory,
 this requires that your home directory is on your <cite>$PYTHONPATH</cite> environment variable
 (see for further details the pip documentation).</p>
 <p>The following command will install Kernel Tuner together with the required dependencies:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner
 </pre></div>
 </div>
 <p>There are also optional dependencies, explained below.</p>
@@ -255,17 +255,17 @@ recommended (older version may work, but may not support all features of
 the Kernel Tuner).</p>
 <p>It’s very important that you install the CUDA toolkit before trying to install PyCuda.</p>
 <p>You can install PyCuda manually using:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install pycuda
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install pycuda
 </pre></div>
 </div>
 <p>Or you could install Kernel Tuner and PyCUDA together if you haven’t done so already:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>cuda<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>cuda<span class="o">]</span>
 </pre></div>
 </div>
 <p>If you run into trouble with installing PyCuda, make sure you have CUDA installed first.
 Also make sure that the Python package Numpy is already installed, e.g. using <cite>pip install numpy</cite>.</p>
-<p>If you retry the <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code> command, you may need to use the
-<code class="docutils literal"><span class="pre">--no-cache-dir</span></code> option to ensure the pycuda installation really starts over and not continues
+<p>If you retry the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code> command, you may need to use the
+<code class="docutils literal notranslate"><span class="pre">--no-cache-dir</span></code> option to ensure the pycuda installation really starts over and not continues
 from an installation that is failing.</p>
 <p>If this fails, I recommend to see the PyCuda installation guide (<a class="reference external" href="https://wiki.tiker.net/PyCuda/Installation">https://wiki.tiker.net/PyCuda/Installation</a>)</p>
 </div>
@@ -285,11 +285,11 @@ code to run on.</p>
 <p>As with the CUDA toolkit, recent versions of one or more of the above OpenCL SDK’s and
 PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
 <p>After you’ve installed your OpenCL compiler of choice you can install PyOpenCL using:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install pyopencl
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install pyopencl
 </pre></div>
 </div>
 <p>Or you could install Kernel Tuner and PyOpenCL together if you haven’t done so already:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>opencl<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>opencl<span class="o">]</span>
 </pre></div>
 </div>
 <p>If this fails, please see the PyOpenCL installation guide (<a class="reference external" href="https://wiki.tiker.net/PyOpenCL/Installation">https://wiki.tiker.net/PyOpenCL/Installation</a>)</p>
@@ -298,7 +298,7 @@ PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
 <h2>Installing the Kernel Tuner<a class="headerlink" href="#installing-the-kernel-tuner" title="Permalink to this headline">¶</a></h2>
 <p>You can also install from the git repository. This way you also get the
 examples and the tutorials.</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
 <span class="nb">cd</span> kernel_tuner
 pip install .
 </pre></div>
@@ -312,7 +312,7 @@ pip install .
 <li><cite>dev</cite>: install everything you need to start development on Kernel Tuner</li>
 </ul>
 <p>For example, use:
-<code class="docutils literal"><span class="pre">`</span>
+<code class="docutils literal notranslate"><span class="pre">`</span>
 <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.[dev,cuda,opencl]</span>
 <span class="pre">`</span></code>
 To install Kernel Tuner along with all the packages required for development.</p>
@@ -323,11 +323,11 @@ To install Kernel Tuner along with all the packages required for development.</p
 actually very commonly used and chances are that you already have these installed.</p>
 <p>However, to install Kernel Tuner along with the dependencies to run the tutorials,
 you could use:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>tutorial,cuda<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>tutorial,cuda<span class="o">]</span>
 </pre></div>
 </div>
 <p>Or if you have already installed Kernel Tuner and PyCUDA, just use:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install jupyter matplotlib pandas
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install jupyter matplotlib pandas
 </pre></div>
 </div>
 </div>

@@ -214,7 +214,7 @@ host and device into your tuning setup, or tune for different methods of moving 
 <dt>There are few differences with tuning just a single CUDA or OpenCL kernel, to list them:</dt>
 <dd><ul class="first last simple">
 <li>You have to specify the lang=”C” option</li>
-<li>The C function should return a <code class="docutils literal"><span class="pre">float</span></code></li>
+<li>The C function should return a <code class="docutils literal notranslate"><span class="pre">float</span></code></li>
 <li>You have to do your own timing and error handling in C</li>
 </ul>
 </dd>
@@ -228,12 +228,12 @@ a different quality, as long as you can express that quality in a single floatin
 of the parameter space the returned floats will be averaged for the multiple runs in the same way as with direct CUDA or OpenCL kernel tuning.</p>
 <p>By itself the C language does not provide any very precise timing functions. If you are tuning the host code of a CUDA program you can use
 CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function.
-In the <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py">C vector add example</a> we are using the <code class="docutils literal"><span class="pre">omp_get_wtime()</span></code> function from OpenMP to measure time on the CPU.</p>
+In the <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py">C vector add example</a> we are using the <code class="docutils literal notranslate"><span class="pre">omp_get_wtime()</span></code> function from OpenMP to measure time on the CPU.</p>
 <div class="section" id="tuning-the-number-of-streams">
 <h2>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Permalink to this headline">¶</a></h2>
-<p>The following describes the example in <code class="docutils literal"><span class="pre">examples/cuda/convolution_streams.py</span></code>.
+<p>The following describes the example in <code class="docutils literal notranslate"><span class="pre">examples/cuda/convolution_streams.py</span></code>.
 In this example, the same convolution kernel is used as with correctness checking and convolution application example.</p>
-<p>What is different is that we also supply the host code, which you can find in <code class="docutils literal"><span class="pre">examples/cuda/convolution_streams.cu</span></code>. It is a bit
+<p>What is different is that we also supply the host code, which you can find in <code class="docutils literal notranslate"><span class="pre">examples/cuda/convolution_streams.cu</span></code>. It is a bit
 too long and complex to include here, but we will explain what it does. The idea behind the host code is that the kernel computation
 is spread across a number of CUDA streams. In this way, it is possible to overlap the data transfers from host to device with kernel execution, and with
 transfers from the device back to the host.</p>
@@ -242,7 +242,7 @@ larger to account for the overlapping border between the data needed by differen
 in streams <cite>n</cite> and <cite>n-1</cite> have to be finished. To ensure the latter, we use CUDA Events and in particular cudaStreamWaitEvent(), which halts stream <cite>n</cite> until the
 transfer in stream <cite>n-1</cite> has finished.</p>
 <p>The way you use the Kernel Tuner to tune this CUDA program is very similar to when you are tuning a CUDA kernel directly, as you can see below:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution_streams.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution_streams.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 
 <span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
@@ -279,7 +279,7 @@ transfer in stream <cite>n-1</cite> has finished.</p>
 <li>“num_streams” is added to the “grid_div_y” list</li>
 <li>The kernel_name “convolution_streams” is a C function</li>
 <li>lang=”C” is used to tell this is a C function</li>
-<li><code class="docutils literal"><span class="pre">filter</span></code> is not passed as a constant memory argument</li>
+<li><code class="docutils literal notranslate"><span class="pre">filter</span></code> is not passed as a constant memory argument</li>
 </ul>
 </dd>
 </dl>

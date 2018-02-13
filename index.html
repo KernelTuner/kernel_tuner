@@ -238,16 +238,16 @@
 <p>To tune CUDA kernels:</p>
 <ul class="simple">
 <li>First, make sure you have the <a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA Toolkit</a> installed</li>
-<li>Then type: <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda]</span></code></li>
+<li>Then type: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda]</span></code></li>
 </ul>
 <p>To tune OpenCL kernels:</p>
 <ul class="simple">
 <li>First, make sure you have an OpenCL compiler for your intended OpenCL platform</li>
-<li>Then type: <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[opencl]</span></code></li>
+<li>Then type: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[opencl]</span></code></li>
 </ul>
 <p>Or both:</p>
 <ul class="simple">
-<li><code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda,opencl]</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda,opencl]</span></code></li>
 </ul>
 <p>More information about how to install Kernel Tuner and its
 dependencies can be found in the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/install.html">installation guide</a></p>
@@ -255,7 +255,7 @@ dependencies can be found in the <a class="reference external" href="http://benv
 <div class="section" id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
 <p>The following shows a simple example for tuning a CUDA kernel:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">__global__ void vector_add(float *c, float *a, float *b, int n) {</span>
 <span class="s2">    int i = blockIdx.x * block_size_x + threadIdx.x;</span>
 <span class="s2">    if (i&lt;n) {</span>
@@ -279,7 +279,7 @@ dependencies can be found in the <a class="reference external" href="http://benv
 </pre></div>
 </div>
 <p>The exact same Python code can be used to tune an OpenCL kernel:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">__kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {</span>
 <span class="s2">    int i = get_global_id(0);</span>
 <span class="s2">    if (i&lt;n) {</span>
@@ -316,16 +316,16 @@ for a detailed explanation of the kernel tuner Python script.</p>
 <div class="section" id="search-strategies-for-tuning">
 <h2>Search strategies for tuning<a class="headerlink" href="#search-strategies-for-tuning" title="Permalink to this headline">¶</a></h2>
 <p>Kernel Tuner supports several strategies: brute_force (default), random_sample, minimize, basinhopping, and diff_evo (differential
-evolution). Using different strategies is easy, you only need to specify to <code class="docutils literal"><span class="pre">tune_kernel</span></code> which strategy you would like to use, for example: <code class="docutils literal"><span class="pre">strategy=&quot;basinhopping&quot;,</span> <span class="pre">method=&quot;TNC&quot;</span></code>. For a full overview of the supported search strategies and methods please see the
+evolution). Using different strategies is easy, you only need to specify to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> which strategy you would like to use, for example: <code class="docutils literal notranslate"><span class="pre">strategy=&quot;basinhopping&quot;,</span> <span class="pre">method=&quot;TNC&quot;</span></code>. For a full overview of the supported search strategies and methods please see the
 <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html">user api</a>.</p>
 </div>
 <div class="section" id="correctness-verification">
 <h2>Correctness verification<a class="headerlink" href="#correctness-verification" title="Permalink to this headline">¶</a></h2>
 <p>Optionally, you can let the kernel tuner verify the output of every
-kernel it compiles and benchmarks, by passing an <code class="docutils literal"><span class="pre">answer</span></code> list. This
+kernel it compiles and benchmarks, by passing an <code class="docutils literal notranslate"><span class="pre">answer</span></code> list. This
 list matches the list of arguments to the kernel, but contains the
 expected output of the kernel. Input arguments are replaced with None.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span>  <span class="c1"># the order matches the arguments (in args) to the kernel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span>  <span class="c1"># the order matches the arguments (in args) to the kernel</span>
 <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -337,7 +337,7 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 <div class="section" id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
 <p>A scientific paper about the Kernel Tuner is in preparation, in the meantime please cite the Kernel Tuner as follows:</p>
-<div class="highlight-latex"><div class="highlight"><pre><span></span>@misc<span class="nb">{</span>vanwerkhoven2018kerneltuner,
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@misc<span class="nb">{</span>vanwerkhoven2018kerneltuner,
   author = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,
   title = <span class="nb">{</span>Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner<span class="nb">}</span>,
   year = <span class="nb">{</span>2018<span class="nb">}</span>

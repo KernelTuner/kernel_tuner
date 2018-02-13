@@ -393,13 +393,13 @@ start the tutorial by typing “jupyter notebook” in the
 <p>We’ll start with a very simple kernel for performing a matrix
 multiplication in CUDA. The idea is that this kernel is executed with
 one thread per element in the output matrix. As such, each thread
-<span class="math">\((i,j)\)</span> iterates over the entire row <span class="math">\(i\)</span> in matrix
-<span class="math">\(A\)</span>, and column <span class="math">\(j\)</span> in matrix <span class="math">\(B\)</span>.</p>
+<span class="math notranslate">\((i,j)\)</span> iterates over the entire row <span class="math notranslate">\(i\)</span> in matrix
+<span class="math notranslate">\(A\)</span>, and column <span class="math notranslate">\(j\)</span> in matrix <span class="math notranslate">\(B\)</span>.</p>
 <p>To keep the code clean and simple, we’ll assume that we only work with
 square matrices. Say we have a naive CUDA kernel for a square matrix
-multiplication stored in a file called <code class="docutils literal"><span class="pre">matmul_naive.cu</span></code>, which looks
+multiplication stored in a file called <code class="docutils literal notranslate"><span class="pre">matmul_naive.cu</span></code>, which looks
 like this:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">matmul_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">matmul_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
     <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
     <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
     <span class="kt">float</span> <span class="n">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
@@ -413,17 +413,17 @@ like this:</p>
 </pre></div>
 </div>
 <p>This kernel assumes that the width and height of the matrices A, B, and
-C is equal to <code class="docutils literal"><span class="pre">WIDTH</span></code>, which is known at compile time. Of course,
+C is equal to <code class="docutils literal notranslate"><span class="pre">WIDTH</span></code>, which is known at compile time. Of course,
 you’ll want a more flexible solution in reality, but this is just an
 example kernel to demonstrate how to use Kernel Tuner.</p>
 <p>There are two more contants in the code that are currently undefined.
-These are <code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>, these are the names
+These are <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>, these are the names
 that Kernel Tuner uses by default for denoting the thread block
 dimensions in x and y. The actual values used for these constants at
 compile time can be any sensible value for thread block dimensions. As
-long as we create enough threads to compute all elements in <span class="math">\(C\)</span>,
-the output will not be affected by the value of <code class="docutils literal"><span class="pre">block_size_x</span></code> and
-<code class="docutils literal"><span class="pre">block_size_y</span></code>. Parameters in the code that have this property are
+long as we create enough threads to compute all elements in <span class="math notranslate">\(C\)</span>,
+the output will not be affected by the value of <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and
+<code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>. Parameters in the code that have this property are
 called <em>tunable parameters</em>.</p>
 <p>Because we can pick any value for these parameters, we can use
 auto-tuning to automatically find the best performing combination of
@@ -440,11 +440,11 @@ creating some input data. Make sure to execute all the code cells you
 come across in this tutorial by selecting them and pressing
 <em>shift+enter</em>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span>
 <span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
 
@@ -457,19 +457,19 @@ come across in this tutorial by selecting them and pressing
 </div>
 </div>
 <p>In the above Python code, we’ve specified the size of matrices and
-generated some random data for matrix <span class="math">\(A\)</span> and <span class="math">\(B\)</span>, and a
-zeroed matrix <span class="math">\(C\)</span>. We’ve also created a list named <code class="docutils literal"><span class="pre">args</span></code> that
+generated some random data for matrix <span class="math notranslate">\(A\)</span> and <span class="math notranslate">\(B\)</span>, and a
+zeroed matrix <span class="math notranslate">\(C\)</span>. We’ve also created a list named <code class="docutils literal notranslate"><span class="pre">args</span></code> that
 contains the matrices C, A, and B, which will be used as the argument
 list by the tuner to call the kernel and measure its performance.</p>
 <p>The next step is specifying to the tuner what values can be used for the
 thread block dimensions in x and y. In other words, we specify the
 tunable parameters and the possible values they can take.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="n">tune_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">]</span>
@@ -491,14 +491,14 @@ By using 4096 as the width and height of our matrix and using only
 powers of two for our thread block dimensions we can avoid memory
 errors.</p>
 <p>Now that we’ve specified the input and the tunable parameters, we are
-ready to call Kernel Tuner’s <code class="docutils literal"><span class="pre">tune_kernel</span></code> method to start auto-tuning
+ready to call Kernel Tuner’s <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> method to start auto-tuning
 our kernel.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="k">import</span> <span class="n">tune_kernel</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul/matmul_naive.cu&quot;</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
@@ -531,20 +531,20 @@ best performing configuration: block_size_x=16, block_size_y=32, time=494.040820
 </pre></div></div>
 </div>
 <p>Before looking at the result, we’ll explain briefly how we called
-<code class="docutils literal"><span class="pre">tune_kernel</span></code>. The first argument is the name of the kernel that we
+<code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. The first argument is the name of the kernel that we
 want to tune. The second argument is a string that contains the filename
 of the kernel. It is also possible to directly pass a string that
 contains the code, or to pass a Python function that generates the
 kernel code. The tuner will figure out which language (CUDA or OpenCL)
-is being used in the kernel code. The third argument to <code class="docutils literal"><span class="pre">tune_kernel</span></code>
+is being used in the kernel code. The third argument to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>
 is the problem size, which is used by the tuner to compute the grid
 dimensions for our kernel. To compute the grid dimensions the tuner
 needs to know the thread block dimensions, which we have specified using
 the tunable parameters (fifth argument). The fourth argument is the
 argument list that the tuner will need to actually call the kernel.</p>
-<p>As we can see the execution times printed by <code class="docutils literal"><span class="pre">tune_kernel</span></code> already
+<p>As we can see the execution times printed by <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> already
 vary quite dramatically between the different values for
-<code class="docutils literal"><span class="pre">block_size_x</span></code> and <code class="docutils literal"><span class="pre">block_size_y</span></code>. However, even with the best
+<code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>. However, even with the best
 thread block dimensions our kernel is still not very efficient.</p>
 <p>Therefore, we’ll have a look at the Nvidia Visual Profiler to find that
 the utilization of our kernel is actually pretty low: <img alt="image0" src="https://raw.githubusercontent.com/benvanwerkhoven/kernel_tuner/master/tutorial/matmul/matmul_naive.png" /> There is
@@ -556,12 +556,12 @@ making the threads in a thread block collaborate.</p>
 <p>We can increase the utilization of memory bandwidth with a technique
 called cache-blocking or loop-tiling. To this end, we define two square
 data structures in shared memory, which will be used for storing square
-parts of matrix <span class="math">\(A\)</span> and <span class="math">\(B\)</span>. The threads in a thread block
+parts of matrix <span class="math notranslate">\(A\)</span> and <span class="math notranslate">\(B\)</span>. The threads in a thread block
 will collaboratively fill these two submatrices, and then proceed to
 perform all the computations that need this data, before moving to the
 next blocked iteration.</p>
 <p>The code required to do this is a little bit more complex:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#define WIDTH 4096</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define WIDTH 4096</span>
 
 <span class="n">__global__</span> <span class="kt">void</span> <span class="nf">matmul_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
 
@@ -594,29 +594,29 @@ next blocked iteration.</p>
 </div>
 <p>As you can see the simple for loop inside our kernel has been replaced
 with a blocked version. The blocked loop consists of two for-loop
-constructs. The outer loop iterates with steps of size <code class="docutils literal"><span class="pre">block_size_x</span></code>
-over the <code class="docutils literal"><span class="pre">WIDTH</span></code> of the matrix. Within each iteration of the outer
+constructs. The outer loop iterates with steps of size <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code>
+over the <code class="docutils literal notranslate"><span class="pre">WIDTH</span></code> of the matrix. Within each iteration of the outer
 loop two things happen. First the threads within this thread block fill
 shared memory with the submatrices needed for all the computations
 performed by the thread block. The actual computation happens in the
-inner loop and only uses data in shared memory. The <code class="docutils literal"><span class="pre">__syncthreads()</span></code>
+inner loop and only uses data in shared memory. The <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code>
 statements are needed to avoid race conditions on data in shared memory.</p>
 <p>The above kernel does come with one restriction, it can only be executed
 correctly when the area operated on by the thread block as a whole is a
 square. This means that the number of threads we use in the x and y
 dimensions will have to be equal. We can specify this restriction to the
-tuner using the <code class="docutils literal"><span class="pre">restrictions=</span></code> option of <code class="docutils literal"><span class="pre">tune_kernel()</span></code>.</p>
-<p>To use the <code class="docutils literal"><span class="pre">restrictions=</span></code> option we need to specify a list of
-conditions that need to evaluate to <code class="docutils literal"><span class="pre">True</span></code> before a kernel
+tuner using the <code class="docutils literal notranslate"><span class="pre">restrictions=</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
+<p>To use the <code class="docutils literal notranslate"><span class="pre">restrictions=</span></code> option we need to specify a list of
+conditions that need to evaluate to <code class="docutils literal notranslate"><span class="pre">True</span></code> before a kernel
 configurations is considered to be part of the parameter space of our
 kernel. In the code below we create such a restrictions list and call
 the tuner again for our kernel that uses shared memory.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">restrict</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x==block_size_y&quot;</span><span class="p">]</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul/matmul_shared.cu&quot;</span><span class="p">,</span>
                                    <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">restrictions</span><span class="o">=</span><span class="n">restrict</span><span class="p">)</span>
@@ -641,7 +641,7 @@ from the highly increased memory utilization:</p>
 <img alt="" src="https://raw.githubusercontent.com/benvanwerkhoven/kernel_tuner/master/tutorial/matmul/matmul_shared.png" />
 </div>
 <p>The compute utilization has actually decreased slightly, which is due to
-the synchronization overhead, because <code class="docutils literal"><span class="pre">__syncthread()</span></code> is called
+the synchronization overhead, because <code class="docutils literal notranslate"><span class="pre">__syncthread()</span></code> is called
 frequently.</p>
 <p>The restriction we have introduced has limited the number of kernel
 configurations benchmarked by the tuner significantly. Because the
@@ -662,9 +662,9 @@ this example:</p>
 similar to the convolution example (used as part of the ‘Getting
 Started’ tutorial). The area of output data that is processed by a
 single thread block is increased by a factor of N, and as such shared
-memory usage also increases by a factor <span class="math">\(N\)</span>. This means that the
+memory usage also increases by a factor <span class="math notranslate">\(N\)</span>. This means that the
 number of thread blocks needed to execute the kernel for this problem
-size is also reduced by a factor of <span class="math">\(N\)</span>. While this may reduce
+size is also reduced by a factor of <span class="math notranslate">\(N\)</span>. While this may reduce
 occupancy due to increased shared memory and register usage, this
 optimization drastically reduces the number of redundant instructions
 that were previously distributed across multiple thread blocks.</p>
@@ -677,7 +677,7 @@ goes down.</p>
 different or even multiple ways to increase the tuning parameter space
 even further. However, for the purposes of this tutorial, the resulting
 kernel is already complex enough:</p>
-<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#define WIDTH 4096</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define WIDTH 4096</span>
 
 <span class="n">__global__</span> <span class="kt">void</span> <span class="nf">matmul_kernel</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
 
@@ -739,11 +739,11 @@ kernel is already complex enough:</p>
 our newly introduced tunable parameters. We’ll choose a couple of small
 values for the tiling factors in both the x and y-dimension.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
 <span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
 </pre></div>
@@ -761,32 +761,32 @@ each dimension. However, the tuner now also needs to take the tiling
 factor into account. We specify this by setting up grid divisor lists,
 that will contain the names of all the tunable parameters that divide
 the grid in a particular dimension. These grid divisor lists will be
-passed as optional arguments when we call <code class="docutils literal"><span class="pre">tune_kernel</span></code>.</p>
+passed as optional arguments when we call <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
 <span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
 <p>Remember that the area operated on by the thread block should be a
-square. In this kernel however, we allow <code class="docutils literal"><span class="pre">block_size_x</span></code> and
-<code class="docutils literal"><span class="pre">block_size_y</span></code> to vary independently, while <code class="docutils literal"><span class="pre">tile_size_y</span></code> increases
+square. In this kernel however, we allow <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and
+<code class="docutils literal notranslate"><span class="pre">block_size_y</span></code> to vary independently, while <code class="docutils literal notranslate"><span class="pre">tile_size_y</span></code> increases
 the amount of work per thread in the y-direction within the thread
 block. This yields a discontinuous search space in which only part of
 the configurations are actually valid. Therefore, we again use the
-<code class="docutils literal"><span class="pre">restrictions=</span></code> option of <code class="docutils literal"><span class="pre">tune_kernel</span></code>. After this, we are ready to
-call <code class="docutils literal"><span class="pre">tune_kernel</span></code> again.</p>
+<code class="docutils literal notranslate"><span class="pre">restrictions=</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. After this, we are ready to
+call <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> again.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none"><div class="highlight"><pre>
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">restrict</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x==block_size_y*tile_size_y&quot;</span><span class="p">]</span>
 
 <span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul/matmul.cu&quot;</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
