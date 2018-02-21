@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+- bugfix for C backend for byte array arguments
+- argument type mismatches throw warning instead of exception
+
+### Added
+- wrapper functionality to wrap C++ functions
 
 ## [0.1.8] - 2017-11-23
 ### Changed
