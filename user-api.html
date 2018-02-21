@@ -553,6 +553,57 @@ function, containing the output after kernel execution.</p>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="kernel_tuner.wrappers.cpp">
+<code class="descclassname">kernel_tuner.wrappers.</code><code class="descname">cpp</code><span class="sig-paren">(</span><em>function_name</em>, <em>kernel_source</em>, <em>args</em>, <em>convert_to_array=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.wrappers.cpp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a wrapper to call C++ functions from Python</p>
+<p>This function allows Kernel Tuner to call templated C++ functions
+that use primitive data types (double, float, int, …).</p>
+<p>There is support to convert function arguments from plain pointers
+to array references. If this is needed, there should be a True value
+in convert_to_array in the location corresponding to the location in
+the args array.</p>
+<p>For example, a Numpy array argument of type float64 and length 10
+will be cast using:
+<code class="docutils literal notranslate"><span class="pre">*reinterpret_cast&lt;double(*)[10]&gt;(arg)</span></code>
+which allows it to be used to call a C++ that is defined as:
+<code class="docutils literal notranslate"><span class="pre">template&lt;typename</span> <span class="pre">T,</span> <span class="pre">int</span> <span class="pre">s&gt;void</span> <span class="pre">my_function(T</span> <span class="pre">(&amp;arg)[s],</span> <span class="pre">...)</span></code></p>
+<p>Arrays of size 1 will be converted to simple non-array references.
+False indicates that no conversion is performed. Conversion
+is only support for numpy array arguments. If convert_to_array is
+passed it should have the same length as the args array.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>function_name</strong> (<em>string</em>) – A string containing the name of the C++ function
+to be wrapped</li>
+<li><strong>kernel_source</strong> (<em>string</em><em> or </em><em>callable</em>) – One of the sources for the kernel, could be a
+function that generates the kernel code, a string containing a filename
+that points to the kernel source, or just a string that contains the code.</li>
+<li><strong>args</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for scalars.</li>
+<li><strong>convert_to_array</strong> (<em>list</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em>) – A list of same length as args, containing
+True or False values indicating whether the corresponding argument
+in args should be cast to a reference to an array or not.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A string containing the orignal code extended with the wrapper
+function. The wrapper has “extern C” binding and can be passed to
+other Kernel Tuner functions, for example run_kernel with lang=”C”.
+The name of the wrapper function will be the name of the function with
+a “_wrapper” postfix.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 
