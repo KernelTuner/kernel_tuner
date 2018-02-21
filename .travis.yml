@@ -67,7 +67,11 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no --set auto_update_conda False
   - conda update -yq conda
-  - conda install -y python=$MCONDA_PYTHON_VERSION numpy scipy
+  - |
+    if [[ "TRAVIS_OS_NAME" == "osx" ]]; then
+      conda install -y python=$MCONDA_PYTHON_VERSION python.app
+    fi
+  - conda install -y python=$MCONDA_PYTHON_VERSION chardet scipy
   - conda install -c conda-forge pyopencl
 
   - |
