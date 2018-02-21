@@ -48,6 +48,10 @@ matrix:
           packages:
             - pandoc
 
+  allow_failures:
+    - env: MCONDA_PYTHON_VERSION=3.5
+
+
 env:
   global:
     - MCONDA_VERSION="latest"
