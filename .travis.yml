@@ -49,7 +49,7 @@ matrix:
             - pandoc
 
   allow_failures:
-    - env: MCONDA_PYTHON_VERSION=3.5
+    - env: MCONDA_PYTHON_VERSION=3.5 MCONDA_PYTHON_MAJOR=3
 
 
 env:
