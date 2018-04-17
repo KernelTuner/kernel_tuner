@@ -1,0 +1,22 @@
+# YAML 1.2
+---
+cff-version: "1.0.3"
+authors:
+  - affiliation: "Netherlands eScience Center"
+    family-names: Werkhoven
+    given-names: Ben
+    name-particle: van
+    orcid: "https://orcid.org/0000-0002-7508-3272"
+    email: "b.vanwerkhoven@esciencecenter.nl"
+date-released: 2017-11-23
+keywords: 
+  - "GPU Computing"
+  - "Auto-Tuning"
+  - "Performance Optimization"
+  - "OpenCL"
+  - "CUDA"
+license: Apache-2.0
+message: "If you use this software, please cite it using these metadata."
+repository-code: "https://github.com/benvanwerkhoven/kernel_tuner"
+title: Kernel Tuner
+version: "0.1.8"
