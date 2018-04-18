@@ -4,6 +4,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+
+
+## [0.1.9] - 2018-04-18
 ### Changed
 - bugfix for C backend for byte array arguments
 - argument type mismatches throw warning instead of exception
