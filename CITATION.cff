@@ -9,6 +9,7 @@ authors:
     orcid: "https://orcid.org/0000-0002-7508-3272"
     email: "b.vanwerkhoven@esciencecenter.nl"
 date-released: 2017-11-23
+doi: 10.5281/zenodo.1220113
 keywords: 
   - "GPU Computing"
   - "Auto-Tuning"
