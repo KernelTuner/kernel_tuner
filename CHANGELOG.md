@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - wrapper functionality to wrap C++ functions
+- citation file and zenodo doi generation for releases
 
 ## [0.1.8] - 2017-11-23
 ### Changed
