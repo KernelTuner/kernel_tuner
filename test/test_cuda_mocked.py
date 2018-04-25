@@ -13,6 +13,7 @@ def setup_mock(drv):
                 'COMPUTE_CAPABILITY_MAJOR': 5,
                 'COMPUTE_CAPABILITY_MINOR': 5 }
     context.return_value.get_device.return_value.get_attributes.return_value = devprops
+    context.return_value.get_device.return_value.compute_capability.return_value = "55"
     drv.Device.return_value.make_context.return_value = context()
     drv.mem_alloc.return_value = 'mem_alloc'
     return drv
