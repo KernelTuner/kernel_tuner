@@ -37,6 +37,7 @@ class CudaFunctions(object):
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        self.allocations = []
         if not drv:
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
@@ -65,7 +66,6 @@ class CudaFunctions(object):
         env["device_properties"] = devprops
         self.env = env
         self.name = env["device_name"]
-        self.allocations = []
 
     def __del__(self):
         for gpu_mem in self.allocations:
@@ -124,7 +124,7 @@ class CudaFunctions(object):
                 source_mod = SourceModule
 
             self.current_module = source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
-                                               arch=('compute_' + self.cc) if self.cc != "00" else None, 
+                                               arch=('compute_' + self.cc) if self.cc != "00" else None,
                                                code=('sm_' + self.cc) if self.cc != "00" else None,
                                                cache_dir=False, no_extern_c=no_extern_c)
 

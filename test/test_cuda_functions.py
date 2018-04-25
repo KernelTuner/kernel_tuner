@@ -1,5 +1,4 @@
 import numpy
-import pytest
 from .context import skip_if_no_cuda
 
 from kernel_tuner import cuda

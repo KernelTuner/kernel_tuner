@@ -85,7 +85,7 @@ def test_unscale():
 
     print(freq)
 
-    for k, v in freq.items():
+    for v in freq.values():
         assert v == freq[params['x'][0]]
 
     assert len(freq.keys()) == len(params['x'])

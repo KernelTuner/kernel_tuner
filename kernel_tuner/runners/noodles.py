@@ -115,7 +115,7 @@ class NoodlesRunner:
 
                 params['time'] = time
                 results.append(params)
-            except Exception as e:
+            except Exception:
                 params['time'] = None
                 results.append(params)
 

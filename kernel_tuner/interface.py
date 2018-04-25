@@ -297,17 +297,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    # see if the kernel arguments have correct type
-    if not callable(kernel_string):
-        util.check_argument_list(util.get_kernel_string(kernel_string), arguments)
-    else:
-        logging.debug("Checking of arguments list not supported yet for code generators.")
+    _check_user_input(kernel_name, kernel_string, arguments, block_size_names)
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params)
-
-    # check for types and length of block_size_names
-    util.check_block_size_names(block_size_names)
 
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
@@ -381,12 +374,13 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
     #finished iterating over search space
-    if results:     #checks if results is not empty
-        best_config = min(results, key=lambda x: x['time'])
-        units = getattr(runner, "units", None)
-        print("best performing configuration:", util.get_config_string(best_config, units=units))
-    else:
-        print("no results to report")
+    if not device_options.quiet:
+        if results:     #checks if results is not empty
+            best_config = min(results, key=lambda x: x['time'])
+            units = getattr(runner, "units", None)
+            print("best performing configuration:", util.get_config_string(best_config, units=units))
+        else:
+            print("no results to report")
 
     del runner.dev
 
@@ -430,6 +424,8 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
                lang=None, device=0, platform=0, cmem_args=None, compiler=None, compiler_options=None,
                block_size_names=None, quiet=False):
 
+    _check_user_input(kernel_name, kernel_string, arguments, block_size_names)
+
     #sort options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
@@ -449,7 +445,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
             raise Exception("cannot create kernel instance, too many threads per block")
 
         # see if the kernel arguments have correct type
-        util.check_argument_list(instance.kernel_string, arguments)
+        util.check_argument_list(instance.name, instance.kernel_string, arguments)
 
         #compile the kernel
         func = dev.compile_kernel(instance, False)
@@ -482,3 +478,18 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 
 run_kernel.__doc__ = _run_kernel_docstring
+
+def _check_user_input(kernel_name, kernel_string, arguments, block_size_names):
+    # see if the kernel arguments have correct type
+    if not callable(kernel_string):
+        if isinstance(kernel_string, list):
+            for file in kernel_string:
+                util.check_argument_list(kernel_name, util.get_kernel_string(file), arguments)
+        else:
+            util.check_argument_list(kernel_name, util.get_kernel_string(kernel_string), arguments)
+    else:
+        logging.debug("Checking of arguments list not supported yet for code generators.")
+
+    # check for types and length of block_size_names
+    util.check_block_size_names(block_size_names)
+

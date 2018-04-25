@@ -4,9 +4,30 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+
+
+## [0.1.9] - 2018-04-18
+### Changed
+- bugfix for C backend for byte array arguments
+- argument type mismatches throw warning instead of exception
+
+### Added
+- wrapper functionality to wrap C++ functions
+- citation file and zenodo doi generation for releases
+
+## [0.1.8] - 2017-11-23
 ### Changed
 - bugfix for when using iterations smaller than 3
 - the install procedure now uses extras, e.g. [cuda,opencl]
+- option quiet makes tune_kernel completely quiet
+- extensive updates to documentation
+
+### Added
+- type checking for kernel arguments and answers lists
+- checks for reserved keywords in tunable paramters
+- checks for whether thread block dimensions are specified
+- printing units for measured time with CUDA and OpenCL
+- option to print all measured execution times
 
 ## [0.1.7] - 2017-10-11
 ### Changed

@@ -1,7 +1,7 @@
-Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python
+Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner
 =========================================================
 
-|Build Status| |Codacy Badge| |Codacy Badge2|
+|Build Status| |Codacy Badge| |Codacy Badge2| |PyPi Badge|
 
 Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.
 
@@ -136,9 +136,9 @@ A scientific paper about the Kernel Tuner is in preparation, in the meantime ple
 
 .. code:: latex
 
-    @misc{
+    @misc{vanwerkhoven2018kerneltuner,
       author = {Ben van Werkhoven},
-      title = {Kernel Tuner: A simple CUDA/OpenCL Auto-Tuner in Python},
+      title = {Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner},
       year = {2018}
     }
 
@@ -156,3 +156,5 @@ spent on tuning kernels.
    :target: https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner
 .. |Codacy Badge2| image:: https://api.codacy.com/project/badge/coverage/016dc85044ab4d57b777449d93275608
    :target: https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner
+.. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue 
+   :target: https://pypi.python.org/pypi/kernel_tuner/

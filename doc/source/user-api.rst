@@ -11,3 +11,5 @@ This file provides all the details you need about how to call the Kernel Tuner's
 .. autofunction:: kernel_tuner.tune_kernel
 
 .. autofunction:: kernel_tuner.run_kernel
+
+.. autofunction:: kernel_tuner.wrappers.cpp

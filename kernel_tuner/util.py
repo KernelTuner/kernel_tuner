@@ -6,105 +6,73 @@ import os
 import errno
 import tempfile
 import logging
-import numpy
 import warnings
+import re
+import numpy
 
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
-def check_argument_list(kernel_string, args):
-    """ raise an exception if a kernel arguments do not match host arguments """
-    kernel_arguments = kernel_string[kernel_string.find("(") + 1:kernel_string.find(")")].split(",")
-    if len(kernel_arguments) != len(args):
-        raise TypeError("Kernel and host argument lists do not match in size.")
-    for (i, arg) in enumerate(args):
-        kernel_argument = kernel_arguments[i]
-        if "*" in kernel_argument:
-            # Corresponding argument should be a NumPy array
-            if not isinstance(arg, numpy.ndarray):
-                raise TypeError("Argument at position " + str(i) + " of type: "
-                    + str(type(arg)) + " does not match " + kernel_argument + ".")
-            # CUDA/OpenCL/C uchar arrays
-            if ("uchar" in kernel_argument or "unsigned char" in kernel_argument) and arg.dtype == "ubyte":
-                continue
-            # CUDA/OpenCL/C char arrays
-            elif "char" in kernel_argument and arg.dtype == "byte":
-                continue
-            # CUDA/OpenCL/C ushort arrays
-            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and arg.dtype == "uint16":
-                continue
-            # CUDA/OpenCL/C short arrays
-            elif "short" in kernel_argument and arg.dtype == "int16":
-                continue
-            # CUDA/OpenCL/C uint arrays
-            elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and arg.dtype == "uint32":
-                continue
-            # CUDA/OpenCL/C int arrays
-            elif "int" in kernel_argument and arg.dtype == "int32":
-                continue
-            # CUDA/OpenCL/C ulong arrays
-            elif ("ulong" in kernel_argument or "unsigned long" in kernel_argument) and arg.dtype == "uint64":
-                continue
-            # CUDA/OpenCL/C long arrays
-            elif "long" in kernel_argument and arg.dtype == "int64":
-                continue
-            # OpenCL/C half arrays
-            elif "half" in kernel_argument and arg.dtype == "float16":
-                continue
-            # CUDA/OpenCL/C float arrays
-            elif "float" in kernel_argument and arg.dtype == "float32":
-                continue
-            # CUDA/OpenCL/C double array
-            elif "double" in kernel_argument and arg.dtype == "float64":
-                continue
-            raise TypeError("Argument at position " + str(i) + " of type: "
-                + str(type(arg)) + " does not match " + kernel_argument + ".")
-        else:
-            # NumPy scalar
-            if not isinstance(arg, numpy.generic):
-                raise TypeError("Argument at position " + str(i) + " of type: "
-                    + str(type(arg)) + " does not match " + kernel_argument + ".")
-            # CUDA/OpenCL/C uchar
-            if ("uchar" in kernel_argument or "unsigned char" in kernel_argument) and arg.dtype == "ubyte":
-                continue
-            # CUDA/OpenCL/C char
-            elif "char" in kernel_argument and arg.dtype == "byte":
-                continue
-            # CUDA/OpenCL/C ushort
-            elif ("ushort" in kernel_argument or "unsigned short" in kernel_argument) and arg.dtype == "ushort":
-                continue
-            # CUDA/OpenCL/C short
-            elif "short" in kernel_argument and arg.dtype == "short":
-                continue
-            # CUDA/OpenCL/C uint
-            elif ("uint" in kernel_argument or "unsigned int" in kernel_argument) and arg.dtype == "uint32":
-                continue
-            # CUDA/OpenCL/C int
-            elif "int" in kernel_argument and arg.dtype == "int32":
-                continue
-            # CUDA/OpenCL/C ulong
-            elif ("ulong" in kernel_argument or "unsigned long" in kernel_argument) and arg.dtype == "uint64":
-                continue
-            # CUDA/OpenCL/C long
-            elif "long" in kernel_argument and arg.dtype == "int64":
-                continue
-            # OpenCL/C half
-            elif "half" in kernel_argument and arg.dtype == "float16":
-                continue
-            # CUDA/OpenCL/C float
-            elif "float" in kernel_argument and arg.dtype == "float32":
-                continue
-            # CUDA/OpenCL/C double
-            elif "double" in kernel_argument and arg.dtype == "float64":
-                continue
-            raise TypeError("Argument at position " + str(i) + " of type: "
-                + str(type(arg)) + " does not match " + kernel_argument + ".")
 
+def check_argument_type(dtype, kernel_argument, i):
+    """check if the numpy.dtype matches the type used in the code"""
+    types_map = {"ubyte": ["uchar", "unsigned char"],
+                 "int8": ["char"],
+                 "uint16": ["ushort", "unsigned short"],
+                 "int16": ["short"],
+                 "uint32": ["uint", "unsigned int"],
+                 "int32": ["int"],   #discrepancy between OpenCL and C here, long may be 32bits in C
+                 "uint64": ["ulong", "unsigned long"],
+                 "int64": ["long"],
+                 "float16": ["half"],
+                 "float32": ["float"],
+                 "float64": ["double"]}
+    if not dtype in types_map:
+        raise TypeError("Unknown dtype for argument " + str(i) + " dtype=" + dtype)
+    return any([substr in kernel_argument for substr in types_map[dtype]])
+
+
+def check_argument_list(kernel_name, kernel_string, args):
+    """ raise an exception if a kernel arguments do not match host arguments """
+    kernel_arguments = list()
+    collected_errors = list()
+    for iterator in re.finditer(kernel_name + "[ \n\t]*" + "\(", kernel_string):
+        kernel_start = iterator.end()
+        kernel_end = kernel_string.find(")", kernel_start)
+        if kernel_start != 0:
+            kernel_arguments.append(kernel_string[kernel_start:kernel_end].split(","))
+    for arguments_set, arguments in enumerate(kernel_arguments):
+        collected_errors.append(list())
+        if len(arguments) != len(args):
+            collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
+            continue
+        for (i, arg) in enumerate(args):
+            kernel_argument = arguments[i]
+
+            if not isinstance(arg, (numpy.ndarray, numpy.generic)):
+                raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
+
+            correct = True
+            if isinstance(arg, numpy.ndarray) and not "*" in kernel_argument:
+                correct = False  #array is passed to non-pointer kernel argument
+
+            if correct and check_argument_type(str(arg.dtype), kernel_argument, i):
+                continue
+
+            collected_errors[arguments_set].append("Argument at position " + str(i) + " of type: " + str(type(arg)) +
+                                                   " does not match " + kernel_argument + ".")
+        if not collected_errors[arguments_set]:
+            # We assume that if there is a possible list of arguments that matches with the provided one
+            # it is the right one
+            return
+    for errors in collected_errors:
+        warnings.warn(errors[0], UserWarning)
+        #raise TypeError(errors[0])
 
 def check_tune_params_list(tune_params):
     """ raise an exception if a tune parameter has a forbidden name """
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z")
     forbidden_name_substr = ("time", "times")
-    for i, (name, param) in enumerate(tune_params.items()):
+    for name, param in tune_params.items():
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
         for forbidden_substr in forbidden_name_substr:
@@ -121,9 +89,9 @@ def check_block_size_names(block_size_names):
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
             raise ValueError("block_size_names should contain only strings!")
         #ensure there is always at least three names
-        for i,name in enumerate(default_block_size_names):
+        for i, name in enumerate(default_block_size_names):
             if len(block_size_names) < i+1:
-                block_size_names.append(default_block_size_names[i])
+                block_size_names.append(name)
 
 def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:

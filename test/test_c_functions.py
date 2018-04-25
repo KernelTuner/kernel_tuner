@@ -9,7 +9,7 @@ try:
 except ImportError:
     from unittest.mock import patch, Mock
 
-from kernel_tuner.c import CFunctions
+from kernel_tuner.c import CFunctions, Argument
 
 
 def test_ready_argument_list1():
@@ -71,6 +71,25 @@ def test_ready_argument_list4():
         cfunc = CFunctions()
         cfunc.ready_argument_list([arg1])
 
+def test_byte_array_arguments():
+    arg1 = numpy.array([1, 2, 3]).astype(numpy.int8)
+
+    cfunc = CFunctions()
+
+    output = cfunc.ready_argument_list([arg1])
+
+    output_arg1 = numpy.ctypeslib.as_array(output[0], shape=arg1.shape)
+
+    assert output_arg1.dtype == 'int8'
+
+    assert all(output_arg1 == arg1)
+
+    dest = numpy.zeros_like(arg1)
+
+    cfunc.memcpy_dtoh(dest, output[0])
+
+    assert all(dest == arg1)
+
 
 @patch('kernel_tuner.c.subprocess')
 @patch('kernel_tuner.c.numpy.ctypeslib')
@@ -120,7 +139,7 @@ def test_memcpy_dtoh():
     output = numpy.zeros_like(x)
 
     cfunc = CFunctions()
-    cfunc.arg_mapping = { str(x_c) : (4,) }
+    cfunc.arg_mapping = { str(x_c) : Argument(str(x.dtype), (4,)) }
     cfunc.memcpy_dtoh(output, x_c)
 
     print(a)

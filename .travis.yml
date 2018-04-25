@@ -1,4 +1,6 @@
 sudo: false
+dist: trusty
+
 language: generic
 
 matrix:
@@ -7,12 +9,6 @@ matrix:
       env:
         - MCONDA_PYTHON_MAJOR=2
         - MCONDA_PYTHON_VERSION=2.7
-
-    - os: linux
-      env:
-        - MCONDA_PYTHON_MAJOR=3
-        - MCONDA_PYTHON_VERSION=3.5
-
     - os: linux
       env:
         - MCONDA_PYTHON_MAJOR=3
@@ -22,12 +18,6 @@ matrix:
       env:
         - MCONDA_PYTHON_MAJOR=2
         - MCONDA_PYTHON_VERSION=2.7
-
-    - os: osx
-      env:
-        - MCONDA_PYTHON_MAJOR=3
-        - MCONDA_PYTHON_VERSION=3.5
-
     - os: osx
       env:
         - MCONDA_PYTHON_MAJOR=3
@@ -66,10 +56,8 @@ install:
   - conda config --set always_yes yes --set changeps1 no --set auto_update_conda False
   - conda update -yq conda
   - conda install -y python=$MCONDA_PYTHON_VERSION numpy scipy
-  - |
-    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      conda install -c conda-forge pyopencl
-    fi
+  - conda install -c conda-forge pyopencl
+
   - |
     if [[ "$GH_PAGES_BUILD" == true ]]; then
       echo "installing documentation dependencies"
