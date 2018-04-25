@@ -346,21 +346,6 @@ div.nboutput div.output_area.stderr {
     margin-top: -19px;
 }
 
-/* nice headers on first paragraph of info/warning boxes */
-.admonition .first {
-    margin: -12px;
-    padding: 6px 12px;
-    margin-bottom: 12px;
-    color: #fff;
-    line-height: 1;
-    display: block;
-}
-.admonition.warning .first {
-    background: #f0b37e;
-}
-.admonition.note .first {
-    background: #6ab0de;
-}
 .admonition > p:before {
     margin-right: 4px;  /* make room for the exclamation icon */
 }
@@ -387,10 +372,10 @@ applications and are the main operation in convolutional neural networks
 used for deep learning. A convolution operation computes the linear
 combination of the weights in a <em>convolution filter</em> and a range of
 pixels from the input image for each output pixel. A 2D convolution of
-an input image <span class="math notranslate">\(I\)</span> of size <span class="math notranslate">\((w\times h)\)</span> and a convolution
-filter <span class="math notranslate">\(F\)</span> of size <span class="math notranslate">\((F_w\times F_h)\)</span> computes an output
-image <span class="math notranslate">\(O\)</span> of size <span class="math notranslate">\(((w-F_w)\times (h-F_h))\)</span>:</p>
-<div class="math notranslate">
+an input image <span class="math notranslate nohighlight">\(I\)</span> of size <span class="math notranslate nohighlight">\((w\times h)\)</span> and a convolution
+filter <span class="math notranslate nohighlight">\(F\)</span> of size <span class="math notranslate nohighlight">\((F_w\times F_h)\)</span> computes an output
+image <span class="math notranslate nohighlight">\(O\)</span> of size <span class="math notranslate nohighlight">\(((w-F_w)\times (h-F_h))\)</span>:</p>
+<div class="math notranslate nohighlight">
 \begin{equation}\nonumber
 O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 \end{equation}</div><p>A naive CUDA kernel for 2D Convolution parallelizes the operation by
@@ -490,7 +475,7 @@ which we have already defined above as <code class="docutils literal notranslate
 <p>The <strong>problem_size</strong> is what is used by Kernel Tuner to determine the
 grid dimensions of the kernel. Our naive kernel needs one thread for
 each pixel in the output image. As defined above, our <code class="docutils literal notranslate"><span class="pre">output_size</span></code> is
-<span class="math notranslate">\(4096 \times 4096\)</span>.</p>
+<span class="math notranslate nohighlight">\(4096 \times 4096\)</span>.</p>
 <p>Kernel Tuner computes the grid dimensions of a kernel by dividing the
 <strong>problem_size</strong> in each dimension with the <strong>grid divisors</strong> in that
 dimension. The grid divisors are, by default, simply the thread block
@@ -557,7 +542,7 @@ block dimensions differently, please use the <code class="docutils literal notra
 option.</p>
 <p>Let’s continue with the creation of our <strong>params</strong> dictionary such that
 we can run our naive convolution kernel. As thread block dimensions we
-will just select the trusty old <span class="math notranslate">\(16 \times 16\)</span>:</p>
+will just select the trusty old <span class="math notranslate nohighlight">\(16 \times 16\)</span>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [ ]:
@@ -690,7 +675,7 @@ documentation of
 <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">tune_kernel</a>.</p>
 <p>Some combinations of values are illegal and will be skipped
 automatically. For example, using thread block dimensions of
-<span class="math notranslate">\(128 \times 16 = 2048\)</span>, which is more than the limit of 1024 that
+<span class="math notranslate nohighlight">\(128 \times 16 = 2048\)</span>, which is more than the limit of 1024 that
 is currently the limit in all CUDA devices. Configurations that fail for
 other (to be expected) reasons like using too much shared memory, or
 requiring more registers than available on the device will also be

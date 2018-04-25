@@ -349,21 +349,6 @@ div.nboutput div.output_area.stderr {
     margin-top: -19px;
 }
 
-/* nice headers on first paragraph of info/warning boxes */
-.admonition .first {
-    margin: -12px;
-    padding: 6px 12px;
-    margin-bottom: 12px;
-    color: #fff;
-    line-height: 1;
-    display: block;
-}
-.admonition.warning .first {
-    background: #f0b37e;
-}
-.admonition.note .first {
-    background: #6ab0de;
-}
 .admonition > p:before {
     margin-right: 4px;  /* make room for the exclamation icon */
 }
@@ -407,16 +392,16 @@ or other causes in this example.</p>
 <p>We can use the <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion_equation">diffusion
 equation</a> to model
 how the heat diffuses through our metal sheet:</p>
-<div class="math notranslate">
+<div class="math notranslate nohighlight">
 \begin{equation*}
 \frac{\partial u}{\partial t}= D \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} \right)
-\end{equation*}</div><p>Where <span class="math notranslate">\(x\)</span> and <span class="math notranslate">\(y\)</span> represent the spatial descretization of
-our 2D domain, <span class="math notranslate">\(u\)</span> is the quantity that is being diffused,
-<span class="math notranslate">\(t\)</span> is the descretization in time, and the constant <span class="math notranslate">\(D\)</span>
+\end{equation*}</div><p>Where <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> represent the spatial descretization of
+our 2D domain, <span class="math notranslate nohighlight">\(u\)</span> is the quantity that is being diffused,
+<span class="math notranslate nohighlight">\(t\)</span> is the descretization in time, and the constant <span class="math notranslate nohighlight">\(D\)</span>
 determines how fast the diffusion takes place.</p>
 <p>In this example, we will assume a very simple descretization of our
-problem. We assume that our 2D domain has <span class="math notranslate">\(nx\)</span> equi-distant grid
-points in the x-direction and <span class="math notranslate">\(ny\)</span> equi-distant grid points in the
+problem. We assume that our 2D domain has <span class="math notranslate nohighlight">\(nx\)</span> equi-distant grid
+points in the x-direction and <span class="math notranslate nohighlight">\(ny\)</span> equi-distant grid points in the
 y-direction. Be sure to execute every cell as you read through this
 document, by selecting it and pressing <strong>shift+enter</strong>.</p>
 <div class="nbinput nblast docutils container">
@@ -430,28 +415,28 @@ document, by selecting it and pressing <strong>shift+enter</strong>.</p>
 </pre></div>
 </div>
 </div>
-<p>This results in a constant distance of <span class="math notranslate">\(\delta x\)</span> between all grid
-points in the <span class="math notranslate">\(x\)</span> dimension. Using central differences, we can
-numerically approximate the derivative for a given point <span class="math notranslate">\(x_i\)</span>:</p>
-<div class="math notranslate">
+<p>This results in a constant distance of <span class="math notranslate nohighlight">\(\delta x\)</span> between all grid
+points in the <span class="math notranslate nohighlight">\(x\)</span> dimension. Using central differences, we can
+numerically approximate the derivative for a given point <span class="math notranslate nohighlight">\(x_i\)</span>:</p>
+<div class="math notranslate nohighlight">
 \begin{equation*}
 \left. \frac{\partial^2 u}{\partial x^2} \right|_{x_{i}} \approx \frac{u_{x_{i+1}}-2u_{{x_i}}+u_{x_{i-1}}}{(\delta x)^2}
-\end{equation*}</div><p>We do the same for the partial derivative in <span class="math notranslate">\(y\)</span>:</p>
-<div class="math notranslate">
+\end{equation*}</div><p>We do the same for the partial derivative in <span class="math notranslate nohighlight">\(y\)</span>:</p>
+<div class="math notranslate nohighlight">
 \begin{equation*}
 \left. \frac{\partial^2 u}{\partial y^2} \right|_{y_{i}} \approx \frac{u_{y_{i+1}}-2u_{y_{i}}+u_{y_{i-1}}}{(\delta y)^2}
 \end{equation*}</div><p>If we combine the above equations, we can obtain a numerical estimation
 for the temperature field of our metal sheet in the next time step,
-using <span class="math notranslate">\(\delta t\)</span> as the time between time steps. But before we do,
+using <span class="math notranslate nohighlight">\(\delta t\)</span> as the time between time steps. But before we do,
 we also simplify the expression a little bit, because we’ll assume that
-<span class="math notranslate">\(\delta x\)</span> and <span class="math notranslate">\(\delta y\)</span> are always equal to 1.</p>
-<div class="math notranslate">
+<span class="math notranslate nohighlight">\(\delta x\)</span> and <span class="math notranslate nohighlight">\(\delta y\)</span> are always equal to 1.</p>
+<div class="math notranslate nohighlight">
 \begin{equation*}
 u'_{x,y} = u_{x,y} + \delta t \times \left( \left( u_{x_{i+1},y}-2u_{{x_i},y}+u_{x_{i-1},y} \right) + \left( u_{x,y_{i+1}}-2u_{x,y_{i}}+u_{x,y_{i-1}} \right) \right)
-\end{equation*}</div><p>In this formula <span class="math notranslate">\(u'_{x,y}\)</span> refers to the temperature field at the
-time <span class="math notranslate">\(t + \delta t\)</span>. As a final step, we further simplify this
+\end{equation*}</div><p>In this formula <span class="math notranslate nohighlight">\(u'_{x,y}\)</span> refers to the temperature field at the
+time <span class="math notranslate nohighlight">\(t + \delta t\)</span>. As a final step, we further simplify this
 equation to:</p>
-<div class="math notranslate">
+<div class="math notranslate nohighlight">
 \begin{equation*}
 u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i},y}+u_{x_{i-1},y}+u_{x,y_{i-1}} \right)
 \end{equation*}</div></div>
