@@ -1,5 +1,5 @@
-Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner
-=========================================================
+Kernel Tuner
+============
 
 |Build Status| |Codacy Badge| |Codacy Badge2| |PyPi Badge|
 
@@ -136,10 +136,12 @@ A scientific paper about the Kernel Tuner is in preparation, in the meantime ple
 
 .. code:: latex
 
-    @misc{vanwerkhoven2018kerneltuner,
-      author = {Ben van Werkhoven},
-      title = {Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner},
-      year = {2018}
+    @misc{kerneltuner,
+      author  = {Ben van Werkhoven},
+      title   = {Kernel Tuner},
+      year    = {2018}
+      doi     = {10.5281/zenodo.1220113},
+      url     = {https://github.com/benvanwerkhoven/kernel_tuner}
     }
 
 Related work
