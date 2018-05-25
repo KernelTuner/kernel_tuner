@@ -146,7 +146,7 @@
         
             
             
-              <a href="https://github.com/benvanwerkhoven/kernel_tuner//master/doc/source/index.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/index.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -201,8 +201,8 @@
 <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 </div>
-<div class="section" id="kernel-tuner-a-search-optimizing-gpu-code-auto-tuner">
-<h1>Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner<a class="headerlink" href="#kernel-tuner-a-search-optimizing-gpu-code-auto-tuner" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="kernel-tuner">
+<h1>Kernel Tuner<a class="headerlink" href="#kernel-tuner" title="Permalink to this headline">¶</a></h1>
 <p><a class="reference external" href="https://travis-ci.org/benvanwerkhoven/kernel_tuner"><img alt="Build Status" src="https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master" /></a> <a class="reference external" href="https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner"><img alt="Codacy Badge" src="https://api.codacy.com/project/badge/grade/016dc85044ab4d57b777449d93275608" /></a> <a class="reference external" href="https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner"><img alt="Codacy Badge2" src="https://api.codacy.com/project/badge/coverage/016dc85044ab4d57b777449d93275608" /></a> <a class="reference external" href="https://pypi.python.org/pypi/kernel_tuner/"><img alt="PyPi Badge" src="https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue" /></a></p>
 <p>Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.</p>
 <p>Kernel Tuner provides a comprehensive solution for auto-tuning GPU programs, supporting auto-tuning of user-defined parameters in both host and device code, supporting output verification of all benchmarked kernels during tuning, as well as many optimization strategies to speed up the tuning process.</p>
@@ -316,10 +316,12 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 <div class="section" id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
 <p>A scientific paper about the Kernel Tuner is in preparation, in the meantime please cite the Kernel Tuner as follows:</p>
-<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@misc<span class="nb">{</span>vanwerkhoven2018kerneltuner,
-  author = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,
-  title = <span class="nb">{</span>Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner<span class="nb">}</span>,
-  year = <span class="nb">{</span>2018<span class="nb">}</span>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@misc<span class="nb">{</span>kerneltuner,
+  author  = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,
+  title   = <span class="nb">{</span>Kernel Tuner<span class="nb">}</span>,
+  year    = <span class="nb">{</span>2018<span class="nb">}</span>
+  doi     = <span class="nb">{</span>10.5281/zenodo.1220113<span class="nb">}</span>,
+  url     = <span class="nb">{</span>https://github.com/benvanwerkhoven/kernel<span class="nb">_</span>tuner<span class="nb">}</span>
 <span class="nb">}</span>
 </pre></div>
 </div>
@@ -403,9 +405,7 @@ spent on tuning kernels.</p>
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 
