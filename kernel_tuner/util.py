@@ -193,7 +193,8 @@ def get_kernel_string(kernel_source, params=None):
     :returns: A string containing the kernel code.
     :rtype: string
     """
-    logging.debug('get_kernel_string called with %s', str(kernel_source))
+    #logging.debug('get_kernel_string called with %s', str(kernel_source))
+    logging.debug('get_kernel_string called')
 
     kernel_string = None
     if callable(kernel_source):
