@@ -35,7 +35,7 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
@@ -346,6 +346,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             if not method in ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
                               "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]:
                 raise ValueError("method option not recognized")
+    elif strategy in ["genetic_algorithm"]:
+        use_strategy = genetic_algorithm
     else:
         raise ValueError("strategy option not recognized")
     strategy = use_strategy
