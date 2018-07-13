@@ -474,6 +474,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
             results.append(numpy.zeros_like(arg))
             dev.memcpy_dtoh(results[-1], gpu_args[i])
 
+    #trying to make run_kernel work nicely with the Nvidia Visual Profiler
+    del dev
+
     return results
 
 
