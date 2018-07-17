@@ -35,7 +35,7 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
@@ -324,6 +324,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         raise ValueError("It's not possible to use both sample_fraction in combination with other strategies. " \
                          'Please set strategy=None or strategy="random_sample", when using sample_fraction')
 
+    strategy_map = {"genetic_algorithm": genetic_algorithm, "pso": pso, "simulated_annealing": simulated_annealing}
+
     if strategy in [None, 'sample_fraction', 'brute_force']:
         if sample_fraction:
             use_strategy = random_sample
@@ -346,8 +348,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             if not method in ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
                               "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]:
                 raise ValueError("method option not recognized")
-    elif strategy in ["genetic_algorithm"]:
-        use_strategy = genetic_algorithm
+    elif strategy in strategy_map.keys():
+        use_strategy = strategy_map[strategy]
     else:
         raise ValueError("strategy option not recognized")
     strategy = use_strategy
