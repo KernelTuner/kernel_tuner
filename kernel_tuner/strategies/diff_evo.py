@@ -4,7 +4,7 @@ from __future__ import print_function
 from scipy.optimize import differential_evolution
 from kernel_tuner import util
 
-import kernel_tuner.strategies.minimize as minimize
+from kernel_tuner.strategies.minimize import get_bounds, _cost_func
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -31,14 +31,16 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     results = []
+    cache = {}
 
     #build a bounds array as needed for the optimizer
     bounds = minimize.get_bounds(tuning_options.tune_params)
 
+    args = (kernel_options, tuning_options, runner, results, cache)
+
     #call the differential evolution optimizer
-    opt_result = differential_evolution(_cost_func, bounds,
-                                        [kernel_options, tuning_options, runner, results],
-                                        maxiter=1, polish=False, disp=tuning_options.verbose)
+    opt_result = differential_evolution(_cost_func, bounds, args, maxiter=1,
+                                        polish=False, disp=tuning_options.verbose)
 
     if tuning_options.verbose:
         print(opt_result.message)
@@ -46,26 +48,3 @@ def tune(runner, kernel_options, device_options, tuning_options):
     return results, runner.dev.get_environment()
 
 
-
-def _cost_func(x, kernel_options, tuning_options, runner, results):
-    """ Cost function used by the differential evolution optimizer """
-
-    #snap values in x to nearest actual value for each parameter
-    params = minimize.snap_to_nearest_config(x, tuning_options.tune_params)
-
-    #check if this is a legal (non-restricted) parameter instance
-    if tuning_options.restrictions:
-        legal = util.check_restrictions(tuning_options.restrictions, params,
-                                        tuning_options.tune_params.keys(), tuning_options.verbose)
-        if not legal:
-            return 1e20
-
-    #compile and benchmark this instance
-    res, _ = runner.run([params], kernel_options, tuning_options)
-
-    #append to tuning results
-    if res:
-        results.append(res[0])
-        return res[0]['time']
-
-    return 1e20
