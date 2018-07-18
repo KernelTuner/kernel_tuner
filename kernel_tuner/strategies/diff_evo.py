@@ -33,8 +33,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
     results = []
     cache = {}
 
+    tuning_options["scaling"] = False
     #build a bounds array as needed for the optimizer
-    bounds = minimize.get_bounds(tuning_options.tune_params)
+    bounds = get_bounds(tuning_options.tune_params)
 
     args = (kernel_options, tuning_options, runner, results, cache)
 
