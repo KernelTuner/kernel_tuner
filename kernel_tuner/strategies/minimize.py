@@ -92,7 +92,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
     res, _ = runner.run([params], kernel_options, tuning_options)
 
     #append to tuning results
-    if len(res) > 0:
+    if res:
         results.append(res[0])
         cache[x_int] = res[0]['time']
         cache[x_key] = res[0]['time']
@@ -191,7 +191,7 @@ def unscale_and_snap_to_nearest(x, tune_params, eps):
         #to actual values, giving each value an equal chance
         #pad = 0.5/len(v)  #use when interval is [0,1]
         pad = 0.5*eps      #use when interval is [0, eps*len(v)]
-        linspace = numpy.linspace(pad,(eps*len(v))-pad,len(v))
+        linspace = numpy.linspace(pad, (eps*len(v))-pad, len(v))
 
         #snap value to nearest point in space, store index
         idx = numpy.abs(linspace-x[i]).argmin()
@@ -202,5 +202,3 @@ def unscale_and_snap_to_nearest(x, tune_params, eps):
         #use index into array of actual values
         x_u[i] = v[idx]
     return x_u
-
-

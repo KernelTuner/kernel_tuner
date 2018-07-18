@@ -36,12 +36,12 @@ def tune(runner, kernel_options, device_options, tuning_options):
     bounds = minimize.get_bounds(tuning_options.tune_params)
 
     #call the differential evolution optimizer
-    opt_result = differential_evolution(_cost_func, bounds, [kernel_options, tuning_options, runner, results],
+    opt_result = differential_evolution(_cost_func, bounds,
+                                        [kernel_options, tuning_options, runner, results],
                                         maxiter=1, polish=False, disp=tuning_options.verbose)
 
     if tuning_options.verbose:
         print(opt_result.message)
-        print('best config:', minimize.snap_to_nearest_config(opt_result.x, tuning_options.tune_params))
 
     return results, runner.dev.get_environment()
 
@@ -55,7 +55,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
 
     #check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:
-        legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
+        legal = util.check_restrictions(tuning_options.restrictions, params,
+                                        tuning_options.tune_params.keys(), tuning_options.verbose)
         if not legal:
             return 1e20
 
@@ -63,7 +64,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     res, _ = runner.run([params], kernel_options, tuning_options)
 
     #append to tuning results
-    if len(res) > 0:
+    if res:
         results.append(res[0])
         return res[0]['time']
 

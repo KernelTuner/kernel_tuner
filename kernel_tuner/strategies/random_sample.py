@@ -37,12 +37,16 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     #check for search space restrictions
     if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
+        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p,
+                                                                   tune_params.keys(),
+                                                                   tuning_options.verbose),
+                                 parameter_space)
 
     #reduce parameter space to a random sample using sample_fraction
     parameter_space = numpy.array(list(parameter_space))
     size = len(parameter_space)
-    sample_indices = numpy.random.choice(range(size), size=int(numpy.ceil(size * float(tuning_options.sample_fraction))), replace=False)
+    fraction = int(numpy.ceil(size * float(tuning_options.sample_fraction)))
+    sample_indices = numpy.random.choice(range(size), size=fraction, replace=False)
     parameter_space = parameter_space[sample_indices]
 
     #call the runner

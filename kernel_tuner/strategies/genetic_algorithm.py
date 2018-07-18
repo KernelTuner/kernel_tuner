@@ -2,7 +2,6 @@
 from __future__ import print_function
 
 import random
-import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
 
@@ -45,7 +44,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     for generation in range(generations):
         if tuning_options.verbose:
-            print("Generation %d, best_time %f" % (generation, best_time));
+            print("Generation %d, best_time %f" % (generation, best_time))
 
         #determine fitness of population members
         weighted_population = []
@@ -56,7 +55,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         #'best_time' is used only for printing
         if tuning_options.verbose:
-            best_time = min(all_results, key= lambda x:x["time"])["time"]
+            best_time = min(all_results, key=lambda x: x["time"])["time"]
 
         #population is sorted such that better configs have higher chance of reproducing
         weighted_population.sort(key=lambda x: x[1])
@@ -116,7 +115,3 @@ def crossover(dna1, dna2):
         return (dna1[:pos]+dna2[pos:], dna2[:pos]+dna1[pos:])
     else:
         return (dna2[:pos]+dna1[pos:], dna1[:pos]+dna2[pos:])
-
-
-
-

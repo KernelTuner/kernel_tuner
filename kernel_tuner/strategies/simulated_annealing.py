@@ -43,7 +43,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     T = 1.0
     T_min = 0.001
     alpha = 0.9
-    iter = 20
+    niter = 20
 
     # generate random starting point and evaluate cost
     pos = []
@@ -52,14 +52,14 @@ def tune(runner, kernel_options, device_options, tuning_options):
     old_cost = _cost_func(pos, *args)
 
     if tuning_options.verbose:
-        c=0
+        c = 0
     # main optimization loop
     while T > T_min:
         if tuning_options.verbose:
             print("iteration: ", c, "T", T, "cost: ", old_cost)
-            c+=1
+            c += 1
 
-        for i in range(iter):
+        for i in range(niter):
 
             new_pos = neighbor(pos, tune_params)
             new_cost = _cost_func(new_pos, *args)
@@ -115,4 +115,3 @@ def neighbor(pos, tune_params):
 
         pos_out.append(new_value)
     return pos_out
-

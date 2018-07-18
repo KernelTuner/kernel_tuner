@@ -55,4 +55,3 @@ def tune(runner, kernel_options, device_options, tuning_options):
         print(opt_result.message)
 
     return results, runner.dev.get_environment()
-

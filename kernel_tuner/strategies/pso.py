@@ -37,19 +37,19 @@ def tune(runner, kernel_options, device_options, tuning_options):
     #scale variables in x because PSO works with velocities to visit different configurations
     tuning_options["scaling"] = True
 
-    bounds, x0, _ = get_bounds_x0_eps(tuning_options)
+    #using this instead of get_bounds because scaling is used
+    bounds, _, _ = get_bounds_x0_eps(tuning_options)
 
     args = (kernel_options, tuning_options, runner, results, cache)
 
     num_particles = 20
     maxiter = 100
 
-    ndim = len(x0)
     best_time_global = 1e20
     best_position_global = []
 
     # init particle swarm
-    swarm=[]
+    swarm = []
     for i in range(0, num_particles):
         swarm.append(Particle(bounds, args))
 
@@ -79,12 +79,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
     return results, runner.dev.get_environment()
 
 
-
-
 class Particle:
     def __init__(self, bounds, args):
-        self.ndim=len(bounds)
-        self.args=args
+        self.ndim = len(bounds)
+        self.args = args
 
         self.velocity = np.random.uniform(-1, 1, self.ndim)
         self.position = np.random.uniform([b[0] for b in bounds], [b[1] for b in bounds])
@@ -93,9 +91,7 @@ class Particle:
         self.time = 1e20
 
     def evaluate(self, cost_func):
-        print("eval", self.position)
         self.time = cost_func(self.position, *self.args)
-
         # update best_pos if needed
         if self.time < self.best_time:
             self.best_pos = self.position
@@ -107,21 +103,11 @@ class Particle:
         c2 = 1        # social constant
         r1 = random.random()
         r2 = random.random()
-
         vc = c1 * r1 * (self.best_pos - self.position)
         vs = c2 * r2 * (best_position_global - self.position)
-
-        print('v_old', self.velocity, 'v_new', w * self.velocity + vc + vs)
         self.velocity = w * self.velocity + vc + vs
 
     def update_position(self, bounds):
-        print("p", self.position, 'v', self.velocity)
-
         self.position = self.position + self.velocity
-
         self.position = np.minimum(self.position, [b[1] for b in bounds])
         self.position = np.maximum(self.position, [b[0] for b in bounds])
-
-
-
-
