@@ -54,7 +54,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         population = []
 
         #'best_time' is used only for printing
-        if tuning_options.verbose:
+        if tuning_options.verbose and all_results:
             best_time = min(all_results, key=lambda x: x["time"])["time"]
 
         #population is sorted such that better configs have higher chance of reproducing
