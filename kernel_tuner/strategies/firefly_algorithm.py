@@ -1,8 +1,5 @@
 """ The strategy that uses the firefly algorithm for optimization"""
-
 from __future__ import print_function
-from __future__ import division
-import random
 import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps
@@ -40,7 +37,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     #using this instead of get_bounds because scaling is used
     bounds, _, _ = get_bounds_x0_eps(tuning_options)
-    ndim = len(bounds)
 
     args = (kernel_options, tuning_options, runner, results, cache)
 
@@ -72,7 +68,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         for i in range(num_particles):
             for j in range(num_particles):
 
-                if (swarm[i].intensity < swarm[j].intensity):
+                if swarm[i].intensity < swarm[j].intensity:
                     dist = swarm[i].distance_to(swarm[j])
                     beta = B0 * np.exp(-gamma * dist * dist)
 
@@ -83,6 +79,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
                     if swarm[i].time <= best_time_global:
                         best_position_global = swarm[i].position
                         best_time_global = swarm[i].time
+
+        swarm.sort(key=lambda x: x.time)
 
     if tuning_options.verbose:
         print('Final result:')
@@ -116,4 +114,3 @@ class Firefly(Particle):
         self.position += alpha * (np.random.uniform(-0.5, 0.5, len(self.position)))
         self.position = np.minimum(self.position, [b[1] for b in self.bounds])
         self.position = np.maximum(self.position, [b[0] for b in self.bounds])
-
