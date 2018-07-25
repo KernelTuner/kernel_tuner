@@ -127,7 +127,6 @@ class CudaFunctions(object):
                                              code=('sm_' + self.cc) if self.cc != "00" else None,
                                              cache_dir=False, no_extern_c=no_extern_c)
 
-
             func = self.current_module.get_function(kernel_name)
             return func
         except drv.CompileError as e:

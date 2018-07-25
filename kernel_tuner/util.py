@@ -225,6 +225,7 @@ def get_problem_size(problem_size, params):
 def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
     file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd()) # or "" for Python 2 compatibility
+    os.close(file[0])
     return file[1]
 
 def get_thread_block_dimensions(params, block_size_names=None):
