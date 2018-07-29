@@ -4,19 +4,18 @@ This roadmap presents an overview of the features we are currently planning to
 implement. Please note that this is a living document that will evolve as
 priorities grow and shift.
 
-### version 0.2.0
+### version 0.3.0
 
 This is the list of features that we want to have implemented by the next version.
 
  * A test_kernel function to perform parameterized testing without tuning
- * Function to generate wrapper kernels for device functions
+ * Function to generate wrapper kernels for directly calling device functions
  
 ### version 1.0.0
 
 These functions are to be implemented by version 1.0.0, but may already be
 implemented in earlier versions.
 
- * Functionality for storing tuning results to datastore on disk
  * Functionality for including auto-tuned kernels in applications
  * Tuning kernels in parallel on a set of nodes in a GPU cluster
 
