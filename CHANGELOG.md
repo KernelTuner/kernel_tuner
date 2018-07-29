@@ -4,7 +4,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Changed
+- bugfix in tempfile creation that lead to too many open files error
 
+### Added
+- Particle Swarm Optimization strategy, use strategy="pso" 
+- Simulated Annealing strategy, use strategy="simulated_annealing" 
+- Firefly Algorithm strategy, use strategy="firefly_algorithm" 
+- Genetic Algorithm strategy, use strategy="genetic_algorithm" 
 
 ## [0.1.9] - 2018-04-18
 ### Changed
