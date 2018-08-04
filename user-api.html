@@ -329,6 +329,10 @@ parameter space, choose from:</p>
 <li>”random_sample”, specify: <em>sample_fraction</em>,</li>
 <li>”minimize” or “basinhopping”, specify: <em>method</em>,</li>
 <li>”diff_evo”, specify: <em>method</em>.</li>
+<li>”genetic_algorithm”</li>
+<li>”pso”</li>
+<li>”firefly_algorithm”</li>
+<li>”simulated_annealing”</li>
 </ul>
 </div></blockquote>
 <p>”brute_force” is the default and iterates over the entire search
@@ -345,6 +349,13 @@ evolution strategies, which can be passed using the <em>method</em> argument:
 “best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”,
 “rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”.
 The default is “best1bin”.</p>
+<p>”genetic_algorithm” implements a simple Genetic Algorithm, default
+setting uses a population size of 20 for 100 generations.</p>
+<p>”pso” implements Particle Swarm Optimization, using the default
+setting of 20 particles for 100 iterations.</p>
+<p>”firefly_algorithm” implements the Firefly Algorithm, using 20
+fireflies for 100 iterations.</p>
+<p>”simulated_annealing” uses Simulated Annealing.</p>
 </li>
 <li><strong>method</strong> (<em>string</em><em> or </em><em>callable</em>) – <p>Specify a method for the strategy that searches through
 the parameter space during tuning.</p>

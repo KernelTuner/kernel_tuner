@@ -278,6 +278,16 @@ tune_kernel does exactly is controlled through its many <a class="reference exte
 and in the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/index.html">Kernel Tuner
 documentation pages</a>.</p>
 </div>
+<div class="section" id="search-strategies-for-tuning">
+<h2>Search strategies for tuning<a class="headerlink" href="#search-strategies-for-tuning" title="Permalink to this headline">¶</a></h2>
+<p>Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process.
+The strategies currently implemented are: brute_force (default), random_sample, minimize, basinhopping, differential
+evolution, genetic algorithm, particle swarm optimization, firefly algorithm, and simulated annealing.
+Using a different strategy is easy, you only need to specify to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> which strategy and method you would like to use,
+for example: <code class="docutils literal notranslate"><span class="pre">strategy=&quot;genetic_algorithm&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">strategy=&quot;basinhopping&quot;,</span> <span class="pre">method=&quot;Powell&quot;</span></code>.
+For a full overview of the supported search strategies and methods please see the
+<a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html">user api</a>.</p>
+</div>
 <div class="section" id="tuning-host-and-kernel-code">
 <h2>Tuning host and kernel code<a class="headerlink" href="#tuning-host-and-kernel-code" title="Permalink to this headline">¶</a></h2>
 <p>It is possible to tune for combinations of tunable parameters in
@@ -290,12 +300,6 @@ code</a>
 and the
 <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/hostcode.html">documentation</a>
 for a detailed explanation of the kernel tuner Python script.</p>
-</div>
-<div class="section" id="search-strategies-for-tuning">
-<h2>Search strategies for tuning<a class="headerlink" href="#search-strategies-for-tuning" title="Permalink to this headline">¶</a></h2>
-<p>Kernel Tuner supports several strategies: brute_force (default), random_sample, minimize, basinhopping, and diff_evo (differential
-evolution). Using different strategies is easy, you only need to specify to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> which strategy you would like to use, for example: <code class="docutils literal notranslate"><span class="pre">strategy=&quot;basinhopping&quot;,</span> <span class="pre">method=&quot;TNC&quot;</span></code>. For a full overview of the supported search strategies and methods please see the
-<a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html">user api</a>.</p>
 </div>
 <div class="section" id="correctness-verification">
 <h2>Correctness verification<a class="headerlink" href="#correctness-verification" title="Permalink to this headline">¶</a></h2>
