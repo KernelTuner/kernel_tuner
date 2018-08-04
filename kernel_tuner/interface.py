@@ -194,6 +194,10 @@ _tuning_options = Options([
             * "random_sample", specify: *sample_fraction*,
             * "minimize" or "basinhopping", specify: *method*,
             * "diff_evo", specify: *method*.
+            * "genetic_algorithm"
+            * "pso"
+            * "firefly_algorithm"
+            * "simulated_annealing"
 
         "brute_force" is the default and iterates over the entire search
         space.
@@ -212,6 +216,17 @@ _tuning_options = Options([
         "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
         "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin".
         The default is "best1bin".
+
+        "genetic_algorithm" implements a simple Genetic Algorithm, default
+        setting uses a population size of 20 for 100 generations.
+
+        "pso" implements Particle Swarm Optimization, using the default
+        setting of 20 particles for 100 iterations.
+
+        "firefly_algorithm" implements the Firefly Algorithm, using 20
+        fireflies for 100 iterations.
+
+        "simulated_annealing" uses Simulated Annealing.
 
         """, "")),
     ("method", ("""Specify a method for the strategy that searches through

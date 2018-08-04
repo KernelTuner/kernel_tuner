@@ -91,6 +91,18 @@ You can find many - more extensive - example codes, in the
 and in the `Kernel Tuner
 documentation pages <http://benvanwerkhoven.github.io/kernel_tuner/index.html>`__.
 
+Search strategies for tuning
+----------------------------
+
+Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process.
+The strategies currently implemented are: brute_force (default), random_sample, minimize, basinhopping, differential
+evolution, genetic algorithm, particle swarm optimization, firefly algorithm, and simulated annealing.
+Using a different strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method you would like to use,
+for example: ``strategy="genetic_algorithm"`` or ``strategy="basinhopping", method="Powell"``.
+For a full overview of the supported search strategies and methods please see the
+`user api <http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
+
+
 Tuning host and kernel code
 ---------------------------
 
@@ -105,12 +117,6 @@ and the
 `documentation <http://benvanwerkhoven.github.io/kernel_tuner/hostcode.html>`__
 for a detailed explanation of the kernel tuner Python script.
 
-Search strategies for tuning
-----------------------------
-
-Kernel Tuner supports several strategies: brute_force (default), random_sample, minimize, basinhopping, and diff_evo (differential
-evolution). Using different strategies is easy, you only need to specify to ``tune_kernel`` which strategy you would like to use, for example: ``strategy="basinhopping", method="TNC"``. For a full overview of the supported search strategies and methods please see the
-`user api <http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
 
 Correctness verification
 ------------------------
