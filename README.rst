@@ -94,14 +94,15 @@ documentation pages <http://benvanwerkhoven.github.io/kernel_tuner/index.html>`_
 Search strategies for tuning
 ----------------------------
 
-Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process.
-The strategies currently implemented are: brute_force (default), random_sample, minimize, basinhopping, differential
-evolution, genetic algorithm, particle swarm optimization, firefly algorithm, and simulated annealing.
-Using a different strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method you would like to use,
-for example: ``strategy="genetic_algorithm"`` or ``strategy="basinhopping", method="Powell"``.
-For a full overview of the supported search strategies and methods please see the
-`user api <http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
+Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process. Currently 
+implemented search algorithms are: Brute Force (default), Nelder-Mead, Powell, CG, BFGS, L-BFGS-B, TNC, 
+COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Algorithm, Particle Swarm 
+Optimization, the Firefly Algorithm, and Simulated Annealing.
 
+Using a search strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method 
+you would like to use, for example ``strategy="genetic_algorithm"`` or ``strategy="basinhopping", 
+method="Powell"``. For a full overview of the supported search strategies and methods please see the `user 
+api documentation <http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
 
 Tuning host and kernel code
 ---------------------------
@@ -138,25 +139,24 @@ Please see the `Contributions Guide <http://benvanwerkhoven.github.io/kernel_tun
 
 Citation
 --------
-A scientific paper about the Kernel Tuner is in preparation, in the meantime please cite the Kernel Tuner as follows:
+A scientific paper about Kernel Tuner has been accepted for publication, please cite
+Kernel Tuner as follows:
 
 .. code:: latex
 
-    @misc{kerneltuner,
+    @article{kerneltuner,
       author  = {Ben van Werkhoven},
-      title   = {Kernel Tuner},
+      title   = {Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner},
+      journal = {Future Generation Computer Systems},
+      pages   = {(accepted for publication)},
       year    = {2018}
-      doi     = {10.5281/zenodo.1220113},
-      url     = {https://github.com/benvanwerkhoven/kernel_tuner}
     }
 
 Related work
 ------------
 
 You may also like `CLTune <https://github.com/CNugteren/CLTune>`__ by
-Cedric Nugteren. CLTune is a C++ library for kernel tuning and supports
-various advanced features like machine learning to optimize the time
-spent on tuning kernels.
+Cedric Nugteren. CLTune is a C++ library for kernel tuning.
 
 .. |Build Status| image:: https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master
    :target: https://travis-ci.org/benvanwerkhoven/kernel_tuner

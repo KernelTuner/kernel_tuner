@@ -17,7 +17,19 @@ keywords:
   - "OpenCL"
   - "CUDA"
 license: Apache-2.0
-message: "If you use this software, please cite it using these metadata."
+message: "If you use this software, please cite the following paper."
+references:
+  - type: article
+    authors:
+      - affiliation: "Netherlands eScience Center"
+        family-names: Werkhoven
+        given-names: Ben
+        name-particle: van
+        orcid: "https://orcid.org/0000-0002-7508-3272"
+        email: "b.vanwerkhoven@esciencecenter.nl"
+    title: "Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner"
+    journal: "Future Generation Computer Systems"
+    year: 2018
 repository-code: "https://github.com/benvanwerkhoven/kernel_tuner"
 title: Kernel Tuner
-version: "0.1.8"
+version: "0.1.9"
