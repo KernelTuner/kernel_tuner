@@ -280,13 +280,14 @@ documentation pages</a>.</p>
 </div>
 <div class="section" id="search-strategies-for-tuning">
 <h2>Search strategies for tuning<a class="headerlink" href="#search-strategies-for-tuning" title="Permalink to this headline">¶</a></h2>
-<p>Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process.
-The strategies currently implemented are: brute_force (default), random_sample, minimize, basinhopping, differential
-evolution, genetic algorithm, particle swarm optimization, firefly algorithm, and simulated annealing.
-Using a different strategy is easy, you only need to specify to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> which strategy and method you would like to use,
-for example: <code class="docutils literal notranslate"><span class="pre">strategy=&quot;genetic_algorithm&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">strategy=&quot;basinhopping&quot;,</span> <span class="pre">method=&quot;Powell&quot;</span></code>.
-For a full overview of the supported search strategies and methods please see the
-<a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html">user api</a>.</p>
+<p>Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process. Currently
+implemented search algorithms are: Brute Force (default), Nelder-Mead, Powell, CG, BFGS, L-BFGS-B, TNC,
+COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Algorithm, Particle Swarm
+Optimization, the Firefly Algorithm, and Simulated Annealing.</p>
+<p>Using a search strategy is easy, you only need to specify to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> which strategy and method
+you would like to use, for example <code class="docutils literal notranslate"><span class="pre">strategy=&quot;genetic_algorithm&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">strategy=&quot;basinhopping&quot;,</span>
+<span class="pre">method=&quot;Powell&quot;</span></code>. For a full overview of the supported search strategies and methods please see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html">user
+api documentation</a>.</p>
 </div>
 <div class="section" id="tuning-host-and-kernel-code">
 <h2>Tuning host and kernel code<a class="headerlink" href="#tuning-host-and-kernel-code" title="Permalink to this headline">¶</a></h2>
@@ -318,13 +319,14 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 </div>
 <div class="section" id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
-<p>A scientific paper about the Kernel Tuner is in preparation, in the meantime please cite the Kernel Tuner as follows:</p>
-<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@misc<span class="nb">{</span>kerneltuner,
+<p>A scientific paper about Kernel Tuner has been accepted for publication, please cite
+Kernel Tuner as follows:</p>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@article<span class="nb">{</span>kerneltuner,
   author  = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,
-  title   = <span class="nb">{</span>Kernel Tuner<span class="nb">}</span>,
+  title   = <span class="nb">{</span>Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner<span class="nb">}</span>,
+  journal = <span class="nb">{</span>Future Generation Computer Systems<span class="nb">}</span>,
+  pages   = <span class="nb">{</span>(accepted for publication)<span class="nb">}</span>,
   year    = <span class="nb">{</span>2018<span class="nb">}</span>
-  doi     = <span class="nb">{</span>10.5281/zenodo.1220113<span class="nb">}</span>,
-  url     = <span class="nb">{</span>https://github.com/benvanwerkhoven/kernel<span class="nb">_</span>tuner<span class="nb">}</span>
 <span class="nb">}</span>
 </pre></div>
 </div>
@@ -332,9 +334,7 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 <div class="section" id="related-work">
 <h2>Related work<a class="headerlink" href="#related-work" title="Permalink to this headline">¶</a></h2>
 <p>You may also like <a class="reference external" href="https://github.com/CNugteren/CLTune">CLTune</a> by
-Cedric Nugteren. CLTune is a C++ library for kernel tuning and supports
-various advanced features like machine learning to optimize the time
-spent on tuning kernels.</p>
+Cedric Nugteren. CLTune is a C++ library for kernel tuning.</p>
 </div>
 <div class="section" id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
