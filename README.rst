@@ -146,10 +146,12 @@ Kernel Tuner as follows:
 
     @article{kerneltuner,
       author  = {Ben van Werkhoven},
-      title   = {Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner},
+      title   = {Kernel Tuner: A search-optimizing GPU code auto-tuner},
       journal = {Future Generation Computer Systems},
-      pages   = {(accepted for publication)},
-      year    = {2018}
+      year = {2019},
+      volume  = {90},
+      pages = {347-358},
+      doi = {https://doi.org/10.1016/j.future.2018.08.004},
     }
 
 Related work
