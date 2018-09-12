@@ -15,21 +15,21 @@ default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 def check_argument_type(dtype, kernel_argument, i):
     """check if the numpy.dtype matches the type used in the code"""
-    types_map = {"ubyte": ["uchar", "unsigned char"],
-                 "int8": ["char"],
-                 "uint16": ["ushort", "unsigned short"],
-                 "int16": ["short"],
-                 "uint32": ["uint", "unsigned int"],
-                 "int32": ["int"],   #discrepancy between OpenCL and C here, long may be 32bits in C
-                 "uint64": ["ulong", "unsigned long"],
-                 "int64": ["long"],
+    types_map = {"uint8": ["uchar", "unsigned char", "uint8_t"],
+                 "int8": ["char", "int8_t"],
+                 "uint16": ["ushort", "unsigned short", "uint16_t"],
+                 "int16": ["short", "int16_t"],
+                 "uint32": ["uint", "unsigned int", "uint32_t"],
+                 "int32": ["int", "int32_t"],   #discrepancy between OpenCL and C here, long may be 32bits in C
+                 "uint64": ["ulong", "unsigned long", "uint64_t"],
+                 "int64": ["long", "int64_t"],
                  "float16": ["half"],
                  "float32": ["float"],
                  "float64": ["double"]}
-    if not dtype in types_map:
-        raise TypeError("Unknown dtype for argument " + str(i) + " dtype=" + dtype)
-    return any([substr in kernel_argument for substr in types_map[dtype]])
-
+    if dtype in types_map:
+        return any([substr in kernel_argument for substr in types_map[dtype]])
+    else:
+        return False # unknown dtype. do not throw exception to still allow kernel to run.
 
 def check_argument_list(kernel_name, kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
@@ -58,7 +58,7 @@ def check_argument_list(kernel_name, kernel_string, args):
             if correct and check_argument_type(str(arg.dtype), kernel_argument, i):
                 continue
 
-            collected_errors[arguments_set].append("Argument at position " + str(i) + " of type: " + str(type(arg)) +
+            collected_errors[arguments_set].append("Argument at position " + str(i) + " of dtype: " + str(arg.dtype) +
                                                    " does not match " + kernel_argument + ".")
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one
