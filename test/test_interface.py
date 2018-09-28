@@ -30,8 +30,8 @@ def test_interface_calls_functions(dev_interface):
     kernel_name, kernel_string, size, args, tune_params = get_fake_kernel()
     tune_kernel(kernel_name, kernel_string, size, args, tune_params, verbose=True)
 
-    expected = "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 128\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 10\n__global__ void fake_kernel_128(int number)"
-    dev.compile.assert_called_once_with("fake_kernel_128", expected)
+    expected = "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 128\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 10\n__global__ void fake_kernel(int number)"
+    dev.compile.assert_called_once_with("fake_kernel", expected)
     dev.benchmark.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1, 1), False)
 
 @patch('kernel_tuner.core.CudaFunctions')
@@ -45,7 +45,7 @@ def test_interface_handles_max_threads(dev_interface):
     kernel_string = "__global__ void fake_kernel(int number)"
     tune_kernel("fake_kernel", kernel_string, (1,1), [numpy.int32(0)], tune_params, lang="CUDA")
 
-    dev.compile.assert_called_once_with("fake_kernel_256", "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 256\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 1\n__global__ void fake_kernel_256(int number)")
+    dev.compile.assert_called_once_with("fake_kernel", "#define block_size_z 1\n#define block_size_y 1\n#define block_size_x 256\n#define grid_size_z 1\n#define grid_size_y 1\n#define grid_size_x 1\n__global__ void fake_kernel(int number)")
 
 @patch('kernel_tuner.core.CudaFunctions')
 def test_interface_handles_compile_error(dev_interface):

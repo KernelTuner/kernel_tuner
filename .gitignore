@@ -13,3 +13,4 @@ doc/create_doc.sh
 *.ipynb_checkpoints
 examples/cuda/output
 deploy_key
+*.mod

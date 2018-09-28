@@ -5,9 +5,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 
 ### Changed
+- no longer replacing kernel names with instance strings during tuning
 - bugfix in tempfile creation that lead to too many open files error
 
 ### Added
+- A minimal Fortran example and basic Fortran support
 - Particle Swarm Optimization strategy, use strategy="pso" 
 - Simulated Annealing strategy, use strategy="simulated_annealing" 
 - Firefly Algorithm strategy, use strategy="firefly_algorithm" 

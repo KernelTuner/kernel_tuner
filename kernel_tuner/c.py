@@ -115,12 +115,8 @@ class CFunctions(object):
         if self.lib != None:
             self.cleanup_lib()
 
-        suffix = ".cc"
-
-        if not "extern \"C\"" in kernel_string:
-            kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
-
         compiler_options = ["-fPIC"]
+
         if "#include <omp.h>" in kernel_string:
             logging.debug('set using_openmp to true')
             self.using_openmp = True
@@ -130,10 +126,19 @@ class CFunctions(object):
             if self.nvcc_available:
                 self.compiler = "nvcc"
 
+        #select right suffix based on compiler
+        suffix = ".cc"
+        if self.compiler == "gfortran":
+            suffix = ".F90"
         if self.compiler == "nvcc":
             suffix = suffix[:-1] + "u"
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
 
+        if ".c" in suffix:
+            if not "extern \"C\"" in kernel_string:
+                kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
+
+        #copy user specified compiler options to current list
         if self.compiler_options:
             compiler_options += self.compiler_options
 
@@ -158,8 +163,8 @@ class CFunctions(object):
             subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
             subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
 
-            self.lib = numpy.ctypeslib.load_library(filename, '.')
 
+            self.lib = numpy.ctypeslib.load_library(filename, '.')
             func = getattr(self.lib, kernel_name)
             func.restype = C.c_float
 
