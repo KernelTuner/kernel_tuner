@@ -18,8 +18,9 @@ def setup_mock(drv):
     drv.mem_alloc.return_value = 'mem_alloc'
     return drv
 
+@patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_ready_argument_list(drv):
+def test_ready_argument_list(drv, _):
     drv = setup_mock(drv)
 
     size = 5
@@ -40,12 +41,11 @@ def test_ready_argument_list(drv):
 
 @patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_compile(drv, src_mod):
+def test_compile(drv, _):
 
     #setup mocked stuff
     drv = setup_mock(drv)
     dev = cuda.CudaFunctions(0)
-    dev.source_mod = src_mod
     dev.source_mod = Mock()
     dev.source_mod.return_value.get_function.return_value = 'func'
 
@@ -67,8 +67,9 @@ def test_compile(drv, src_mod):
 def dummy_func(a, b, block=0, grid=0):
     pass
 
+@patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_benchmark(drv):
+def test_benchmark(drv, _):
     drv = setup_mock(drv)
 
     drv.Event.return_value.time_since.return_value = 0.1
@@ -83,8 +84,9 @@ def test_benchmark(drv):
     assert drv.Event.return_value.time_since.call_count == dev.iterations
 
 
+@patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_copy_constant_memory_args(drv):
+def test_copy_constant_memory_args(drv, _):
     drv = setup_mock(drv)
 
     fake_array = numpy.zeros(10).astype(numpy.float32)
