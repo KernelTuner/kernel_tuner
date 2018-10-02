@@ -117,7 +117,7 @@ class CFunctions(object):
 
         compiler_options = ["-fPIC"]
 
-        if "#include <omp.h>" in kernel_string:
+        if "#include <omp.h>" in kernel_string or "use omp_lib" in kernel_string:
             logging.debug('set using_openmp to true')
             self.using_openmp = True
             compiler_options.append("-fopenmp")

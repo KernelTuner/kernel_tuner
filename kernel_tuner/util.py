@@ -238,24 +238,24 @@ def get_thread_block_dimensions(params, block_size_names=None):
     block_size_z = params.get(block_size_names[2], 1)
     return (int(block_size_x), int(block_size_y), int(block_size_z))
 
-def looks_like_a_filename(original_kernel):
+def looks_like_a_filename(kernel_source):
     """ attempt to detect whether source code or a filename was passed """
     result = False
-    if isinstance(original_kernel, str):
+    if isinstance(kernel_source, str):
         result = True
         #test if not too long
-        if len(original_kernel) > 250:
+        if len(kernel_source) > 250:
             result = False
         #test if not contains special characters
         for c in "();{}\\":
-            if c in original_kernel:
+            if c in kernel_source:
                 result = False
         #just a safeguard for stuff that looks like code
         for s in ["__global__ ", "__kernel ", "void ", "float "]:
-            if s in original_kernel:
+            if s in kernel_source:
                 result = False
-        #string must contain substring ".c"
-        result = result and any([s in original_kernel for s in (".c", ".opencl")])
+        #string must contain substring ".c", ".opencl", or ".F"
+        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
     return result
 
 def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names):

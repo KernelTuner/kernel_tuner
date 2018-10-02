@@ -3,14 +3,11 @@
 
 import json
 import numpy as np
-from kernel_tuner import run_kernel
+from kernel_tuner import tune_kernel
 
 def tune():
 
-    with open('vector_add.F90', 'r') as f:
-        kernel_string = f.read()
-
-    size = 10000000
+    size = int(80e6)
 
     a = np.random.randn(size).astype(np.float32)
     b = np.random.randn(size).astype(np.float32)
@@ -20,12 +17,12 @@ def tune():
     args = [c, a, b, n]
 
     tune_params = dict()
-    tune_params["N"] = size
+    tune_params["N"] = [size]
+    tune_params["NTHREADS"] = [1, 2, 4, 8, 16]
 
-    answer = run_kernel("vector_add", kernel_string, size, args, tune_params, lang="C", compiler="gfortran")
+    result, env = tune_kernel("time_vector_add", "vector_add.F90", size, args, tune_params, lang="C", compiler="gfortran")
 
-    assert np.allclose(answer[0], a+b, atol=1e-8)
-
+    return result
 
 if __name__ == "__main__":
     tune()
