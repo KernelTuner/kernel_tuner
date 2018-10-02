@@ -41,20 +41,25 @@ def test_ready_argument_list(drv):
 @patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
 def test_compile(drv, src_mod):
+
+    #setup mocked stuff
     drv = setup_mock(drv)
-
-    src_mod.return_value.get_function.return_value = 'func'
-
     dev = cuda.CudaFunctions(0)
+    dev.source_mod = src_mod
+    dev.source_mod = Mock()
+    dev.source_mod.return_value.get_function.return_value = 'func'
+
+    #call compile
     kernel_string = "__global__ void vector_add()"
     func = dev.compile("vector_add", kernel_string)
 
-    assert src_mod.call_count == 1
-    assert dev.current_module is src_mod.return_value
+    #verify behavior
+    assert dev.source_mod.call_count == 1
+    assert dev.current_module is dev.source_mod.return_value
     assert func == 'func'
 
-    assert kernel_string == list(src_mod.mock_calls[0])[1][0]
-    optional_args = list(src_mod.mock_calls[0])[2]
+    assert kernel_string == list(dev.source_mod.mock_calls[0])[1][0]
+    optional_args = list(dev.source_mod.mock_calls[0])[2]
     assert optional_args['code'] == 'sm_55'
     assert optional_args['arch'] == 'compute_55'
 

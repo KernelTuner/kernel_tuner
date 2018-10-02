@@ -55,6 +55,14 @@ class CudaFunctions(object):
         self.current_module = None
         self.compiler_options = compiler_options or []
 
+        #select PyCUDA source module
+        if int(self.cc) >= 35:
+            self.source_mod = DynamicSourceModule
+        else:
+            self.source_mod = SourceModule
+        if not self.source_mod:
+            raise ImportError("Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
+
         #collect environment information
         env = dict()
         env["device_name"] = self.context.get_device().name()
@@ -117,12 +125,7 @@ class CudaFunctions(object):
             if self.compiler_options:
                 compiler_options += self.compiler_options
 
-            if int(self.cc) >= 35:
-                source_mod = DynamicSourceModule
-            else:
-                source_mod = SourceModule
-
-            self.current_module = source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
+            self.current_module = self.source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
                                              arch=('compute_' + self.cc) if self.cc != "00" else None,
                                              code=('sm_' + self.cc) if self.cc != "00" else None,
                                              cache_dir=False, no_extern_c=no_extern_c)
