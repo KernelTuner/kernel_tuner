@@ -4,6 +4,7 @@ from collections import namedtuple
 import subprocess
 import platform
 import errno
+import re
 import logging
 import ctypes as C
 import _ctypes
@@ -117,18 +118,23 @@ class CFunctions(object):
 
         compiler_options = ["-fPIC"]
 
+        #detect openmp
         if "#include <omp.h>" in kernel_string or "use omp_lib" in kernel_string:
             logging.debug('set using_openmp to true')
             self.using_openmp = True
-            compiler_options.append("-fopenmp")
+            if self.compiler == "pgfortran":
+                compiler_options.append("-mp")
+            else:
+                compiler_options.append("-fopenmp")
 
+        #detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
         if ("#include <cuda" in kernel_string) or ("__global__" in kernel_string):
-            if self.nvcc_available:
+            if self.compiler == "g++" and self.nvcc_available:
                 self.compiler = "nvcc"
 
         #select right suffix based on compiler
         suffix = ".cc"
-        if self.compiler == "gfortran":
+        if self.compiler in ["gfortran", "pgfortran"]:
             suffix = ".F90"
         if self.compiler == "nvcc":
             suffix = suffix[:-1] + "u"
@@ -152,6 +158,15 @@ class CFunctions(object):
 
         source_file = get_temp_filename(suffix=suffix)
         filename = ".".join(source_file.split(".")[:-1])
+
+        #detect Fortran modules
+        match = re.search(r"\s*module\s+([a-zA-Z_]*)", kernel_string)
+        if match:
+            if self.compiler == "gfortran":
+                kernel_name = "__" + match.group(1) + "_MOD_" + kernel_name
+            elif self.compiler == "pgfortran":
+                kernel_name = match.group(1) + "_" + kernel_name + "_"
+
 
         try:
             write_file(source_file, kernel_string)

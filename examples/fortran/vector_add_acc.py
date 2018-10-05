@@ -8,7 +8,7 @@ from kernel_tuner import tune_kernel
 
 def tune():
 
-    size = int(80e6)
+    size = int(72*1024*1024)
 
     a = np.random.randn(size).astype(np.float32)
     b = np.random.randn(size).astype(np.float32)
@@ -19,13 +19,11 @@ def tune():
 
     tune_params = dict()
     tune_params["N"] = [size]
-    tune_params["NTHREADS"] = [16, 8, 4, 2, 1]
+    tune_params["block_size_x"] = [32, 64, 128, 256, 512]
 
-    print("compile with gfortran")
-    result, env = tune_kernel("time_vector_add", "vector_add.F90", size, args, tune_params, lang="C", compiler="gfortran")
-
-    print("compile with pgfortran")
-    result, env = tune_kernel("time_vector_add", "vector_add.F90", size, args, tune_params, lang="C", compiler="pgfortran")
+    result, env = tune_kernel("time_vector_add", "vector_add_acc.F90", size, args,
+                              tune_params, lang="C", compiler="pgfortran",
+                              compiler_options=["-acc=verystrict", "-ta=tesla,lineinfo"])
 
     return result
 
