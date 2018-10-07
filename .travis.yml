@@ -74,7 +74,7 @@ script:
       cd doc
       bash ./deploy.sh
     else
-      python -m pytest
+      python -m pytest test/
     fi
 branches:
   only:

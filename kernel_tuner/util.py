@@ -307,9 +307,9 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     for k, v in params.items():
         if k not in block_size_names:
             kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
-    #name = kernel_name
-    name = kernel_name + "_" + get_instance_string(params)
-    kernel_string = kernel_string.replace(kernel_name, name)
+    name = kernel_name
+    #name = kernel_name + "_" + get_instance_string(params)
+    #kernel_string = kernel_string.replace(kernel_name, name)
     return name, kernel_string
 
 def prepare_list_of_files(kernel_name, kernel_file_list, params, grid, threads, block_size_names):
