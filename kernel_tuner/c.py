@@ -134,7 +134,7 @@ class CFunctions(object):
 
         #select right suffix based on compiler
         suffix = ".cc"
-        if self.compiler in ["gfortran", "pgfortran"]:
+        if self.compiler in ["gfortran", "pgfortran", "ftn", "ifort"]:
             suffix = ".F90"
         if self.compiler == "nvcc":
             suffix = suffix[:-1] + "u"
@@ -164,6 +164,8 @@ class CFunctions(object):
         if match:
             if self.compiler == "gfortran":
                 kernel_name = "__" + match.group(1) + "_MOD_" + kernel_name
+            elif self.compiler in ["ftn", "ifort"]:
+                kernel_name = match.group(1) + "_mp_" + kernel_name + "_"
             elif self.compiler == "pgfortran":
                 kernel_name = match.group(1) + "_" + kernel_name + "_"
 
