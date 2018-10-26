@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """This is a minimal example for calling Fortran functions"""
 
+from __future__ import print_function
 import logging
 import json
 import numpy as np
@@ -21,11 +22,17 @@ def tune():
     tune_params["N"] = [size]
     tune_params["NTHREADS"] = [16, 8, 4, 2, 1]
 
+    print("compile with ftn using intel on cray")
+    result, env = tune_kernel("time_vector_add", "vector_add.F90", size,
+                              args, tune_params, lang="C", compiler="ftn")
+
     print("compile with gfortran")
-    result, env = tune_kernel("time_vector_add", "vector_add.F90", size, args, tune_params, lang="C", compiler="gfortran")
+    result, env = tune_kernel("time_vector_add", "vector_add.F90", size,
+                              args, tune_params, lang="C", compiler="gfortran")
 
     print("compile with pgfortran")
-    result, env = tune_kernel("time_vector_add", "vector_add.F90", size, args, tune_params, lang="C", compiler="pgfortran")
+    result, env = tune_kernel("time_vector_add", "vector_add.F90", size,
+                              args, tune_params, lang="C", compiler="pgfortran")
 
     return result
 
