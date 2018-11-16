@@ -8,7 +8,12 @@ priorities grow and shift.
 
 This is the list of features that we want to have implemented by the next version.
 
+ * Enable setting search strategy parameters through the user interface
+ * Extend Fortran support, no more warnings on data types or missing block size parameter etc.
+ * Turn the C backend into a more general compiler backend
+ * A get_parameterized_kernel_source function to return the parameterized kernel source for inspection
  * A test_kernel function to perform parameterized testing without tuning
+ * Function to instrument source files with parameter values after tuning
  * Function to generate wrapper kernels for directly calling device functions
  
 ### version 1.0.0
