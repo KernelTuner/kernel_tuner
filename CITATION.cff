@@ -32,4 +32,4 @@ references:
     year: 2018
 repository-code: "https://github.com/benvanwerkhoven/kernel_tuner"
 title: Kernel Tuner
-version: "0.1.9"
+version: "0.2.0"
