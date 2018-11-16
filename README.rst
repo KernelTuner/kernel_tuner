@@ -99,6 +99,10 @@ implemented search algorithms are: Brute Force (default), Nelder-Mead, Powell, C
 COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Algorithm, Particle Swarm 
 Optimization, the Firefly Algorithm, and Simulated Annealing.
 
+.. image:: doc/gemm-amd-summary.png
+    :width: 100%
+    :align: center
+
 Using a search strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method 
 you would like to use, for example ``strategy="genetic_algorithm"`` or ``strategy="basinhopping", 
 method="Powell"``. For a full overview of the supported search strategies and methods please see the `user 
