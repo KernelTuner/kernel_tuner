@@ -143,7 +143,7 @@ Please see the `Contributions Guide <http://benvanwerkhoven.github.io/kernel_tun
 
 Citation
 --------
-A scientific paper about Kernel Tuner has been accepted for publication, please cite
+The paper about `Kernel Tuner is published (Open Access) <https://www.sciencedirect.com/science/article/pii/S0167739X18313359>`__, please cite
 Kernel Tuner as follows:
 
 .. code:: latex
