@@ -224,18 +224,18 @@ div.nblast {
 
 /* input prompt */
 div.nbinput div.prompt pre {
-    color: #303F9F;
+    color: #307FC1;
 }
 
 /* output prompt */
 div.nboutput div.prompt pre {
-    color: #D84315;
+    color: #BF5B3D;
 }
 
 /* all prompts */
 div.nbinput div.prompt,
 div.nboutput div.prompt {
-    min-width: 8ex;
+    min-width: 5ex;
     padding-top: 0.4em;
     padding-right: 0.4em;
     text-align: right;
@@ -275,9 +275,9 @@ div.nboutput div.output_area {
 
 /* input area */
 div.nbinput div.input_area {
-    border: 1px solid #cfcfcf;
+    border: 1px solid #e0e0e0;
     border-radius: 2px;
-    background: #f7f7f7;
+    background: #f5f5f5;
 }
 
 /* override MathJax center alignment in output cells */
@@ -285,7 +285,7 @@ div.nboutput div[class*=MathJax] {
     text-align: left !important;
 }
 
-/* override sphinx.ext.pngmath center alignment in output cells */
+/* override sphinx.ext.imgmath center alignment in output cells */
 div.nboutput div.math p {
     text-align: left;
 }
@@ -335,6 +335,40 @@ div.nboutput div.output_area.stderr {
 .ansi-bold { font-weight: bold; }
 .ansi-underline { text-decoration: underline; }
 
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
 /* CSS overrides for sphinx_rtd_theme */
 
 /* 24px margin */
@@ -351,61 +385,31 @@ div.nboutput div.output_area.stderr {
 .admonition > p:before {
     margin-right: 4px;  /* make room for the exclamation icon */
 }
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
 </style>
 <div class="section" id="Tutorial:-From-physics-to-tuned-GPU-kernels">
 <h1>Tutorial: From physics to tuned GPU kernels<a class="headerlink" href="#Tutorial:-From-physics-to-tuned-GPU-kernels" title="Permalink to this headline">¶</a></h1>
-<p>This tutorial is designed to show you the whole process starting from
-modeling a physical process to a Python implementation to creating
-optimized and auto-tuned GPU application using Kernel Tuner.</p>
-<p>In this tutorial, we will use
-<a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion">diffusion</a> as an example
-application.</p>
-<p>We start with modeling the physical process of diffusion, for which we
-create a simple numerical implementation in Python. Then we create a
-CUDA kernel that performs the same computation, but on the GPU. Once we
-have a CUDA kernel, we start using the Kernel Tuner for auto-tuning our
-GPU application. And finally, we’ll introduce a few code optimizations
-to our CUDA kernel that will improve performance, but also add more
-parameters to tune on using the Kernel Tuner.</p>
+<p>This tutorial is designed to show you the whole process starting from modeling a physical process to a Python implementation to creating optimized and auto-tuned GPU application using Kernel Tuner.</p>
+<p>In this tutorial, we will use <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion">diffusion</a> as an example application.</p>
+<p>We start with modeling the physical process of diffusion, for which we create a simple numerical implementation in Python. Then we create a CUDA kernel that performs the same computation, but on the GPU. Once we have a CUDA kernel, we start using the Kernel Tuner for auto-tuning our GPU application. And finally, we’ll introduce a few code optimizations to our CUDA kernel that will improve performance, but also add more parameters to tune on using the Kernel Tuner.</p>
 <div class="admonition note">
-<strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s
-documentation pages, note that you can actually run this tutorial as a
-Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub
-repository</a>. Install
-using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can
-start the tutorial by typing “jupyter notebook” in the
-“kernel_tuner/tutorial” directory.</div>
+<strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</div>
 <div class="section" id="Diffusion">
 <h2>Diffusion<a class="headerlink" href="#Diffusion" title="Permalink to this headline">¶</a></h2>
-<p>Put simply, diffusion is the redistribution of something from a region
-of high concentration to a region of low concentration without bulk
-motion. The concept of diffusion is widely used in many fields,
-including physics, chemistry, biology, and many more.</p>
-<p>Suppose that we take a metal sheet, in which the temperature is exactly
-equal to one degree everywhere in the sheet. Now if we were to heat a
-number of points on the sheet to a very high temperature, say a thousand
-degrees, in an instant by some method. We could see the heat diffuse
-from these hotspots to the cooler areas. We are assuming that the metal
-does not melt. In addition, we will ignore any heat loss from radiation
-or other causes in this example.</p>
-<p>We can use the <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion_equation">diffusion
-equation</a> to model
-how the heat diffuses through our metal sheet:</p>
+<p>Put simply, diffusion is the redistribution of something from a region of high concentration to a region of low concentration without bulk motion. The concept of diffusion is widely used in many fields, including physics, chemistry, biology, and many more.</p>
+<p>Suppose that we take a metal sheet, in which the temperature is exactly equal to one degree everywhere in the sheet. Now if we were to heat a number of points on the sheet to a very high temperature, say a thousand degrees, in an instant by some method. We could see the heat diffuse from these hotspots to the cooler areas. We are assuming that the metal does not melt. In addition, we will ignore any heat loss from radiation or other causes in this example.</p>
+<p>We can use the <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion_equation">diffusion equation</a> to model how the heat diffuses through our metal sheet:</p>
 <div class="math notranslate nohighlight">
 \begin{equation*}
 \frac{\partial u}{\partial t}= D \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} \right)
-\end{equation*}</div><p>Where <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> represent the spatial descretization of
-our 2D domain, <span class="math notranslate nohighlight">\(u\)</span> is the quantity that is being diffused,
-<span class="math notranslate nohighlight">\(t\)</span> is the descretization in time, and the constant <span class="math notranslate nohighlight">\(D\)</span>
-determines how fast the diffusion takes place.</p>
-<p>In this example, we will assume a very simple descretization of our
-problem. We assume that our 2D domain has <span class="math notranslate nohighlight">\(nx\)</span> equi-distant grid
-points in the x-direction and <span class="math notranslate nohighlight">\(ny\)</span> equi-distant grid points in the
-y-direction. Be sure to execute every cell as you read through this
-document, by selecting it and pressing <strong>shift+enter</strong>.</p>
+\end{equation*}</div><p>Where <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> represent the spatial descretization of our 2D domain, <span class="math notranslate nohighlight">\(u\)</span> is the quantity that is being diffused, <span class="math notranslate nohighlight">\(t\)</span> is the descretization in time, and the constant <span class="math notranslate nohighlight">\(D\)</span> determines how fast the diffusion takes place.</p>
+<p>In this example, we will assume a very simple descretization of our problem. We assume that our 2D domain has <span class="math notranslate nohighlight">\(nx\)</span> equi-distant grid points in the x-direction and <span class="math notranslate nohighlight">\(ny\)</span> equi-distant grid points in the y-direction. Be sure to execute every cell as you read through this document, by selecting it and pressing <strong>shift+enter</strong>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -414,9 +418,7 @@ document, by selecting it and pressing <strong>shift+enter</strong>.</p>
 </pre></div>
 </div>
 </div>
-<p>This results in a constant distance of <span class="math notranslate nohighlight">\(\delta x\)</span> between all grid
-points in the <span class="math notranslate nohighlight">\(x\)</span> dimension. Using central differences, we can
-numerically approximate the derivative for a given point <span class="math notranslate nohighlight">\(x_i\)</span>:</p>
+<p>This results in a constant distance of <span class="math notranslate nohighlight">\(\delta x\)</span> between all grid points in the <span class="math notranslate nohighlight">\(x\)</span> dimension. Using central differences, we can numerically approximate the derivative for a given point <span class="math notranslate nohighlight">\(x_i\)</span>:</p>
 <div class="math notranslate nohighlight">
 \begin{equation*}
 \left. \frac{\partial^2 u}{\partial x^2} \right|_{x_{i}} \approx \frac{u_{x_{i+1}}-2u_{{x_i}}+u_{x_{i-1}}}{(\delta x)^2}
@@ -424,29 +426,20 @@ numerically approximate the derivative for a given point <span class="math notra
 <div class="math notranslate nohighlight">
 \begin{equation*}
 \left. \frac{\partial^2 u}{\partial y^2} \right|_{y_{i}} \approx \frac{u_{y_{i+1}}-2u_{y_{i}}+u_{y_{i-1}}}{(\delta y)^2}
-\end{equation*}</div><p>If we combine the above equations, we can obtain a numerical estimation
-for the temperature field of our metal sheet in the next time step,
-using <span class="math notranslate nohighlight">\(\delta t\)</span> as the time between time steps. But before we do,
-we also simplify the expression a little bit, because we’ll assume that
-<span class="math notranslate nohighlight">\(\delta x\)</span> and <span class="math notranslate nohighlight">\(\delta y\)</span> are always equal to 1.</p>
+\end{equation*}</div><p>If we combine the above equations, we can obtain a numerical estimation for the temperature field of our metal sheet in the next time step, using <span class="math notranslate nohighlight">\(\delta t\)</span> as the time between time steps. But before we do, we also simplify the expression a little bit, because we’ll assume that <span class="math notranslate nohighlight">\(\delta x\)</span> and <span class="math notranslate nohighlight">\(\delta y\)</span> are always equal to 1.</p>
 <div class="math notranslate nohighlight">
 \begin{equation*}
 u'_{x,y} = u_{x,y} + \delta t \times \left( \left( u_{x_{i+1},y}-2u_{{x_i},y}+u_{x_{i-1},y} \right) + \left( u_{x,y_{i+1}}-2u_{x,y_{i}}+u_{x,y_{i-1}} \right) \right)
-\end{equation*}</div><p>In this formula <span class="math notranslate nohighlight">\(u'_{x,y}\)</span> refers to the temperature field at the
-time <span class="math notranslate nohighlight">\(t + \delta t\)</span>. As a final step, we further simplify this
-equation to:</p>
+\end{equation*}</div><p>In this formula <span class="math notranslate nohighlight">\(u'_{x,y}\)</span> refers to the temperature field at the time <span class="math notranslate nohighlight">\(t + \delta t\)</span>. As a final step, we further simplify this equation to:</p>
 <div class="math notranslate nohighlight">
 \begin{equation*}
 u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i},y}+u_{x_{i-1},y}+u_{x,y_{i-1}} \right)
 \end{equation*}</div></div>
 <div class="section" id="Python-implementation">
 <h2>Python implementation<a class="headerlink" href="#Python-implementation" title="Permalink to this headline">¶</a></h2>
-<p>We can create a Python function that implements the numerical
-approximation defined in the above equation. For simplicity we’ll use
-the assumption of a free boundary condition.</p>
+<p>We can create a Python function that implements the numerical approximation defined in the above equation. For simplicity we’ll use the assumption of a free boundary condition.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -458,15 +451,9 @@ the assumption of a free boundary condition.</p>
 </pre></div>
 </div>
 </div>
-<p>To give our Python function a test run, we will now do some imports and
-generate the input data for the initial conditions of our metal sheet
-with a few very hot points. We’ll also make two plots, one after a
-thousand time steps, and a second plot after another two thousand time
-steps. Do note that the plots are using different ranges for the colors.
-Also, executing the following cell may take a little while.</p>
+<p>To give our Python function a test run, we will now do some imports and generate the input data for the initial conditions of our metal sheet with a few very hot points. We’ll also make two plots, one after a thousand time steps, and a second plot after another two thousand time steps. Do note that the plots are using different ranges for the colors. Also, executing the following cell may take a little while.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -494,8 +481,7 @@ Also, executing the following cell may take a little while.</p>
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="output_area highlight-none notranslate"><div class="highlight"><pre>
@@ -510,12 +496,9 @@ Also, executing the following cell may take a little while.</p>
 <img alt="_images/diffusion_7_1.png" src="_images/diffusion_7_1.png" />
 </div>
 </div>
-<p>Now let’s take a quick look at the execution time of our diffuse
-function. Before we do, we also copy the current state of the metal
-sheet to be able to restart the computation from this state.</p>
+<p>Now let’s take a quick look at the execution time of our diffuse function. Before we do, we also copy the current state of the metal sheet to be able to restart the computation from this state.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -542,8 +525,7 @@ sheet to be able to restart the computation from this state.</p>
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="output_area highlight-none notranslate"><div class="highlight"><pre>
@@ -561,18 +543,11 @@ sheet to be able to restart the computation from this state.</p>
 </div>
 <div class="section" id="Computing-on-the-GPU">
 <h2>Computing on the GPU<a class="headerlink" href="#Computing-on-the-GPU" title="Permalink to this headline">¶</a></h2>
-<p>The next step in this tutorial is to implement a GPU kernel that will
-allow us to run our problem on the GPU. We store the kernel code in a
-Python string, because we can directly compile and run the kernel from
-Python. In this tutorial, we’ll use the CUDA programming model to
-implement our kernels.</p>
+<p>The next step in this tutorial is to implement a GPU kernel that will allow us to run our problem on the GPU. We store the kernel code in a Python string, because we can directly compile and run the kernel from Python. In this tutorial, we’ll use the CUDA programming model to implement our kernels.</p>
 <blockquote>
-<div>If you prefer OpenCL over CUDA, don’t worry. Everything in this
-tutorial applies as much to OpenCL as it does to CUDA. But we will
-use CUDA for our examples, and CUDA terminology in the text.</div></blockquote>
+<div>If you prefer OpenCL over CUDA, don’t worry. Everything in this tutorial applies as much to OpenCL as it does to CUDA. But we will use CUDA for our examples, and CUDA terminology in the text.</div></blockquote>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -595,24 +570,11 @@ use CUDA for our examples, and CUDA terminology in the text.</div></blockquote>
 </pre></div>
 </div>
 </div>
-<p>The above CUDA kernel parallelizes the work such that every grid point
-will be processed by a different CUDA thread. Therefore, the kernel is
-executed by a 2D grid of threads, which are grouped together into 2D
-thread blocks. The specific thread block dimensions we choose are not
-important for the result of the computation in this kernel. But as we
-will see will later, they will have an impact on performance.</p>
-<p>In this kernel we are using two, currently undefined, compile-time
-constants for <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>, because we will
-auto tune these parameters later. It is often needed for performance to
-fix the thread block dimensions at compile time, because the compiler
-can unroll loops that iterate using the block size, or because you need
-to allocate shared memory using the thread block dimensions.</p>
-<p>The next bit of Python code initializes PyCuda, and makes preparations
-so that we can call the CUDA kernel to do the computation on the GPU as
-we did earlier in Python.</p>
+<p>The above CUDA kernel parallelizes the work such that every grid point will be processed by a different CUDA thread. Therefore, the kernel is executed by a 2D grid of threads, which are grouped together into 2D thread blocks. The specific thread block dimensions we choose are not important for the result of the computation in this kernel. But as we will see will later, they will have an impact on performance.</p>
+<p>In this kernel we are using two, currently undefined, compile-time constants for <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>, because we will auto tune these parameters later. It is often needed for performance to fix the thread block dimensions at compile time, because the compiler can unroll loops that iterate using the block size, or because you need to allocate shared memory using the thread block dimensions.</p>
+<p>The next bit of Python code initializes PyCuda, and makes preparations so that we can call the CUDA kernel to do the computation on the GPU as we did earlier in Python.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -642,15 +604,10 @@ we did earlier in Python.</p>
 </pre></div>
 </div>
 </div>
-<p>The above code is a bit of boilerplate we need to compile a kernel using
-PyCuda. We’ve also, for the moment, fixed the thread block dimensions at
-16 by 16. These dimensions serve as our initial guess for what a good
-performing pair of thread block dimensions could look like.</p>
-<p>Now that we’ve setup everything, let’s see how long the computation
-would take using the GPU.</p>
+<p>The above code is a bit of boilerplate we need to compile a kernel using PyCuda. We’ve also, for the moment, fixed the thread block dimensions at 16 by 16. These dimensions serve as our initial guess for what a good performing pair of thread block dimensions could look like.</p>
+<p>Now that we’ve setup everything, let’s see how long the computation would take using the GPU.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -688,8 +645,7 @@ would take using the GPU.</p>
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="output_area highlight-none notranslate"><div class="highlight"><pre>
@@ -704,12 +660,9 @@ would take using the GPU.</p>
 <img alt="_images/diffusion_15_2.png" src="_images/diffusion_15_2.png" />
 </div>
 </div>
-<p>That should already be a lot faster than our previous Python
-implementation, but we can do much better if we optimize our GPU kernel.
-And that is exactly what the rest of this tutorial is about!</p>
+<p>That should already be a lot faster than our previous Python implementation, but we can do much better if we optimize our GPU kernel. And that is exactly what the rest of this tutorial is about!</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -718,24 +671,14 @@ And that is exactly what the rest of this tutorial is about!</p>
 </pre></div>
 </div>
 </div>
-<p>Also, if you think the Python boilerplate code to call a GPU kernel was
-a bit messy, we’ve got good news for you! From now on, we’ll only use
-the Kernel Tuner to compile and benchmark GPU kernels, which we can do
-with much cleaner Python code.</p>
+<p>Also, if you think the Python boilerplate code to call a GPU kernel was a bit messy, we’ve got good news for you! From now on, we’ll only use the Kernel Tuner to compile and benchmark GPU kernels, which we can do with much cleaner Python code.</p>
 </div>
 <div class="section" id="Auto-Tuning-with-the-Kernel-Tuner">
 <h2>Auto-Tuning with the Kernel Tuner<a class="headerlink" href="#Auto-Tuning-with-the-Kernel-Tuner" title="Permalink to this headline">¶</a></h2>
-<p>Remember that previously we’ve set the thread block dimensions to 16 by
-16. But how do we actually know if that is the best performing setting?
-That is where auto-tuning comes into play. Basically, it is very
-difficult to provide an answer through performance modeling and as such,
-we’d rather use the Kernel Tuner to compile and benchmark all possible
-kernel configurations.</p>
-<p>But before we continue, we’ll increase the problem size, because the GPU
-is very likely underutilized.</p>
+<p>Remember that previously we’ve set the thread block dimensions to 16 by 16. But how do we actually know if that is the best performing setting? That is where auto-tuning comes into play. Basically, it is very difficult to provide an answer through performance modeling and as such, we’d rather use the Kernel Tuner to compile and benchmark all possible kernel configurations.</p>
+<p>But before we continue, we’ll increase the problem size, because the GPU is very likely underutilized.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -746,18 +689,10 @@ is very likely underutilized.</p>
 </pre></div>
 </div>
 </div>
-<p>The above code block has generated new initial conditions and a new
-string that contains our CUDA kernel using our new domain size.</p>
-<p>To call the Kernel Tuner, we have to specify the tunable parameters, in
-our case <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>. For this purpose, we’ll
-create an ordered dictionary to store the tunable parameters. The keys
-will be the name of the tunable parameter, and the corresponding value
-is the list of possible values for the parameter. For the purpose of
-this tutorial, we’ll use a small number of commonly used values for the
-thread block dimensions, but feel free to try more!</p>
+<p>The above code block has generated new initial conditions and a new string that contains our CUDA kernel using our new domain size.</p>
+<p>To call the Kernel Tuner, we have to specify the tunable parameters, in our case <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>. For this purpose, we’ll create an ordered dictionary to store the tunable parameters. The keys will be the name of the tunable parameter, and the corresponding value is the list of possible values for the parameter. For the purpose of this tutorial, we’ll use a small number of commonly used values for the thread block dimensions, but feel free to try more!</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -768,18 +703,10 @@ thread block dimensions, but feel free to try more!</p>
 </pre></div>
 </div>
 </div>
-<p>We also have to tell the Kernel Tuner about the argument list of our
-CUDA kernel. Because the Kernel Tuner will be calling the CUDA kernel
-and measure its execution time. For this purpose we create a list in
-Python, that corresponds with the argument list of the
-<code class="docutils literal notranslate"><span class="pre">diffuse_kernel</span></code> CUDA function. This list will only be used as input
-to the kernel during tuning. The objects in the list should be Numpy
-arrays or scalars.</p>
-<p>Because you can specify the arguments as Numpy arrays, the Kernel Tuner
-will take care of allocating GPU memory and copying the data to the GPU.</p>
+<p>We also have to tell the Kernel Tuner about the argument list of our CUDA kernel. Because the Kernel Tuner will be calling the CUDA kernel and measure its execution time. For this purpose we create a list in Python, that corresponds with the argument list of the <code class="docutils literal notranslate"><span class="pre">diffuse_kernel</span></code> CUDA function. This list will only be used as input to the kernel during tuning. The objects in the list should be Numpy arrays or scalars.</p>
+<p>Because you can specify the arguments as Numpy arrays, the Kernel Tuner will take care of allocating GPU memory and copying the data to the GPU.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -787,15 +714,9 @@ will take care of allocating GPU memory and copying the data to the GPU.</p>
 </pre></div>
 </div>
 </div>
-<p>We’re almost ready to call the Kernel Tuner, we just need to set how
-large the problem is we are currently working on by setting a
-<code class="docutils literal notranslate"><span class="pre">problem_size</span></code>. The Kernel Tuner knows about thread block dimensions,
-which it expects to be called <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code>, <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>, and/or
-<code class="docutils literal notranslate"><span class="pre">block_size_z</span></code>. From these and the <code class="docutils literal notranslate"><span class="pre">problem_size</span></code>, the Kernel Tuner
-will compute the appropiate grid dimensions on the fly.</p>
+<p>We’re almost ready to call the Kernel Tuner, we just need to set how large the problem is we are currently working on by setting a <code class="docutils literal notranslate"><span class="pre">problem_size</span></code>. The Kernel Tuner knows about thread block dimensions, which it expects to be called <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code>, <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>, and/or <code class="docutils literal notranslate"><span class="pre">block_size_z</span></code>. From these and the <code class="docutils literal notranslate"><span class="pre">problem_size</span></code>, the Kernel Tuner will compute the appropiate grid dimensions on the fly.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -803,11 +724,9 @@ will compute the appropiate grid dimensions on the fly.</p>
 </pre></div>
 </div>
 </div>
-<p>And that’s everything the Kernel Tuner needs to know to be able to start
-tuning our kernel. Let’s give it a try by executing the next code block!</p>
+<p>And that’s everything the Kernel Tuner needs to know to be able to start tuning our kernel. Let’s give it a try by executing the next code block!</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -847,62 +766,21 @@ block_size_x=128, block_size_y=8, time=0.893279993534,
 best performing configuration: block_size_x=32, block_size_y=2, time=0.727967989445,
 </pre></div></div>
 </div>
-<p>Note that the Kernel Tuner prints a lot of useful information. To ensure
-you’ll be able to tell what was measured in this run the Kernel Tuner
-always prints the GPU or OpenCL Device name that is being used, as well
-as the name of the kernel. After that every line contains the
-combination of parameters and the time that was measured during
-benchmarking. The time that is being printed is in milliseconds and is
-obtained by averaging the execution time of 7 runs of the kernel.
-Finally, as a matter of convenience, the Kernel Tuner also prints the
-best performing combination of tunable parameters. However, later on in
-this tutorial we’ll explain how to analyze and store the tuning results
-using Python.</p>
-<p>Looking at the results printed above, the difference in performance
-between the different kernel configurations may seem very little.
-However, on our hardware, the performance of this kernel already varies
-in the order of 10%. Which of course can build up to large differences
-in the execution time if the kernel is to be executed thousands of
-times. We can also see that the performance of the best configuration in
-this set is 5% better than our initially guessed thread block dimensions
-of 16 by 16.</p>
-<p>In addtion, you may notice that not all possible combinations of values
-for <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code> are among the results. For
-example, 128x32 is not among the results. This is because some
-configuration require more threads per thread block than allowed on our
-GPU. The Kernel Tuner checks the limitations of your GPU at runtime and
-automatically skips over configurations that use too many threads per
-block. It will also do this for kernels that cannot be compiled because
-they use too much shared memory. And likewise for kernels that use too
-many registers to be launched at runtime. If you’d like to know about
-which configurations were skipped automatically you can pass the
-optional parameter <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code> to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>.</p>
-<p>However, knowing the best performing combination of tunable parameters
-becomes even more important when we start to further optimize our CUDA
-kernel. In the next section, we’ll add a simple code optimization and
-show how this affects performance.</p>
+<p>Note that the Kernel Tuner prints a lot of useful information. To ensure you’ll be able to tell what was measured in this run the Kernel Tuner always prints the GPU or OpenCL Device name that is being used, as well as the name of the kernel. After that every line contains the combination of parameters and the time that was measured during benchmarking. The time that is being printed is in milliseconds and is obtained by averaging the execution time of 7 runs of the kernel. Finally, as a matter
+of convenience, the Kernel Tuner also prints the best performing combination of tunable parameters. However, later on in this tutorial we’ll explain how to analyze and store the tuning results using Python.</p>
+<p>Looking at the results printed above, the difference in performance between the different kernel configurations may seem very little. However, on our hardware, the performance of this kernel already varies in the order of 10%. Which of course can build up to large differences in the execution time if the kernel is to be executed thousands of times. We can also see that the performance of the best configuration in this set is 5% better than our initially guessed thread block dimensions of 16 by
+16.</p>
+<p>In addtion, you may notice that not all possible combinations of values for <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code> are among the results. For example, 128x32 is not among the results. This is because some configuration require more threads per thread block than allowed on our GPU. The Kernel Tuner checks the limitations of your GPU at runtime and automatically skips over configurations that use too many threads per block. It will also do this for kernels that cannot be compiled because they use
+too much shared memory. And likewise for kernels that use too many registers to be launched at runtime. If you’d like to know about which configurations were skipped automatically you can pass the optional parameter <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code> to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>.</p>
+<p>However, knowing the best performing combination of tunable parameters becomes even more important when we start to further optimize our CUDA kernel. In the next section, we’ll add a simple code optimization and show how this affects performance.</p>
 </div>
 <div class="section" id="Using-Shared-Memory">
 <h2>Using Shared Memory<a class="headerlink" href="#Using-Shared-Memory" title="Permalink to this headline">¶</a></h2>
-<p>Shared memory, is a special type of the memory available in CUDA. Shared
-memory can be used by threads within the same thread block to exchange
-and share values. It is in fact, one of the very few ways for threads to
-communicate on the GPU.</p>
-<p>The idea is that we’ll try improve the performance of our kernel by
-using shared memory as a software controlled cache. There are already
-caches on the GPU, but most GPUs only cache accesses to global memory in
-L2. Shared memory is closer to the multiprocessors where the thread
-blocks are executed, comparable to an L1 cache.</p>
-<p>However, because there are also hardware caches, the performance
-improvement from this step is expected to not be that great. The more
-fine-grained control that we get by using a software managed cache,
-rather than a hardware implemented cache, comes at the cost of some
-instruction overhead. In fact, performance is quite likely to degrade a
-little. However, this intermediate step is necessary for the next
-optimization step we have in mind.</p>
+<p>Shared memory, is a special type of the memory available in CUDA. Shared memory can be used by threads within the same thread block to exchange and share values. It is in fact, one of the very few ways for threads to communicate on the GPU.</p>
+<p>The idea is that we’ll try improve the performance of our kernel by using shared memory as a software controlled cache. There are already caches on the GPU, but most GPUs only cache accesses to global memory in L2. Shared memory is closer to the multiprocessors where the thread blocks are executed, comparable to an L1 cache.</p>
+<p>However, because there are also hardware caches, the performance improvement from this step is expected to not be that great. The more fine-grained control that we get by using a software managed cache, rather than a hardware implemented cache, comes at the cost of some instruction overhead. In fact, performance is quite likely to degrade a little. However, this intermediate step is necessary for the next optimization step we have in mind.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -982,28 +860,12 @@ best performing configuration: block_size_x=64, block_size_y=4, time=1.048070430
 </div>
 <div class="section" id="Tiling-GPU-Code">
 <h2>Tiling GPU Code<a class="headerlink" href="#Tiling-GPU-Code" title="Permalink to this headline">¶</a></h2>
-<p>One very useful code optimization is called tiling, sometimes also
-called thread-block-merge. You can look at it in this way, currently we
-have many thread blocks that together work on the entire domain. If we
-were to use only half of the number of thread blocks, every thread block
-would need to double the amount of work it performs to cover the entire
-domain. However, the threads may be able to reuse part of the data and
-computation that is required to process a single output element for
-every element beyond the first.</p>
-<p>This is a code optimization because effectively we are reducing the
-total number of instructions executed by all threads in all thread
-blocks. So in a way, were are condensing the total instruction stream
-while keeping the all the really necessary compute instructions. More
-importantly, we are increasing data reuse, where previously these values
-would have been reused from the cache or in the worst-case from GPU
-memory.</p>
-<p>We can apply tiling in both the x and y-dimensions. This also introduces
-two new tunable parameters, namely the tiling factor in x and y, which
-we will call <code class="docutils literal notranslate"><span class="pre">tile_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">tile_size_y</span></code>. This is what the new
-kernel looks like:</p>
+<p>One very useful code optimization is called tiling, sometimes also called thread-block-merge. You can look at it in this way, currently we have many thread blocks that together work on the entire domain. If we were to use only half of the number of thread blocks, every thread block would need to double the amount of work it performs to cover the entire domain. However, the threads may be able to reuse part of the data and computation that is required to process a single output element for every
+element beyond the first.</p>
+<p>This is a code optimization because effectively we are reducing the total number of instructions executed by all threads in all thread blocks. So in a way, were are condensing the total instruction stream while keeping the all the really necessary compute instructions. More importantly, we are increasing data reuse, where previously these values would have been reused from the cache or in the worst-case from GPU memory.</p>
+<p>We can apply tiling in both the x and y-dimensions. This also introduces two new tunable parameters, namely the tiling factor in x and y, which we will call <code class="docutils literal notranslate"><span class="pre">tile_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">tile_size_y</span></code>. This is what the new kernel looks like:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1056,30 +918,13 @@ kernel looks like:</p>
 </pre></div>
 </div>
 </div>
-<p>We can tune our tiled kernel by adding the two new tunable parameters to
-our dictionary <code class="docutils literal notranslate"><span class="pre">tune_params</span></code>.</p>
-<p>We also need to somehow tell the Kernel Tuner to use fewer thread blocks
-to launch kernels with <code class="docutils literal notranslate"><span class="pre">tile_size_x</span></code> or <code class="docutils literal notranslate"><span class="pre">tile_size_y</span></code> larger than
-one. For this purpose the Kernel Tuner’s <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> function
-supports two optional arguments, called grid_div_x and grid_div_y.
-These are the grid divisor lists, which are lists of strings containing
-all the tunable parameters that divide a certain grid dimension. So far,
-we have been using the default settings for these, in which case the
-Kernel Tuner only uses the block_size_x and block_size_y tunable
-parameters to divide the problem_size.</p>
-<p>Note that the Kernel Tuner will replace the values of the tunable
-parameters inside the strings and use the product of the parameters in
-the grid divisor list to compute the grid dimension rounded up. You can
-even use arithmetic operations, inside these strings as they will be
-evaluated. As such, we could have used <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x*tile_size_x&quot;]</span></code>
-to get the same result.</p>
-<p>We are now ready to call the Kernel Tuner again and tune our tiled
-kernel. Let’s execute the following code block, note that it may take a
-while as the number of kernel configurations that the Kernel Tuner will
-try has just been increased with a factor of 9!</p>
+<p>We can tune our tiled kernel by adding the two new tunable parameters to our dictionary <code class="docutils literal notranslate"><span class="pre">tune_params</span></code>.</p>
+<p>We also need to somehow tell the Kernel Tuner to use fewer thread blocks to launch kernels with <code class="docutils literal notranslate"><span class="pre">tile_size_x</span></code> or <code class="docutils literal notranslate"><span class="pre">tile_size_y</span></code> larger than one. For this purpose the Kernel Tuner’s <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> function supports two optional arguments, called grid_div_x and grid_div_y. These are the grid divisor lists, which are lists of strings containing all the tunable parameters that divide a certain grid dimension. So far, we have been using the default settings for these, in which case the Kernel
+Tuner only uses the block_size_x and block_size_y tunable parameters to divide the problem_size.</p>
+<p>Note that the Kernel Tuner will replace the values of the tunable parameters inside the strings and use the product of the parameters in the grid divisor list to compute the grid dimension rounded up. You can even use arithmetic operations, inside these strings as they will be evaluated. As such, we could have used <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x*tile_size_x&quot;]</span></code> to get the same result.</p>
+<p>We are now ready to call the Kernel Tuner again and tune our tiled kernel. Let’s execute the following code block, note that it may take a while as the number of kernel configurations that the Kernel Tuner will try has just been increased with a factor of 9!</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1287,25 +1132,12 @@ block_size_x=128, block_size_y=8, tile_size_x=4, tile_size_y=2, time=0.588492810
 best performing configuration: block_size_x=64, block_size_y=8, tile_size_x=2, tile_size_y=4, time=0.538227200508,
 </pre></div></div>
 </div>
-<p>We can see that the number of kernel configurations tried by the Kernel
-Tuner is growing rather quickly. Also, the best performing configuration
-quite a bit faster than the best kernel before we started optimizing. On
-our GTX Titan X, the execution time went from 0.72 ms to 0.53 ms, a
-performance improvement of 26%!</p>
-<p>Note that the thread block dimensions for this kernel configuration are
-also different. Without optimizations the best performing kernel used a
-thread block of 32x2, after we’ve added tiling the best performing
-kernel uses thread blocks of size 64x4, which is four times as many
-threads! Also the amount of work increased with tiling factors 2 in the
-x-direction and 4 in the y-direction, increasing the amount of work per
-thread block by a factor of 8. The difference in the area processed per
+<p>We can see that the number of kernel configurations tried by the Kernel Tuner is growing rather quickly. Also, the best performing configuration quite a bit faster than the best kernel before we started optimizing. On our GTX Titan X, the execution time went from 0.72 ms to 0.53 ms, a performance improvement of 26%!</p>
+<p>Note that the thread block dimensions for this kernel configuration are also different. Without optimizations the best performing kernel used a thread block of 32x2, after we’ve added tiling the best performing kernel uses thread blocks of size 64x4, which is four times as many threads! Also the amount of work increased with tiling factors 2 in the x-direction and 4 in the y-direction, increasing the amount of work per thread block by a factor of 8. The difference in the area processed per
 thread block between the naive and the tiled kernel is a factor 32.</p>
-<p>However, there are actually several kernel configurations that come
-close. The following Python code prints all instances with an execution
-time within 5% of the best performing configuration.</p>
+<p>However, there are actually several kernel configurations that come close. The following Python code prints all instances with an execution time within 5% of the best performing configuration.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1338,22 +1170,11 @@ block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540383994
 </div>
 <div class="section" id="Storing-the-results">
 <h2>Storing the results<a class="headerlink" href="#Storing-the-results" title="Permalink to this headline">¶</a></h2>
-<p>While it’s nice that the Kernel Tuner prints the tuning results to
-stdout, it’s not that great if we’d have to parse what is printed to get
-the results. That is why the <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> returns a data structure
-that holds all the results. We’ve actually already used this data in the
-above bit of Python code.</p>
-<p><code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> returns a list of dictionaries, where each benchmarked
-kernel is represented by a dictionary containing the tunable parameters
-for that particular kernel configuration and one more entry called
-‘time’. The list of dictionaries format is very flexible and can easily
-be converted other formats that are easy to parse formats, like json or
-csv, for further analysis.</p>
-<p>You can execute the following code block to store the tuning results to
-both a json and a csv file (if you have Pandas installed).</p>
+<p>While it’s nice that the Kernel Tuner prints the tuning results to stdout, it’s not that great if we’d have to parse what is printed to get the results. That is why the <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> returns a data structure that holds all the results. We’ve actually already used this data in the above bit of Python code.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> returns a list of dictionaries, where each benchmarked kernel is represented by a dictionary containing the tunable parameters for that particular kernel configuration and one more entry called ‘time’. The list of dictionaries format is very flexible and can easily be converted other formats that are easy to parse formats, like json or csv, for further analysis.</p>
+<p>You can execute the following code block to store the tuning results to both a json and a csv file (if you have Pandas installed).</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1417,7 +1238,9 @@ both a json and a csv file (if you have Pandas installed).</p>
         <script type="text/javascript" src="_static/jquery.js"></script>
         <script type="text/javascript" src="_static/underscore.js"></script>
         <script type="text/javascript" src="_static/doctools.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
 
   
