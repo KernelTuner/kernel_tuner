@@ -63,7 +63,7 @@ def test_compile():
         print(str(e))
         assert False
 
-def dummy_func(a, b, block=0, grid=0):
+def dummy_func(a, b, block=0, grid=0, texrefs=None):
     pass
 
 @skip_if_no_cuda

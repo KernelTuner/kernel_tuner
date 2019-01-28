@@ -117,6 +117,9 @@ _kernel_options = Options([
             strings containing the constant memory symbol name together with numpy
             objects in the same way as normal kernel arguments.""",
             "dict(string: numpy object)")),
+    ("texmem_args", ("""CUDA-specific feature for specifying texture memory
+            arguments to the kernel.""", # TODO: Expand interface, extra docs
+            "dict(string: numpy object)")),
     ("block_size_names", ("""A list of strings that replace the defaults for the names
             that denote the thread block dimensions. If not passed, the behavior
             defaults to ``["block_size_x", "block_size_y", "block_size_z"]``""",
@@ -305,7 +308,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
-                lang=None, device=0, platform=0, cmem_args=None,
+                lang=None, device=0, platform=0, cmem_args=None, texmem_args=None,
                 num_threads=1, use_noodles=False, sample_fraction=False, compiler=None, compiler_options=None, log=None,
                 iterations=7, times=False, block_size_names=None, quiet=False, strategy=None, method=None):
 
@@ -443,7 +446,7 @@ _run_kernel_docstring = """Compile and run a single kernel
 
 def run_kernel(kernel_name, kernel_string, problem_size, arguments,
                params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-               lang=None, device=0, platform=0, cmem_args=None, compiler=None, compiler_options=None,
+               lang=None, device=0, platform=0, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None,
                block_size_names=None, quiet=False, log=None):
 
     if log:
@@ -480,6 +483,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
         #add constant memory arguments to compiled module
         if cmem_args is not None:
             dev.copy_constant_memory_args(cmem_args)
+        #add texture memory arguments to compiled module
+        if texmem_args is not None:
+            dev.copy_texture_memory_args(texmem_args)
     finally:
         #delete temp files
         if instance is not None:

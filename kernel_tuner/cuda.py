@@ -38,6 +38,7 @@ class CudaFunctions(object):
         :type iterations: int
         """
         self.allocations = []
+        self.texrefs = []
         if not drv:
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
@@ -212,6 +213,26 @@ class CudaFunctions(object):
             logging.debug(v.flags)
             drv.memcpy_htod(symbol, v)
 
+    def copy_texture_memory_args(self, texmem_args):
+        """adds texture memory arguments to the most recently compiled module
+
+        :param texmem_args: A dictionary containing the data to be passed to the
+            device texture memory. TODO
+        """
+        logging.debug('copy_texture_memory_args called')
+        logging.debug('current module: ' + str(self.current_module))
+        self.texrefs = []
+        for k, v in texmem_args.items():
+            tex = self.current_module.get_texref(k)
+            self.texrefs.append(tex)
+            tex.set_filter_mode(drv.filter_mode.LINEAR) # TODO: Config
+            logging.debug('copying to texture: ' + str(k))
+            logging.debug('texture to be copied: ')
+            logging.debug(v.nbytes)
+            logging.debug(v.dtype)
+            logging.debug(v.flags)
+            drv.matrix_to_texref(v, tex, order="C") # TODO: Order from numpy array?
+
     def run_kernel(self, func, gpu_args, threads, grid):
         """runs the CUDA kernel passed as 'func'
 
@@ -231,7 +252,7 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
         """
-        func(*gpu_args, block=threads, grid=grid)
+        func(*gpu_args, block=threads, grid=grid, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
