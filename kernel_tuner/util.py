@@ -240,6 +240,7 @@ def get_thread_block_dimensions(params, block_size_names=None):
 
 def looks_like_a_filename(kernel_source):
     """ attempt to detect whether source code or a filename was passed """
+    logging.debug('looks_like_a_filename called')
     result = False
     if isinstance(kernel_source, str):
         result = True
@@ -256,6 +257,7 @@ def looks_like_a_filename(kernel_source):
                 result = False
         #string must contain substring ".c", ".opencl", or ".F"
         result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
+    logging.debug('kernel_source is a filename: %s' % str(result))
     return result
 
 def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names):
