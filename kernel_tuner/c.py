@@ -127,17 +127,21 @@ class CFunctions(object):
             else:
                 compiler_options.append("-fopenmp")
 
+        #select right suffix based on compiler
+        suffix = ".cc"
+
         #detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
-        if ("#include <cuda" in kernel_string) or ("__global__" in kernel_string):
+        if ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string):
             if self.compiler == "g++" and self.nvcc_available:
                 self.compiler = "nvcc"
 
-        #select right suffix based on compiler
-        suffix = ".cc"
+        #if contains device code suffix .cu is required by nvcc
+        if self.compiler == "nvcc" and "__global__" in kernel_string:
+            suffix = ".cu"
         if self.compiler in ["gfortran", "pgfortran", "ftn", "ifort"]:
             suffix = ".F90"
+
         if self.compiler == "nvcc":
-            suffix = suffix[:-1] + "u"
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
 
         if ".c" in suffix:
