@@ -444,7 +444,10 @@ _run_kernel_docstring = """Compile and run a single kernel
 def run_kernel(kernel_name, kernel_string, problem_size, arguments,
                params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                lang=None, device=0, platform=0, cmem_args=None, compiler=None, compiler_options=None,
-               block_size_names=None, quiet=False):
+               block_size_names=None, quiet=False, log=None):
+
+    if log:
+        logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
     _check_user_input(kernel_name, kernel_string, arguments, block_size_names)
 
