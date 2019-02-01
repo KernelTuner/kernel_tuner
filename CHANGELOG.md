@@ -5,6 +5,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 
 ### Changed
+- fix for output checking, custom verify functions are called just once
+
+
+## [0.2.0] - 2018-11-16
+### Changed
 - no longer replacing kernel names with instance strings during tuning
 - bugfix in tempfile creation that lead to too many open files error
 

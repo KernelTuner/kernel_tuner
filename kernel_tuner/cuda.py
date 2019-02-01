@@ -246,7 +246,8 @@ class CudaFunctions(object):
         :type size: int
 
         """
-        drv.memset_d8(allocation, int(value), int(size))
+        drv.memset_d8(allocation, value, size)
+
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy

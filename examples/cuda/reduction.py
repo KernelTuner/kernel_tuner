@@ -28,7 +28,7 @@ def tune():
     #prepare output verification with custom function
     reference = [numpy.sum(x), None, None]
     def verify_partial_reduce(cpu_result, gpu_result, atol=None):
-        return numpy.isclose(cpu_result, numpy.sum(gpu_result), atol=atol)
+        return numpy.isclose(cpu_result[0], numpy.sum(gpu_result[0]), atol=atol)
 
     #tune the first kernel
     first_kernel, _ = tune_kernel("sum_floats", kernel_string, problem_size,

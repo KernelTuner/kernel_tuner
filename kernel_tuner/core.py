@@ -90,85 +90,45 @@ class DeviceInterface(object):
                 raise e
         return time
 
-    def check_kernel_correctness(self, func, gpu_args, instance, answer, atol, verify, verbose):
+    def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
-        logging.debug('check_kernel_correctness')
+        logging.debug('check_kernel_output')
         params = instance.params
 
-        if len(instance.arguments) != len(answer):
+        #if not using custom verify function, check if the length is the same
+        if not verify and len(instance.arguments) != len(answer):
             raise TypeError("The length of argument list and provided results do not match.")
 
         #zero GPU memory for output arguments
         for i, arg in enumerate(instance.arguments):
-            if answer[i] is not None:
-                self.dev.memset(gpu_args[i], 0, arg.nbytes)
+            if verify or answer[i] is not None:
+                if isinstance(arg, numpy.ndarray):
+                    self.dev.memset(gpu_args[i], 0, arg.nbytes)
 
         #run the kernel
-        if not self.run_kernel(func, gpu_args, instance):
+        check = self.run_kernel(func, gpu_args, instance)
+        if not check:
             return True #runtime failure occured that should be ignored, skip correctness check
 
-        def _ravel(a):
-            if hasattr(a, 'ravel') and len(a.shape) > 1:
-                return a.ravel()
-            return a
-
-        def _flatten(a):
-            if hasattr(a, 'flatten'):
-                return a.flatten()
-            return a
-
-        #check correctness of each output argument
-        correct = True
+        #retrieve gpu results to host memory
+        result_host = []
         for i, arg in enumerate(instance.arguments):
-            expected = answer[i]
-            if expected is not None:
-                if verify is not None:
-                    if not isinstance(expected, numpy.ndarray):
-                        raise TypeError("Element " + str(i) + " of the expected results list should be a numpy.ndarray")
-                else:
-                    if isinstance(expected, numpy.ndarray) and isinstance(arg, numpy.ndarray):
-                        if expected.dtype != arg.dtype:
-                            raise TypeError("Element " + str(i)
-                                            + " of the expected results list is not the same as the kernel output: "
-                                            + str(expected.dtype) + " != " + str(arg.dtype) + ".")
-                        if expected.size != arg.size:
-                            raise TypeError("Element " + str(i)
-                                            + " of the expected results list has a different size than "
-                                            + "the kernel output: "
-                                            + str(expected.size) + " != " + str(arg.size) + ".")
-                    elif isinstance(expected, numpy.numeric) and isinstance(arg, numpy.numeric):
-                        if expected.dtype != arg.dtype:
-                            raise TypeError("Element " + str(i)
-                                            + " of the expected results list is not the same as the kernel output: "
-                                            + str(expected.dtype) + " != " + str(arg.dtype) + ".")
+            if verify or answer[i] is not None:
+                if isinstance(arg, numpy.ndarray):
+                    result_host.append(numpy.zeros_like(arg))
+                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+            else:
+                result_host.append(None)
 
-                result_host = numpy.zeros_like(arg)
-                self.dev.memcpy_dtoh(result_host, gpu_args[i])
+        #if the user has specified a custom verify function, then call it, else use default based on numpy allclose
+        if verify:
+            try:
+                return verify(answer, result_host, atol=atol)
+            except TypeError:
+               return verify(answer, result_host)
+        else:
+            return _default_verify_function(instance, answer, result_host, atol)
 
-                result_host = _ravel(result_host)
-                expected = _flatten(expected)
-                if verify is None:
-                    output_test = numpy.allclose(expected, result_host, atol=atol)
-                else:
-                    try:
-                        output_test = verify(expected, result_host, atol=atol)
-                    except TypeError:
-                        output_test = verify(expected, result_host)
-
-                if not output_test and verbose:
-                    print("Error: " + util.get_config_string(params) + " detected during correctness check")
-                    print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
-                    numpy.set_printoptions(edgeitems=50)
-                    print("Kernel output:")
-                    print(result_host)
-                    print("Expected:")
-                    print(expected)
-                correct = correct and output_test
-                del result_host
-        if not correct:
-            logging.debug('correctness check has found a correctness issue')
-            raise Exception("Error: " + util.get_config_string(params) + " failed correctness check")
-        return correct
 
     def compile_and_benchmark(self, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
@@ -197,7 +157,7 @@ class DeviceInterface(object):
 
             #test kernel for correctness and benchmark
             if tuning_options.answer is not None:
-                self.check_kernel_correctness(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
+                self.check_kernel_output(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
 
             #benchmark
             time = self.benchmark(func, gpu_args, instance, tuning_options.times, verbose)
@@ -303,4 +263,76 @@ class DeviceInterface(object):
     def __del__(self):
         if hasattr(self, 'dev'):
             del self.dev
+
+
+
+def _default_verify_function(instance, answer, result_host, atol):
+    """default verify function based on numpy.allclose"""
+
+    #first check if the length is the same
+    if len(instance.arguments) != len(answer):
+        raise TypeError("The length of argument list and provided results do not match.")
+    #for each element in the argument list, check if the types match
+    for i, arg in enumerate(instance.arguments):
+        if answer[i] is not None: #skip None elements in the answer list
+            if isinstance(answer[i], numpy.ndarray) and isinstance(arg, numpy.ndarray):
+                if answer[i].dtype != arg.dtype:
+                    raise TypeError("Element " + str(i)
+                                    + " of the expected results list is not of the same dtype as the kernel output: "
+                                    + str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+                if answer[i].size != arg.size:
+                    raise TypeError("Element " + str(i)
+                                    + " of the expected results list has a size different from "
+                                    + "the kernel argument: "
+                                    + str(answer[i].size) + " != " + str(arg.size) + ".")
+            elif isinstance(answer[i], numpy.number) and isinstance(arg, numpy.number):
+                if answer[i].dtype != arg.dtype:
+                    raise TypeError("Element " + str(i)
+                                    + " of the expected results list is not the same as the kernel output: "
+                                    + str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+            else:
+                #either answer[i] and argument have different types or answer[i] is not a numpy type
+                if not isinstance(answer[i], numpy.ndarray) or not isinstance(answer[i], numpy.number):
+                    raise TypeError("Element " + str(i)
+                                    + " of expected results list is not a numpy array or numpy scalar.")
+                else:
+                    raise TypeError("Element " + str(i)
+                                    + " of expected results list and kernel arguments have different types.")
+
+    def _ravel(a):
+        if hasattr(a, 'ravel') and len(a.shape) > 1:
+            return a.ravel()
+        return a
+
+    def _flatten(a):
+        if hasattr(a, 'flatten'):
+            return a.flatten()
+        return a
+
+    correct = True
+    for i, arg in enumerate(instance.arguments):
+        expected = answer[i]
+        if expected is not None:
+
+            result = _ravel(result_host[i])
+            expected = _flatten(expected)
+            output_test = numpy.allclose(expected, result, atol=atol)
+
+            if not output_test and verbose:
+                print("Error: " + util.get_config_string(params) + " detected during correctness check")
+                print("this error occured when checking value of the " + i + "th kernel argument")
+                print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
+                numpy.set_printoptions(edgeitems=50)
+                print("Kernel output:")
+                print(result)
+                print("Expected:")
+                print(expected)
+            correct = correct and output_test
+
+    if not correct:
+        logging.debug('correctness check has found a correctness issue')
+        raise Exception("Error: " + util.get_config_string(params) + " failed correctness check")
+
+    return correct
+
 
