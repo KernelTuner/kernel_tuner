@@ -263,4 +263,18 @@ class CudaFunctions(object):
         else:
             dest = src
 
+    def memcpy_htod(self, dest, src):
+        """perform a host to device memory copy
+
+        :param dest: A GPU memory allocation unit
+        :type dest: pycuda.driver.DeviceAllocation
+
+        :param src: A numpy array in host memory to store the data
+        :type src: numpy.ndarray
+        """
+        if isinstance(dest, drv.DeviceAllocation):
+            drv.memcpy_htod(dest, src)
+        else:
+            dest = src
+
     units = {'time': 'ms'}

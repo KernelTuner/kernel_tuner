@@ -103,7 +103,7 @@ class DeviceInterface(object):
         for i, arg in enumerate(instance.arguments):
             if verify or answer[i] is not None:
                 if isinstance(arg, numpy.ndarray):
-                    self.dev.memset(gpu_args[i], 0, arg.nbytes)
+                    self.dev.memcpy_htod(gpu_args[i], arg)
 
         #run the kernel
         check = self.run_kernel(func, gpu_args, instance)

@@ -25,7 +25,7 @@ def test_check_kernel_output(dev_func_interface):
 
     test = dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
 
-    dfi.memset.assert_called_once_with(answer[0], 0, answer[0].nbytes)
+    dfi.memcpy_htod.assert_called_once_with(answer[0], answer[0])
     dfi.run_kernel.assert_called_once_with('func', answer, (256,1,1), (1,1,1))
 
     print(dfi.mock_calls)

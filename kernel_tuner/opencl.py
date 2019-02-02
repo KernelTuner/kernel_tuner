@@ -191,4 +191,16 @@ class OpenCLFunctions(object):
         if isinstance(src, cl.Buffer):
             cl.enqueue_copy(self.queue, dest, src)
 
+    def memcpy_htod(self, dest, src):
+        """perform a host to device memory copy
+
+        :param dest: An OpenCL Buffer to copy data from
+        :type dest: pyopencl.Buffer
+
+        :param src: A numpy array in host memory to store the data
+        :type src: numpy.ndarray
+        """
+        if isinstance(dest, cl.Buffer):
+            cl.enqueue_copy(self.queue, dest, src)
+
     units = {'time': 'ms'}

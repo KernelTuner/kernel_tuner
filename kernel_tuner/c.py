@@ -82,7 +82,7 @@ class CFunctions(object):
         self.arg_mapping = dict()
 
         for i, arg in enumerate(arguments):
-            if not isinstance(arg, (numpy.ndarray, numpy.generic)):
+            if not isinstance(arg, (numpy.ndarray, numpy.number)):
                 raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
             dtype_str = str(arg.dtype)
             arg_info = Argument(dtype_str, arg.shape)
@@ -317,6 +317,24 @@ class CFunctions(object):
         """
         arginfo = self.arg_mapping[str(src)]
         dest[:] = numpy.ctypeslib.as_array(src, shape=arginfo.shape)
+
+    def memcpy_htod(self, dest, src):
+        """a simple memcpy to a ctypes pointer from a numpy array
+
+        :param dest: A ctypes pointer to some memory allocation
+        :type dst: ctypes.pointer
+
+        :param src: A numpy array to store the data
+        :type src: numpy.ndarray
+        """
+        if not isinstance(src, numpy.ndarray):
+            raise TypeError("Argument is not numpy ndarray, received: %s" % type(src))
+        dtype_str = str(src.dtype)
+        if dtype_str in dtype_map.keys():
+            dest[:] = src.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+        else:
+            raise TypeError("unknown dtype for ndarray")
+
 
 
     def cleanup_lib(self):
