@@ -767,6 +767,24 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</td>
 </dd></dl>
 
 <dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.memcpy_htod">
+<code class="descname">memcpy_htod</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform a host to device memory copy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> (<em>pycuda.driver.DeviceAllocation</em>) – A GPU memory allocation unit</li>
+<li><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="kernel_tuner.cuda.CudaFunctions.memset">
 <code class="descname">memset</code><span class="sig-paren">(</span><em>allocation</em>, <em>value</em>, <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.memset" title="Permalink to this definition">¶</a></dt>
 <dd><p>set the memory in allocation to the value in value</p>
@@ -930,6 +948,24 @@ function after compilation.</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</li>
 <li><strong>src</strong> (<em>pyopencl.Buffer</em>) – An OpenCL Buffer to copy data from</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.opencl.OpenCLFunctions.memcpy_htod">
+<code class="descname">memcpy_htod</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform a host to device memory copy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> (<em>pyopencl.Buffer</em>) – An OpenCL Buffer to copy data from</li>
+<li><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</li>
 </ul>
 </td>
 </tr>
@@ -1107,6 +1143,24 @@ function after compilation.</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array to store the data</li>
 <li><strong>src</strong> (<em>ctypes.pointer</em>) – A ctypes pointer to some memory allocation</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.c.CFunctions.memcpy_htod">
+<code class="descname">memcpy_htod</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
+<dd><p>a simple memcpy to a ctypes pointer from a numpy array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dest</strong> – A ctypes pointer to some memory allocation</li>
+<li><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array to store the data</li>
 </ul>
 </td>
 </tr>
