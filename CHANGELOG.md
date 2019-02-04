@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - fix for output checking, custom verify functions are called just once
 
+### Added
+- support for kernels that use texture memory in CUDA
 
 ## [0.2.0] - 2018-11-16
 ### Changed
