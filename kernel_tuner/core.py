@@ -154,6 +154,9 @@ class DeviceInterface(object):
             #add constant memory arguments to compiled module
             if kernel_options.cmem_args is not None:
                 self.dev.copy_constant_memory_args(kernel_options.cmem_args)
+            #add texture memory arguments to compiled module
+            if kernel_options.texmem_args is not None:
+                self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
             #test kernel for correctness and benchmark
             if tuning_options.answer is not None:
@@ -203,6 +206,13 @@ class DeviceInterface(object):
             self.dev.copy_constant_memory_args(cmem_args)
         else:
             raise Exception("Error cannot copy constant memory arguments when language is not CUDA")
+
+    def copy_texture_memory_args(self, texmem_args):
+        """adds texture memory arguments to the most recently compiled module, if using CUDA"""
+        if self.lang == "CUDA":
+            self.dev.copy_texture_memory_args(texmem_args)
+        else:
+            raise Exception("Error cannot copy texture memory arguments when language is not CUDA")
 
     def create_kernel_instance(self, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""

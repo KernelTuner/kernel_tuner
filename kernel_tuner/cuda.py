@@ -38,6 +38,7 @@ class CudaFunctions(object):
         :type iterations: int
         """
         self.allocations = []
+        self.texrefs = []
         if not drv:
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
@@ -212,6 +213,61 @@ class CudaFunctions(object):
             logging.debug(v.flags)
             drv.memcpy_htod(symbol, v)
 
+    def copy_texture_memory_args(self, texmem_args):
+        """adds texture memory arguments to the most recently compiled module
+
+        :param texmem_args: A dictionary containing the data to be passed to the
+            device texture memory. TODO
+        """
+
+
+        filter_mode_map = { 'point': drv.filter_mode.POINT,
+                            'linear': drv.filter_mode.LINEAR }
+        address_mode_map = { 'border': drv.address_mode.BORDER,
+                             'clamp': drv.address_mode.CLAMP,
+                             'mirror': drv.address_mode.MIRROR,
+                             'wrap': drv.address_mode.WRAP }
+
+        logging.debug('copy_texture_memory_args called')
+        logging.debug('current module: ' + str(self.current_module))
+        self.texrefs = []
+        for k, v in texmem_args.items():
+            tex = self.current_module.get_texref(k)
+            self.texrefs.append(tex)
+
+            logging.debug('copying to texture: ' + str(k))
+            if not isinstance(v, dict):
+                data = v
+            else:
+                data = v['array']
+            logging.debug('texture to be copied: ')
+            logging.debug(data.nbytes)
+            logging.debug(data.dtype)
+            logging.debug(data.flags)
+
+            drv.matrix_to_texref(data, tex, order="C")
+
+            if isinstance(v, dict):
+                if 'address_mode' in v and v['address_mode'] is not None:
+                    # address_mode is set per axis
+                    amode = v['address_mode']
+                    if not isinstance(amode, list):
+                        amode = [ amode ] * data.ndim
+                    for i, m in enumerate(amode):
+                        try:
+                            if m is not None:
+                                tex.set_address_mode(i, address_mode_map[m])
+                        except KeyError:
+                            raise ValueError('Unknown address mode: ' + m)
+                if 'filter_mode' in v and v['filter_mode'] is not None:
+                    fmode = v['filter_mode']
+                    try:
+                        tex.set_filter_mode(filter_mode_map[fmode])
+                    except KeyError:
+                        raise ValueError('Unknown filter mode: ' + fmode)
+                if 'normalized_coordinates' in v and v['normalized_coordinates']:
+                    tex.set_flags(tex.get_flags() | drv.TRSF_NORMALIZED_COORDINATES)
+
     def run_kernel(self, func, gpu_args, threads, grid):
         """runs the CUDA kernel passed as 'func'
 
@@ -231,7 +287,7 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
         """
-        func(*gpu_args, block=threads, grid=grid)
+        func(*gpu_args, block=threads, grid=grid, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
