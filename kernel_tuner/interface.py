@@ -118,8 +118,8 @@ _kernel_options = Options([
             objects in the same way as normal kernel arguments.""",
             "dict(string: numpy object)")),
     ("texmem_args", ("""CUDA-specific feature for specifying texture memory
-            arguments to the kernel.""", # TODO: Expand interface, extra docs
-            "dict(string: numpy object)")),
+            arguments to the kernel. You specify texture memory arguments by passing a dictionary with strings containing the texture reference name together with the texture contents. These contents can be either simply a numpy object, or a dictionary containing the numpy object under the key 'array' plus the configuration options 'filter_mode' ('point' or 'linear), 'address_mode' (a list of 'border', 'clamp', 'mirror', 'wrap' per axis), 'normalized_coordinates' (True/False).""",
+            "dict(string: numpy object or dict)")),
     ("block_size_names", ("""A list of strings that replace the defaults for the names
             that denote the thread block dimensions. If not passed, the behavior
             defaults to ``["block_size_x", "block_size_y", "block_size_z"]``""",
