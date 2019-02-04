@@ -101,3 +101,30 @@ def test_copy_constant_memory_args(drv, _):
     drv.memcpy_htod.assert_called_once_with('get_global', fake_array)
     dev.current_module.get_global.assert_called_once_with('fake_array')
 
+@patch('kernel_tuner.cuda.DynamicSourceModule')
+@patch('kernel_tuner.cuda.drv')
+def test_copy_texture_memory_args(drv, _):
+    drv = setup_mock(drv)
+
+    fake_array = numpy.zeros(10).astype(numpy.float32)
+    texmem_args = { 'fake_tex': fake_array }
+
+    texref = Mock()
+
+    dev = cuda.CudaFunctions(0)
+    dev.current_module = Mock()
+    dev.current_module.get_texref.return_value = texref
+
+    dev.copy_texture_memory_args(texmem_args)
+
+    drv.matrix_to_texref.assert_called_once_with(fake_array, texref, order="C")
+    dev.current_module.get_texref.assert_called_once_with('fake_tex')
+
+    texmem_args = { 'fake_tex2': { 'array': fake_array, 'filter_mode': 'linear', 'address_mode': ['border', 'clamp'] } }
+
+    dev.copy_texture_memory_args(texmem_args)
+    drv.matrix_to_texref.assert_called_with(fake_array, texref, order="C")
+    dev.current_module.get_texref.assert_called_with('fake_tex2')
+    texref.set_filter_mode.assert_called_once_with(drv.filter_mode.LINEAR)
+    texref.set_address_mode.assert_any_call(0, drv.address_mode.BORDER)
+    texref.set_address_mode.assert_any_call(1, drv.address_mode.CLAMP)
