@@ -607,6 +607,12 @@ the language using this argument, currently supported: “CUDA”, “OpenCL”,
 </dd></dl>
 
 <dl class="method">
+<dt id="kernel_tuner.core.DeviceInterface.copy_texture_memory_args">
+<code class="descname">copy_texture_memory_args</code><span class="sig-paren">(</span><em>texmem_args</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.copy_texture_memory_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds texture memory arguments to the most recently compiled module, if using CUDA</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="kernel_tuner.core.DeviceInterface.create_kernel_instance">
 <code class="descname">create_kernel_instance</code><span class="sig-paren">(</span><em>kernel_options</em>, <em>params</em>, <em>verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.create_kernel_instance" title="Permalink to this definition">¶</a></dt>
 <dd><p>create kernel instance from kernel source, parameters, problem size, grid divisors, and so on</p>
@@ -743,6 +749,21 @@ device constant memory. The format to be used is as follows: A
 string key is used to name the constant memory symbol to which the
 value needs to be copied. Similar to regular arguments, these need
 to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="kernel_tuner.cuda.CudaFunctions.copy_texture_memory_args">
+<code class="descname">copy_texture_memory_args</code><span class="sig-paren">(</span><em>texmem_args</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.copy_texture_memory_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds texture memory arguments to the most recently compiled module</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>texmem_args</strong> – A dictionary containing the data to be passed to the
+device texture memory. TODO</td>
 </tr>
 </tbody>
 </table>
