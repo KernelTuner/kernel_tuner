@@ -2,7 +2,6 @@
 from __future__ import print_function
 
 from scipy.optimize import differential_evolution
-from kernel_tuner import util
 
 from kernel_tuner.strategies.minimize import get_bounds, _cost_func
 

@@ -93,7 +93,6 @@ class DeviceInterface(object):
     def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
         logging.debug('check_kernel_output')
-        params = instance.params
 
         #if not using custom verify function, check if the length is the same
         if not verify and len(instance.arguments) != len(answer):
@@ -125,7 +124,7 @@ class DeviceInterface(object):
             try:
                 return verify(answer, result_host, atol=atol)
             except TypeError:
-               return verify(answer, result_host)
+                return verify(answer, result_host)
         else:
             return _default_verify_function(instance, answer, result_host, atol)
 

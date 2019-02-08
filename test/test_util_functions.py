@@ -88,27 +88,20 @@ def test_get_grid_dimensions5():
     grid_div_x = ["block_x", "block_y"]
     grid_div_y = ["(block_y+2)/8"]
 
-    grid = get_grid_dimensions(problem_size, params,
+    def assert_grid_dimensions(problem_size):
+        grid = get_grid_dimensions(problem_size, params,
                     (grid_div_x, grid_div_y, None), block_size_names)
+        assert grid[0] == 1
+        assert grid[1] == 256
+        assert grid[2] == 1
 
-    assert grid[0] == 1
-    assert grid[1] == 256
-    assert grid[2] == 1
-
-def test_get_grid_dimensions6():
+    assert_grid_dimensions(problem_size)
 
     problem_size = (numpy.int32(1024), numpy.int64(1024), 1)
-    params = {"block_x": 41, "block_y": 37}
+    assert_grid_dimensions(problem_size)
 
-    grid_div_x = ["block_x", "block_y"]
-    grid_div_y = ["(block_y+2)/8"]
 
-    grid = get_grid_dimensions(problem_size, params,
-                    (grid_div_x, grid_div_y, None), block_size_names)
 
-    assert grid[0] == 1
-    assert grid[1] == 256
-    assert grid[2] == 1
 
 def test_get_thread_block_dimensions():
 
@@ -359,56 +352,37 @@ def test_check_tune_params_list3():
     assert True
 
 def test_check_block_size_params_names_list():
+    def test_warnings(function, args, number, warning_type):
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger a warning.
+            function(*args)
+            # Verify some things
+            assert len(w) == number
+            for warn in w:
+                assert issubclass(warn.category, warning_type)
+
+    #check warning triggers for both unused blocksize names
     block_size_names = ["block_size_a", "block_size_b"]
     tune_params = dict(zip(["hyper", "ultra", "mega", "turbo"], [1, 2, 3, 4]))
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        # Trigger a warning.
-        check_block_size_params_names_list(block_size_names, tune_params)
-        # Verify some things
-        assert len(w) == 2
-        assert issubclass(w[0].category, UserWarning)
-        assert issubclass(w[1].category, UserWarning)
-        assert "Block size name block_size_a is not specified in the tunable parameters list!" == str(w[0].message)
-        assert "Block size name block_size_b is not specified in the tunable parameters list!" == str(w[1].message)
+    test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 2, UserWarning)
 
-def test_check_block_size_params_names_list2():
+    #check warning does not triger when nondefault block size names are used correctly
     block_size_names = ["block_size_a", "block_size_b"]
     tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        # Trigger a warning.
-        check_block_size_params_names_list(block_size_names, tune_params)
-        # test that no warning is raised
-        assert len(w) == 0
+    test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
-def test_check_block_size_params_names_list3():
-    """check that a warning is issued when none of the default names are used and no alternative names are specified"""
+    #check that a warning is issued when none of the default names are used and no alternative names are specified
     block_size_names = None
     tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        # Trigger a warning.
-        check_block_size_params_names_list(block_size_names, tune_params)
-        # test that a warning is raised
-        assert len(w) == 1
-        assert issubclass(w[0].category, UserWarning)
-        assert "None of the tunable parameters specify thread block dimensions!" == str(w[0].message)
+    test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 1, UserWarning)
 
-def test_check_block_size_params_names_list4():
-    """check that no error is raised when any of the default block size names is being used"""
+    #check that no error is raised when any of the default block size names is being used
     block_size_names = None
     tune_params = dict(zip(["block_size_x", "several_other_things"], [[1,2,3,4], [2,4]]))
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        # Trigger a warning.
-        check_block_size_params_names_list(block_size_names, tune_params)
-        # test that no warning is raised
-        assert len(w) == 0
+    test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
+
 
 def test_get_kernel_string_func():
     #test whether passing a function instead of string works
