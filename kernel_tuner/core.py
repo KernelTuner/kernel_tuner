@@ -126,7 +126,7 @@ class DeviceInterface(object):
             except TypeError:
                 return verify(answer, result_host)
         else:
-            return _default_verify_function(instance, answer, result_host, atol)
+            return _default_verify_function(instance, answer, result_host, atol, verbose)
 
 
     def compile_and_benchmark(self, gpu_args, params, kernel_options, tuning_options):
@@ -275,7 +275,7 @@ class DeviceInterface(object):
 
 
 
-def _default_verify_function(instance, answer, result_host, atol):
+def _default_verify_function(instance, answer, result_host, atol, verbose):
     """default verify function based on numpy.allclose"""
 
     #first check if the length is the same
@@ -328,8 +328,8 @@ def _default_verify_function(instance, answer, result_host, atol):
             output_test = numpy.allclose(expected, result, atol=atol)
 
             if not output_test and verbose:
-                print("Error: " + util.get_config_string(params) + " detected during correctness check")
-                print("this error occured when checking value of the " + i + "th kernel argument")
+                print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
+                print("this error occured when checking value of the %oth kernel argument" % (i,))
                 print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
                 numpy.set_printoptions(edgeitems=50)
                 print("Kernel output:")
@@ -340,7 +340,7 @@ def _default_verify_function(instance, answer, result_host, atol):
 
     if not correct:
         logging.debug('correctness check has found a correctness issue')
-        raise Exception("Error: " + util.get_config_string(params) + " failed correctness check")
+        raise Exception("Error: " + util.get_config_string(instance.params) + " failed correctness check")
 
     return correct
 

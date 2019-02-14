@@ -21,7 +21,10 @@ dtype_map = {"int8": C.c_int8,
              "float32": C.c_float,
              "float64": C.c_double}
 
-Argument = namedtuple("Argument", ["type", "shape"])
+# This represents an individual kernel argument.
+# It contains a numpy object (ndarray or number) and a ctypes object with a copy
+# of the argument data. For an ndarray, the ctypes object is a wrapper for the ndarray's data.
+Argument = namedtuple("Argument", ["numpy", "ctypes"])
 
 
 class CFunctions(object):
@@ -39,7 +42,6 @@ class CFunctions(object):
         self.compiler = compiler or "g++"  # use gcc by default
         self.lib = None
         self.using_openmp = False
-        self.arg_mapping = dict()
 
         try:
             cc_version = str(subprocess.check_output([self.compiler, "--version"]))
@@ -76,27 +78,28 @@ class CFunctions(object):
         :type arguments: list(numpy objects)
 
         :returns: A list of arguments that can be passed to the C function.
-        :rtype: list()
+        :rtype: list(Argument)
         """
-        ctype_args = [None for _ in arguments]
-        self.arg_mapping = dict()
+        ctype_args = [ None for _ in arguments]
 
         for i, arg in enumerate(arguments):
             if not isinstance(arg, (numpy.ndarray, numpy.number)):
                 raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
             dtype_str = str(arg.dtype)
-            arg_info = Argument(dtype_str, arg.shape)
+            data = arg.copy()
             if isinstance(arg, numpy.ndarray):
                 if dtype_str in dtype_map.keys():
-                    ctype_args[i] = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+                    # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
+                    # to its underlying array, so we need to store a reference to arg.copy()
+                    # in the Argument object manually to avoid it being deleted.
+                    # (This changed in numpy > 1.15.)
+                    data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
-                self.arg_mapping[str(ctype_args[i])] = arg_info
             elif isinstance(arg, numpy.generic):
-                ctype_args[i] = dtype_map[dtype_str](arg)
-                self.arg_mapping[str(i)] = arg_info
+                data_ctypes = dtype_map[dtype_str](arg)
+            ctype_args[i] = Argument(numpy=data, ctypes=data_ctypes)
         return ctype_args
-
 
     def compile(self, kernel_name, kernel_string):
         """call the C compiler to compile the kernel, return the function
@@ -219,7 +222,7 @@ class CFunctions(object):
         :param c_args: A list of arguments to the function, order should match the
             order in the code. The list should be prepared using
             ready_argument_list().
-        :type c_args: list()
+        :type c_args: list(Argument)
 
         :param threads: Ignored, but left as argument for now to have the same
             interface as CudaFunctions and OpenCLFunctions.
@@ -270,7 +273,7 @@ class CFunctions(object):
         :param c_args: A list of arguments to the function, order should match the
             order in the code. The list should be prepared using
             ready_argument_list().
-        :type c_args: list()
+        :type c_args: list(Argument)
 
         :param threads: Ignored, but left as argument for now to have the same
             interface as CudaFunctions and OpenCLFunctions.
@@ -284,58 +287,47 @@ class CFunctions(object):
         :rtype: float
         """
         logging.debug("run_kernel")
-        logging.debug("arguments=" + str([str(arg) for arg in c_args]))
+        logging.debug("arguments=" + str([str(arg.ctypes) for arg in c_args]))
 
-        time = func(*c_args)
+        time = func(*[arg.ctypes for arg in c_args])
 
         return time
-
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
 
-        :param allocation: A memory allocation unit
-        :type allocation: pycuda.driver.DeviceAllocation
+        :param allocation: An Argument for some memory allocation unit
+        :type allocation: Argument
 
         :param value: The value to set the memory to
-        :type value: a single 32-bit float or int
+        :type value: a single 8-bit unsigned int
 
         :param size: The size of to the allocation unit in bytes
         :type size: int
         """
-        C.memset(allocation, value, size)
-
+        C.memset(allocation.ctypes, value, size)
 
     def memcpy_dtoh(self, dest, src):
-        """a simple memcpy expects a ctypes pointer, returns a numpy array
+        """a simple memcpy copying from an Argument to a numpy array
 
         :param dest: A numpy array to store the data
         :type dest: numpy.ndarray
 
-        :param src: A ctypes pointer to some memory allocation
-        :type src: ctypes.pointer
+        :param src: An Argument for some memory allocation
+        :type src: Argument
         """
-        arginfo = self.arg_mapping[str(src)]
-        dest[:] = numpy.ctypeslib.as_array(src, shape=arginfo.shape)
+        dest[:] = src.numpy
 
     def memcpy_htod(self, dest, src):
-        """a simple memcpy to a ctypes pointer from a numpy array
+        """a simple memcpy copying from a numpy array to an Argument
 
-        :param dest: A ctypes pointer to some memory allocation
-        :type dst: ctypes.pointer
+        :param dest: An Argument for some memory allocation
+        :type dst: Argument
 
-        :param src: A numpy array to store the data
+        :param src: A numpy array containing the source data
         :type src: numpy.ndarray
         """
-        if not isinstance(src, numpy.ndarray):
-            raise TypeError("Argument is not numpy ndarray, received: %s" % type(src))
-        dtype_str = str(src.dtype)
-        if dtype_str in dtype_map.keys():
-            dest[:] = src.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
-        else:
-            raise TypeError("unknown dtype for ndarray")
-
-
+        dest.numpy[:] = src
 
     def cleanup_lib(self):
         """ unload the previously loaded shared library """
