@@ -17,34 +17,38 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Contribution guide" href="contributing.html" />
     <link rel="prev" title="API Documentation" href="user-api.html" /> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -1100,7 +1104,7 @@ artifacts and other exceptional cases.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>func</strong> (<em>ctypes._FuncPtr</em>) – A C function compiled for this specific configuration</li>
-<li><strong>c_args</strong> (<em>list</em><em>(</em><em>)</em>) – A list of arguments to the function, order should match the
+<li><strong>c_args</strong> (<em>list</em><em>(</em><em>Argument</em><em>)</em>) – A list of arguments to the function, order should match the
 order in the code. The list should be prepared using
 ready_argument_list().</li>
 <li><strong>threads</strong> (<em>any</em>) – Ignored, but left as argument for now to have the same
@@ -1156,14 +1160,14 @@ function after compilation.</li>
 <dl class="method">
 <dt id="kernel_tuner.c.CFunctions.memcpy_dtoh">
 <code class="descname">memcpy_dtoh</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
-<dd><p>a simple memcpy expects a ctypes pointer, returns a numpy array</p>
+<dd><p>a simple memcpy copying from an Argument to a numpy array</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array to store the data</li>
-<li><strong>src</strong> (<em>ctypes.pointer</em>) – A ctypes pointer to some memory allocation</li>
+<li><strong>src</strong> (<em>Argument</em>) – An Argument for some memory allocation</li>
 </ul>
 </td>
 </tr>
@@ -1174,14 +1178,14 @@ function after compilation.</li>
 <dl class="method">
 <dt id="kernel_tuner.c.CFunctions.memcpy_htod">
 <code class="descname">memcpy_htod</code><span class="sig-paren">(</span><em>dest</em>, <em>src</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
-<dd><p>a simple memcpy to a ctypes pointer from a numpy array</p>
+<dd><p>a simple memcpy copying from a numpy array to an Argument</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dest</strong> – A ctypes pointer to some memory allocation</li>
-<li><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array to store the data</li>
+<li><strong>dest</strong> – An Argument for some memory allocation</li>
+<li><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array containing the source data</li>
 </ul>
 </td>
 </tr>
@@ -1198,8 +1202,8 @@ function after compilation.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) – A memory allocation unit</li>
-<li><strong>value</strong> (<em>a single 32-bit float</em><em> or </em><em>int</em>) – The value to set the memory to</li>
+<li><strong>allocation</strong> (<em>Argument</em>) – An Argument for some memory allocation unit</li>
+<li><strong>value</strong> (<em>a single 8-bit unsigned int</em>) – The value to set the memory to</li>
 <li><strong>size</strong> (<em>int</em>) – The size of to the allocation unit in bytes</li>
 </ul>
 </td>
@@ -1222,7 +1226,7 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of arguments that can be passed to the C function.</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list()</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list(Argument)</td>
 </tr>
 </tbody>
 </table>
@@ -1238,7 +1242,7 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>func</strong> (<em>ctypes._FuncPtr</em>) – A C function compiled for this specific configuration</li>
-<li><strong>c_args</strong> (<em>list</em><em>(</em><em>)</em>) – A list of arguments to the function, order should match the
+<li><strong>c_args</strong> (<em>list</em><em>(</em><em>Argument</em><em>)</em>) – A list of arguments to the function, order should match the
 order in the code. The list should be prepared using
 ready_argument_list().</li>
 <li><strong>threads</strong> (<em>any</em>) – Ignored, but left as argument for now to have the same
@@ -1491,7 +1495,7 @@ convenience.</li>
         <a href="contributing.html" class="btn btn-neutral float-right" title="Contribution guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="user-api.html" class="btn btn-neutral" title="API Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="user-api.html" class="btn btn-neutral float-left" title="API Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1517,28 +1521,16 @@ convenience.</li>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-    
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
