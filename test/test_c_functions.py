@@ -23,9 +23,9 @@ def test_ready_argument_list1():
     output = cfunc.ready_argument_list(arguments)
     print(output)
 
-    output_arg1 = numpy.ctypeslib.as_array(output[0], shape=arg1.shape)
-    output_arg2 = numpy.ctypeslib.as_array(output[1], shape=arg2.shape)
-    output_arg3 = numpy.ctypeslib.as_array(output[2], shape=arg3.shape)
+    output_arg1 = numpy.ctypeslib.as_array(output[0].ctypes, shape=arg1.shape)
+    output_arg2 = numpy.ctypeslib.as_array(output[1].ctypes, shape=arg2.shape)
+    output_arg3 = numpy.ctypeslib.as_array(output[2].ctypes, shape=arg3.shape)
 
     assert output_arg1.dtype == 'float32'
     assert output_arg2.dtype == 'float64'
@@ -34,6 +34,14 @@ def test_ready_argument_list1():
     assert all(output_arg1 == arg1)
     assert all(output_arg2 == arg2)
     assert all(output_arg3 == arg3)
+
+    assert output[0].numpy.dtype == 'float32'
+    assert output[1].numpy.dtype == 'float64'
+    assert output[2].numpy.dtype == 'int32'
+
+    assert all(output[0].numpy == arg1)
+    assert all(output[1].numpy == arg2)
+    assert all(output[2].numpy == arg3)
 
 def test_ready_argument_list2():
     arg1 = numpy.array([1, 2, 3]).astype(numpy.float32)
@@ -45,15 +53,15 @@ def test_ready_argument_list2():
     output = cfunc.ready_argument_list(arguments)
     print(output)
 
-    output_arg1 = numpy.ctypeslib.as_array(output[0], shape=arg1.shape)
+    output_arg1 = numpy.ctypeslib.as_array(output[0].ctypes, shape=arg1.shape)
 
     assert output_arg1.dtype == 'float32'
-    assert isinstance(output[1], C.c_int32)
-    assert isinstance(output[2], C.c_float)
+    assert isinstance(output[1].ctypes, C.c_int32)
+    assert isinstance(output[2].ctypes, C.c_float)
 
     assert all(output_arg1 == arg1)
-    assert output[1].value == arg2
-    assert output[2].value == arg3
+    assert output[1][1].value == arg2
+    assert output[2][1].value == arg3
 
 def test_ready_argument_list3():
     arg1 = Mock()
@@ -71,6 +79,20 @@ def test_ready_argument_list4():
         cfunc = CFunctions()
         cfunc.ready_argument_list([arg1])
 
+def test_ready_argument_list5():
+    arg1 = numpy.array([1, 2, 3]).astype(numpy.float32)
+    arguments = [arg1]
+
+    cfunc = CFunctions()
+    output = cfunc.ready_argument_list(arguments)
+
+    assert all(output[0].numpy == arg1)
+
+    # test that a copy has been made
+    arg1[0] = arg1[0] + 1
+    assert not all(output[0].numpy == arg1)
+
+
 def test_byte_array_arguments():
     arg1 = numpy.array([1, 2, 3]).astype(numpy.int8)
 
@@ -78,7 +100,7 @@ def test_byte_array_arguments():
 
     output = cfunc.ready_argument_list([arg1])
 
-    output_arg1 = numpy.ctypeslib.as_array(output[0], shape=arg1.shape)
+    output_arg1 = numpy.ctypeslib.as_array(output[0].ctypes, shape=arg1.shape)
 
     assert output_arg1.dtype == 'int8'
 
@@ -123,26 +145,41 @@ def test_memset():
     a = [1, 2, 3, 4]
     x = numpy.array(a).astype(numpy.float32)
     x_c = x.ctypes.data_as(C.POINTER(C.c_float))
+    arg = Argument(numpy=x, ctypes=x_c)
 
     cfunc = CFunctions()
-    cfunc.memset(x_c, 0, x.nbytes)
+    cfunc.memset(arg, 0, x.nbytes)
 
     output = numpy.ctypeslib.as_array(x_c, shape=(4,))
 
     print(output)
     assert all(output == numpy.zeros(4))
+    assert all(x == numpy.zeros(4))
 
 def test_memcpy_dtoh():
     a = [1, 2, 3, 4]
     x = numpy.array(a).astype(numpy.float32)
     x_c = x.ctypes.data_as(C.POINTER(C.c_float))
+    arg = Argument(numpy=x, ctypes=x_c)
     output = numpy.zeros_like(x)
 
     cfunc = CFunctions()
-    cfunc.arg_mapping = { str(x_c) : Argument(str(x.dtype), (4,)) }
-    cfunc.memcpy_dtoh(output, x_c)
+    cfunc.memcpy_dtoh(output, arg)
 
     print(a)
     print(output)
 
     assert all(output == a)
+    assert all(x == a)
+
+def test_memcpy_htod():
+    a = [1, 2, 3, 4]
+    src = numpy.array(a).astype(numpy.float32)
+    x = numpy.zeros_like(src)
+    x_c = x.ctypes.data_as(C.POINTER(C.c_float))
+    arg = Argument(numpy=x, ctypes=x_c)
+
+    cfunc = CFunctions()
+    cfunc.memcpy_htod(arg, src)
+
+    assert all(arg.numpy == a)
