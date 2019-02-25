@@ -159,7 +159,7 @@ class DeviceInterface(object):
                 self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
             #test kernel for correctness and benchmark
-            if tuning_options.answer is not None:
+            if tuning_options.answer is not None or tuning_options.verify is not None:
                 self.check_kernel_output(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
 
             #benchmark
