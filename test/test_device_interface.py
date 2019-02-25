@@ -67,7 +67,7 @@ def test_default_verify_function_arrays():
     for ans in [answer_type_error1, answer_type_error2, answer_type_error3]:
         try:
             core._default_verify_function(instance, ans, result_host, 0, False)
-            print("check_kernel_output failed to throw an exception")
+            print("_default_verify_function failed to throw an exception")
             assert False
         except TypeError:
             assert True
@@ -90,7 +90,7 @@ def test_default_verify_function_scalar():
     for ans in [answer_type_error1, answer_type_error2]:
         try:
             core._default_verify_function(instance, ans, result_host, 0, False)
-            print("check_kernel_output failed to throw an exception")
+            print("_default_verify_function failed to throw an exception")
             assert False
         except TypeError:
             assert True
