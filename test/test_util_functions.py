@@ -162,50 +162,38 @@ def test_check_restrictions():
         assert answer == e
 
 def test_detect_language1():
-    lang = None
     kernel_string = "__global__ void vector_add( ... );"
-    lang = detect_language(lang, kernel_string)
+    lang = detect_language(kernel_string)
     assert lang == "CUDA"
 
 def test_detect_language2():
-    lang = None
     kernel_string = "__kernel void vector_add( ... );"
-    lang = detect_language(lang, kernel_string)
+    lang = detect_language(kernel_string)
     assert lang == "OpenCL"
 
 def test_detect_language3():
-    lang = None
     kernel_string = "blabla"
-    lang = detect_language(lang, kernel_string)
+    lang = detect_language(kernel_string)
     assert lang == "C"
-
-def test_detect_language4():
-    lang = "CUDA"
-    kernel_string = "blabla"
-    try:
-        lang = detect_language(lang, kernel_string)
-        assert lang == "CUDA"
-    except Exception:
-        assert False
 
 @skip_if_no_cuda
 def test_get_device_interface1():
     lang = "CUDA"
-    dev = core.DeviceInterface("", 0, 0, lang=lang)
+    dev = core.DeviceInterface(core.KernelSource("", lang=lang))
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, cuda.CudaFunctions)
 
 @skip_if_no_opencl
 def test_get_device_interface2():
     lang = "OpenCL"
-    dev = core.DeviceInterface("", 0, 0, lang=lang)
+    dev = core.DeviceInterface(core.KernelSource("", lang=lang))
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, opencl.OpenCLFunctions)
 
 def test_get_device_interface3():
     with raises(Exception):
         lang = "blabla"
-        core.DeviceInterface("", 0, 0, lang=lang)
+        core.DeviceInterface(lang)
 
 def assert_user_warning(f, args, substring=None):
     with warnings.catch_warnings(record=True) as w:

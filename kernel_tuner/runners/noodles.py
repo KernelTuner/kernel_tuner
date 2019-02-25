@@ -25,11 +25,12 @@ def _chunk_list(l, n):
 
 class NoodlesRunner:
 
-    def __init__(self, device_options, max_threads=1):
+    def __init__(self, kernel_source, device_options, max_threads=1):
         self.device_options = device_options
         self.device_options["quiet"] = True
         self.max_threads = max_threads
         self.dev = None
+        self.kernel_source = kernel_source
 
     def run(self, parameter_space, kernel_options, tuning_options):
         """ Tune all instances in parameter_space using a multiple threads
@@ -100,7 +101,7 @@ class NoodlesRunner:
         """Benchmark a single kernel instance in the parameter space"""
 
         #detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_options.kernel_string, iterations=tuning_options.iterations, **device_options)
+        self.dev = DeviceInterface(self.kernel_source, iterations=tuning_options.iterations, **device_options)
 
         #move data to the GPU
         gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -111,7 +112,7 @@ class NoodlesRunner:
             params = dict(OrderedDict(zip(tuning_options.tune_params.keys(), element)))
 
             try:
-                time = self.dev.compile_and_benchmark(gpu_args, params, kernel_options, tuning_options)
+                time = self.dev.compile_and_benchmark(self.kernel_source, gpu_args, params, kernel_options, tuning_options)
 
                 params['time'] = time
                 results.append(params)

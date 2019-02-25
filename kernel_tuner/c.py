@@ -134,6 +134,8 @@ class CFunctions(object):
             else:
                 compiler_options.append("-fopenmp")
 
+        # TODO: Get suffix from KernelSources, and adapt the logic below
+
         #select right suffix based on compiler
         suffix = ".cc"
 

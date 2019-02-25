@@ -67,7 +67,11 @@ _kernel_options = Options([
             a dict containing the parameters. The function should return a
             string with the source code for the kernel.""",
             "string or list and/or callable")),
-    ("problem_size", ("""An int or string, or 1,2,3-dimensional tuple
+     ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
+        automatically detects the language, but if it fails, you may specify
+        the language using this argument, currently supported: "CUDA",
+        "OpenCL", or "C".""", "string")),
+     ("problem_size", ("""An int or string, or 1,2,3-dimensional tuple
             containing the size from which the grid dimensions of the kernel
             will be computed.
 
@@ -263,10 +267,6 @@ _tuning_options = Options([
     ])
 
 _device_options = Options([
-    ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
-        automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA",
-        "OpenCL", or "C".""", "string")),
     ("device", ("""CUDA/OpenCL device to use, in case you have multiple
         CUDA-capable GPUs or OpenCL devices you may use this to select one,
         0 by default. Ignored if you are tuning host code by passing
@@ -314,6 +314,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
+
+    kernel_source = util.KernelSource(kernel_string, lang)
 
     _check_user_input(kernel_name, kernel_string, arguments, block_size_names)
 
@@ -378,7 +380,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #select runner based on user options
     if num_threads == 1 and not use_noodles:
         from kernel_tuner.runners.sequential import SequentialRunner
-        runner = SequentialRunner(kernel_options, device_options, iterations)
+        runner = SequentialRunner(kernel_source, kernel_options, device_options, iterations)
     elif num_threads > 1 and not use_noodles:
         raise ValueError("Using multiple threads requires the Noodles runner, use use_noodles=True")
     elif use_noodles:
@@ -391,7 +393,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             raise ValueError("Using multiple threads requires Noodles, please use 'pip install noodles'")
         #import the NoodlesRunner
         from kernel_tuner.runners.noodles import NoodlesRunner
-        runner = NoodlesRunner(device_options, num_threads)
+        runner = NoodlesRunner(kernel_source, device_options, num_threads)
     else:
         raise ValueError("Somehow no runner was selected, this should not happen, please file a bug report")
 
@@ -463,8 +465,10 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
+    kernel_source = util.KernelSource(kernel_string, lang)
+
     #detect language and create the right device function interface
-    dev = core.DeviceInterface(kernel_string, iterations=1, **device_options)
+    dev = core.DeviceInterface(kernel_source, iterations=1, **device_options)
 
     #move data to the GPU
     gpu_args = dev.ready_argument_list(arguments)
@@ -472,7 +476,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     instance = None
     try:
         #create kernel instance
-        instance = dev.create_kernel_instance(kernel_options, params, False)
+        instance = dev.create_kernel_instance(kernel_source, kernel_options, params, False)
         if instance is None:
             raise Exception("cannot create kernel instance, too many threads per block")
 

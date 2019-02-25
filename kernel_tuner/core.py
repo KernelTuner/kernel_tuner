@@ -11,17 +11,17 @@ from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
 import kernel_tuner.util as util
 
-_KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
+_KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
 
 class KernelInstance(_KernelInstance):
     def delete_temp_files(self):
         """Delete any generated temp files"""
-        for v in temp_files.values():
+        for v in self.temp_files.values():
             util.delete_temp_file(v)
 
     def prepare_temp_files_for_error_msg(self):
         """Prepare temp file with source code, and return list of temp file names"""
-        temp_filename = util.get_temp_filename(suffix=".c")
+        temp_filename = util.get_temp_filename(suffix=self.kernel_source.get_suffix())
         util.write_file(temp_filename, self.kernel_string)
         ret = [ temp_filename ]
         ret.extend(self.temp_files.values())
@@ -30,11 +30,11 @@ class KernelInstance(_KernelInstance):
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, original_kernel, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7):
+    def __init__(self, kernel_source, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
-        :param original_kernel: The source of the kernel as passed to tune_kernel
-        :type original_kernel: kernel source as a string or a list of strings denoting filenames
+        :param kernel_source The kernel sources
+        :type kernel_source: kernel_tuner.util.KernelSource
 
         :param device: CUDA/OpenCL device to use, in case you have multiple
             CUDA-capable GPUs or OpenCL devices you may use this to select one,
@@ -46,9 +46,8 @@ class DeviceInterface(object):
             0 by default. Ignored if not using OpenCL.
         :type device: int
 
-        :param lang: Specifies the language used for GPU kernels. The kernel_tuner
-            automatically detects the language, but if it fails, you may specify
-            the language using this argument, currently supported: "CUDA", "OpenCL", or "C"
+        :param lang: Specifies the language used for GPU kernels.
+            Currently supported: "CUDA", "OpenCL", or "C"
         :type lang: string
 
         :param compiler_options: The compiler options to use when compiling kernels for this device.
@@ -61,9 +60,10 @@ class DeviceInterface(object):
         :type times: bool
 
         """
+        lang = kernel_source.lang
+
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
-        lang = util.detect_language(lang, original_kernel)
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations)
         elif lang == "OpenCL":
@@ -143,7 +143,7 @@ class DeviceInterface(object):
             raise Exception("Kernel result verification failed for: " + util.get_config_string(instance.params))
         return True
 
-    def compile_and_benchmark(self, gpu_args, params, kernel_options, tuning_options):
+    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
 
         instance_string = util.get_instance_string(params)
@@ -154,7 +154,7 @@ class DeviceInterface(object):
 
         verbose = tuning_options.verbose
 
-        instance = self.create_kernel_instance(kernel_options, params, verbose)
+        instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if instance is None:
             return None
 
@@ -225,7 +225,7 @@ class DeviceInterface(object):
         else:
             raise Exception("Error cannot copy texture memory arguments when language is not CUDA")
 
-    def create_kernel_instance(self, kernel_options, params, verbose):
+    def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
         instance_string = util.get_instance_string(params)
         grid_div = (kernel_options.grid_div_x, kernel_options.grid_div_y, kernel_options.grid_div_z)
@@ -242,14 +242,10 @@ class DeviceInterface(object):
             return None
 
         #obtain the kernel_string and prepare additional files, if any
-        temp_files = dict()
-        kernel_source = kernel_options.kernel_string
-        if not isinstance(kernel_source, list):
-            kernel_source = [kernel_source]
-        name, kernel_string, temp_files = util.prepare_list_of_files(kernel_options.kernel_name, kernel_source, params, grid, threads, kernel_options.block_size_names)
+        name, kernel_string, temp_files = kernel_source.prepare_list_of_files(kernel_options.kernel_name, params, grid, threads, kernel_options.block_size_names)
 
         #collect everything we know about this instance and return it
-        return KernelInstance(name, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
+        return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
 
     def get_environment(self):
         """Return dictionary with information about the environment"""

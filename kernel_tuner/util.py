@@ -117,18 +117,17 @@ def delete_temp_file(filename):
         if e.errno != errno.ENOENT:
             raise e
 
-def detect_language(lang, kernel_source):
-    """attempt to detect language from the kernel_string if not specified"""
-    if lang is None:
-        if callable(kernel_source):
-            raise TypeError("Please specify language when using a code generator function")
-        kernel_string = get_kernel_string(kernel_source)
-        if "__global__" in kernel_string:
-            lang = "CUDA"
-        elif "__kernel" in kernel_string:
-            lang = "OpenCL"
-        else:
-            lang = "C"
+def detect_language(kernel_source):
+    """attempt to detect language from the kernel_string"""
+    if callable(kernel_source):
+        raise TypeError("Please specify language when using a code generator function")
+    kernel_string = get_kernel_string(kernel_source)
+    if "__global__" in kernel_string:
+        lang = "CUDA"
+    elif "__kernel" in kernel_string:
+        lang = "OpenCL"
+    else:
+        lang = "C"
     return lang
 
 
@@ -305,49 +304,6 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     #kernel_string = kernel_string.replace(kernel_name, name)
     return name, kernel_string
 
-def prepare_list_of_files(kernel_name, kernel_file_list, params, grid, threads, block_size_names):
-    """ prepare the kernel string along with any additional files
-
-    The first file in the list is allowed to include or read in the others
-    The files beyond the first are considered additional files that may also contain tunable parameters
-
-    For each file beyond the first this function creates a temporary file with
-    preprocessors statements inserted. Occurences of the original filenames in the
-    first file are replaced with their temporary counterparts.
-
-    :param kernel_file_list: A list of filenames. The first file in the list is
-        allowed to read or include the other files in the list. All files may
-        will have access to the tunable parameters.
-    :type kernel_file_list: list(string)
-
-    :param params: A dictionary with the tunable parameters for this particular
-        instance.
-    :type params: dict()
-
-    :param grid: The grid dimensions for this instance. The grid dimensions are
-        also inserted into the code as if they are tunable parameters for
-        convenience.
-    :type grid: tuple()
-
-    """
-    temp_files = dict()
-
-    kernel_string = get_kernel_string(kernel_file_list[0], params)
-    name, kernel_string = prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names)
-
-    if len(kernel_file_list) > 1:
-        for f in kernel_file_list[1:]:
-            #generate temp filename with the same extension
-            temp_file = get_temp_filename(suffix="." + f.split(".")[-1])
-            temp_files[f] = temp_file
-            #add preprocessor statements to the additional file
-            _, temp_file_string = prepare_kernel_string(kernel_name, get_kernel_string(f, params), params, grid, threads, block_size_names)
-            write_file(temp_file, temp_file_string)
-            #replace occurences of the additional file's name in the first kernel_string with the name of the temp file
-            kernel_string = kernel_string.replace(f, temp_file)
-
-    return name, kernel_string, temp_files
-
 def read_file(filename):
     """ return the contents of the file named filename or None if file not found """
     if os.path.isfile(filename):
@@ -377,6 +333,7 @@ def write_file(filename, string):
     else:
         with open(filename, 'w') as f:
             f.write(string.encode("utf-8"))
+
 
 def normalize_verify_function(v):
     """Normalize a user-specified verify function.
@@ -422,3 +379,84 @@ def normalize_verify_function(v):
         return v
     else:
         return lambda answer, result_host, atol: v(answer, result_host)
+
+class KernelSource(object):
+    """Class that holds the kernel sources."""
+
+    def __init__(self, kernel_sources, lang):
+        if not isinstance(kernel_sources, list):
+           kernel_sources = [ kernel_sources ]
+        self.kernel_sources = kernel_sources
+        if lang is None:
+          lang = detect_language(kernel_sources[0])
+
+        # The validity of lang is checked later, when creating the DeviceInterface
+        self.lang = lang
+
+    def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
+        """ prepare the kernel string along with any additional files
+
+        The first file in the list is allowed to include or read in the others
+        The files beyond the first are considered additional files that may also contain tunable parameters
+
+        For each file beyond the first this function creates a temporary file with
+        preprocessors statements inserted. Occurences of the original filenames in the
+        first file are replaced with their temporary counterparts.
+
+        :param params: A dictionary with the tunable parameters for this particular
+            instance.
+        :type params: dict()
+
+        :param grid: The grid dimensions for this instance. The grid dimensions are
+            also inserted into the code as if they are tunable parameters for
+            convenience.
+        :type grid: tuple()
+
+        """
+        kernel_file_list = self.kernel_sources
+        temp_files = dict()
+
+        kernel_string = get_kernel_string(kernel_file_list[0], params)
+        name, kernel_string = prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names)
+
+        if len(kernel_file_list) > 1:
+            for f in kernel_file_list[1:]:
+                if not looks_like_a_filename(f):
+                    raise ValueError('When passing a list of kernel sources, the secondary entries must be filenames')
+                #generate temp filename with the same extension
+                temp_file = get_temp_filename(suffix="." + f.split(".")[-1])
+                temp_files[f] = temp_file
+                #add preprocessor statements to the additional file
+                _, temp_file_string = prepare_kernel_string(kernel_name, get_kernel_string(f, params), params, grid, threads, block_size_names)
+                write_file(temp_file, temp_file_string)
+                #replace occurences of the additional file's name in the first kernel_string with the name of the temp file
+                kernel_string = kernel_string.replace(f, temp_file)
+
+        return name, kernel_string, temp_files
+
+
+    def get_user_suffix(self, index=0):
+        """ Get the suffix of the kernel filename, if the user specified one. Return None otherwise.
+        """
+        if looks_like_a_filename(self.kernel_sources[index]) and ("." in self.kernel_sources[index]):
+            return "." + self.kernel_sources[index].split(".")[-1]
+        return None
+
+    def get_suffix(self, index=0):
+        """ Return a suitable suffix for a kernel filename.
+
+        This uses the user-specified suffix if available, or one based on the
+        lang/backend otherwise.
+        """
+
+        # TODO: Consider delegating this to the backend
+
+        suffix = self.get_user_suffix(index)
+        if suffix is not None:
+            return suffix
+
+        _suffixes = { 'CUDA': '.cu', 'OpenCL': '.cl', 'C': '.c' }
+        try:
+            return _suffixes[self.lang]
+        except KeyError:
+            return ".c"
