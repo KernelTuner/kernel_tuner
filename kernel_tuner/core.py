@@ -11,7 +11,21 @@ from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
 import kernel_tuner.util as util
 
-KernelInstance = namedtuple("KernelInstance", ["name", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
+_KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
+
+class KernelInstance(_KernelInstance):
+    def delete_temp_files(self):
+        """Delete any generated temp files"""
+        for v in temp_files.values():
+            util.delete_temp_file(v)
+
+    def prepare_temp_files_for_error_msg(self):
+        """Prepare temp file with source code, and return list of temp file names"""
+        temp_filename = util.get_temp_filename(suffix=".c")
+        util.write_file(temp_filename, self.kernel_string)
+        ret = [ temp_filename ]
+        ret.extend(self.temp_files.values())
+        return ret
 
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
@@ -166,14 +180,12 @@ class DeviceInterface(object):
 
         except Exception as e:
             #dump kernel_string to temp file
-            temp_filename = util.get_temp_filename(suffix=".c")
-            util.write_file(temp_filename, instance.kernel_string)
-            print("Error while compiling or benchmarking, see source files: " + temp_filename + " ".join(instance.temp_files.values()))
+            temp_filenames = instance.prepare_temp_files_for_error_msg()
+            print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
             raise e
 
         #clean up any temporary files, if no error occured
-        for v in instance.temp_files.values():
-            util.delete_temp_file(v)
+        instance.delete_temp_files()
 
         return time
 

@@ -493,8 +493,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     finally:
         #delete temp files
         if instance is not None:
-            for v in instance.temp_files.values():
-                util.delete_temp_file(v)
+            instance.delete_temp_files()
 
     #run the kernel
     if not dev.run_kernel(func, gpu_args, instance):
