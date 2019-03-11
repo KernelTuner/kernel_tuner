@@ -217,7 +217,8 @@ class CudaFunctions(object):
         """adds texture memory arguments to the most recently compiled module
 
         :param texmem_args: A dictionary containing the data to be passed to the
-            device texture memory. TODO
+            device texture memory. See tune_kernel().
+        :type texmem_args: dict
         """
 
 
