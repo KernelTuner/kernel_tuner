@@ -270,11 +270,6 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
      * the grid dimensions
      * tunable parameters
 
-    Additionally the name of kernel is replace with an instance specific name. This
-    is done to prevent that the kernel compilation could be skipped by PyCUDA and/or PyOpenCL,
-    which may use caching to save compilation time. This feature could lead to strange bugs
-    in the source code if the name of the kernel is also used for other stuff.
-
     :param kernel_name: Name of the kernel.
     :type kernel_name: string
 
