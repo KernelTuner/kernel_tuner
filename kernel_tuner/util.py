@@ -70,14 +70,10 @@ def check_argument_list(kernel_name, kernel_string, args):
 
 def check_tune_params_list(tune_params):
     """ raise an exception if a tune parameter has a forbidden name """
-    forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z")
-    forbidden_name_substr = ("time", "times")
+    forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
-        for forbidden_substr in forbidden_name_substr:
-            if forbidden_substr in name:
-                raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name: not allowed to use " + forbidden_substr + " in tune parameter names!")
 
 def check_block_size_names(block_size_names):
     if block_size_names is not None:
