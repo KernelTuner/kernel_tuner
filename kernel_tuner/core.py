@@ -113,10 +113,9 @@ class DeviceInterface(object):
         #retrieve gpu results to host memory
         result_host = []
         for i, arg in enumerate(instance.arguments):
-            if verify or answer[i] is not None:
-                if isinstance(arg, numpy.ndarray):
-                    result_host.append(numpy.zeros_like(arg))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+            if (verify or answer[i] is not None) and isinstance(arg, numpy.ndarray):
+                result_host.append(numpy.zeros_like(arg))
+                self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
             else:
                 result_host.append(None)
 
