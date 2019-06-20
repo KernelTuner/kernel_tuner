@@ -123,12 +123,15 @@ class DeviceInterface(object):
         #if the user has specified a custom verify function, then call it, else use default based on numpy allclose
         if verify:
             try:
-                return verify(answer, result_host, atol=atol)
+                correct = verify(answer, result_host, atol=atol)
             except TypeError:
-                return verify(answer, result_host)
+                correct = verify(answer, result_host)
         else:
-            return _default_verify_function(instance, answer, result_host, atol, verbose)
+            correct = _default_verify_function(instance, answer, result_host, atol, verbose)
 
+        if not correct:
+            raise Exception("Kernel result verification failed for: " + util.get_config_string(instance.params))
+        return True
 
     def compile_and_benchmark(self, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
@@ -341,7 +344,6 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
 
     if not correct:
         logging.debug('correctness check has found a correctness issue')
-        raise Exception("Error: " + util.get_config_string(instance.params) + " failed correctness check")
 
     return correct
 
