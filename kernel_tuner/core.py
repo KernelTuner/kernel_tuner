@@ -121,10 +121,7 @@ class DeviceInterface(object):
 
         #if the user has specified a custom verify function, then call it, else use default based on numpy allclose
         if verify:
-            try:
-                correct = verify(answer, result_host, atol=atol)
-            except TypeError:
-                correct = verify(answer, result_host)
+            correct = verify(answer, result_host, atol=atol)
         else:
             correct = _default_verify_function(instance, answer, result_host, atol, verbose)
 

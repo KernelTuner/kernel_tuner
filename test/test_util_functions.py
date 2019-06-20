@@ -410,4 +410,22 @@ def test_read_write_file():
     finally:
         delete_temp_file(filename)
 
+def test_normalize_verify_function():
+    assert normalize_verify_function(None) is None
+
+    def verify1(answer, result_host):
+        return True
+    v = normalize_verify_function(verify1)
+    assert v(1, 2, atol=3)
+
+    def verify2(answer, result_host, atol):
+        return True
+    v = normalize_verify_function(verify2)
+    assert v(1, 2, atol=3)
+
+    v = normalize_verify_function(lambda a, b: True)
+    assert v(1, 2, atol=3)
+
+    v = normalize_verify_function(lambda a, b, atol: True)
+    assert v(1, 2, atol=3)
 

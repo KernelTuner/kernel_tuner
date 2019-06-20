@@ -377,3 +377,48 @@ def write_file(filename, string):
     else:
         with open(filename, 'w') as f:
             f.write(string.encode("utf-8"))
+
+def normalize_verify_function(v):
+    """Normalize a user-specified verify function.
+
+    The user-specified function has two required positional arguments (answer, result_host),
+    and an optional keyword (or keyword-only) argument atol. We normalize it to always accept
+    an atol keyword argument.
+
+    Undefined behaviour if the passed function does not match the required signatures.
+    """
+
+    # python 3.3+
+    def _has_kw_argument_sig(func, name):
+        from inspect import signature
+        sig = signature(func)
+        return name in sig.parameters
+    # python 3.0+
+    def _has_kw_argument_fullarg(func, name):
+        from inspect import getfullargspec
+        spec = getfullargspec(func)
+        return (name in spec.args) or (name in spec.kwonlyargs)
+    # python 2.6+
+    def _has_kw_argument_arg(func, name):
+        from inspect import getargspec
+        spec = getargspec(func)
+        return name in spec.args
+
+    if v is None:
+        return None
+
+    import inspect
+
+    if hasattr(inspect, 'signature'):
+        has_kw_argument = _has_kw_argument_sig
+    elif hasattr(inspect, 'getfullargspec'):
+        has_kw_argument = _has_kw_argument_fullarg
+    elif hasattr(inspect, 'getargspec'):
+        has_kw_argument = _has_kw_argument_arg
+    else:
+        raise RuntimeError('No suitable inspect function found')
+
+    if has_kw_argument(v, 'atol'):
+        return v
+    else:
+        return lambda answer, result_host, atol: v(answer, result_host)
