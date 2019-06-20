@@ -98,7 +98,8 @@ class DeviceInterface(object):
         if not verify and len(instance.arguments) != len(answer):
             raise TypeError("The length of argument list and provided results do not match.")
 
-        #zero GPU memory for output arguments
+        #re-copy original contents of output arguments to GPU memory, to overwrite any changes
+        #by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
             if verify or answer[i] is not None:
                 if isinstance(arg, numpy.ndarray):
