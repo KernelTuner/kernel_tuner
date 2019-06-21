@@ -208,7 +208,47 @@ with an maximum allowed absolute error of 1e-6. If you want to use a
 difference tolerance value, use the optional argument <code class="docutils literal notranslate"><span class="pre">atol</span></code>.</p>
 <p>The example in <code class="docutils literal notranslate"><span class="pre">examples/cuda/convolution_correct.py</span></code> demonstrates how
 to use the <code class="docutils literal notranslate"><span class="pre">answer</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">import</span> <span class="nn">kernel_tuner</span>
 
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -250,7 +290,7 @@ to use the <code class="docutils literal notranslate"><span class="pre">answer</
     <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">cmem_args</span><span class="o">=</span><span class="n">cmem_args</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
 </pre></div>
-</div>
+</td></tr></table></div>
 <p>This example uses the <code class="docutils literal notranslate"><span class="pre">run_kernel()</span></code> function of the kernel tuner
 to run a single kernel and return its results, with almost the same
 interface as <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>. In this example we run a naive CUDA
@@ -268,7 +308,16 @@ Although the name of the parameters can be different, their semantic is position
 used in the documentation.</p>
 <p>The example in <code class="docutils literal notranslate"><span class="pre">examples/cuda/reduction.py</span></code> demonstrates how to use the <code class="docutils literal notranslate"><span class="pre">verify</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>;
 what follows is a snippet from the example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># gpu_result</span>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="c1"># gpu_result</span>
 <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">sum_x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
 <span class="c1"># cpu_result</span>
 <span class="n">reference</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span>
@@ -279,7 +328,7 @@ what follows is a snippet from the example:</p>
 <span class="n">first_kernel</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;sum_floats&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span>
     <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">reference</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="n">verify_partial_reduce</span><span class="p">)</span>
 </pre></div>
-</div>
+</td></tr></table></div>
 <p>The first argument, <code class="docutils literal notranslate"><span class="pre">cpu_result</span></code>, is mapped to the NumPy array provided to the <code class="docutils literal notranslate"><span class="pre">answer</span></code> option; in this example it
 is mapped to <code class="docutils literal notranslate"><span class="pre">reference</span></code>.
 The second argument, <code class="docutils literal notranslate"><span class="pre">gpu_result</span></code>, is mapped to the NumPy array provided to the <code class="docutils literal notranslate"><span class="pre">arguments</span></code> option of

@@ -197,12 +197,11 @@
 Tuning host code can be useful when it contains parameters that have impact on the performance of kernel on the GPU, such as the number of
 streams to use when executing a kernel across multiple streams. Another example is when you want to include the data transfers between
 host and device into your tuning setup, or tune for different methods of moving data between host and device.</p>
-<dl class="docutils">
-<dt>There are few differences with tuning just a single CUDA or OpenCL kernel, to list them:</dt>
-<dd><ul class="first last simple">
-<li>You have to specify the lang=”C” option</li>
-<li>The C function should return a <code class="docutils literal notranslate"><span class="pre">float</span></code></li>
-<li>You have to do your own timing and error handling in C</li>
+<dl class="simple">
+<dt>There are few differences with tuning just a single CUDA or OpenCL kernel, to list them:</dt><dd><ul class="simple">
+<li><p>You have to specify the lang=”C” option</p></li>
+<li><p>The C function should return a <code class="docutils literal notranslate"><span class="pre">float</span></code></p></li>
+<li><p>You have to do your own timing and error handling in C</p></li>
 </ul>
 </dd>
 </dl>
@@ -229,7 +228,33 @@ larger to account for the overlapping border between the data needed by differen
 in streams <cite>n</cite> and <cite>n-1</cite> have to be finished. To ensure the latter, we use CUDA Events and in particular cudaStreamWaitEvent(), which halts stream <cite>n</cite> until the
 transfer in stream <cite>n-1</cite> has finished.</p>
 <p>The way you use the Kernel Tuner to tune this CUDA program is very similar to when you are tuning a CUDA kernel directly, as you can see below:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution_streams.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution_streams.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 
 <span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
@@ -257,16 +282,15 @@ transfer in stream <cite>n-1</cite> has finished.</p>
     <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
     <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lang</span><span class="o">=</span><span class="s2">&quot;C&quot;</span><span class="p">)</span>
 </pre></div>
-</div>
-<dl class="docutils">
-<dt>In fact, the only differences with the simple convolution example are:</dt>
-<dd><ul class="first last simple">
-<li>The source file also contains host code</li>
-<li>“num_streams” is added to the tuning parameters</li>
-<li>“num_streams” is added to the “grid_div_y” list</li>
-<li>The kernel_name “convolution_streams” is a C function</li>
-<li>lang=”C” is used to tell this is a C function</li>
-<li><code class="docutils literal notranslate"><span class="pre">filter</span></code> is not passed as a constant memory argument</li>
+</td></tr></table></div>
+<dl class="simple">
+<dt>In fact, the only differences with the simple convolution example are:</dt><dd><ul class="simple">
+<li><p>The source file also contains host code</p></li>
+<li><p>“num_streams” is added to the tuning parameters</p></li>
+<li><p>“num_streams” is added to the “grid_div_y” list</p></li>
+<li><p>The kernel_name “convolution_streams” is a C function</p></li>
+<li><p>lang=”C” is used to tell this is a C function</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filter</span></code> is not passed as a constant memory argument</p></li>
 </ul>
 </dd>
 </dl>

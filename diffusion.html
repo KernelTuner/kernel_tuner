@@ -401,7 +401,8 @@ div.rendered_html tbody tr:hover {
 <p>In this tutorial, we will use <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion">diffusion</a> as an example application.</p>
 <p>We start with modeling the physical process of diffusion, for which we create a simple numerical implementation in Python. Then we create a CUDA kernel that performs the same computation, but on the GPU. Once we have a CUDA kernel, we start using the Kernel Tuner for auto-tuning our GPU application. And finally, we’ll introduce a few code optimizations to our CUDA kernel that will improve performance, but also add more parameters to tune on using the Kernel Tuner.</p>
 <div class="admonition note">
-<strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</div>
+<p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
+</div>
 <div class="section" id="Diffusion">
 <h2>Diffusion<a class="headerlink" href="#Diffusion" title="Permalink to this headline">¶</a></h2>
 <p>Put simply, diffusion is the redistribution of something from a region of high concentration to a region of low concentration without bulk motion. The concept of diffusion is widely used in many fields, including physics, chemistry, biology, and many more.</p>
@@ -549,7 +550,8 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 <h2>Computing on the GPU<a class="headerlink" href="#Computing-on-the-GPU" title="Permalink to this headline">¶</a></h2>
 <p>The next step in this tutorial is to implement a GPU kernel that will allow us to run our problem on the GPU. We store the kernel code in a Python string, because we can directly compile and run the kernel from Python. In this tutorial, we’ll use the CUDA programming model to implement our kernels.</p>
 <blockquote>
-<div>If you prefer OpenCL over CUDA, don’t worry. Everything in this tutorial applies as much to OpenCL as it does to CUDA. But we will use CUDA for our examples, and CUDA terminology in the text.</div></blockquote>
+<div><p>If you prefer OpenCL over CUDA, don’t worry. Everything in this tutorial applies as much to OpenCL as it does to CUDA. But we will use CUDA for our examples, and CUDA terminology in the text.</p>
+</div></blockquote>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>

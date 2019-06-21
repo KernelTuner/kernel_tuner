@@ -195,15 +195,13 @@
 <p>This file provides all the details you need about how to call the Kernel Tuner’s functions, including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">tune_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>tune_params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>restrictions=None</em>, <em>answer=None</em>, <em>atol=1e-06</em>, <em>verify=None</em>, <em>verbose=False</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>texmem_args=None</em>, <em>num_threads=1</em>, <em>use_noodles=False</em>, <em>sample_fraction=False</em>, <em>compiler=None</em>, <em>compiler_options=None</em>, <em>log=None</em>, <em>iterations=7</em>, <em>times=False</em>, <em>block_size_names=None</em>, <em>quiet=False</em>, <em>strategy=None</em>, <em>method=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">kernel_tuner.</code><code class="sig-name descname">tune_kernel</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_string</em>, <em class="sig-param">problem_size</em>, <em class="sig-param">arguments</em>, <em class="sig-param">tune_params</em>, <em class="sig-param">grid_div_x=None</em>, <em class="sig-param">grid_div_y=None</em>, <em class="sig-param">grid_div_z=None</em>, <em class="sig-param">restrictions=None</em>, <em class="sig-param">answer=None</em>, <em class="sig-param">atol=1e-06</em>, <em class="sig-param">verify=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">lang=None</em>, <em class="sig-param">device=0</em>, <em class="sig-param">platform=0</em>, <em class="sig-param">cmem_args=None</em>, <em class="sig-param">texmem_args=None</em>, <em class="sig-param">num_threads=1</em>, <em class="sig-param">use_noodles=False</em>, <em class="sig-param">sample_fraction=False</em>, <em class="sig-param">compiler=None</em>, <em class="sig-param">compiler_options=None</em>, <em class="sig-param">log=None</em>, <em class="sig-param">iterations=7</em>, <em class="sig-param">times=False</em>, <em class="sig-param">block_size_names=None</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">strategy=None</em>, <em class="sig-param">method=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel in the code.</li>
-<li><strong>kernel_string</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, or C kernel code as a string.
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel in the code.</p></li>
+<li><p><strong>kernel_string</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, or C kernel code as a string.
 It is also allowed for the string to be a filename of the file
 containing the code.</p>
 <p>To support combined host and device code tuning for runtime
@@ -218,8 +216,8 @@ the kernel code based on the specific parameters. This function
 should take one positional argument, which will be used to pass
 a dict containing the parameters. The function should return a
 string with the source code for the kernel.</p>
-</li>
-<li><strong>problem_size</strong> (<em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>An int or string, or 1,2,3-dimensional tuple
+</p></li>
+<li><p><strong>problem_size</strong> (<em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>An int or string, or 1,2,3-dimensional tuple
 containing the size from which the grid dimensions of the kernel
 will be computed.</p>
 <p>Do not divide the problem_size yourself by the thread block sizes.
@@ -234,10 +232,10 @@ in these expressions.
 The Kernel Tuner will replace instances of the tunable parameters
 with their current value when computing the grid dimensions.
 See the reduction CUDA example for an example use of this feature.</p>
-</li>
-<li><strong>arguments</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
-arrays, use numpy.int32 or numpy.float32 for scalars.</li>
-<li><strong>grid_div_x</strong> (<em>list</em>) – <p>A list of names of the parameters whose values divide
+</p></li>
+<li><p><strong>arguments</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for scalars.</p></li>
+<li><p><strong>grid_div_x</strong> (<em>list</em>) – <p>A list of names of the parameters whose values divide
 the grid dimensions in the x-direction.
 The product of all grid divisor expressions is computed before dividing
 the problem_size in that dimension. Also note that the divison is treated
@@ -250,27 +248,27 @@ x-dimension with the number of warps rather than the number of threads
 in a block, in such cases one could use [“block_size_x/32”].</p>
 <p>If not supplied, [“block_size_x”] will be used by default, if you do not
 want any grid x-dimension divisors pass an empty list.</p>
-</li>
-<li><strong>grid_div_y</strong> (<em>list</em>) – A list of names of the parameters whose values divide
+</p></li>
+<li><p><strong>grid_div_y</strong> (<em>list</em>) – A list of names of the parameters whose values divide
 the grid dimensions in the y-direction, [“block_size_y”] by default.
 If you do not want to divide the problem_size, you should pass an empty list.
-See grid_div_x for more details.</li>
-<li><strong>grid_div_z</strong> (<em>list</em>) – A list of names of the parameters whose values divide
+See grid_div_x for more details.</p></li>
+<li><p><strong>grid_div_z</strong> (<em>list</em>) – A list of names of the parameters whose values divide
 the grid dimensions in the z-direction, [“block_size_z”] by default.
 If you do not want to divide the problem_size, you should pass an empty list.
-See grid_div_x for more details.</li>
-<li><strong>cmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em>)</em>) – CUDA-specific feature for specifying constant memory
+See grid_div_x for more details.</p></li>
+<li><p><strong>cmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em>)</em>) – CUDA-specific feature for specifying constant memory
 arguments to the kernel. In OpenCL these are handled as normal
 kernel arguments, but in CUDA you can copy to a symbol. The way you
 specify constant memory arguments is by passing a dictionary with
 strings containing the constant memory symbol name together with numpy
-objects in the same way as normal kernel arguments.</li>
-<li><strong>texmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em> or </em><em>dict</em><em>)</em>) – CUDA-specific feature for specifying texture memory
-arguments to the kernel. You specify texture memory arguments by passing a dictionary with strings containing the texture reference name together with the texture contents. These contents can be either simply a numpy object, or a dictionary containing the numpy object under the key ‘array’ plus the configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’ (a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis), ‘normalized_coordinates’ (True/False).</li>
-<li><strong>block_size_names</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that replace the defaults for the names
+objects in the same way as normal kernel arguments.</p></li>
+<li><p><strong>texmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em> or </em><em>dict</em><em>)</em>) – CUDA-specific feature for specifying texture memory
+arguments to the kernel. You specify texture memory arguments by passing a dictionary with strings containing the texture reference name together with the texture contents. These contents can be either simply a numpy object, or a dictionary containing the numpy object under the key ‘array’ plus the configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’ (a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis), ‘normalized_coordinates’ (True/False).</p></li>
+<li><p><strong>block_size_names</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that replace the defaults for the names
 that denote the thread block dimensions. If not passed, the behavior
-defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></li>
-<li><strong>tune_params</strong> (<em>dict</em><em>( </em><em>string :</em><em> [</em><em>..</em><em>]</em>) – <p>A dictionary containing the parameter names as keys,
+defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></p></li>
+<li><p><strong>tune_params</strong> (<em>dict</em><em>( </em><em>string :</em><em> [</em><em>..</em><em>]</em>) – <p>A dictionary containing the parameter names as keys,
 and lists of possible parameter settings as values.
 The Kernel Tuner will try to compile and benchmark all possible
 combinations of all possible values for all tuning parameters.
@@ -282,34 +280,34 @@ Currently, the Kernel Tuner uses the convention that the following
 list of tuning parameters are used as thread block dimensions:</p>
 <blockquote>
 <div><ul>
-<li>”block_size_x”   thread block (work group) x-dimension</li>
-<li>”block_size_y”   thread block (work group) y-dimension</li>
-<li>”block_size_z”   thread block (work group) z-dimension</li>
+<li><p>”block_size_x”   thread block (work group) x-dimension</p></li>
+<li><p>”block_size_y”   thread block (work group) y-dimension</p></li>
+<li><p>”block_size_z”   thread block (work group) z-dimension</p></li>
 </ul>
 </div></blockquote>
 <p>Options for changing these defaults may be added later. If you
 don’t want the thread block dimensions to be compiled in, you
 may use the built-in variables blockDim.xyz in CUDA or the
 built-in function get_local_size() in OpenCL instead.</p>
-</li>
-<li><strong>restrictions</strong> (<em>list</em>) – A list of strings containing boolean expression that
+</p></li>
+<li><p><strong>restrictions</strong> (<em>list</em>) – A list of strings containing boolean expression that
 limit the search space in that they must be satisfied by the kernel
 configuration. These expressions must be true for the configuration
 to be part of the search space. For example:
 restrictions=[“block_size_x==block_size_y*tile_size_y”] limits the
 search to configurations where the block_size_x equals the product
 of block_size_y and tile_size_y.
-The default is None.</li>
-<li><strong>answer</strong> (<em>list</em>) – A list of arguments, similar to what you pass to arguments,
+The default is None.</p></li>
+<li><p><strong>answer</strong> (<em>list</em>) – A list of arguments, similar to what you pass to arguments,
 that contains the expected output of the kernel after it has executed
 and contains None for each argument that is input-only. The expected
 output of the kernel will then be used to verify the correctness of
-each kernel in the parameter space before it will be benchmarked.</li>
-<li><strong>atol</strong> (<em>float</em>) – The maximum allowed absolute difference between two elements
+each kernel in the parameter space before it will be benchmarked.</p></li>
+<li><p><strong>atol</strong> (<em>float</em>) – The maximum allowed absolute difference between two elements
 in the output and the reference answer, as passed to numpy.allclose().
 Ignored if you have not passed a reference answer. Default value is
-1e-6, that is 0.000001.</li>
-<li><strong>verify</strong> (<em>func</em><em>(</em><em>ref</em><em>, </em><em>ans</em><em>, </em><em>atol=None</em><em>)</em>) – <p>Python function used for output verification. By default,
+1e-6, that is 0.000001.</p></li>
+<li><p><strong>verify</strong> (<em>func</em><em>(</em><em>ref</em><em>, </em><em>ans</em><em>, </em><em>atol=None</em><em>)</em>) – <p>Python function used for output verification. By default,
 numpy.allclose is used for output verification, if this does not suit
 your application, you can pass a different function here.</p>
 <p>The function is expected to have two positional arguments. The first
@@ -320,30 +318,30 @@ have an optional argument named atol, to which the value will be
 passed that was specified using the atol option to tune_kernel.
 The function should return True when the output passes the test, and
 False when the output fails the test.</p>
-</li>
-<li><strong>sample_fraction</strong> (<em>float</em>) – Benchmark only a sample fraction of the search space, False by
-default. To enable sampling, pass a value between 0 and 1.</li>
-<li><strong>use_noodles</strong> (<em>boolean</em>) – Use Noodles workflow engine to tune in parallel using
+</p></li>
+<li><p><strong>sample_fraction</strong> (<em>float</em>) – Benchmark only a sample fraction of the search space, False by
+default. To enable sampling, pass a value between 0 and 1.</p></li>
+<li><p><strong>use_noodles</strong> (<em>boolean</em>) – Use Noodles workflow engine to tune in parallel using
 multiple threads, False by Default.
 Requires Noodles to be installed, use ‘pip install noodles’.
 Note that Noodles requires Python 3.5 or newer.
 You can configure the number of threads to use with the option
-num_threads.</li>
-<li><strong>num_threads</strong> (<em>int</em>) – The number of threads to use when using the Noodles
+num_threads.</p></li>
+<li><p><strong>num_threads</strong> (<em>int</em>) – The number of threads to use when using the Noodles
 workflow engine for tuning using multiple threads, 1 by default.
-Requires Noodles, see ‘use_noodles’ option.</li>
-<li><strong>strategy</strong> – <p>Specify the strategy to use for searching through the
+Requires Noodles, see ‘use_noodles’ option.</p></li>
+<li><p><strong>strategy</strong> – <p>Specify the strategy to use for searching through the
 parameter space, choose from:</p>
 <blockquote>
 <div><ul>
-<li>”brute_force” (default),</li>
-<li>”random_sample”, specify: <em>sample_fraction</em>,</li>
-<li>”minimize” or “basinhopping”, specify: <em>method</em>,</li>
-<li>”diff_evo”, specify: <em>method</em>.</li>
-<li>”genetic_algorithm”</li>
-<li>”pso”</li>
-<li>”firefly_algorithm”</li>
-<li>”simulated_annealing”</li>
+<li><p>”brute_force” (default),</p></li>
+<li><p>”random_sample”, specify: <em>sample_fraction</em>,</p></li>
+<li><p>”minimize” or “basinhopping”, specify: <em>method</em>,</p></li>
+<li><p>”diff_evo”, specify: <em>method</em>.</p></li>
+<li><p>”genetic_algorithm”</p></li>
+<li><p>”pso”</p></li>
+<li><p>”firefly_algorithm”</p></li>
+<li><p>”simulated_annealing”</p></li>
 </ul>
 </div></blockquote>
 <p>”brute_force” is the default and iterates over the entire search
@@ -367,8 +365,8 @@ setting of 20 particles for 100 iterations.</p>
 <p>”firefly_algorithm” implements the Firefly Algorithm, using 20
 fireflies for 100 iterations.</p>
 <p>”simulated_annealing” uses Simulated Annealing.</p>
-</li>
-<li><strong>method</strong> (<em>string</em><em> or </em><em>callable</em>) – <p>Specify a method for the strategy that searches through
+</p></li>
+<li><p><strong>method</strong> (<em>string</em><em> or </em><em>callable</em>) – <p>Specify a method for the strategy that searches through
 the parameter space during tuning.</p>
 <p>When using strategy=”minimize” or strategy=”basinhopping”, the
 following options are supported:
@@ -378,84 +376,79 @@ that implements a custom minimization strategy.</p>
 <p>When using strategy=”diff_evo”, the following options are supported:
 “best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”,
 “rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”.</p>
-</li>
-<li><strong>iterations</strong> (<em>int</em>) – The number of times a kernel should be executed and
-its execution time measured when benchmarking a kernel, 7 by default.</li>
-<li><strong>times</strong> (<em>bool</em>) – Returns the execution time of all iterations of a
-kernel execution. False by default.</li>
-<li><strong>verbose</strong> (<em>bool</em>) – <p>Sets whether or not to report about configurations that
+</p></li>
+<li><p><strong>iterations</strong> (<em>int</em>) – The number of times a kernel should be executed and
+its execution time measured when benchmarking a kernel, 7 by default.</p></li>
+<li><p><strong>times</strong> (<em>bool</em>) – Returns the execution time of all iterations of a
+kernel execution. False by default.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – <p>Sets whether or not to report about configurations that
 were skipped during the search. This could be due to several reasons:</p>
 <blockquote>
 <div><ul>
-<li>kernel configuration fails one or more restrictions</li>
-<li>too many threads per thread block</li>
-<li>too much shared memory used by the kernel</li>
-<li>too many resources requested for launch</li>
+<li><p>kernel configuration fails one or more restrictions</p></li>
+<li><p>too many threads per thread block</p></li>
+<li><p>too much shared memory used by the kernel</p></li>
+<li><p>too many resources requested for launch</p></li>
 </ul>
 </div></blockquote>
 <p>verbose is False by default.</p>
-</li>
-<li><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
+</p></li>
+<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
 automatically detects the language, but if it fails, you may specify
 the language using this argument, currently supported: “CUDA”,
-“OpenCL”, or “C”.</li>
-<li><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
+“OpenCL”, or “C”.</p></li>
+<li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default. Ignored if you are tuning host code by passing
-lang=”C”.</li>
-<li><strong>platform</strong> (<em>int</em>) – OpenCL platform to use, in case you have multiple
+lang=”C”.</p></li>
+<li><p><strong>platform</strong> (<em>int</em>) – OpenCL platform to use, in case you have multiple
 OpenCL platforms you may use this to select one,
-0 by default. Ignored if not using OpenCL.</li>
-<li><strong>quiet</strong> (<em>boolean</em>) – Control whether or not to print to the console which
-device is being used, False by default</li>
-<li><strong>compiler</strong> (<em>string</em>) – A string containing your preferred compiler,
-only effective with lang=”C”.</li>
-<li><strong>compiler_options</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that specify compiler
-options.</li>
+0 by default. Ignored if not using OpenCL.</p></li>
+<li><p><strong>quiet</strong> (<em>boolean</em>) – Control whether or not to print to the console which
+device is being used, False by default</p></li>
+<li><p><strong>compiler</strong> (<em>string</em>) – A string containing your preferred compiler,
+only effective with lang=”C”.</p></li>
+<li><p><strong>compiler_options</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that specify compiler
+options.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of dictionaries of all executed kernel configurations and their
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of dictionaries of all executed kernel configurations and their
 execution times. And a dictionary with information about the environment
 in which the tuning took place. This records device name, properties,
 version info, and so on.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list(dict()), dict()</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list(dict()), dict()</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="kernel_tuner.run_kernel">
-<code class="descclassname">kernel_tuner.</code><code class="descname">run_kernel</code><span class="sig-paren">(</span><em>kernel_name</em>, <em>kernel_string</em>, <em>problem_size</em>, <em>arguments</em>, <em>params</em>, <em>grid_div_x=None</em>, <em>grid_div_y=None</em>, <em>grid_div_z=None</em>, <em>lang=None</em>, <em>device=0</em>, <em>platform=0</em>, <em>cmem_args=None</em>, <em>texmem_args=None</em>, <em>compiler=None</em>, <em>compiler_options=None</em>, <em>block_size_names=None</em>, <em>quiet=False</em>, <em>log=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">kernel_tuner.</code><code class="sig-name descname">run_kernel</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_string</em>, <em class="sig-param">problem_size</em>, <em class="sig-param">arguments</em>, <em class="sig-param">params</em>, <em class="sig-param">grid_div_x=None</em>, <em class="sig-param">grid_div_y=None</em>, <em class="sig-param">grid_div_z=None</em>, <em class="sig-param">lang=None</em>, <em class="sig-param">device=0</em>, <em class="sig-param">platform=0</em>, <em class="sig-param">cmem_args=None</em>, <em class="sig-param">texmem_args=None</em>, <em class="sig-param">compiler=None</em>, <em class="sig-param">compiler_options=None</em>, <em class="sig-param">block_size_names=None</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">log=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compile and run a single kernel</p>
 <p>Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
 However, instead of measuring execution time run_kernel returns the output of the kernel.
 The output is returned as a list of numpy arrays that contains the state of all the kernel arguments
 after execution on the GPU.</p>
-<dl class="docutils">
-<dt>To summarize what this function will do for you in one call:</dt>
-<dd><ul class="first last simple">
-<li>Compile the kernel according to the set of parameters passed</li>
-<li>Allocate GPU memory to hold all kernel arguments</li>
-<li>Move the all data to the GPU</li>
-<li>Execute the kernel on the GPU</li>
-<li>Copy all data from the GPU back to the host and return it as a list of Numpy arrays</li>
+<dl class="simple">
+<dt>To summarize what this function will do for you in one call:</dt><dd><ul class="simple">
+<li><p>Compile the kernel according to the set of parameters passed</p></li>
+<li><p>Allocate GPU memory to hold all kernel arguments</p></li>
+<li><p>Move the all data to the GPU</p></li>
+<li><p>Execute the kernel on the GPU</p></li>
+<li><p>Copy all data from the GPU back to the host and return it as a list of Numpy arrays</p></li>
 </ul>
 </dd>
 </dl>
 <p>This function was added to the Kernel Tuner mostly to allow easy testing for kernel correctness.
 On purpose, the interface is a lot like <cite>tune_kernel()</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel in the code.</li>
-<li><strong>kernel_string</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, or C kernel code as a string.
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel in the code.</p></li>
+<li><p><strong>kernel_string</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, or C kernel code as a string.
 It is also allowed for the string to be a filename of the file
 containing the code.</p>
 <p>To support combined host and device code tuning for runtime
@@ -470,8 +463,8 @@ the kernel code based on the specific parameters. This function
 should take one positional argument, which will be used to pass
 a dict containing the parameters. The function should return a
 string with the source code for the kernel.</p>
-</li>
-<li><strong>problem_size</strong> (<em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>An int or string, or 1,2,3-dimensional tuple
+</p></li>
+<li><p><strong>problem_size</strong> (<em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>An int or string, or 1,2,3-dimensional tuple
 containing the size from which the grid dimensions of the kernel
 will be computed.</p>
 <p>Do not divide the problem_size yourself by the thread block sizes.
@@ -486,10 +479,10 @@ in these expressions.
 The Kernel Tuner will replace instances of the tunable parameters
 with their current value when computing the grid dimensions.
 See the reduction CUDA example for an example use of this feature.</p>
-</li>
-<li><strong>arguments</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
-arrays, use numpy.int32 or numpy.float32 for scalars.</li>
-<li><strong>grid_div_x</strong> (<em>list</em>) – <p>A list of names of the parameters whose values divide
+</p></li>
+<li><p><strong>arguments</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for scalars.</p></li>
+<li><p><strong>grid_div_x</strong> (<em>list</em>) – <p>A list of names of the parameters whose values divide
 the grid dimensions in the x-direction.
 The product of all grid divisor expressions is computed before dividing
 the problem_size in that dimension. Also note that the divison is treated
@@ -502,62 +495,60 @@ x-dimension with the number of warps rather than the number of threads
 in a block, in such cases one could use [“block_size_x/32”].</p>
 <p>If not supplied, [“block_size_x”] will be used by default, if you do not
 want any grid x-dimension divisors pass an empty list.</p>
-</li>
-<li><strong>grid_div_y</strong> (<em>list</em>) – A list of names of the parameters whose values divide
+</p></li>
+<li><p><strong>grid_div_y</strong> (<em>list</em>) – A list of names of the parameters whose values divide
 the grid dimensions in the y-direction, [“block_size_y”] by default.
 If you do not want to divide the problem_size, you should pass an empty list.
-See grid_div_x for more details.</li>
-<li><strong>grid_div_z</strong> (<em>list</em>) – A list of names of the parameters whose values divide
+See grid_div_x for more details.</p></li>
+<li><p><strong>grid_div_z</strong> (<em>list</em>) – A list of names of the parameters whose values divide
 the grid dimensions in the z-direction, [“block_size_z”] by default.
 If you do not want to divide the problem_size, you should pass an empty list.
-See grid_div_x for more details.</li>
-<li><strong>cmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em>)</em>) – CUDA-specific feature for specifying constant memory
+See grid_div_x for more details.</p></li>
+<li><p><strong>cmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em>)</em>) – CUDA-specific feature for specifying constant memory
 arguments to the kernel. In OpenCL these are handled as normal
 kernel arguments, but in CUDA you can copy to a symbol. The way you
 specify constant memory arguments is by passing a dictionary with
 strings containing the constant memory symbol name together with numpy
-objects in the same way as normal kernel arguments.</li>
-<li><strong>texmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em> or </em><em>dict</em><em>)</em>) – CUDA-specific feature for specifying texture memory
-arguments to the kernel. You specify texture memory arguments by passing a dictionary with strings containing the texture reference name together with the texture contents. These contents can be either simply a numpy object, or a dictionary containing the numpy object under the key ‘array’ plus the configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’ (a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis), ‘normalized_coordinates’ (True/False).</li>
-<li><strong>block_size_names</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that replace the defaults for the names
+objects in the same way as normal kernel arguments.</p></li>
+<li><p><strong>texmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em> or </em><em>dict</em><em>)</em>) – CUDA-specific feature for specifying texture memory
+arguments to the kernel. You specify texture memory arguments by passing a dictionary with strings containing the texture reference name together with the texture contents. These contents can be either simply a numpy object, or a dictionary containing the numpy object under the key ‘array’ plus the configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’ (a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis), ‘normalized_coordinates’ (True/False).</p></li>
+<li><p><strong>block_size_names</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that replace the defaults for the names
 that denote the thread block dimensions. If not passed, the behavior
-defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></li>
-<li><strong>params</strong> (<em>dict</em><em>( </em><em>string: int</em><em> )</em>) – A dictionary containing the tuning parameter names as keys
-and a single value per tuning parameter as values.</li>
-<li><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
+defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></p></li>
+<li><p><strong>params</strong> (<em>dict</em><em>( </em><em>string: int</em><em> )</em>) – A dictionary containing the tuning parameter names as keys
+and a single value per tuning parameter as values.</p></li>
+<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
 automatically detects the language, but if it fails, you may specify
 the language using this argument, currently supported: “CUDA”,
-“OpenCL”, or “C”.</li>
-<li><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
+“OpenCL”, or “C”.</p></li>
+<li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default. Ignored if you are tuning host code by passing
-lang=”C”.</li>
-<li><strong>platform</strong> (<em>int</em>) – OpenCL platform to use, in case you have multiple
+lang=”C”.</p></li>
+<li><p><strong>platform</strong> (<em>int</em>) – OpenCL platform to use, in case you have multiple
 OpenCL platforms you may use this to select one,
-0 by default. Ignored if not using OpenCL.</li>
-<li><strong>quiet</strong> (<em>boolean</em>) – Control whether or not to print to the console which
-device is being used, False by default</li>
-<li><strong>compiler</strong> (<em>string</em>) – A string containing your preferred compiler,
-only effective with lang=”C”.</li>
-<li><strong>compiler_options</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that specify compiler
-options.</li>
+0 by default. Ignored if not using OpenCL.</p></li>
+<li><p><strong>quiet</strong> (<em>boolean</em>) – Control whether or not to print to the console which
+device is being used, False by default</p></li>
+<li><p><strong>compiler</strong> (<em>string</em>) – A string containing your preferred compiler,
+only effective with lang=”C”.</p></li>
+<li><p><strong>compiler_options</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that specify compiler
+options.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of numpy arrays, similar to the arguments passed to this
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of numpy arrays, similar to the arguments passed to this
 function, containing the output after kernel execution.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="kernel_tuner.wrappers.cpp">
-<code class="descclassname">kernel_tuner.wrappers.</code><code class="descname">cpp</code><span class="sig-paren">(</span><em>function_name</em>, <em>kernel_source</em>, <em>args</em>, <em>convert_to_array=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.wrappers.cpp" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">kernel_tuner.wrappers.</code><code class="sig-name descname">cpp</code><span class="sig-paren">(</span><em class="sig-param">function_name</em>, <em class="sig-param">kernel_source</em>, <em class="sig-param">args</em>, <em class="sig-param">convert_to_array=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.wrappers.cpp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a wrapper to call C++ functions from Python</p>
 <p>This function allows Kernel Tuner to call templated C++ functions
 that use primitive data types (double, float, int, …).</p>
@@ -574,36 +565,32 @@ which allows it to be used to call a C++ that is defined as:
 False indicates that no conversion is performed. Conversion
 is only support for numpy array arguments. If convert_to_array is
 passed it should have the same length as the args array.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>function_name</strong> (<em>string</em>) – A string containing the name of the C++ function
-to be wrapped</li>
-<li><strong>kernel_source</strong> (<em>string</em><em> or </em><em>callable</em>) – One of the sources for the kernel, could be a
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>function_name</strong> (<em>string</em>) – A string containing the name of the C++ function
+to be wrapped</p></li>
+<li><p><strong>kernel_source</strong> (<em>string</em><em> or </em><em>callable</em>) – One of the sources for the kernel, could be a
 function that generates the kernel code, a string containing a filename
-that points to the kernel source, or just a string that contains the code.</li>
-<li><strong>args</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
-arrays, use numpy.int32 or numpy.float32 for scalars.</li>
-<li><strong>convert_to_array</strong> (<em>list</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em>) – A list of same length as args, containing
+that points to the kernel source, or just a string that contains the code.</p></li>
+<li><p><strong>args</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for scalars.</p></li>
+<li><p><strong>convert_to_array</strong> (<em>list</em><em> (</em><em>True</em><em> or </em><em>False</em><em>)</em>) – A list of same length as args, containing
 True or False values indicating whether the corresponding argument
-in args should be cast to a reference to an array or not.</li>
+in args should be cast to a reference to an array or not.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A string containing the orignal code extended with the wrapper
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A string containing the orignal code extended with the wrapper
 function. The wrapper has “extern C” binding and can be passed to
 other Kernel Tuner functions, for example run_kernel with lang=”C”.
 The name of the wrapper function will be the name of the function with
 a “_wrapper” postfix.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
