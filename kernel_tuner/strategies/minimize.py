@@ -64,10 +64,6 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
     logging.debug('_cost_func called')
     logging.debug('x: ' + str(x))
 
-    x_key = ",".join([str(i) for i in x])
-    if x_key in cache:
-        return cache[x_key]
-
     #snap values in x to nearest actual value for each parameter unscale x if needed
     if tuning_options.scaling:
         params = unscale_and_snap_to_nearest(x, tuning_options.tune_params, tuning_options.eps)
@@ -76,6 +72,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
 
     logging.debug('params ' + str(params))
 
+    #we cache snapped values, since those correspond to results for an actual instance of the kernel
     x_int = ",".join([str(i) for i in params])
     if x_int in cache:
         return cache[x_int]
@@ -85,7 +82,6 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
         legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
         if not legal:
             cache[x_int] = error_time
-            cache[x_key] = error_time
             return error_time
 
     #compile and benchmark this instance
@@ -95,11 +91,9 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
     if res:
         results.append(res[0])
         cache[x_int] = res[0]['time']
-        cache[x_key] = res[0]['time']
         return res[0]['time']
 
     cache[x_int] = error_time
-    cache[x_key] = error_time
     return error_time
 
 

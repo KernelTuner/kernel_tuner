@@ -18,6 +18,10 @@ dtype_map = {"int8": C.c_int8,
              "int16": C.c_int16,
              "int32": C.c_int32,
              "int64": C.c_int64,
+             "uint8": C.c_uint8,
+             "uint16": C.c_uint16,
+             "uint32": C.c_uint32,
+             "uint64": C.c_uint64,
              "float32": C.c_float,
              "float64": C.c_double}
 
