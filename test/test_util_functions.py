@@ -333,19 +333,6 @@ def test_check_tune_params_list():
         assert False
 
 def test_check_tune_params_list2():
-    tune_params = dict(zip(["once_upon_a_time", "in_the_west"], [1, 2]))
-    try:
-        check_tune_params_list(tune_params)
-        print("Expected a ValueError to be raised")
-        assert False
-    except ValueError as e:
-        print(str(e))
-        assert "Tune parameter once_upon_a_time with value 1 has a forbidden name: not allowed to use time in tune parameter names!" == str(e)
-    except Exception:
-        print("Expected a ValueError to be raised")
-        assert False
-
-def test_check_tune_params_list3():
     tune_params = dict(zip(["rock", "paper", "scissors"], [1, 2, 3]))
     check_tune_params_list(tune_params)
     # test that no exception is raised
