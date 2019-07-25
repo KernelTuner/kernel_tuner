@@ -1257,6 +1257,16 @@ kernel instance, only needed when kernel_source is a generator.</p></li>
 </dd></dl>
 
 <dl class="function">
+<dt id="kernel_tuner.util.normalize_verify_function">
+<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">normalize_verify_function</code><span class="sig-paren">(</span><em class="sig-param">v</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.normalize_verify_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize a user-specified verify function.</p>
+<p>The user-specified function has two required positional arguments (answer, result_host),
+and an optional keyword (or keyword-only) argument atol. We normalize it to always accept
+an atol keyword argument.</p>
+<p>Undefined behaviour if the passed function does not match the required signatures.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="kernel_tuner.util.prepare_kernel_string">
 <code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">prepare_kernel_string</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_string</em>, <em class="sig-param">params</em>, <em class="sig-param">grid</em>, <em class="sig-param">threads</em>, <em class="sig-param">block_size_names</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>prepare kernel string for compilation</p>
