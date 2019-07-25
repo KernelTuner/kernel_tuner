@@ -113,22 +113,21 @@ class DeviceInterface(object):
         #retrieve gpu results to host memory
         result_host = []
         for i, arg in enumerate(instance.arguments):
-            if verify or answer[i] is not None:
-                if isinstance(arg, numpy.ndarray):
-                    result_host.append(numpy.zeros_like(arg))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+            if (verify or answer[i] is not None) and isinstance(arg, numpy.ndarray):
+                result_host.append(numpy.zeros_like(arg))
+                self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
             else:
                 result_host.append(None)
 
         #if the user has specified a custom verify function, then call it, else use default based on numpy allclose
         if verify:
-            try:
-                return verify(answer, result_host, atol=atol)
-            except TypeError:
-                return verify(answer, result_host)
+            correct = verify(answer, result_host, atol=atol)
         else:
-            return _default_verify_function(instance, answer, result_host, atol, verbose)
+            correct = _default_verify_function(instance, answer, result_host, atol, verbose)
 
+        if not correct:
+            raise Exception("Kernel result verification failed for: " + util.get_config_string(instance.params))
+        return True
 
     def compile_and_benchmark(self, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
@@ -159,7 +158,7 @@ class DeviceInterface(object):
                 self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
             #test kernel for correctness and benchmark
-            if tuning_options.answer is not None:
+            if tuning_options.answer is not None or tuning_options.verify is not None:
                 self.check_kernel_output(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
 
             #benchmark
@@ -341,7 +340,6 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
 
     if not correct:
         logging.debug('correctness check has found a correctness issue')
-        raise Exception("Error: " + util.get_config_string(instance.params) + " failed correctness check")
 
     return correct
 

@@ -395,6 +395,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         raise ValueError("Somehow no runner was selected, this should not happen, please file a bug report")
 
+    #the user-specified function may or may not have an optional atol argument;
+    #we normalize it so that it always accepts atol.
+    tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
+
     #call the strategy to execute the tuning process
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
