@@ -317,7 +317,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     kernel_source = util.KernelSource(kernel_string, lang)
 
-    _check_user_input(kernel_name, kernel_string, arguments, block_size_names)
+    _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params)
@@ -458,14 +458,14 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    _check_user_input(kernel_name, kernel_string, arguments, block_size_names)
+    kernel_source = util.KernelSource(kernel_string, lang)
+
+    _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
 
     #sort options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
-
-    kernel_source = util.KernelSource(kernel_string, lang)
 
     #detect language and create the right device function interface
     dev = core.DeviceInterface(kernel_source, iterations=1, **device_options)
@@ -520,16 +520,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 run_kernel.__doc__ = _run_kernel_docstring
 
-def _check_user_input(kernel_name, kernel_string, arguments, block_size_names):
+def _check_user_input(kernel_name, kernel_source, arguments, block_size_names):
     # see if the kernel arguments have correct type
-    if not callable(kernel_string):
-        if isinstance(kernel_string, list):
-            for file in kernel_string:
-                util.check_argument_list(kernel_name, util.get_kernel_string(file), arguments)
-        else:
-            util.check_argument_list(kernel_name, util.get_kernel_string(kernel_string), arguments)
-    else:
-        logging.debug("Checking of arguments list not supported yet for code generators.")
+    kernel_source.check_argument_lists(kernel_name, arguments)
 
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)

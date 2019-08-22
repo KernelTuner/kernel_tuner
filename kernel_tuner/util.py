@@ -117,11 +117,8 @@ def delete_temp_file(filename):
         if e.errno != errno.ENOENT:
             raise e
 
-def detect_language(kernel_source):
+def detect_language(kernel_string):
     """attempt to detect language from the kernel_string"""
-    if callable(kernel_source):
-        raise TypeError("Please specify language when using a code generator function")
-    kernel_string = get_kernel_string(kernel_source)
     if "__global__" in kernel_string:
         lang = "CUDA"
     elif "__kernel" in kernel_string:
@@ -381,17 +378,49 @@ def normalize_verify_function(v):
         return lambda answer, result_host, atol: v(answer, result_host)
 
 class KernelSource(object):
-    """Class that holds the kernel sources."""
+    """Class that holds the kernel sources.
+
+    There is a primary kernel source, which can be either a source string,
+    a filename (indicating a file containing the kernel source code),
+    or a callable (generating the kernel source code).
+    There can additionally be (one or multiple) secondary kernel sources, which
+    must be filenames.
+    """
 
     def __init__(self, kernel_sources, lang):
         if not isinstance(kernel_sources, list):
            kernel_sources = [ kernel_sources ]
         self.kernel_sources = kernel_sources
         if lang is None:
-          lang = detect_language(kernel_sources[0])
+            if callable(self.kernel_sources[0]):
+                raise TypeError("Please specify language when using a code generator function")
+            kernel_string = self.get_kernel_string(0)
+            lang = detect_language(kernel_string)
 
         # The validity of lang is checked later, when creating the DeviceInterface
         self.lang = lang
+
+    def get_kernel_string(self, index=0, params=None):
+        """ retrieve the kernel source with the given index and return as a string
+
+        See util.get_kernel_string() for details.
+
+        :param index: Index of the kernel source in the list of sources.
+        :type index: int
+
+        :param params: Dictionary containing the tunable parameters for this specific
+            kernel instance, only needed when kernel_source is a generator.
+        :type param: dict
+
+        :returns: A string containing the kernel code.
+        :rtype: string
+        """
+        #logging.debug('get_kernel_string called with %s', str(kernel_source))
+        logging.debug('get_kernel_string called')
+
+        kernel_source = self.kernel_sources[index]
+        return get_kernel_string(kernel_source, params)
+
 
     def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
         """ prepare the kernel string along with any additional files
@@ -413,24 +442,30 @@ class KernelSource(object):
         :type grid: tuple()
 
         """
-        kernel_file_list = self.kernel_sources
         temp_files = dict()
 
-        kernel_string = get_kernel_string(kernel_file_list[0], params)
-        name, kernel_string = prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names)
+        for i, f in enumerate(self.kernel_sources):
+            if i > 0 and not looks_like_a_filename(f):
+                raise ValueError('When passing multiple kernel sources, the secondary entries must be filenames')
 
-        if len(kernel_file_list) > 1:
-            for f in kernel_file_list[1:]:
-                if not looks_like_a_filename(f):
-                    raise ValueError('When passing a list of kernel sources, the secondary entries must be filenames')
-                #generate temp filename with the same extension
-                temp_file = get_temp_filename(suffix="." + f.split(".")[-1])
-                temp_files[f] = temp_file
-                #add preprocessor statements to the additional file
-                _, temp_file_string = prepare_kernel_string(kernel_name, get_kernel_string(f, params), params, grid, threads, block_size_names)
-                write_file(temp_file, temp_file_string)
-                #replace occurences of the additional file's name in the first kernel_string with the name of the temp file
-                kernel_string = kernel_string.replace(f, temp_file)
+            ks = self.get_kernel_string(i, params)
+            # add preprocessor statements
+            n, ks = prepare_kernel_string(kernel_name, ks, params, grid, threads, block_size_names)
+
+            if i == 0:
+                # primary kernel source
+                name = n
+                kernel_string = ks
+                continue
+
+            # save secondary kernel sources to temporary files
+
+            # generate temp filename with the same extension
+            temp_file = get_temp_filename(suffix="." + f.split(".")[-1])
+            temp_files[f] = temp_file
+            write_file(temp_file, temp_file_string)
+            # replace occurences of the additional file's name in the first kernel_string with the name of the temp file
+            kernel_string = kernel_string.replace(f, temp_file)
 
         return name, kernel_string, temp_files
 
@@ -460,3 +495,14 @@ class KernelSource(object):
             return _suffixes[self.lang]
         except KeyError:
             return ".c"
+
+    def check_argument_lists(self, kernel_name, arguments):
+        """ Check if the kernel arguments have the correct types
+
+        This is done by calling util.check_argument_list on each kernel string.
+        """
+        for i, f in enumerate(self.kernel_sources):
+            if not callable(f):
+                check_argument_list(kernel_name, self.get_kernel_string(i), arguments)
+            else:
+                logging.debug("Checking of arguments list not supported yet for code generators.")
