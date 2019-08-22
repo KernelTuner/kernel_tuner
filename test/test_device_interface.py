@@ -15,7 +15,7 @@ from .test_interface import mock_config
 def test_check_kernel_output(dev_func_interface):
     dev_func_interface.configure_mock(**mock_config)
 
-    dev = core.DeviceInterface(util.KernelSource("", lang="CUDA"))
+    dev = core.DeviceInterface(core.KernelSource("", lang="CUDA"))
     dfi = dev.dev
 
     answer = [numpy.zeros(4).astype(numpy.float32)]

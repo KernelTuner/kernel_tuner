@@ -15,7 +15,7 @@ class SequentialRunner(object):
         """ Instantiate the SequentialRunner
 
         :param kernel_source: The kernel source
-        :type kernel_source: kernel_tuner.util.KernelSource
+        :type kernel_source: kernel_tuner.core.KernelSource
 
         :param kernel_options: A dictionary with all options for the kernel.
         :type kernel_options: kernel_tuner.interface.Options

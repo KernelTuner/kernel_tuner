@@ -315,7 +315,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = util.KernelSource(kernel_string, lang)
+    kernel_source = core.KernelSource(kernel_string, lang)
 
     _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
 
@@ -458,7 +458,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = util.KernelSource(kernel_string, lang)
+    kernel_source = core.KernelSource(kernel_string, lang)
 
     _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
 
