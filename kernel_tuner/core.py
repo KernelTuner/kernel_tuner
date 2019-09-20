@@ -14,6 +14,8 @@ import kernel_tuner.util as util
 _KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
 
 class KernelInstance(_KernelInstance):
+    """Class that represents the specific parameterized instance of a kernel"""
+
     def delete_temp_files(self):
         """Delete any generated temp files"""
         for v in self.temp_files.values():
@@ -23,7 +25,7 @@ class KernelInstance(_KernelInstance):
         """Prepare temp file with source code, and return list of temp file names"""
         temp_filename = util.get_temp_filename(suffix=self.kernel_source.get_suffix())
         util.write_file(temp_filename, self.kernel_string)
-        ret = [ temp_filename ]
+        ret = [temp_filename]
         ret.extend(self.temp_files.values())
         return ret
 
@@ -40,7 +42,7 @@ class KernelSource(object):
 
     def __init__(self, kernel_sources, lang):
         if not isinstance(kernel_sources, list):
-           kernel_sources = [ kernel_sources ]
+            kernel_sources = [kernel_sources]
         self.kernel_sources = kernel_sources
         if lang is None:
             if callable(self.kernel_sources[0]):
@@ -83,6 +85,9 @@ class KernelSource(object):
         preprocessors statements inserted. Occurences of the original filenames in the
         first file are replaced with their temporary counterparts.
 
+        :param kernel_name: A string specifying the kernel name.
+        :type kernel_name: string
+
         :param params: A dictionary with the tunable parameters for this particular
             instance.
         :type params: dict()
@@ -92,11 +97,20 @@ class KernelSource(object):
             convenience.
         :type grid: tuple()
 
+        :param threads: The thread block dimensions for this instance. The thread block are
+            also inserted into the code as if they are tunable parameters for
+            convenience.
+        :type threads: tuple()
+
+        :param block_size_names: A list of strings that denote the names
+            for the thread block dimensions.
+        :type block_size_names: list(string)
+
         """
         temp_files = dict()
 
         for i, f in enumerate(self.kernel_sources):
-            if i > 0 and not looks_like_a_filename(f):
+            if i > 0 and not util.looks_like_a_filename(f):
                 raise ValueError('When passing multiple kernel sources, the secondary entries must be filenames')
 
             ks = self.get_kernel_string(i, params)
@@ -112,9 +126,9 @@ class KernelSource(object):
             # save secondary kernel sources to temporary files
 
             # generate temp filename with the same extension
-            temp_file = get_temp_filename(suffix="." + f.split(".")[-1])
+            temp_file = util.get_temp_filename(suffix="." + f.split(".")[-1])
             temp_files[f] = temp_file
-            write_file(temp_file, temp_file_string)
+            util.write_file(temp_file, ks)
             # replace occurences of the additional file's name in the first kernel_string with the name of the temp file
             kernel_string = kernel_string.replace(f, temp_file)
 
@@ -136,12 +150,11 @@ class KernelSource(object):
         """
 
         # TODO: Consider delegating this to the backend
-
         suffix = self.get_user_suffix(index)
         if suffix is not None:
             return suffix
 
-        _suffixes = { 'CUDA': '.cu', 'OpenCL': '.cl', 'C': '.c' }
+        _suffixes = {'CUDA': '.cu', 'OpenCL': '.cl', 'C': '.c'}
         try:
             return _suffixes[self.lang]
         except KeyError:
@@ -482,5 +495,3 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         logging.debug('correctness check has found a correctness issue')
 
     return correct
-
-

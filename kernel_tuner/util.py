@@ -13,7 +13,7 @@ import numpy
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 
-def check_argument_type(dtype, kernel_argument, i):
+def check_argument_type(dtype, kernel_argument):
     """check if the numpy.dtype matches the type used in the code"""
     types_map = {"uint8": ["uchar", "unsigned char", "uint8_t"],
                  "int8": ["char", "int8_t"],
@@ -28,8 +28,7 @@ def check_argument_type(dtype, kernel_argument, i):
                  "float64": ["double"]}
     if dtype in types_map:
         return any([substr in kernel_argument for substr in types_map[dtype]])
-    else:
-        return False # unknown dtype. do not throw exception to still allow kernel to run.
+    return False # unknown dtype. do not throw exception to still allow kernel to run.
 
 def check_argument_list(kernel_name, kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
@@ -55,7 +54,7 @@ def check_argument_list(kernel_name, kernel_string, args):
             if isinstance(arg, numpy.ndarray) and not "*" in kernel_argument:
                 correct = False  #array is passed to non-pointer kernel argument
 
-            if correct and check_argument_type(str(arg.dtype), kernel_argument, i):
+            if correct and check_argument_type(str(arg.dtype), kernel_argument):
                 continue
 
             collected_errors[arguments_set].append("Argument at position " + str(i) + " of dtype: " + str(arg.dtype) +
@@ -374,5 +373,4 @@ def normalize_verify_function(v):
 
     if has_kw_argument(v, 'atol'):
         return v
-    else:
-        return lambda answer, result_host, atol: v(answer, result_host)
+    return lambda answer, result_host, atol: v(answer, result_host)
