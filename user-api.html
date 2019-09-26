@@ -217,6 +217,10 @@ should take one positional argument, which will be used to pass
 a dict containing the parameters. The function should return a
 string with the source code for the kernel.</p>
 </p></li>
+<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
+automatically detects the language, but if it fails, you may specify
+the language using this argument, currently supported: “CUDA”,
+“OpenCL”, or “C”.</p></li>
 <li><p><strong>problem_size</strong> (<em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>An int or string, or 1,2,3-dimensional tuple
 containing the size from which the grid dimensions of the kernel
 will be computed.</p>
@@ -393,10 +397,6 @@ were skipped during the search. This could be due to several reasons:</p>
 </div></blockquote>
 <p>verbose is False by default.</p>
 </p></li>
-<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
-automatically detects the language, but if it fails, you may specify
-the language using this argument, currently supported: “CUDA”,
-“OpenCL”, or “C”.</p></li>
 <li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default. Ignored if you are tuning host code by passing
@@ -464,6 +464,10 @@ should take one positional argument, which will be used to pass
 a dict containing the parameters. The function should return a
 string with the source code for the kernel.</p>
 </p></li>
+<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
+automatically detects the language, but if it fails, you may specify
+the language using this argument, currently supported: “CUDA”,
+“OpenCL”, or “C”.</p></li>
 <li><p><strong>problem_size</strong> (<em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>An int or string, or 1,2,3-dimensional tuple
 containing the size from which the grid dimensions of the kernel
 will be computed.</p>
@@ -517,10 +521,6 @@ that denote the thread block dimensions. If not passed, the behavior
 defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></p></li>
 <li><p><strong>params</strong> (<em>dict</em><em>( </em><em>string: int</em><em> )</em>) – A dictionary containing the tuning parameter names as keys
 and a single value per tuning parameter as values.</p></li>
-<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
-automatically detects the language, but if it fails, you may specify
-the language using this argument, currently supported: “CUDA”,
-“OpenCL”, or “C”.</p></li>
 <li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default. Ignored if you are tuning host code by passing

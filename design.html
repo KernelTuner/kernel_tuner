@@ -465,15 +465,16 @@ about the hardware/software environment on which the tuning took place.</p>
 <h3>kernel_tuner.runners.sequential.SequentialRunner<a class="headerlink" href="#kernel-tuner-runners-sequential-sequentialrunner" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.runners.sequential.SequentialRunner">
-<em class="property">class </em><code class="sig-prename descclassname">kernel_tuner.runners.sequential.</code><code class="sig-name descname">SequentialRunner</code><span class="sig-paren">(</span><em class="sig-param">kernel_options</em>, <em class="sig-param">device_options</em>, <em class="sig-param">iterations</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">kernel_tuner.runners.sequential.</code><code class="sig-name descname">SequentialRunner</code><span class="sig-paren">(</span><em class="sig-param">kernel_source</em>, <em class="sig-param">kernel_options</em>, <em class="sig-param">device_options</em>, <em class="sig-param">iterations</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner" title="Permalink to this definition">¶</a></dt>
 <dd><p>SequentialRunner is used for tuning with a single process/thread</p>
 <dl class="method">
 <dt id="kernel_tuner.runners.sequential.SequentialRunner.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">kernel_options</em>, <em class="sig-param">device_options</em>, <em class="sig-param">iterations</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">kernel_source</em>, <em class="sig-param">kernel_options</em>, <em class="sig-param">device_options</em>, <em class="sig-param">iterations</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiate the SequentialRunner</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel source</p></li>
 <li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
 <li><p><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the device
 on which the kernel should be tuned.</p></li>
@@ -521,25 +522,25 @@ about the hardware/software environment on which the tuning took place.</p>
 <h3>kernel_tuner.core.DeviceInterface<a class="headerlink" href="#kernel-tuner-core-deviceinterface" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="kernel_tuner.core.DeviceInterface">
-<em class="property">class </em><code class="sig-prename descclassname">kernel_tuner.core.</code><code class="sig-name descname">DeviceInterface</code><span class="sig-paren">(</span><em class="sig-param">original_kernel</em>, <em class="sig-param">device=0</em>, <em class="sig-param">platform=0</em>, <em class="sig-param">lang=None</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">compiler=None</em>, <em class="sig-param">compiler_options=None</em>, <em class="sig-param">iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">kernel_tuner.core.</code><code class="sig-name descname">DeviceInterface</code><span class="sig-paren">(</span><em class="sig-param">kernel_source</em>, <em class="sig-param">device=0</em>, <em class="sig-param">platform=0</em>, <em class="sig-param">lang=None</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">compiler=None</em>, <em class="sig-param">compiler_options=None</em>, <em class="sig-param">iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class that offers a High-Level Device Interface to the rest of the Kernel Tuner</p>
 <dl class="method">
 <dt id="kernel_tuner.core.DeviceInterface.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">original_kernel</em>, <em class="sig-param">device=0</em>, <em class="sig-param">platform=0</em>, <em class="sig-param">lang=None</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">compiler=None</em>, <em class="sig-param">compiler_options=None</em>, <em class="sig-param">iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">kernel_source</em>, <em class="sig-param">device=0</em>, <em class="sig-param">platform=0</em>, <em class="sig-param">lang=None</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">compiler=None</em>, <em class="sig-param">compiler_options=None</em>, <em class="sig-param">iterations=7</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiate the DeviceInterface, based on language in kernel source</p>
+<p>:param kernel_source The kernel sources
+:type kernel_source: kernel_tuner.core.KernelSource</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>original_kernel</strong> (<em>kernel source as a string</em><em> or </em><em>a list of strings denoting filenames</em>) – The source of the kernel as passed to tune_kernel</p></li>
 <li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default. Ignored if you are tuning host code by passing lang=”C”.</p></li>
 <li><p><strong>platform</strong> – OpenCL platform to use, in case you have multiple
 OpenCL platforms you may use this to select one,
 0 by default. Ignored if not using OpenCL.</p></li>
-<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
-automatically detects the language, but if it fails, you may specify
-the language using this argument, currently supported: “CUDA”, “OpenCL”, or “C”</p></li>
+<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels.
+Currently supported: “CUDA”, “OpenCL”, or “C”</p></li>
 <li><p><strong>compiler_options</strong> (<em>list of strings</em>) – The compiler options to use when compiling kernels for this device.</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – Number of iterations to be used when benchmarking using this device.</p></li>
 <li><p><strong>times</strong> (<em>bool</em>) – Return the execution time of all iterations.</p></li>
@@ -562,7 +563,7 @@ the language using this argument, currently supported: “CUDA”, “OpenCL”,
 
 <dl class="method">
 <dt id="kernel_tuner.core.DeviceInterface.compile_and_benchmark">
-<code class="sig-name descname">compile_and_benchmark</code><span class="sig-paren">(</span><em class="sig-param">gpu_args</em>, <em class="sig-param">params</em>, <em class="sig-param">kernel_options</em>, <em class="sig-param">tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.compile_and_benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compile_and_benchmark</code><span class="sig-paren">(</span><em class="sig-param">kernel_source</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">params</em>, <em class="sig-param">kernel_options</em>, <em class="sig-param">tuning_options</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.compile_and_benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compile and benchmark a kernel instance based on kernel strings and parameters</p>
 </dd></dl>
 
@@ -586,7 +587,7 @@ the language using this argument, currently supported: “CUDA”, “OpenCL”,
 
 <dl class="method">
 <dt id="kernel_tuner.core.DeviceInterface.create_kernel_instance">
-<code class="sig-name descname">create_kernel_instance</code><span class="sig-paren">(</span><em class="sig-param">kernel_options</em>, <em class="sig-param">params</em>, <em class="sig-param">verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.create_kernel_instance" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">create_kernel_instance</code><span class="sig-paren">(</span><em class="sig-param">kernel_source</em>, <em class="sig-param">kernel_options</em>, <em class="sig-param">params</em>, <em class="sig-param">verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.create_kernel_instance" title="Permalink to this definition">¶</a></dt>
 <dd><p>create kernel instance from kernel source, parameters, problem size, grid divisors, and so on</p>
 </dd></dl>
 
@@ -1155,7 +1156,7 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 
 <dl class="function">
 <dt id="kernel_tuner.util.check_argument_type">
-<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">check_argument_type</code><span class="sig-paren">(</span><em class="sig-param">dtype</em>, <em class="sig-param">kernel_argument</em>, <em class="sig-param">i</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_type" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">check_argument_type</code><span class="sig-paren">(</span><em class="sig-param">dtype</em>, <em class="sig-param">kernel_argument</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_type" title="Permalink to this definition">¶</a></dt>
 <dd><p>check if the numpy.dtype matches the type used in the code</p>
 </dd></dl>
 
@@ -1179,8 +1180,8 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 
 <dl class="function">
 <dt id="kernel_tuner.util.detect_language">
-<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">detect_language</code><span class="sig-paren">(</span><em class="sig-param">lang</em>, <em class="sig-param">kernel_source</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.detect_language" title="Permalink to this definition">¶</a></dt>
-<dd><p>attempt to detect language from the kernel_string if not specified</p>
+<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">detect_language</code><span class="sig-paren">(</span><em class="sig-param">kernel_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.detect_language" title="Permalink to this definition">¶</a></dt>
+<dd><p>attempt to detect language from the kernel_string</p>
 </dd></dl>
 
 <dl class="function">
@@ -1297,31 +1298,6 @@ may supply different names if they prefer.</p></li>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>string</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="kernel_tuner.util.prepare_list_of_files">
-<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">prepare_list_of_files</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_file_list</em>, <em class="sig-param">params</em>, <em class="sig-param">grid</em>, <em class="sig-param">threads</em>, <em class="sig-param">block_size_names</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_list_of_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>prepare the kernel string along with any additional files</p>
-<p>The first file in the list is allowed to include or read in the others
-The files beyond the first are considered additional files that may also contain tunable parameters</p>
-<p>For each file beyond the first this function creates a temporary file with
-preprocessors statements inserted. Occurences of the original filenames in the
-first file are replaced with their temporary counterparts.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>kernel_file_list</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of filenames. The first file in the list is
-allowed to read or include the other files in the list. All files may
-will have access to the tunable parameters.</p></li>
-<li><p><strong>params</strong> (<em>dict</em><em>(</em><em>)</em>) – A dictionary with the tunable parameters for this particular
-instance.</p></li>
-<li><p><strong>grid</strong> (<em>tuple</em><em>(</em><em>)</em>) – The grid dimensions for this instance. The grid dimensions are
-also inserted into the code as if they are tunable parameters for
-convenience.</p></li>
-</ul>
 </dd>
 </dl>
 </dd></dl>
