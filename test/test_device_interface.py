@@ -6,7 +6,7 @@ except ImportError:
     from unittest.mock import patch
 
 import numpy
-from kernel_tuner import core
+from kernel_tuner import core, util
 
 from .test_interface import mock_config
 
@@ -15,11 +15,11 @@ from .test_interface import mock_config
 def test_check_kernel_output(dev_func_interface):
     dev_func_interface.configure_mock(**mock_config)
 
-    dev = core.DeviceInterface(0, 0, "", lang="CUDA")
+    dev = core.DeviceInterface(core.KernelSource("", lang="CUDA"))
     dfi = dev.dev
 
     answer = [numpy.zeros(4).astype(numpy.float32)]
-    instance = core.KernelInstance("name", "kernel_string", "temp_files", (256,1,1), (1,1,1), {}, answer)
+    instance = core.KernelInstance("name", None, "kernel_string", "temp_files", (256,1,1), (1,1,1), {}, answer)
     wrong = [numpy.array([1,2,3,4]).astype(numpy.float32)]
     atol = 1e-6
 
@@ -62,7 +62,7 @@ def test_default_verify_function_arrays():
     result_host = [numpy.zeros(4).astype(numpy.float32), None, numpy.ones(5).astype(numpy.int32)]
     result_host2 = [numpy.array([0,0,0,0]).reshape((2,2)).astype(numpy.float32), None, numpy.ones(5).astype(numpy.int32)]
 
-    instance = core.KernelInstance("name", "kernel_string", [], (256,1,1), (1,1,1), {}, answer)
+    instance = core.KernelInstance("name", None, "kernel_string", [], (256,1,1), (1,1,1), {}, answer)
 
     for ans in [answer_type_error1, answer_type_error2, answer_type_error3]:
         try:
@@ -80,7 +80,7 @@ def test_default_verify_function_scalar():
 
     answer = [numpy.zeros(4).astype(numpy.float32), None, numpy.int64(42)]
 
-    instance = core.KernelInstance("name", "kernel_string", [], (256,1,1), (1,1,1), {}, answer)
+    instance = core.KernelInstance("name", None, "kernel_string", [], (256,1,1), (1,1,1), {}, answer)
 
     answer_type_error1 = [numpy.zeros(4).astype(numpy.float32), None, numpy.float64(42)]
     answer_type_error2 = [numpy.zeros(4).astype(numpy.float32), None, numpy.float32(42)]

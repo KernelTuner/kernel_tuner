@@ -11,8 +11,11 @@ from kernel_tuner.core import DeviceInterface
 class SequentialRunner(object):
     """ SequentialRunner is used for tuning with a single process/thread """
 
-    def __init__(self, kernel_options, device_options, iterations):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations):
         """ Instantiate the SequentialRunner
+
+        :param kernel_source: The kernel source
+        :type kernel_source: kernel_tuner.core.KernelSource
 
         :param kernel_options: A dictionary with all options for the kernel.
         :type kernel_options: kernel_tuner.interface.Options
@@ -27,9 +30,10 @@ class SequentialRunner(object):
         """
 
         #detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_options.kernel_string, iterations=iterations, **device_options)
+        self.dev = DeviceInterface(kernel_source, iterations=iterations, **device_options)
         self.units = self.dev.units
         self.quiet = device_options.quiet
+        self.kernel_source = kernel_source
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -62,7 +66,7 @@ class SequentialRunner(object):
         for element in parameter_space:
             params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
-            time = self.dev.compile_and_benchmark(self.gpu_args, params, kernel_options, tuning_options)
+            time = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
 
             if time is None:
                 logging.debug('received time is None, kernel configuration was skipped silently due to compile or runtime failure')

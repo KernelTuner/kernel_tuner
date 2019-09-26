@@ -11,16 +11,175 @@ from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
 import kernel_tuner.util as util
 
-KernelInstance = namedtuple("KernelInstance", ["name", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
+_KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
+
+class KernelInstance(_KernelInstance):
+    """Class that represents the specific parameterized instance of a kernel"""
+
+    def delete_temp_files(self):
+        """Delete any generated temp files"""
+        for v in self.temp_files.values():
+            util.delete_temp_file(v)
+
+    def prepare_temp_files_for_error_msg(self):
+        """Prepare temp file with source code, and return list of temp file names"""
+        temp_filename = util.get_temp_filename(suffix=self.kernel_source.get_suffix())
+        util.write_file(temp_filename, self.kernel_string)
+        ret = [temp_filename]
+        ret.extend(self.temp_files.values())
+        return ret
+
+
+class KernelSource(object):
+    """Class that holds the kernel sources.
+
+    There is a primary kernel source, which can be either a source string,
+    a filename (indicating a file containing the kernel source code),
+    or a callable (generating the kernel source code).
+    There can additionally be (one or multiple) secondary kernel sources, which
+    must be filenames.
+    """
+
+    def __init__(self, kernel_sources, lang):
+        if not isinstance(kernel_sources, list):
+            kernel_sources = [kernel_sources]
+        self.kernel_sources = kernel_sources
+        if lang is None:
+            if callable(self.kernel_sources[0]):
+                raise TypeError("Please specify language when using a code generator function")
+            kernel_string = self.get_kernel_string(0)
+            lang = util.detect_language(kernel_string)
+
+        # The validity of lang is checked later, when creating the DeviceInterface
+        self.lang = lang
+
+    def get_kernel_string(self, index=0, params=None):
+        """ retrieve the kernel source with the given index and return as a string
+
+        See util.get_kernel_string() for details.
+
+        :param index: Index of the kernel source in the list of sources.
+        :type index: int
+
+        :param params: Dictionary containing the tunable parameters for this specific
+            kernel instance, only needed when kernel_source is a generator.
+        :type param: dict
+
+        :returns: A string containing the kernel code.
+        :rtype: string
+        """
+        #logging.debug('get_kernel_string called with %s', str(kernel_source))
+        logging.debug('get_kernel_string called')
+
+        kernel_source = self.kernel_sources[index]
+        return util.get_kernel_string(kernel_source, params)
+
+
+    def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
+        """ prepare the kernel string along with any additional files
+
+        The first file in the list is allowed to include or read in the others
+        The files beyond the first are considered additional files that may also contain tunable parameters
+
+        For each file beyond the first this function creates a temporary file with
+        preprocessors statements inserted. Occurences of the original filenames in the
+        first file are replaced with their temporary counterparts.
+
+        :param kernel_name: A string specifying the kernel name.
+        :type kernel_name: string
+
+        :param params: A dictionary with the tunable parameters for this particular
+            instance.
+        :type params: dict()
+
+        :param grid: The grid dimensions for this instance. The grid dimensions are
+            also inserted into the code as if they are tunable parameters for
+            convenience.
+        :type grid: tuple()
+
+        :param threads: The thread block dimensions for this instance. The thread block are
+            also inserted into the code as if they are tunable parameters for
+            convenience.
+        :type threads: tuple()
+
+        :param block_size_names: A list of strings that denote the names
+            for the thread block dimensions.
+        :type block_size_names: list(string)
+
+        """
+        temp_files = dict()
+
+        for i, f in enumerate(self.kernel_sources):
+            if i > 0 and not util.looks_like_a_filename(f):
+                raise ValueError('When passing multiple kernel sources, the secondary entries must be filenames')
+
+            ks = self.get_kernel_string(i, params)
+            # add preprocessor statements
+            n, ks = util.prepare_kernel_string(kernel_name, ks, params, grid, threads, block_size_names)
+
+            if i == 0:
+                # primary kernel source
+                name = n
+                kernel_string = ks
+                continue
+
+            # save secondary kernel sources to temporary files
+
+            # generate temp filename with the same extension
+            temp_file = util.get_temp_filename(suffix="." + f.split(".")[-1])
+            temp_files[f] = temp_file
+            util.write_file(temp_file, ks)
+            # replace occurences of the additional file's name in the first kernel_string with the name of the temp file
+            kernel_string = kernel_string.replace(f, temp_file)
+
+        return name, kernel_string, temp_files
+
+
+    def get_user_suffix(self, index=0):
+        """ Get the suffix of the kernel filename, if the user specified one. Return None otherwise.
+        """
+        if util.looks_like_a_filename(self.kernel_sources[index]) and ("." in self.kernel_sources[index]):
+            return "." + self.kernel_sources[index].split(".")[-1]
+        return None
+
+    def get_suffix(self, index=0):
+        """ Return a suitable suffix for a kernel filename.
+
+        This uses the user-specified suffix if available, or one based on the
+        lang/backend otherwise.
+        """
+
+        # TODO: Consider delegating this to the backend
+        suffix = self.get_user_suffix(index)
+        if suffix is not None:
+            return suffix
+
+        _suffixes = {'CUDA': '.cu', 'OpenCL': '.cl', 'C': '.c'}
+        try:
+            return _suffixes[self.lang]
+        except KeyError:
+            return ".c"
+
+    def check_argument_lists(self, kernel_name, arguments):
+        """ Check if the kernel arguments have the correct types
+
+        This is done by calling util.check_argument_list on each kernel string.
+        """
+        for i, f in enumerate(self.kernel_sources):
+            if not callable(f):
+                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments)
+            else:
+                logging.debug("Checking of arguments list not supported yet for code generators.")
+
 
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, original_kernel, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7):
+    def __init__(self, kernel_source, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
-        :param original_kernel: The source of the kernel as passed to tune_kernel
-        :type original_kernel: kernel source as a string or a list of strings denoting filenames
+        :param kernel_source The kernel sources
+        :type kernel_source: kernel_tuner.core.KernelSource
 
         :param device: CUDA/OpenCL device to use, in case you have multiple
             CUDA-capable GPUs or OpenCL devices you may use this to select one,
@@ -32,9 +191,8 @@ class DeviceInterface(object):
             0 by default. Ignored if not using OpenCL.
         :type device: int
 
-        :param lang: Specifies the language used for GPU kernels. The kernel_tuner
-            automatically detects the language, but if it fails, you may specify
-            the language using this argument, currently supported: "CUDA", "OpenCL", or "C"
+        :param lang: Specifies the language used for GPU kernels.
+            Currently supported: "CUDA", "OpenCL", or "C"
         :type lang: string
 
         :param compiler_options: The compiler options to use when compiling kernels for this device.
@@ -47,9 +205,10 @@ class DeviceInterface(object):
         :type times: bool
 
         """
+        lang = kernel_source.lang
+
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
-        lang = util.detect_language(lang, original_kernel)
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations)
         elif lang == "OpenCL":
@@ -129,7 +288,7 @@ class DeviceInterface(object):
             raise Exception("Kernel result verification failed for: " + util.get_config_string(instance.params))
         return True
 
-    def compile_and_benchmark(self, gpu_args, params, kernel_options, tuning_options):
+    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
 
         instance_string = util.get_instance_string(params)
@@ -140,7 +299,7 @@ class DeviceInterface(object):
 
         verbose = tuning_options.verbose
 
-        instance = self.create_kernel_instance(kernel_options, params, verbose)
+        instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if instance is None:
             return None
 
@@ -166,14 +325,12 @@ class DeviceInterface(object):
 
         except Exception as e:
             #dump kernel_string to temp file
-            temp_filename = util.get_temp_filename(suffix=".c")
-            util.write_file(temp_filename, instance.kernel_string)
-            print("Error while compiling or benchmarking, see source files: " + temp_filename + " ".join(instance.temp_files.values()))
+            temp_filenames = instance.prepare_temp_files_for_error_msg()
+            print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
             raise e
 
         #clean up any temporary files, if no error occured
-        for v in instance.temp_files.values():
-            util.delete_temp_file(v)
+        instance.delete_temp_files()
 
         return time
 
@@ -213,7 +370,7 @@ class DeviceInterface(object):
         else:
             raise Exception("Error cannot copy texture memory arguments when language is not CUDA")
 
-    def create_kernel_instance(self, kernel_options, params, verbose):
+    def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
         instance_string = util.get_instance_string(params)
         grid_div = (kernel_options.grid_div_x, kernel_options.grid_div_y, kernel_options.grid_div_z)
@@ -230,14 +387,10 @@ class DeviceInterface(object):
             return None
 
         #obtain the kernel_string and prepare additional files, if any
-        temp_files = dict()
-        kernel_source = kernel_options.kernel_string
-        if not isinstance(kernel_source, list):
-            kernel_source = [kernel_source]
-        name, kernel_string, temp_files = util.prepare_list_of_files(kernel_options.kernel_name, kernel_source, params, grid, threads, kernel_options.block_size_names)
+        name, kernel_string, temp_files = kernel_source.prepare_list_of_files(kernel_options.kernel_name, params, grid, threads, kernel_options.block_size_names)
 
         #collect everything we know about this instance and return it
-        return KernelInstance(name, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
+        return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
 
     def get_environment(self):
         """Return dictionary with information about the environment"""
@@ -342,5 +495,3 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         logging.debug('correctness check has found a correctness issue')
 
     return correct
-
-
