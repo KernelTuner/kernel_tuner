@@ -268,7 +268,7 @@ class CudaFunctions(object):
                 if 'normalized_coordinates' in v and v['normalized_coordinates']:
                     tex.set_flags(tex.get_flags() | drv.TRSF_NORMALIZED_COORDINATES)
 
-    def run_kernel(self, func, gpu_args, threads, grid):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'
 
         :param func: A PyCuda kernel compiled for this specific kernel configuration
@@ -287,7 +287,7 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
         """
-        func(*gpu_args, block=threads, grid=grid, texrefs=self.texrefs)
+        func(*gpu_args, block=threads, grid=grid, stream=stream, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
