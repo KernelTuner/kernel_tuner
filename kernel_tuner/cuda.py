@@ -64,6 +64,9 @@ class CudaFunctions(object):
         if not self.source_mod:
             raise ImportError("Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
 
+        #create a stream
+        self.stream = drv.Stream()
+
         #collect environment information
         env = dict()
         env["device_name"] = self.context.get_device().name()
@@ -173,24 +176,20 @@ class CudaFunctions(object):
             kernel execution time.
         :rtype: float
         """
+        result = dict()
+        result["times"] = []
         start = drv.Event()
         end = drv.Event()
-        time = []
+        self.context.synchronize()
         for _ in range(self.iterations):
-            self.context.synchronize()
-            start.record()
-            self.run_kernel(func, gpu_args, threads, grid)
-            end.record()
-            self.context.synchronize()
-            time.append(end.time_since(start))
-        time = sorted(time)
-        if times:
-            return time
-        else:
-            if self.iterations > 4:
-                return numpy.mean(time[1:-1])
-            else:
-                return numpy.mean(time)
+            start.record(stream=self.stream)
+            self.run_kernel(func, gpu_args, threads, grid, stream=self.stream)
+            end.record(stream=self.stream)
+            end.synchronize()
+            result["times"].append(end.time_since(start))
+        result["times"] = sorted(result["times"])
+        result["time"] = numpy.mean(result["times"])
+        return result
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
