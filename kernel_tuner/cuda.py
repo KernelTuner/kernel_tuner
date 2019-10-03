@@ -172,9 +172,8 @@ class CudaFunctions(object):
         :param times: Return the execution time of all iterations.
         :type times: bool
 
-        :returns: All execution times, if times=True, or a robust average for the
-            kernel execution time.
-        :rtype: float
+        :returns: A dictionary with benchmark results.
+        :rtype: dict()
         """
         result = dict()
         result["times"] = []
@@ -187,7 +186,6 @@ class CudaFunctions(object):
             end.record(stream=self.stream)
             end.synchronize()
             result["times"].append(end.time_since(start))
-        result["times"] = sorted(result["times"])
         result["time"] = numpy.mean(result["times"])
         return result
 
