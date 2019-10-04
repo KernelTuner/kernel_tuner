@@ -173,20 +173,24 @@ class CudaFunctions(object):
             kernel execution time.
         :rtype: float
         """
-        result = dict()
-        result["times"] = []
         start = drv.Event()
         end = drv.Event()
+        time = []
         for _ in range(self.iterations):
             self.context.synchronize()
             start.record()
             self.run_kernel(func, gpu_args, threads, grid)
             end.record()
             self.context.synchronize()
-            result["times"].append(end.time_since(start))
-        result["times"] = sorted(result["times"])
-        result["time"] = numpy.mean(result["times"])
-        return result
+            time.append(end.time_since(start))
+        time = sorted(time)
+        if times:
+            return time
+        else:
+            if self.iterations > 4:
+                return numpy.mean(time[1:-1])
+            else:
+                return numpy.mean(time)
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
