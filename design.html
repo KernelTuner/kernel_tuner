@@ -552,7 +552,7 @@ Currently supported: “CUDA”, “OpenCL”, or “C”</p></li>
 
 <dl class="method">
 <dt id="kernel_tuner.core.DeviceInterface.benchmark">
-<code class="sig-name descname">benchmark</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">instance</em>, <em class="sig-param">times</em>, <em class="sig-param">verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">benchmark</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">instance</em>, <em class="sig-param">verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>benchmark the kernel instance</p>
 </dd></dl>
 
@@ -645,7 +645,7 @@ source module for copying data to constant memory before kernel launch.</p>
 
 <dl class="method">
 <dt id="kernel_tuner.cuda.CudaFunctions.benchmark">
-<code class="sig-name descname">benchmark</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">threads</em>, <em class="sig-param">grid</em>, <em class="sig-param">times</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">benchmark</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">threads</em>, <em class="sig-param">grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel and measures time repeatedly, returns average time</p>
 <p>Runs the kernel and measures kernel execution time repeatedly, number of
 iterations is set during the creation of CudaFunctions. Benchmark returns
@@ -664,15 +664,13 @@ or single values passed by value.</p></li>
 the thread block</p></li>
 <li><p><strong>grid</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of thread blocks in each dimension
 of the grid</p></li>
-<li><p><strong>times</strong> (<em>bool</em>) – Return the execution time of all iterations.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>All execution times, if times=True, or a robust average for the
-kernel execution time.</p>
+<dd class="field-even"><p>A dictionary with benchmark results.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>dict()</p>
 </dd>
 </dl>
 </dd></dl>
@@ -789,7 +787,7 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 
 <dl class="method">
 <dt id="kernel_tuner.cuda.CudaFunctions.run_kernel">
-<code class="sig-name descname">run_kernel</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">threads</em>, <em class="sig-param">grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">run_kernel</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">threads</em>, <em class="sig-param">grid</em>, <em class="sig-param">stream=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the CUDA kernel passed as ‘func’</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -832,7 +830,7 @@ of the grid</p></li>
 
 <dl class="method">
 <dt id="kernel_tuner.opencl.OpenCLFunctions.benchmark">
-<code class="sig-name descname">benchmark</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">threads</em>, <em class="sig-param">grid</em>, <em class="sig-param">times</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">benchmark</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">gpu_args</em>, <em class="sig-param">threads</em>, <em class="sig-param">grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel and measures time repeatedly, returns average time</p>
 <p>Runs the kernel and measures kernel execution time repeatedly, number of
 iterations is set during the creation of OpenCLFunctions. Benchmark returns
@@ -851,15 +849,13 @@ or single values passed by value.</p></li>
 the work group.</p></li>
 <li><p><strong>grid</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of work groups in each dimension
 of the NDRange.</p></li>
-<li><p><strong>times</strong> (<em>bool</em>) – Return the execution time of all iterations.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>All execution times, if times=True, or a robust average for the
-kernel execution time.</p>
+<dd class="field-even"><p>All benchmark results.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>dict()</p>
 </dd>
 </dl>
 </dd></dl>
@@ -989,7 +985,7 @@ of the NDRange.</p></li>
 
 <dl class="method">
 <dt id="kernel_tuner.c.CFunctions.benchmark">
-<code class="sig-name descname">benchmark</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">c_args</em>, <em class="sig-param">threads</em>, <em class="sig-param">grid</em>, <em class="sig-param">times</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">benchmark</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">c_args</em>, <em class="sig-param">threads</em>, <em class="sig-param">grid</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel repeatedly, returns averaged returned value</p>
 <p>The C function tuning is a little bit more flexible than direct CUDA
 or OpenCL kernel tuning. The C function needs to measure time, or some
@@ -1012,15 +1008,13 @@ ready_argument_list().</p></li>
 interface as CudaFunctions and OpenCLFunctions.</p></li>
 <li><p><strong>grid</strong> (<em>any</em>) – Ignored, but left as argument for now to have the same
 interface as CudaFunctions and OpenCLFunctions.</p></li>
-<li><p><strong>times</strong> (<em>bool</em>) – Return the execution time of all iterations.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>All execution times, if times=True, or a robust average for the
-kernel execution time.</p>
+<dd class="field-even"><p>All execution times.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>dict()</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1187,8 +1181,8 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 
 <dl class="function">
 <dt id="kernel_tuner.util.get_config_string">
-<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">get_config_string</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">units=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_config_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>return a compact string representation of a dictionary</p>
+<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">get_config_string</code><span class="sig-paren">(</span><em class="sig-param">params</em>, <em class="sig-param">keys=None</em>, <em class="sig-param">units=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_config_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a compact string representation of a measurement</p>
 </dd></dl>
 
 <dl class="function">
