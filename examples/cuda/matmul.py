@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import json
 import numpy
 import kernel_tuner
 from collections import OrderedDict
@@ -26,10 +27,14 @@ def tune():
 
     answer = [numpy.dot(A,B), None, None]
 
-    return kernel_tuner.tune_kernel("matmul_kernel", "matmul.cu",
+    res, env = kernel_tuner.tune_kernel("matmul_kernel", "matmul.cu",
         problem_size, args, tune_params,
         grid_div_y=grid_div_y, grid_div_x=grid_div_x,
-        restrictions=restrict, verbose=True, answer=answer, atol=1e-3)
+        restrictions=restrict, verbose=True, iterations=32)
+
+    with open("matmul.json", 'w') as fp:
+        json.dump(res, fp)
+
 
 if __name__ == "__main__":
     tune()

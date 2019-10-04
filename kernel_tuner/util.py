@@ -127,15 +127,18 @@ def detect_language(kernel_string):
     return lang
 
 
-def get_config_string(params, units=None):
-    """ return a compact string representation of a dictionary """
+def get_config_string(params, keys=None, units=None):
+    """ return a compact string representation of a measurement """
     compact_str_items = []
+    if not keys:
+        keys = params.keys()
     # first make a list of compact strings for each parameter
     for k, v in params.items():
-        unit = ""
-        if isinstance(units, dict): #check if not None not enough, units could be mocked which causes errors
-            unit = units.get(k, "")
-        compact_str_items.append(k + "=" + str(v) + unit)
+        if k in keys:
+            unit = ""
+            if isinstance(units, dict): #check if not None not enough, units could be mocked which causes errors
+                unit = units.get(k, "")
+            compact_str_items.append(k + "=" + str(v) + unit)
     # and finally join them
     compact_str = ", ".join(compact_str_items)
     return compact_str

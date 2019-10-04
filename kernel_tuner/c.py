@@ -182,7 +182,6 @@ class CFunctions(object):
             elif self.compiler == "pgfortran":
                 kernel_name = match.group(1) + "_" + kernel_name + "_"
 
-
         try:
             write_file(source_file, kernel_string)
 
@@ -207,7 +206,7 @@ class CFunctions(object):
         return func
 
 
-    def benchmark(self, func, c_args, threads, grid, times):
+    def benchmark(self, func, c_args, threads, grid):
         """runs the kernel repeatedly, returns averaged returned value
 
         The C function tuning is a little bit more flexible than direct CUDA
@@ -238,14 +237,11 @@ class CFunctions(object):
             interface as CudaFunctions and OpenCLFunctions.
         :type grid: any
 
-        :param times: Return the execution time of all iterations.
-        :type times: bool
-
-        :returns: All execution times, if times=True, or a robust average for the
-            kernel execution time.
-        :rtype: float
+        :returns: All execution times.
+        :rtype: dict()
         """
-        time = []
+        result = dict()
+        result["times"] = []
         for _ in range(self.iterations):
             value = self.run_kernel(func, c_args, threads, grid)
 
@@ -256,19 +252,13 @@ class CFunctions(object):
             #
             #The current, less than ideal, scheme uses the convention that a
             #negative time indicates a 'too many resources requested for launch'
+            #which Kernel Tuner can silently ignore
             if value < 0.0:
                 raise Exception("too many resources requested for launch")
 
-            time.append(value)
-        time = sorted(time)
-        if times:
-            return time
-        else:
-            if self.iterations > 4:
-                return numpy.mean(time[1:-1])
-            else:
-                return numpy.mean(time)
-
+            result["times"].append(value)
+        result["time"] = numpy.mean(result["times"])
+        return result
 
     def run_kernel(self, func, c_args, threads, grid):
         """runs the kernel once, returns whatever the kernel returns

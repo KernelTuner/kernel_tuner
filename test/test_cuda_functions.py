@@ -63,19 +63,13 @@ def test_compile():
         print(str(e))
         assert False
 
-def dummy_func(a, b, block=0, grid=0, texrefs=None):
+def dummy_func(a, b, block=0, grid=0, stream=None, texrefs=None):
     pass
 
 @skip_if_no_cuda
 def test_benchmark():
     dev = cuda.CudaFunctions(0)
     args = [1, 2]
-    time = dev.benchmark(dummy_func, args, (1,2), (1,2), False)
-    assert time > 0
-
-@skip_if_no_cuda
-def test_benchmark_times():
-    dev = cuda.CudaFunctions(0)
-    args = [1, 2]
-    time = dev.benchmark(dummy_func, args, (1,2), (1,2), True)
-    assert len(time) == 7
+    res = dev.benchmark(dummy_func, args, (1,2), (1,2))
+    assert res["time"] > 0
+    assert len(res["times"]) == dev.iterations

@@ -224,15 +224,15 @@ class DeviceInterface(object):
         if not quiet:
             print("Using: " + self.dev.name)
 
-    def benchmark(self, func, gpu_args, instance, times, verbose):
+    def benchmark(self, func, gpu_args, instance, verbose):
         """benchmark the kernel instance"""
         logging.debug('benchmark ' + instance.name)
         logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
         logging.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
 
-        time = None
+        result = None
         try:
-            time = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid, times)
+            result = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid)
         except Exception as e:
             #some launches may fail because too many registers are required
             #to run the kernel given the current thread block size
@@ -247,7 +247,7 @@ class DeviceInterface(object):
                 logging.debug('benchmark encountered runtime failure: ' + str(e))
                 print("Error while benchmarking:", instance.name)
                 raise e
-        return time
+        return result
 
     def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
@@ -321,7 +321,7 @@ class DeviceInterface(object):
                 self.check_kernel_output(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
 
             #benchmark
-            time = self.benchmark(func, gpu_args, instance, tuning_options.times, verbose)
+            result = self.benchmark(func, gpu_args, instance, verbose)
 
         except Exception as e:
             #dump kernel_string to temp file
@@ -332,7 +332,7 @@ class DeviceInterface(object):
         #clean up any temporary files, if no error occured
         instance.delete_temp_files()
 
-        return time
+        return result
 
     def compile_kernel(self, instance, verbose):
         """compile the kernel for this specific instance"""

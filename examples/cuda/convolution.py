@@ -10,8 +10,8 @@ def tune():
 
     #setup tunable parameters
     tune_params = OrderedDict()
-    tune_params["filter_height"] = [i for i in range(3,35,2)]
-    tune_params["filter_width"] = [i for i in range(3,35,2)]
+    tune_params["filter_height"] = [17] #[i for i in range(3,35,2)]
+    tune_params["filter_width"] = [17] #[i for i in range(3,35,2)]
     tune_params["block_size_x"] = [16*i for i in range(1,9)]
     tune_params["block_size_y"] = [2**i for i in range(6)]
     tune_params["tile_size_x"] = [i for i in range(1,9)]
@@ -47,7 +47,7 @@ def tune():
     results, env = kernel_tuner.tune_kernel("convolution_kernel", kernel_string,
         problem_size, args, tune_params,
         grid_div_y=grid_div_y, grid_div_x=grid_div_x, cmem_args=cmem_args,
-        verbose=True, restrictions=restrict)
+        verbose=True, restrictions=restrict, iterations=100)
 
     end = time.time()
     env['execution_time'] = end-start

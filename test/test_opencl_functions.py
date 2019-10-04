@@ -66,15 +66,10 @@ def create_benchmark_args():
 @skip_if_no_opencl
 def test_benchmark():
     dev, args, times = create_benchmark_args()
-    time = dev.benchmark(fun_test, args, times, times, False)
-    assert time > 0
+    res = dev.benchmark(fun_test, args, times, times)
+    assert res["time"] > 0
+    assert len(res["times"]) == dev.iterations
 
-
-@skip_if_no_opencl
-def test_benchmark_times():
-    dev, args, times = create_benchmark_args()
-    time = dev.benchmark(fun_test, args, times, times, True)
-    assert len(time) == 7
 
 
 @skip_if_no_opencl

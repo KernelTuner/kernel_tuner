@@ -18,9 +18,10 @@ def setup_mock(drv):
     drv.mem_alloc.return_value = 'mem_alloc'
     return drv
 
+@patch('kernel_tuner.cuda.nvml')
 @patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_ready_argument_list(drv, _):
+def test_ready_argument_list(drv, *args):
     drv = setup_mock(drv)
 
     size = 5
@@ -39,9 +40,10 @@ def test_ready_argument_list(drv, _):
 
     assert isinstance(gpu_args[0], numpy.int32)
 
+@patch('kernel_tuner.cuda.nvml')
 @patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_compile(drv, _):
+def test_compile(drv, *args):
 
     #setup mocked stuff
     drv = setup_mock(drv)
@@ -64,29 +66,32 @@ def test_compile(drv, _):
     assert optional_args['arch'] == 'compute_55'
 
 
-def dummy_func(a, b, block=0, grid=0, texrefs=None):
+def dummy_func(a, b, block=0, grid=0, stream=None, texrefs=None):
     pass
 
+@patch('kernel_tuner.cuda.nvml')
 @patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_benchmark(drv, _):
+def test_benchmark(drv, *args):
     drv = setup_mock(drv)
 
     drv.Event.return_value.time_since.return_value = 0.1
 
     dev = cuda.CudaFunctions(0)
     args = [1, 2]
-    time = dev.benchmark(dummy_func, args, (1,2), (1,2), False)
-    assert time > 0
+    res = dev.benchmark(dummy_func, args, (1,2), (1,2))
+    assert res["time"] > 0
 
-    assert dev.context.synchronize.call_count == 2*dev.iterations
+    assert dev.context.synchronize.call_count == 1
+    assert drv.Event.return_value.synchronize.call_count == dev.iterations
     assert drv.Event.return_value.record.call_count == 2*dev.iterations
     assert drv.Event.return_value.time_since.call_count == dev.iterations
 
 
+@patch('kernel_tuner.cuda.nvml')
 @patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_copy_constant_memory_args(drv, _):
+def test_copy_constant_memory_args(drv, *args):
     drv = setup_mock(drv)
 
     fake_array = numpy.zeros(10).astype(numpy.float32)
@@ -101,9 +106,10 @@ def test_copy_constant_memory_args(drv, _):
     drv.memcpy_htod.assert_called_once_with('get_global', fake_array)
     dev.current_module.get_global.assert_called_once_with('fake_array')
 
+@patch('kernel_tuner.cuda.nvml')
 @patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_copy_texture_memory_args(drv, _):
+def test_copy_texture_memory_args(drv, *args):
     drv = setup_mock(drv)
 
     fake_array = numpy.zeros(10).astype(numpy.float32)

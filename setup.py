@@ -1,10 +1,15 @@
-
+import sys
 from setuptools import setup
 
 
 def readme():
     with open('README.rst') as f:
         return f.read()
+
+if sys.version_info[0] >= 3:
+    pynvml = 'nvidia-ml-py3'
+else:
+    pynvml = 'nvidia-ml-py'
 
 
 setup(
@@ -39,7 +44,7 @@ setup(
     extras_require={
         'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx',
                 'noodles', 'ipython'],
-        'cuda': ['pycuda'],
+        'cuda': ['pycuda', pynvml],
         'opencl': ['pyopencl'],
         'cuda_opencl': ['pycuda', 'pyopencl'],
         'tutorial': ['jupyter', 'matplotlib', 'pandas'],
