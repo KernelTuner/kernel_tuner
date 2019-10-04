@@ -3,6 +3,9 @@ from __future__ import print_function
 import numpy as np
 
 import kernel_tuner
+from kernel_tuner import core
+from kernel_tuner.interface import Options
+
 from .context import skip_if_no_cuda, skip_if_no_noodles
 
 
@@ -117,7 +120,7 @@ def test_sequential_runner_alt_block_size_names():
 
 
 @skip_if_no_cuda
-def test_sequential_runner_not_matching_answer1():
+def test_check_kernel_output():
     kernel_string = """__global__ void vector_add(float *c, float *a, float *b, int n) {
             int i = blockIdx.x * block_size_x + threadIdx.x;
             if (i<n) {
@@ -125,13 +128,27 @@ def test_sequential_runner_not_matching_answer1():
             }
         } """
     args = get_vector_add_args()
-    answer = [args[1] + args[2]]
-    tune_params = {"block_size_x": [128 + 64 * i for i in range(5)]}
+    params = {"block_size_x": 128}
 
+    lang="CUDA"
+    kernel_source = core.KernelSource(kernel_string, lang)
+
+    verbose = True
+    kernel_options = Options(kernel_name="vector_add", kernel_string=kernel_string, problem_size=args[-1], arguments=args, lang=lang,
+                          grid_div_x=None, grid_div_y=None, grid_div_z=None, cmem_args=None, texmem_args=None, block_size_names=None)
+
+    device_options = Options(device=0, platform=0, lang=lang, quiet=False, compiler=None, compiler_options=None)
+
+    dev = core.DeviceInterface(kernel_source, iterations=7, **device_options)
+
+    gpu_args = dev.ready_argument_list(args)
+    instance = dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
+    func = dev.compile_kernel(instance, verbose)
+
+    #1st case, correct answer but not enough items in the list
+    answer = [args[1] + args[2]]
     try:
-        kernel_tuner.tune_kernel(
-            "vector_add", kernel_string, args[-1], args, tune_params,
-            method="diff_evo", verbose=True, answer=answer)
+        dev.check_kernel_output(func, gpu_args, instance, answer, 1e-6, None, verbose)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as expected_error:
@@ -141,24 +158,10 @@ def test_sequential_runner_not_matching_answer1():
         print("Expected a TypeError to be raised")
         assert False
 
-
-@skip_if_no_cuda
-def test_sequential_runner_not_matching_answer2():
-    kernel_string = """__global__ void vector_add(float *c, float *a, float *b, int n) {
-            int i = blockIdx.x * block_size_x + threadIdx.x;
-            if (i<n) {
-                c[i] = a[i] + b[i];
-            }
-        } """
-    args = get_vector_add_args()
+    #2nd case, answer is of wrong type
     answer = [np.ubyte([12]), None, None, None]
-    tune_params = {"block_size_x": [128 + 64 * i for i in range(5)]}
-
     try:
-        kernel_tuner.tune_kernel(
-            "vector_add", kernel_string, args[-1], args, tune_params,
-            method="diff_evo", verbose=True, answer=answer)
-
+        dev.check_kernel_output(func, gpu_args, instance, answer, 1e-6, None, verbose)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as expected_error:
@@ -167,3 +170,7 @@ def test_sequential_runner_not_matching_answer2():
     except Exception:
         print("Expected a TypeError to be raised")
         assert False
+
+
+    instance.delete_temp_files()
+    assert True
