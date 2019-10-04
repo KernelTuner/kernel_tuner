@@ -14,3 +14,4 @@ doc/create_doc.sh
 examples/cuda/output
 deploy_key
 *.mod
+temp_*.*

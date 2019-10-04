@@ -1,7 +1,7 @@
 Kernel Tuner
 ============
 
-|Build Status| |Codacy Badge| |Codacy Badge2| |PyPi Badge|
+|Build Status| |CodeCov Badge| |PyPi Badge|
 
 Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.
 
@@ -166,9 +166,13 @@ Cedric Nugteren. CLTune is a C++ library for kernel tuning.
 
 .. |Build Status| image:: https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master
    :target: https://travis-ci.org/benvanwerkhoven/kernel_tuner
-.. |Codacy Badge| image:: https://api.codacy.com/project/badge/grade/016dc85044ab4d57b777449d93275608
-   :target: https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner
-.. |Codacy Badge2| image:: https://api.codacy.com/project/badge/coverage/016dc85044ab4d57b777449d93275608
-   :target: https://www.codacy.com/app/b-vanwerkhoven/kernel_tuner
+.. |CodeCov Badge| image:: https://codecov.io/gh/benvanwerkhoven/kernel_tuner/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/benvanwerkhoven/kernel_tuner
 .. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue 
    :target: https://pypi.python.org/pypi/kernel_tuner/
+
+
+
+
+
+
