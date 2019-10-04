@@ -66,18 +66,27 @@ class SequentialRunner(object):
         for element in parameter_space:
             params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
-            time = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+            result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
 
-            if time is None:
-                logging.debug('received time is None, kernel configuration was skipped silently due to compile or runtime failure')
+            if result is None:
+                logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
                 continue
 
             #print and append to results
+            if isinstance(result, dict):
+                time = result["time"]
+            else:
+                time = result
+
             params['time'] = time
             output_string = get_config_string(params, self.units)
             logging.debug(output_string)
             if not self.quiet:
                 print(output_string)
+
+            if isinstance(result, dict):
+                params.update(result)
+
             results.append(params)
 
         return results, self.dev.get_environment()

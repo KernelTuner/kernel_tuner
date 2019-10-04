@@ -2,7 +2,10 @@
 from __future__ import print_function
 
 import logging
+import time
 import numpy
+
+from kernel_tuner.nvml import nvml
 
 #embedded in try block to be able to generate documentation
 #and run tests without pycuda installed
@@ -44,6 +47,7 @@ class CudaFunctions(object):
 
         drv.init()
         self.context = drv.Device(device).make_context()
+        self.nvml = nvml(device)
 
         #inspect device properties
         devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
@@ -63,6 +67,9 @@ class CudaFunctions(object):
             self.source_mod = SourceModule
         if not self.source_mod:
             raise ImportError("Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
+
+        #create a stream
+        self.stream = drv.Stream()
 
         #collect environment information
         env = dict()
@@ -140,7 +147,7 @@ class CudaFunctions(object):
                 raise e
 
 
-    def benchmark(self, func, gpu_args, threads, grid, times):
+    def benchmark(self, func, gpu_args, threads, grid):
         """runs the kernel and measures time repeatedly, returns average time
 
         Runs the kernel and measures kernel execution time repeatedly, number of
@@ -166,31 +173,44 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
 
-        :param times: Return the execution time of all iterations.
-        :type times: bool
-
-        :returns: All execution times, if times=True, or a robust average for the
-            kernel execution time.
-        :rtype: float
+        :returns: A dictionary with benchmark results.
+        :rtype: dict()
         """
+        result = dict()
+        result["times"] = []
+        result["power"] = []
+        energy = []
         start = drv.Event()
         end = drv.Event()
-        time = []
+        self.context.synchronize()
         for _ in range(self.iterations):
-            self.context.synchronize()
-            start.record()
-            self.run_kernel(func, gpu_args, threads, grid)
-            end.record()
-            self.context.synchronize()
-            time.append(end.time_since(start))
-        time = sorted(time)
-        if times:
-            return time
-        else:
-            if self.iterations > 4:
-                return numpy.mean(time[1:-1])
-            else:
-                return numpy.mean(time)
+            power_readings = []
+            start.record(stream=self.stream)
+            self.run_kernel(func, gpu_args, threads, grid, stream=self.stream)
+            end.record(stream=self.stream)
+            #measure power usage until kernel is done
+            t0 = time.time()
+            while not end.query():
+                power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
+            end.synchronize()
+            execution_time = end.time_since(start) #ms
+            result["times"].append(execution_time)
+
+            #pre and postfix to start at 0 and end at kernel end
+            if power_readings:
+                power_readings = [[0.0, power_readings[0][1]]] + power_readings
+                power_readings = power_readings + [[execution_time / 1000.0, power_readings[-1][1]]]
+                result["power"].append(power_readings) #time in s, power usage in milliwatts
+
+                #compute energy consumption as area under curve
+                x = [d[0] for d in power_readings]
+                y = [d[1]/1000.0 for d in power_readings] #convert to watts
+                energy.append(numpy.trapz(y,x)) #in Joule
+
+        result["time"] = numpy.mean(result["times"])
+        if (self.iterations > 10) and energy:
+            result["energy"] = numpy.mean(energy[10:])
+        return result
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
@@ -269,7 +289,7 @@ class CudaFunctions(object):
                 if 'normalized_coordinates' in v and v['normalized_coordinates']:
                     tex.set_flags(tex.get_flags() | drv.TRSF_NORMALIZED_COORDINATES)
 
-    def run_kernel(self, func, gpu_args, threads, grid):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'
 
         :param func: A PyCuda kernel compiled for this specific kernel configuration
@@ -288,7 +308,7 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
         """
-        func(*gpu_args, block=threads, grid=grid, texrefs=self.texrefs)
+        func(*gpu_args, block=threads, grid=grid, stream=stream, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
@@ -334,4 +354,6 @@ class CudaFunctions(object):
         else:
             dest = src
 
-    units = {'time': 'ms'}
+    units = {'time': 'ms',
+             'power': 's,mW',
+             'energy': 'J'}
