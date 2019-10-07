@@ -98,6 +98,8 @@
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Contribution guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#reporting-issues">Reporting Issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributing-code">Contributing Code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#development-setup">Development setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-tests">Running tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#building-documentation">Building documentation</a></li>
@@ -197,21 +199,31 @@
 </div>
 <div class="section" id="contribution-guide">
 <span id="contributing"></span><h1>Contribution guide<a class="headerlink" href="#contribution-guide" title="Permalink to this headline">¶</a></h1>
-<p>The kernel tuner follows the Google Python style guide, with Sphinxdoc
-docstrings for module public functions. If you want to contribute to the project
-please fork it, create a branch including your changes and additions, and create
-a pull request.</p>
+<p>Thank you for considering to contribute to Kernel Tuner!</p>
+<div class="section" id="reporting-issues">
+<h2>Reporting Issues<a class="headerlink" href="#reporting-issues" title="Permalink to this headline">¶</a></h2>
+<p>Not all contributions are code, creating an issue also helps us to improve. When you create an issue about a problem, please ensure the following:
+* Describe what you expected to happen.
+* If possible, include a minimal example to help us reproduce the issue.
+* Describe what actually happened, including the output of any errors printed.
+* List the version of Python, CUDA or OpenCL, and C compiler, if applicable.</p>
+</div>
+<div class="section" id="contributing-code">
+<h2>Contributing Code<a class="headerlink" href="#contributing-code" title="Permalink to this headline">¶</a></h2>
+<p>For contributing code to Kernel Tuner please select an issue to work on or create a new issue to propose a change or addition. For significant changes, it is required to first create an issue and discuss the proposed changes. Then fork the repository, create a branch, one per change or addition, and create a pull request.</p>
+<p>Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings for module public functions. Please use <cite>pylint</cite> to check your Python changes.</p>
 <p>Before creating a pull request please ensure the following:</p>
 <ul class="simple">
 <li><p>You have written unit tests to test your additions and all unit tests pass</p></li>
 <li><p>The examples still work and produce the same (or better) results</p></li>
-<li><p>The code is compatible with both Python 2.7 and Python 3.5</p></li>
+<li><p>The code is compatible with both Python 2.7 and Python 3.5 or newer</p></li>
 <li><p>You have run <cite>pylint</cite> to check your code</p></li>
 <li><p>An entry about the change or addition is created in CHANGELOG.md</p></li>
 <li><p>Any matching entries in the roadmap.md are updated/removed</p></li>
 </ul>
 <p>If you are in doubt on where to put your additions to the Kernel Tuner, please
-have look at the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/design.html">design documentation</a>.</p>
+have look at the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/design.html">design documentation</a>, or discuss it in the issue regarding your additions.</p>
+</div>
 <div class="section" id="development-setup">
 <h2>Development setup<a class="headerlink" href="#development-setup" title="Permalink to this headline">¶</a></h2>
 <p>You can install the packages required to run the tests using:</p>
@@ -225,11 +237,11 @@ changes in the source files.</p>
 </div>
 <div class="section" id="running-tests">
 <h2>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this headline">¶</a></h2>
-<p>To run the tests you can use <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">-v</span></code> in the top-level directory.</p>
+<p>To run the tests you can use <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">-v</span> <span class="pre">test/</span></code> in the top-level directory.</p>
 <p>Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
 are not installed/present. The same holds for tests that require PyOpenCL.</p>
 <p>Contributions you make to the Kernel Tuner should not break any of the tests
-even if you can not run them locally.</p>
+even if you cannot run them locally.</p>
 <p>The examples can be seen as <em>integration tests</em> for the Kernel Tuner. Note that
 these will also use the installed package.</p>
 </div>
