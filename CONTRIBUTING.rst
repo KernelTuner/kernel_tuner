@@ -1,27 +1,36 @@
 Contribution guide
 ==================
+Thank you for considering to contribute to Kernel Tuner!
 
-The kernel tuner follows the Google Python style guide, with Sphinxdoc
-docstrings for module public functions. If you want to contribute to the project
-please fork it, create a branch including your changes and additions, and create
-a pull request.
+Reporting Issues
+----------------
+Not all contributions are code, creating an issue also helps us to improve. When you create an issue about a problem, please ensure the following:
+* Describe what you expected to happen.
+* If possible, include a minimal example to help us reproduce the issue.
+* Describe what actually happened, including the output of any errors printed.
+* List the version of Python, CUDA or OpenCL, and C compiler, if applicable. 
+
+Contributing Code
+-----------------
+For contributing code to Kernel Tuner please select an issue to work on or create a new issue to propose a change or addition. For significant changes, it is required to first create an issue and discuss the proposed changes. Then fork the repository, create a branch, one per change or addition, and create a pull request.
+
+Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings for module public functions. Please use `pylint` to check your Python changes.
 
 Before creating a pull request please ensure the following:
 
 * You have written unit tests to test your additions and all unit tests pass
 * The examples still work and produce the same (or better) results
-* The code is compatible with both Python 2.7 and Python 3.5
+* The code is compatible with both Python 2.7 and Python 3.5 or newer
 * You have run `pylint` to check your code
 * An entry about the change or addition is created in CHANGELOG.md
 * Any matching entries in the roadmap.md are updated/removed
 
 If you are in doubt on where to put your additions to the Kernel Tuner, please
 have look at the `design documentation
-<http://benvanwerkhoven.github.io/kernel_tuner/design.html>`__.
+<http://benvanwerkhoven.github.io/kernel_tuner/design.html>`__, or discuss it in the issue regarding your additions.
 
 Development setup
 -----------------
-
 You can install the packages required to run the tests using:
 
 .. code-block:: bash
@@ -35,21 +44,19 @@ changes in the source files.
 
 Running tests
 -------------
-
-To run the tests you can use ``pytest -v`` in the top-level directory.
+To run the tests you can use ``pytest -v test/`` in the top-level directory.
 
 Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
 are not installed/present. The same holds for tests that require PyOpenCL.
 
 Contributions you make to the Kernel Tuner should not break any of the tests
-even if you can not run them locally.
+even if you cannot run them locally.
 
 The examples can be seen as *integration tests* for the Kernel Tuner. Note that
 these will also use the installed package.
 
 Building documentation
 ----------------------
-
 Documentation is located in the ``doc/`` directory. This is where you can type
 ``make html`` to generate the html pages in the ``doc/build/html`` directory.
 
