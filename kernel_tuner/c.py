@@ -105,7 +105,7 @@ class CFunctions(object):
             ctype_args[i] = Argument(numpy=data, ctypes=data_ctypes)
         return ctype_args
 
-    def compile(self, kernel_name, kernel_string):
+    def compile(self, kernel_instance):
         """call the C compiler to compile the kernel, return the function
 
         :param kernel_name: The name of the kernel to be compiled, used to lookup the
@@ -118,7 +118,9 @@ class CFunctions(object):
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
-        logging.debug('compiling ' + kernel_name)
+        logging.debug('compiling ' + kernel_instance.name)
+
+        kernel_string = kernel_instance.kernel_string
 
         if self.lib != None:
             self.cleanup_lib()
@@ -194,7 +196,7 @@ class CFunctions(object):
 
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
-            func = getattr(self.lib, kernel_name)
+            func = getattr(self.lib, kernel_instance.name)
             func.restype = C.c_float
 
         finally:

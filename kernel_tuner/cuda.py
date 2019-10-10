@@ -113,7 +113,7 @@ class CudaFunctions(object):
         return gpu_args
 
 
-    def compile(self, kernel_name, kernel_string):
+    def compile(self, kernel_instance):
         """call the CUDA compiler to compile the kernel, return the device function
 
         :param kernel_name: The name of the kernel to be compiled, used to lookup the
@@ -126,6 +126,9 @@ class CudaFunctions(object):
         :returns: An CUDA kernel that can be called directly.
         :rtype: pycuda.driver.Function
         """
+        kernel_string = kernel_instance.kernel_string
+        kernel_name = kernel_instance.name
+
         try:
             no_extern_c = 'extern "C"' in kernel_string
 

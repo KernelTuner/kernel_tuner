@@ -69,7 +69,7 @@ class OpenCLFunctions(object):
                 gpu_args.append(arg)
         return gpu_args
 
-    def compile(self, kernel_name, kernel_string):
+    def compile(self, kernel_instance):
         """call the OpenCL compiler to compile the kernel, return the device function
 
         :param kernel_name: The name of the kernel to be compiled, used to lookup the
@@ -82,8 +82,8 @@ class OpenCLFunctions(object):
         :returns: An OpenCL kernel that can be called directly.
         :rtype: pyopencl.Kernel
         """
-        prg = cl.Program(self.ctx, kernel_string).build(options=self.compiler_options)
-        func = getattr(prg, kernel_name)
+        prg = cl.Program(self.ctx, kernel_instance.kernel_string).build(options=self.compiler_options)
+        func = getattr(prg, kernel_instance.name)
         return func
 
     def benchmark(self, func, gpu_args, threads, grid):
