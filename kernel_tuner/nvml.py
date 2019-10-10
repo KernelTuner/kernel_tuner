@@ -12,23 +12,41 @@ class nvml(object):
         pynvml.nvmlInit()
         self.dev = pynvml.nvmlDeviceGetHandleByIndex(id)
 
-        self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
-        self.pwr_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.dev)
-        self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
+        try:
+            self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
+            self.pwr_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.dev)
+        except pynvml.nvml.NVMLError_NotSupported:
+            self._pwr_limit = None
+            self.pwr_constraints = [1, 0] # inverted range to make all range checks fail
 
-        self._auto_boost = pynvml.nvmlDeviceGetAutoBoostedClocksEnabled(self.dev)[0]  # returns [isEnabled, isDefaultEnabled]
+        try:
+            self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
+        except pynvml.nvml.NVMLError_NotSupported:
+            self._persistence_mode = None
 
-        self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
-        self.sm_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_SM)
-        self.mem_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
+        try:
+            self._auto_boost = pynvml.nvmlDeviceGetAutoBoostedClocksEnabled(self.dev)[0]  # returns [isEnabled, isDefaultEnabled]
+        except pynvml.nvml.NVMLError_NotSupported:
+            self._auto_boost = None
 
-        self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
+        try:
+            self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
+            self.sm_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_SM)
+            self.mem_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
 
-        #gather the supported gr clocks for each supported mem clock into a dict
-        self.supported_gr_clocks = dict()
-        for mem_clock in self.supported_mem_clocks:
-            supported_gr_clocks = pynvml.nvmlDeviceGetSupportedGraphicsClocks(self.dev, mem_clock)
-            self.supported_gr_clocks[mem_clock] = supported_gr_clocks
+            self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
+
+            #gather the supported gr clocks for each supported mem clock into a dict
+            self.supported_gr_clocks = dict()
+            for mem_clock in self.supported_mem_clocks:
+                supported_gr_clocks = pynvml.nvmlDeviceGetSupportedGraphicsClocks(self.dev, mem_clock)
+                self.supported_gr_clocks[mem_clock] = supported_gr_clocks
+        except pynvml.nvml.NVMLError_NotSupported:
+            self.gr_clock_default = None
+            self.sm_clock_default = None
+            self.mem_clock_default = None
+            self.supported_mem_clocks = []
+            self.supported_gr_clocks = dict()
 
     @property
     def pwr_state(self):
