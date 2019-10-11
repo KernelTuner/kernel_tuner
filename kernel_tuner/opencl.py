@@ -8,6 +8,13 @@ try:
 except ImportError:
     cl = None
 
+#check if power_sensor is installed
+try:
+    import power_sensor
+except ImportError:
+    power_sensor = None
+
+
 
 class OpenCLFunctions(object):
     """Class that groups the OpenCL functions on maintains some state about the device"""
@@ -34,6 +41,12 @@ class OpenCLFunctions(object):
         #inspect device properties
         self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE)
         self.compiler_options = compiler_options or []
+
+        #setup PowerSensor if available
+        if power_sensor:
+            self.ps = power_sensor.PowerSensor("/dev/ttyACM0")
+        else:
+            self.ps = None
 
         #collect environment information
         dev = self.ctx.devices[0]
@@ -117,13 +130,23 @@ class OpenCLFunctions(object):
         """
         result = dict()
         result["times"] = []
+        energy = []
         global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
         local_size = threads
         time = []
         for _ in range(self.iterations):
             event = func(self.queue, global_size, local_size, *gpu_args)
+            if self.ps:
+                begin_state = self.ps.read()
             event.wait()
+            if self.ps:
+                end_state = self.ps.read()
+                energy.append(power_sensor.Joules(begin_state, end_state, -1))
             result["times"].append((event.profile.end - event.profile.start)*1e-6)
+
+        if energy:
+            result["energies"] = energy
+            result["energy"] = numpy.mean(result["energies"])
         result["time"] = numpy.mean(result["times"])
         return result
 

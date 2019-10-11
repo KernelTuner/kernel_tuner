@@ -22,6 +22,13 @@ try:
 except ImportError:
     DynamicSourceModule = None
 
+#check if power_sensor is installed
+try:
+    import power_sensor
+except ImportError:
+    power_sensor = None
+
+
 
 class CudaFunctions(object):
     """Class that groups the CUDA functions on maintains state about the device"""
@@ -47,7 +54,12 @@ class CudaFunctions(object):
 
         drv.init()
         self.context = drv.Device(device).make_context()
-        self.nvml = nvml(device)
+
+        try:
+            self.nvml = nvml(device)
+            self.use_nvml = True
+        except:
+            self.use_nvml = False
 
         #inspect device properties
         devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
@@ -71,6 +83,12 @@ class CudaFunctions(object):
         #create a stream
         self.stream = drv.Stream()
 
+        #setup PowerSensor if available
+        if power_sensor:
+            self.ps = power_sensor.PowerSensor("/dev/ttyACM0")
+        else:
+            self.ps = None
+
         #collect environment information
         env = dict()
         env["device_name"] = self.context.get_device().name()
@@ -88,6 +106,9 @@ class CudaFunctions(object):
                 gpu_mem.free()
         if hasattr(self, 'context'):
             self.context.pop()
+
+
+
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
@@ -146,7 +167,6 @@ class CudaFunctions(object):
             else:
                 raise e
 
-
     def benchmark(self, func, gpu_args, threads, grid):
         """runs the kernel and measures time repeatedly, returns average time
 
@@ -177,40 +197,67 @@ class CudaFunctions(object):
         :rtype: dict()
         """
         result = dict()
-        result["times"] = []
-        result["power"] = []
-        energy = []
+        result["times"] = [] #collect run times of individual runs
+        power = []  #collect nvml power readings of individual runs
+        energy = [] #collect energy usage of individual runs
         start = drv.Event()
         end = drv.Event()
-        self.context.synchronize()
         for _ in range(self.iterations):
-            power_readings = []
+            self.context.synchronize()
             start.record(stream=self.stream)
+            if self.ps:
+                begin_state = self.ps.read()
             self.run_kernel(func, gpu_args, threads, grid, stream=self.stream)
             end.record(stream=self.stream)
-            #measure power usage until kernel is done
-            t0 = time.time()
-            while not end.query():
-                power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
-            end.synchronize()
+            if self.ps:
+                end.synchronize()
+                end_state = self.ps.read()
+                energy.append(power_sensor.Joules(begin_state, end_state, -1))
+            elif self.use_nvml:
+                energy_consumed, power_readings = self._measure_nvml(start, end)
+                power.append(power_readings) #time in s, power usage in milliwatts
+                energy.append(energy_consumed)
             execution_time = end.time_since(start) #ms
             result["times"].append(execution_time)
 
-            #pre and postfix to start at 0 and end at kernel end
-            if power_readings:
-                power_readings = [[0.0, power_readings[0][1]]] + power_readings
-                power_readings = power_readings + [[execution_time / 1000.0, power_readings[-1][1]]]
-                result["power"].append(power_readings) #time in s, power usage in milliwatts
-
-                #compute energy consumption as area under curve
-                x = [d[0] for d in power_readings]
-                y = [d[1]/1000.0 for d in power_readings] #convert to watts
-                energy.append(numpy.trapz(y,x)) #in Joule
-
+        if power:
+            result["power"] = power
         result["time"] = numpy.mean(result["times"])
-        if (self.iterations > 10) and energy:
-            result["energy"] = numpy.mean(energy[10:])
+        if energy:
+            result["energies"] = energy
+            result["energy"] = numpy.mean(result["energies"])
         return result
+
+
+    def _measure_nvml(self, start, end):
+        #measure power usage until kernel is done
+        power_readings = []
+        t0 = time.time()
+        while not end.query():
+            power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
+        end.synchronize()
+        execution_time_s = end.time_since(start) / 1000.0 #seconds
+
+        #pre and postfix to start at 0 and end at kernel end
+        if power_readings:
+            #prefix to start at t0
+            power_readings = [[0.0, power_readings[0][1]]] + power_readings
+
+            #postfix if kernel ended later than our final measurement
+            if execution_time_s > power_readings[-1][0]:
+                power_readings = power_readings + [[execution_time_s, power_readings[-1][1]]]
+            else:
+                power_readings[-1][0] = execution_time_s
+
+            #compute energy consumption as area under curve
+            x = [d[0] for d in power_readings] #s
+            y = [d[1]/1000.0 for d in power_readings] #convert to watts
+            energy = numpy.trapz(y,x) #in Joule
+
+        return energy, power_readings
+
+
+
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
