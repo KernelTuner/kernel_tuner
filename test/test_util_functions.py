@@ -358,6 +358,17 @@ def test_check_block_size_params_names_list():
     tune_params = dict(zip(["block_size_x", "several_other_things"], [[1,2,3,4], [2,4]]))
     test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
+def test_get_config_string():
+
+    params = OrderedDict(block_size_x=128, time=0.2343)
+    output = get_config_string(params)
+    assert output == "block_size_x=128, time=0.2343"
+    output = get_config_string(params, units=dict(time="ms"))
+    assert output == "block_size_x=128, time=0.2343ms"
+    output = get_config_string(params, ["time"],units=dict(time="ms"))
+    assert output == "time=0.2343ms"
+
+
 
 def test_get_kernel_string_func():
     #test whether passing a function instead of string works
