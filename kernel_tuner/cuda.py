@@ -232,6 +232,7 @@ class CudaFunctions(object):
     def _measure_nvml(self, start, end):
         #measure power usage until kernel is done
         power_readings = []
+        energy = False
         t0 = time.time()
         while not end.query():
             power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
