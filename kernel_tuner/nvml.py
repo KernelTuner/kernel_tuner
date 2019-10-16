@@ -1,3 +1,5 @@
+import subprocess
+
 try:
     import pynvml
 except ImportError:
@@ -15,18 +17,19 @@ class nvml(object):
         try:
             self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
             self.pwr_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.dev)
-        except pynvml.nvml.NVMLError_NotSupported:
+            self.pwr_limit_default = pynvml.nvmlDeviceGetPowerManagementDefaultLimit(self.dev)
+        except pynvml.NVMLError_NotSupported:
             self._pwr_limit = None
             self.pwr_constraints = [1, 0] # inverted range to make all range checks fail
 
         try:
             self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
-        except pynvml.nvml.NVMLError_NotSupported:
+        except pynvml.NVMLError_NotSupported:
             self._persistence_mode = None
 
         try:
             self._auto_boost = pynvml.nvmlDeviceGetAutoBoostedClocksEnabled(self.dev)[0]  # returns [isEnabled, isDefaultEnabled]
-        except pynvml.nvml.NVMLError_NotSupported:
+        except pynvml.NVMLError_NotSupported:
             self._auto_boost = None
 
         try:
@@ -41,12 +44,21 @@ class nvml(object):
             for mem_clock in self.supported_mem_clocks:
                 supported_gr_clocks = pynvml.nvmlDeviceGetSupportedGraphicsClocks(self.dev, mem_clock)
                 self.supported_gr_clocks[mem_clock] = supported_gr_clocks
-        except pynvml.nvml.NVMLError_NotSupported:
+        except pynvml.NVMLError_NotSupported:
             self.gr_clock_default = None
             self.sm_clock_default = None
             self.mem_clock_default = None
             self.supported_mem_clocks = []
             self.supported_gr_clocks = dict()
+
+    def __del__(self):
+        #try to restore to defaults
+        if self._pwr_limit != None and self.pwr_limit != self.pwr_limit_default:
+            self.pwr_limit = self.pwr_limit_default
+        if self.gr_clock_default != None:
+            if self.gr_clock != self.gr_clock_default or self.mem_clock != self.mem_clock_default:
+                self.set_clocks(self.mem_clock_default, self.gr_clock_default)
+
 
     @property
     def pwr_state(self):
@@ -61,8 +73,16 @@ class nvml(object):
     @pwr_limit.setter
     def pwr_limit(self, new_limit):
         if not self.pwr_constraints[0] <= new_limit <= self.pwr_constraints[1]:
-            raise ValueError("Power limit out of range")
-        pynvml.nvmlDeviceSetPowerManagementLimit(self.dev, new_limit)
+            raise ValueError("Power limit out of range: %d" % new_limit)
+        try:
+            pynvml.nvmlDeviceSetPowerManagementLimit(self.dev, new_limit)
+        except pynvml.NVMLError_NoPermission:
+            #attempt to set power limit on DAS5
+            new_limit_watt = int(new_limit / 1000.0) # nvidia-smi expects Watts rather than milliwatts
+            args = ["sudo", "/cm/shared/package/utils/bin/run-nvidia-smi", "--power-limit="+str(new_limit_watt)]
+            out = subprocess.run(args, check=True)
+
+        #update cached copy of variable
         self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
 
     @property

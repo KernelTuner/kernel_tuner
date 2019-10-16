@@ -1,6 +1,9 @@
 """This module contains all OpenCL specific kernel_tuner functions"""
 from __future__ import print_function
+import time
 import numpy
+
+from kernel_tuner.nvml import nvml
 
 #embedded in try block to be able to generate documentation
 try:
@@ -51,6 +54,7 @@ class OpenCLFunctions(object):
         #collect environment information
         dev = self.ctx.devices[0]
         env = dict()
+        env["vendor_name"] = dev.vendor
         env["platform_name"] = dev.platform.name
         env["platform_version"] = dev.platform.version
         env["device_name"] = dev.name
@@ -61,6 +65,16 @@ class OpenCLFunctions(object):
         env["compiler_options"] = compiler_options
         self.env = env
         self.name = dev.name
+
+        if "NVIDIA" in dev.vendor:
+            try:
+                self.nvml = nvml(device)
+                self.use_nvml = True
+            except:
+                self.use_nvml = False
+
+
+
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
@@ -130,6 +144,7 @@ class OpenCLFunctions(object):
         """
         result = dict()
         result["times"] = []
+        power = []
         energy = []
         global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
         local_size = threads
@@ -138,10 +153,15 @@ class OpenCLFunctions(object):
             event = func(self.queue, global_size, local_size, *gpu_args)
             if self.ps:
                 begin_state = self.ps.read()
-            event.wait()
             if self.ps:
+                event.wait()
                 end_state = self.ps.read()
                 energy.append(power_sensor.Joules(begin_state, end_state, -1))
+            elif self.use_nvml:
+                energy_consumed, power_readings = self._measure_nvml(event)
+                power.append(power_readings) #time in s, power usage in milliwatts
+                energy.append(energy_consumed)
+
             result["times"].append((event.profile.end - event.profile.start)*1e-6)
 
         if energy:
@@ -149,6 +169,36 @@ class OpenCLFunctions(object):
             result["energy"] = numpy.mean(result["energies"])
         result["time"] = numpy.mean(result["times"])
         return result
+
+    def _measure_nvml(self, event):
+        #measure power usage until kernel is done
+        power_readings = []
+        energy = False
+        t0 = time.time()
+        while event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) != 0:
+            power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
+        event.wait()
+        execution_time_s = (event.profile.end - event.profile.start)*1e-9 # s
+
+        #pre and postfix to start at 0 and end at kernel end
+        if power_readings:
+            #prefix to start at t0
+            power_readings = [[0.0, power_readings[0][1]]] + power_readings
+
+            #postfix if kernel ended later than our final measurement
+            if execution_time_s > power_readings[-1][0]:
+                power_readings = power_readings + [[execution_time_s, power_readings[-1][1]]]
+            else:
+                power_readings[-1][0] = execution_time_s
+
+            #compute energy consumption as area under curve
+            x = [d[0] for d in power_readings] #s
+            y = [d[1]/1000.0 for d in power_readings] #convert to watts
+            energy = numpy.trapz(y,x) #in Joule
+
+        return energy, power_readings
+
+
 
     def run_kernel(self, func, gpu_args, threads, grid):
         """runs the OpenCL kernel passed as 'func'

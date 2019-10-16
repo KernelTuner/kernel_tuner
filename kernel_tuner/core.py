@@ -230,6 +230,13 @@ class DeviceInterface(object):
         logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
         logging.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
 
+        #rather dirty way to support a tunable parameter called 'pwr_limit' on devices
+        #that support nvml, note this could be opencl on nvidia gpus
+        if "pwr_limit" in instance.params and self.dev.use_nvml:
+            new_limit = instance.params["pwr_limit"]*1000 #user specifies in Watt, but nvml uses milliWatt
+            if self.dev.nvml.pwr_limit != new_limit:
+                self.dev.nvml.pwr_limit = new_limit
+
         result = None
         try:
             result = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid)
