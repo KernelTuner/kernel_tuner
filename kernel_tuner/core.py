@@ -233,7 +233,7 @@ class DeviceInterface(object):
         #rather dirty way to support a tunable parameter called 'pwr_limit' on devices
         #that support nvml, note this could be opencl on nvidia gpus
         if "pwr_limit" in instance.params and self.dev.use_nvml:
-            new_limit = instance.params["pwr_limit"]*1000 #user specifies in Watt, but nvml uses milliWatt
+            new_limit = int(instance.params["pwr_limit"]*1000) #user specifies in Watt, but nvml uses milliWatt
             if self.dev.nvml.pwr_limit != new_limit:
                 self.dev.nvml.pwr_limit = new_limit
 
