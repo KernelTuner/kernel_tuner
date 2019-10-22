@@ -79,9 +79,9 @@ def weighted_choice(population, n):
     def random_index(pop_size):
         alpha = 1
         beta = 2.5
-        return random.betavariate(alpha, beta)*pop_size
+        return int(random.betavariate(alpha, beta)*pop_size)
 
-    indices = [random_index(len(population)) for _ in n]
+    indices = [random_index(len(population)) for _ in range(n)]
     chosen = []
     for ind in indices:
         while ind in chosen:
@@ -136,11 +136,11 @@ def uniform_crossover(dna1, dna2):
     for ind in range(len(dna1)):
         p = random.random()
         if p < 0.5:
-            child1.append[dna1[ind]]
-            child2.append[dna2[ind]]
+            child1.append(dna1[ind])
+            child2.append(dna2[ind])
         else:
-            child2.append[dna1[ind]]
-            child1.append[dna2[ind]]
+            child2.append(dna1[ind])
+            child1.append(dna2[ind])
     return (child1, child2)
 
 def disruptive_uniform_crossover(dna1, dna2):
