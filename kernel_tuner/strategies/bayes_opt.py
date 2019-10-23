@@ -44,10 +44,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
     bounds = minimize.get_bounds(tuning_options.tune_params)
     pbounds = OrderedDict(zip(tuning_options.tune_params.keys(),bounds))
 
+    verbose=0
+    if tuning_options.verbose:
+        verbose=2
+
     optimizer = BayesianOptimization(
         f=func,
         pbounds=pbounds,
         random_state=1,
+        verbose=verbose
     )
 
     optimizer.maximize(
@@ -55,6 +60,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         n_iter=10,
     )
 
-    print(optimizer.max)
+    if tuning_options.verbose:
+        print(optimizer.max)
 
     return results, runner.dev.get_environment()
