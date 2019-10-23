@@ -35,7 +35,7 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
@@ -345,7 +345,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     strategy_map = {"genetic_algorithm": genetic_algorithm,
                     "pso": pso,
                     "simulated_annealing": simulated_annealing,
-                    "firefly_algorithm": firefly_algorithm}
+                    "firefly_algorithm": firefly_algorithm,
+                    "bayes_opt": bayes_opt}
 
     if strategy in [None, 'sample_fraction', 'brute_force']:
         if sample_fraction:
