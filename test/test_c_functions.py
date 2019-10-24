@@ -10,6 +10,7 @@ except ImportError:
     from unittest.mock import patch, Mock
 
 from kernel_tuner.c import CFunctions, Argument
+from kernel_tuner.core import KernelSource, KernelInstance
 
 
 def test_ready_argument_list1():
@@ -119,9 +120,13 @@ def test_compile(npct, subprocess):
 
     kernel_string = "this is a fake C program"
     kernel_name = "blabla"
+    kernel_sources = KernelSource(kernel_string, "C")
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+
 
     cfunc = CFunctions()
-    f = cfunc.compile(kernel_name, kernel_string)
+
+    f = cfunc.compile(kernel_instance)
 
     print(subprocess.mock_calls)
     print(npct.mock_calls)
