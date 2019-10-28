@@ -33,7 +33,11 @@ def tune(runner, kernel_options, device_options, tuning_options):
     dna_size = len(tuning_options.tune_params.keys())
     pop_size = 20
     generations = 100
-    crossover = single_point_crossover
+
+    #crossover = single_point_crossover
+    #crossover = two_point_crossover
+    crossover = uniform_crossover
+    #crossover = disruptive_uniform_crossover
 
     tuning_options["scaling"] = False
     tune_params = tuning_options.tune_params
@@ -45,6 +49,11 @@ def tune(runner, kernel_options, device_options, tuning_options):
     population = random_population(pop_size, tune_params)
 
     for generation in range(generations):
+
+        #optionally enable something to remove duplicates and increase diversity
+        #leads to longer execution times, but improves robustness
+        #population = ensure_diversity(population, pop_size, tune_params)
+
         if tuning_options.verbose:
             print("Generation %d, best_time %f" % (generation, best_time))
 
@@ -66,7 +75,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         for _ in range(pop_size//2):
             dna1, dna2 = weighted_choice(weighted_population, 2)
 
-            dna1, dna2 = crossover(ind1, ind2)
+            dna1, dna2 = crossover(dna1, dna2)
 
             population.append(mutate(dna1, tune_params))
             population.append(mutate(dna2, tune_params))
@@ -74,13 +83,40 @@ def tune(runner, kernel_options, device_options, tuning_options):
     return all_results, runner.dev.get_environment()
 
 
+def ensure_diversity(population, pop_size, tune_params):
+    """filter duplicates and replace with new random individuals"""
+    unique_set = []
+    unique_population = []
+    for i, dna in enumerate(population):
+        string_repr = " ".join([str(d) for d in dna])
+        if not string_repr in unique_set:
+            unique_population.append(dna)
+            unique_set.append(string_repr)
+    uniques = len(unique_set)
+    #could do different things here to increase population
+    #e.g. additional crossovers, or new random configs
+    return unique_population + random_population(pop_size - uniques, tune_params)
+
 
 def weighted_choice(population, n):
     """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected"""
-    def random_index(pop_size):
+    def random_index_betavariate(pop_size):
         alpha = 1
         beta = 2.5
         return int(random.betavariate(alpha, beta)*pop_size)
+
+    def random_index_weighted(pop_size):
+        """might lead to problems if there's only one valid configuration"""
+        weights = [w for _, w in population]
+        #invert because lower is better
+        inverted_weights = [1.0/w for w in weights]
+        prefix_sum = np.cumsum(inverted_weights)
+        total_weight = sum(inverted_weights)
+        randf = random.random()*total_weight
+        #return first index of prefix_sum larger than random number
+        return next(i for i,v in enumerate(prefix_sum) if v > randf)
+
+    random_index = random_index_betavariate
 
     indices = [random_index(len(population)) for _ in range(n)]
     chosen = []
@@ -128,7 +164,6 @@ def single_point_crossover(dna1, dna2):
 def two_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at 2 random indices"""
     pos1, pos2 = sorted(random.sample(range(len(dna1)), 2))
-    print(pos1, pos2)
     child1 = dna1[:pos1]+dna2[pos1:pos2]+dna1[pos2:]
     child2 = dna2[:pos1]+dna1[pos1:pos2]+dna2[pos2:]
     return (child1, child2)
