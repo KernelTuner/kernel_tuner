@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import random
+import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
 
@@ -93,6 +94,8 @@ def weighted_choice(population, n):
 def random_population(pop_size, tune_params):
     """create a random population"""
     population = []
+    option_space = np.prod([len(v) for v in tune_params.values()])
+    assert pop_size < option_space
     while len(population) < pop_size:
         dna = []
         for i in range(len(tune_params)):
@@ -124,10 +127,10 @@ def single_point_crossover(dna1, dna2):
 
 def two_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at 2 random indices"""
-    pos1 = int(random.random()*len(dna1))
-    pos2 = int(random.random()*len(dna1))
-    child1 = dna1[pos1:]+dna2[pos1:pos2]+dna1[:pos2]
-    child2 = dna2[pos1:]+dna1[pos1:pos2]+dna2[:pos2]
+    pos1, pos2 = sorted(random.sample(range(len(dna1)), 2))
+    print(pos1, pos2)
+    child1 = dna1[:pos1]+dna2[pos1:pos2]+dna1[pos2:]
+    child2 = dna2[:pos1]+dna1[pos1:pos2]+dna2[pos2:]
     return (child1, child2)
 
 def uniform_crossover(dna1, dna2):
