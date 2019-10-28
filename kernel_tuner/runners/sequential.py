@@ -79,7 +79,7 @@ class SequentialRunner(object):
                 time = result
 
             params['time'] = time
-            output_string = get_config_string(params, self.units)
+            output_string = get_config_string(params, params.keys(), self.units)
             logging.debug(output_string)
             if not self.quiet:
                 print(output_string)
