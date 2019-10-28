@@ -31,7 +31,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
 
-    tuning_options["scaling"] = False
+    tuning_options["scaling"] = True
 
     results = []
     cache = {}
@@ -41,7 +41,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         args = [kwargs[key] for key in tuning_options.tune_params.keys()]
         return -1.0 * minimize._cost_func(args, kernel_options, tuning_options, runner, results, cache)
 
-    bounds = minimize.get_bounds(tuning_options.tune_params)
+    bounds, _, _ = minimize.get_bounds_x0_eps(tuning_options)
     pbounds = OrderedDict(zip(tuning_options.tune_params.keys(),bounds))
 
     verbose=0
@@ -51,13 +51,31 @@ def tune(runner, kernel_options, device_options, tuning_options):
     optimizer = BayesianOptimization(
         f=func,
         pbounds=pbounds,
-        random_state=1,
         verbose=verbose
     )
 
+    #Bayesian Optimization strategy seems to need some hyper parameter tuning to
+    #become better than random sampling for auto-tuning GPU kernels.
+
+    #alpha, normalize_y, and n_restarts_optimizer are options to
+    #https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html
+    #defaults used by Baysian Optimization are:
+    #   alpha=1e-6,  #1e-3 recommended for very noisy or discrete search spaces
+    #   n_restarts_optimizer=5,
+    #   normalize_y=True,
+
+    #several exploration friendly settings are: (default is acq="ucb", kappa=2.576)
+    #   acq="poi", xi=1e-1
+    #   acq="ei", xi=1e-1
+    #   acq="ucb", kappa=10
+
+    #options
+    #   init_points=5, (default)
+    #   n_iter=25,  (default)
+
     optimizer.maximize(
-        init_points=10,
-        n_iter=10,
+        init_points=5,
+        n_iter=25,
     )
 
     if tuning_options.verbose:
