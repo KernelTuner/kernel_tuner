@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - benchmarking returns multiple results not only time
 
 ### Added
+- Bayesian Optimizaton strategy, use strategy="bayes_opt"
 - support for kernels that use texture memory in CUDA
 - support for measuring energy consumption of CUDA kernels
 

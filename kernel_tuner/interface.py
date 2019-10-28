@@ -205,6 +205,7 @@ _tuning_options = Options([
             * "pso"
             * "firefly_algorithm"
             * "simulated_annealing"
+            * "bayes_opt"
 
         "brute_force" is the default and iterates over the entire search
         space.
@@ -234,6 +235,8 @@ _tuning_options = Options([
         fireflies for 100 iterations.
 
         "simulated_annealing" uses Simulated Annealing.
+
+        "bayes_opt" uses Bayesian Optimization.
 
         """, "")),
     ("method", ("""Specify a method for the strategy that searches through
