@@ -93,11 +93,12 @@ def weighted_choice(population, n):
 def random_population(pop_size, tune_params):
     """create a random population"""
     population = []
-    for _ in range(pop_size):
+    while len(population) < pop_size:
         dna = []
         for i in range(len(tune_params)):
             dna.append(random_val(i, tune_params))
-        population.append(dna)
+        if not dna in population:
+            population.append(dna)
     return population
 
 def random_val(index, tune_params):
