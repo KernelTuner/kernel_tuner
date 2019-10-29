@@ -57,6 +57,7 @@ install:
   - conda update -yq conda
   - conda install -y python=$MCONDA_PYTHON_VERSION numpy scipy
   - conda install -c conda-forge pyopencl
+  - conda install -c conda-forge bayesian-optimization
 
   - |
     if [[ "$GH_PAGES_BUILD" == true ]]; then
