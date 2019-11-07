@@ -13,6 +13,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - support for kernels that use texture memory in CUDA
 - support for measuring energy consumption of CUDA kernels
 
+### Removed
+- Python 2 support, it may still work but we no longer test for Python 2
+
 ## [0.2.0] - 2018-11-16
 ### Changed
 - no longer replacing kernel names with instance strings during tuning
