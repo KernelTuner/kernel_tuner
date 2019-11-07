@@ -2,6 +2,7 @@ import numpy
 from .context import skip_if_no_cuda
 
 from kernel_tuner import cuda
+from kernel_tuner.core import KernelSource, KernelInstance
 
 try:
     import pycuda.driver
@@ -39,11 +40,15 @@ def test_compile():
     }
     """
 
+    kernel_sources = KernelSource(original_kernel, "cuda")
+
+
     kernel_string = original_kernel.replace("shared_size", str(100*1024*1024))
+    kernel_instance = KernelInstance("vector_add", kernel_sources, kernel_string, [], None, None, dict(), [])
 
     dev = cuda.CudaFunctions(0)
     try:
-        func = dev.compile("vector_add", kernel_string)
+        func = dev.compile(kernel_instance)
         assert isinstance(func, pycuda.driver.Function)
         print("Expected an exception because too much shared memory is requested")
         assert False
@@ -55,8 +60,9 @@ def test_compile():
             assert False
 
     kernel_string = original_kernel.replace("shared_size", str(100))
+    kernel_instance = KernelInstance("vector_add", kernel_sources, kernel_string, [], None, None, dict(), [])
     try:
-        func = dev.compile("vector_add", kernel_string)
+        func = dev.compile( kernel_instance)
         assert True
     except Exception as e:
         print("Did not expect any exception:")
