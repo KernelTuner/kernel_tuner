@@ -50,8 +50,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     for generation in range(generations):
 
-        #optionally enable something to remove duplicates and increase diversity
-        #leads to longer execution times, but improves robustness
+        #optionally enable something to remove duplicates and increase diversity,
+        #leads to longer execution times, but might improve robustness
         #population = ensure_diversity(population, pop_size, tune_params)
 
         if tuning_options.verbose:
@@ -101,12 +101,13 @@ def ensure_diversity(population, pop_size, tune_params):
 def weighted_choice(population, n):
     """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected"""
     def random_index_betavariate(pop_size):
+        #has a higher probability of returning index of item at the head of the list
         alpha = 1
         beta = 2.5
         return int(random.betavariate(alpha, beta)*pop_size)
 
     def random_index_weighted(pop_size):
-        """might lead to problems if there's only one valid configuration"""
+        """might lead to problems: if there's only one valid configuration this method only returns that configuration"""
         weights = [w for _, w in population]
         #invert because lower is better
         inverted_weights = [1.0/w for w in weights]
@@ -128,7 +129,7 @@ def weighted_choice(population, n):
     return [population[ind][0] for ind in chosen]
 
 def random_population(pop_size, tune_params):
-    """create a random population"""
+    """create a random population of pop_size unique members"""
     population = []
     option_space = np.prod([len(v) for v in tune_params.values()])
     assert pop_size < option_space
@@ -183,7 +184,7 @@ def uniform_crossover(dna1, dna2):
     return (child1, child2)
 
 def disruptive_uniform_crossover(dna1, dna2):
-    """disruptive random crossover
+    """disruptive uniform crossover
 
     uniformly crossover genes between dna1 and dna2,
     with children guaranteed to be different from parents,
