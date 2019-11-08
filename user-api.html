@@ -196,7 +196,7 @@
 <p>This file provides all the details you need about how to call the Kernel Tuner’s functions, including all the optional arguments.</p>
 <dl class="function">
 <dt id="kernel_tuner.tune_kernel">
-<code class="sig-prename descclassname">kernel_tuner.</code><code class="sig-name descname">tune_kernel</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_string</em>, <em class="sig-param">problem_size</em>, <em class="sig-param">arguments</em>, <em class="sig-param">tune_params</em>, <em class="sig-param">grid_div_x=None</em>, <em class="sig-param">grid_div_y=None</em>, <em class="sig-param">grid_div_z=None</em>, <em class="sig-param">restrictions=None</em>, <em class="sig-param">answer=None</em>, <em class="sig-param">atol=1e-06</em>, <em class="sig-param">verify=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">lang=None</em>, <em class="sig-param">device=0</em>, <em class="sig-param">platform=0</em>, <em class="sig-param">cmem_args=None</em>, <em class="sig-param">texmem_args=None</em>, <em class="sig-param">num_threads=1</em>, <em class="sig-param">use_noodles=False</em>, <em class="sig-param">sample_fraction=False</em>, <em class="sig-param">compiler=None</em>, <em class="sig-param">compiler_options=None</em>, <em class="sig-param">log=None</em>, <em class="sig-param">iterations=7</em>, <em class="sig-param">block_size_names=None</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">strategy=None</em>, <em class="sig-param">method=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">kernel_tuner.</code><code class="sig-name descname">tune_kernel</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_string</em>, <em class="sig-param">problem_size</em>, <em class="sig-param">arguments</em>, <em class="sig-param">tune_params</em>, <em class="sig-param">grid_div_x=None</em>, <em class="sig-param">grid_div_y=None</em>, <em class="sig-param">grid_div_z=None</em>, <em class="sig-param">restrictions=None</em>, <em class="sig-param">answer=None</em>, <em class="sig-param">atol=1e-06</em>, <em class="sig-param">verify=None</em>, <em class="sig-param">verbose=False</em>, <em class="sig-param">lang=None</em>, <em class="sig-param">device=0</em>, <em class="sig-param">platform=0</em>, <em class="sig-param">cmem_args=None</em>, <em class="sig-param">texmem_args=None</em>, <em class="sig-param">num_threads=1</em>, <em class="sig-param">use_noodles=False</em>, <em class="sig-param">compiler=None</em>, <em class="sig-param">compiler_options=None</em>, <em class="sig-param">log=None</em>, <em class="sig-param">iterations=7</em>, <em class="sig-param">block_size_names=None</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">strategy=None</em>, <em class="sig-param">strategy_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -357,16 +357,9 @@ space.</p>
 <p>”random_sample” can be used to only benchmark a fraction of the
 search space, specify a <em>sample_fraction</em> in the interval [0, 1].</p>
 <p>”minimize” and “basinhopping” strategies use minimizers to
-limit the search through the parameter space, select any of the
-methods: “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”,
-“TNC”, “COBYLA”, or “SLSQP”. It is also possible to pass a
-function that implements a custom minimization strategy.</p>
-<p>”diff_evo” uses differential evolution and supports the following
-evolution strategies, which can be passed using the <em>method</em> argument:
-“best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”,
-“rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”.
-The default is “best1bin”.</p>
-<p>”genetic_algorithm” implements a simple Genetic Algorithm, default
+limit the search through the parameter space.</p>
+<p>”diff_evo” uses differential evolution.</p>
+<p>”genetic_algorithm” implements a Genetic Algorithm, default
 setting uses a population size of 20 for 100 generations.</p>
 <p>”pso” implements Particle Swarm Optimization, using the default
 setting of 20 particles for 100 iterations.</p>
@@ -374,19 +367,61 @@ setting of 20 particles for 100 iterations.</p>
 fireflies for 100 iterations.</p>
 <p>”simulated_annealing” uses Simulated Annealing.</p>
 </p></li>
-<li><p><strong>method</strong> (<em>string</em><em> or </em><em>callable</em>) – <p>Specify a method for the strategy that searches through
-the parameter space during tuning.</p>
-<p>When using strategy=”minimize” or strategy=”basinhopping”, the
-following options are supported:
+<li><p><strong>strategy_options</strong> (<em>dict</em>) – <p>A dict with options for the tuning strategy</p>
+<p>Example usage:</p>
+<blockquote>
+<div><ul>
+<li><p>strategy=”basinhopping”,
+strategy_options={“method”: “BFGS”,</p>
+<blockquote>
+<div><p>”maxiter”: 100,
+“T”: 1.0}</p>
+</div></blockquote>
+</li>
+<li><p>strategy=”diff_evo”,
+strategy_options={“method”: “best1bin”,</p>
+<blockquote>
+<div><p>”popsize”: 20}</p>
+</div></blockquote>
+</li>
+<li><p>strategy=”genetic_algorithm”,
+strategy_options={“method”: “uniform”,</p>
+<blockquote>
+<div><p>”popsize”: 20,
+“maxiter”: 100}</p>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>strategy=”minimize” and strategy=”basinhopping”, support the following
+options for “method”:
 “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”,
 “TNC”, “COBYLA”, or “SLSQP”. It is also possible to pass a function
-that implements a custom minimization strategy.</p>
-<p>When using strategy=”diff_evo”, the following options are supported:
+that implements a custom minimization strategy.
+The default is “L-BFGS-B”.
+strategy=”basinhopping” also supports “T”, which is 1.0 by default.</p>
+<p>strategy=”diff_evo” supports the following creation “method” options:
 “best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”,
-“rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”.</p>
+“rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”.
+The default is “best1bin”.</p>
+<p>strategy=”genetic_algorithm” uses “method” to select the crossover
+method, options are: “single_point”, “two_point”, “uniform”, and
+“disruptive_uniform”.
+The default is “uniform”.
+Also “mutation_chance” can be set to control the chance of a mutation,
+which is separately evaluated for each dimension. For example, set
+to 100 for a probability of 0.01 of a mutation per tunable parameter.</p>
+<p>strategy=”random_sample” supports “fraction” to specify
+the fraction of the search space to sample in the interval [0,1].</p>
+<p>strategy=”firefly_algorithm” supports the following parameters:
+B0 = 1.0, gamma = 1.0, alpha = 0.20.</p>
+<p>strategy=”simulated_annealing” supports parameters:
+T = 1.0, T_min = 0.001, alpha = 0.9.</p>
+<p>”maxiter” is supported by “minimize”, “basinhopping”, “diff_evo”
+“firefly_algorithm”, “pso”, and “genetic_algorithm”. Note that
+maxiter generally refers to iterations of the strategy, not the
+maximum number of function evaluations.</p>
 </p></li>
-<li><p><strong>sample_fraction</strong> (<em>float</em>) – Benchmark only a sample fraction of the search space, False by
-default. To enable sampling, pass a value between 0 and 1.</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – The number of times a kernel should be executed and
 its execution time measured when benchmarking a kernel, 7 by default.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em>) – <p>Sets whether or not to report about configurations that
