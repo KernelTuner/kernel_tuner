@@ -7,10 +7,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - fix for output checking, custom verify functions are called just once
 - benchmarking returns multiple results not only time
+- more sophisticated implementation of genetic algorithm strategy
+- how the method to the strategy is passed, use strategy_options
 
 ### Added
 - support for kernels that use texture memory in CUDA
 - support for measuring energy consumption of CUDA kernels
+- option to set strategy_options to pass strategy specific options
 
 ## [0.2.0] - 2018-11-16
 ### Changed

@@ -7,6 +7,8 @@ import numpy
 import scipy.optimize
 from kernel_tuner import util
 
+supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -34,7 +36,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     results = []
     cache = {}
 
-    method = tuning_options.method
+    method = tuning_options.strategy_options.get("method", "L-BFGS-B")
 
     #scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
@@ -42,10 +44,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     bounds, x0, _ = get_bounds_x0_eps(tuning_options)
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
-
-    #not all methods support 'disp' option
-    if not method in ['TNC']:
-        options['disp'] = tuning_options.verbose
 
     args = (kernel_options, tuning_options, runner, results, cache)
 
@@ -149,9 +147,11 @@ def setup_method_options(method, tuning_options):
     """ prepare method specific options """
     kwargs = {}
 
-    #pass size of parameter space as max iterations to methods that support it
-    #it seems not all methods iterpret this value in the same manner
-    maxiter = numpy.prod([len(v) for v in tuning_options.tune_params.values()])
+    #Note that not all methods iterpret maxiter in the same manner
+    if "maxiter" in tuning_options.strategy_options:
+        maxiter = tuning_options.strategy_options.maxiter
+    else:
+        maxiter = 100
     kwargs['maxiter'] = maxiter
     if method in ["Nelder-Mead", "Powell"]:
         kwargs['maxfev'] = maxiter
@@ -163,6 +163,10 @@ def setup_method_options(method, tuning_options):
         kwargs['eps'] = tuning_options.eps
     elif method == "COBYLA":
         kwargs['rhobeg'] = tuning_options.eps
+
+    #not all methods support 'disp' option
+    if not method in ['TNC']:
+        kwargs['disp'] = tuning_options.verbose
 
     return kwargs
 
