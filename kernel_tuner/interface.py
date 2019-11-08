@@ -25,6 +25,8 @@ limitations under the License.
 """
 from __future__ import print_function
 
+import json
+import os.path
 from collections import OrderedDict
 import importlib
 from datetime import datetime
@@ -306,6 +308,9 @@ _tuning_options = Options([
             * too many resources requested for launch
 
         verbose is False by default.""", "bool")),
+    ("cache",("""filename for caching/logging benchmarked instances
+        if the file exists it is read and tuning continues from this file
+        if the file does not exist it is created""", "string"))
     ])
 
 _device_options = Options([
@@ -352,7 +357,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None, texmem_args=None,
                 num_threads=1, use_noodles=False, compiler=None, compiler_options=None, log=None,
-                iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None):
+                iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
+                cache=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -436,6 +442,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #we normalize it so that it always accepts atol.
     tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
+    #process cache
+    if cache:
+        util.process_cache(cache, kernel_options, tuning_options, runner)
+
     #call the strategy to execute the tuning process
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
@@ -447,6 +457,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             print("best performing configuration:", util.get_config_string(best_config, list(tune_params.keys()) + ['time'], units=units))
         else:
             print("no results to report")
+
+    if cache:
+        util.close_cache(cache)
 
     del runner.dev
 

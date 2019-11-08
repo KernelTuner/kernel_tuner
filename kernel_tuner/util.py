@@ -1,6 +1,7 @@
 """ Module for kernel tuner utility functions """
 from __future__ import print_function
 
+import json
 from collections import OrderedDict
 import os
 import errno
@@ -377,3 +378,85 @@ def normalize_verify_function(v):
     if has_kw_argument(v, 'atol'):
         return v
     return lambda answer, result_host, atol: v(answer, result_host)
+
+
+def process_cache(cache, kernel_options, tuning_options, runner):
+    """cache file for storing tuned configurations
+
+    the cache file is stored using JSON and uses the following format:
+
+    { device_name: "name of device"
+      kernel_name: "name of kernel"
+      tune_params_keys: list
+      tune_params:
+      cache: {
+      "x1,x2,..xN": {"block_size_x": x1, ..., time=0.234342},
+      "y1,y2,..yN": {"block_size_x": y1, ..., time=0.134233},
+      }
+    }
+
+    The last two closing brackets "}}" are not required, and everything
+    should work as expected if these are missing. This is to allow to continue
+    from an earlier (abruptly ended) tuning session.
+
+    """
+    #caching only works correctly if tunable_parameters are stored in a OrderedDict
+    if not isinstance(tuning_options.tune_params, OrderedDict):
+        raise ValueError("Caching only works correctly when tunable parameters are stored in a OrderedDict")
+
+    if not os.path.isfile(cache):
+        c = OrderedDict()
+        c["device_name"] = runner.dev.name
+        c["kernel_name"] = kernel_options.kernel_name
+        c["tune_params_keys"] = list(tuning_options.tune_params.keys())
+        c["tune_params"] = tuning_options.tune_params
+        c["cache"] = {}
+
+        contents = json.dumps(c, indent="")[:-3] #except the last "}\n}"
+
+        #write the header to the cachefile
+        with open(cache, "w") as cachefile:
+            cachefile.write(contents)
+
+        tuning_options.cachefile = cache
+        tuning_options.cache = {}
+
+    #if file exists
+    if os.path.isfile(cache):
+        with open(cache, "r") as cachefile:
+            filestr = cachefile.read().strip()
+
+        #if file was not properly closed, pretend it was properly closed
+        if not filestr[-3:] == "}\n}":
+            filestr = filestr + "}\n}"
+
+        cached_data = json.loads(filestr)
+
+        #check if it is safe to continue tuning from this cache
+        assert cached_data["device_name"] == runner.dev.name
+        assert cached_data["kernel_name"] == kernel_options.kernel_name
+        assert cached_data["tune_params_keys"] == list(tuning_options.tune_params.keys())
+
+        tuning_options.cachefile = cache
+        tuning_options.cache = cached_data["cache"]
+
+
+def close_cache(cache):
+    if not os.path.isfile(cache):
+        raise ValueError("close_cache expects cache file to exist")
+
+    with open(cache, "r") as fh:
+        contents = fh.read()
+
+    if contents[-1] == ",":
+        with open(cache, "w") as fh:
+            fh.write(contents[:-1] + "}\n}")
+
+
+def store_cache(key, params, tuning_options):
+    if not key in tuning_options.cache:
+        tuning_options.cache[key] = params
+        if tuning_options.cachefile:
+            with open(tuning_options.cachefile, "a") as cachefile:
+                cachefile.write("\n" + json.dumps({key: params})[1:-1] + ",")
+
