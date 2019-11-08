@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - fix for output checking, custom verify functions are called just once
 - benchmarking returns multiple results not only time
+- more sophisticated implementation of genetic algorithm strategy
 
 ### Added
 - support for kernels that use texture memory in CUDA
