@@ -49,23 +49,23 @@ class Options(OrderedDict):
 
 _kernel_options = Options([
     ("kernel_name", ("""The name of the kernel in the code.""", "string")),
-    ("kernel_string", ("""The CUDA, OpenCL, or C kernel code as a string.
-            It is also allowed for the string to be a filename of the file
-            containing the code.
+    ("kernel_source", ("""The CUDA, OpenCL, or C kernel code.
+            It is allowed for the code to be passed as a string, a filename, a function
+            that returns a string of code, or a list when the code needs auxilliary files.
 
-            To support combined host and device code tuning for runtime
-            compiled device code, a list of filenames can be passed instead.
-            The first file in the list should be the file that contains the
-            host code. The host code is allowed to include or read as a string
-            any of the files in the list beyond the first.
+            To support combined host and device code tuning, a list of
+            filenames can be passed. The first file in the list should be the
+            file that contains the host code. The host code is assumed to
+            include or read in any of the files in the list beyond the first.
+            The tunable parameters can be used within all files.
 
-            Another alternative is to pass a function instead, or instead
-            of the first item in the list of filenames. The purpose of this
-            is to support the use of code generating functions that generate
-            the kernel code based on the specific parameters. This function
-            should take one positional argument, which will be used to pass
-            a dict containing the parameters. The function should return a
-            string with the source code for the kernel.""",
+            Another alternative is to pass a code generating function.
+            The purpose of this is to support the use of code generating
+            functions that generate the kernel code based on the specific
+            parameters. This function should take one positional argument,
+            which will be used to pass a dict containing the parameters.
+            The function should return a string with the source code for
+            the kernel.""",
             "string or list and/or callable")),
      ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
@@ -122,7 +122,12 @@ _kernel_options = Options([
             objects in the same way as normal kernel arguments.""",
             "dict(string: numpy object)")),
     ("texmem_args", ("""CUDA-specific feature for specifying texture memory
-            arguments to the kernel. You specify texture memory arguments by passing a dictionary with strings containing the texture reference name together with the texture contents. These contents can be either simply a numpy object, or a dictionary containing the numpy object under the key 'array' plus the configuration options 'filter_mode' ('point' or 'linear), 'address_mode' (a list of 'border', 'clamp', 'mirror', 'wrap' per axis), 'normalized_coordinates' (True/False).""",
+            arguments to the kernel. You specify texture memory arguments by passing a
+            dictionary with strings containing the texture reference name together with
+            the texture contents. These contents can be either simply a numpy object,
+            or a dictionary containing the numpy object under the key 'array' plus the
+            configuration options 'filter_mode' ('point' or 'linear), 'address_mode'
+            (a list of 'border', 'clamp', 'mirror', 'wrap' per axis), 'normalized_coordinates' (True/False).""",
             "dict(string: numpy object or dict)")),
     ("block_size_names", ("""A list of strings that replace the defaults for the names
             that denote the thread block dimensions. If not passed, the behavior
@@ -183,8 +188,6 @@ _tuning_options = Options([
         passed that was specified using the atol option to tune_kernel.
         The function should return True when the output passes the test, and
         False when the output fails the test.""", "func(ref, ans, atol=None)")),
-    ("sample_fraction", ("""Benchmark only a sample fraction of the search space, False by
-        default. To enable sampling, pass a value between 0 and 1. """, "float")),
     ("use_noodles", ("""Use Noodles workflow engine to tune in parallel using
         multiple threads, False by Default.
         Requires Noodles to be installed, use 'pip install noodles'.
@@ -250,6 +253,8 @@ _tuning_options = Options([
         "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin".
 
         """, "string or callable")),
+    ("sample_fraction", ("""Benchmark only a sample fraction of the search space, False by
+        default. To enable sampling, pass a value between 0 and 1. """, "float")),
     ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""",
         "int")),
@@ -338,8 +343,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     logging.debug('device_options: %s', util.get_config_string(device_options))
 
     #select strategy based on user options
-    if sample_fraction and not strategy in [None, 'sample_fraction']:
-        raise ValueError("It's not possible to use both sample_fraction in combination with other strategies. " \
+    if sample_fraction and not strategy in [None, 'random_sample']:
+        raise ValueError("It's not possible to use sample_fraction in combination with other strategies. " \
                          'Please set strategy=None or strategy="random_sample", when using sample_fraction')
 
     strategy_map = {"genetic_algorithm": genetic_algorithm,
@@ -347,7 +352,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                     "simulated_annealing": simulated_annealing,
                     "firefly_algorithm": firefly_algorithm}
 
-    if strategy in [None, 'sample_fraction', 'brute_force']:
+    if strategy in [None, 'random_sample', 'brute_force']:
         if sample_fraction:
             use_strategy = random_sample
         else:
