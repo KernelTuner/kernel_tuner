@@ -6,6 +6,8 @@ from bayes_opt import BayesianOptimization
 
 from kernel_tuner.strategies import minimize
 
+supported_methods = ["poi", "ei", "ucb"]
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -30,6 +32,28 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
+    #Bayesian Optimization strategy seems to need some hyper parameter tuning to
+    #become better than random sampling for auto-tuning GPU kernels.
+
+    #alpha, normalize_y, and n_restarts_optimizer are options to
+    #https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html
+    #defaults used by Baysian Optimization are:
+    #   alpha=1e-6,  #1e-3 recommended for very noisy or discrete search spaces
+    #   n_restarts_optimizer=5,
+    #   normalize_y=True,
+
+    #several exploration friendly settings are: (default is acq="ucb", kappa=2.576)
+    #   acq="poi", xi=1e-1
+    #   acq="ei", xi=1e-1
+    #   acq="ucb", kappa=10
+
+    #defaults as used by Bayesian Optimization Python package
+    acq = tuning_options.strategy_options.get("method", "poi")
+    kappa = tuning_options.strategy_options.get("kappa", 2.576)
+    xi = tuning_options.strategy_options.get("xi", 0.0)
+    init_points = tuning_options.strategy_options.get("popsize", 5)
+    n_iter = tuning_options.strategy_options.get("maxiter", 25)
+    alpha = tuning_options.strategy_options.get("alpha", 1e-6)
 
     tuning_options["scaling"] = True
 
@@ -48,35 +72,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
     if tuning_options.verbose:
         verbose=2
 
-    optimizer = BayesianOptimization(
-        f=func,
-        pbounds=pbounds,
-        verbose=verbose
-    )
+    optimizer = BayesianOptimization(f=func, pbounds=pbounds, verbose=verbose, alpha=alpha)
 
-    #Bayesian Optimization strategy seems to need some hyper parameter tuning to
-    #become better than random sampling for auto-tuning GPU kernels.
-
-    #alpha, normalize_y, and n_restarts_optimizer are options to
-    #https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html
-    #defaults used by Baysian Optimization are:
-    #   alpha=1e-6,  #1e-3 recommended for very noisy or discrete search spaces
-    #   n_restarts_optimizer=5,
-    #   normalize_y=True,
-
-    #several exploration friendly settings are: (default is acq="ucb", kappa=2.576)
-    #   acq="poi", xi=1e-1
-    #   acq="ei", xi=1e-1
-    #   acq="ucb", kappa=10
-
-    #options
-    #   init_points=5, (default)
-    #   n_iter=25,  (default)
-
-    optimizer.maximize(
-        init_points=5,
-        n_iter=25,
-    )
+    optimizer.maximize(init_points=init_points, n_iter=n_iter, acq=acq, kappa=kappa, xi=xi)
 
     if tuning_options.verbose:
         print(optimizer.max)

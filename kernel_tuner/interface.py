@@ -292,10 +292,14 @@ _tuning_options = Options([
         strategy="simulated_annealing" supports parameters:
         T = 1.0, T_min = 0.001, alpha = 0.9.
 
+        strategy="bayes_opt" supports acquisition methods: "poi" (default),
+        "ei", "ucb". And parameters, popsize (initial random guesses),
+        maxiter, alpha, kappa, xi.
+
         "maxiter" is supported by "minimize", "basinhopping", "diff_evo"
-        "firefly_algorithm", "pso", and "genetic_algorithm". Note that
-        maxiter generally refers to iterations of the strategy, not the
-        maximum number of function evaluations.
+        "firefly_algorithm", "pso", "genetic_algorithm", "bayes_opt". Note
+        that maxiter generally refers to iterations of the strategy, not
+        the maximum number of function evaluations.
 
     """, "dict")),
     ("iterations", ("""The number of times a kernel should be executed and
