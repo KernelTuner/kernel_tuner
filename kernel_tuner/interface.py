@@ -37,6 +37,16 @@ import kernel_tuner.core as core
 
 from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm
 
+strategy_map = {"brute_force": brute_force,
+                "random_sample": random_sample,
+                "minimize": minimize,
+                "basinhopping": basinhopping,
+                "diff_evo": diff_evo,
+                "genetic_algorithm": genetic_algorithm,
+                "pso": pso,
+                "simulated_annealing": simulated_annealing,
+                "firefly_algorithm": firefly_algorithm}
+
 class Options(OrderedDict):
     """read-only class for passing options around"""
     def __getattr__(self, name):
@@ -216,18 +226,11 @@ _tuning_options = Options([
         search space, specify a *sample_fraction* in the interval [0, 1].
 
         "minimize" and "basinhopping" strategies use minimizers to
-        limit the search through the parameter space, select any of the
-        methods: "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B",
-        "TNC", "COBYLA", or "SLSQP". It is also possible to pass a
-        function that implements a custom minimization strategy.
+        limit the search through the parameter space.
 
-        "diff_evo" uses differential evolution and supports the following
-        evolution strategies, which can be passed using the *method* argument:
-        "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
-        "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin".
-        The default is "best1bin".
+        "diff_evo" uses differential evolution.
 
-        "genetic_algorithm" implements a simple Genetic Algorithm, default
+        "genetic_algorithm" implements a Genetic Algorithm, default
         setting uses a population size of 20 for 100 generations.
 
         "pso" implements Particle Swarm Optimization, using the default
@@ -239,22 +242,58 @@ _tuning_options = Options([
         "simulated_annealing" uses Simulated Annealing.
 
         """, "")),
-    ("method", ("""Specify a method for the strategy that searches through
-        the parameter space during tuning.
+    ("strategy_options", ("""A dict with options for the tuning strategy
 
-        When using strategy="minimize" or strategy="basinhopping", the
-        following options are supported:
+        Example usage:
+
+         * strategy="basinhopping",
+           strategy_options={"method": "BFGS",
+                             "maxiter": 100,
+                             "T": 1.0}
+         * strategy="diff_evo",
+           strategy_options={"method": "best1bin",
+                             "popsize": 20}
+         * strategy="genetic_algorithm",
+           strategy_options={"method": "uniform",
+                             "popsize": 20,
+                             "maxiter": 100}
+
+        strategy="minimize" and strategy="basinhopping", support the following
+        options for "method":
         "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B",
         "TNC", "COBYLA", or "SLSQP". It is also possible to pass a function
         that implements a custom minimization strategy.
+        The default is "L-BFGS-B".
+        strategy="basinhopping" also supports "T", which is 1.0 by default.
 
-        When using strategy="diff_evo", the following options are supported:
+        strategy="diff_evo" supports the following creation "method" options:
         "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
         "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin".
+        The default is "best1bin".
 
-        """, "string or callable")),
-    ("sample_fraction", ("""Benchmark only a sample fraction of the search space, False by
-        default. To enable sampling, pass a value between 0 and 1. """, "float")),
+        strategy="genetic_algorithm" uses "method" to select the crossover
+        method, options are: "single_point", "two_point", "uniform", and
+        "disruptive_uniform".
+        The default is "uniform".
+        Also "mutation_chance" can be set to control the chance of a mutation,
+        which is separately evaluated for each dimension. For example, set
+        to 100 for a probability of 0.01 of a mutation per tunable parameter.
+
+        strategy="random_sample" supports "fraction" to specify
+        the fraction of the search space to sample in the interval [0,1].
+
+        strategy="firefly_algorithm" supports the following parameters:
+        B0 = 1.0, gamma = 1.0, alpha = 0.20.
+
+        strategy="simulated_annealing" supports parameters:
+        T = 1.0, T_min = 0.001, alpha = 0.9.
+
+        "maxiter" is supported by "minimize", "basinhopping", "diff_evo"
+        "firefly_algorithm", "pso", and "genetic_algorithm". Note that
+        maxiter generally refers to iterations of the strategy, not the
+        maximum number of function evaluations.
+
+    """, "dict")),
     ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""",
         "int")),
@@ -312,8 +351,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None, texmem_args=None,
-                num_threads=1, use_noodles=False, sample_fraction=False, compiler=None, compiler_options=None, log=None,
-                iterations=7, block_size_names=None, quiet=False, strategy=None, method=None):
+                num_threads=1, use_noodles=False, compiler=None, compiler_options=None, log=None,
+                iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -342,43 +381,36 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     logging.debug('tuning_options: %s', util.get_config_string(tuning_options))
     logging.debug('device_options: %s', util.get_config_string(device_options))
 
-    #select strategy based on user options
-    if sample_fraction and not strategy in [None, 'random_sample']:
-        raise ValueError("It's not possible to use sample_fraction in combination with other strategies. " \
-                         'Please set strategy=None or strategy="random_sample", when using sample_fraction')
+    if strategy:
+        if strategy in strategy_map:
+            strategy = strategy_map[strategy]
+        else:
+            raise ValueError("Strategy %s not recognized" % strategy)
 
-    strategy_map = {"genetic_algorithm": genetic_algorithm,
-                    "pso": pso,
-                    "simulated_annealing": simulated_annealing,
-                    "firefly_algorithm": firefly_algorithm}
+        #make strategy_options into an Options object
+        if tuning_options.strategy_options:
+            if not isinstance(strategy_options, Options):
+                tuning_options.strategy_options = Options(strategy_options)
 
-    if strategy in [None, 'random_sample', 'brute_force']:
-        if sample_fraction:
-            use_strategy = random_sample
+            #select strategy based on user options
+            if "fraction" in tuning_options.strategy_options and not tuning_options.strategy == 'random_sample':
+                raise ValueError('It is not possible to use fraction in combination with strategies other than "random_sample". ' \
+                                 'Please set strategy="random_sample", when using "fraction" in strategy_options')
+
+            #check if method is supported by the selected strategy
+            if "method" in tuning_options.strategy_options:
+                method = tuning_options.strategy_options.method
+                if not method in strategy.supported_methods:
+                    raise ValueError('Method %s is not supported for strategy %s' % (method, tuning_options.strategy))
+
+        #if no strategy_options dict has been passed, create empty dictionary
         else:
-            use_strategy = brute_force
-    elif strategy in ["minimize", "basinhopping"]:
-        if method:
-            if not (method in ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B",
-                               "TNC", "COBYLA", "SLSQP"] or callable(method)):
-                raise ValueError("method option not recognized")
-        else:
-            method = "L-BFGS-B"
-        if strategy == "minimize":
-            use_strategy = minimize
-        else:
-            use_strategy = basinhopping
-    elif strategy == "diff_evo":
-        use_strategy = diff_evo
-        if method:
-            if not method in ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
-                              "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]:
-                raise ValueError("method option not recognized")
-    elif strategy in strategy_map.keys():
-        use_strategy = strategy_map[strategy]
+            tuning_options.strategy_options = Options({})
+
+    #if no strategy selected
     else:
-        raise ValueError("strategy option not recognized")
-    strategy = use_strategy
+        strategy = brute_force
+
 
     #select runner based on user options
     if num_threads == 1 and not use_noodles:
