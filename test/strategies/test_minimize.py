@@ -29,7 +29,7 @@ def test__cost_func():
 
     x = [1, 4]
     kernel_options = None
-    tuning_options = Options(scaling=False, tune_params=tune_params, restrictions=None)
+    tuning_options = Options(scaling=False, tune_params=tune_params, restrictions=None, strategy_options={})
     runner = fake_runner()
     results = []
     cache = {}
@@ -48,6 +48,7 @@ def test__cost_func():
     tuning_options = Options(scaling=False,
                              tune_params=tune_params,
                              restrictions=restrictions,
+                             strategy_options={},
                              verbose=True)
     time = minimize._cost_func(x, kernel_options, tuning_options, runner, results, cache)
     assert time == 1e20
@@ -59,10 +60,11 @@ def test_setup_method_arguments():
 
 
 def test_setup_method_options():
-    tuning_options = Options(eps=1e-5,tune_params=tune_params)
+    tuning_options = Options(eps=1e-5, tune_params=tune_params, strategy_options={}, verbose=True)
 
     method_options = minimize.setup_method_options("L-BFGS-B", tuning_options)
     assert isinstance(method_options, dict)
     assert method_options["eps"] == 1e-5
-    assert method_options["maxfun"] == 9
+    assert method_options["maxfun"] == 100
+    assert method_options["disp"] == True
 
