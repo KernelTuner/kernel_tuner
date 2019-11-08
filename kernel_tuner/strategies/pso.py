@@ -42,8 +42,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     args = (kernel_options, tuning_options, runner, results, cache)
 
-    num_particles = 20
-    maxiter = 100
+    num_particles = tuning_options.strategy_options.get("popsize", 20)
+    maxiter = tuning_options.strategy_options.get("maxiter", 100)
 
     best_time_global = 1e20
     best_position_global = []

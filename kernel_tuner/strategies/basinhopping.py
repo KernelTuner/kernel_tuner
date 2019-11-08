@@ -5,6 +5,8 @@ import scipy.optimize
 
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, setup_method_arguments, setup_method_options
 
+supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -32,7 +34,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
     results = []
     cache = {}
 
-    method = tuning_options.method
+    method = tuning_options.strategy_options.get("method", "L-BFGS-B")
+    T = tuning_options.strategy_options.get("T", 1.0)
 
     #scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True

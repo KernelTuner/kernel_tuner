@@ -31,13 +31,12 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     dna_size = len(tuning_options.tune_params.keys())
-    pop_size = 20
-    generations = 100
 
-    #crossover = single_point_crossover
-    #crossover = two_point_crossover
-    crossover = uniform_crossover
-    #crossover = disruptive_uniform_crossover
+    options = tuning_options.strategy_options
+    pop_size = options.get("popsize", 20)
+    generations = options.get("maxiter", 100)
+    crossover = supported_methods[options.get("method", "uniform")]
+    mutation_chance = options.get("mutation_chance", 10)
 
     tuning_options["scaling"] = False
     tune_params = tuning_options.tune_params
@@ -77,8 +76,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
             dna1, dna2 = crossover(dna1, dna2)
 
-            population.append(mutate(dna1, tune_params))
-            population.append(mutate(dna2, tune_params))
+            population.append(mutate(dna1, tune_params, mutation_chance))
+            population.append(mutate(dna2, tune_params, mutation_chance))
 
     return all_results, runner.dev.get_environment()
 
@@ -146,10 +145,9 @@ def random_val(index, tune_params):
     key = list(tune_params.keys())[index]
     return random.choice(tune_params[key])
 
-def mutate(dna, tune_params):
+def mutate(dna, tune_params, mutation_chance):
     """Mutate DNA with 1/mutation_chance chance"""
     dna_out = []
-    mutation_chance = 10
     for i in range(len(dna)):
         if int(random.random()*mutation_chance) == 1:
             dna_out.append(random_val(i, tune_params))
@@ -205,4 +203,9 @@ def disruptive_uniform_crossover(dna1, dna2):
                     swaps += 1
     return (child1, child2)
 
+
+supported_methods = {"single_point": single_point_crossover,
+                     "two_point": two_point_crossover,
+                     "uniform": uniform_crossover,
+                     "disruptive_uniform": disruptive_uniform_crossover}
 

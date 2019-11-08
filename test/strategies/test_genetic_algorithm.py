@@ -51,7 +51,7 @@ def test_random_val():
 def test_mutate():
     pop = ga.random_population(1, tune_params)
 
-    mutant = ga.mutate(pop[0], tune_params)
+    mutant = ga.mutate(pop[0], tune_params, 10)
     assert len(pop[0]) == len(mutant)
     assert mutant[0] in tune_params["x"]
     assert mutant[1] in tune_params["y"]
@@ -59,10 +59,7 @@ def test_mutate():
 def test_crossover_functions():
     dna1 = ["x", "y", "z"]
     dna2 = ["a", "b", "c"]
-    funcs = [ga.single_point_crossover,
-             ga.two_point_crossover,
-             ga.uniform_crossover,
-             ga.disruptive_uniform_crossover]
+    funcs = ga.supported_methods.values()
     for func in funcs:
         children = func(dna1, dna2)
         print(dna1, dna2)
