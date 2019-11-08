@@ -202,21 +202,21 @@
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel in the code.</p></li>
-<li><p><strong>kernel_string</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, or C kernel code as a string.
-It is also allowed for the string to be a filename of the file
-containing the code.</p>
-<p>To support combined host and device code tuning for runtime
-compiled device code, a list of filenames can be passed instead.
-The first file in the list should be the file that contains the
-host code. The host code is allowed to include or read as a string
-any of the files in the list beyond the first.</p>
-<p>Another alternative is to pass a function instead, or instead
-of the first item in the list of filenames. The purpose of this
-is to support the use of code generating functions that generate
-the kernel code based on the specific parameters. This function
-should take one positional argument, which will be used to pass
-a dict containing the parameters. The function should return a
-string with the source code for the kernel.</p>
+<li><p><strong>kernel_source</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, or C kernel code.
+It is allowed for the code to be passed as a string, a filename, a function
+that returns a string of code, or a list when the code needs auxilliary files.</p>
+<p>To support combined host and device code tuning, a list of
+filenames can be passed. The first file in the list should be the
+file that contains the host code. The host code is assumed to
+include or read in any of the files in the list beyond the first.
+The tunable parameters can be used within all files.</p>
+<p>Another alternative is to pass a code generating function.
+The purpose of this is to support the use of code generating
+functions that generate the kernel code based on the specific
+parameters. This function should take one positional argument,
+which will be used to pass a dict containing the parameters.
+The function should return a string with the source code for
+the kernel.</p>
 </p></li>
 <li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
 automatically detects the language, but if it fails, you may specify
@@ -269,7 +269,12 @@ specify constant memory arguments is by passing a dictionary with
 strings containing the constant memory symbol name together with numpy
 objects in the same way as normal kernel arguments.</p></li>
 <li><p><strong>texmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em> or </em><em>dict</em><em>)</em>) – CUDA-specific feature for specifying texture memory
-arguments to the kernel. You specify texture memory arguments by passing a dictionary with strings containing the texture reference name together with the texture contents. These contents can be either simply a numpy object, or a dictionary containing the numpy object under the key ‘array’ plus the configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’ (a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis), ‘normalized_coordinates’ (True/False).</p></li>
+arguments to the kernel. You specify texture memory arguments by passing a
+dictionary with strings containing the texture reference name together with
+the texture contents. These contents can be either simply a numpy object,
+or a dictionary containing the numpy object under the key ‘array’ plus the
+configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’
+(a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis), ‘normalized_coordinates’ (True/False).</p></li>
 <li><p><strong>block_size_names</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that replace the defaults for the names
 that denote the thread block dimensions. If not passed, the behavior
 defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></p></li>
@@ -324,8 +329,6 @@ passed that was specified using the atol option to tune_kernel.
 The function should return True when the output passes the test, and
 False when the output fails the test.</p>
 </p></li>
-<li><p><strong>sample_fraction</strong> (<em>float</em>) – Benchmark only a sample fraction of the search space, False by
-default. To enable sampling, pass a value between 0 and 1.</p></li>
 <li><p><strong>use_noodles</strong> (<em>boolean</em>) – Use Noodles workflow engine to tune in parallel using
 multiple threads, False by Default.
 Requires Noodles to be installed, use ‘pip install noodles’.
@@ -382,6 +385,8 @@ that implements a custom minimization strategy.</p>
 “best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”,
 “rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”.</p>
 </p></li>
+<li><p><strong>sample_fraction</strong> (<em>float</em>) – Benchmark only a sample fraction of the search space, False by
+default. To enable sampling, pass a value between 0 and 1.</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – The number of times a kernel should be executed and
 its execution time measured when benchmarking a kernel, 7 by default.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em>) – <p>Sets whether or not to report about configurations that
@@ -447,21 +452,21 @@ On purpose, the interface is a lot like <cite>tune_kernel()</cite>.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel in the code.</p></li>
-<li><p><strong>kernel_string</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, or C kernel code as a string.
-It is also allowed for the string to be a filename of the file
-containing the code.</p>
-<p>To support combined host and device code tuning for runtime
-compiled device code, a list of filenames can be passed instead.
-The first file in the list should be the file that contains the
-host code. The host code is allowed to include or read as a string
-any of the files in the list beyond the first.</p>
-<p>Another alternative is to pass a function instead, or instead
-of the first item in the list of filenames. The purpose of this
-is to support the use of code generating functions that generate
-the kernel code based on the specific parameters. This function
-should take one positional argument, which will be used to pass
-a dict containing the parameters. The function should return a
-string with the source code for the kernel.</p>
+<li><p><strong>kernel_source</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, or C kernel code.
+It is allowed for the code to be passed as a string, a filename, a function
+that returns a string of code, or a list when the code needs auxilliary files.</p>
+<p>To support combined host and device code tuning, a list of
+filenames can be passed. The first file in the list should be the
+file that contains the host code. The host code is assumed to
+include or read in any of the files in the list beyond the first.
+The tunable parameters can be used within all files.</p>
+<p>Another alternative is to pass a code generating function.
+The purpose of this is to support the use of code generating
+functions that generate the kernel code based on the specific
+parameters. This function should take one positional argument,
+which will be used to pass a dict containing the parameters.
+The function should return a string with the source code for
+the kernel.</p>
 </p></li>
 <li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
 automatically detects the language, but if it fails, you may specify
@@ -514,7 +519,12 @@ specify constant memory arguments is by passing a dictionary with
 strings containing the constant memory symbol name together with numpy
 objects in the same way as normal kernel arguments.</p></li>
 <li><p><strong>texmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em> or </em><em>dict</em><em>)</em>) – CUDA-specific feature for specifying texture memory
-arguments to the kernel. You specify texture memory arguments by passing a dictionary with strings containing the texture reference name together with the texture contents. These contents can be either simply a numpy object, or a dictionary containing the numpy object under the key ‘array’ plus the configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’ (a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis), ‘normalized_coordinates’ (True/False).</p></li>
+arguments to the kernel. You specify texture memory arguments by passing a
+dictionary with strings containing the texture reference name together with
+the texture contents. These contents can be either simply a numpy object,
+or a dictionary containing the numpy object under the key ‘array’ plus the
+configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’
+(a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis), ‘normalized_coordinates’ (True/False).</p></li>
 <li><p><strong>block_size_names</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that replace the defaults for the names
 that denote the thread block dimensions. If not passed, the behavior
 defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></p></li>
