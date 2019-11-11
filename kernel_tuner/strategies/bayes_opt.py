@@ -58,12 +58,11 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = True
 
     results = []
-    cache = {}
 
     #function to pass to the optimizer
     def func(**kwargs):
         args = [kwargs[key] for key in tuning_options.tune_params.keys()]
-        return -1.0 * minimize._cost_func(args, kernel_options, tuning_options, runner, results, cache)
+        return -1.0 * minimize._cost_func(args, kernel_options, tuning_options, runner, results)
 
     bounds, _, _ = minimize.get_bounds_x0_eps(tuning_options)
     pbounds = OrderedDict(zip(tuning_options.tune_params.keys(),bounds))

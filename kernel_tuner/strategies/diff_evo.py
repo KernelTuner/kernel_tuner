@@ -32,7 +32,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     results = []
-    cache = {}
 
     method = tuning_options.strategy_options.get("method", "best1bin")
 
@@ -40,7 +39,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     #build a bounds array as needed for the optimizer
     bounds = get_bounds(tuning_options.tune_params)
 
-    args = (kernel_options, tuning_options, runner, results, cache)
+    args = (kernel_options, tuning_options, runner, results)
 
     #call the differential evolution optimizer
     opt_result = differential_evolution(_cost_func, bounds, args, maxiter=1,

@@ -35,7 +35,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     results = []
-    cache = {}
 
     method = tuning_options.strategy_options.get("method", "L-BFGS-B")
 
@@ -46,7 +45,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
 
-    args = (kernel_options, tuning_options, runner, results, cache)
+    args = (kernel_options, tuning_options, runner, results)
 
     opt_result = scipy.optimize.minimize(_cost_func, x0, args=args, method=method, options=options, **kwargs)
 
@@ -56,7 +55,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     return results, runner.dev.get_environment()
 
 
-def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
+def _cost_func(x, kernel_options, tuning_options, runner, results):
     """ Cost function used by minimize """
 
     error_time = 1e20
@@ -73,8 +72,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
 
     #we cache snapped values, since those correspond to results for an actual instance of the kernel
     x_int = ",".join([str(i) for i in params])
-    if x_int in cache:
-        return cache[x_int]["time"]
+    if x_int in tuning_options.cache:
+        return tuning_options.cache[x_int]["time"]
 
     #check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:
@@ -82,7 +81,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
         if not legal:
             error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
             error_result["time"] = error_time
-            cache[x_int] = error_result
+            tuning_options.cache[x_int] = error_result
             return error_time
 
     #compile and benchmark this instance
@@ -91,12 +90,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
     #append to tuning results
     if res:
         results.append(res[0])
-        cache[x_int] = res[0]
         return res[0]['time']
 
-    error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
-    error_result["time"] = error_time
-    cache[x_int] = error_result
     return error_time
 
 

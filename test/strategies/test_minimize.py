@@ -2,6 +2,7 @@ from __future__ import print_function
 
 from collections import OrderedDict
 import numpy as np
+import pytest
 
 import kernel_tuner
 from kernel_tuner.strategies import minimize
@@ -20,8 +21,7 @@ def fake_runner():
     runner.run.return_value = [[fake_result], None]
     return runner
 
-tune_params = OrderedDict(x=[1, 2, 3], y=[4, 5, 6])
-
+tune_params = OrderedDict([("x", [1, 2, 3]), ("y",[4, 5, 6])])
 
 
 
@@ -29,28 +29,30 @@ def test__cost_func():
 
     x = [1, 4]
     kernel_options = None
-    tuning_options = Options(scaling=False, tune_params=tune_params, restrictions=None, strategy_options={})
+    tuning_options = Options(scaling=False, tune_params=tune_params, restrictions=None, strategy_options={}, cache={})
     runner = fake_runner()
     results = []
-    cache = {}
 
-    time = minimize._cost_func(x, kernel_options, tuning_options, runner, results, cache)
+    time = minimize._cost_func(x, kernel_options, tuning_options, runner, results)
     assert time == 5
 
-    time = minimize._cost_func(x, kernel_options, tuning_options, runner, results, cache)
+    tuning_options.cache["1,4"] = OrderedDict([("x",1), ("y",4), ("time",5)])
+
+    time = minimize._cost_func(x, kernel_options, tuning_options, runner, results)
+
     assert time == 5
     #check if 1st run is properly cached and runner is only called once
     assert runner.run.call_count == 1
 
     #check if restrictions are properly handled
     restrictions = ["False"]
-    cache = {}
     tuning_options = Options(scaling=False,
                              tune_params=tune_params,
                              restrictions=restrictions,
                              strategy_options={},
-                             verbose=True)
-    time = minimize._cost_func(x, kernel_options, tuning_options, runner, results, cache)
+                             verbose=True,
+                             cache={})
+    time = minimize._cost_func(x, kernel_options, tuning_options, runner, results)
     assert time == 1e20
 
 

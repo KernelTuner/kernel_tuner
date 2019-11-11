@@ -32,11 +32,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     results = []
-    cache = {}
 
     # SA works with real parameter values and does not need scaling
     tuning_options["scaling"] = False
-    args = (kernel_options, tuning_options, runner, results, cache)
+    args = (kernel_options, tuning_options, runner, results)
     tune_params = tuning_options.tune_params
 
     # optimization parameters
