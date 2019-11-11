@@ -74,8 +74,6 @@ class OpenCLFunctions(object):
                 self.use_nvml = False
 
 
-
-
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
 
@@ -156,7 +154,10 @@ class OpenCLFunctions(object):
             if self.ps:
                 event.wait()
                 end_state = self.ps.read()
-                energy.append(power_sensor.Joules(begin_state, end_state, -1))
+                ps_measured_t = end_state.time_at_read - begin_state.time_at_read
+                cl_measured_t = (event.profile.end - event.profile.start) * 1e-9
+                ps_measured_e = power_sensor.Joules(begin_state, end_state, -1) * (cl_measured_t / ps_measured_t)
+                energy.append(ps_measured_e)
             elif self.use_nvml:
                 energy_consumed, power_readings = self._measure_nvml(event)
                 power.append(power_readings) #time in s, power usage in milliwatts

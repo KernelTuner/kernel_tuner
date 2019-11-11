@@ -1,4 +1,6 @@
+import os.path
 import subprocess
+
 
 try:
     import pynvml
@@ -10,6 +12,9 @@ class nvml(object):
 
     def __init__(self, id=0):
         """Create object to control device using NVML"""
+
+        id=0 #hack because CUDA and OpenCL disagree on device IDs
+        self.id = id
 
         pynvml.nvmlInit()
         self.dev = pynvml.nvmlDeviceGetHandleByIndex(id)
@@ -79,7 +84,10 @@ class nvml(object):
         except pynvml.NVMLError_NoPermission:
             #attempt to set power limit on DAS5
             new_limit_watt = int(new_limit / 1000.0) # nvidia-smi expects Watts rather than milliwatts
-            args = ["sudo", "/cm/shared/package/utils/bin/run-nvidia-smi", "--power-limit="+str(new_limit_watt)]
+            fname = "/cm/shared/package/utils/bin/run-nvidia-smi"
+            if not os.path.isfile(fname):
+                fname = "/usr/bin/nvidia-smi"
+            args = ["sudo", fname, "-i", str(self.id), "--power-limit="+str(new_limit_watt)]
             out = subprocess.run(args, check=True)
 
         #update cached copy of variable
