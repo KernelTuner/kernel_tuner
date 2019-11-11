@@ -37,7 +37,7 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
 
 strategy_map = {"brute_force": brute_force,
                 "random_sample": random_sample,
@@ -47,7 +47,8 @@ strategy_map = {"brute_force": brute_force,
                 "genetic_algorithm": genetic_algorithm,
                 "pso": pso,
                 "simulated_annealing": simulated_annealing,
-                "firefly_algorithm": firefly_algorithm}
+                "firefly_algorithm": firefly_algorithm,
+                "bayes_opt": bayes_opt}
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
@@ -220,6 +221,7 @@ _tuning_options = Options([
             * "pso"
             * "firefly_algorithm"
             * "simulated_annealing"
+            * "bayes_opt"
 
         "brute_force" is the default and iterates over the entire search
         space.
@@ -242,6 +244,8 @@ _tuning_options = Options([
         fireflies for 100 iterations.
 
         "simulated_annealing" uses Simulated Annealing.
+
+        "bayes_opt" uses Bayesian Optimization.
 
         """, "")),
     ("strategy_options", ("""A dict with options for the tuning strategy
@@ -290,10 +294,14 @@ _tuning_options = Options([
         strategy="simulated_annealing" supports parameters:
         T = 1.0, T_min = 0.001, alpha = 0.9.
 
+        strategy="bayes_opt" supports acquisition methods: "poi" (default),
+        "ei", "ucb". And parameters, popsize (initial random guesses),
+        maxiter, alpha, kappa, xi.
+
         "maxiter" is supported by "minimize", "basinhopping", "diff_evo"
-        "firefly_algorithm", "pso", and "genetic_algorithm". Note that
-        maxiter generally refers to iterations of the strategy, not the
-        maximum number of function evaluations.
+        "firefly_algorithm", "pso", "genetic_algorithm", "bayes_opt". Note
+        that maxiter generally refers to iterations of the strategy, not
+        the maximum number of function evaluations.
 
     """, "dict")),
     ("iterations", ("""The number of times a kernel should be executed and
