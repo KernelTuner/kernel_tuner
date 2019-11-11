@@ -425,7 +425,10 @@ def test_process_cache():
 
     def assert_open_cachefile_is_correctly_parsed(cache):
         with open(cache, "r") as cachefile:
-            file_contents = cachefile.read() + "}\n}"
+            filestr = cachefile.read()
+            if filestr[-1] == ",":
+                filestr = filestr[:-1]
+            file_contents = filestr + "}\n}"
         cache_object = json.loads(file_contents)
         assert cache_object["device_name"] == "test_device"
         assert cache_object["kernel_name"] == "test_kernel"
@@ -481,4 +484,5 @@ def test_process_cache():
             assert "parameter" in str(excep.value)
 
     finally:
-        delete_temp_file(cache)
+        #delete_temp_file(cache)
+        pass

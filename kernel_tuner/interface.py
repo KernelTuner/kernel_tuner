@@ -309,8 +309,9 @@ _tuning_options = Options([
 
         verbose is False by default.""", "bool")),
     ("cache",("""filename for caching/logging benchmarked instances
+        filename uses suffix ".json"
         if the file exists it is read and tuning continues from this file
-        if the file does not exist it is created""", "string"))
+        """, "string"))
     ])
 
 _device_options = Options([
@@ -444,6 +445,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     #process cache
     if cache:
+        if cache[-5:] != ".json":
+            cache += ".json"
+
         util.process_cache(cache, kernel_options, tuning_options, runner)
 
     #call the strategy to execute the tuning process

@@ -425,17 +425,20 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         tuning_options.cache = {}
 
     #if file exists
-    if os.path.isfile(cache):
+    else:
         with open(cache, "r") as cachefile:
             filestr = cachefile.read().strip()
 
         #if file was not properly closed, pretend it was properly closed
         if not filestr[-3:] == "}\n}":
-            filestr = filestr + "}\n}"
+            #remove the trailing comma if any, and append closing brackets
+            if filestr[-1] == ",":
+                filestr = filestr[:-1]
+            filestr = filestr + "}\n}" 
         else:
             #if it was properly closed, open it for appending new entries
             with open(cache, "w") as cachefile:
-                cachefile.write(filestr[:-3])
+                cachefile.write(filestr[:-3] + ",")
 
         cached_data = json.loads(filestr)
 
