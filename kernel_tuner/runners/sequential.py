@@ -74,7 +74,6 @@ class SequentialRunner(object):
                     continue
 
             result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
-
             if result is None:
                 logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
                 params.update({"time": 1e20})

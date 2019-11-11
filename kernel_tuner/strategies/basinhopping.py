@@ -32,7 +32,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     results = []
-    cache = {}
 
     method = tuning_options.strategy_options.get("method", "L-BFGS-B")
     T = tuning_options.strategy_options.get("T", 1.0)
@@ -46,7 +45,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     options = setup_method_options(method, tuning_options)
     kwargs['options'] = options
 
-    args = (kernel_options, tuning_options, runner, results, cache)
+    args = (kernel_options, tuning_options, runner, results)
 
     minimizer_kwargs = dict(**kwargs)
     minimizer_kwargs["method"] = method

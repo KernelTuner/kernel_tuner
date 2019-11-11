@@ -43,7 +43,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     best_time = 1e20
     all_results = []
-    cache = {}
 
     population = random_population(pop_size, tune_params)
 
@@ -59,7 +58,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         #determine fitness of population members
         weighted_population = []
         for dna in population:
-            time = _cost_func(dna, kernel_options, tuning_options, runner, all_results, cache)
+            time = _cost_func(dna, kernel_options, tuning_options, runner, all_results)
             weighted_population.append((dna, time))
         population = []
 
