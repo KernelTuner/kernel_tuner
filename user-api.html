@@ -350,6 +350,7 @@ parameter space, choose from:</p>
 <li><p>”pso”</p></li>
 <li><p>”firefly_algorithm”</p></li>
 <li><p>”simulated_annealing”</p></li>
+<li><p>”bayes_opt”</p></li>
 </ul>
 </div></blockquote>
 <p>”brute_force” is the default and iterates over the entire search
@@ -366,6 +367,7 @@ setting of 20 particles for 100 iterations.</p>
 <p>”firefly_algorithm” implements the Firefly Algorithm, using 20
 fireflies for 100 iterations.</p>
 <p>”simulated_annealing” uses Simulated Annealing.</p>
+<p>”bayes_opt” uses Bayesian Optimization.</p>
 </p></li>
 <li><p><strong>strategy_options</strong> (<em>dict</em>) – <p>A dict with options for the tuning strategy</p>
 <p>Example usage:</p>
@@ -417,10 +419,13 @@ the fraction of the search space to sample in the interval [0,1].</p>
 B0 = 1.0, gamma = 1.0, alpha = 0.20.</p>
 <p>strategy=”simulated_annealing” supports parameters:
 T = 1.0, T_min = 0.001, alpha = 0.9.</p>
+<p>strategy=”bayes_opt” supports acquisition methods: “poi” (default),
+“ei”, “ucb”. And parameters, popsize (initial random guesses),
+maxiter, alpha, kappa, xi.</p>
 <p>”maxiter” is supported by “minimize”, “basinhopping”, “diff_evo”
-“firefly_algorithm”, “pso”, and “genetic_algorithm”. Note that
-maxiter generally refers to iterations of the strategy, not the
-maximum number of function evaluations.</p>
+“firefly_algorithm”, “pso”, “genetic_algorithm”, “bayes_opt”. Note
+that maxiter generally refers to iterations of the strategy, not
+the maximum number of function evaluations.</p>
 </p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – The number of times a kernel should be executed and
 its execution time measured when benchmarking a kernel, 7 by default.</p></li>
