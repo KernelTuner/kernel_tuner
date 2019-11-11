@@ -1,6 +1,7 @@
 """ The strategy that uses a minimizer method for searching through the parameter space """
 from __future__ import print_function
 
+from collections import OrderedDict
 import logging
 
 import numpy
@@ -73,13 +74,15 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
     #we cache snapped values, since those correspond to results for an actual instance of the kernel
     x_int = ",".join([str(i) for i in params])
     if x_int in cache:
-        return cache[x_int]
+        return cache[x_int]["time"]
 
     #check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:
         legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
         if not legal:
-            cache[x_int] = error_time
+            error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
+            error_result["time"] = error_time
+            cache[x_int] = error_result
             return error_time
 
     #compile and benchmark this instance
@@ -88,10 +91,12 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
     #append to tuning results
     if res:
         results.append(res[0])
-        cache[x_int] = res[0]['time']
+        cache[x_int] = res[0]
         return res[0]['time']
 
-    cache[x_int] = error_time
+    error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
+    error_result["time"] = error_time
+    cache[x_int] = error_result
     return error_time
 
 

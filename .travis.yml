@@ -7,17 +7,9 @@ matrix:
   include:
     - os: linux
       env:
-        - MCONDA_PYTHON_MAJOR=2
-        - MCONDA_PYTHON_VERSION=2.7
-    - os: linux
-      env:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.6
 
-    - os: osx
-      env:
-        - MCONDA_PYTHON_MAJOR=2
-        - MCONDA_PYTHON_VERSION=2.7
     - os: osx
       env:
         - MCONDA_PYTHON_MAJOR=3
@@ -57,6 +49,7 @@ install:
   - conda update -yq conda
   - conda install -y python=$MCONDA_PYTHON_VERSION numpy scipy
   - conda install -c conda-forge pyopencl
+  - conda install -c conda-forge bayesian-optimization
 
   - |
     if [[ "$GH_PAGES_BUILD" == true ]]; then
