@@ -91,12 +91,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
     #append to tuning results
     if res:
         results.append(res[0])
-        cache[x_int] = res[0]
         return res[0]['time']
 
-    error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
-    error_result["time"] = error_time
-    cache[x_int] = error_result
     return error_time
 
 

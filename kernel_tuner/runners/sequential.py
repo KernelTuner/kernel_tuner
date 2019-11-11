@@ -99,8 +99,8 @@ class SequentialRunner(object):
             store_cache(x_int, params, tuning_options)
             results.append(params)
 
-
         return results, self.dev.get_environment()
+
 
     def __del__(self):
         if hasattr(self, 'dev'):
