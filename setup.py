@@ -31,8 +31,7 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development',
         'Topic :: System :: Distributed Computing',
@@ -53,7 +52,7 @@ setup(
             'pytest>=3.0.3', 'Sphinx>=1.4.8',
             'sphinx-rtd-theme>=0.1.9', 'nbsphinx>=0.2.13',
             'jupyter>=1.0.0', 'matplotlib>=1.5.3', 'pandas>=0.19.1',
-            'pylint>=1.7.1']
+            'pylint>=1.7.1', 'bayesian-optimization>=1.0.1']
     },
 )
 

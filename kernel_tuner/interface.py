@@ -25,6 +25,8 @@ limitations under the License.
 """
 from __future__ import print_function
 
+import json
+import os.path
 from collections import OrderedDict
 import importlib
 from datetime import datetime
@@ -35,7 +37,7 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
 
 strategy_map = {"brute_force": brute_force,
                 "random_sample": random_sample,
@@ -45,7 +47,8 @@ strategy_map = {"brute_force": brute_force,
                 "genetic_algorithm": genetic_algorithm,
                 "pso": pso,
                 "simulated_annealing": simulated_annealing,
-                "firefly_algorithm": firefly_algorithm}
+                "firefly_algorithm": firefly_algorithm,
+                "bayes_opt": bayes_opt}
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
@@ -218,6 +221,7 @@ _tuning_options = Options([
             * "pso"
             * "firefly_algorithm"
             * "simulated_annealing"
+            * "bayes_opt"
 
         "brute_force" is the default and iterates over the entire search
         space.
@@ -240,6 +244,8 @@ _tuning_options = Options([
         fireflies for 100 iterations.
 
         "simulated_annealing" uses Simulated Annealing.
+
+        "bayes_opt" uses Bayesian Optimization.
 
         """, "")),
     ("strategy_options", ("""A dict with options for the tuning strategy
@@ -288,10 +294,14 @@ _tuning_options = Options([
         strategy="simulated_annealing" supports parameters:
         T = 1.0, T_min = 0.001, alpha = 0.9.
 
+        strategy="bayes_opt" supports acquisition methods: "poi" (default),
+        "ei", "ucb". And parameters, popsize (initial random guesses),
+        maxiter, alpha, kappa, xi.
+
         "maxiter" is supported by "minimize", "basinhopping", "diff_evo"
-        "firefly_algorithm", "pso", and "genetic_algorithm". Note that
-        maxiter generally refers to iterations of the strategy, not the
-        maximum number of function evaluations.
+        "firefly_algorithm", "pso", "genetic_algorithm", "bayes_opt". Note
+        that maxiter generally refers to iterations of the strategy, not
+        the maximum number of function evaluations.
 
     """, "dict")),
     ("iterations", ("""The number of times a kernel should be executed and
@@ -306,6 +316,10 @@ _tuning_options = Options([
             * too many resources requested for launch
 
         verbose is False by default.""", "bool")),
+    ("cache",("""filename for caching/logging benchmarked instances
+        filename uses suffix ".json"
+        if the file exists it is read and tuning continues from this file
+        """, "string"))
     ])
 
 _device_options = Options([
@@ -352,7 +366,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None, texmem_args=None,
                 num_threads=1, use_noodles=False, compiler=None, compiler_options=None, log=None,
-                iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None):
+                iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
+                cache=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -436,6 +451,13 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     #we normalize it so that it always accepts atol.
     tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
+    #process cache
+    if cache:
+        if cache[-5:] != ".json":
+            cache += ".json"
+
+        util.process_cache(cache, kernel_options, tuning_options, runner)
+
     #call the strategy to execute the tuning process
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
@@ -447,6 +469,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             print("best performing configuration:", util.get_config_string(best_config, list(tune_params.keys()) + ['time'], units=units))
         else:
             print("no results to report")
+
+    if cache:
+        util.close_cache(cache)
 
     del runner.dev
 

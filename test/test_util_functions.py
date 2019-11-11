@@ -1,11 +1,14 @@
 from __future__ import print_function
 
-import numpy
+import json
 import warnings
+
+import numpy
 from pytest import raises
 
 from .context import skip_if_no_cuda, skip_if_no_opencl
 
+from kernel_tuner.interface import Options
 import kernel_tuner.core as core
 import kernel_tuner.cuda as cuda
 import kernel_tuner.opencl as opencl
@@ -428,3 +431,69 @@ def test_normalize_verify_function():
     v = normalize_verify_function(lambda a, b, atol: True)
     assert v(1, 2, atol=3)
 
+
+def test_process_cache():
+
+    def assert_open_cachefile_is_correctly_parsed(cache):
+        with open(cache, "r") as cachefile:
+            filestr = cachefile.read()
+            if filestr[-1] == ",":
+                filestr = filestr[:-1]
+            file_contents = filestr + "}\n}"
+        cache_object = json.loads(file_contents)
+        assert cache_object["device_name"] == "test_device"
+        assert cache_object["kernel_name"] == "test_kernel"
+
+    #get temp filename, but remove the file
+    cache = get_temp_filename(suffix=".json")
+    delete_temp_file(cache)
+
+    kernel_options = Options(kernel_name="test_kernel")
+    tuning_options = Options(cache=cache, tune_params=Options(x=[1,2,3,4]))
+    runner = Options(dev=Options(name="test_device"))
+
+    try:
+        #call process_cache without pre-existing cache
+        process_cache(cache, kernel_options, tuning_options, runner)
+
+        #check if file has been created
+        assert os.path.isfile(cache)
+        assert_open_cachefile_is_correctly_parsed(cache)
+        assert tuning_options.cachefile == cache
+        assert isinstance(tuning_options.cache, dict)
+        assert len(tuning_options.cache) == 0
+
+        #store one entry in the cache
+        params = {"x": 4, "time": 0.1234}
+        store_cache("4", params, tuning_options)
+        assert len(tuning_options.cache) == 1
+
+        #close the cache
+        close_cache(cache)
+
+        #now test process cache with a pre-existing cache file
+        process_cache(cache, kernel_options, tuning_options, runner)
+        assert_open_cachefile_is_correctly_parsed(cache)
+
+        assert tuning_options.cache["4"]["time"] == params["time"]
+
+        #check that exceptions are raised when using a cache file for
+        #a different kernel, device, or parameter set
+        with pytest.raises(ValueError) as excp:
+            kernel_options.kernel_name = "wrong_kernel"
+            process_cache(cache, kernel_options, tuning_options, runner)
+            assert "kernel" in str(excep.value)
+
+        with pytest.raises(ValueError):
+            runner.dev.name = "wrong_device"
+            process_cache(cache, kernel_options, tuning_options, runner)
+            assert "device" in str(excep.value)
+
+        with pytest.raises(ValueError):
+            tuning_options.tune_params["y"] = ["a", "b"]
+            process_cache(cache, kernel_options, tuning_options, runner)
+            assert "parameter" in str(excep.value)
+
+    finally:
+        delete_temp_file(cache)
+        #pass
