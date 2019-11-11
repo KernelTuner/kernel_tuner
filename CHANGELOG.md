@@ -7,10 +7,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - fix for output checking, custom verify functions are called just once
 - benchmarking returns multiple results not only time
+- more sophisticated implementation of genetic algorithm strategy
+- how the method to the strategy is passed, use strategy_options
 
 ### Added
+- Bayesian Optimizaton strategy, use strategy="bayes_opt"
 - support for kernels that use texture memory in CUDA
 - support for measuring energy consumption of CUDA kernels
+- option to set strategy_options to pass strategy specific options
+- option to cache and restart from tuned kernel configurations cachefile
+
+### Removed
+- Python 2 support, it may still work but we no longer test for Python 2
 
 ## [0.2.0] - 2018-11-16
 ### Changed

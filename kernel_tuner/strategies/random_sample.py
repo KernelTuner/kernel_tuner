@@ -32,6 +32,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     tune_params = tuning_options.tune_params
 
+    fraction = tuning_options.strategy_options.get("fraction", 0.1)
+
     #compute cartesian product of all tunable parameters
     parameter_space = itertools.product(*tune_params.values())
 
@@ -45,7 +47,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     #reduce parameter space to a random sample using sample_fraction
     parameter_space = numpy.array(list(parameter_space))
     size = len(parameter_space)
-    fraction = int(numpy.ceil(size * float(tuning_options.sample_fraction)))
+    fraction = int(numpy.ceil(size * fraction))
     sample_indices = numpy.random.choice(range(size), size=fraction, replace=False)
     parameter_space = parameter_space[sample_indices]
 

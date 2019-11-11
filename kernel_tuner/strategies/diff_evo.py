@@ -5,6 +5,8 @@ from scipy.optimize import differential_evolution
 
 from kernel_tuner.strategies.minimize import get_bounds, _cost_func
 
+supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -30,17 +32,18 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     results = []
-    cache = {}
+
+    method = tuning_options.strategy_options.get("method", "best1bin")
 
     tuning_options["scaling"] = False
     #build a bounds array as needed for the optimizer
     bounds = get_bounds(tuning_options.tune_params)
 
-    args = (kernel_options, tuning_options, runner, results, cache)
+    args = (kernel_options, tuning_options, runner, results)
 
     #call the differential evolution optimizer
     opt_result = differential_evolution(_cost_func, bounds, args, maxiter=1,
-                                        polish=False, disp=tuning_options.verbose)
+                                        polish=False, strategy=method, disp=tuning_options.verbose)
 
     if tuning_options.verbose:
         print(opt_result.message)

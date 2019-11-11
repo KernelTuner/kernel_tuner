@@ -104,8 +104,8 @@ Optimization, the Firefly Algorithm, and Simulated Annealing.
     :align: center
 
 Using a search strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method 
-you would like to use, for example ``strategy="genetic_algorithm"`` or ``strategy="basinhopping", 
-method="Powell"``. For a full overview of the supported search strategies and methods please see the `user 
+you would like to use, for example ``strategy="genetic_algorithm"`` or ``strategy="basinhopping"``. 
+For a full overview of the supported search strategies and methods please see the `user 
 api documentation <http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
 
 Tuning host and kernel code

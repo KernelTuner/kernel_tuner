@@ -1,12 +1,12 @@
 Kernel Tuner Examples
 =====================
 
-Most of the examples show how to use the Kernel Tuner to tune a specific
-CUDA, OpenCL, or C kernel.
+Most of the examples show how to use the Kernel Tuner to tune a
+CUDA, OpenCL, or C kernel, while demonstrating a particular usecase of Kernel Tuner.
 
-Except for `test\_vector\_add.py <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/test_vector_add.py>`__ which
-shows how to use run\_kernel to implement a test that you can run with
-pytest to test your CUDA or OpenCL kernels from Python.
+Except for `test\_vector\_add.py <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/test_vector_add.py>`__  and 
+`test\_vector\_add_parameterized.py <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/test_vector_add_parameterized.py>`__,
+which show how to write tests for GPU kernels with Kernel Tuner.
 
 Below we list the example applications and the features they illustrate.
 
