@@ -68,9 +68,10 @@ class SequentialRunner(object):
 
             #check if element is in the cache
             x_int = ",".join([str(i) for i in element])
-            if x_int in tuning_options.cache:
-                results.append(tuning_options.cache[x_int])
-                continue
+            if tuning_options.cache:
+                if x_int in tuning_options.cache:
+                    results.append(tuning_options.cache[x_int])
+                    continue
 
             result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
 

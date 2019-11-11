@@ -9,6 +9,8 @@ import tempfile
 import logging
 import warnings
 import re
+
+import pytest
 import numpy
 
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
@@ -395,7 +397,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
       }
     }
 
-    The last two closing brackets "}}" are not required, and everything
+    The last two closing brackets "}\n}" are not required, and everything
     should work as expected if these are missing. This is to allow to continue
     from an earlier (abruptly ended) tuning session.
 
@@ -404,6 +406,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     if not isinstance(tuning_options.tune_params, OrderedDict):
         raise ValueError("Caching only works correctly when tunable parameters are stored in a OrderedDict")
 
+    #if file does not exist, create new cache
     if not os.path.isfile(cache):
         c = OrderedDict()
         c["device_name"] = runner.dev.name
@@ -429,13 +432,20 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         #if file was not properly closed, pretend it was properly closed
         if not filestr[-3:] == "}\n}":
             filestr = filestr + "}\n}"
+        else:
+            #if it was properly closed, open it for appending new entries
+            with open(cache, "w") as cachefile:
+                cachefile.write(filestr[:-3])
 
         cached_data = json.loads(filestr)
 
         #check if it is safe to continue tuning from this cache
-        assert cached_data["device_name"] == runner.dev.name
-        assert cached_data["kernel_name"] == kernel_options.kernel_name
-        assert cached_data["tune_params_keys"] == list(tuning_options.tune_params.keys())
+        if cached_data["device_name"] != runner.dev.name:
+            raise ValueError("Cannot load cache which contains results for different device")
+        if cached_data["kernel_name"] != kernel_options.kernel_name:
+            raise ValueError("Cannot load cache which contains results for different kernel")
+        if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
+            raise ValueError("Cannot load cache which contains results obtained with different tunable parameters")
 
         tuning_options.cachefile = cache
         tuning_options.cache = cached_data["cache"]
@@ -448,15 +458,17 @@ def close_cache(cache):
     with open(cache, "r") as fh:
         contents = fh.read()
 
+    #close to file to make sure it can be read by JSON parsers
     if contents[-1] == ",":
         with open(cache, "w") as fh:
             fh.write(contents[:-1] + "}\n}")
 
 
 def store_cache(key, params, tuning_options):
-    if not key in tuning_options.cache:
-        tuning_options.cache[key] = params
-        if tuning_options.cachefile:
-            with open(tuning_options.cachefile, "a") as cachefile:
-                cachefile.write("\n" + json.dumps({key: params})[1:-1] + ",")
+    if isinstance(tuning_options.cache, dict):
+        if not key in tuning_options.cache:
+            tuning_options.cache[key] = params
+            if tuning_options.cachefile:
+                with open(tuning_options.cachefile, "a") as cachefile:
+                    cachefile.write("\n" + json.dumps({key: params})[1:-1] + ",")
 
