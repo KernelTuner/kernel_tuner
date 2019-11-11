@@ -15,18 +15,18 @@ class nvml(object):
         try:
             self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
             self.pwr_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.dev)
-        except pynvml.nvml.NVMLError_NotSupported:
+        except pynvml.NVMLError_NotSupported:
             self._pwr_limit = None
             self.pwr_constraints = [1, 0] # inverted range to make all range checks fail
 
         try:
             self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
-        except pynvml.nvml.NVMLError_NotSupported:
+        except pynvml.NVMLError_NotSupported:
             self._persistence_mode = None
 
         try:
             self._auto_boost = pynvml.nvmlDeviceGetAutoBoostedClocksEnabled(self.dev)[0]  # returns [isEnabled, isDefaultEnabled]
-        except pynvml.nvml.NVMLError_NotSupported:
+        except pynvml.NVMLError_NotSupported:
             self._auto_boost = None
 
         try:
@@ -41,7 +41,7 @@ class nvml(object):
             for mem_clock in self.supported_mem_clocks:
                 supported_gr_clocks = pynvml.nvmlDeviceGetSupportedGraphicsClocks(self.dev, mem_clock)
                 self.supported_gr_clocks[mem_clock] = supported_gr_clocks
-        except pynvml.nvml.NVMLError_NotSupported:
+        except pynvml.NVMLError_NotSupported:
             self.gr_clock_default = None
             self.sm_clock_default = None
             self.mem_clock_default = None
