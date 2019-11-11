@@ -484,5 +484,5 @@ def test_process_cache():
             assert "parameter" in str(excep.value)
 
     finally:
-        #delete_temp_file(cache)
-        pass
+        delete_temp_file(cache)
+        #pass
