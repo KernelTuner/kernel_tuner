@@ -52,7 +52,7 @@ def test_compile():
 def fun_test(queue, a, b, block=0, grid=0):
     profile = type('profile', (object,), {'end': 0.1, 'start': 0})
     return type(
-        'Event', (object,), {'wait': lambda self: 0, 'profile': profile()})()
+        'Event', (object,), {'wait': lambda self: 0, 'profile': profile(), 'get_info': lambda x,y: 0})()
 
 
 def create_benchmark_args():

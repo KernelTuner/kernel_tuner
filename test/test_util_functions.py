@@ -362,13 +362,13 @@ def test_check_block_size_params_names_list():
     test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
 def test_get_config_string():
-
-    params = OrderedDict(block_size_x=128, time=0.2343)
+    params = OrderedDict(block_size_x=128)
+    params["time"] = 0.2343
     output = get_config_string(params)
     assert output == "block_size_x=128, time=0.2343"
     output = get_config_string(params, units=dict(time="ms"))
     assert output == "block_size_x=128, time=0.2343ms"
-    output = get_config_string(params, ["time"],units=dict(time="ms"))
+    output = get_config_string(params, ["time"], units=dict(time="ms"))
     assert output == "time=0.2343ms"
 
 
