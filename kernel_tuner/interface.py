@@ -457,7 +457,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
             cache += ".json"
 
         util.process_cache(cache, kernel_options, tuning_options, runner)
-    if not tuning_options.cache:
+    else:
         tuning_options.cache = {}
         tuning_options.cachefile = None
 
