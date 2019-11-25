@@ -94,12 +94,6 @@ kernel_tuner.runners.sequential.SequentialRunner
     :special-members: __init__
     :members:
 
-kernel_tuner.runners.noodles.NoodlesRunner
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.runners.noodles.NoodlesRunner
-    :special-members: __init__
-    :members:
-
 
 Device Interfaces
 -----------------
