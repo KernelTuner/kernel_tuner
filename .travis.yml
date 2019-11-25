@@ -9,11 +9,19 @@ matrix:
       env:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.6
+    - os: linux
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.7
 
     - os: osx
       env:
         - MCONDA_PYTHON_MAJOR=3
         - MCONDA_PYTHON_VERSION=3.6
+    - os: osx
+      env:
+        - MCONDA_PYTHON_MAJOR=3
+        - MCONDA_PYTHON_VERSION=3.7
 
     # build the documentation and deploy to the gh-pages branch
     - os: linux
