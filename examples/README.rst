@@ -88,7 +88,6 @@ ExpDist
  -  in-thread block 2D reduction using CUB library
  -  C++ in CUDA kernel code
  -  tune multiple kernels in pipeline
- -  tune in parallel using multiple threads
 
 Code Generator
 --------------

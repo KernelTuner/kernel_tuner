@@ -19,6 +19,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 - Python 2 support, it may still work but we no longer test for Python 2
+- Noodles parallel runner
 
 ## [0.2.0] - 2018-11-16
 ### Changed

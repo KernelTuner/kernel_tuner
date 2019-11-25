@@ -18,16 +18,8 @@ try:
 except Exception:
     opencl_present=False
 
-try:
-    import noodles
-    noodles_present=True
-except ImportError:
-    noodles_present=False
-
 skip_if_no_cuda=pytest.mark.skipif(not cuda_present,
                     reason="PyCuda not installed or no CUDA device detected")
 skip_if_no_opencl=pytest.mark.skipif(not opencl_present,
-                    reason="PyCuda not installed or no CUDA device detected")
-skip_if_no_noodles=pytest.mark.skipif(not noodles_present,
                     reason="PyCuda not installed or no CUDA device detected")
 

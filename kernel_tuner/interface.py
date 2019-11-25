@@ -37,6 +37,8 @@ import numpy
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
+from kernel_tuner.runners.sequential import SequentialRunner
+
 from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
 
 strategy_map = {"brute_force": brute_force,
@@ -201,15 +203,6 @@ _tuning_options = Options([
         passed that was specified using the atol option to tune_kernel.
         The function should return True when the output passes the test, and
         False when the output fails the test.""", "func(ref, ans, atol=None)")),
-    ("use_noodles", ("""Use Noodles workflow engine to tune in parallel using
-        multiple threads, False by Default.
-        Requires Noodles to be installed, use 'pip install noodles'.
-        Note that Noodles requires Python 3.5 or newer.
-        You can configure the number of threads to use with the option
-        num_threads.""", "boolean")),
-    ("num_threads", ("""The number of threads to use when using the Noodles
-        workflow engine for tuning using multiple threads, 1 by default.
-        Requires Noodles, see 'use_noodles' option.""", "int")),
     ("strategy", ("""Specify the strategy to use for searching through the
         parameter space, choose from:
 
@@ -365,7 +358,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
                 lang=None, device=0, platform=0, cmem_args=None, texmem_args=None,
-                num_threads=1, use_noodles=False, compiler=None, compiler_options=None, log=None,
+                compiler=None, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
                 cache=None):
 
@@ -427,25 +420,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         strategy = brute_force
 
 
-    #select runner based on user options
-    if num_threads == 1 and not use_noodles:
-        from kernel_tuner.runners.sequential import SequentialRunner
-        runner = SequentialRunner(kernel_source, kernel_options, device_options, iterations)
-    elif num_threads > 1 and not use_noodles:
-        raise ValueError("Using multiple threads requires the Noodles runner, use use_noodles=True")
-    elif use_noodles:
-        #check if Python version matches required by Noodles
-        if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 5):
-            raise ValueError("Using multiple threads requires Noodles, Noodles requires Python 3.5 or higher")
-        #check if noodles is installed in a way that works with Python 3.4 or newer
-        noodles_installed = importlib.util.find_spec("noodles") is not None
-        if not noodles_installed:
-            raise ValueError("Using multiple threads requires Noodles, please use 'pip install noodles'")
-        #import the NoodlesRunner
-        from kernel_tuner.runners.noodles import NoodlesRunner
-        runner = NoodlesRunner(kernel_source, device_options, num_threads)
-    else:
-        raise ValueError("Somehow no runner was selected, this should not happen, please file a bug report")
+    runner = SequentialRunner(kernel_source, kernel_options, device_options, iterations)
 
     #the user-specified function may or may not have an optional atol argument;
     #we normalize it so that it always accepts atol.
