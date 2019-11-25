@@ -236,13 +236,10 @@ advanced strategies currently implemented in Kernel Tuner are
 (<code class="docutils literal notranslate"><span class="pre">diff_evo</span></code>). How to use these is explained in the <a class="reference internal" href="user-api.html"><span class="doc">API Documentation</span></a>,
 see the options <code class="docutils literal notranslate"><span class="pre">strategy</span></code> and <code class="docutils literal notranslate"><span class="pre">method</span></code>.</p>
 <p>The runners are responsible for compiling and benchmarking the kernel
-configurations selected by the strategy. The default runner is the
-sequential runner, which does exactly what its name says. It compiles
+configurations selected by the strategy. The sequential runner is currently
+the only supported runner, which does exactly what its name says. It compiles
 and benchmarks configurations using a single sequential Python process.
-The Noodles runner is a parallel runner that uses the Noodles library to
-parallelize a brute force or random sample iteration over the search
-space across of a number of Python processes on the same node or across
-a number of nodes in a compute cluster.</p>
+Other parallel runners are foreseen in future releases.</p>
 <p>The runners are implemented on top of a high-level <em>Device Interface</em>,
 which wraps all the functionality for compiling and benchmarking
 kernel configurations based on the low-level <em>Device Function Interface</em>.
