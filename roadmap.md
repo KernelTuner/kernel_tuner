@@ -4,15 +4,13 @@ This roadmap presents an overview of the features we are currently planning to
 implement. Please note that this is a living document that will evolve as
 priorities grow and shift.
 
-### version 0.3.0
+### version 0.4.0
 
 This is the list of features that we want to have implemented by the next version.
 
- * Enable setting search strategy parameters through the user interface
  * Extend Fortran support, no more warnings on data types or missing block size parameter etc.
  * Turn the C backend into a more general compiler backend
  * A get_parameterized_kernel_source function to return the parameterized kernel source for inspection
- * A test_kernel function to perform parameterized testing without tuning
  * Function to instrument source files with parameter values after tuning
  * Function to generate wrapper kernels for directly calling device functions
  
@@ -36,5 +34,6 @@ demand for it. If you are interested in any of these, let us know!
  * Tuning compiler options in combination with other parameters
  * Example that tunes a kernel using thread block re-indexing
  * Example CUDA host code that uses runtime compilation
+ * A test_kernel function to perform parameterized testing without tuning
 
 
