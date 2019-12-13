@@ -446,7 +446,7 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span>
-<span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="k">import</span> <span class="n">run_kernel</span>
+<span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">run_kernel</span>
 
 <span class="n">filter_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">17</span><span class="p">)</span>
 <span class="n">output_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
@@ -595,7 +595,7 @@ the GPU in a list that we have named <strong>answer</strong> in the above exampl
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="k">import</span> <span class="n">tune_kernel</span>
+<span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">tune_kernel</span>
 <span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">convolution_kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>

@@ -319,7 +319,7 @@ for a detailed explanation of the kernel tuner Python script.</p>
 kernel it compiles and benchmarks, by passing an <code class="docutils literal notranslate"><span class="pre">answer</span></code> list. This
 list matches the list of arguments to the kernel, but contains the
 expected output of the kernel. Input arguments are replaced with None.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">]</span>  <span class="c1"># the order matches the arguments (in args) to the kernel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>  <span class="c1"># the order matches the arguments (in args) to the kernel</span>
 <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
 </pre></div>
 </div>
