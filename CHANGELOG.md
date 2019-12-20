@@ -4,11 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [0.3.0] - 2019-12-20
 ### Changed
 - fix for output checking, custom verify functions are called just once
-- benchmarking returns multiple results not only time
+- benchmarking now returns multiple results not only time
 - more sophisticated implementation of genetic algorithm strategy
-- how the method to the strategy is passed, use strategy_options
+- how the "method" option is passed, now use strategy_options
 
 ### Added
 - Bayesian Optimizaton strategy, use strategy="bayes_opt"
