@@ -37,8 +37,7 @@ def tune_expdist():
 
     #tune using the Noodles runner for parallel tuning using 8 threads
     kernel1 = tune_kernel("ExpDist", kernel_string, (size, size), arguments, tune_params,
-                          grid_div_x=grid_div_x, grid_div_y=grid_div_y,
-                          num_threads=8, use_noodles=True, verbose=True)
+                          grid_div_x=grid_div_x, grid_div_y=grid_div_y, verbose=True)
 
     #dump the tuning results to a json file
     with open("expdist.json", 'w') as fp:
@@ -53,10 +52,10 @@ def tune_expdist():
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [32*i for i in range(1,33)]
 
-    #tune the second kernel, again in parallel with 8 threads
+    #tune the second kernel
     arguments = [numpy.zeros(1).astype(numpy.float64), cost, size, size, nblocks]
     kernel2 = tune_kernel("reduce_cross_term", kernel_string, 1, arguments, tune_params,
-                grid_div_x=[], num_threads=8, use_noodles=True, verbose=True)
+                grid_div_x=[], verbose=True)
 
     best_config2 = min(kernel2[0], key=lambda x:x['time'])
     print("best GPU configuration, total time=", best_config1['time'] + best_config2['time'])

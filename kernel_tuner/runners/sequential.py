@@ -4,7 +4,7 @@ from __future__ import print_function
 from collections import OrderedDict
 import logging
 
-from kernel_tuner.util import get_config_string
+from kernel_tuner.util import get_config_string, store_cache
 from kernel_tuner.core import DeviceInterface
 
 
@@ -66,10 +66,18 @@ class SequentialRunner(object):
         for element in parameter_space:
             params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
-            result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+            #check if element is in the cache
+            x_int = ",".join([str(i) for i in element])
+            if tuning_options.cache:
+                if x_int in tuning_options.cache:
+                    results.append(tuning_options.cache[x_int])
+                    continue
 
+            result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
             if result is None:
                 logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
+                params.update({"time": 1e20})
+                store_cache(x_int, params, tuning_options)
                 continue
 
             #print and append to results
@@ -79,7 +87,7 @@ class SequentialRunner(object):
                 time = result
 
             params['time'] = time
-            output_string = get_config_string(params, self.units)
+            output_string = get_config_string(params, params.keys(), self.units)
             logging.debug(output_string)
             if not self.quiet:
                 print(output_string)
@@ -87,9 +95,11 @@ class SequentialRunner(object):
             if isinstance(result, dict):
                 params.update(result)
 
+            store_cache(x_int, params, tuning_options)
             results.append(params)
 
         return results, self.dev.get_environment()
+
 
     def __del__(self):
         if hasattr(self, 'dev'):

@@ -102,27 +102,3 @@ def test_run_kernel(dev_interface):
     dev.run_kernel.assert_called_once_with('compile', 'ready_argument_list', (128, 1, 1), (10, 1, 1))
     assert answer[0] == size
 
-@patch('kernel_tuner.interface.sys')
-def test_interface_noodles_checks_version(sysmock):
-    sysmock.version_info = [2, 7]
-
-    kernel_name, kernel_string, size, args, tune_params = get_fake_kernel()
-    try:
-        tune_kernel(kernel_name, kernel_string, size, args, tune_params,
-                    use_noodles=True, num_threads=4)
-        assert False
-    except ValueError:
-        assert True
-
-@patch('kernel_tuner.interface.importlib')
-def test_interface_noodles_checks_noodles(importlibmock):
-    importlibmock.util.find_spec.return_value = None
-
-    kernel_name, kernel_string, size, args, tune_params = get_fake_kernel()
-
-    try:
-        tune_kernel(kernel_name, kernel_string, size, args, tune_params,
-                    use_noodles=True, num_threads=4)
-        assert False
-    except ValueError:
-        assert True

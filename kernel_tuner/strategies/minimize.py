@@ -1,11 +1,14 @@
 """ The strategy that uses a minimizer method for searching through the parameter space """
 from __future__ import print_function
 
+from collections import OrderedDict
 import logging
 
 import numpy
 import scipy.optimize
 from kernel_tuner import util
+
+supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -32,9 +35,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     results = []
-    cache = {}
 
-    method = tuning_options.method
+    method = tuning_options.strategy_options.get("method", "L-BFGS-B")
 
     #scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
@@ -43,11 +45,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
 
-    #not all methods support 'disp' option
-    if not method in ['TNC']:
-        options['disp'] = tuning_options.verbose
-
-    args = (kernel_options, tuning_options, runner, results, cache)
+    args = (kernel_options, tuning_options, runner, results)
 
     opt_result = scipy.optimize.minimize(_cost_func, x0, args=args, method=method, options=options, **kwargs)
 
@@ -57,7 +55,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     return results, runner.dev.get_environment()
 
 
-def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
+def _cost_func(x, kernel_options, tuning_options, runner, results):
     """ Cost function used by minimize """
 
     error_time = 1e20
@@ -74,14 +72,16 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
 
     #we cache snapped values, since those correspond to results for an actual instance of the kernel
     x_int = ",".join([str(i) for i in params])
-    if x_int in cache:
-        return cache[x_int]
+    if x_int in tuning_options.cache:
+        return tuning_options.cache[x_int]["time"]
 
     #check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:
         legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
         if not legal:
-            cache[x_int] = error_time
+            error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
+            error_result["time"] = error_time
+            tuning_options.cache[x_int] = error_result
             return error_time
 
     #compile and benchmark this instance
@@ -90,10 +90,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, cache):
     #append to tuning results
     if res:
         results.append(res[0])
-        cache[x_int] = res[0]['time']
         return res[0]['time']
 
-    cache[x_int] = error_time
     return error_time
 
 
@@ -149,9 +147,11 @@ def setup_method_options(method, tuning_options):
     """ prepare method specific options """
     kwargs = {}
 
-    #pass size of parameter space as max iterations to methods that support it
-    #it seems not all methods iterpret this value in the same manner
-    maxiter = numpy.prod([len(v) for v in tuning_options.tune_params.values()])
+    #Note that not all methods iterpret maxiter in the same manner
+    if "maxiter" in tuning_options.strategy_options:
+        maxiter = tuning_options.strategy_options.maxiter
+    else:
+        maxiter = 100
     kwargs['maxiter'] = maxiter
     if method in ["Nelder-Mead", "Powell"]:
         kwargs['maxfev'] = maxiter
@@ -163,6 +163,10 @@ def setup_method_options(method, tuning_options):
         kwargs['eps'] = tuning_options.eps
     elif method == "COBYLA":
         kwargs['rhobeg'] = tuning_options.eps
+
+    #not all methods support 'disp' option
+    if not method in ['TNC']:
+        kwargs['disp'] = tuning_options.verbose
 
     return kwargs
 

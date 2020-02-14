@@ -32,7 +32,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     results = []
-    cache = {}
 
     #scale variables in x because PSO works with velocities to visit different configurations
     tuning_options["scaling"] = True
@@ -40,10 +39,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
     #using this instead of get_bounds because scaling is used
     bounds, _, _ = get_bounds_x0_eps(tuning_options)
 
-    args = (kernel_options, tuning_options, runner, results, cache)
+    args = (kernel_options, tuning_options, runner, results)
 
-    num_particles = 20
-    maxiter = 100
+    num_particles = tuning_options.strategy_options.get("popsize", 20)
+    maxiter = tuning_options.strategy_options.get("maxiter", 100)
 
     best_time_global = 1e20
     best_position_global = []
