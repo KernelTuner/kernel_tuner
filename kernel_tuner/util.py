@@ -10,7 +10,6 @@ import logging
 import warnings
 import re
 
-import pytest
 import numpy
 
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]

@@ -47,7 +47,12 @@ class CudaFunctions(object):
 
         drv.init()
         self.context = drv.Device(device).make_context()
-        self.nvml = nvml(device)
+
+        try:
+            self.nvml = nvml(device)
+            self.use_nvml = True
+        except:
+            self.use_nvml = False
 
         #inspect device properties
         devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
@@ -191,7 +196,8 @@ class CudaFunctions(object):
             #measure power usage until kernel is done
             t0 = time.time()
             while not end.query():
-                power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
+                if self.use_nvml:
+                    power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
             end.synchronize()
             execution_time = end.time_since(start) #ms
             result["times"].append(execution_time)
