@@ -341,7 +341,7 @@ class DeviceInterface(object):
         #compile kernel_string into device func
         func = None
         try:
-            func = self.dev.compile(instance.name, instance.kernel_string)
+            func = self.dev.compile(instance)
         except Exception as e:
             #compiles may fail because certain kernel configurations use too
             #much shared memory for example, the desired behavior is to simply

@@ -105,7 +105,7 @@ class CFunctions(object):
             ctype_args[i] = Argument(numpy=data, ctypes=data_ctypes)
         return ctype_args
 
-    def compile(self, kernel_name, kernel_string):
+    def compile(self, kernel_instance):
         """call the C compiler to compile the kernel, return the function
 
         :param kernel_name: The name of the kernel to be compiled, used to lookup the
@@ -118,7 +118,9 @@ class CFunctions(object):
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
-        logging.debug('compiling ' + kernel_name)
+        logging.debug('compiling ' + kernel_instance.name)
+
+        kernel_string = kernel_instance.kernel_string
 
         if self.lib != None:
             self.cleanup_lib()
@@ -134,25 +136,31 @@ class CFunctions(object):
             else:
                 compiler_options.append("-fopenmp")
 
-        # TODO: Get suffix from KernelSources, and adapt the logic below
+        #if filename is known, use that one
+        suffix = kernel_instance.kernel_source.get_user_suffix()
 
-        #select right suffix based on compiler
-        suffix = ".cc"
+        #if code contains device code, suffix .cu is required
+        device_code_signals = ["__global", "__syncthreads()", "threadIdx"]
+        if any([snippet in kernel_string for snippet in device_code_signals]):
+            suffix = ".cu"
 
         #detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
-        if ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string):
+        if (suffix == ".cu") or ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string):
             if self.compiler == "g++" and self.nvcc_available:
                 self.compiler = "nvcc"
 
-        #if contains device code suffix .cu is required by nvcc
-        if self.compiler == "nvcc" and "__global__" in kernel_string:
-            suffix = ".cu"
-        if self.compiler in ["gfortran", "pgfortran", "ftn", "ifort"]:
-            suffix = ".F90"
+        if suffix is None:
+            #select right suffix based on compiler
+            suffix = ".cc"
+
+            if self.compiler in ["gfortran", "pgfortran", "ftn", "ifort"]:
+                suffix = ".F90"
 
         if self.compiler == "nvcc":
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
 
+        #this basically checks if we aren't compiling Fortran
+        #at the moment any C, C++, or CUDA code is assumed to use extern "C" linkage
         if ".c" in suffix:
             if not "extern \"C\"" in kernel_string:
                 kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
@@ -194,7 +202,7 @@ class CFunctions(object):
 
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
-            func = getattr(self.lib, kernel_name)
+            func = getattr(self.lib, kernel_instance.name)
             func.restype = C.c_float
 
         finally:
