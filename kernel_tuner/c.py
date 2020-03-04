@@ -136,7 +136,13 @@ class CFunctions(object):
             else:
                 compiler_options.append("-fopenmp")
 
+        #if filename is known, use that one
         suffix = kernel_instance.kernel_source.get_user_suffix()
+
+        #if code contains device code, suffix .cu is required
+        device_code_signals = ["__global", "__syncthreads()", "threadIdx"]
+        if any([snippet in kernel_string for snippet in device_code_signals]):
+            suffix = ".cu"
 
         #detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
         if (suffix == ".cu") or ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string):
@@ -147,15 +153,14 @@ class CFunctions(object):
             #select right suffix based on compiler
             suffix = ".cc"
 
-            #if contains device code suffix .cu is required by nvcc
-            if self.compiler == "nvcc" and "__global__" in kernel_string:
-                suffix = ".cu"
             if self.compiler in ["gfortran", "pgfortran", "ftn", "ifort"]:
                 suffix = ".F90"
 
         if self.compiler == "nvcc":
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
 
+        #this basically checks if we aren't compiling Fortran
+        #at the moment any C, C++, or CUDA code is assumed to use extern "C" linkage
         if ".c" in suffix:
             if not "extern \"C\"" in kernel_string:
                 kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
