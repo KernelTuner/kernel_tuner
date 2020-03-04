@@ -670,7 +670,7 @@ of the grid</p></li>
 
 <dl class="method">
 <dt id="kernel_tuner.cuda.CudaFunctions.compile">
-<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.compile" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param">kernel_instance</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the CUDA compiler to compile the kernel, return the device function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -855,7 +855,7 @@ of the NDRange.</p></li>
 
 <dl class="method">
 <dt id="kernel_tuner.opencl.OpenCLFunctions.compile">
-<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.compile" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param">kernel_instance</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the OpenCL compiler to compile the kernel, return the device function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1020,7 +1020,7 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 
 <dl class="method">
 <dt id="kernel_tuner.c.CFunctions.compile">
-<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param">kernel_name</em>, <em class="sig-param">kernel_string</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.compile" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param">kernel_instance</em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the C compiler to compile the kernel, return the function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
