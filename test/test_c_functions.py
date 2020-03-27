@@ -10,6 +10,7 @@ except ImportError:
     from unittest.mock import patch, Mock
 
 from kernel_tuner.c import CFunctions, Argument
+from kernel_tuner.core import KernelSource, KernelInstance
 
 
 def test_ready_argument_list1():
@@ -119,9 +120,12 @@ def test_compile(npct, subprocess):
 
     kernel_string = "this is a fake C program"
     kernel_name = "blabla"
+    kernel_sources = KernelSource(kernel_string, "C")
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     cfunc = CFunctions()
-    f = cfunc.compile(kernel_name, kernel_string)
+
+    f = cfunc.compile(kernel_instance)
 
     print(subprocess.mock_calls)
     print(npct.mock_calls)
@@ -139,6 +143,35 @@ def test_compile(npct, subprocess):
     assert not os.path.isfile(filename + ".cu")
     assert not os.path.isfile(filename + ".o")
     assert not os.path.isfile(filename + ".so")
+
+
+@patch('kernel_tuner.c.subprocess')
+@patch('kernel_tuner.c.numpy.ctypeslib')
+def test_compile_detects_device_code(npct, subprocess):
+
+    kernel_string = "this code clearly contains device code __global__ kernel(float* arg){ return; }"
+    kernel_name = "blabla"
+    kernel_sources = KernelSource(kernel_string, "C")
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+
+    cfunc = CFunctions()
+
+    f = cfunc.compile(kernel_instance)
+
+    print(subprocess.check_call.call_args_list)
+
+    #assert the filename suffix used for source compilation is .cu
+    dot_cu_used = False
+    for call in subprocess.check_call.call_args_list:
+        args, kwargs = call
+        args = args[0]
+        print(args)
+        if args[0] == 'nvcc' and args[1] == '-c':
+            assert args[2][-3:] == '.cu'
+            dot_cu_used = True
+
+    assert dot_cu_used
+
 
 
 def test_memset():

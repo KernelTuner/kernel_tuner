@@ -2,10 +2,13 @@ import numpy as np
 from .context import skip_if_no_opencl
 
 from kernel_tuner import opencl
+from kernel_tuner.core import KernelSource, KernelInstance
+
 try:
     import pyopencl
 except Exception:
     pass
+
 
 
 @skip_if_no_opencl
@@ -41,10 +44,12 @@ def test_compile():
     }
     """
 
+    kernel_sources = KernelSource(original_kernel, "opencl")
     kernel_string = original_kernel.replace("shared_size", str(1024))
+    kernel_instance = KernelInstance("sum", kernel_sources, kernel_string, [], None, None, dict(), [])
 
     dev = opencl.OpenCLFunctions(0)
-    func = dev.compile("sum", kernel_string)
+    func = dev.compile(kernel_instance)
 
     assert isinstance(func, pyopencl.Kernel)
 

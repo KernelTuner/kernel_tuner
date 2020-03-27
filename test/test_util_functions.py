@@ -4,6 +4,7 @@ import json
 import warnings
 
 import numpy
+import pytest
 from pytest import raises
 
 from .context import skip_if_no_cuda, skip_if_no_opencl

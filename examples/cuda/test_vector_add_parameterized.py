@@ -33,5 +33,5 @@ def test_vector_add(vector_add, block_size_x):
 
     answer = run_kernel(*vector_add, {"block_size_x": block_size_x})
 
-    a, b = vector_add[-1][1:3]
+    c, a, b, n = vector_add[-1]
     assert numpy.allclose(answer[0], a+b, atol=1e-8)

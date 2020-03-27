@@ -6,6 +6,7 @@ except ImportError:
     from unittest.mock import patch, Mock
 
 from kernel_tuner import cuda
+from kernel_tuner.core import KernelSource, KernelInstance
 
 def setup_mock(drv):
     context = Mock()
@@ -53,7 +54,9 @@ def test_compile(drv, *args):
 
     #call compile
     kernel_string = "__global__ void vector_add()"
-    func = dev.compile("vector_add", kernel_string)
+    kernel_sources = KernelSource(kernel_string, "cuda")
+    kernel_instance = KernelInstance("vector_add", kernel_sources, kernel_string, [], None, None, dict(), [])
+    func = dev.compile(kernel_instance)
 
     #verify behavior
     assert dev.source_mod.call_count == 1

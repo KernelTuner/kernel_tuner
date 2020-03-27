@@ -8,7 +8,7 @@ authors:
     name-particle: van
     orcid: "https://orcid.org/0000-0002-7508-3272"
     email: "b.vanwerkhoven@esciencecenter.nl"
-date-released: 2017-11-23
+date-released: 2019-12-20
 doi: 10.5281/zenodo.1220113
 keywords: 
   - "GPU Computing"
@@ -29,7 +29,7 @@ references:
         email: "b.vanwerkhoven@esciencecenter.nl"
     title: "Kernel Tuner: A Search-Optimizing GPU Code Auto-Tuner"
     journal: "Future Generation Computer Systems"
-    year: 2018
+    year: 2019
 repository-code: "https://github.com/benvanwerkhoven/kernel_tuner"
 title: Kernel Tuner
-version: "0.2.0"
+version: "0.3.0"

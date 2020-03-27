@@ -2,7 +2,15 @@
 from __future__ import print_function
 
 from collections import OrderedDict
-from bayes_opt import BayesianOptimization
+
+try:
+    from bayes_opt import BayesianOptimization
+    bayes_opt_present=True
+except Exception:
+    BayesianOptimization = None
+    bayes_opt_present=False
+
+
 
 from kernel_tuner.strategies import minimize
 
@@ -46,6 +54,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
     #   acq="poi", xi=1e-1
     #   acq="ei", xi=1e-1
     #   acq="ucb", kappa=10
+
+    if not bayes_opt_present:
+        raise ImportError("Error: optional dependency Bayesian Optimization not installed")
 
     #defaults as used by Bayesian Optimization Python package
     acq = tuning_options.strategy_options.get("method", "poi")

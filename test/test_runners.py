@@ -7,7 +7,7 @@ import kernel_tuner
 from kernel_tuner import core
 from kernel_tuner.interface import Options
 
-from .context import skip_if_no_cuda, skip_if_no_noodles
+from .context import skip_if_no_cuda
 
 @pytest.fixture
 def env():
@@ -52,13 +52,6 @@ def test_random_sample():
     # check all returned results make sense
     for v in result:
         assert v['time'] == 1.0
-
-
-@skip_if_no_noodles
-@skip_if_no_cuda
-def test_noodles_runner(env):
-    result, _ = kernel_tuner.tune_kernel(*env, use_noodles=True, num_threads=4)
-    assert len(result) == len(env[-1]["block_size_x"])
 
 
 @skip_if_no_cuda
