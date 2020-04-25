@@ -44,6 +44,10 @@ class nvml(object):
 
             self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
 
+            self._gr_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
+            self._sm_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_SM)
+            self._mem_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
+
             #gather the supported gr clocks for each supported mem clock into a dict
             self.supported_gr_clocks = dict()
             for mem_clock in self.supported_mem_clocks:
@@ -61,9 +65,10 @@ class nvml(object):
         if self._pwr_limit != None and self.pwr_limit != self.pwr_limit_default:
             self.pwr_limit = self.pwr_limit_default
         if self.gr_clock_default != None:
-            if self.gr_clock != self.gr_clock_default or self.mem_clock != self.mem_clock_default:
+            gr_app_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
+            mem_app_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
+            if gr_app_clock != self.gr_clock_default or mem_app_clock != self.mem_clock_default:
                 self.set_clocks(self.mem_clock_default, self.gr_clock_default)
-
 
     @property
     def pwr_state(self):
@@ -108,7 +113,7 @@ class nvml(object):
     def set_clocks(self, mem_clock, gr_clock):
         """Set the memory and graphics clock for this device (may require permission)"""
         if not mem_clock in self.supported_mem_clocks:
-            raise ValueError("Illegal value for memmory clock")
+            raise ValueError("Illegal value for memory clock")
         if not gr_clock in self.supported_gr_clocks[mem_clock]:
             raise ValueError("Graphics clock incompatible with memory clock")
         pynvml.nvmlDeviceSetApplicationsClocks(self.dev, mem_clock, gr_clock)
@@ -119,20 +124,25 @@ class nvml(object):
     @property
     def gr_clock(self):
         """Control the graphics clock (may require permission), only values compatible with the memory clock can be set directly"""
-        return pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
+        return pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
 
     @gr_clock.setter
     def gr_clock(self, new_clock):
-        self.set_clocks(self.mem_clock, new_clock)
+        self.set_clocks(self._mem_clock, new_clock)
 
     @property
     def mem_clock(self):
         """Control the graphics clock (may require permission), only values compatible with the graphics clock can be set directly"""
-        return pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
+        return pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_MEM)
 
     @mem_clock.setter
     def mem_clock(self, new_clock):
-        self.set_clocks(new_clock, self.gr_clock)
+        self.set_clocks(new_clock, self._gr_clock)
+
+    @property
+    def temperature(self):
+        """Get the GPU temperature"""
+        return pynvml.nvmlDeviceGetTemperature(self.dev, pynvml.NVML_TEMPERATURE_GPU)
 
     @property
     def auto_boost(self):

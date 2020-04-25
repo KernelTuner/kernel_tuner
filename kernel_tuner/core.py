@@ -236,6 +236,9 @@ class DeviceInterface(object):
             new_limit = int(instance.params["pwr_limit"]*1000) #user specifies in Watt, but nvml uses milliWatt
             if self.dev.nvml.pwr_limit != new_limit:
                 self.dev.nvml.pwr_limit = new_limit
+        if "gr_clock" in instance.params and self.dev.use_nvml:
+            self.dev.nvml.gr_clock = instance.params["gr_clock"]
+
 
         result = None
         try:

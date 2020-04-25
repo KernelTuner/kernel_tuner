@@ -85,7 +85,7 @@ class CudaFunctions(object):
 
         #setup PowerSensor if available
         if power_sensor:
-            self.ps = power_sensor.PowerSensor("/dev/ttyACM0")
+            self.ps = power_sensor.PowerSensor("/dev/ttyACM1")
         else:
             self.ps = None
 
@@ -203,6 +203,8 @@ class CudaFunctions(object):
         result["times"] = [] #collect run times of individual runs
         power = []  #collect nvml power readings of individual runs
         energy = [] #collect energy usage of individual runs
+        result["temperatures"] = []
+
         start = drv.Event()
         end = drv.Event()
         for _ in range(self.iterations):
@@ -222,10 +224,12 @@ class CudaFunctions(object):
                 energy.append(energy_consumed)
             execution_time = end.time_since(start) #ms
             result["times"].append(execution_time)
+            result["temperatures"].append(self.nvml.temperature)
 
         if power:
             result["power"] = power
         result["time"] = numpy.mean(result["times"])
+        result["temperature"] = numpy.mean(result["temperatures"])
         if energy:
             result["energies"] = energy
             result["energy"] = numpy.mean(result["energies"])

@@ -47,7 +47,7 @@ class OpenCLFunctions(object):
 
         #setup PowerSensor if available
         if power_sensor:
-            self.ps = power_sensor.PowerSensor("/dev/ttyACM0")
+            self.ps = power_sensor.PowerSensor("/dev/ttyACM1")
         else:
             self.ps = None
 
@@ -142,6 +142,11 @@ class OpenCLFunctions(object):
         """
         result = dict()
         result["times"] = []
+        result["temperatures"] = []
+        result["core_clocks"] = []
+        result["memory_clocks"] = []
+        ps_power = []
+        ps_energy = []
         power = []
         energy = []
         global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
@@ -151,24 +156,38 @@ class OpenCLFunctions(object):
             event = func(self.queue, global_size, local_size, *gpu_args)
             if self.ps:
                 begin_state = self.ps.read()
+            if self.use_nvml:
+                energy_consumed, power_readings = self._measure_nvml(event)
             if self.ps:
                 event.wait()
                 end_state = self.ps.read()
-                ps_measured_t = end_state.time_at_read - begin_state.time_at_read
-                cl_measured_t = (event.profile.end - event.profile.start) * 1e-9
+                ps_measured_t = end_state.time_at_read - begin_state.time_at_read  #s
+                cl_measured_t = (event.profile.end - event.profile.start) * 1e-9   #s
                 ps_measured_e = power_sensor.Joules(begin_state, end_state, -1) * (cl_measured_t / ps_measured_t)
-                energy.append(ps_measured_e)
-            elif self.use_nvml:
-                energy_consumed, power_readings = self._measure_nvml(event)
+                #ps_measured_e = power_sensor.Joules(begin_state, end_state, -1)
+                ps_energy.append(ps_measured_e) # Joule
+                ps_power.append(ps_measured_e / ps_measured_t) # Watt
+            if self.use_nvml:
                 power.append(power_readings) #time in s, power usage in milliwatts
                 energy.append(energy_consumed)
 
             result["times"].append((event.profile.end - event.profile.start)*1e-6)
+            result["timestamp"].append(time.time())
+            result["temperatures"].append(self.nvml.temperature)
+            result["core_clocks"].append(self.nvml.gr_clock)
+            result["memory_clocks"].append(self.nvml.mem_clock)
 
+        if power:
+            result["powers"] = power
         if energy:
             result["energies"] = energy
             result["energy"] = numpy.mean(result["energies"])
+            result["ps_energies"] = ps_energy
+            result["ps_energy"] = numpy.mean(result["ps_energies"])
         result["time"] = numpy.mean(result["times"])
+        result["temperature"] = numpy.mean(result["temperatures"])
+        result["core_clock_freq"] = numpy.mean(result["core_clocks"])
+        result["memory_clock_freq"] = numpy.mean(result["memory_clocks"])
         return result
 
     def _measure_nvml(self, event):
