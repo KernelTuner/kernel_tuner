@@ -80,13 +80,12 @@ _kernel_options = Options([
             parameters. This function should take one positional argument,
             which will be used to pass a dict containing the parameters.
             The function should return a string with the source code for
-            the kernel.""",
-            "string or list and/or callable")),
-     ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
+            the kernel.""", "string or list and/or callable")),
+    ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
         the language using this argument, currently supported: "CUDA",
         "OpenCL", or "C".""", "string")),
-     ("problem_size", ("""An int or string, or 1,2,3-dimensional tuple
+    ("problem_size", ("""An int or string, or 1,2,3-dimensional tuple
             containing the size from which the grid dimensions of the kernel
             will be computed.
 
@@ -142,7 +141,8 @@ _kernel_options = Options([
             the texture contents. These contents can be either simply a numpy object,
             or a dictionary containing the numpy object under the key 'array' plus the
             configuration options 'filter_mode' ('point' or 'linear), 'address_mode'
-            (a list of 'border', 'clamp', 'mirror', 'wrap' per axis), 'normalized_coordinates' (True/False).""",
+            (a list of 'border', 'clamp', 'mirror', 'wrap' per axis),
+            'normalized_coordinates' (True/False).""",
             "dict(string: numpy object or dict)")),
     ("block_size_names", ("""A list of strings that replace the defaults for the names
             that denote the thread block dimensions. If not passed, the behavior
@@ -309,7 +309,7 @@ _tuning_options = Options([
             * too many resources requested for launch
 
         verbose is False by default.""", "bool")),
-    ("cache",("""filename for caching/logging benchmarked instances
+    ("cache", ("""filename for caching/logging benchmarked instances
         filename uses suffix ".json"
         if the file exists it is read and tuning continues from this file
         """, "string"))
