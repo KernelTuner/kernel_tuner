@@ -69,7 +69,7 @@ def test_compile(drv, *args):
     assert optional_args['arch'] == 'compute_55'
 
 
-def dummy_func(a, b, block=0, grid=0, stream=None, texrefs=None):
+def dummy_func(a, b, block=0, grid=0, shared=0, stream=None, texrefs=None):
     pass
 
 @patch('kernel_tuner.cuda.nvml')

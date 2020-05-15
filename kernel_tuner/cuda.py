@@ -76,6 +76,9 @@ class CudaFunctions(object):
         #create a stream
         self.stream = drv.Stream()
 
+        #default dynamically allocated shared memory size, can be overwritten using smem_args
+        self.smem_size = 0
+
         #collect environment information
         env = dict()
         env["device_name"] = self.context.get_device().name()
@@ -242,6 +245,10 @@ class CudaFunctions(object):
             logging.debug(v.flags)
             drv.memcpy_htod(symbol, v)
 
+    def copy_shared_memory_args(self, smem_args):
+        """add shared memory arguments to the kernel"""
+        self.smem_size = smem_args["size"]
+
     def copy_texture_memory_args(self, texmem_args):
         """adds texture memory arguments to the most recently compiled module
 
@@ -317,7 +324,7 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
         """
-        func(*gpu_args, block=threads, grid=grid, stream=stream, texrefs=self.texrefs)
+        func(*gpu_args, block=threads, grid=grid, stream=stream, shared=self.smem_size, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value

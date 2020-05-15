@@ -128,6 +128,12 @@ _kernel_options = Options([
             the grid dimensions in the z-direction, ["block_size_z"] by default.
             If you do not want to divide the problem_size, you should pass an empty list.
             See grid_div_x for more details.""", "list")),
+    ("smem_args", ("""CUDA-specific feature for specifying shared memory options
+            to the kernel. At the moment only 'size' is supported, but setting the
+            shared memory configuration on Kepler GPUs for example could be added
+            in the future. Size should denote the number of bytes for to use when
+            dynamically allocating shared memory.""",
+            "dict(string: numpy object)")),
     ("cmem_args", ("""CUDA-specific feature for specifying constant memory
             arguments to the kernel. In OpenCL these are handled as normal
             kernel arguments, but in CUDA you can copy to a symbol. The way you
@@ -357,7 +363,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                 restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
-                lang=None, device=0, platform=0, cmem_args=None, texmem_args=None,
+                lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
                 cache=None):
@@ -490,7 +496,7 @@ _run_kernel_docstring = """Compile and run a single kernel
 
 def run_kernel(kernel_name, kernel_string, problem_size, arguments,
                params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-               lang=None, device=0, platform=0, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None,
+               lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None,
                block_size_names=None, quiet=False, log=None):
 
     if log:
