@@ -50,6 +50,7 @@ class CudaFunctions(object):
 
         try:
             self.nvml = nvml(device)
+            self.nvml.pwr_usage()
             self.use_nvml = True
         except:
             self.use_nvml = False
