@@ -4,10 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-
 ### Added
 - kernelbuilder functionality for including kernels in Python applications
 - smem_args option for dynamically allocated shared memory in CUDA kernels
+
+### Changed
+- bugfix for Nvidia devices without internal current sensor
 
 ## [0.3.0] - 2019-12-20
 ### Changed
