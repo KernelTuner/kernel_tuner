@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+
+## [0.3.1] - 2020-06-11
 ### Added
 - kernelbuilder functionality for including kernels in Python applications
 - smem_args option for dynamically allocated shared memory in CUDA kernels
