@@ -1,0 +1,20 @@
+{
+    "creators": [
+        {
+            "affiliation": "Netherlands eScience Center",
+            "name": "van Werkhoven, Ben",
+            "orcid": "0000-0002-7508-3272"
+        }
+    ],
+    "keywords": [
+        "GPU Computing",
+        "Auto-Tuning",
+        "Performance Optimization",
+        "OpenCL",
+        "CUDA"
+    ],
+    "license": {
+        "id": "Apache-2.0"
+    },
+    "title": "Kernel Tuner"
+}
