@@ -256,7 +256,7 @@ def looks_like_a_filename(kernel_source):
     logging.debug('kernel_source is a filename: %s' % str(result))
     return result
 
-def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names):
+def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names, lang):
     """ prepare kernel string for compilation
 
     Prepends the kernel with a series of C preprocessor defines specific
@@ -298,11 +298,24 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     for i, g in enumerate(threads):
         kernel_string = "#define " + block_size_names[i] + " " + str(g) + "\n" + kernel_string
     for k, v in params.items():
-        if k not in block_size_names:
+        if "loop_unroll_factor" in k and lang == "CUDA":
+            #this handles the special case that in CUDA
+            #pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
+            #in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
+            if v > 0: # using 0 to disable loop unrolling for this loop
+                kernel_string = "const int " + k + " = " + str(v) + ";\n" + kernel_string
+            else:
+                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
+        elif k not in block_size_names:
             kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
+
     name = kernel_name
+
+    #also insert kernel_tuner token
+    kernel_string = "#define kernel_tuner 1\n" + kernel_string
     #name = kernel_name + "_" + get_instance_string(params)
     #kernel_string = kernel_string.replace(kernel_name, name)
+
     return name, kernel_string
 
 def read_file(filename):

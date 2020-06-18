@@ -115,7 +115,7 @@ class KernelSource(object):
 
             ks = self.get_kernel_string(i, params)
             # add preprocessor statements
-            n, ks = util.prepare_kernel_string(kernel_name, ks, params, grid, threads, block_size_names)
+            n, ks = util.prepare_kernel_string(kernel_name, ks, params, grid, threads, block_size_names, self.lang)
 
             if i == 0:
                 # primary kernel source
