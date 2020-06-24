@@ -1,6 +1,7 @@
 """ This module contains the functionality for running and compiling C functions """
 
 from collections import namedtuple
+import os
 import subprocess
 import platform
 import errno
@@ -8,6 +9,7 @@ import re
 import logging
 import ctypes as C
 import _ctypes
+
 
 import numpy
 import numpy.ctypeslib
@@ -197,9 +199,17 @@ class CFunctions(object):
             if platform.system() == "Darwin":
                 lib_extension = ".dylib"
 
-            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
-            subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
-
+            if not self.compiler == "compute++":
+                subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
+                subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
+            elif self.compiler == "compute++":
+                subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".sycl"])
+                if "-sycl-target" in compiler_options:
+                    del compiler_options[compiler_options.index("-sycl-target") + 1]
+                opts = [c for c in compiler_options if "-sycl" not in c]
+                subprocess.check_call([self.compiler, source_file, "-include", filename + ".sycl"] + opts + ["-lComputeCpp", "-shared", "-o", filename + lib_extension] + lib_args)
+                #cleanup intermediate sycl file
+                os.remove(filename + ".sycl")
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
             func = getattr(self.lib, kernel_instance.name)

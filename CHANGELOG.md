@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Added
+- preliminary support for SYCL
 
 ## [0.3.1] - 2020-06-11
 ### Added
