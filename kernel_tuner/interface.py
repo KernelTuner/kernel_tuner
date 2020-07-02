@@ -367,6 +367,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
+                scheduler=None,
                 cache=None):
 
     if log:
@@ -427,8 +428,6 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         strategy = brute_force
 
 
-    #runner = SequentialRunner(kernel_source, kernel_options, device_options, iterations)
-    runner = ParallelRunner(kernel_source, kernel_options, device_options, iterations)
 
     #the user-specified function may or may not have an optional atol argument;
     #we normalize it so that it always accepts atol.
@@ -443,6 +442,11 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         tuning_options.cache = {}
         tuning_options.cachefile = None
+
+    if not scheduler:
+        runner = SequentialRunner(kernel_source, kernel_options, device_options, tuning_options, iterations)
+    else:
+        runner = ParallelRunner(kernel_source, kernel_options, device_options, tuning_options, iterations, scheduler)
 
     #call the strategy to execute the tuning process
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)

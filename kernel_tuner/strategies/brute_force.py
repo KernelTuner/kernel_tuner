@@ -40,6 +40,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     if restrictions is not None:
         parameter_space = filter(lambda p: util.check_restrictions(restrictions, p, tune_params.keys(), verbose), parameter_space)
 
-    results, env = runner.run(parameter_space, kernel_options, tuning_options)
+    results, env = runner.run(parameter_space)
 
     return results, env
