@@ -38,6 +38,7 @@ import kernel_tuner.util as util
 import kernel_tuner.core as core
 
 from kernel_tuner.runners.sequential import SequentialRunner
+from kernel_tuner.runners.parallel import ParallelRunner
 
 from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
 
@@ -426,7 +427,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         strategy = brute_force
 
 
-    runner = SequentialRunner(kernel_source, kernel_options, device_options, iterations)
+    #runner = SequentialRunner(kernel_source, kernel_options, device_options, iterations)
+    runner = ParallelRunner(kernel_source, kernel_options, device_options, iterations)
 
     #the user-specified function may or may not have an optional atol argument;
     #we normalize it so that it always accepts atol.

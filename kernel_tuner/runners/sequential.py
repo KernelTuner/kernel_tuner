@@ -8,6 +8,7 @@ from kernel_tuner.util import get_config_string, store_cache
 from kernel_tuner.core import DeviceInterface
 
 
+
 class SequentialRunner(object):
     """ SequentialRunner is used for tuning with a single process/thread """
 
