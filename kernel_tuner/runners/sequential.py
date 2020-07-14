@@ -76,7 +76,7 @@ class SequentialRunner(object):
             result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
             if result is None:
                 logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
-                params.update({"time": 1e20})
+                params.update({"time": 1e20, "energy": 1e20})
                 store_cache(x_int, params, tuning_options)
                 continue
 
@@ -87,6 +87,7 @@ class SequentialRunner(object):
                 time = result
 
             params['time'] = time
+            params['energy'] = result["ps_energy"]
             output_string = get_config_string(params, params.keys(), self.units)
             logging.debug(output_string)
             if not self.quiet:

@@ -142,6 +142,7 @@ class OpenCLFunctions(object):
         """
         result = dict()
         result["times"] = []
+        result["timestamp"] = []
         result["temperatures"] = []
         result["core_clocks"] = []
         result["memory_clocks"] = []
@@ -151,7 +152,6 @@ class OpenCLFunctions(object):
         energy = []
         global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
         local_size = threads
-        time = []
         for _ in range(self.iterations):
             event = func(self.queue, global_size, local_size, *gpu_args)
             if self.ps:
@@ -177,11 +177,11 @@ class OpenCLFunctions(object):
             result["core_clocks"].append(self.nvml.gr_clock)
             result["memory_clocks"].append(self.nvml.mem_clock)
 
-        if power:
-            result["powers"] = power
+        #if power:
+        #    result["powers"] = power
         if energy:
-            result["energies"] = energy
-            result["energy"] = numpy.mean(result["energies"])
+            result["nvml_energies"] = energy
+            result["nvml_energy"] = numpy.mean(result["nvml_energies"])
             result["ps_energies"] = ps_energy
             result["ps_energy"] = numpy.mean(result["ps_energies"])
         result["time"] = numpy.mean(result["times"])
