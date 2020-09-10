@@ -90,7 +90,7 @@ def cpp(function_name, kernel_source, args, convert_to_array=None):
         for i, arg in enumerate(args):
             if convert_to_array[i]:
                 if not isinstance(arg, np.ndarray):
-                    ValueError("conversion to array reference only supported for arguments that are numpy arrays, use length-1 numpy array to pass a scalar by reference")
+                    raise ValueError("conversion to array reference only supported for arguments that are numpy arrays, use length-1 numpy array to pass a scalar by reference")
                 if np.prod(arg.shape) > 1:
                     #convert pointer to a reference to an array
                     arg_shape = "".join("[%d]" % i for i in arg.shape)

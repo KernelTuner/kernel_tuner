@@ -81,8 +81,7 @@ def test_benchmark(drv, *args):
     drv.Event.return_value.time_since.return_value = 0.1
 
     dev = cuda.CudaFunctions(0)
-    args = [1, 2]
-    res = dev.benchmark(dummy_func, args, (1,2), (1,2))
+    res = dev.benchmark(dummy_func, [1,2], (1,2), (1,2))
     assert res["time"] > 0
 
     assert dev.context.synchronize.call_count == 1

@@ -10,7 +10,6 @@ def tune_expdist():
     #setup tuning parameters
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [2**i for i in range(5,10)]
-    tune_params["block_size_x"] = [2**i for i in range(5,10)]
     tune_params["block_size_y"] = [2**i for i in range(6)]
     tune_params["tile_size_x"] = [2**i for i in range(4)]
     tune_params["tile_size_y"] = [2**i for i in range(4)]
