@@ -488,3 +488,38 @@ def test_process_cache():
     finally:
         delete_temp_file(cache)
         #pass
+
+
+def test_process_metrics():
+    params = {"x": 15, "b": 12}
+    metrics = OrderedDict()
+    metrics["y"] = lambda p : p["x"]
+
+    #test if lambda function is correctly evaluated
+    params = process_metrics(params, metrics)
+    assert params["y"] == params["x"]
+
+    #test if we can do the same with a string
+    params = {"x": 15, "b": 12}
+    metrics["y"] = "x"
+    params = process_metrics(params, metrics)
+    assert params["y"] == params["x"]
+
+    #test if composability works correctly
+    params = {"x": 15, "b": 12}
+    metrics = OrderedDict()
+    metrics["y"] = "x"
+    metrics["z"] = "y"
+    params = process_metrics(params, metrics)
+    assert params["z"] == params["x"]
+
+    #test ValueError is raised when metrics is not an OrderedDict
+    with pytest.raises(ValueError):
+        params = process_metrics(params, {})
+
+    #test ValueError is raised when b already exists in params
+    params = {"x": 15, "b": 12}
+    metrics = OrderedDict()
+    metrics["b"] = "x"
+    with pytest.raises(ValueError):
+        params = process_metrics(params, metrics)

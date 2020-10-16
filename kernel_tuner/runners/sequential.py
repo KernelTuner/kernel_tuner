@@ -4,7 +4,7 @@ from __future__ import print_function
 from collections import OrderedDict
 import logging
 
-from kernel_tuner.util import get_config_string, store_cache
+from kernel_tuner.util import get_config_string, store_cache, process_metrics
 from kernel_tuner.core import DeviceInterface
 
 
@@ -87,13 +87,20 @@ class SequentialRunner(object):
                 time = result
 
             params['time'] = time
-            output_string = get_config_string(params, params.keys(), self.units)
-            logging.debug(output_string)
-            if not self.quiet:
-                print(output_string)
 
             if isinstance(result, dict):
                 params.update(result)
+
+            print_keys = list(tuning_options.tune_params.keys())+["time"]
+
+            if tuning_options.metrics:
+                params = process_metrics(params, tuning_options.metrics)
+                print_keys += tuning_options.metrics.keys()
+
+            output_string = get_config_string(params, print_keys, self.units)
+            logging.debug(output_string)
+            if not self.quiet:
+                print(output_string)
 
             store_cache(x_int, params, tuning_options)
             results.append(params)

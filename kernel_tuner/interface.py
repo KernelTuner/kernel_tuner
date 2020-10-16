@@ -318,7 +318,8 @@ _tuning_options = Options([
     ("cache", ("""filename for caching/logging benchmarked instances
         filename uses suffix ".json"
         if the file exists it is read and tuning continues from this file
-        """, "string"))
+        """, "string")),
+    ("metrics", ("specifies user-defined metrics", "OrderedDict"))
     ])
 
 _device_options = Options([
@@ -366,7 +367,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None):
+                cache=None, metrics=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
