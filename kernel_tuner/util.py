@@ -36,7 +36,7 @@ def check_argument_list(kernel_name, kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
     kernel_arguments = list()
     collected_errors = list()
-    for iterator in re.finditer(kernel_name + "[ \n\t]*" + "\(", kernel_string):
+    for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
         kernel_end = kernel_string.find(")", kernel_start)
         if kernel_start != 0:
