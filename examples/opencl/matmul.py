@@ -5,7 +5,6 @@ This file demonstrates how to use Kernel Tuner to tune a relatively
 simple matrix multiplication kernel.
 
 """
-
 import json
 import numpy
 import kernel_tuner
