@@ -67,6 +67,7 @@ Reduction
 [`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/reduction.py>`__] [`OpenCL <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/reduction.py>`__]
  - use vector types and shuffle instructions (shuffle is only available in CUDA)
  - tune the number of thread blocks the kernel is executed with
+ - tune the partial loop unrolling factor of a for-loop
  - tune pipeline that consists of two kernels
  - tune with custom output verification function
 

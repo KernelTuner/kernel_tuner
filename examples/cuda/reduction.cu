@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #ifndef vector
 #define vector 1
 #endif 
@@ -18,7 +16,6 @@
 #define stop_loop 0
 #endif
 
-
 __global__ void sum_floats(float *sum_global, floatvector *array, int n) {
     int ti = threadIdx.x;
     int x = blockIdx.x * block_size_x + threadIdx.x;
@@ -26,6 +23,7 @@ __global__ void sum_floats(float *sum_global, floatvector *array, int n) {
     float sum = 0.0f;
 
     //cooperatively iterate over input array with all thread blocks
+    #pragma unroll loop_unroll_factor_0
     for (int i=x; i<n/vector; i+=step_size) {
         floatvector v = array[i];
         #if vector == 1
@@ -56,7 +54,7 @@ __global__ void sum_floats(float *sum_global, floatvector *array, int n) {
         sum = sh_mem[ti];
         #pragma unroll
         for (unsigned int s=16; s>0; s>>=1) {
-            sum += __shfl_down(sum, s);        
+            sum += __shfl_down_sync(0, sum, s);
         }
     }
     #else

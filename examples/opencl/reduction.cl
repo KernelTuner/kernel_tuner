@@ -17,15 +17,9 @@ __kernel void sum_floats(__global float *sum_global, __global floatvector *array
     float sum = 0.0f;
 
     //cooperatively iterate over input array with all thread blocks
+    #pragma unroll loop_unroll_factor
     for (int i=x; i<n/vector; i+=step_size) {
-        floatvector v = array[i];
-        #if vector == 1
-        sum += v;
-        #elif vector == 2
-        sum += v.x + v.y;
-        #elif vector == 4
-        sum += v.x + v.y + v.z + v.w;
-        #endif
+        sum += dot(array[i], (floatvector)(1));
     }
     
     //reduce sum to single value (or last 32 in case of use_shuffle)
