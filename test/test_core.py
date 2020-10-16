@@ -39,7 +39,7 @@ def env():
     verbose = True
     kernel_options = Options(kernel_name="vector_add", kernel_string=kernel_string, problem_size=args[-1], arguments=args, lang=lang,
                           grid_div_x=None, grid_div_y=None, grid_div_z=None, cmem_args=None, texmem_args=None, block_size_names=None)
-    device_options = Options(device=0, platform=0, lang=lang, quiet=False, compiler=None, compiler_options=None)
+    device_options = Options(device=0, platform=0, quiet=False, compiler=None, compiler_options=None)
     dev = core.DeviceInterface(kernel_source, iterations=7, **device_options)
     instance = dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
 

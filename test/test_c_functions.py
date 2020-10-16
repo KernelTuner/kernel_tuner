@@ -89,9 +89,9 @@ def test_ready_argument_list5():
 
     assert all(output[0].numpy == arg1)
 
-    # test that a copy has been made
+    # test that a copy has not been made
     arg1[0] = arg1[0] + 1
-    assert not all(output[0].numpy == arg1)
+    assert all(output[0].numpy == arg1)
 
 
 def test_byte_array_arguments():

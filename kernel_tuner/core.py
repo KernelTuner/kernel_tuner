@@ -115,7 +115,7 @@ class KernelSource(object):
 
             ks = self.get_kernel_string(i, params)
             # add preprocessor statements
-            n, ks = util.prepare_kernel_string(kernel_name, ks, params, grid, threads, block_size_names)
+            n, ks = util.prepare_kernel_string(kernel_name, ks, params, grid, threads, block_size_names, self.lang)
 
             if i == 0:
                 # primary kernel source
@@ -175,7 +175,7 @@ class KernelSource(object):
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, kernel_source, device=0, platform=0, lang=None, quiet=False, compiler=None, compiler_options=None, iterations=7):
+    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param kernel_source The kernel sources

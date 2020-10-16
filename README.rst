@@ -1,7 +1,7 @@
 Kernel Tuner
 ============
 
-|Build Status| |CodeCov Badge| |PyPi Badge|
+|Build Status| |CodeCov Badge| |PyPi Badge| |Zenodo Badge| |SonarCloud Badge| |FairSoftware Badge|
 
 Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.
 
@@ -170,9 +170,9 @@ Cedric Nugteren. CLTune is a C++ library for kernel tuning.
    :target: https://codecov.io/gh/benvanwerkhoven/kernel_tuner
 .. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue 
    :target: https://pypi.python.org/pypi/kernel_tuner/
-
-
-
-
-
-
+.. |Zenodo Badge| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1220113.svg
+   :target: https://doi.org/10.5281/zenodo.1220113
+.. |SonarCloud Badge| image:: https://sonarcloud.io/api/project_badges/measure?project=benvanwerkhoven_kernel_tuner&metric=alert_status
+   :target: https://sonarcloud.io/dashboard?id=benvanwerkhoven_kernel_tuner
+.. |FairSoftware Badge| image:: https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green
+   :target: https://fair-software.eu

@@ -90,19 +90,21 @@ class CFunctions(object):
             if not isinstance(arg, (numpy.ndarray, numpy.number)):
                 raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
             dtype_str = str(arg.dtype)
-            data = arg.copy()
+            #data = arg.copy()
             if isinstance(arg, numpy.ndarray):
                 if dtype_str in dtype_map.keys():
                     # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
                     # to its underlying array, so we need to store a reference to arg.copy()
                     # in the Argument object manually to avoid it being deleted.
                     # (This changed in numpy > 1.15.)
-                    data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+                    #data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+                    data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, numpy.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
-            ctype_args[i] = Argument(numpy=data, ctypes=data_ctypes)
+            #ctype_args[i] = Argument(numpy=data, ctypes=data_ctypes)
+            ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
         return ctype_args
 
     def compile(self, kernel_instance):

@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+""" Simple matrix multiplication example
+
+This file demonstrates how to use Kernel Tuner to tune a relatively
+simple matrix multiplication kernel.
+
+"""
 import json
 import numpy
 import kernel_tuner
@@ -27,10 +33,13 @@ def tune():
 
     answer = [numpy.dot(A,B), None, None]
 
+    metrics = OrderedDict()
+    metrics["GFLOP/s"] = lambda p : (2*4096**3/1e9) / (p["time"] / 1e3)
+
     res, env = kernel_tuner.tune_kernel("matmul_kernel", "matmul.cu",
         problem_size, args, tune_params,
         grid_div_y=grid_div_y, grid_div_x=grid_div_x,
-        restrictions=restrict, verbose=True, iterations=32)
+        restrictions=restrict, verbose=True, iterations=32, metrics=metrics)
 
     with open("matmul.json", 'w') as fp:
         json.dump(res, fp)

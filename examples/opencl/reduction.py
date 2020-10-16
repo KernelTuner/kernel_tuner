@@ -13,9 +13,10 @@ def tune():
     tune_params["block_size_x"] = [2**i for i in range(5,11)]
     tune_params["vector"] = [2**i for i in range(3)]
     tune_params["num_blocks"] = [2**i for i in range(5,11)]
+    tune_params["loop_unroll_factor"] = [0, 1, 8, 16, 32]
 
     problem_size = "num_blocks"
-    size = 80000000
+    size = 800000000
     max_blocks = max(tune_params["num_blocks"])
 
     x = numpy.random.rand(size).astype(numpy.float32)
@@ -27,7 +28,7 @@ def tune():
     #prepare output verification with custom function
     reference = [numpy.sum(x), None, None]
     def verify_partial_reduce(cpu_result, gpu_result, atol=None):
-        return numpy.isclose(cpu_result, numpy.sum(gpu_result), atol=atol)
+        return numpy.isclose(cpu_result[0], numpy.sum(gpu_result[0]), atol=atol)
 
     #tune the first kernel
     first_kernel, _ = tune_kernel("sum_floats", kernel_string, problem_size,

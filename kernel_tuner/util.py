@@ -36,7 +36,7 @@ def check_argument_list(kernel_name, kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
     kernel_arguments = list()
     collected_errors = list()
-    for iterator in re.finditer(kernel_name + "[ \n\t]*" + "\(", kernel_string):
+    for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
         kernel_end = kernel_string.find(")", kernel_start)
         if kernel_start != 0:
@@ -234,6 +234,51 @@ def get_thread_block_dimensions(params, block_size_names=None):
     block_size_z = params.get(block_size_names[2], 1)
     return (int(block_size_x), int(block_size_y), int(block_size_z))
 
+def process_metrics(params, metrics):
+    """ process user-defined metrics for derived benchmark results
+
+    Metrics must be an OrderedDict to support composable metrics. The dictionary keys describe
+    the name given to this user-defined metric and will be used as the key in the results dictionaries
+    return by Kernel Tuner. The values describe how to calculate the user-defined metric, using either a
+    string expression in which the tunable parameters and benchmark results can be used as variables, or
+    as a function that accepts a dictionary as argument.
+    Example:
+    metrics = OrderedDict()
+    metrics["x"] = "10000 / time"
+    metrics["x2"] = "x*x"
+
+    Note that the values in the metric dictionary can also be functions that accept params as argument.
+    Example:
+    metrics = OrderedDict()
+    metrics["GFLOP/s"] = lambda p : 10000 / p["time"]
+
+    :param params: A dictionary with tunable parameters and benchmark results.
+    :type params: dict
+
+    :param metrics: An OrderedDict with user-defined metrics that can be used to create derived benchmark results.
+    :type metrics: OrderedDict
+
+    :returns: An updated params dictionary with the derived metrics inserted along with the benchmark results.
+    :rtype: dict
+
+    """
+    if not isinstance(metrics, OrderedDict):
+        raise ValueError("metrics should be an OrderedDict to preserve order and support composability")
+    for k, v in metrics.items():
+        if isinstance(v, str):
+            value = eval(replace_param_occurrences(v, params))
+        elif callable(v):
+            value = v(params)
+        else:
+            raise ValueError("metric dicts values should be strings or callable")
+        if not k in params:
+            params[k] = value
+        else:
+            raise ValueError("metric dicts keys should not already exist in params")
+    return params
+
+
+
 def looks_like_a_filename(kernel_source):
     """ attempt to detect whether source code or a filename was passed """
     logging.debug('looks_like_a_filename called')
@@ -256,7 +301,7 @@ def looks_like_a_filename(kernel_source):
     logging.debug('kernel_source is a filename: %s' % str(result))
     return result
 
-def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names):
+def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names, lang):
     """ prepare kernel string for compilation
 
     Prepends the kernel with a series of C preprocessor defines specific
@@ -298,11 +343,24 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     for i, g in enumerate(threads):
         kernel_string = "#define " + block_size_names[i] + " " + str(g) + "\n" + kernel_string
     for k, v in params.items():
-        if k not in block_size_names:
+        if "loop_unroll_factor" in k and lang == "CUDA":
+            #this handles the special case that in CUDA
+            #pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
+            #in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
+            if v > 0: # using 0 to disable loop unrolling for this loop
+                kernel_string = "const int " + k + " = " + str(v) + ";\n" + kernel_string
+            else:
+                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
+        elif k not in block_size_names:
             kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
+
     name = kernel_name
+
+    #also insert kernel_tuner token
+    kernel_string = "#define kernel_tuner 1\n" + kernel_string
     #name = kernel_name + "_" + get_instance_string(params)
     #kernel_string = kernel_string.replace(kernel_name, name)
+
     return name, kernel_string
 
 def read_file(filename):
