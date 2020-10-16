@@ -305,6 +305,7 @@ kernel [<a class="reference external" href="https://github.com/benvanwerkhoven/k
 <dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/reduction.py">CUDA</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/reduction.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>use vector types and shuffle instructions (shuffle is only available in CUDA)</p></li>
 <li><p>tune the number of thread blocks the kernel is executed with</p></li>
+<li><p>tune the partial loop unrolling factor of a for-loop</p></li>
 <li><p>tune pipeline that consists of two kernels</p></li>
 <li><p>tune with custom output verification function</p></li>
 </ul>
