@@ -25,8 +25,9 @@ Matrix Multiplication
 [`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/matmul.py>`__] [`OpenCL <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/matmul.py>`__]
  -  pass a filename instead of a string with code
  -  use 2-dimensional thread blocks and tiling in both dimensions
- -  tell the Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling
+ -  tell Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling
  -  use the restrictions option to limit the search to only valid configurations
+ -  use a user-defined performance metric like GFLOP/s
 
 Convolution
 -----------
