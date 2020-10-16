@@ -1326,6 +1326,39 @@ from an earlier (abruptly ended) tuning session.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="kernel_tuner.util.process_metrics">
+<code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">process_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">metrics</span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.process_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>process user-defined metrics for derived benchmark results</p>
+<p>Metrics must be an OrderedDict to support composable metrics. The dictionary keys describe
+the name given to this user-defined metric and will be used as the key in the results dictionaries
+return by Kernel Tuner. The values describe how to calculate the user-defined metric, using either a
+string expression in which the tunable parameters and benchmark results can be used as variables, or
+as a function that accepts a dictionary as argument.
+Example:
+metrics = OrderedDict()
+metrics[“x”] = “10000 / time”
+metrics[“x2”] = “x*x”</p>
+<p>Note that the values in the metric dictionary can also be functions that accept params as argument.
+Example:
+metrics = OrderedDict()
+metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>dict</em>) – A dictionary with tunable parameters and benchmark results.</p></li>
+<li><p><strong>metrics</strong> (<em>OrderedDict</em>) – An OrderedDict with user-defined metrics that can be used to create derived benchmark results.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An updated params dictionary with the derived metrics inserted along with the benchmark results.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="kernel_tuner.util.read_file">
 <code class="sig-prename descclassname">kernel_tuner.util.</code><code class="sig-name descname">read_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.read_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>return the contents of the file named filename or None if file not found</p>

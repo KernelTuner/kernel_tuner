@@ -243,8 +243,9 @@ which show how to write tests for GPU kernels with Kernel Tuner.</p>
 <dt>[<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/matmul.py">CUDA</a>] [<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/matmul.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>pass a filename instead of a string with code</p></li>
 <li><p>use 2-dimensional thread blocks and tiling in both dimensions</p></li>
-<li><p>tell the Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling</p></li>
+<li><p>tell Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling</p></li>
 <li><p>use the restrictions option to limit the search to only valid configurations</p></li>
+<li><p>use a user-defined performance metric like GFLOP/s</p></li>
 </ul>
 </dd>
 </dl>
