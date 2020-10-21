@@ -29,38 +29,18 @@ def test_ready_argument_list():
 @skip_if_no_cuda
 def test_compile():
 
-    original_kernel = """
+    kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
-        __shared__ float test[shared_size];
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i<n) {
-            test[0] = a[i];
-            c[i] = test[0] + b[i];
+            c[i] = a[i] + b[i];
         }
     }
     """
 
-    kernel_sources = KernelSource(original_kernel, "cuda")
-
-
-    kernel_string = original_kernel.replace("shared_size", str(100*1024*1024))
+    kernel_sources = KernelSource(kernel_string, "cuda")
     kernel_instance = KernelInstance("vector_add", kernel_sources, kernel_string, [], None, None, dict(), [])
-
     dev = cuda.CudaFunctions(0)
-    try:
-        func = dev.compile(kernel_instance)
-        assert isinstance(func, pycuda.driver.Function)
-        print("Expected an exception because too much shared memory is requested")
-        assert False
-    except Exception as e:
-        if "uses too much shared data" in str(e):
-            assert True
-        else:
-            print("Expected a different exception:" + str(e))
-            assert False
-
-    kernel_string = original_kernel.replace("shared_size", str(100))
-    kernel_instance = KernelInstance("vector_add", kernel_sources, kernel_string, [], None, None, dict(), [])
     try:
         func = dev.compile( kernel_instance)
         assert True
