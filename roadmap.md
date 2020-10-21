@@ -11,7 +11,6 @@ priorities grow and shift.
 
 ## version 0.5.0
 
- * Support for specifying metrics, using tunable parameters, results, and/or a function
  * Allow strategies to tune for a metric other than time
 
 ## version 0.9.0
@@ -37,7 +36,6 @@ immediate demand for it. If you are interested in any of these, let us know!
  * Tuning compiler options in combination with other parameters
  * Example that tunes a kernel using thread block re-indexing
  * Example CUDA host code that uses runtime compilation
- * A test_kernel function to perform parameterized testing without tuning
  * Extend Fortran support, no more warnings on data types or missing block size parameter etc.
  * Turn the C backend into a more general compiler backend
  * A get_parameterized_kernel_source function to return the parameterized kernel source for inspection
