@@ -4,7 +4,7 @@ from __future__ import print_function
 from collections import OrderedDict
 import logging
 
-from kernel_tuner.util import get_config_string, store_cache, process_metrics
+from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output
 from kernel_tuner.core import DeviceInterface
 
 
@@ -34,6 +34,8 @@ class SequentialRunner(object):
         self.units = self.dev.units
         self.quiet = device_options.quiet
         self.kernel_source = kernel_source
+
+        self.warmed_up = False
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -66,6 +68,11 @@ class SequentialRunner(object):
         for element in parameter_space:
             params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
+            #attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
+            if not self.warmed_up:
+                self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+                self.warmed_up = True
+
             #check if element is in the cache
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache:
@@ -91,16 +98,11 @@ class SequentialRunner(object):
             if isinstance(result, dict):
                 params.update(result)
 
-            print_keys = list(tuning_options.tune_params.keys())+["time"]
 
             if tuning_options.metrics:
                 params = process_metrics(params, tuning_options.metrics)
-                print_keys += tuning_options.metrics.keys()
 
-            output_string = get_config_string(params, print_keys, self.units)
-            logging.debug(output_string)
-            if not self.quiet:
-                print(output_string)
+            print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
 
             store_cache(x_int, params, tuning_options)
             results.append(params)
@@ -111,3 +113,7 @@ class SequentialRunner(object):
     def __del__(self):
         if hasattr(self, 'dev'):
             del self.dev
+
+
+
+

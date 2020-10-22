@@ -131,6 +131,12 @@ def detect_language(kernel_string):
 
 def get_config_string(params, keys=None, units=None):
     """ return a compact string representation of a measurement """
+    def compact_number(v):
+        if isinstance(v, float):
+            return "{:.3f}".format(round(v, 3))
+        else:
+            return str(v)
+
     compact_str_items = []
     if not keys:
         keys = params.keys()
@@ -140,7 +146,7 @@ def get_config_string(params, keys=None, units=None):
             unit = ""
             if isinstance(units, dict): #check if not None not enough, units could be mocked which causes errors
                 unit = units.get(k, "")
-            compact_str_items.append(k + "=" + str(v) + unit)
+            compact_str_items.append(k + "=" + compact_number(v) + unit)
     # and finally join them
     compact_str = ", ".join(compact_str_items)
     return compact_str
@@ -233,6 +239,15 @@ def get_thread_block_dimensions(params, block_size_names=None):
     block_size_y = params.get(block_size_names[1], 1)
     block_size_z = params.get(block_size_names[2], 1)
     return (int(block_size_x), int(block_size_y), int(block_size_z))
+
+def print_config_output(tune_params, params, quiet, metrics, units):
+    """print the configuration string with tunable parameters and benchmark results"""
+    print_keys = list(tune_params.keys())+["time"]
+    if metrics:
+        print_keys += metrics.keys()
+    output_string = get_config_string(params, print_keys, units)
+    if not quiet:
+        print(output_string)
 
 def process_metrics(params, metrics):
     """ process user-defined metrics for derived benchmark results

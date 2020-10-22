@@ -6,8 +6,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - support loop unrolling using params that start with loop_unroll_factor
-- always insert "define kernel_tuner" to allow preprocessor ifdef kernel_tuner
+- always insert "define kernel_tuner 1" to allow preprocessor ifdef kernel_tuner
 - support for user-defined metrics
+
+### Changed
+- more compact output is printed to the terminal
+- sequential runner runs first kernel in the parameter space to warm up device
 
 ## [0.3.1] - 2020-06-11
 ### Added

@@ -451,7 +451,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         if results:     #checks if results is not empty
             best_config = min(results, key=lambda x: x['time'])
             units = getattr(runner, "units", None)
-            print("best performing configuration:", util.get_config_string(best_config, list(tune_params.keys()) + ['time'], units=units))
+            print("best performing configuration:")
+            util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
         else:
             print("no results to report")
 
