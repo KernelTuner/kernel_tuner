@@ -20,7 +20,7 @@ Linux users could type the following to download and install Python 3 using Mini
     bash Miniconda3-latest-Linux-x86_64.sh
 
 You are of course also free to use your own Python installation, and the Kernel Tuner
-is developed to be fully compatible with Python 3.5 and newer, and also Python 2.7.
+is developed to be fully compatible with Python 3.6 and newer.
 
 Installing Python Packages
 --------------------------
@@ -53,7 +53,7 @@ CUDA kernels you will first need to install the CUDA toolkit
 (https://developer.nvidia.com/cuda-toolkit). A recent version of the 
 CUDA toolkit (and the PyCUDA Python bindings for CUDA) are 
 recommended (older version may work, but may not support all features of 
-the Kernel Tuner). 
+Kernel Tuner). 
 
 It's very important that you install the CUDA toolkit before trying to install PyCuda.
 
@@ -112,8 +112,8 @@ Or you could install Kernel Tuner and PyOpenCL together if you haven't done so a
 If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.net/PyOpenCL/Installation)
 
 
-Installing the Kernel Tuner
----------------------------
+Installing Kernel Tuner
+-----------------------
 
 You can also install from the git repository. This way you also get the 
 examples and the tutorials.
