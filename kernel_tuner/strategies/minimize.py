@@ -98,19 +98,28 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
 
 def get_bounds_x0_eps(tuning_options):
     """compute bounds, x0 (the initial guess), and eps"""
-    values = tuning_options.tune_params.values()
+    values = list(tuning_options.tune_params.values())
+
+    if "x0" in tuning_options.strategy_options:
+        x0 = tuning_options.strategy_options.x0
+    else:
+        x0 = None
 
     if tuning_options.scaling:
-        #bounds = [(0, 1) for _ in values]
-        #x0 = [0.5 for _ in bounds]
         eps = numpy.amin([1.0/len(v) for v in values])
 
         #reducing interval from [0, 1] to [0, eps*len(v)]
         bounds = [(0, eps*len(v)) for v in values]
-        x0 = [0.5*eps*len(v) for v in values]
+        if x0:
+            #x0 has been supplied by the user, map x0 into [0, eps*len(v)]
+            for i, e in enumerate(values):
+                x0[i] = eps*values[i].index(x0[i])
+        else:
+            x0 = [0.5*eps*len(v) for v in values]
     else:
         bounds = get_bounds(tuning_options.tune_params)
-        x0 = [(min_v+max_v)/2.0 for (min_v, max_v) in bounds]
+        if not x0:
+            x0 = [(min_v+max_v)/2.0 for (min_v, max_v) in bounds]
         eps = 1e9
         for v_list in values:
             vals = numpy.sort(v_list)

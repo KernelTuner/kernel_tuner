@@ -16,6 +16,7 @@ def test_get_bounds_x0_eps():
     tune_params['x'] = [0, 1, 2, 3, 4]
 
     tuning_options["tune_params"] = tune_params
+    tuning_options["strategy_options"] = {}
 
     bounds, x0, eps = minimize.get_bounds_x0_eps(tuning_options)
 
