@@ -25,13 +25,13 @@ iterates over all valid kernel configurations in the search space.
 advanced strategies currently implemented in Kernel Tuner are 
 ``minimize``, ``basinhopping``, and differential evolution 
 (``diff_evo``). How to use these is explained in the :doc:`user-api`,
-see the options ``strategy`` and ``method``.
+see the options ``strategy`` and ``strategy_options``.
 
 The runners are responsible for compiling and benchmarking the kernel 
 configurations selected by the strategy. The sequential runner is currently
 the only supported runner, which does exactly what its name says. It compiles 
 and benchmarks configurations using a single sequential Python process.
-Other parallel runners are foreseen in future releases.
+Other runners are foreseen in future releases.
 
 The runners are implemented on top of a high-level *Device Interface*,
 which wraps all the functionality for compiling and benchmarking

@@ -96,7 +96,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#installing-python-packages">Installing Python Packages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cuda-and-pycuda">CUDA and PyCUDA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#opencl-and-pyopencl">OpenCL and PyOpenCL</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-the-kernel-tuner">Installing the Kernel Tuner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-kernel-tuner">Installing Kernel Tuner</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#dependencies-for-the-tutorial">Dependencies for the Tutorial</a></li>
 </ul>
 </li>
@@ -217,7 +217,7 @@ bash Miniconda3-latest-Linux-x86_64.sh
 </pre></div>
 </div>
 <p>You are of course also free to use your own Python installation, and the Kernel Tuner
-is developed to be fully compatible with Python 3.5 and newer, and also Python 2.7.</p>
+is developed to be fully compatible with Python 3.6 and newer.</p>
 </div>
 <div class="section" id="installing-python-packages">
 <h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Permalink to this headline">¶</a></h2>
@@ -243,7 +243,7 @@ CUDA kernels you will first need to install the CUDA toolkit
 (<a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">https://developer.nvidia.com/cuda-toolkit</a>). A recent version of the
 CUDA toolkit (and the PyCUDA Python bindings for CUDA) are
 recommended (older version may work, but may not support all features of
-the Kernel Tuner).</p>
+Kernel Tuner).</p>
 <p>It’s very important that you install the CUDA toolkit before trying to install PyCuda.</p>
 <p>You can install PyCuda manually using:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install pycuda
@@ -285,8 +285,8 @@ PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
 </div>
 <p>If this fails, please see the PyOpenCL installation guide (<a class="reference external" href="https://wiki.tiker.net/PyOpenCL/Installation">https://wiki.tiker.net/PyOpenCL/Installation</a>)</p>
 </div>
-<div class="section" id="installing-the-kernel-tuner">
-<h2>Installing the Kernel Tuner<a class="headerlink" href="#installing-the-kernel-tuner" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="installing-kernel-tuner">
+<h2>Installing Kernel Tuner<a class="headerlink" href="#installing-kernel-tuner" title="Permalink to this headline">¶</a></h2>
 <p>You can also install from the git repository. This way you also get the
 examples and the tutorials.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
