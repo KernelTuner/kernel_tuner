@@ -558,8 +558,5 @@ def store_cache(key, params, tuning_options):
             tuning_options.cache[key] = params
             if tuning_options.cachefile:
                 with open(tuning_options.cachefile, "a") as cachefile:
-                    print("going to write:")
-                    print(f"{key}")
-                    print(f"{params}")
                     cachefile.write("\n" + json.dumps({key: params}, default=npconverter)[1:-1] + ",")
 
