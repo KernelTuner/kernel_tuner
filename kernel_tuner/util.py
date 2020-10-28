@@ -10,7 +10,7 @@ import logging
 import warnings
 import re
 
-import numpy
+import numpy as np
 
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
@@ -49,11 +49,11 @@ def check_argument_list(kernel_name, kernel_string, args):
         for (i, arg) in enumerate(args):
             kernel_argument = arguments[i]
 
-            if not isinstance(arg, (numpy.ndarray, numpy.generic)):
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type numpy.ndarray or numpy scalar")
+            if not isinstance(arg, (np.ndarray, np.generic)):
+                raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type np.ndarray or numpy scalar")
 
             correct = True
-            if isinstance(arg, numpy.ndarray) and not "*" in kernel_argument:
+            if isinstance(arg, np.ndarray) and not "*" in kernel_argument:
                 correct = False  #array is passed to non-pointer kernel argument
 
             if correct and check_argument_type(str(arg.dtype), kernel_argument):
@@ -160,9 +160,9 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
                 divisor_list = [default]
             else:
                 return 1
-        return numpy.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+        return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
-    return tuple(int(numpy.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
+    return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
 
 def get_instance_string(params):
     """ combine the parameters to a string mostly used for debug output
@@ -212,13 +212,13 @@ def get_kernel_string(kernel_source, params=None):
 
 def get_problem_size(problem_size, params):
     """compute current problem size"""
-    if isinstance(problem_size, (str, int, numpy.integer)):
+    if isinstance(problem_size, (str, int, np.integer)):
         problem_size = (problem_size, )
     current_problem_size = [1, 1, 1]
     for i, s in enumerate(problem_size):
         if isinstance(s, str):
             current_problem_size[i] = int(eval(replace_param_occurrences(s, params)))
-        elif isinstance(s, (int, numpy.integer)):
+        elif isinstance(s, (int, np.integer)):
             current_problem_size[i] = s
         else:
             raise TypeError("Error: problem_size should only contain strings or integers")
@@ -540,11 +540,23 @@ def close_cache(cache):
 
 
 def store_cache(key, params, tuning_options):
+    """ stores a new entry (key, params) to the cachefile """
+    # create converter for dumping numpy objects to JSON
+    def npconverter(obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return obj.__str__()
+
     logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict):
         if not key in tuning_options.cache:
             tuning_options.cache[key] = params
             if tuning_options.cachefile:
                 with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({key: params})[1:-1] + ",")
+                    cachefile.write("\n" + json.dumps({key: params}, default=npconverter)[1:-1] + ",")
 

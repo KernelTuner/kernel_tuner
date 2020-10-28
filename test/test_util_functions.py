@@ -455,7 +455,7 @@ def test_process_cache():
         assert len(tuning_options.cache) == 0
 
         #store one entry in the cache
-        params = {"x": 4, "time": 0.1234}
+        params = {"x": 4, "time": numpy.float32(0.1234)}
         store_cache("4", params, tuning_options)
         assert len(tuning_options.cache) == 1
 
