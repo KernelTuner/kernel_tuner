@@ -349,7 +349,8 @@ class DeviceInterface(object):
             #compiles may fail because certain kernel configurations use too
             #much shared memory for example, the desired behavior is to simply
             #skip over this configuration and try the next one
-            if "uses too much shared data" in str(e):
+            shared_mem_error_messages = ["uses too much shared data", "local memory limit exceeded"]
+            if any(msg in str(e) for msg in shared_mem_error_messages):
                 logging.debug('compile_kernel failed due to kernel using too much shared memory')
                 if verbose:
                     print("skipping config", instance.name, "reason: too much shared memory used")
