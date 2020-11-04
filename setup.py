@@ -14,7 +14,7 @@ else:
 
 setup(
     name="kernel_tuner",
-    version="0.3.1",
+    version="0.3.2",
     author="Ben van Werkhoven",
     author_email="b.vanwerkhoven@esciencecenter.nl",
     description=("An easy to use CUDA/OpenCL kernel tuner in Python"),

@@ -2,8 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
-
+## [0.3.2] - 2020-11-04
 ### Added
 - support loop unrolling using params that start with loop_unroll_factor
 - always insert "define kernel_tuner 1" to allow preprocessor ifdef kernel_tuner
