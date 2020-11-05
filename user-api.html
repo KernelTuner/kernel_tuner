@@ -225,25 +225,37 @@ the kernel.</p>
 automatically detects the language, but if it fails, you may specify
 the language using this argument, currently supported: “CUDA”,
 “OpenCL”, or “C”.</p></li>
-<li><p><strong>problem_size</strong> (<em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>An int or string, or 1,2,3-dimensional tuple
-containing the size from which the grid dimensions of the kernel
-will be computed.</p>
-<p>Do not divide the problem_size yourself by the thread block sizes.
-The Kernel Tuner does this for you based on tunable parameters,
+<li><p><strong>problem_size</strong> (<em>callable</em><em>, </em><em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>The size of the domain from which the grid dimensions
+of the kernel are computed.</p>
+<p>This can be specified using an int, string, function, or
+1,2,3-dimensional tuple.</p>
+<p>In general, do not divide the problem_size yourself by the thread block sizes.
+Kernel Tuner does this for you based on tunable parameters,
 called “block_size_x”, “block_size_y”, and “block_size_z”.
 If more or different parameters divide the grid dimensions use
 grid_div_x/y/z options to specify this.</p>
-<p>You are allowed to use a string to specify the problem
-size. Within a string you are allowed to write Python
+<p>In most use-cases the problem_size is specified using a single integer
+or a tuple of integers,
+but Kernel Tuner supports more advanced use cases where the problem_size
+itself depends on the tunable parameters in some way.</p>
+<p>You are allowed to use a function or string to specify the problem_size.
+A function should accept a dictionary with the tunable parameters
+for this kernel configuration and directly return a tuple
+that specifies the problem size in all dimensions.</p>
+<p>When passing a string, you are allowed to write Python
 arithmetic and use the names of tunable parameters as variables
-in these expressions.
-The Kernel Tuner will replace instances of the tunable parameters
-with their current value when computing the grid dimensions.
-See the reduction CUDA example for an example use of this feature.</p>
+in these expressions. Kernel Tuner will replace instances of the tunable
+parameters with their current value when computing the grid dimensions.
+This option exists for convenience, but do note that using a lambda
+function is probably safer. The string notation should only return
+the problem size for one dimension, but can be used inside
+a tuple, possibly in combination with integers or more strings in
+different dimensions.</p>
+<p>See the reduction CUDA example for an example use of this feature.</p>
 </p></li>
 <li><p><strong>arguments</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
 arrays, use numpy.int32 or numpy.float32 for scalars.</p></li>
-<li><p><strong>grid_div_x</strong> (<em>list</em>) – <p>A list of names of the parameters whose values divide
+<li><p><strong>grid_div_x</strong> (<em>callable</em><em> or </em><em>list</em>) – <p>A list of names of the parameters whose values divide
 the grid dimensions in the x-direction.
 The product of all grid divisor expressions is computed before dividing
 the problem_size in that dimension. Also note that the divison is treated
@@ -253,7 +265,10 @@ the nearest integer number.</p>
 used if necessary inside the string containing a parameter name. For
 example, in some cases you may want to divide the problem size in the
 x-dimension with the number of warps rather than the number of threads
-in a block, in such cases one could use [“block_size_x/32”].</p>
+in a block, in such cases one could for example use [“block_size_x/32”].
+Another option is to pass a function to grid_div_x that accepts a
+dictionary with the tunable parameters and returns the grid divisor
+in this dimension, for example: grid_div_x=lambda p:p[“block_size_x”]/32.</p>
 <p>If not supplied, [“block_size_x”] will be used by default, if you do not
 want any grid x-dimension divisors pass an empty list.</p>
 </p></li>
@@ -289,13 +304,13 @@ that denote the thread block dimensions. If not passed, the behavior
 defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></p></li>
 <li><p><strong>tune_params</strong> (<em>dict</em><em>( </em><em>string :</em><em> [</em><em>..</em><em>]</em>) – <p>A dictionary containing the parameter names as keys,
 and lists of possible parameter settings as values.
-The Kernel Tuner will try to compile and benchmark all possible
+Kernel Tuner will try to compile and benchmark all possible
 combinations of all possible values for all tuning parameters.
 This typically results in a rather large search space of all
 possible kernel configurations.</p>
 <p>For each kernel configuration, each tuning parameter is
 replaced at compile-time with its current value.
-Currently, the Kernel Tuner uses the convention that the following
+Currently, Kernel Tuner uses the convention that the following
 list of tuning parameters are used as thread block dimensions:</p>
 <blockquote>
 <div><ul>
@@ -309,9 +324,15 @@ don’t want the thread block dimensions to be compiled in, you
 may use the built-in variables blockDim.xyz in CUDA or the
 built-in function get_local_size() in OpenCL instead.</p>
 </p></li>
-<li><p><strong>restrictions</strong> (<em>list</em>) – A list of strings containing boolean expression that
-limit the search space in that they must be satisfied by the kernel
-configuration. These expressions must be true for the configuration
+<li><p><strong>restrictions</strong> (<em>callable</em><em> or </em><em>list</em><em>(</em><em>strings</em><em>)</em>) – An option to limit the search space with restrictions.
+The restrictions can be specified using a function or a list of strings.
+The function should take one argument, namely a dictionary with the
+tunable parameters of the kernel configuration, if the function returns
+True the configuration is considered to be part of the search space, or
+False otherwise.
+The other way to specify restrictions is using a list of strings
+containing boolean expression that must be satisfied by the kernel
+configuration. These expressions must all be true for the configuration
 to be part of the search space. For example:
 restrictions=[“block_size_x==block_size_y*tile_size_y”] limits the
 search to configurations where the block_size_x equals the product
@@ -490,7 +511,7 @@ after execution on the GPU.</p>
 </ul>
 </dd>
 </dl>
-<p>This function was added to the Kernel Tuner mostly to allow easy testing for kernel correctness.
+<p>This function was added to Kernel Tuner mostly to allow easy testing for kernel correctness.
 On purpose, the interface is a lot like <cite>tune_kernel()</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -516,25 +537,37 @@ the kernel.</p>
 automatically detects the language, but if it fails, you may specify
 the language using this argument, currently supported: “CUDA”,
 “OpenCL”, or “C”.</p></li>
-<li><p><strong>problem_size</strong> (<em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>An int or string, or 1,2,3-dimensional tuple
-containing the size from which the grid dimensions of the kernel
-will be computed.</p>
-<p>Do not divide the problem_size yourself by the thread block sizes.
-The Kernel Tuner does this for you based on tunable parameters,
+<li><p><strong>problem_size</strong> (<em>callable</em><em>, </em><em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>.</em><em>)</em>) – <p>The size of the domain from which the grid dimensions
+of the kernel are computed.</p>
+<p>This can be specified using an int, string, function, or
+1,2,3-dimensional tuple.</p>
+<p>In general, do not divide the problem_size yourself by the thread block sizes.
+Kernel Tuner does this for you based on tunable parameters,
 called “block_size_x”, “block_size_y”, and “block_size_z”.
 If more or different parameters divide the grid dimensions use
 grid_div_x/y/z options to specify this.</p>
-<p>You are allowed to use a string to specify the problem
-size. Within a string you are allowed to write Python
+<p>In most use-cases the problem_size is specified using a single integer
+or a tuple of integers,
+but Kernel Tuner supports more advanced use cases where the problem_size
+itself depends on the tunable parameters in some way.</p>
+<p>You are allowed to use a function or string to specify the problem_size.
+A function should accept a dictionary with the tunable parameters
+for this kernel configuration and directly return a tuple
+that specifies the problem size in all dimensions.</p>
+<p>When passing a string, you are allowed to write Python
 arithmetic and use the names of tunable parameters as variables
-in these expressions.
-The Kernel Tuner will replace instances of the tunable parameters
-with their current value when computing the grid dimensions.
-See the reduction CUDA example for an example use of this feature.</p>
+in these expressions. Kernel Tuner will replace instances of the tunable
+parameters with their current value when computing the grid dimensions.
+This option exists for convenience, but do note that using a lambda
+function is probably safer. The string notation should only return
+the problem size for one dimension, but can be used inside
+a tuple, possibly in combination with integers or more strings in
+different dimensions.</p>
+<p>See the reduction CUDA example for an example use of this feature.</p>
 </p></li>
 <li><p><strong>arguments</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
 arrays, use numpy.int32 or numpy.float32 for scalars.</p></li>
-<li><p><strong>grid_div_x</strong> (<em>list</em>) – <p>A list of names of the parameters whose values divide
+<li><p><strong>grid_div_x</strong> (<em>callable</em><em> or </em><em>list</em>) – <p>A list of names of the parameters whose values divide
 the grid dimensions in the x-direction.
 The product of all grid divisor expressions is computed before dividing
 the problem_size in that dimension. Also note that the divison is treated
@@ -544,7 +577,10 @@ the nearest integer number.</p>
 used if necessary inside the string containing a parameter name. For
 example, in some cases you may want to divide the problem size in the
 x-dimension with the number of warps rather than the number of threads
-in a block, in such cases one could use [“block_size_x/32”].</p>
+in a block, in such cases one could for example use [“block_size_x/32”].
+Another option is to pass a function to grid_div_x that accepts a
+dictionary with the tunable parameters and returns the grid divisor
+in this dimension, for example: grid_div_x=lambda p:p[“block_size_x”]/32.</p>
 <p>If not supplied, [“block_size_x”] will be used by default, if you do not
 want any grid x-dimension divisors pass an empty list.</p>
 </p></li>
