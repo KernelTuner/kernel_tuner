@@ -48,6 +48,13 @@ def test_get_grid_dimensions1():
     assert grid[1] == 28
     assert grid[2] == 1
 
+    grid = get_grid_dimensions(problem_size, params,
+                    (None, lambda p: p["block_x"], lambda p: p["block_y"]*p["block_x"]), block_size_names)
+
+    assert grid[0] == 1024
+    assert grid[1] == 25
+    assert grid[2] == 1
+
 def test_get_grid_dimensions2():
     problem_size = (1024, 1024, 1)
     params = {"block_x": 41, "block_y": 37}
@@ -60,6 +67,25 @@ def test_get_grid_dimensions2():
 
     assert grid[0] == 4
     assert grid[1] == 256
+
+def test_get_grid_dimensions3():
+    problem_size = (1024, 1024, 1)
+    params = {"block_x": 41, "block_y": 37}
+
+    grid_div_x = ["block_x", "block_y"]
+    grid_div_y = ["(block_y+2)/8"]
+
+    def assert_grid_dimensions(problem_size):
+        grid = get_grid_dimensions(problem_size, params,
+                    (grid_div_x, grid_div_y, None), block_size_names)
+        assert grid[0] == 1
+        assert grid[1] == 256
+        assert grid[2] == 1
+
+    assert_grid_dimensions(problem_size)
+
+    problem_size = (numpy.int32(1024), numpy.int64(1024), 1)
+    assert_grid_dimensions(problem_size)
 
 def test_get_problem_size1():
     problem_size = ("num_blocks_x", "num_blocks_y*3")
@@ -85,27 +111,14 @@ def test_get_problem_size3():
         params = {"num_blocks_y": 57}
         get_problem_size(problem_size, params)
 
-def test_get_grid_dimensions5():
-    problem_size = (1024, 1024, 1)
-    params = {"block_x": 41, "block_y": 37}
+def test_get_problem_size4():
+    problem_size = lambda p: (p["num_blocks_x"], 1, 13)
+    params = {"num_blocks_x": 71}
 
-    grid_div_x = ["block_x", "block_y"]
-    grid_div_y = ["(block_y+2)/8"]
-
-    def assert_grid_dimensions(problem_size):
-        grid = get_grid_dimensions(problem_size, params,
-                    (grid_div_x, grid_div_y, None), block_size_names)
-        assert grid[0] == 1
-        assert grid[1] == 256
-        assert grid[2] == 1
-
-    assert_grid_dimensions(problem_size)
-
-    problem_size = (numpy.int32(1024), numpy.int64(1024), 1)
-    assert_grid_dimensions(problem_size)
-
-
-
+    answer = get_problem_size(problem_size, params)
+    assert answer[0] == 71
+    assert answer[1] == 1
+    assert answer[2] == 13
 
 def test_get_thread_block_dimensions():
 
@@ -158,8 +171,10 @@ def test_check_restrictions():
     params = {"a": 7, "b": 4, "c": 3}
     print(params.values())
     print(params.keys())
-    restrictions = [["a==b+c"], ["a==b+c", "b==b", "a-b==c"], ["a==b+c", "b!=b", "a-b==c"]]
-    expected = [True, True, False]
+    restrictions = [["a==b+c"], ["a==b+c", "b==b", "a-b==c"],
+                    ["a==b+c", "b!=b", "a-b==c"],
+                    lambda p:p["a"]==p["b"]+p["c"]]
+    expected = [True, True, False, True]
     #test the call returns expected
     for r,e in zip(restrictions, expected):
         answer = check_restrictions(r, params.values(), params.keys(), False)

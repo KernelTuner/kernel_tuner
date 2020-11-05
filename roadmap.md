@@ -30,8 +30,6 @@ implemented in earlier versions.
 These are the things that we would like to implement, but we currently have no
 immediate demand for it. If you are interested in any of these, let us know!
 
- * Option to set function that computes search space restriction, instead of a list of strings
- * Option to set function that computes grid dimensions instead of grid divisor lists
  * Provide API for analysis of tuning results
  * Tuning compiler options in combination with other parameters
  * Example that tunes a kernel using thread block re-indexing

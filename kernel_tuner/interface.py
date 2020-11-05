@@ -1,6 +1,6 @@
 """Kernel Tuner interface module
 
-This module contains the main functions that the Kernel Tuner
+This module contains the main functions that Kernel Tuner
 offers to its users.
 
 Author
@@ -85,24 +85,40 @@ _kernel_options = Options([
         automatically detects the language, but if it fails, you may specify
         the language using this argument, currently supported: "CUDA",
         "OpenCL", or "C".""", "string")),
-    ("problem_size", ("""An int or string, or 1,2,3-dimensional tuple
-            containing the size from which the grid dimensions of the kernel
-            will be computed.
+    ("problem_size", ("""The size of the domain from which the grid dimensions
+            of the kernel are computed.
 
-            Do not divide the problem_size yourself by the thread block sizes.
-            The Kernel Tuner does this for you based on tunable parameters,
+            This can be specified using an int, string, function, or
+            1,2,3-dimensional tuple.
+
+            In general, do not divide the problem_size yourself by the thread block sizes.
+            Kernel Tuner does this for you based on tunable parameters,
             called "block_size_x", "block_size_y", and "block_size_z".
             If more or different parameters divide the grid dimensions use
             grid_div_x/y/z options to specify this.
 
-            You are allowed to use a string to specify the problem
-            size. Within a string you are allowed to write Python
+            In most use-cases the problem_size is specified using a single integer
+            or a tuple of integers,
+            but Kernel Tuner supports more advanced use cases where the problem_size
+            itself depends on the tunable parameters in some way.
+
+            You are allowed to use a function or string to specify the problem_size.
+            A function should accept a dictionary with the tunable parameters
+            for this kernel configuration and directly return a tuple
+            that specifies the problem size in all dimensions.
+
+            When passing a string, you are allowed to write Python
             arithmetic and use the names of tunable parameters as variables
-            in these expressions.
-            The Kernel Tuner will replace instances of the tunable parameters
-            with their current value when computing the grid dimensions.
+            in these expressions. Kernel Tuner will replace instances of the tunable
+            parameters with their current value when computing the grid dimensions.
+            This option exists for convenience, but do note that using a lambda
+            function is probably safer. The string notation should only return
+            the problem size for one dimension, but can be used inside
+            a tuple, possibly in combination with integers or more strings in
+            different dimensions.
+
             See the reduction CUDA example for an example use of this feature.""",
-            "string, int, or tuple(int or string, ..)")),
+            "callable, string, int, or tuple(int or string, ..)")),
     ("arguments", ("""A list of kernel arguments, use numpy arrays for
             arrays, use numpy.int32 or numpy.float32 for scalars.""", "list")),
     ("grid_div_x", ("""A list of names of the parameters whose values divide
@@ -116,10 +132,13 @@ _kernel_options = Options([
             used if necessary inside the string containing a parameter name. For
             example, in some cases you may want to divide the problem size in the
             x-dimension with the number of warps rather than the number of threads
-            in a block, in such cases one could use ["block_size_x/32"].
+            in a block, in such cases one could for example use ["block_size_x/32"].
+            Another option is to pass a function to grid_div_x that accepts a
+            dictionary with the tunable parameters and returns the grid divisor
+            in this dimension, for example: grid_div_x=lambda p:p["block_size_x"]/32.
 
             If not supplied, ["block_size_x"] will be used by default, if you do not
-            want any grid x-dimension divisors pass an empty list.""", "list")),
+            want any grid x-dimension divisors pass an empty list.""", "callable or list")),
     ("grid_div_y", ("""A list of names of the parameters whose values divide
             the grid dimensions in the y-direction, ["block_size_y"] by default.
             If you do not want to divide the problem_size, you should pass an empty list.
@@ -160,14 +179,14 @@ _kernel_options = Options([
 _tuning_options = Options([
     ("tune_params", ("""A dictionary containing the parameter names as keys,
             and lists of possible parameter settings as values.
-            The Kernel Tuner will try to compile and benchmark all possible
+            Kernel Tuner will try to compile and benchmark all possible
             combinations of all possible values for all tuning parameters.
             This typically results in a rather large search space of all
             possible kernel configurations.
 
             For each kernel configuration, each tuning parameter is
             replaced at compile-time with its current value.
-            Currently, the Kernel Tuner uses the convention that the following
+            Currently, Kernel Tuner uses the convention that the following
             list of tuning parameters are used as thread block dimensions:
 
                 * "block_size_x"   thread block (work group) x-dimension
@@ -179,14 +198,20 @@ _tuning_options = Options([
             may use the built-in variables blockDim.xyz in CUDA or the
             built-in function get_local_size() in OpenCL instead.""",
             "dict( string : [...]")),
-    ("restrictions", ("""A list of strings containing boolean expression that
-        limit the search space in that they must be satisfied by the kernel
-        configuration. These expressions must be true for the configuration
+    ("restrictions", ("""An option to limit the search space with restrictions.
+        The restrictions can be specified using a function or a list of strings.
+        The function should take one argument, namely a dictionary with the
+        tunable parameters of the kernel configuration, if the function returns
+        True the configuration is considered to be part of the search space, or
+        False otherwise.
+        The other way to specify restrictions is using a list of strings
+        containing boolean expression that must be satisfied by the kernel
+        configuration. These expressions must all be true for the configuration
         to be part of the search space. For example:
         restrictions=["block_size_x==block_size_y*tile_size_y"] limits the
         search to configurations where the block_size_x equals the product
         of block_size_y and tile_size_y.
-        The default is None.""", "list")),
+        The default is None.""", "callable or list(strings)")),
     ("answer", ("""A list of arguments, similar to what you pass to arguments,
         that contains the expected output of the kernel after it has executed
         and contains None for each argument that is input-only. The expected
@@ -481,7 +506,7 @@ _run_kernel_docstring = """Compile and run a single kernel
      * Execute the kernel on the GPU
      * Copy all data from the GPU back to the host and return it as a list of Numpy arrays
 
-    This function was added to the Kernel Tuner mostly to allow easy testing for kernel correctness.
+    This function was added to Kernel Tuner mostly to allow easy testing for kernel correctness.
     On purpose, the interface is a lot like `tune_kernel()`.
 
 %s

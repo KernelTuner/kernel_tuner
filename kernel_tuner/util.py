@@ -103,12 +103,16 @@ def check_block_size_params_names_list(block_size_names, tune_params):
 def check_restrictions(restrictions, element, keys, verbose):
     """ check whether a specific instance meets the search space restrictions """
     params = OrderedDict(zip(keys, element))
-    for restrict in restrictions:
-        if not eval(replace_param_occurrences(restrict, params)):
-            if verbose:
-                print("skipping config", get_instance_string(params), "reason: config fails restriction")
-            return False
-    return True
+    valid = True
+    if callable(restrictions):
+        valid = restrictions(params)
+    else:
+        for restrict in restrictions:
+            if not eval(replace_param_occurrences(restrict, params)):
+                valid = False
+    if not valid and verbose:
+        print("skipping config", get_instance_string(params), "reason: config fails restriction")
+    return valid
 
 def delete_temp_file(filename):
     """ delete a temporary file, don't complain if is no longer exists """
@@ -160,7 +164,10 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
                 divisor_list = [default]
             else:
                 return 1
-        return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+        if callable(divisor_list):
+            return divisor_list(params)
+        else:
+            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
     return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
 
@@ -212,6 +219,8 @@ def get_kernel_string(kernel_source, params=None):
 
 def get_problem_size(problem_size, params):
     """compute current problem size"""
+    if callable(problem_size):
+        problem_size = problem_size(params)
     if isinstance(problem_size, (str, int, np.integer)):
         problem_size = (problem_size, )
     current_problem_size = [1, 1, 1]

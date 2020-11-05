@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+
+### Added
+- support for (lambda) function instead of list of strings for restrictions
+- support for (lambda) function instead of list for specifying grid divisors
+- support for (lambda) function instead of tuple for specifying problem_size
+
 ## [0.3.2] - 2020-11-04
 ### Added
 - support loop unrolling using params that start with loop_unroll_factor
