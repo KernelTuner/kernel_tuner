@@ -594,14 +594,32 @@ size, which is used by the tuner to compute the grid dimensions for our kernel. 
 <p>As you can see the simple for loop inside our kernel has been replaced with a blocked version. The blocked loop consists of two for-loop constructs. The outer loop iterates with steps of size <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> over the <code class="docutils literal notranslate"><span class="pre">WIDTH</span></code> of the matrix. Within each iteration of the outer loop two things happen. First the threads within this thread block fill shared memory with the submatrices needed for all the computations performed by the thread block. The actual computation happens in the inner loop and
 only uses data in shared memory. The <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> statements are needed to avoid race conditions on data in shared memory.</p>
 <p>The above kernel does come with one restriction, it can only be executed correctly when the area operated on by the thread block as a whole is a square. This means that the number of threads we use in the x and y dimensions will have to be equal. We can specify this restriction to the tuner using the <code class="docutils literal notranslate"><span class="pre">restrictions=</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
-<p>To use the <code class="docutils literal notranslate"><span class="pre">restrictions=</span></code> option we need to specify a list of conditions that need to evaluate to <code class="docutils literal notranslate"><span class="pre">True</span></code> before a kernel configurations is considered to be part of the parameter space of our kernel. In the code below we create such a restrictions list and call the tuner again for our kernel that uses shared memory.</p>
+<p>There are multiple ways to define restrictions in Kernel Tuner. You can specify a list of conditions that need to evaluate to <code class="docutils literal notranslate"><span class="pre">True</span></code> before a kernel configurations is considered to be part of the parameter space of our kernel. In the code below we create such a restrictions list and call the tuner again for our kernel that uses shared memory.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">restrict</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x==block_size_y&quot;</span><span class="p">]</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul_shared.cu&quot;</span><span class="p">,</span>
+</pre></div>
+</div>
+</div>
+<p>Since we have only one restriction, our list only contains a single expression. The tunable parameter values will be inserted in this expression before it is evaluated. Another way to specify restrictions is with a function. This function takes a dictionary with the tunable parameter values of the kernel configuration and should return <code class="docutils literal notranslate"><span class="pre">True</span></code> if the configuration is part of the search space.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">restrict</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span><span class="o">==</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul_shared.cu&quot;</span><span class="p">,</span>
                       <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
                       <span class="n">restrictions</span><span class="o">=</span><span class="n">restrict</span><span class="p">)</span>
 </pre></div>
