@@ -186,11 +186,11 @@ class CFunctions(object):
         match = re.search(r"\s*module\s+([a-zA-Z_]*)", kernel_string)
         if match:
             if self.compiler == "gfortran":
-                kernel_name = "__" + match.group(1) + "_MOD_" + kernel_name
+                kernel_name = "__" + match.group(1) + "_MOD_" + kernel_instance.name
             elif self.compiler in ["ftn", "ifort"]:
-                kernel_name = match.group(1) + "_mp_" + kernel_name + "_"
+                kernel_name = match.group(1) + "_mp_" + kernel_instance.name + "_"
             elif self.compiler == "pgfortran":
-                kernel_name = match.group(1) + "_" + kernel_name + "_"
+                kernel_name = match.group(1) + "_" + kernel_instance.name + "_"
 
         try:
             write_file(source_file, kernel_string)

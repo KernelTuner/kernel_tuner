@@ -75,7 +75,7 @@ def cpp(function_name, kernel_source, args, convert_to_array=None):
 
     def type_str(arg):
         if not str(arg.dtype) in type_map:
-            raise Value("only primitive data types are supported by the C++ wrapper")
+            raise ValueError("only primitive data types are supported by the C++ wrapper")
         typestring = type_map[str(arg.dtype)]
         if isinstance(arg, np.ndarray):
             typestring += " *"

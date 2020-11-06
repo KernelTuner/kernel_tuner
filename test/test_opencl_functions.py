@@ -10,7 +10,6 @@ except Exception:
     pass
 
 
-
 @skip_if_no_opencl
 def test_ready_argument_list():
 
@@ -74,7 +73,6 @@ def test_benchmark():
     res = dev.benchmark(fun_test, args, times, times)
     assert res["time"] > 0
     assert len(res["times"]) == dev.iterations
-
 
 
 @skip_if_no_opencl

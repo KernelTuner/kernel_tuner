@@ -4,10 +4,9 @@ import numpy as np
 import pytest
 
 import kernel_tuner
-from kernel_tuner import core
-from kernel_tuner.interface import Options
 
 from .context import skip_if_no_cuda
+
 
 @pytest.fixture
 def env():
@@ -59,6 +58,7 @@ def test_diff_evo(env):
     result, _ = kernel_tuner.tune_kernel(*env, strategy="diff_evo", verbose=True)
     assert len(result) > 0
 
+
 @skip_if_no_cuda
 def test_genetic_algorithm(env):
     options = dict(method="uniform", popsize=10, maxiter=2, mutation_change=1)
@@ -93,4 +93,3 @@ def test_sequential_runner_alt_block_size_names(env):
                                          block_size_names=block_size_names)
 
     assert len(result) == len(tune_params["block_dim_x"])
-

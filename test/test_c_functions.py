@@ -44,6 +44,7 @@ def test_ready_argument_list1():
     assert all(output[1].numpy == arg2)
     assert all(output[2].numpy == arg3)
 
+
 def test_ready_argument_list2():
     arg1 = numpy.array([1, 2, 3]).astype(numpy.float32)
     arg2 = numpy.int32(7)
@@ -64,6 +65,7 @@ def test_ready_argument_list2():
     assert output[1][1].value == arg2
     assert output[2][1].value == arg3
 
+
 def test_ready_argument_list3():
     arg1 = Mock()
     arguments = [arg1]
@@ -74,11 +76,13 @@ def test_ready_argument_list3():
     except Exception:
         assert True
 
+
 def test_ready_argument_list4():
     with raises(TypeError):
         arg1 = int(9)
         cfunc = CFunctions()
         cfunc.ready_argument_list([arg1])
+
 
 def test_ready_argument_list5():
     arg1 = numpy.array([1, 2, 3]).astype(numpy.float32)
@@ -138,7 +142,7 @@ def test_compile(npct, subprocess):
     filename = args[0]
     print('filename=' + filename)
 
-    #check if temporary files are cleaned up correctly
+    # check if temporary files are cleaned up correctly
     import os.path
     assert not os.path.isfile(filename + ".cu")
     assert not os.path.isfile(filename + ".o")
@@ -156,11 +160,11 @@ def test_compile_detects_device_code(npct, subprocess):
 
     cfunc = CFunctions()
 
-    f = cfunc.compile(kernel_instance)
+    cfunc.compile(kernel_instance)
 
     print(subprocess.check_call.call_args_list)
 
-    #assert the filename suffix used for source compilation is .cu
+    # assert the filename suffix used for source compilation is .cu
     dot_cu_used = False
     for call in subprocess.check_call.call_args_list:
         args, kwargs = call
@@ -171,7 +175,6 @@ def test_compile_detects_device_code(npct, subprocess):
             dot_cu_used = True
 
     assert dot_cu_used
-
 
 
 def test_memset():
@@ -189,6 +192,7 @@ def test_memset():
     assert all(output == numpy.zeros(4))
     assert all(x == numpy.zeros(4))
 
+
 def test_memcpy_dtoh():
     a = [1, 2, 3, 4]
     x = numpy.array(a).astype(numpy.float32)
@@ -204,6 +208,7 @@ def test_memcpy_dtoh():
 
     assert all(output == a)
     assert all(x == a)
+
 
 def test_memcpy_htod():
     a = [1, 2, 3, 4]
