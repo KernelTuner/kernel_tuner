@@ -8,12 +8,12 @@ try:
 except ImportError:
     from unittest.mock import patch
 
-import kernel_tuner
-from kernel_tuner import core, util
+from kernel_tuner import core
 from kernel_tuner.interface import Options
 
 from .context import skip_if_no_cuda
 from .test_interface import mock_config
+
 
 def get_vector_add_args():
     size = int(1e6)
@@ -22,6 +22,7 @@ def get_vector_add_args():
     c = np.zeros_like(b).astype(np.float32)
     n = np.int32(size)
     return c, a, b, n
+
 
 @pytest.fixture
 def env():
@@ -34,11 +35,12 @@ def env():
     args = get_vector_add_args()
     params = {"block_size_x": 128}
 
-    lang="CUDA"
+    lang = "CUDA"
     kernel_source = core.KernelSource(kernel_string, lang)
     verbose = True
-    kernel_options = Options(kernel_name="vector_add", kernel_string=kernel_string, problem_size=args[-1], arguments=args, lang=lang,
-                          grid_div_x=None, grid_div_y=None, grid_div_z=None, cmem_args=None, texmem_args=None, block_size_names=None)
+    kernel_options = Options(kernel_name="vector_add", kernel_string=kernel_string, problem_size=args[-1],
+                             arguments=args, lang=lang, grid_div_x=None, grid_div_y=None, grid_div_z=None,
+                             cmem_args=None, texmem_args=None, block_size_names=None)
     device_options = Options(device=0, platform=0, quiet=False, compiler=None, compiler_options=None)
     dev = core.DeviceInterface(kernel_source, iterations=7, **device_options)
     instance = dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
@@ -125,7 +127,6 @@ def test_check_kernel_output(dev_func_interface):
         assert False
     except Exception:
         assert True
-
 
 
 def test_default_verify_function_arrays():

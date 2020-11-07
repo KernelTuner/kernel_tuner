@@ -22,7 +22,7 @@ def check_argument_type(dtype, kernel_argument):
                  "uint16": ["ushort", "unsigned short", "uint16_t"],
                  "int16": ["short", "int16_t"],
                  "uint32": ["uint", "unsigned int", "uint32_t"],
-                 "int32": ["int", "int32_t"],   #discrepancy between OpenCL and C here, long may be 32bits in C
+                 "int32": ["int", "int32_t"],   # discrepancy between OpenCL and C here, long may be 32bits in C
                  "uint64": ["ulong", "unsigned long", "uint64_t"],
                  "int64": ["long", "int64_t"],
                  "float16": ["half"],
@@ -54,7 +54,7 @@ def check_argument_list(kernel_name, kernel_string, args):
 
             correct = True
             if isinstance(arg, np.ndarray) and not "*" in kernel_argument:
-                correct = False  #array is passed to non-pointer kernel argument
+                correct = False  # array is passed to non-pointer kernel argument
 
             if correct and check_argument_type(str(arg.dtype), kernel_argument):
                 continue
@@ -67,7 +67,7 @@ def check_argument_list(kernel_name, kernel_string, args):
             return
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
-        #raise TypeError(errors[0])
+        # raise TypeError(errors[0])
 
 def check_tune_params_list(tune_params):
     """ raise an exception if a tune parameter has a forbidden name """
@@ -78,14 +78,14 @@ def check_tune_params_list(tune_params):
 
 def check_block_size_names(block_size_names):
     if block_size_names is not None:
-        #do some type checks for the user input
+        # do some type checks for the user input
         if not isinstance(block_size_names, list):
             raise ValueError("block_size_names should be a list of strings!")
         if len(block_size_names) > 3:
             raise ValueError("block_size_names should not contain more than 3 names!")
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
             raise ValueError("block_size_names should contain only strings!")
-        #ensure there is always at least three names
+        # ensure there is always at least three names
         for i, name in enumerate(default_block_size_names):
             if len(block_size_names) < i+1:
                 block_size_names.append(name)
@@ -95,7 +95,7 @@ def check_block_size_params_names_list(block_size_names, tune_params):
         for name in block_size_names:
             if name not in tune_params.keys():
                 warnings.warn("Block size name " + name + " is not specified in the tunable parameters list!", UserWarning)
-    else: #if default block size names are used
+    else: # if default block size names are used
         if not any([k in default_block_size_names for k in tune_params.keys()]):
             warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
 
@@ -148,7 +148,7 @@ def get_config_string(params, keys=None, units=None):
     for k, v in params.items():
         if k in keys:
             unit = ""
-            if isinstance(units, dict): #check if not None not enough, units could be mocked which causes errors
+            if isinstance(units, dict): # check if not None not enough, units could be mocked which causes errors
                 unit = units.get(k, "")
             compact_str_items.append(k + "=" + compact_number(v) + unit)
     # and finally join them
@@ -202,7 +202,7 @@ def get_kernel_string(kernel_source, params=None):
     :returns: A string containing the kernel code.
     :rtype: string
     """
-    #logging.debug('get_kernel_string called with %s', str(kernel_source))
+    # logging.debug('get_kernel_string called with %s', str(kernel_source))
     logging.debug('get_kernel_string called')
 
     kernel_string = None
@@ -309,18 +309,18 @@ def looks_like_a_filename(kernel_source):
     result = False
     if isinstance(kernel_source, str):
         result = True
-        #test if not too long
+        # test if not too long
         if len(kernel_source) > 250:
             result = False
-        #test if not contains special characters
+        # test if not contains special characters
         for c in "();{}\\":
             if c in kernel_source:
                 result = False
-        #just a safeguard for stuff that looks like code
+        # just a safeguard for stuff that looks like code
         for s in ["__global__ ", "__kernel ", "void ", "float "]:
             if s in kernel_source:
                 result = False
-        #string must contain substring ".c", ".opencl", or ".F"
+        # string must contain substring ".c", ".opencl", or ".F"
         result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
     logging.debug('kernel_source is a filename: %s' % str(result))
     return result
@@ -368,9 +368,9 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
         kernel_string = "#define " + block_size_names[i] + " " + str(g) + "\n" + kernel_string
     for k, v in params.items():
         if "loop_unroll_factor" in k and lang == "CUDA":
-            #this handles the special case that in CUDA
-            #pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
-            #in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
+            # this handles the special case that in CUDA
+            # pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
+            # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
             if v > 0: # using 0 to disable loop unrolling for this loop
                 kernel_string = "const int " + k + " = " + str(v) + ";\n" + kernel_string
             else:
@@ -380,10 +380,10 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
     name = kernel_name
 
-    #also insert kernel_tuner token
+    # also insert kernel_tuner token
     kernel_string = "#define kernel_tuner 1\n" + kernel_string
-    #name = kernel_name + "_" + get_instance_string(params)
-    #kernel_string = kernel_string.replace(kernel_name, name)
+    # name = kernel_name + "_" + get_instance_string(params)
+    # kernel_string = kernel_string.replace(kernel_name, name)
 
     return name, kernel_string
 
@@ -409,7 +409,7 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
 def write_file(filename, string):
     """dump the contents of string to a file called filename"""
     import sys
-    #ugly fix, hopefully we can find a better one
+    # ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:
         with open(filename, 'w', encoding="utf-8") as f:
             f.write(string)
@@ -483,11 +483,11 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     from an earlier (abruptly ended) tuning session.
 
     """
-    #caching only works correctly if tunable_parameters are stored in a OrderedDict
+    # caching only works correctly if tunable_parameters are stored in a OrderedDict
     if not isinstance(tuning_options.tune_params, OrderedDict):
         raise ValueError("Caching only works correctly when tunable parameters are stored in a OrderedDict")
 
-    #if file does not exist, create new cache
+    # if file does not exist, create new cache
     if not os.path.isfile(cache):
         c = OrderedDict()
         c["device_name"] = runner.dev.name
@@ -496,34 +496,34 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         c["tune_params"] = tuning_options.tune_params
         c["cache"] = {}
 
-        contents = json.dumps(c, indent="")[:-3] #except the last "}\n}"
+        contents = json.dumps(c, indent="")[:-3] # except the last "}\n}"
 
-        #write the header to the cachefile
+        # write the header to the cachefile
         with open(cache, "w") as cachefile:
             cachefile.write(contents)
 
         tuning_options.cachefile = cache
         tuning_options.cache = {}
 
-    #if file exists
+    # if file exists
     else:
         with open(cache, "r") as cachefile:
             filestr = cachefile.read().strip()
 
-        #if file was not properly closed, pretend it was properly closed
+        # if file was not properly closed, pretend it was properly closed
         if not filestr[-3:] == "}\n}":
-            #remove the trailing comma if any, and append closing brackets
+            # remove the trailing comma if any, and append closing brackets
             if filestr[-1] == ",":
                 filestr = filestr[:-1]
             filestr = filestr + "}\n}" 
         else:
-            #if it was properly closed, open it for appending new entries
+            # if it was properly closed, open it for appending new entries
             with open(cache, "w") as cachefile:
                 cachefile.write(filestr[:-3] + ",")
 
         cached_data = json.loads(filestr)
 
-        #check if it is safe to continue tuning from this cache
+        # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != runner.dev.name:
             raise ValueError("Cannot load cache which contains results for different device")
         if cached_data["kernel_name"] != kernel_options.kernel_name:
@@ -542,7 +542,7 @@ def close_cache(cache):
     with open(cache, "r") as fh:
         contents = fh.read()
 
-    #close to file to make sure it can be read by JSON parsers
+    # close to file to make sure it can be read by JSON parsers
     if contents[-1] == ",":
         with open(cache, "w") as fh:
             fh.write(contents[:-1] + "}\n}")

@@ -7,6 +7,7 @@ import numpy as np
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner.strategies.genetic_algorithm import random_val
 
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -76,18 +77,19 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     return results, runner.dev.get_environment()
 
+
 def acceptance_prob(old_cost, new_cost, T):
     """annealing equation, with modifications to work towards a lower value"""
-    #if start pos is not valid, always move
+    # if start pos is not valid, always move
     if old_cost == 1e20:
         return 1.0
-    #if we have found a valid ps before, never move to nonvalid pos
+    # if we have found a valid ps before, never move to nonvalid pos
     if new_cost == 1e20:
         return 0.0
-    #always move if new cost is better
+    # always move if new cost is better
     if new_cost < old_cost:
         return 1.0
-    #maybe move if old cost is better than new cost depending on T and random value
+    # maybe move if old cost is better than new cost depending on T and random value
     return np.exp(((old_cost-new_cost)/old_cost)/T)
 
 
@@ -101,9 +103,9 @@ def neighbor(pos, tune_params):
         key = list(tune_params.keys())[i]
         values = tune_params[key]
 
-        if random.random() < 0.2:  #replace with random value
+        if random.random() < 0.2:  # replace with random value
             new_value = random_val(i, tune_params)
-        else: #adjacent value
+        else:  # adjacent value
             ind = values.index(pos[i])
             if random.random() > 0.5:
                 ind += 1
