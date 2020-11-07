@@ -1,9 +1,10 @@
 from __future__ import print_function
 
+from collections import OrderedDict
 import json
 import warnings
 
-import numpy
+import numpy as np
 import pytest
 from pytest import raises
 
@@ -84,7 +85,7 @@ def test_get_grid_dimensions3():
 
     assert_grid_dimensions(problem_size)
 
-    problem_size = (numpy.int32(1024), numpy.int64(1024), 1)
+    problem_size = (np.int32(1024), np.int64(1024), 1)
     assert_grid_dimensions(problem_size)
 
 def test_get_problem_size1():
@@ -173,10 +174,10 @@ def test_check_restrictions():
     print(params.keys())
     restrictions = [["a==b+c"], ["a==b+c", "b==b", "a-b==c"],
                     ["a==b+c", "b!=b", "a-b==c"],
-                    lambda p:p["a"]==p["b"]+p["c"]]
+                    lambda p:p["a"] == p["b"] + p["c"]]
     expected = [True, True, False, True]
-    #test the call returns expected
-    for r,e in zip(restrictions, expected):
+    # test the call returns expected
+    for r, e in zip(restrictions, expected):
         answer = check_restrictions(r, params.values(), params.keys(), False)
         print(answer)
         assert answer == e
@@ -237,7 +238,7 @@ def test_check_argument_list1():
     numbers[get_global_id(0)] = numbers[get_global_id(0)] * number;
     }
     """
-    args = [numpy.int32(5), 'blah', numpy.array([1, 2, 3])]
+    args = [np.int32(5), 'blah', np.array([1, 2, 3])]
     try:
         check_argument_list(kernel_name, kernel_string, args)
         print("Expected a TypeError to be raised")
@@ -256,7 +257,7 @@ def test_check_argument_list2():
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
+    args = [np.byte(5), np.float64(4.6), np.int32([1, 2, 3]), np.uint64([3, 2, 111])]
     assert_no_user_warning(check_argument_list, [kernel_name, kernel_string, args])
 
 def test_check_argument_list3():
@@ -265,7 +266,7 @@ def test_check_argument_list3():
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int32([300])]
+    args = [np.uint16(42), np.float16([3, 4, 6]), np.int32([300])]
     assert_user_warning(check_argument_list, [kernel_name, kernel_string, args], "at position 2")
 
 def test_check_argument_list4():
@@ -274,7 +275,7 @@ def test_check_argument_list4():
         numbers[get_global_id(0)] = numbers[get_global_id(0)] * factors[get_global_id(0)] + number;
         }
         """
-    args = [numpy.uint16(42), numpy.float16([3, 4, 6]), numpy.int64([300]), numpy.ubyte(32)]
+    args = [np.uint16(42), np.float16([3, 4, 6]), np.int64([300]), np.ubyte(32)]
     assert_user_warning(check_argument_list, [kernel_name, kernel_string, args], "do not match in size")
 
 def test_check_argument_list5():
@@ -292,10 +293,11 @@ def test_check_argument_list5():
             a[threadIdx.x] = b[blockIdx.x]*c*d;
         }
         """
-    args = [numpy.array([1,2,3]).astype(numpy.float64),
-            numpy.array([1,2,3]).astype(numpy.float32),
-            numpy.int32(6), numpy.int32(7)]
+    args = [np.array([1, 2, 3]).astype(np.float64),
+            np.array([1, 2, 3]).astype(np.float32),
+            np.int32(6), np.int32(7)]
     assert_no_user_warning(check_argument_list, [kernel_name, kernel_string, args])
+
 
 def test_check_argument_list6():
     kernel_name = "test_kernel"
@@ -307,10 +309,11 @@ def test_check_argument_list6():
         }
         // /test_kernel
         """
-    args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
+    args = [np.byte(5), np.float64(4.6), np.int32([1, 2, 3]), np.uint64([3, 2, 111])]
     check_argument_list(kernel_name, kernel_string, args)
-    #test that no exception is raised
+    # test that no exception is raised
     assert True
+
 
 def test_check_argument_list7():
     kernel_name = "test_kernel"
@@ -323,8 +326,9 @@ def test_check_argument_list7():
         }
         // /test_kernel
         """
-    args = [numpy.byte(5), numpy.float64(4.6), numpy.int32([1, 2, 3]), numpy.uint64([3, 2, 111])]
+    args = [np.byte(5), np.float64(4.6), np.int32([1, 2, 3]), np.uint64([3, 2, 111])]
     assert_user_warning(check_argument_list, [kernel_name, kernel_string, args])
+
 
 def test_check_tune_params_list():
     tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
@@ -340,11 +344,13 @@ def test_check_tune_params_list():
         print("Expected a ValueError to be raised")
         assert False
 
+
 def test_check_tune_params_list2():
     tune_params = dict(zip(["rock", "paper", "scissors"], [1, 2, 3]))
     check_tune_params_list(tune_params)
     # test that no exception is raised
     assert True
+
 
 def test_check_block_size_params_names_list():
     def test_warnings(function, args, number, warning_type):
@@ -358,29 +364,29 @@ def test_check_block_size_params_names_list():
             for warn in w:
                 assert issubclass(warn.category, warning_type)
 
-    #check warning triggers for both unused blocksize names
+    # check warning triggers for both unused blocksize names
     block_size_names = ["block_size_a", "block_size_b"]
     tune_params = dict(zip(["hyper", "ultra", "mega", "turbo"], [1, 2, 3, 4]))
     test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 2, UserWarning)
 
-    #check warning does not triger when nondefault block size names are used correctly
+    # check warning does not triger when nondefault block size names are used correctly
     block_size_names = ["block_size_a", "block_size_b"]
     tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
     test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
-    #check that a warning is issued when none of the default names are used and no alternative names are specified
+    # check that a warning is issued when none of the default names are used and no alternative names are specified
     block_size_names = None
     tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
     test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 1, UserWarning)
 
-    #check that no error is raised when any of the default block size names is being used
+    # check that no error is raised when any of the default block size names is being used
     block_size_names = None
-    tune_params = dict(zip(["block_size_x", "several_other_things"], [[1,2,3,4], [2,4]]))
+    tune_params = dict(zip(["block_size_x", "several_other_things"], [[1, 2, 3, 4], [2, 4]]))
     test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
 
 def test_get_kernel_string_func():
-    #test whether passing a function instead of string works
+    # test whether passing a function instead of string works
     def gen_kernel(params):
         return "__global__ void kernel_name() { %s }" % params["block_size_x"]
     params = {"block_size_x": "//do that kernel thing!"}
@@ -388,20 +394,24 @@ def test_get_kernel_string_func():
     answer = get_kernel_string(gen_kernel, params)
     assert answer == expected
 
+
 def test_get_kernel_string_filename_not_found():
-    #when the string looks like a filename, but the file does not exist
-    #assume the string is not a filename after all
+    # when the string looks like a filename, but the file does not exist
+    # assume the string is not a filename after all
     bogus_filename = "filename_3456789.cu"
     answer = get_kernel_string(bogus_filename)
     assert answer == bogus_filename
+
 
 def test_looks_like_a_filename1():
     string = "filename.c"
     assert looks_like_a_filename(string)
 
+
 def test_looks_like_a_filename2():
     string = "__global__ void kernel_name() { //do that kernel thing! }"
     assert not looks_like_a_filename(string)
+
 
 def test_read_write_file():
     filename = get_temp_filename()
@@ -417,6 +427,7 @@ def test_read_write_file():
 
     finally:
         delete_temp_file(filename)
+
 
 def test_normalize_verify_function():
     assert normalize_verify_function(None) is None
@@ -450,41 +461,41 @@ def test_process_cache():
         assert cache_object["device_name"] == "test_device"
         assert cache_object["kernel_name"] == "test_kernel"
 
-    #get temp filename, but remove the file
+    # get temp filename, but remove the file
     cache = get_temp_filename(suffix=".json")
     delete_temp_file(cache)
 
     kernel_options = Options(kernel_name="test_kernel")
-    tuning_options = Options(cache=cache, tune_params=Options(x=[1,2,3,4]))
+    tuning_options = Options(cache=cache, tune_params=Options(x=[1, 2, 3, 4]))
     runner = Options(dev=Options(name="test_device"))
 
     try:
-        #call process_cache without pre-existing cache
+        # call process_cache without pre-existing cache
         process_cache(cache, kernel_options, tuning_options, runner)
 
-        #check if file has been created
+        # check if file has been created
         assert os.path.isfile(cache)
         assert_open_cachefile_is_correctly_parsed(cache)
         assert tuning_options.cachefile == cache
         assert isinstance(tuning_options.cache, dict)
         assert len(tuning_options.cache) == 0
 
-        #store one entry in the cache
-        params = {"x": 4, "time": numpy.float32(0.1234)}
+        # store one entry in the cache
+        params = {"x": 4, "time": np.float32(0.1234)}
         store_cache("4", params, tuning_options)
         assert len(tuning_options.cache) == 1
 
-        #close the cache
+        # close the cache
         close_cache(cache)
 
-        #now test process cache with a pre-existing cache file
+        # now test process cache with a pre-existing cache file
         process_cache(cache, kernel_options, tuning_options, runner)
         assert_open_cachefile_is_correctly_parsed(cache)
 
         assert tuning_options.cache["4"]["time"] == params["time"]
 
-        #check that exceptions are raised when using a cache file for
-        #a different kernel, device, or parameter set
+        # check that exceptions are raised when using a cache file for
+        # a different kernel, device, or parameter set
         with pytest.raises(ValueError) as excp:
             kernel_options.kernel_name = "wrong_kernel"
             process_cache(cache, kernel_options, tuning_options, runner)
@@ -502,7 +513,7 @@ def test_process_cache():
 
     finally:
         delete_temp_file(cache)
-        #pass
+        # pass
 
 
 def test_process_metrics():
@@ -510,17 +521,17 @@ def test_process_metrics():
     metrics = OrderedDict()
     metrics["y"] = lambda p : p["x"]
 
-    #test if lambda function is correctly evaluated
+    # test if lambda function is correctly evaluated
     params = process_metrics(params, metrics)
     assert params["y"] == params["x"]
 
-    #test if we can do the same with a string
+    # test if we can do the same with a string
     params = {"x": 15, "b": 12}
     metrics["y"] = "x"
     params = process_metrics(params, metrics)
     assert params["y"] == params["x"]
 
-    #test if composability works correctly
+    # test if composability works correctly
     params = {"x": 15, "b": 12}
     metrics = OrderedDict()
     metrics["y"] = "x"
@@ -528,11 +539,11 @@ def test_process_metrics():
     params = process_metrics(params, metrics)
     assert params["z"] == params["x"]
 
-    #test ValueError is raised when metrics is not an OrderedDict
+    # test ValueError is raised when metrics is not an OrderedDict
     with pytest.raises(ValueError):
         params = process_metrics(params, {})
 
-    #test ValueError is raised when b already exists in params
+    # test ValueError is raised when b already exists in params
     params = {"x": 15, "b": 12}
     metrics = OrderedDict()
     metrics["b"] = "x"

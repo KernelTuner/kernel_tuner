@@ -44,7 +44,7 @@ def test_interface_handles_max_threads(dev_interface):
     dev.max_threads = 256
 
     kernel_string = "__global__ void fake_kernel(int number)"
-    tune_kernel("fake_kernel", kernel_string, (1,1), [np.int32(0)], tune_params, lang="CUDA")
+    tune_kernel("fake_kernel", kernel_string, (1, 1), [np.int32(0)], tune_params, lang="CUDA")
 
     # verify that only a single instance of the kernel is compiled
     dev.compile.assert_called()
@@ -59,10 +59,10 @@ def test_interface_handles_compile_error(dev_interface):
     dev.compile.side_effect = Exception("uses too much shared data")
 
     kernel_string = "__global__ void fake_kernel(int number)"
-    tune_kernel("fake_kernel", kernel_string, (1,1), [np.int32(0)], tune_params, lang="CUDA")
+    tune_kernel("fake_kernel", kernel_string, (1, 1), [np.int32(0)], tune_params, lang="CUDA")
 
     assert dev.compile.call_count == 2
-    assert dev.benchmark.called == False
+    assert not dev.benchmark.called
 
 
 @patch('kernel_tuner.core.CudaFunctions')
@@ -74,7 +74,8 @@ def test_interface_handles_restriction(dev_interface):
     restrict = ["block_size_x > 128", "block_size_x < 512"]
 
     kernel_string = "__global__ void fake_kernel(int number)"
-    tune_kernel("fake_kernel", kernel_string, (1,1), [np.int32(0)], tune_params, restrictions=restrict, lang="CUDA", verbose=True)
+    tune_kernel("fake_kernel", kernel_string, (1, 1), [np.int32(0)], tune_params, restrictions=restrict,
+                lang="CUDA", verbose=True)
 
     assert dev.compile.call_count == 2
     dev.benchmark.assert_called_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1))
@@ -89,7 +90,7 @@ def test_interface_handles_runtime_error(dev_interface):
     dev.benchmark.side_effect = Exception("too many resources requested for launch")
 
     kernel_string = "__global__ void fake_kernel(int number)"
-    results, _ = tune_kernel("fake_kernel",kernel_string, (1,1), [np.int32(0)], tune_params, lang="CUDA")
+    results, _ = tune_kernel("fake_kernel", kernel_string, (1, 1), [np.int32(0)], tune_params, lang="CUDA")
 
     assert dev.compile.call_count == 2
     dev.benchmark.assert_called_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1))
