@@ -28,10 +28,11 @@ def tune():
     args = [a, b, c, n]
 
     tuning_parameters = dict()
-    tuning_parameters["real_type"] = "float"
+    tuning_parameters["real_type"] = ["float"]
     tuning_parameters["block_size_x"] = [32 * i for i in range(1, 33)]
+    tuning_parameters["vector_size"] = [1]
 
-    result = tune_kernel("vector_add", generate_code, size, args, tuning_parameters)
+    result = tune_kernel("vector_add", generate_code, size, args, tuning_parameters, lang="CUDA")
 
     with open("vector_add_jinja.json", 'w') as fp:
         json.dump(result, fp)
