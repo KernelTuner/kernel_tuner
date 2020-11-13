@@ -1,4 +1,6 @@
-"""Minimal example of vector_add using a Jinja2 template"""
+"""
+Minimal example of vector_add using a Jinja2 template.
+"""
 
 from kernel_tuner import tune_kernel
 from jinja2 import Environment, FileSystemLoader
@@ -25,7 +27,8 @@ def tune():
     c = numpy.zeros_like(b)
     n = numpy.int32(size)
 
-    args = [a, b, c, n]
+    arguments = [a, b, c, n]
+    control = [None, None, a + b, None]
 
     tuning_parameters = dict()
     tuning_parameters["real_type"] = ["float"]
@@ -33,7 +36,7 @@ def tune():
     tuning_parameters["vector_size"] = [1, 2, 4]
     tuning_parameters["tiling_x"] = [i for i in range(1, 33)]
 
-    result = tune_kernel("vector_add", generate_code, size, args, tuning_parameters, lang="CUDA", grid_div_x=["block_size_x * vector_size * tiling_x"])
+    result = tune_kernel("vector_add", generate_code, size, arguments, tuning_parameters, lang="CUDA", grid_div_x=["block_size_x * vector_size * tiling_x"], answer=control)
 
     with open("vector_add_jinja.json", 'w') as fp:
         json.dump(result, fp)
