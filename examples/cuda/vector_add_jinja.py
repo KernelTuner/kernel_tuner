@@ -11,10 +11,10 @@ def generate_code(tuning_parameters):
     template_environment = Environment(loader=template_loader)
     template = template_environment.get_template("vector_add_jinja.cu")
     if tuning_parameters["vector_size"] == 1:
-        vector_size = ""
+        real_type = tuning_parameters["real_type"]
     else:
-        vector_size = str(tuning_parameters["vector_size"])
-    return template.render(real_type=tuning_parameters["real_type"], vector_size=vector_size)
+        real_type = str(tuning_parameters["real_type"]) + str(tuning_parameters["vector_size"])
+    return template.render(real_type=real_type, vector_size=tuning_parameters["vector_size"])
 
 
 def tune():
@@ -30,9 +30,9 @@ def tune():
     tuning_parameters = dict()
     tuning_parameters["real_type"] = ["float"]
     tuning_parameters["block_size_x"] = [32 * i for i in range(1, 33)]
-    tuning_parameters["vector_size"] = [1]
+    tuning_parameters["vector_size"] = [1, 2, 4]
 
-    result = tune_kernel("vector_add", generate_code, size, args, tuning_parameters, lang="CUDA")
+    result = tune_kernel("vector_add", generate_code, size, args, tuning_parameters, lang="CUDA", grid_div_x=["block_size_x / vector_size"])
 
     with open("vector_add_jinja.json", 'w') as fp:
         json.dump(result, fp)
