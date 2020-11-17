@@ -1033,11 +1033,8 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 <dd><p>call the C compiler to compile the kernel, return the function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel to be compiled, used to lookup the
-function after compilation.</p></li>
-<li><p><strong>kernel_string</strong> (<em>string</em>) – The C code that contains the function <cite>kernel_name</cite></p></li>
-</ul>
+<dd class="field-odd"><p><strong>kernel_instance</strong> (<em>kernel_tuner.core.KernelInstance</em>) – An object representing the specific instance of the tunable kernel
+in the parameter space.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>An ctypes function that can be called directly.</p>
