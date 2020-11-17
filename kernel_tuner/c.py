@@ -110,12 +110,9 @@ class CFunctions(object):
     def compile(self, kernel_instance):
         """call the C compiler to compile the kernel, return the function
 
-        :param kernel_name: The name of the kernel to be compiled, used to lookup the
-            function after compilation.
-        :type kernel_name: string
-
-        :param kernel_string: The C code that contains the function `kernel_name`
-        :type kernel_string: string
+        :param kernel_instance: An object representing the specific instance of the tunable kernel
+            in the parameter space.
+        :type kernel_instance: kernel_tuner.core.KernelInstance
 
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
@@ -123,6 +120,7 @@ class CFunctions(object):
         logging.debug('compiling ' + kernel_instance.name)
 
         kernel_string = kernel_instance.kernel_string
+        kernel_name = kernel_instance.name
 
         if self.lib != None:
             self.cleanup_lib()
@@ -186,11 +184,11 @@ class CFunctions(object):
         match = re.search(r"\s*module\s+([a-zA-Z_]*)", kernel_string)
         if match:
             if self.compiler == "gfortran":
-                kernel_name = "__" + match.group(1) + "_MOD_" + kernel_instance.name
+                kernel_name = "__" + match.group(1) + "_MOD_" + kernel_name
             elif self.compiler in ["ftn", "ifort"]:
-                kernel_name = match.group(1) + "_mp_" + kernel_instance.name + "_"
+                kernel_name = match.group(1) + "_mp_" + kernel_name + "_"
             elif self.compiler == "pgfortran":
-                kernel_name = match.group(1) + "_" + kernel_instance.name + "_"
+                kernel_name = match.group(1) + "_" + kernel_name + "_"
 
         try:
             write_file(source_file, kernel_string)
@@ -204,7 +202,7 @@ class CFunctions(object):
 
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
-            func = getattr(self.lib, kernel_instance.name)
+            func = getattr(self.lib, kernel_name)
             func.restype = C.c_float
 
         finally:
