@@ -189,6 +189,10 @@ class CFunctions(object):
                 kernel_name = match.group(1) + "_mp_" + kernel_name + "_"
             elif self.compiler == "pgfortran":
                 kernel_name = match.group(1) + "_" + kernel_name + "_"
+        else:
+            #for functions outside of modules
+            if self.compiler in ["gfortran", "ftn", "ifort", "pgfortran"]:
+                kernel_name = kernel_name + "_"
 
         try:
             write_file(source_file, kernel_string)
@@ -199,7 +203,6 @@ class CFunctions(object):
 
             subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
             subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
-
 
             self.lib = numpy.ctypeslib.load_library(filename, '.')
             func = getattr(self.lib, kernel_name)

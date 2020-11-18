@@ -1,6 +1,8 @@
 import sys
 import pytest
 
+import shutil
+
 try:
     import pycuda.driver as drv
     drv.init()
@@ -18,5 +20,8 @@ try:
 except Exception:
     opencl_present = False
 
+gfortran_present = shutil.which("gfortran") is not None
+
 skip_if_no_cuda = pytest.mark.skipif(not cuda_present, reason="PyCuda not installed or no CUDA device detected")
-skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyCuda not installed or no CUDA device detected")
+skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected")
+skip_if_no_gfortran = pytest.mark.skipif(not gfortran_present, reason="No gfortran on PATH")
