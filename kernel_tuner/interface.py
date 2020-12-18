@@ -452,39 +452,37 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         strategy = brute_force
 
 
-    runner = SequentialRunner(kernel_source, kernel_options, device_options, iterations)
+    with SequentialRunner(kernel_source, kernel_options, device_options, iterations) as runner:
 
-    #the user-specified function may or may not have an optional atol argument;
-    #we normalize it so that it always accepts atol.
-    tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
+        #the user-specified function may or may not have an optional atol argument;
+        #we normalize it so that it always accepts atol.
+        tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
-    #process cache
-    if cache:
-        if cache[-5:] != ".json":
-            cache += ".json"
+        #process cache
+        if cache:
+            if cache[-5:] != ".json":
+                cache += ".json"
 
-        util.process_cache(cache, kernel_options, tuning_options, runner)
-    else:
-        tuning_options.cache = {}
-        tuning_options.cachefile = None
-
-    #call the strategy to execute the tuning process
-    results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
-
-    #finished iterating over search space
-    if not device_options.quiet:
-        if results:     #checks if results is not empty
-            best_config = min(results, key=lambda x: x['time'])
-            units = getattr(runner, "units", None)
-            print("best performing configuration:")
-            util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
+            util.process_cache(cache, kernel_options, tuning_options, runner)
         else:
-            print("no results to report")
+            tuning_options.cache = {}
+            tuning_options.cachefile = None
 
-    if cache:
-        util.close_cache(cache)
+        #call the strategy to execute the tuning process
+        results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
-    del runner.dev
+        #finished iterating over search space
+        if not device_options.quiet:
+            if results:     #checks if results is not empty
+                best_config = min(results, key=lambda x: x['time'])
+                units = getattr(runner, "units", None)
+                print("best performing configuration:")
+                util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
+            else:
+                print("no results to report")
+
+        if cache:
+            util.close_cache(cache)
 
     return results, env
 
@@ -539,52 +537,49 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
     #detect language and create the right device function interface
-    dev = core.DeviceInterface(kernel_source, iterations=1, **device_options)
+    with core.DeviceInterface(kernel_source, iterations=1, **device_options) as dev:
 
-    #move data to the GPU
-    gpu_args = dev.ready_argument_list(arguments)
+        #move data to the GPU
+        gpu_args = dev.ready_argument_list(arguments)
 
-    instance = None
-    try:
-        #create kernel instance
-        instance = dev.create_kernel_instance(kernel_source, kernel_options, params, False)
-        if instance is None:
-            raise Exception("cannot create kernel instance, too many threads per block")
+        instance = None
+        try:
+            #create kernel instance
+            instance = dev.create_kernel_instance(kernel_source, kernel_options, params, False)
+            if instance is None:
+                raise Exception("cannot create kernel instance, too many threads per block")
 
-        # see if the kernel arguments have correct type
-        util.check_argument_list(instance.name, instance.kernel_string, arguments)
+            # see if the kernel arguments have correct type
+            util.check_argument_list(instance.name, instance.kernel_string, arguments)
 
-        #compile the kernel
-        func = dev.compile_kernel(instance, False)
-        if func is None:
-            raise Exception("cannot compile kernel, too much shared memory used")
+            #compile the kernel
+            func = dev.compile_kernel(instance, False)
+            if func is None:
+                raise Exception("cannot compile kernel, too much shared memory used")
 
-        #add constant memory arguments to compiled module
-        if cmem_args is not None:
-            dev.copy_constant_memory_args(cmem_args)
-        #add texture memory arguments to compiled module
-        if texmem_args is not None:
-            dev.copy_texture_memory_args(texmem_args)
-    finally:
-        #delete temp files
-        if instance is not None:
-            instance.delete_temp_files()
+            #add constant memory arguments to compiled module
+            if cmem_args is not None:
+                dev.copy_constant_memory_args(cmem_args)
+            #add texture memory arguments to compiled module
+            if texmem_args is not None:
+                dev.copy_texture_memory_args(texmem_args)
+        finally:
+            #delete temp files
+            if instance is not None:
+                instance.delete_temp_files()
 
-    #run the kernel
-    if not dev.run_kernel(func, gpu_args, instance):
-        raise Exception("runtime error occured, too many resources requested")
+        #run the kernel
+        if not dev.run_kernel(func, gpu_args, instance):
+            raise Exception("runtime error occured, too many resources requested")
 
-    #copy data in GPU memory back to the host
-    results = []
-    for i, arg in enumerate(arguments):
-        if numpy.isscalar(arg):
-            results.append(arg)
-        else:
-            results.append(numpy.zeros_like(arg))
-            dev.memcpy_dtoh(results[-1], gpu_args[i])
-
-    #trying to make run_kernel work nicely with the Nvidia Visual Profiler
-    del dev
+        #copy data in GPU memory back to the host
+        results = []
+        for i, arg in enumerate(arguments):
+            if numpy.isscalar(arg):
+                results.append(arg)
+            else:
+                results.append(numpy.zeros_like(arg))
+                dev.memcpy_dtoh(results[-1], gpu_args[i])
 
     return results
 
