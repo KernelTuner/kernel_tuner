@@ -134,7 +134,10 @@ class CFunctions(object):
             if self.compiler == "pgfortran":
                 compiler_options.append("-mp")
             else:
-                compiler_options.append("-fopenmp")
+                if "#pragma acc" in kernel_string or "!$acc" in kernel_string:
+                    compiler_options.append("-fopenacc")
+                else:
+                    compiler_options.append("-fopenmp")
 
         #if filename is known, use that one
         suffix = kernel_instance.kernel_source.get_user_suffix()
