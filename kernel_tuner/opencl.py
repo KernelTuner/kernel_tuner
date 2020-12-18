@@ -49,6 +49,12 @@ class OpenCLFunctions(object):
         self.env = env
         self.name = dev.name
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        pass
+
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
 

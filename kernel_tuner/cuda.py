@@ -91,7 +91,10 @@ class CudaFunctions(object):
         self.env = env
         self.name = env["device_name"]
 
-    def __del__(self):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
         for gpu_mem in self.allocations:
             if hasattr(gpu_mem, 'free'): #if needed for when using mocks during testing
                 gpu_mem.free()
