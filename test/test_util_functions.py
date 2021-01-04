@@ -211,23 +211,24 @@ def test_detect_language3():
 @skip_if_no_cuda
 def test_get_device_interface1():
     lang = "CUDA"
-    dev = core.DeviceInterface(core.KernelSource("", lang=lang))
-    assert isinstance(dev, core.DeviceInterface)
-    assert isinstance(dev.dev, cuda.CudaFunctions)
+    with core.DeviceInterface(core.KernelSource("", lang=lang)) as dev:
+        assert isinstance(dev, core.DeviceInterface)
+        assert isinstance(dev.dev, cuda.CudaFunctions)
 
 
 @skip_if_no_opencl
 def test_get_device_interface2():
     lang = "OpenCL"
-    dev = core.DeviceInterface(core.KernelSource("", lang=lang))
-    assert isinstance(dev, core.DeviceInterface)
-    assert isinstance(dev.dev, opencl.OpenCLFunctions)
+    with core.DeviceInterface(core.KernelSource("", lang=lang)) as dev:
+        assert isinstance(dev, core.DeviceInterface)
+        assert isinstance(dev.dev, opencl.OpenCLFunctions)
 
 
 def test_get_device_interface3():
     with raises(Exception):
         lang = "blabla"
-        core.DeviceInterface(lang)
+        with core.DeviceInterface(lang) as dev:
+            pass
 
 
 def assert_user_warning(f, args, substring=None):

@@ -224,6 +224,11 @@ class DeviceInterface(object):
         if not quiet:
             print("Using: " + self.dev.name)
 
+        dev.__enter__()
+
+    def __enter__(self):
+        return self
+
     def benchmark(self, func, gpu_args, instance, verbose):
         """benchmark the kernel instance"""
         logging.debug('benchmark ' + instance.name)
@@ -426,9 +431,9 @@ class DeviceInterface(object):
         return True
 
 
-    def __del__(self):
+    def __exit__(self, *exc):
         if hasattr(self, 'dev'):
-            del self.dev
+            self.dev.__exit__(*exc)
 
 
 

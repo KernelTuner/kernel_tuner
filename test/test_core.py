@@ -42,10 +42,10 @@ def env():
                              arguments=args, lang=lang, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                              cmem_args=None, texmem_args=None, block_size_names=None)
     device_options = Options(device=0, platform=0, quiet=False, compiler=None, compiler_options=None)
-    dev = core.DeviceInterface(kernel_source, iterations=7, **device_options)
-    instance = dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
+    with core.DeviceInterface(kernel_source, iterations=7, **device_options) as dev:
+        instance = dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
 
-    return dev, instance
+        yield dev, instance
 
 
 @skip_if_no_cuda
@@ -62,7 +62,6 @@ def test_default_verify_function(env):
     answer = [args[1] + args[2]]
     try:
         core._default_verify_function(instance, answer, args, 1e-6, verbose)
-        # dev.check_kernel_output(func, gpu_args, instance, answer, 1e-6, None, verbose)
         print("Expected a TypeError to be raised")
         assert False
     except TypeError as expected_error:

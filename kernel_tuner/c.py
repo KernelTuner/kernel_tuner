@@ -73,6 +73,12 @@ class CFunctions(object):
         self.env = env
         self.name = platform.processor()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        pass
+
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the C function
 
