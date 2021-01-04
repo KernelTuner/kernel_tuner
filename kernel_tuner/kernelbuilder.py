@@ -96,3 +96,7 @@ class PythonKernel(object):
         :type *args: np.ndarray or np.generic
         """
         return self.run_kernel(args)
+
+    def __del__(self):
+        if hasattr(self, 'dev'):
+            self.dev.__exit__([None, None, None])
