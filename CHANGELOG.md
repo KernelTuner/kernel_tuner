@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - support for (lambda) function instead of list of strings for restrictions
 - support for (lambda) function instead of list for specifying grid divisors
 - support for (lambda) function instead of tuple for specifying problem_size
+- function to store the top tuning results
 
 ## [0.3.2] - 2020-11-04
 ### Added
