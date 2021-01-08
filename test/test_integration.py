@@ -2,21 +2,29 @@ import os
 import itertools
 import json
 
+import pytest
+
 from kernel_tuner import integration
 from kernel_tuner import util
 
-def test_store_results():
-
-    filename = "temp_test_results_file.json"
+@pytest.fixture()
+def fake_results():
+    #create fake results for testing
     tune_params = {"a": [1, 2, 4], "b": [4, 5, 6]}
     problem_size = 100
-
-    #create fake results for testing
     parameter_space = itertools.product(*tune_params.values())
     results = [dict(zip(tune_params.keys(), element)) for element in parameter_space]
     for i,r in enumerate(results):
         r["time"] = 100.0+i
     env = {"device_name": "My GPU"}
+
+    return tune_params, problem_size, parameter_space, results, env
+
+
+def test_store_results(fake_results):
+
+    filename = "temp_test_results_file.json"
+    tune_params, problem_size, parameter_space, results, env = fake_results
 
     try:
         #test basic operation
@@ -54,3 +62,12 @@ def test_store_results():
 
     finally:
         util.delete_temp_file(filename)
+
+
+def test_setup_device_targets():
+
+    results_filename = "temp_test_results_file.json"
+    header_filename = "temp_test_header_file.h"
+
+    #create_device_targets(header_filename, results_filename, objective=("time", min))
+
