@@ -64,10 +64,71 @@ def test_store_results(fake_results):
         util.delete_temp_file(filename)
 
 
-def test_setup_device_targets():
+
+def test_setup_device_targets(fake_results):
 
     results_filename = "temp_test_results_file.json"
     header_filename = "temp_test_header_file.h"
+    tune_params, problem_size, parameter_space, results, env = fake_results
 
-    #create_device_targets(header_filename, results_filename, objective=("time", min))
 
+    try:
+
+        integration.store_results(results_filename, tune_params, problem_size, results, env, top=3)
+        #results file
+        #{'My-GPU': {'100': [{'a': 1, 'b': 4, 'time': 100.0}, {'a': 1, 'b': 5, 'time': 101.0}, {'a': 1, 'b': 6, 'time': 102.0}]}}
+
+        integration.create_device_targets(header_filename, results_filename, objective=("time", min))
+
+        with open(header_filename, 'r') as fh:
+            output_str = fh.read()
+
+        assert "TARGET_GPU == My-GPU" in output_str
+        assert "#define a 1" in output_str
+        assert "#define b 4" in output_str
+
+        #test output when more then one problem size is used, and best configuration is different
+        for i,e in enumerate(results):
+            if e['a'] == 1 and e['b'] == 4:
+                e['time'] += 100
+        integration.store_results(results_filename, tune_params, 1000, results, env, top=3)
+        integration.create_device_targets(header_filename, results_filename, objective=("time", min))
+
+        with open(header_filename, 'r') as fh:
+            output_str = fh.read()
+        expected = "\n".join(["TARGET_GPU == My-GPU", "#define a 1", "#define b 5"])
+        assert expected in output_str
+
+        #test output when more then one problem size is used, and best configuration depends on total time
+        for i,e in enumerate(results):
+            if e['a'] == 1 and e['b'] == 6:
+                e['time'] -= 3
+        integration.store_results(results_filename, tune_params, 1000, results, env, top=3)
+        integration.create_device_targets(header_filename, results_filename, objective=("time", min))
+
+        with open(header_filename, 'r') as fh:
+            output_str = fh.read()
+        expected = "\n".join(["TARGET_GPU == My-GPU", "#define a 1", "#define b 6"])
+        assert expected in output_str
+
+        #test output when more then one GPU is used
+        for i,e in enumerate(results):
+            if e['a'] == 1 and e['b'] == 6:
+                e['time'] += 3.1
+        env['device_name'] = "My-GPU2"
+        integration.store_results(results_filename, tune_params, 1000, results, env, top=3)
+        integration.create_device_targets(header_filename, results_filename, objective=("time", min))
+
+        with open(header_filename, 'r') as fh:
+            output_str = fh.read()
+        expected = "\n".join(["TARGET_GPU == My-GPU", "#define a 1", "#define b 6"])
+        assert expected in output_str
+        expected = "\n".join(["TARGET_GPU == My-GPU2", "#define a 1", "#define b 5"])
+        assert expected in output_str
+        expected = "\n".join(["#ifndef TARGET_GPU /* default configuration */", "#define a 1", "#define b 5"])
+        assert expected in output_str
+
+
+    finally:
+        util.delete_temp_file(results_filename)
+        util.delete_temp_file(header_filename)
