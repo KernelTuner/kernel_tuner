@@ -15,6 +15,7 @@ except ImportError:
 
 from kernel_tuner.c import CFunctions, Argument
 from kernel_tuner.core import KernelSource, KernelInstance
+from kernel_tuner import util
 
 from .context import skip_if_no_gfortran
 
@@ -268,10 +269,14 @@ def test_complies_fortran_function_with_module():
     kernel_sources = KernelSource(kernel_string, "C")
     kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
-    with CFunctions(compiler="gfortran") as cfunc:
-        func = cfunc.compile(kernel_instance)
+    try:
 
-        result = cfunc.run_kernel(func, [], (), ())
+        with CFunctions(compiler="gfortran") as cfunc:
+            func = cfunc.compile(kernel_instance)
 
-    assert np.isclose(result, 42.0)
+            result = cfunc.run_kernel(func, [], (), ())
 
+        assert np.isclose(result, 42.0)
+
+    finally:
+        util.delete_temp_file("my_fancy_module.mod")
