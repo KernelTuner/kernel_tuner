@@ -32,15 +32,15 @@ def test_store_results(fake_results):
         with open(filename, 'r') as fh:
             stored_data = json.loads(fh.read())
 
-        assert len(stored_data["My-GPU"]["100"]) == 3
+        assert len(stored_data["My_GPU"]["100"]) == 3
 
         #test if results for a different problem_size values are added
         integration.store_results(filename, tune_params, 1000, results, env, top=3)
         with open(filename, 'r') as fh:
             stored_data = json.loads(fh.read())
 
-        assert len(stored_data["My-GPU"]["100"]) == 3
-        assert len(stored_data["My-GPU"]["1000"]) == 3
+        assert len(stored_data["My_GPU"]["100"]) == 3
+        assert len(stored_data["My_GPU"]["1000"]) == 3
 
         #test if results for a different GPU can be added
         integration.store_results(filename, tune_params, problem_size, results, {"device_name": "Another GPU"}, top=3)
@@ -56,8 +56,8 @@ def test_store_results(fake_results):
         with open(filename, 'r') as fh:
             stored_data = json.loads(fh.read())
 
-        assert len(stored_data["My-GPU"]["100"]) == 1
-        assert stored_data["My-GPU"]["100"][0]["time"] < 100
+        assert len(stored_data["My_GPU"]["100"]) == 1
+        assert stored_data["My_GPU"]["100"][0]["time"] < 100
 
     finally:
         util.delete_temp_file(filename)
@@ -73,14 +73,14 @@ def test_setup_device_targets(fake_results):
     try:
         integration.store_results(results_filename, tune_params, problem_size, results, env, top=3)
         #results file
-        #{'My-GPU': {'100': [{'a': 1, 'b': 4, 'time': 100.0}, {'a': 1, 'b': 5, 'time': 101.0}, {'a': 1, 'b': 6, 'time': 102.0}]}}
+        #{'My_GPU': {'100': [{'a': 1, 'b': 4, 'time': 100.0}, {'a': 1, 'b': 5, 'time': 101.0}, {'a': 1, 'b': 6, 'time': 102.0}]}}
 
         integration.create_device_targets(header_filename, results_filename, objective=("time", min))
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
 
-        assert "TARGET_GPU == My-GPU" in output_str
+        assert "#ifdef TARGET_My_GPU" in output_str
         assert "#define a 1" in output_str
         assert "#define b 4" in output_str
 
@@ -93,7 +93,7 @@ def test_setup_device_targets(fake_results):
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
-        expected = "\n".join(["TARGET_GPU == My-GPU", "#define a 1", "#define b 5"])
+        expected = "\n".join(["TARGET_My_GPU", "#define a 1", "#define b 5"])
         assert expected in output_str
 
         #test output when more then one problem size is used, and best configuration depends on total time
@@ -105,24 +105,24 @@ def test_setup_device_targets(fake_results):
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
-        expected = "\n".join(["TARGET_GPU == My-GPU", "#define a 1", "#define b 6"])
+        expected = "\n".join(["TARGET_My_GPU", "#define a 1", "#define b 6"])
         assert expected in output_str
 
         #test output when more then one GPU is used
         for i,e in enumerate(results):
             if e['a'] == 1 and e['b'] == 6:
                 e['time'] += 3.1
-        env['device_name'] = "My-GPU2"
+        env['device_name'] = "My_GPU2"
         integration.store_results(results_filename, tune_params, 1000, results, env, top=3)
         integration.create_device_targets(header_filename, results_filename, objective=("time", min))
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
-        expected = "\n".join(["TARGET_GPU == My-GPU", "#define a 1", "#define b 6"])
+        expected = "\n".join(["TARGET_My_GPU", "#define a 1", "#define b 6"])
         assert expected in output_str
-        expected = "\n".join(["TARGET_GPU == My-GPU2", "#define a 1", "#define b 5"])
+        expected = "\n".join(["TARGET_My_GPU2", "#define a 1", "#define b 5"])
         assert expected in output_str
-        expected = "\n".join(["#ifndef TARGET_GPU /* default configuration */", "#define a 1", "#define b 5"])
+        expected = "\n".join(["#else /* default configuration */", "#define a 1", "#define b 5"])
         assert expected in output_str
 
     finally:
@@ -146,7 +146,7 @@ def test_setup_device_targets_max(fake_results):
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
-        assert "TARGET_GPU == My-GPU" in output_str
+        assert "TARGET_My_GPU" in output_str
         assert "#define a 1" in output_str
         assert "#define b 4" in output_str
 
@@ -160,7 +160,7 @@ def test_setup_device_targets_max(fake_results):
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
-        expected = "\n".join(["TARGET_GPU == My-GPU", "#define a 1", "#define b 5"])
+        expected = "\n".join(["TARGET_My_GPU", "#define a 1", "#define b 5"])
         assert expected in output_str
 
 
