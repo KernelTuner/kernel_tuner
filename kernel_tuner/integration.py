@@ -3,7 +3,8 @@ import json
 
 from kernel_tuner import util
 
-class TuneResults(object):
+class TuneResults():
+    """ Object to represent the tuning results stored to file """
 
     def __init__(self, results_filename, objective=("time", min)):
         #open results file
@@ -17,6 +18,29 @@ class TuneResults(object):
         self.objective = objective
 
     def get_best_config(self, gpu_name="default", problem_size=None):
+        """ get the best config based on these tuning results
+
+            This function returns the overall best performing kernel configuration
+            based on the tuning results for a given gpu_name and problem_size.
+
+            If problem_size is not given this function will select a default configuration
+            based on the tuning results for all problem_sizes and the given gpu_name.
+
+            If gpu_name is not given this function will select a default configuration
+            based on all tuning results.
+
+            :param gpu_name: Name of the GPU for which the best configuration
+                needs to be retrieved.
+            :type gpu_name: string
+
+            :param problem_size: The problem size for which the best configuration
+                on the given gpu_name needs to be retrieved.
+            :type problem_size: tuple, int, or string
+
+            :returns: A dictionary with tunable parameters of the selected kernel
+                kernel configuration.
+            :rtype: dict
+        """
         gpu_name = gpu_name.replace("-", "_").replace(" ", "_")
 
         if problem_size:
@@ -30,16 +54,15 @@ class TuneResults(object):
         if gpu_name in self.data:
             if problem_size and problem_size_str in self.data[gpu_name]:
                 return _get_best_config_from_list(self.data[gpu_name][problem_size_str], self.objective)
-            else:
-                #problem size is not given or not among the results, so return a good default
-                return _select_best_common_config(self.data[gpu_name], self.objective)
-        else:
-            #gpu is not among the results, so return a good default
-            merge_results = {}
-            for gpu, problem_sizes in self.data.items():
-                for problem_size, configs in problem_sizes.items():
-                    merge_results[gpu + "_" + problem_size] = configs
-            return _select_best_common_config(merge_results, self.objective)
+            #problem size is not given or not among the results, so return a good default
+            return _select_best_common_config(self.data[gpu_name], self.objective)
+
+        #gpu is not among the results, so return a good default
+        merge_results = {}
+        for gpu, problem_sizes in self.data.items():
+            for problem, configs in problem_sizes.items():
+                merge_results[gpu + "_" + problem] = configs
+        return _select_best_common_config(merge_results, self.objective)
 
 
 
@@ -93,10 +116,9 @@ def store_results(results_filename, tune_params, problem_size, results, env, top
         current = item[objective[0]]
         if objective[1] == min:
             return current < best * (1+top_range)
-        elif objective[1] == max:
+        if objective[1] == max:
             return current > best * (1-top_range)
-        else:
-            raise ValueError("only min or max are supported to compare results")
+        raise ValueError("only min or max are supported to compare results")
 
     top_results = [item for item in results_filtered if top_result(item)]
 
@@ -169,7 +191,7 @@ def create_device_targets(header_filename, results_filename, objective=("time", 
 
     #collect data for the if-block
     targets = {}
-    for gpu_name, problem_sizes in data.items():
+    for gpu_name in data:
         targets[gpu_name] = results.get_best_config(gpu_name)
 
     #select a good default from all good configs
@@ -215,10 +237,10 @@ def _select_best_common_config(results, objective):
     inverse_table = {}
 
     #for each problem_size in the results dictionary
-    for key, value in results.items():
+    for value in results.values():
         #for each configuration in the list
         for config in value:
-            params = {k:config[k] for k in config.keys() if k != objective[0]}
+            params = {k:config[k] for k in config if k != objective[0]}
 
             config_str = util.get_instance_string(params)
             #count occurances
@@ -230,10 +252,10 @@ def _select_best_common_config(results, objective):
 
     #look for best config
     top_freq = max(results_table.values())
-    best_configs = [k for k in results_table.keys() if results_table[k] == top_freq]
+    best_configs = [k for k in results_table if results_table[k] == top_freq]
 
     #intersect total_performance with the best_configs
-    total_performance = {k:total_performance[k] for k in total_performance.keys() if k in best_configs}
+    total_performance = {k:total_performance[k] for k in total_performance if k in best_configs}
 
     #get the best config from this intersection
     best_config_str = objective[1](total_performance.keys(), key=lambda x: total_performance[x])
@@ -245,6 +267,5 @@ def _select_best_common_config(results, objective):
 def _get_best_config_from_list(configs, objective):
     """ return the tunable parameters of the best config from a list of configs """
     best_config = objective[1](configs, key=lambda x: x[objective[0]])
-    best_config_params = {k:best_config[k] for k in best_config.keys() if k != objective[0]}
+    best_config_params = {k:best_config[k] for k in best_config if k != objective[0]}
     return best_config_params
-
