@@ -1,7 +1,7 @@
 Kernel Tuner Examples
 =====================
 
-Most of the examples show how to use the Kernel Tuner to tune a
+Most of the examples show how to use Kernel Tuner to tune a
 CUDA, OpenCL, or C kernel, while demonstrating a particular usecase of Kernel Tuner.
 
 Except for `test\_vector\_add.py <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/test_vector_add.py>`__  and 
@@ -13,7 +13,7 @@ Below we list the example applications and the features they illustrate.
 Vector Add
 ----------
 [`CUDA <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/cuda/vector_add.py>`__] [`OpenCL <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/opencl/vector_add.py>`__] [`C <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py>`__] [`Fortran <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/fortran/vector_add.py>`__]
- - use the Kernel Tuner to tune a simple kernel
+ - use Kernel Tuner to tune a simple kernel
 
 Stencil
 -------

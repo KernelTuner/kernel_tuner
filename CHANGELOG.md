@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - support for (lambda) function instead of list of strings for restrictions
 - support for (lambda) function instead of list for specifying grid divisors
 - support for (lambda) function instead of tuple for specifying problem_size
+- function to store the top tuning results
+- function to create header file with device targets from stored results
+- support for using tuning results in PythonKernel
+
 
 ## [0.3.2] - 2020-11-04
 ### Added
