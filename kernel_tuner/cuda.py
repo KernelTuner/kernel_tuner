@@ -217,11 +217,8 @@ class CudaFunctions(object):
         :rtype: dict()
         """
         result = dict()
-        result["power"] = []
-        energy = []
         self.context.synchronize()
         for _ in range(self.iterations):
-            power_readings = []
             self.start.record(stream=self.stream)
             for obs in self.observers:
                 obs.before_start()
