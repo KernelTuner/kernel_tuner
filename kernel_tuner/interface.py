@@ -344,7 +344,8 @@ _tuning_options = Options([
         filename uses suffix ".json"
         if the file exists it is read and tuning continues from this file
         """, "string")),
-    ("metrics", ("specifies user-defined metrics", "OrderedDict"))
+    ("metrics", ("specifies user-defined metrics", "OrderedDict")),
+    ("observers", ("""A list of BenchmarkObservers""", "list"))
     ])
 
 _device_options = Options([
@@ -360,8 +361,7 @@ _device_options = Options([
     ("compiler", ("""A string containing your preferred compiler,
         only effective with lang="C". """, "string")),
     ("compiler_options", ("""A list of strings that specify compiler
-        options.""", "list(string)")),
-    ("observers", ("""A list of BenchmarkObservers""", "list"))
+        options.""", "list(string)"))
     ])
 
 
@@ -453,7 +453,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         strategy = brute_force
 
 
-    with SequentialRunner(kernel_source, kernel_options, device_options, iterations) as runner:
+    with SequentialRunner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.
