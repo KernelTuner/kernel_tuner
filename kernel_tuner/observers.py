@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 #check if power_sensor is installed
 try:
     import power_sensor
@@ -26,7 +28,7 @@ class BenchmarkObserver(ABC):
         pass
 
 
-class PowerSensorObserver():
+class PowerSensorObserver(BenchmarkObserver):
     """Observer that an external PowerSensor2 device to accurately measure power"""
 
     def __init__(self, observables=None, device=None):
@@ -38,7 +40,7 @@ class PowerSensorObserver():
         self.ps = power_sensor.PowerSensor(device)
 
         self.begin_state = None
-        self.results = dict()
+        self.results = {"energy": [], "power": []}
 
     def after_start(self):
         self.begin_state = self.ps.read()
@@ -53,6 +55,6 @@ class PowerSensorObserver():
             self.results["power"].append(ps_measured_e / ps_measured_t) # Watt
 
     def get_results(self):
-        self.averages = {key: np.average(values) for key, values in self.results()}
-        self.results = dict()
+        averages = {key: np.average(values) for key, values in self.results.items()}
+        self.results = {"energy": [], "power": []}
         return averages
