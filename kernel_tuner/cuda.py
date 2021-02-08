@@ -34,12 +34,12 @@ class CudaRuntimeObserver(BenchmarkObserver):
         self.times = []
 
     def after_finish(self):
-            self.times.append(self.end.time_since(self.start)) #ms
+        self.times.append(self.end.time_since(self.start)) #ms
 
     def get_results(self):
-            results = {"time": np.average(self.times), "times": self.times.copy()}
-            self.times = []
-            return results
+        results = {"time": np.average(self.times), "times": self.times.copy()}
+        self.times = []
+        return results
 
 
 class CudaFunctions(object):

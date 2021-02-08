@@ -212,7 +212,7 @@ class DeviceInterface(object):
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
-            dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations)
+            dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "C":
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         else:
