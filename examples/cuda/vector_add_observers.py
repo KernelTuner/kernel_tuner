@@ -31,11 +31,10 @@ def tune():
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    observables = ["energy", "temperature"]
-    nvmlobserver = NVMLObserver(observables)
+    nvmlobserver = NVMLObserver(["nvml_energy", "temperature"])
 
     metrics = OrderedDict()
-    metrics["GFLOPS/W"] = lambda p: (size/1e9) / p["energy"]
+    metrics["GFLOPS/W"] = lambda p: (size/1e9) / p["nvml_energy"]
 
     results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, observers=[nvmlobserver], metrics=metrics, iterations=32)
 

@@ -139,13 +139,13 @@ class NVMLObserver(BenchmarkObserver):
     def __init__(self, observables, device=0):
         self.nvml = nvml(device)
 
-        supported = ["power_readings", "power", "energy", "core_freq", "mem_freq", "temperature"]
+        supported = ["power_readings", "nvml_power", "nvml_energy", "core_freq", "mem_freq", "temperature"]
         for obs in observables:
             if not obs in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
         self.observables = observables
 
-        needs_power = ["power_readings", "power", "energy"]
+        needs_power = ["power_readings", "nvml_power", "nvml_energy"]
         if any([obs in needs_power for obs in observables]):
             self.measure_power = True
             self.power_readings = []
@@ -177,17 +177,17 @@ class NVMLObserver(BenchmarkObserver):
             if "power_readings" in self.observables:
                 self.results["power_readings"].append(power_readings) #time in s, power usage in milliwatts
 
-            if "energy" in self.observables or "power" in self.observables:
+            if "nvml_energy" in self.observables or "nvml_power" in self.observables:
                 #compute energy consumption as area under curve
                 x = [d[0] for d in power_readings]
                 y = [d[1]/1000.0 for d in power_readings] #convert to Watt
                 energy = (np.trapz(y,x)) #in Joule
                 power = energy / execution_time #in Watt
 
-                if "energy" in self.observables:
-                    self.results["energy"].append(energy)
-                if "power" in self.observables:
-                    self.results["power"].append(power)
+                if "nvml_energy" in self.observables:
+                    self.results["nvml_energy"].append(energy)
+                if "nvml_power" in self.observables:
+                    self.results["nvml_power"].append(power)
 
         if "temperature" in self.observables:
             self.results["temperature"].append(self.nvml.temperature)
