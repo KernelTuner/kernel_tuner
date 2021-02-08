@@ -45,7 +45,7 @@ class CudaRuntimeObserver(BenchmarkObserver):
 class CudaFunctions(object):
     """Class that groups the CUDA functions on maintains state about the device"""
 
-    def __init__(self, device=0, iterations=7, compiler_options=None):
+    def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """instantiate CudaFunctions object used for interacting with the CUDA device
 
         Instantiating this object will inspect and store certain device properties at
@@ -66,13 +66,6 @@ class CudaFunctions(object):
 
         drv.init()
         self.context = drv.Device(device).make_context()
-
-        try:
-            self.nvml = nvml(device)
-            self.nvml.pwr_usage()
-            self.use_nvml = True
-        except:
-            self.use_nvml = False
 
         #inspect device properties
         devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
@@ -102,7 +95,7 @@ class CudaFunctions(object):
         self.smem_size = 0
 
         #setup observers
-        self.observers = []
+        self.observers = observers or []
         self.observers.append(CudaRuntimeObserver(self))
 
         #collect environment information
@@ -226,33 +219,16 @@ class CudaFunctions(object):
             self.end.record(stream=self.stream)
             for obs in self.observers:
                 obs.after_start()
-            #measure power usage until kernel is done
-            t0 = time.time()
             while not self.end.query():
                 for obs in self.observers:
                     obs.during()
-                if self.use_nvml:
-                    power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
             self.end.synchronize()
             for obs in self.observers:
                 obs.after_finish()
 
-            #pre and postfix to start at 0 and end at kernel end
-            if power_readings:
-                power_readings = [[0.0, power_readings[0][1]]] + power_readings
-                power_readings = power_readings + [[execution_time / 1000.0, power_readings[-1][1]]]
-                result["power"].append(power_readings) #time in s, power usage in milliwatts
-
-                #compute energy consumption as area under curve
-                x = [d[0] for d in power_readings]
-                y = [d[1]/1000.0 for d in power_readings] #convert to watts
-                energy.append(np.trapz(y,x)) #in Joule
-
         for obs in self.observers:
             result.update(obs.get_results())
 
-        if (self.iterations > 10) and energy:
-            result["energy"] = np.mean(energy[10:])
         return result
 
     def copy_constant_memory_args(self, cmem_args):

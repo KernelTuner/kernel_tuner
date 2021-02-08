@@ -360,7 +360,8 @@ _device_options = Options([
     ("compiler", ("""A string containing your preferred compiler,
         only effective with lang="C". """, "string")),
     ("compiler_options", ("""A list of strings that specify compiler
-        options.""", "list(string)"))
+        options.""", "list(string)")),
+    ("observers", ("""A list of BenchmarkObservers""", "list"))
     ])
 
 
@@ -392,7 +393,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None):
+                cache=None, metrics=None, observers=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)

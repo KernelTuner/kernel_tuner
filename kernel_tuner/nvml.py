@@ -169,9 +169,10 @@ class NVMLObserver(BenchmarkObserver):
         if self.measure_power:
             #pre and postfix to start at 0 and end at kernel end
             power_readings = self.power_readings
-            power_readings = [[0.0, power_readings[0][1]]] + power_readings
-            execution_time = time.time() - self.t0
-            power_readings = power_readings + [[execution_time, power_readings[-1][1]]]
+            if power_readings:
+                power_readings = [[0.0, power_readings[0][1]]] + power_readings
+                execution_time = time.time() - self.t0
+                power_readings = power_readings + [[execution_time, power_readings[-1][1]]]
 
             if "power_readings" in self.observables:
                 self.results["power_readings"].append(power_readings) #time in s, power usage in milliwatts

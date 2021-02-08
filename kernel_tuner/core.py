@@ -175,7 +175,7 @@ class KernelSource(object):
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7):
+    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7, observers=None):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param kernel_source The kernel sources
@@ -210,7 +210,7 @@ class DeviceInterface(object):
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
         if lang == "CUDA":
-            dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations)
+            dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations)
         elif lang == "C":
