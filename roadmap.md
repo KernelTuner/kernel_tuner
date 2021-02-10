@@ -1,4 +1,4 @@
-# Roadmap for the Kernel Tuner
+# Roadmap for Kernel Tuner
 
 This roadmap presents an overview of the features we are currently planning to
 implement. Please note that this is a living document that will evolve as
@@ -38,4 +38,4 @@ immediate demand for it. If you are interested in any of these, let us know!
  * Turn the C backend into a more general compiler backend
  * A get_parameterized_kernel_source function to return the parameterized kernel source for inspection
  * Function to generate wrapper kernels for directly calling/testing device functions
- * Function to instrument source files with parameter values after tuning
+
