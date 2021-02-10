@@ -38,6 +38,7 @@ import kernel_tuner.util as util
 import kernel_tuner.core as core
 
 from kernel_tuner.runners.sequential import SequentialRunner
+from kernel_tuner.runners.simulation import SimulationRunner
 
 from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
 
@@ -392,7 +393,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None):
+                cache=None, metrics=None, simulation_mode=False):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -452,7 +453,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
         strategy = brute_force
 
 
-    with SequentialRunner(kernel_source, kernel_options, device_options, iterations) as runner:
+    # select the runner for this job based on input
+    SelectedRunner = SimulationRunner if simulation_mode else SequentialRunner
+    with SelectedRunner(kernel_source, kernel_options, device_options, iterations) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.

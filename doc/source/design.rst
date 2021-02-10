@@ -94,6 +94,12 @@ kernel_tuner.runners.sequential.SequentialRunner
     :special-members: __init__
     :members:
 
+kernel_tuner.runners.sequential.SimulationRunner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.runners.sequential.SimulationRunner
+    :special-members: __init__
+    :members:
+
 
 Device Interfaces
 -----------------
