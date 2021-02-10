@@ -1,16 +1,21 @@
+import time
+import numpy as np
+
+from kernel_tuner.observers import BenchmarkObserver
+
 try:
     import pynvml
 except ImportError:
     pynvml = None
 
-class nvml(object):
+class nvml():
     """Class that gathers the NVML functionality for one device"""
 
-    def __init__(self, id=0):
+    def __init__(self, device_id=0):
         """Create object to control device using NVML"""
 
         pynvml.nvmlInit()
-        self.dev = pynvml.nvmlDeviceGetHandleByIndex(id)
+        self.dev = pynvml.nvmlDeviceGetHandleByIndex(device_id)
 
         try:
             self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
@@ -107,6 +112,11 @@ class nvml(object):
         self.set_clocks(new_clock, self.gr_clock)
 
     @property
+    def temperature(self):
+        """Get the GPU temperature"""
+        return pynvml.nvmlDeviceGetTemperature(self.dev, pynvml.NVML_TEMPERATURE_GPU)
+
+    @property
     def auto_boost(self):
         """Control the auto boost setting (may require permission), 0 for disable, 1 for enabled"""
         return self._auto_boost
@@ -122,3 +132,83 @@ class nvml(object):
     def pwr_usage(self):
         """Return current power usage in milliwatts"""
         return pynvml.nvmlDeviceGetPowerUsage(self.dev)
+
+
+class NVMLObserver(BenchmarkObserver):
+    """ Observer that measures time using CUDA events during benchmarking """
+    def __init__(self, observables, device=0):
+        self.nvml = nvml(device)
+
+        supported = ["power_readings", "nvml_power", "nvml_energy", "core_freq", "mem_freq", "temperature"]
+        for obs in observables:
+            if not obs in supported:
+                raise ValueError(f"Observable {obs} not in supported: {supported}")
+        self.observables = observables
+
+        needs_power = ["power_readings", "nvml_power", "nvml_energy"]
+        if any([obs in needs_power for obs in observables]):
+            self.measure_power = True
+            self.power_readings = []
+
+        self.results = dict()
+        for obs in observables:
+            self.results[obs] = []
+
+    def before_start(self):
+        if self.measure_power:
+            self.power_readings = []
+
+    def after_start(self):
+        self.t0 = time.time()
+
+    def during(self):
+        if self.measure_power:
+            self.power_readings.append([time.time()-self.t0, self.nvml.pwr_usage()])
+
+    def after_finish(self):
+        if self.measure_power:
+            execution_time = time.time() - self.t0
+
+            #pre and postfix to start at 0 and end at kernel end
+            power_readings = self.power_readings
+            if power_readings:
+                power_readings = [[0.0, power_readings[0][1]]] + power_readings
+                power_readings = power_readings + [[execution_time, power_readings[-1][1]]]
+
+            if "power_readings" in self.observables:
+                self.results["power_readings"].append(power_readings) #time in s, power usage in milliwatts
+
+            if "nvml_energy" in self.observables or "nvml_power" in self.observables:
+                #compute energy consumption as area under curve
+                x = [d[0] for d in power_readings]
+                y = [d[1]/1000.0 for d in power_readings] #convert to Watt
+                energy = (np.trapz(y,x)) #in Joule
+                power = energy / execution_time #in Watt
+
+                if "nvml_energy" in self.observables:
+                    self.results["nvml_energy"].append(energy)
+                if "nvml_power" in self.observables:
+                    self.results["nvml_power"].append(power)
+
+        if "temperature" in self.observables:
+            self.results["temperature"].append(self.nvml.temperature)
+        if "core_freq" in self.observables:
+            self.results["core_freq"].append(self.nvml.gr_clock)
+        if "mem_freq" in self.observables:
+            self.results["mem_freq"].append(self.nvml.mem_clock)
+
+    def get_results(self):
+        averaged_results = dict()
+
+        #return averaged results, except for power_readings
+        for obs in self.observables:
+            if not obs == "power_readings":
+                averaged_results[obs] = np.average(self.results[obs])
+        if "power_readings" in self.observables:
+            averaged_results["power_readings"] = self.results["power_readings"].copy()
+
+        #clear results for next measurement
+        for obs in self.observables:
+            self.results[obs] = []
+
+        return averaged_results

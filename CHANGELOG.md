@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - function to store the top tuning results
 - function to create header file with device targets from stored results
 - support for using tuning results in PythonKernel
-
+- option to control measurements using observers
 
 ## [0.3.2] - 2020-11-04
 ### Added
