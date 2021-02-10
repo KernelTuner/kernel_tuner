@@ -97,6 +97,8 @@ class CudaFunctions(object):
         #setup observers
         self.observers = observers or []
         self.observers.append(CudaRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
         #collect environment information
         env = dict()

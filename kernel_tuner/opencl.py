@@ -57,6 +57,8 @@ class OpenCLFunctions():
         self.observers = observers or []
         self.observers.append(OpenCLObserver(self))
         self.event = None
+        for obs in self.observers:
+            obs.register_device(self)
 
         #collect environment information
         dev = self.ctx.devices[0]
