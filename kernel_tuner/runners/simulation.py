@@ -185,7 +185,7 @@ class SimulationDeviceInterface(object):
 class SimulationRunner(object):
     """ SimulationRunner is used for tuning with a single process/thread """
     def __init__(self, kernel_source, kernel_options, device_options,
-                 iterations):
+                 iterations, observers):
         """ Instantiate the SimulationRunner
 
         :param kernel_source: The kernel source
