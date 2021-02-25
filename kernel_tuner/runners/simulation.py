@@ -89,7 +89,7 @@ class SimulationDeviceInterface(object):
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
         if lang not in ('CUDA', 'OpenCL', 'C'):
-            raise ValueException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
         self.lang = lang
         self.dev = SimulationLangFunction(self.lang, device, iterations, compiler_options)
         self.units = None
