@@ -174,8 +174,7 @@ def store_results(results_filename, kernel_name, kernel_string, tune_params, pro
         current = item[objective]
         if objective_higher_is_better:
             return current > best * (1-top_range)
-        else:
-            return current < best * (1+top_range)
+        return current < best * (1+top_range)
     top_results = [item for item in results_filtered if top_result(item)]
 
     #filter result items to just the tunable parameters and the objective
@@ -273,7 +272,7 @@ def create_device_targets(header_filename, results_filename, objective=None, obj
     data = results.data
 
     #collect data for the if-block
-    gpu_targets = list(set([r["device_name"] for r in data]))
+    gpu_targets = list({r["device_name"] for r in data})
     targets = {}
     for gpu_name in gpu_targets:
         targets[gpu_name] = results.get_best_config(gpu_name)
@@ -385,10 +384,8 @@ def _read_results_file(results_filename):
     if "version_number" in data:
         if data["version_number"] == "1.0":
             return _parse_results_file_version_1_0(data)
-        else:
-            raise ValueError(f"Unknown results file version_number: {version_number}")
-    else:
-        raise ValueError("Results fileformat not recognized")
+        raise ValueError(f"Unknown results file version_number: {data['version_number']}")
+    raise ValueError("Results fileformat not recognized")
 
 
 
