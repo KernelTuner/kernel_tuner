@@ -560,12 +560,13 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     """
     # caching only works correctly if tunable_parameters are stored in a OrderedDict
     if not isinstance(tuning_options.tune_params, OrderedDict):
-        raise ValueError(
-            "Caching only works correctly when tunable parameters are stored in a OrderedDict"
-        )
+        raise ValueError("Caching only works correctly when tunable parameters are stored in a OrderedDict")
 
     # if file does not exist, create new cache
     if not os.path.isfile(cache):
+        if tuning_options.simulation_mode:
+            raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
+
         c = OrderedDict()
         c["device_name"] = runner.dev.name
         c["kernel_name"] = kernel_options.kernel_name
