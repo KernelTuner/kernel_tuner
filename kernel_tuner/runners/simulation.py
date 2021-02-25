@@ -48,7 +48,7 @@ class SimulationLangFunction(object):
         return self
 
     def __exit__(self, *exc):
-        pass
+        return
 
 
 class SimulationDeviceInterface(object):
@@ -89,12 +89,13 @@ class SimulationDeviceInterface(object):
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
         if lang not in ('CUDA', 'OpenCL', 'C'):
-            raise Exception("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+            raise ValueException("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
         self.lang = lang
         self.dev = SimulationLangFunction(self.lang, device, iterations, compiler_options)
         self.units = None
         self._name = self.dev.name
         self.quiet = quiet
+        self.device_access_error = SystemError("Device not accessible in simulation mode")
 
     @property
     def name(self):
@@ -114,55 +115,54 @@ class SimulationDeviceInterface(object):
         logging.debug('benchmark ' + instance.name)
         logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
         logging.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
         logging.debug('check_kernel_output')
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
         instance_string = get_instance_string(params)
         logging.debug('compile_and_benchmark ' + instance_string)
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def compile_kernel(self, instance, verbose):
         """compile the kernel for this specific instance"""
         logging.debug('compile_kernel ' + instance.name)
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module, if using CUDA"""
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def copy_texture_memory_args(self, texmem_args):
         """adds texture memory arguments to the most recently compiled module, if using CUDA"""
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def get_environment(self):
         """Return dictionary with information about the environment"""
-        # raise Exception("Device not accessible in simulation mode")
         return self.dev.env
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy"""
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem if necessary"""
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def run_kernel(self, func, gpu_args, instance):
         """ Run a compiled kernel instance on a device """
         logging.debug('run_kernel %s', instance.name)
         logging.debug('thread block dims (%d, %d, %d)', *instance.threads)
         logging.debug('grid dims (%d, %d, %d)', *instance.grid)
-        raise Exception("Device not accessible in simulation mode")
+        raise self.device_access_error
 
     def __exit__(self, *exc):
         if hasattr(self, 'dev'):
@@ -225,19 +225,14 @@ class SimulationRunner(object):
 
         results = []
 
-        #iterate over parameter space
+        # iterate over parameter space
         for element in parameter_space:
-            # params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
-            # if not self.warmed_up:
-            # self.warmed_up = True
-
-            #check if element is in the cache
+            # check if element is in the cache
             x_int = ",".join([str(i) for i in element])
-            if tuning_options.cache:
-                if x_int in tuning_options.cache:
-                    results.append(tuning_options.cache[x_int])
-                    continue
+            if tuning_options.cache and x_int in tuning_options.cache:
+                results.append(tuning_options.cache[x_int])
+                continue
 
             # if the element is not in the cache, raise an error
             logging.debug('parameter element not in cache')
