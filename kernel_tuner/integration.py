@@ -31,7 +31,7 @@ def get_objective_defaults(objective, objective_higher_is_better):
     return objective, objective_higher_is_better
 
 schema_v1_0 = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$schema": "https://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
         "version_number": {"type": "string"},
