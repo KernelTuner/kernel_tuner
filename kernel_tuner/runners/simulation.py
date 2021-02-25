@@ -197,7 +197,6 @@ class SimulationRunner(object):
         self.kernel_source = kernel_source
 
         self.simulation_mode = True
-        # self.warmed_up = False
 
     def __enter__(self):
         return self
