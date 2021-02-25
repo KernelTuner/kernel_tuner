@@ -176,8 +176,6 @@ def store_results(results_filename, kernel_name, kernel_string, tune_params, pro
             return current > best * (1-top_range)
         else:
             return current < best * (1+top_range)
-        raise ValueError("only min or max are supported to compare results")
-
     top_results = [item for item in results_filtered if top_result(item)]
 
     #filter result items to just the tunable parameters and the objective
