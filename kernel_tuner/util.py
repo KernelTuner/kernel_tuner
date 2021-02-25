@@ -423,25 +423,20 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads,
 
     grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
     for i, g in enumerate(grid):
-        kernel_string = "#define " + grid_dim_names[i] + " " + str(
-            g) + "\n" + kernel_string
+        kernel_string = f"#define {grid_dim_names[i]} {g}\n" + kernel_string
     for i, g in enumerate(threads):
-        kernel_string = "#define " + block_size_names[i] + " " + str(
-            g) + "\n" + kernel_string
+        kernel_string = f"#define {block_size_names[i]} {g}\n" + kernel_string
     for k, v in params.items():
         if "loop_unroll_factor" in k and lang == "CUDA":
             # this handles the special case that in CUDA
             # pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
             # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
             if v > 0:  # using 0 to disable loop unrolling for this loop
-                kernel_string = "const int " + k + " = " + str(
-                    v) + ";\n" + kernel_string
+                kernel_string = "const int " + k + " = " + str(v) + ";\n" + kernel_string
             else:
-                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n",
-                                       kernel_string)  # + r"[^\S]*"
+                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
         elif k not in block_size_names:
-            kernel_string = "#define " + k + " " + str(
-                v) + "\n" + kernel_string
+            kernel_string = f"#define {k} {v}\n" + kernel_string
 
     name = kernel_name
 
@@ -560,12 +555,13 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     """
     # caching only works correctly if tunable_parameters are stored in a OrderedDict
     if not isinstance(tuning_options.tune_params, OrderedDict):
-        raise ValueError(
-            "Caching only works correctly when tunable parameters are stored in a OrderedDict"
-        )
+        raise ValueError("Caching only works correctly when tunable parameters are stored in a OrderedDict")
 
     # if file does not exist, create new cache
     if not os.path.isfile(cache):
+        if tuning_options.simulation_mode:
+            raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
+
         c = OrderedDict()
         c["device_name"] = runner.dev.name
         c["kernel_name"] = kernel_options.kernel_name

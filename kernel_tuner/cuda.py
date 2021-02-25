@@ -3,8 +3,9 @@ from __future__ import print_function
 
 import logging
 import time
-import numpy
+import numpy as np
 
+from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.nvml import nvml
 
 #embedded in try block to be able to generate documentation
@@ -23,10 +24,28 @@ except ImportError:
     DynamicSourceModule = None
 
 
+class CudaRuntimeObserver(BenchmarkObserver):
+    """ Observer that measures time using CUDA events during benchmarking """
+    def __init__(self, dev):
+        self.dev = dev
+        self.stream = dev.stream
+        self.start = dev.start
+        self.end = dev.end
+        self.times = []
+
+    def after_finish(self):
+        self.times.append(self.end.time_since(self.start)) #ms
+
+    def get_results(self):
+        results = {"time": np.average(self.times), "times": self.times.copy()}
+        self.times = []
+        return results
+
+
 class CudaFunctions(object):
     """Class that groups the CUDA functions on maintains state about the device"""
 
-    def __init__(self, device=0, iterations=7, compiler_options=None):
+    def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """instantiate CudaFunctions object used for interacting with the CUDA device
 
         Instantiating this object will inspect and store certain device properties at
@@ -48,13 +67,6 @@ class CudaFunctions(object):
         drv.init()
         self.context = drv.Device(device).make_context()
 
-        try:
-            self.nvml = nvml(device)
-            self.nvml.pwr_usage()
-            self.use_nvml = True
-        except:
-            self.use_nvml = False
-
         #inspect device properties
         devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
@@ -74,11 +86,19 @@ class CudaFunctions(object):
         if not self.source_mod:
             raise ImportError("Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
 
-        #create a stream
+        #create a stream and events
         self.stream = drv.Stream()
+        self.start = drv.Event()
+        self.end = drv.Event()
 
         #default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
+
+        #setup observers
+        self.observers = observers or []
+        self.observers.append(CudaRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
         #collect environment information
         env = dict()
@@ -115,7 +135,7 @@ class CudaFunctions(object):
         gpu_args = []
         for arg in arguments:
             # if arg i is a numpy array copy to device
-            if isinstance(arg, numpy.ndarray):
+            if isinstance(arg, np.ndarray):
                 alloc = drv.mem_alloc(arg.nbytes)
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
@@ -192,40 +212,25 @@ class CudaFunctions(object):
         :rtype: dict()
         """
         result = dict()
-        result["times"] = []
-        result["power"] = []
-        energy = []
-        start = drv.Event()
-        end = drv.Event()
         self.context.synchronize()
         for _ in range(self.iterations):
-            power_readings = []
-            start.record(stream=self.stream)
+            self.start.record(stream=self.stream)
+            for obs in self.observers:
+                obs.before_start()
             self.run_kernel(func, gpu_args, threads, grid, stream=self.stream)
-            end.record(stream=self.stream)
-            #measure power usage until kernel is done
-            t0 = time.time()
-            while not end.query():
-                if self.use_nvml:
-                    power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
-            end.synchronize()
-            execution_time = end.time_since(start) #ms
-            result["times"].append(execution_time)
+            self.end.record(stream=self.stream)
+            for obs in self.observers:
+                obs.after_start()
+            while not self.end.query():
+                for obs in self.observers:
+                    obs.during()
+            self.end.synchronize()
+            for obs in self.observers:
+                obs.after_finish()
 
-            #pre and postfix to start at 0 and end at kernel end
-            if power_readings:
-                power_readings = [[0.0, power_readings[0][1]]] + power_readings
-                power_readings = power_readings + [[execution_time / 1000.0, power_readings[-1][1]]]
-                result["power"].append(power_readings) #time in s, power usage in milliwatts
+        for obs in self.observers:
+            result.update(obs.get_results())
 
-                #compute energy consumption as area under curve
-                x = [d[0] for d in power_readings]
-                y = [d[1]/1000.0 for d in power_readings] #convert to watts
-                energy.append(numpy.trapz(y,x)) #in Joule
-
-        result["time"] = numpy.mean(result["times"])
-        if (self.iterations > 10) and energy:
-            result["energy"] = numpy.mean(energy[10:])
         return result
 
     def copy_constant_memory_args(self, cmem_args):

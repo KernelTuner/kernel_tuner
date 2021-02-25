@@ -337,7 +337,9 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
                            ("cache", ("""filename for caching/logging benchmarked instances
         filename uses suffix ".json"
         if the file exists it is read and tuning continues from this file
-        """, "string")), ("metrics", ("specifies user-defined metrics", "OrderedDict"))])
+        """, "string")), ("metrics", ("specifies user-defined metrics", "OrderedDict")),
+                           ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
+                           ("observers", ("""A list of BenchmarkObservers""", "list"))])
 
 _device_options = Options([("device", ("""CUDA/OpenCL device to use, in case you have multiple
         CUDA-capable GPUs or OpenCL devices you may use this to select one,
@@ -379,7 +381,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, simulation_mode=False):
+                cache=None, metrics=None, simulation_mode=False, observers=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -440,7 +442,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
 
     # select the runner for this job based on input
     SelectedRunner = SimulationRunner if simulation_mode else SequentialRunner
-    with SelectedRunner(kernel_source, kernel_options, device_options, iterations) as runner:
+    with SelectedRunner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.

@@ -9,7 +9,7 @@ class PythonKernel(object):
 
     def __init__(self, kernel_name, kernel_string, problem_size, arguments, params=None, inputs=None, outputs=None, device=0, platform=0,
                  block_size_names=None, grid_div_x=None, grid_div_y=None, grid_div_z=None, verbose=True, lang=None,
-                 results_file=None, objective=("time", min)):
+                 results_file=None):
         """ Construct Python helper object to compile and call the kernel from Python
 
             This object compiles a GPU kernel parameterized using the parameters in params.
@@ -32,13 +32,12 @@ class PythonKernel(object):
         #construct device interface
         kernel_source = core.KernelSource(kernel_string, lang)
         self.dev = core.DeviceInterface(kernel_source, device=device, quiet=True)
-
         if not params:
             params = {}
 
         #if results_file is passed use the results file to lookup tunable parameters
         if results_file:
-            results = TuneResults(results_file, objective)
+            results = TuneResults(results_file)
             params.update(results.get_best_config(self.dev.name, problem_size))
         self.params = params
 

@@ -93,9 +93,18 @@ class SimulationDeviceInterface(object):
         self.lang = lang
         self.dev = SimulationLangFunction(self.lang, device, iterations, compiler_options)
         self.units = None
-        self.name = self.dev.name
-        if not quiet:
-            print("Using: " + self.name)
+        self._name = self.dev.name
+        self.quiet = quiet
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+        if not self.quiet:
+            print("Simulating: " + value)
 
     def __enter__(self):
         return self
@@ -163,7 +172,7 @@ class SimulationDeviceInterface(object):
 class SimulationRunner(object):
     """ SimulationRunner is used for tuning with a single process/thread """
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
         """ Instantiate the SimulationRunner
 
         :param kernel_source: The kernel source
@@ -184,16 +193,11 @@ class SimulationRunner(object):
         # #detect language and create high-level device interface
         self.dev = SimulationDeviceInterface(kernel_source, iterations=iterations, **device_options).__enter__()
 
-        # self.units = self.dev.units
         self.quiet = device_options.quiet
         self.kernel_source = kernel_source
 
-        # self.warmed_up = False
-
         self.simulation_mode = True
-
-        # #move data to the GPU
-        # self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
+        # self.warmed_up = False
 
     def __enter__(self):
         return self
@@ -225,10 +229,8 @@ class SimulationRunner(object):
         for element in parameter_space:
             # params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
-            # #attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
             # if not self.warmed_up:
-            #     self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
-            #     self.warmed_up = True
+            # self.warmed_up = True
 
             #check if element is in the cache
             x_int = ",".join([str(i) for i in element])

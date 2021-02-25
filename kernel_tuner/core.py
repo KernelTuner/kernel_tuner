@@ -9,6 +9,7 @@ import numpy
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
+from kernel_tuner.nvml import NVMLObserver
 import kernel_tuner.util as util
 
 _KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
@@ -178,7 +179,7 @@ class KernelSource(object):
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7):
+    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7, observers=None):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param kernel_source The kernel sources
@@ -213,13 +214,22 @@ class DeviceInterface(object):
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
         if lang == "CUDA":
-            dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations)
+            dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
-            dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations)
+            dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "C":
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         else:
             raise Exception("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+
+        #look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
+        self.use_nvml = False
+        if observers:
+            for obs in observers:
+                if isinstance(obs, NVMLObserver):
+                    self.nvml = obs.nvml
+                    self.use_nvml = True
+
         self.lang = lang
         self.dev = dev
         self.units = dev.units
@@ -237,6 +247,18 @@ class DeviceInterface(object):
         logging.debug('benchmark ' + instance.name)
         logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
         logging.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
+
+        if self.use_nvml:
+            if "nvml_pwr_limit" in instance.params:
+                new_limit = int(instance.params["nvml_pwr_limit"] * 1000)    #user specifies in Watt, but nvml uses milliWatt
+                if self.nvml.pwr_limit != new_limit:
+                    self.nvml.pwr_limit = new_limit
+            if "nvml_gr_clock" in instance.params:
+                self.nvml.gr_clock = instance.params["nvml_gr_clock"]
+            if "nvml_sm_clock" in instance.params:
+                self.nvml.sm_clock = instance.params["nvml_sm_clock"]
+            if "nvml_mem_clock" in instance.params:
+                self.nvml.mem_clock = instance.params["nvml_mem_clock"]
 
         result = None
         try:
