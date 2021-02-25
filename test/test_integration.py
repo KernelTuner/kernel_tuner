@@ -18,46 +18,43 @@ def fake_results():
         r["time"] = 100.0+i
     env = {"device_name": "My GPU"}
 
-    return tune_params, problem_size, parameter_space, results, env
+    return "fake_kernel", "fake_string", tune_params, problem_size, parameter_space, results, env
 
 
 def test_store_results(fake_results):
 
     filename = "temp_test_results_file.json"
-    tune_params, problem_size, parameter_space, results, env = fake_results
+    kernel_name, kernel_string, tune_params, problem_size, parameter_space, results, env = fake_results
 
     try:
         #test basic operation
-        integration.store_results(filename, tune_params, problem_size, results, env, top=3)
-        with open(filename, 'r') as fh:
-            stored_data = json.loads(fh.read())
+        integration.store_results(filename, kernel_name, kernel_string, tune_params, problem_size, results, env, top=3)
+        meta, stored_data = integration._read_results_file(filename)
 
-        assert len(stored_data["My_GPU"]["100"]) == 3
+        assert len([d for d in stored_data if d["device_name"] == "My_GPU" and d["problem_size"] == "100"]) == 3
 
         #test if results for a different problem_size values are added
-        integration.store_results(filename, tune_params, 1000, results, env, top=3)
-        with open(filename, 'r') as fh:
-            stored_data = json.loads(fh.read())
+        integration.store_results(filename, kernel_name, kernel_string, tune_params, 1000, results, env, top=3)
+        meta, stored_data = integration._read_results_file(filename)
 
-        assert len(stored_data["My_GPU"]["100"]) == 3
-        assert len(stored_data["My_GPU"]["1000"]) == 3
+        assert len([d for d in stored_data if d["device_name"] == "My_GPU" and d["problem_size"] == "100"]) == 3
+        assert len([d for d in stored_data if d["device_name"] == "My_GPU" and d["problem_size"] == "1000"]) == 3
 
         #test if results for a different GPU can be added
-        integration.store_results(filename, tune_params, problem_size, results, {"device_name": "Another GPU"}, top=3)
-        with open(filename, 'r') as fh:
-            stored_data = json.loads(fh.read())
+        integration.store_results(filename, kernel_name, kernel_string, tune_params, problem_size, results, {"device_name": "Another GPU"}, top=3)
+        meta, stored_data = integration._read_results_file(filename)
 
-        assert len(stored_data.keys()) == 2
+        assert len(set([d["device_name"] for d in stored_data])) == 2
 
         #test if overwriting results works
         for i,r in enumerate(results):
             r["time"] = 50.0+i
-        integration.store_results(filename, tune_params, problem_size, results, env, top=0.1)
-        with open(filename, 'r') as fh:
-            stored_data = json.loads(fh.read())
+        integration.store_results(filename, kernel_name, kernel_string, tune_params, problem_size, results, env, top=0.1)
+        meta, stored_data = integration._read_results_file(filename)
 
-        assert len(stored_data["My_GPU"]["100"]) == 1
-        assert stored_data["My_GPU"]["100"][0]["time"] < 100
+        my_gpu_100_data = [d for d in stored_data if d["device_name"] == "My_GPU" and d["problem_size"] == "100"]
+        assert len(my_gpu_100_data) == 1
+        assert my_gpu_100_data[0]["time"] < 100
 
     finally:
         util.delete_temp_file(filename)
@@ -68,14 +65,14 @@ def test_setup_device_targets(fake_results):
 
     results_filename = "temp_test_results_file.json"
     header_filename = "temp_test_header_file.h"
-    tune_params, problem_size, parameter_space, results, env = fake_results
+    kernel_name, kernel_string, tune_params, problem_size, parameter_space, results, env = fake_results
 
     try:
-        integration.store_results(results_filename, tune_params, problem_size, results, env, top=3)
+        integration.store_results(results_filename, kernel_name, kernel_string, tune_params, problem_size, results, env, top=3)
         #results file
         #{'My_GPU': {'100': [{'a': 1, 'b': 4, 'time': 100.0}, {'a': 1, 'b': 5, 'time': 101.0}, {'a': 1, 'b': 6, 'time': 102.0}]}}
 
-        integration.create_device_targets(header_filename, results_filename, objective=("time", min))
+        integration.create_device_targets(header_filename, results_filename)
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
@@ -88,8 +85,8 @@ def test_setup_device_targets(fake_results):
         for i,e in enumerate(results):
             if e['a'] == 1 and e['b'] == 4:
                 e['time'] += 100
-        integration.store_results(results_filename, tune_params, 1000, results, env, top=3)
-        integration.create_device_targets(header_filename, results_filename, objective=("time", min))
+        integration.store_results(results_filename, kernel_name, kernel_string, tune_params, 1000, results, env, top=3)
+        integration.create_device_targets(header_filename, results_filename, objective="time")
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
@@ -100,8 +97,8 @@ def test_setup_device_targets(fake_results):
         for i,e in enumerate(results):
             if e['a'] == 1 and e['b'] == 6:
                 e['time'] -= 3
-        integration.store_results(results_filename, tune_params, 1000, results, env, top=3)
-        integration.create_device_targets(header_filename, results_filename, objective=("time", min))
+        integration.store_results(results_filename, kernel_name, kernel_string, tune_params, 1000, results, env, top=3)
+        integration.create_device_targets(header_filename, results_filename, objective="time")
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
@@ -113,8 +110,8 @@ def test_setup_device_targets(fake_results):
             if e['a'] == 1 and e['b'] == 6:
                 e['time'] += 3.1
         env['device_name'] = "My_GPU2"
-        integration.store_results(results_filename, tune_params, 1000, results, env, top=3)
-        integration.create_device_targets(header_filename, results_filename, objective=("time", min))
+        integration.store_results(results_filename, kernel_name, kernel_string, tune_params, 1000, results, env, top=3)
+        integration.create_device_targets(header_filename, results_filename, objective="time")
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
@@ -134,15 +131,15 @@ def test_setup_device_targets_max(fake_results):
 
     results_filename = "temp_test_results_file.json"
     header_filename = "temp_test_header_file.h"
-    tune_params, problem_size, parameter_space, results, env = fake_results
+    kernel_name, kernel_string, tune_params, problem_size, parameter_space, results, env = fake_results
 
     #add GFLOP/s as metric
     for i,e in enumerate(results):
         e['GFLOP/s'] = 1e5 / e['time']
 
     try:
-        integration.store_results(results_filename, tune_params, problem_size, results, env, top=3, objective=("GFLOP/s", max))
-        integration.create_device_targets(header_filename, results_filename, objective=("GFLOP/s", max))
+        integration.store_results(results_filename, kernel_name, kernel_string, tune_params, problem_size, results, env, top=3, objective="GFLOP/s")
+        integration.create_device_targets(header_filename, results_filename, objective="GFLOP/s")
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
@@ -155,8 +152,8 @@ def test_setup_device_targets_max(fake_results):
             if e['a'] == 1 and e['b'] == 4:
                 e['time'] += 100
                 e['GFLOP/s'] = 1e5 / e['time']
-        integration.store_results(results_filename, tune_params, 1000, results, env, top=3, objective=("GFLOP/s", max))
-        integration.create_device_targets(header_filename, results_filename, objective=("GFLOP/s", max))
+        integration.store_results(results_filename, kernel_name, kernel_string, tune_params, 1000, results, env, top=3, objective="GFLOP/s")
+        integration.create_device_targets(header_filename, results_filename, objective="GFLOP/s")
 
         with open(header_filename, 'r') as fh:
             output_str = fh.read()
