@@ -345,7 +345,8 @@ _tuning_options = Options([
         filename uses suffix ".json"
         if the file exists it is read and tuning continues from this file
         """, "string")),
-    ("metrics", ("specifies user-defined metrics", "OrderedDict"))
+    ("metrics", ("specifies user-defined metrics", "OrderedDict")),
+    ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool"))
     ])
 
 _device_options = Options([
