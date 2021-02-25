@@ -10,8 +10,8 @@ from kernel_tuner.core import DeviceInterface
 
 class SequentialRunner(object):
     """ SequentialRunner is used for tuning with a single process/thread """
-    def __init__(self, kernel_source, kernel_options, device_options,
-                 iterations):
+
+    def __init__(self, kernel_source, kernel_options, device_options, iterations):
         """ Instantiate the SequentialRunner
 
         :param kernel_source: The kernel source
@@ -30,9 +30,7 @@ class SequentialRunner(object):
         """
 
         #detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_source,
-                                   iterations=iterations,
-                                   **device_options).__enter__()
+        self.dev = DeviceInterface(kernel_source, iterations=iterations, **device_options).__enter__()
 
         self.units = self.dev.units
         self.quiet = device_options.quiet
@@ -67,21 +65,17 @@ class SequentialRunner(object):
         :rtype: list(dict()), dict()
 
         """
-        logging.debug('sequential runner started for ' +
-                      kernel_options.kernel_name)
+        logging.debug('sequential runner started for ' + kernel_options.kernel_name)
 
         results = []
 
         #iterate over parameter space
         for element in parameter_space:
-            params = OrderedDict(
-                zip(tuning_options.tune_params.keys(), element))
+            params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
             #attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
             if not self.warmed_up:
-                self.dev.compile_and_benchmark(self.kernel_source,
-                                               self.gpu_args, params,
-                                               kernel_options, tuning_options)
+                self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
                 self.warmed_up = True
 
             #check if element is in the cache
@@ -91,15 +85,10 @@ class SequentialRunner(object):
                     results.append(tuning_options.cache[x_int])
                     continue
 
-            result = self.dev.compile_and_benchmark(self.kernel_source,
-                                                    self.gpu_args, params,
-                                                    kernel_options,
-                                                    tuning_options)
+            result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
             if result is None:
-                logging.debug(
-                    'received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure'
-                )
-                params.update({"time": 1e20})
+                logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
+                params.update({ "time": 1e20 })
                 store_cache(x_int, params, tuning_options)
                 continue
 
@@ -117,8 +106,7 @@ class SequentialRunner(object):
             if tuning_options.metrics:
                 params = process_metrics(params, tuning_options.metrics)
 
-            print_config_output(tuning_options.tune_params, params, self.quiet,
-                                tuning_options.metrics, self.units)
+            print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
 
             store_cache(x_int, params, tuning_options)
             results.append(params)

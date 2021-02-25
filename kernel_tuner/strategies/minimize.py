@@ -74,12 +74,12 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     # we cache snapped values, since those correspond to results for an actual instance of the kernel
     x_int = ",".join([str(i) for i in params])
     if x_int in tuning_options.cache:
+        results.append(tuning_options.cache[x_int])
         return tuning_options.cache[x_int]["time"]
 
     # check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:
-        legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(),
-                                        tuning_options.verbose)
+        legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
         if not legal:
             error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
             error_result["time"] = error_time
@@ -107,20 +107,20 @@ def get_bounds_x0_eps(tuning_options):
         x0 = None
 
     if tuning_options.scaling:
-        eps = numpy.amin([1.0/len(v) for v in values])
+        eps = numpy.amin([1.0 / len(v) for v in values])
 
         # reducing interval from [0, 1] to [0, eps*len(v)]
-        bounds = [(0, eps*len(v)) for v in values]
+        bounds = [(0, eps * len(v)) for v in values]
         if x0:
             # x0 has been supplied by the user, map x0 into [0, eps*len(v)]
             for i, e in enumerate(values):
-                x0[i] = eps*values[i].index(x0[i])
+                x0[i] = eps * values[i].index(x0[i])
         else:
-            x0 = [0.5*eps*len(v) for v in values]
+            x0 = [0.5 * eps * len(v) for v in values]
     else:
         bounds = get_bounds(tuning_options.tune_params)
         if not x0:
-            x0 = [(min_v+max_v)/2.0 for (min_v, max_v) in bounds]
+            x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
         eps = 1e9
         for v_list in values:
             vals = numpy.sort(v_list)
@@ -186,7 +186,7 @@ def snap_to_nearest_config(x, tune_params):
     params = []
     for i, k in enumerate(tune_params.keys()):
         values = numpy.array(tune_params[k])
-        idx = numpy.abs(values-x[i]).argmin()
+        idx = numpy.abs(values - x[i]).argmin()
         params.append(int(values[idx]))
     return params
 
@@ -198,14 +198,14 @@ def unscale_and_snap_to_nearest(x, tune_params, eps):
         # create an evenly spaced linear space to map [0,1]-interval
         # to actual values, giving each value an equal chance
         # pad = 0.5/len(v)  #use when interval is [0,1]
-        pad = 0.5*eps      # use when interval is [0, eps*len(v)]
-        linspace = numpy.linspace(pad, (eps*len(v))-pad, len(v))
+        pad = 0.5 * eps    # use when interval is [0, eps*len(v)]
+        linspace = numpy.linspace(pad, (eps * len(v)) - pad, len(v))
 
         # snap value to nearest point in space, store index
-        idx = numpy.abs(linspace-x[i]).argmin()
+        idx = numpy.abs(linspace - x[i]).argmin()
 
         # safeguard that should not be needed
-        idx = min(max(idx, 0), len(v)-1)
+        idx = min(max(idx, 0), len(v) - 1)
 
         # use index into array of actual values
         x_u[i] = v[idx]

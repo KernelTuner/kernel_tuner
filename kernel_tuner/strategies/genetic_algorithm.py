@@ -71,7 +71,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         weighted_population.sort(key=lambda x: x[1])
 
         # crossover and mutate
-        for _ in range(pop_size//2):
+        for _ in range(pop_size // 2):
             dna1, dna2 = weighted_choice(weighted_population, 2)
 
             dna1, dna2 = crossover(dna1, dna2)
@@ -99,22 +99,23 @@ def ensure_diversity(population, pop_size, tune_params):
 
 def weighted_choice(population, n):
     """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected"""
+
     def random_index_betavariate(pop_size):
         # has a higher probability of returning index of item at the head of the list
         alpha = 1
         beta = 2.5
-        return int(random.betavariate(alpha, beta)*pop_size)
+        return int(random.betavariate(alpha, beta) * pop_size)
 
     def random_index_weighted(pop_size):
         """might lead to problems: if there's only one valid configuration this method only returns that configuration"""
         weights = [w for _, w in population]
         # invert because lower is better
-        inverted_weights = [1.0/w for w in weights]
+        inverted_weights = [1.0 / w for w in weights]
         prefix_sum = np.cumsum(inverted_weights)
         total_weight = sum(inverted_weights)
-        randf = random.random()*total_weight
+        randf = random.random() * total_weight
         # return first index of prefix_sum larger than random number
-        return next(i for i,v in enumerate(prefix_sum) if v > randf)
+        return next(i for i, v in enumerate(prefix_sum) if v > randf)
 
     random_index = random_index_betavariate
 
@@ -152,7 +153,7 @@ def mutate(dna, tune_params, mutation_chance):
     """Mutate DNA with 1/mutation_chance chance"""
     dna_out = []
     for i in range(len(dna)):
-        if int(random.random()*mutation_chance) == 1:
+        if int(random.random() * mutation_chance) == 1:
             dna_out.append(random_val(i, tune_params))
         else:
             dna_out.append(dna[i])
@@ -161,15 +162,15 @@ def mutate(dna, tune_params, mutation_chance):
 
 def single_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at a random index"""
-    pos = int(random.random()*len(dna1))
-    return (dna1[:pos]+dna2[pos:], dna2[:pos]+dna1[pos:])
+    pos = int(random.random() * len(dna1))
+    return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
 
 
 def two_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at 2 random indices"""
     pos1, pos2 = sorted(random.sample(range(len(dna1)), 2))
-    child1 = dna1[:pos1]+dna2[pos1:pos2]+dna1[pos2:]
-    child2 = dna2[:pos1]+dna1[pos1:pos2]+dna2[pos2:]
+    child1 = dna1[:pos1] + dna2[pos1:pos2] + dna1[pos2:]
+    child2 = dna2[:pos1] + dna1[pos1:pos2] + dna2[pos2:]
     return (child1, child2)
 
 
@@ -199,20 +200,21 @@ def disruptive_uniform_crossover(dna1, dna2):
     swaps = 0
     child1 = dna1[:]
     child2 = dna2[:]
-    while swaps < (differences+1)//2:
+    while swaps < (differences + 1) // 2:
         for ind in range(len(dna1)):
             # if there is a difference on this index and has not been swapped yet
             if dna1[ind] != dna2[ind] and child1[ind] != dna2[ind]:
                 p = random.random()
-                if p < 0.5 and swaps < (differences+1)//2:
+                if p < 0.5 and swaps < (differences + 1) // 2:
                     child1[ind] = dna2[ind]
                     child2[ind] = dna1[ind]
                     swaps += 1
     return (child1, child2)
 
 
-supported_methods = {"single_point": single_point_crossover,
-                     "two_point": two_point_crossover,
-                     "uniform": uniform_crossover,
-                     "disruptive_uniform": disruptive_uniform_crossover}
-
+supported_methods = {
+    "single_point": single_point_crossover,
+    "two_point": two_point_crossover,
+    "uniform": uniform_crossover,
+    "disruptive_uniform": disruptive_uniform_crossover
+}

@@ -9,6 +9,7 @@ from kernel_tuner.util import get_config_string, store_cache, process_metrics, p
 
 class SimulationLangFunction(object):
     """Compatibility class for supplying simulated device information based on CudaFunctions"""
+
     def __init__(self, lang, device=0, iterations=7, compiler_options=None):
         self.allocations = []
         self.texrefs = []
@@ -36,7 +37,7 @@ class SimulationLangFunction(object):
             env["driver_version"] = None
         elif lang == "C":
             self.nvcc_available = False
-            self.max_threads = 1024
+            self.max_threads = None
             self.lib = None
             self.using_openmp = False
             env["CC Version"] = None
@@ -52,14 +53,8 @@ class SimulationLangFunction(object):
 
 class SimulationDeviceInterface(object):
     """Compatibily class for DeviceInterface that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
-    def __init__(self,
-                 kernel_source,
-                 device=0,
-                 platform=0,
-                 quiet=False,
-                 compiler=None,
-                 compiler_options=None,
-                 iterations=7):
+
+    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param kernel_source The kernel sources
@@ -94,12 +89,9 @@ class SimulationDeviceInterface(object):
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
         if lang not in ('CUDA', 'OpenCL', 'C'):
-            raise Exception(
-                "Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet"
-            )
+            raise Exception("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
         self.lang = lang
-        self.dev = SimulationLangFunction(self.lang, device, iterations,
-                                          compiler_options)
+        self.dev = SimulationLangFunction(self.lang, device, iterations, compiler_options)
         self.units = None
         self.name = self.dev.name
         if not quiet:
@@ -111,19 +103,16 @@ class SimulationDeviceInterface(object):
     def benchmark(self, func, gpu_args, instance, verbose):
         """benchmark the kernel instance"""
         logging.debug('benchmark ' + instance.name)
-        logging.debug('thread block dimensions x,y,z=%d,%d,%d',
-                      *instance.threads)
+        logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
         logging.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
         raise Exception("Device not accessible in simulation mode")
 
-    def check_kernel_output(self, func, gpu_args, instance, answer, atol,
-                            verify, verbose):
+    def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
         logging.debug('check_kernel_output')
         raise Exception("Device not accessible in simulation mode")
 
-    def compile_and_benchmark(self, kernel_source, gpu_args, params,
-                              kernel_options, tuning_options):
+    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
         instance_string = get_instance_string(params)
         logging.debug('compile_and_benchmark ' + instance_string)
@@ -142,8 +131,7 @@ class SimulationDeviceInterface(object):
         """adds texture memory arguments to the most recently compiled module, if using CUDA"""
         raise Exception("Device not accessible in simulation mode")
 
-    def create_kernel_instance(self, kernel_source, kernel_options, params,
-                               verbose):
+    def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
         raise Exception("Device not accessible in simulation mode")
 
@@ -168,15 +156,14 @@ class SimulationDeviceInterface(object):
         raise Exception("Device not accessible in simulation mode")
 
     def __exit__(self, *exc):
-        # if hasattr(self, 'dev'):
-        #     self.dev.__exit__(*exc)
-        pass
+        if hasattr(self, 'dev'):
+            self.dev.__exit__(*exc)
 
 
 class SimulationRunner(object):
     """ SimulationRunner is used for tuning with a single process/thread """
-    def __init__(self, kernel_source, kernel_options, device_options,
-                 iterations):
+
+    def __init__(self, kernel_source, kernel_options, device_options, iterations):
         """ Instantiate the SimulationRunner
 
         :param kernel_source: The kernel source
@@ -195,9 +182,7 @@ class SimulationRunner(object):
         """
 
         # #detect language and create high-level device interface
-        self.dev = SimulationDeviceInterface(kernel_source,
-                                             iterations=iterations,
-                                             **device_options).__enter__()
+        self.dev = SimulationDeviceInterface(kernel_source, iterations=iterations, **device_options).__enter__()
 
         # self.units = self.dev.units
         self.quiet = device_options.quiet
@@ -232,8 +217,7 @@ class SimulationRunner(object):
         :rtype: list(dict()), dict()
 
         """
-        logging.debug('simulation runner started for ' +
-                      kernel_options.kernel_name)
+        logging.debug('simulation runner started for ' + kernel_options.kernel_name)
 
         results = []
 
@@ -255,13 +239,10 @@ class SimulationRunner(object):
 
             # if the element is not in the cache, raise an error
             logging.debug('parameter element not in cache')
-            raise ValueError(
-                "Parameter element not in cache - in simulation mode, all parameter elements must be present in the cache"
-            )
+            raise ValueError("Parameter element not in cache - in simulation mode, all parameter elements must be present in the cache")
 
         return results, self.dev.get_environment()
 
     def __exit__(self, *exc):
-        # if hasattr(self, 'dev'):
-        #     self.dev.__exit__(*exc)
-        pass
+        if hasattr(self, 'dev'):
+            self.dev.__exit__(*exc)
