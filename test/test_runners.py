@@ -101,7 +101,7 @@ def test_sequential_runner_alt_block_size_names(env):
 
 
 def test_simulation_runner(env):
-    cache_filename = dir_path = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
+    cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
     result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, simulation_mode=True, verbose=True)
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])
