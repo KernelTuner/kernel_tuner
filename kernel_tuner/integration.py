@@ -1,21 +1,77 @@
 import os
+import re
 import json
 
+from jsonschema import validate
+
 from kernel_tuner import util
+
+#specifies for a number of pre-defined objectives whether
+#the objective should be minimized or maximized (boolean value denotes higher is better)
+objective_default_map = {
+    "time": False,
+    "energy": False,
+    "GFLOP/s": True,
+    "TFLOP/s": True,
+    "GB/s": True,
+    "TB/s": True,
+    "GFLOPS/W": True,
+    "TFLOPS/W": True,
+    "GFLOP/J": True,
+    "TFLOP/J": True
+}
+
+def get_objective_defaults(objective, objective_higher_is_better):
+    #use time as default objective and attempt to lookup objective_higher_is_better for known objectives
+    objective = objective or "time"
+    if objective_higher_is_better is None and objective in objective_default_map:
+        objective_higher_is_better = objective_default_map[objective]
+    else:
+        raise ValueError(f"Please specify objective_higher_is_better for objective {objective}")
+    return objective, objective_higher_is_better
+
+schema_v1_0 = {
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "version_number": {"type": "string"},
+        "tunable_parameters": {"type": "array", "items": {"type": "string"}},
+        "kernel_name": {"type": "string"},
+        "kernel_string": {"type": "string"},
+        "objective": {"type": "string"},
+        "objective_higher_is_better": {"type": "boolean"},
+        "data": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "device_name": {"type": "string"},
+                    "problem_size": {"type": "string"}
+                },
+                "required": ["device_name", "problem_size", "tunable_parameters"]
+            },
+        },
+    },
+    "required": ["version_number", "tunable_parameters", "kernel_name", "objective", "data"]
+}
+
+
+
 
 class TuneResults():
     """ Object to represent the tuning results stored to file """
 
-    def __init__(self, results_filename, objective=("time", min)):
+    def __init__(self, results_filename):
         #open results file
         if not os.path.isfile(results_filename):
             raise ValueError("Error: results_filename does not exist")
-        with open(results_filename, 'r') as fh:
-            data = json.loads(fh.read())
+        meta, data = _read_results_file(results_filename)
         if len(data) < 1:
             raise ValueError("results file seems to be empty or did not load correctly")
         self.data = data
-        self.objective = objective
+        self.meta = meta
+        self.objective = meta["objective"]
+        self.objective_higher_is_better = meta.get("objective_higher_is_better", False)
 
     def get_best_config(self, gpu_name="default", problem_size=None):
         """ get the best config based on these tuning results
@@ -51,23 +107,20 @@ class TuneResults():
             else:
                 problem_size_str = problem_size
 
-        if gpu_name in self.data:
-            if problem_size and problem_size_str in self.data[gpu_name]:
-                return _get_best_config_from_list(self.data[gpu_name][problem_size_str], self.objective)
+        gpu_match = [result for result in self.data if result["device_name"] == gpu_name]
+
+        if gpu_match:
+            gpu_ps_match = [result for result in gpu_match if problem_size and result["problem_size"] == problem_size_str]
+            if gpu_ps_match:
+                return _get_best_config_from_list(gpu_ps_match, self.objective, self.objective_higher_is_better)
             #problem size is not given or not among the results, so return a good default
-            return _select_best_common_config(self.data[gpu_name], self.objective)
+            return _select_best_common_config(gpu_match, self.objective, self.objective_higher_is_better)
 
         #gpu is not among the results, so return a good default
-        merge_results = {}
-        for gpu, problem_sizes in self.data.items():
-            for problem, configs in problem_sizes.items():
-                merge_results[gpu + "_" + problem] = configs
-        return _select_best_common_config(merge_results, self.objective)
+        return _select_best_common_config(self.data, self.objective, self.objective_higher_is_better)
 
 
-
-
-def store_results(results_filename, tune_params, problem_size, results, env, top=3, objective=("time", min)):
+def store_results(results_filename, kernel_name, kernel_string, tune_params, problem_size, results, env, top=3, objective=None, objective_higher_is_better=None):
     """ stores tuning results to a JSON file
 
         Stores the top (3% by default) best kernel configurations in a JSON file.
@@ -104,54 +157,82 @@ def store_results(results_filename, tune_params, problem_size, results, env, top
 
     """
 
+    objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
+
     #filter results to only those that contain the objective
-    results_filtered = [item for item in results if objective[0] in item]
+    results_filtered = [item for item in results if objective in item]
 
     #get top results
-    best_config = objective[1](results_filtered, key=lambda x: x[objective[0]])
-    best = best_config[objective[0]]
+    if objective_higher_is_better:
+        best_config = max(results_filtered, key=lambda x: x[objective])
+    else:
+        best_config = min(results_filtered, key=lambda x: x[objective])
+    best = best_config[objective]
     top_range = top/100.0
 
     def top_result(item):
-        current = item[objective[0]]
-        if objective[1] == min:
-            return current < best * (1+top_range)
-        if objective[1] == max:
+        current = item[objective]
+        if objective_higher_is_better:
             return current > best * (1-top_range)
-        raise ValueError("only min or max are supported to compare results")
-
+        return current < best * (1+top_range)
     top_results = [item for item in results_filtered if top_result(item)]
 
     #filter result items to just the tunable parameters and the objective
-    filter_keys = list(tune_params.keys()) + [objective[0]]
+    filter_keys = list(tune_params.keys()) + [objective]
     top_results = [{k:item[k] for k in filter_keys} for item in top_results]
 
-    #read results file
+    #read existing results file
     if os.path.isfile(results_filename):
-        with open(results_filename, 'r') as fh:
-            data = json.loads(fh.read())
-    else:
-        data = {}
+        meta, data = _read_results_file(results_filename)
 
-    #insert new results into the database
+        #validate consistency between arguments and results file
+        if not kernel_name == meta["kernel_name"]:
+            raise ValueError("Mismatch between given kernel_name and results file")
+        if not all([param in meta["tunable_parameters"] for param in tune_params]):
+            raise ValueError("Mismatch between tunable_parameters in results file and tune_params")
+        if not objective == meta["objective"]:
+            raise ValueError("Mismatch between given objective and results file")
+    else:
+        #new file
+        meta = {}
+        meta["version_number"] = "1.0"
+        meta["kernel_name"] = kernel_name
+        if kernel_string:
+            meta["kernel_string"] = kernel_string
+        meta["objective"] = objective
+        meta["objective_higher_is_better"] = objective_higher_is_better
+        meta["tunable_parameters"] = list(tune_params.keys())
+        data = []
+
+    #insert new results into the list
     if not isinstance(problem_size, (list, tuple)):
         problem_size = (problem_size,)
     problem_size_str = "x".join(str(i) for i in problem_size)
 
-    dev_name = env["device_name"].strip().replace(" ", '_').replace("-", '_')
+    #replace all non alphanumeric characters with underscore
+    dev_name = re.sub('[^0-9a-zA-Z]+', '_', env["device_name"].strip())
 
-    datum_insert = {problem_size_str: top_results}
-    if dev_name in data:
-        data[dev_name].update(datum_insert)
-    else:
-        data[dev_name] = datum_insert
+    #remove existing entries for this GPU and problem_size combination from the results if any
+    data = [d for d in data if not (d["device_name"] == dev_name and d["problem_size"] == problem_size_str)]
+
+    #extend the results with the top_results
+    results = []
+    for result in top_results:
+        record = {"device_name": dev_name, "problem_size": problem_size_str, "tunable_parameters": {}}
+        for k, v in result.items():
+            if k in tune_params:
+                record["tunable_parameters"][k] = v
+        record[objective] = result[objective]
+        results.append(record)
+    data.extend(results)
 
     #write output file
+    meta["data"] = data
     with open(results_filename, 'w') as fh:
-        fh.write(json.dumps(data))
+        fh.write(json.dumps(meta))
 
 
-def create_device_targets(header_filename, results_filename, objective=("time", min)):
+def create_device_targets(header_filename, results_filename, objective=None, objective_higher_is_better=None):
     """ create a header with device targets
 
         This function generates a header file with device targets for compiling
@@ -184,14 +265,16 @@ def create_device_targets(header_filename, results_filename, objective=("time", 
             or max, that will be used to compare results.
         :type objective: tuple(string, callable)
     """
+    objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
 
     #open results file
-    results = TuneResults(results_filename, objective)
+    results = TuneResults(results_filename)
     data = results.data
 
     #collect data for the if-block
+    gpu_targets = list({r["device_name"] for r in data})
     targets = {}
-    for gpu_name in data:
+    for gpu_name in gpu_targets:
         targets[gpu_name] = results.get_best_config(gpu_name)
 
     #select a good default from all good configs
@@ -229,26 +312,24 @@ def create_device_targets(header_filename, results_filename, objective=("time", 
 
 
 
-def _select_best_common_config(results, objective):
+def _select_best_common_config(results, objective, objective_higher_is_better):
     """ return the most common config among results obtained on different problem sizes """
     results_table = {}
     total_performance = {}
 
     inverse_table = {}
 
-    #for each problem_size in the results dictionary
-    for value in results.values():
-        #for each configuration in the list
-        for config in value:
-            params = {k:config[k] for k in config if k != objective[0]}
+    #for each configuration in the list
+    for config in results:
+        params = config["tunable_parameters"]
 
-            config_str = util.get_instance_string(params)
-            #count occurances
-            results_table[config_str] = results_table.get(config_str,0) + 1
-            #add to performance
-            total_performance[config_str] = total_performance.get(config_str,0) + config[objective[0]]
-            #store mapping from config_str to the parameters
-            inverse_table[config_str] = params
+        config_str = util.get_instance_string(params)
+        #count occurances
+        results_table[config_str] = results_table.get(config_str,0) + 1
+        #add to performance
+        total_performance[config_str] = total_performance.get(config_str,0) + config[objective]
+        #store mapping from config_str to the parameters
+        inverse_table[config_str] = params
 
     #look for best config
     top_freq = max(results_table.values())
@@ -258,14 +339,71 @@ def _select_best_common_config(results, objective):
     total_performance = {k:total_performance[k] for k in total_performance if k in best_configs}
 
     #get the best config from this intersection
-    best_config_str = objective[1](total_performance.keys(), key=lambda x: total_performance[x])
+    if objective_higher_is_better:
+        best_config_str = max(total_performance.keys(), key=lambda x: total_performance[x])
+    else:
+        best_config_str = min(total_performance.keys(), key=lambda x: total_performance[x])
 
     #lookup the tunable parameters of this configuration in the inverse table and return result
     return inverse_table[best_config_str]
 
 
-def _get_best_config_from_list(configs, objective):
+def _get_best_config_from_list(configs, objective, objective_higher_is_better):
     """ return the tunable parameters of the best config from a list of configs """
-    best_config = objective[1](configs, key=lambda x: x[objective[0]])
-    best_config_params = {k:best_config[k] for k in best_config if k != objective[0]}
+    if objective_higher_is_better:
+        best_config = max(configs, key=lambda x: x[objective])
+    else:
+        best_config = min(configs, key=lambda x: x[objective])
+    best_config_params = {k:best_config[k] for k in best_config if k != objective}
     return best_config_params
+
+
+
+
+def _read_results_file(results_filename):
+    """ Reader for results file
+
+        File format 1.0 specifies the following metadata
+        "version_number": string e.g. "1.0"
+        "tunable_parameters": list of strings
+        "kernel_name": string
+        "kernel_string": string with kernel code, optional
+        "objective": string
+        "objective_higher_is_better": True or False, default False
+        "data": list of dicts
+            each dict consists of the following keys:
+            - "device_name": device name as reported by the device, with all non-alphanumeric characters replaced with "_"
+            - "problem_size": a concatenated string of problem dimensions using "x" as separator
+            - "tunable_parameters": a dict with all tunable parameters
+            - "objective" as specified in the "objective" metadata
+
+    """
+    with open(results_filename, 'r') as fh:
+        data = json.loads(fh.read())
+
+    if "version_number" in data:
+        if data["version_number"] == "1.0":
+            return _parse_results_file_version_1_0(data)
+        raise ValueError(f"Unknown results file version_number: {data['version_number']}")
+    raise ValueError("Results fileformat not recognized")
+
+
+
+def _parse_results_file_version_1_0(data):
+    validate(instance=data, schema=schema_v1_0)
+
+    meta_keys = ["kernel_name", "tunable_parameters", "objective", "version_number"]
+    meta = {k: v for k, v in data.items() if k in meta_keys}
+    meta["objective_higher_is_better"] = data.get("objective_higher_is_better", False)
+    meta["kernel_string"] = data.get("kernel_string", "")
+    entries = data["data"]
+
+    #do some final checks against the metadata that cannot be handled by the JSON schema
+    entry_keys = ["tunable_parameters"] + [meta["objective"]] + ["device_name", "problem_size"]
+    for entry in entries:
+        if not all([k in entry for k in entry_keys]):
+            raise ValueError(f"Error while parsing results file, missing keys in: {entry}")
+        if not all([k in entry["tunable_parameters"] for k in meta["tunable_parameters"]]):
+            raise ValueError(f"Error while parsing results file, missing tunable parameter keys in: {entry}")
+
+    return meta, entries

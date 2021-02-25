@@ -346,7 +346,8 @@ _tuning_options = Options([
         if the file exists it is read and tuning continues from this file
         """, "string")),
     ("metrics", ("specifies user-defined metrics", "OrderedDict")),
-    ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool"))
+    ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
+    ("observers", ("""A list of BenchmarkObservers""", "list"))
     ])
 
 _device_options = Options([
@@ -394,7 +395,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
                 lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None,
                 iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, simulation_mode=False):
+                cache=None, metrics=None, simulation_mode=False, observers=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -456,7 +457,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
     # select the runner for this job based on input
     SelectedRunner = SimulationRunner if simulation_mode else SequentialRunner
-    with SelectedRunner(kernel_source, kernel_options, device_options, iterations) as runner:
+    with SelectedRunner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.

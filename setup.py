@@ -41,7 +41,8 @@ setup(
     ],
     install_requires=[
         'numpy>=1.13.3',
-        'scipy>=0.18.1'],
+        'scipy>=0.18.1',
+        'jsonschema'],
     extras_require={
         'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx',
                 'pytest', 'ipython'],
