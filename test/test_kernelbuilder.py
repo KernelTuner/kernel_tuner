@@ -41,7 +41,7 @@ def test_PythonKernel_tuned(test_kernel):
     env = {"device_name": "bogus GPU"}
     try:
         #create a fake results file
-        integration.store_results(test_results_file, params, n, [results], env)
+        integration.store_results(test_results_file, kernel_name, kernel_string, params, n, [results], env)
 
         #create a kernel using the results
         kernel_function = kernelbuilder.PythonKernel(kernel_name, kernel_string, n, args, results_file=test_results_file)
