@@ -1,9 +1,13 @@
 from __future__ import print_function
 
+import os
+from collections import OrderedDict
+
 import numpy as np
 import pytest
 
 import kernel_tuner
+from kernel_tuner import util
 
 from .context import skip_if_no_cuda
 
@@ -26,7 +30,8 @@ def env():
     n = np.int32(size)
 
     args = [c, a, b, n]
-    tune_params = {"block_size_x": [128+64*i for i in range(15)]}
+    tune_params = OrderedDict()
+    tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
@@ -93,3 +98,10 @@ def test_sequential_runner_alt_block_size_names(env):
                                          block_size_names=block_size_names)
 
     assert len(result) == len(tune_params["block_dim_x"])
+
+
+def test_simulation_runner(env):
+    cache_filename = dir_path = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
+    result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, simulation_mode=True, verbose=True)
+    tune_params = env[-1]
+    assert len(result) == len(tune_params["block_size_x"])
