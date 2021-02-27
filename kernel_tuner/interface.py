@@ -38,33 +38,38 @@ import kernel_tuner.util as util
 import kernel_tuner.core as core
 
 from kernel_tuner.runners.sequential import SequentialRunner
+from kernel_tuner.runners.simulation import SimulationRunner
 
 from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
 
-strategy_map = {"brute_force": brute_force,
-                "random_sample": random_sample,
-                "minimize": minimize,
-                "basinhopping": basinhopping,
-                "diff_evo": diff_evo,
-                "genetic_algorithm": genetic_algorithm,
-                "pso": pso,
-                "simulated_annealing": simulated_annealing,
-                "firefly_algorithm": firefly_algorithm,
-                "bayes_opt": bayes_opt}
+strategy_map = {
+    "brute_force": brute_force,
+    "random_sample": random_sample,
+    "minimize": minimize,
+    "basinhopping": basinhopping,
+    "diff_evo": diff_evo,
+    "genetic_algorithm": genetic_algorithm,
+    "pso": pso,
+    "simulated_annealing": simulated_annealing,
+    "firefly_algorithm": firefly_algorithm,
+    "bayes_opt": bayes_opt
+}
+
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
+
     def __getattr__(self, name):
         if not name.startswith('_'):
             return self[name]
         return super(Options, self).__getattr__(name)
+
     def __deepcopy__(self, _):
         return self
 
 
-_kernel_options = Options([
-    ("kernel_name", ("""The name of the kernel in the code.""", "string")),
-    ("kernel_source", ("""The CUDA, OpenCL, or C kernel code.
+_kernel_options = Options([("kernel_name", ("""The name of the kernel in the code.""", "string")),
+                           ("kernel_source", ("""The CUDA, OpenCL, or C kernel code.
             It is allowed for the code to be passed as a string, a filename, a function
             that returns a string of code, or a list when the code needs auxilliary files.
 
@@ -81,11 +86,11 @@ _kernel_options = Options([
             which will be used to pass a dict containing the parameters.
             The function should return a string with the source code for
             the kernel.""", "string or list and/or callable")),
-    ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
+                           ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
         the language using this argument, currently supported: "CUDA",
         "OpenCL", or "C".""", "string")),
-    ("problem_size", ("""The size of the domain from which the grid dimensions
+                           ("problem_size", ("""The size of the domain from which the grid dimensions
             of the kernel are computed.
 
             This can be specified using an int, string, function, or
@@ -117,11 +122,10 @@ _kernel_options = Options([
             a tuple, possibly in combination with integers or more strings in
             different dimensions.
 
-            See the reduction CUDA example for an example use of this feature.""",
-            "callable, string, int, or tuple(int or string, ..)")),
-    ("arguments", ("""A list of kernel arguments, use numpy arrays for
+            See the reduction CUDA example for an example use of this feature.""", "callable, string, int, or tuple(int or string, ..)")),
+                           ("arguments", ("""A list of kernel arguments, use numpy arrays for
             arrays, use numpy.int32 or numpy.float32 for scalars.""", "list")),
-    ("grid_div_x", ("""A list of names of the parameters whose values divide
+                           ("grid_div_x", ("""A list of names of the parameters whose values divide
             the grid dimensions in the x-direction.
             The product of all grid divisor expressions is computed before dividing
             the problem_size in that dimension. Also note that the divison is treated
@@ -139,45 +143,38 @@ _kernel_options = Options([
 
             If not supplied, ["block_size_x"] will be used by default, if you do not
             want any grid x-dimension divisors pass an empty list.""", "callable or list")),
-    ("grid_div_y", ("""A list of names of the parameters whose values divide
+                           ("grid_div_y", ("""A list of names of the parameters whose values divide
             the grid dimensions in the y-direction, ["block_size_y"] by default.
             If you do not want to divide the problem_size, you should pass an empty list.
             See grid_div_x for more details.""", "list")),
-    ("grid_div_z", ("""A list of names of the parameters whose values divide
+                           ("grid_div_z", ("""A list of names of the parameters whose values divide
             the grid dimensions in the z-direction, ["block_size_z"] by default.
             If you do not want to divide the problem_size, you should pass an empty list.
             See grid_div_x for more details.""", "list")),
-    ("smem_args", ("""CUDA-specific feature for specifying shared memory options
+                           ("smem_args", ("""CUDA-specific feature for specifying shared memory options
             to the kernel. At the moment only 'size' is supported, but setting the
             shared memory configuration on Kepler GPUs for example could be added
             in the future. Size should denote the number of bytes for to use when
-            dynamically allocating shared memory.""",
-            "dict(string: numpy object)")),
-    ("cmem_args", ("""CUDA-specific feature for specifying constant memory
+            dynamically allocating shared memory.""", "dict(string: numpy object)")),
+                           ("cmem_args", ("""CUDA-specific feature for specifying constant memory
             arguments to the kernel. In OpenCL these are handled as normal
             kernel arguments, but in CUDA you can copy to a symbol. The way you
             specify constant memory arguments is by passing a dictionary with
             strings containing the constant memory symbol name together with numpy
-            objects in the same way as normal kernel arguments.""",
-            "dict(string: numpy object)")),
-    ("texmem_args", ("""CUDA-specific feature for specifying texture memory
+            objects in the same way as normal kernel arguments.""", "dict(string: numpy object)")),
+                           ("texmem_args", ("""CUDA-specific feature for specifying texture memory
             arguments to the kernel. You specify texture memory arguments by passing a
             dictionary with strings containing the texture reference name together with
             the texture contents. These contents can be either simply a numpy object,
             or a dictionary containing the numpy object under the key 'array' plus the
             configuration options 'filter_mode' ('point' or 'linear), 'address_mode'
             (a list of 'border', 'clamp', 'mirror', 'wrap' per axis),
-            'normalized_coordinates' (True/False).""",
-            "dict(string: numpy object or dict)")),
-    ("block_size_names", ("""A list of strings that replace the defaults for the names
+            'normalized_coordinates' (True/False).""", "dict(string: numpy object or dict)")),
+                           ("block_size_names", ("""A list of strings that replace the defaults for the names
             that denote the thread block dimensions. If not passed, the behavior
-            defaults to ``["block_size_x", "block_size_y", "block_size_z"]``""",
-            "list(string)"))
-    ])
+            defaults to ``["block_size_x", "block_size_y", "block_size_z"]``""", "list(string)"))])
 
-
-_tuning_options = Options([
-    ("tune_params", ("""A dictionary containing the parameter names as keys,
+_tuning_options = Options([("tune_params", ("""A dictionary containing the parameter names as keys,
             and lists of possible parameter settings as values.
             Kernel Tuner will try to compile and benchmark all possible
             combinations of all possible values for all tuning parameters.
@@ -196,9 +193,8 @@ _tuning_options = Options([
             Options for changing these defaults may be added later. If you
             don't want the thread block dimensions to be compiled in, you
             may use the built-in variables blockDim.xyz in CUDA or the
-            built-in function get_local_size() in OpenCL instead.""",
-            "dict( string : [...]")),
-    ("restrictions", ("""An option to limit the search space with restrictions.
+            built-in function get_local_size() in OpenCL instead.""", "dict( string : [...]")),
+                           ("restrictions", ("""An option to limit the search space with restrictions.
         The restrictions can be specified using a function or a list of strings.
         The function should take one argument, namely a dictionary with the
         tunable parameters of the kernel configuration, if the function returns
@@ -212,17 +208,16 @@ _tuning_options = Options([
         search to configurations where the block_size_x equals the product
         of block_size_y and tile_size_y.
         The default is None.""", "callable or list(strings)")),
-    ("answer", ("""A list of arguments, similar to what you pass to arguments,
+                           ("answer", ("""A list of arguments, similar to what you pass to arguments,
         that contains the expected output of the kernel after it has executed
         and contains None for each argument that is input-only. The expected
         output of the kernel will then be used to verify the correctness of
-        each kernel in the parameter space before it will be benchmarked.""",
-        "list")),
-    ("atol", ("""The maximum allowed absolute difference between two elements
+        each kernel in the parameter space before it will be benchmarked.""", "list")),
+                           ("atol", ("""The maximum allowed absolute difference between two elements
         in the output and the reference answer, as passed to numpy.allclose().
         Ignored if you have not passed a reference answer. Default value is
         1e-6, that is 0.000001.""", "float")),
-    ("verify", ("""Python function used for output verification. By default,
+                           ("verify", ("""Python function used for output verification. By default,
         numpy.allclose is used for output verification, if this does not suit
         your application, you can pass a different function here.
 
@@ -234,7 +229,7 @@ _tuning_options = Options([
         passed that was specified using the atol option to tune_kernel.
         The function should return True when the output passes the test, and
         False when the output fails the test.""", "func(ref, ans, atol=None)")),
-    ("strategy", ("""Specify the strategy to use for searching through the
+                           ("strategy", ("""Specify the strategy to use for searching through the
         parameter space, choose from:
 
             * "brute_force" (default),
@@ -272,7 +267,7 @@ _tuning_options = Options([
         "bayes_opt" uses Bayesian Optimization.
 
         """, "")),
-    ("strategy_options", ("""A dict with options for the tuning strategy
+                           ("strategy_options", ("""A dict with options for the tuning strategy
 
         Example usage:
 
@@ -328,10 +323,9 @@ _tuning_options = Options([
         the maximum number of function evaluations.
 
     """, "dict")),
-    ("iterations", ("""The number of times a kernel should be executed and
-        its execution time measured when benchmarking a kernel, 7 by default.""",
-        "int")),
-    ("verbose", ("""Sets whether or not to report about configurations that
+                           ("iterations", ("""The number of times a kernel should be executed and
+        its execution time measured when benchmarking a kernel, 7 by default.""", "int")),
+                           ("verbose", ("""Sets whether or not to report about configurations that
         were skipped during the search. This could be due to several reasons:
 
             * kernel configuration fails one or more restrictions
@@ -340,38 +334,34 @@ _tuning_options = Options([
             * too many resources requested for launch
 
         verbose is False by default.""", "bool")),
-    ("cache", ("""filename for caching/logging benchmarked instances
+                           ("cache", ("""filename for caching/logging benchmarked instances
         filename uses suffix ".json"
         if the file exists it is read and tuning continues from this file
-        """, "string")),
-    ("metrics", ("specifies user-defined metrics", "OrderedDict")),
-    ("observers", ("""A list of BenchmarkObservers""", "list"))
-    ])
+        """, "string")), ("metrics", ("specifies user-defined metrics", "OrderedDict")),
+                           ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
+                           ("observers", ("""A list of BenchmarkObservers""", "list"))])
 
-_device_options = Options([
-    ("device", ("""CUDA/OpenCL device to use, in case you have multiple
+_device_options = Options([("device", ("""CUDA/OpenCL device to use, in case you have multiple
         CUDA-capable GPUs or OpenCL devices you may use this to select one,
         0 by default. Ignored if you are tuning host code by passing
         lang="C".""", "int")),
-    ("platform", ("""OpenCL platform to use, in case you have multiple
+                           ("platform", ("""OpenCL platform to use, in case you have multiple
         OpenCL platforms you may use this to select one,
         0 by default. Ignored if not using OpenCL. """, "int")),
-    ("quiet", ("""Control whether or not to print to the console which
+                           ("quiet", ("""Control whether or not to print to the console which
         device is being used, False by default""", "boolean")),
-    ("compiler", ("""A string containing your preferred compiler,
-        only effective with lang="C". """, "string")),
-    ("compiler_options", ("""A list of strings that specify compiler
-        options.""", "list(string)"))
-    ])
-
+                           ("compiler", ("""A string containing your preferred compiler,
+        only effective with lang="C". """, "string")), ("compiler_options", ("""A list of strings that specify compiler
+        options.""", "list(string)"))])
 
 
 def _get_docstring(opts):
     docstr = ""
     for k, v in opts.items():
         docstr += "    :param " + k + ": " + v[0] + "\n"
-        docstr += "    :type "  + k + ": " + v[1] + "\n\n"
+        docstr += "    :type " + k + ": " + v[1] + "\n\n"
     return docstr
+
 
 _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameters
 
@@ -387,13 +377,11 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 
 #"""
 
-def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
-                tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-                restrictions=None, answer=None, atol=1e-6, verify=None, verbose=False,
-                lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
-                compiler=None, compiler_options=None, log=None,
-                iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, observers=None):
+
+def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
+                answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
+                compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
+                cache=None, metrics=None, simulation_mode=False, observers=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -452,8 +440,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
     else:
         strategy = brute_force
 
-
-    with SequentialRunner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
+    # select the runner for this job based on input
+    SelectedRunner = SimulationRunner if simulation_mode else SequentialRunner
+    with SelectedRunner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.
@@ -474,7 +463,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
         #finished iterating over search space
         if not device_options.quiet:
-            if results:     #checks if results is not empty
+            if results:    #checks if results is not empty
                 best_config = min(results, key=lambda x: x['time'])
                 units = getattr(runner, "units", None)
                 print("best performing configuration:")
@@ -489,7 +478,6 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 
 tune_kernel.__doc__ = _tune_kernel_docstring
-
 
 _run_kernel_docstring = """Compile and run a single kernel
 
@@ -520,10 +508,8 @@ _run_kernel_docstring = """Compile and run a single kernel
 """ % _get_docstring(_kernel_options) + _get_docstring(_device_options)
 
 
-def run_kernel(kernel_name, kernel_string, problem_size, arguments,
-               params, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-               lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None,
-               block_size_names=None, quiet=False, log=None):
+def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid_div_x=None, grid_div_y=None, grid_div_z=None, lang=None, device=0, platform=0,
+               smem_args=None, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None, block_size_names=None, quiet=False, log=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -587,10 +573,10 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments,
 
 run_kernel.__doc__ = _run_kernel_docstring
 
+
 def _check_user_input(kernel_name, kernel_source, arguments, block_size_names):
     # see if the kernel arguments have correct type
     kernel_source.check_argument_lists(kernel_name, arguments)
 
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)
-

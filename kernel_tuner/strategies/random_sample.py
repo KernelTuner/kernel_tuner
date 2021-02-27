@@ -40,10 +40,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # check for search space restrictions
     if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p,
-                                                                   tune_params.keys(),
-                                                                   tuning_options.verbose),
-                                 parameter_space)
+        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
 
     # reduce parameter space to a random sample using sample_fraction
     parameter_space = numpy.array(list(parameter_space))

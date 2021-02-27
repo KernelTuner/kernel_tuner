@@ -1,9 +1,13 @@
 from __future__ import print_function
 
+import os
+from collections import OrderedDict
+
 import numpy as np
 import pytest
 
 import kernel_tuner
+from kernel_tuner import util
 
 from .context import skip_if_no_cuda
 
@@ -26,7 +30,8 @@ def env():
     n = np.int32(size)
 
     args = [c, a, b, n]
-    tune_params = {"block_size_x": [128+64*i for i in range(15)]}
+    tune_params = OrderedDict()
+    tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
@@ -36,12 +41,12 @@ def test_random_sample():
     kernel_string = "float test_kernel(float *a) { return 1.0f; }"
     a = np.arange(4, dtype=np.float32)
 
-    tune_params = {"block_size_x": range(1, 25)}
+    tune_params = {
+        "block_size_x": range(1, 25)
+    }
     print(tune_params)
 
-    result, _ = kernel_tuner.tune_kernel(
-        "test_kernel", kernel_string, (1, 1), [a], tune_params,
-        strategy="random_sample", strategy_options={"fraction": 0.1})
+    result, _ = kernel_tuner.tune_kernel("test_kernel", kernel_string, (1, 1), [a], tune_params, strategy="random_sample", strategy_options={ "fraction": 0.1 })
 
     print(result)
 
@@ -77,19 +82,27 @@ def test_sequential_runner_alt_block_size_names(env):
     }
     """
 
-    tune_params = {"block_dim_x": [128 + 64 * i for i in range(5)],
-                   "block_size_y": [1], "block_size_z": [1]}
+    tune_params = {
+        "block_dim_x": [128 + 64 * i for i in range(5)],
+        "block_size_y": [1],
+        "block_size_z": [1]
+    }
 
     env[1] = kernel_string
     env[-1] = tune_params
 
-    ref = (env[3][1]+env[3][2]).astype(np.float32)
+    ref = (env[3][1] + env[3][2]).astype(np.float32)
     answer = [ref, None, None, None]
 
     block_size_names = ["block_dim_x"]
 
-    result, _ = kernel_tuner.tune_kernel(*env,
-                                         grid_div_x=["block_dim_x"], answer=answer,
-                                         block_size_names=block_size_names)
+    result, _ = kernel_tuner.tune_kernel(*env, grid_div_x=["block_dim_x"], answer=answer, block_size_names=block_size_names)
 
     assert len(result) == len(tune_params["block_dim_x"])
+
+
+def test_simulation_runner(env):
+    cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
+    result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, simulation_mode=True, verbose=True)
+    tune_params = env[-1]
+    assert len(result) == len(tune_params["block_size_x"])

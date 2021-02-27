@@ -14,6 +14,7 @@ import kernel_tuner.util as util
 
 _KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
 
+
 class KernelInstance(_KernelInstance):
     """Class that represents the specific parameterized instance of a kernel"""
 
@@ -75,7 +76,6 @@ class KernelSource(object):
         kernel_source = self.kernel_sources[index]
         return util.get_kernel_string(kernel_source, params)
 
-
     def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
         """ prepare the kernel string along with any additional files
 
@@ -135,7 +135,6 @@ class KernelSource(object):
 
         return name, kernel_string, temp_files
 
-
     def get_user_suffix(self, index=0):
         """ Get the suffix of the kernel filename, if the user specified one. Return None otherwise.
         """
@@ -155,7 +154,11 @@ class KernelSource(object):
         if suffix is not None:
             return suffix
 
-        _suffixes = {'CUDA': '.cu', 'OpenCL': '.cl', 'C': '.c'}
+        _suffixes = {
+            'CUDA': '.cu',
+            'OpenCL': '.cl',
+            'C': '.c'
+        }
         try:
             return _suffixes[self.lang]
         except KeyError:
@@ -247,7 +250,7 @@ class DeviceInterface(object):
 
         if self.use_nvml:
             if "nvml_pwr_limit" in instance.params:
-                new_limit = int(instance.params["nvml_pwr_limit"]*1000) #user specifies in Watt, but nvml uses milliWatt
+                new_limit = int(instance.params["nvml_pwr_limit"] * 1000)    #user specifies in Watt, but nvml uses milliWatt
                 if self.nvml.pwr_limit != new_limit:
                     self.nvml.pwr_limit = new_limit
             if "nvml_gr_clock" in instance.params:
@@ -294,7 +297,7 @@ class DeviceInterface(object):
         #run the kernel
         check = self.run_kernel(func, gpu_args, instance)
         if not check:
-            return True #runtime failure occured that should be ignored, skip correctness check
+            return True    #runtime failure occured that should be ignored, skip correctness check
 
         #retrieve gpu results to host memory
         result_host = []
@@ -321,7 +324,7 @@ class DeviceInterface(object):
         instance_string = util.get_instance_string(params)
 
         logging.debug('compile_and_benchmark ' + instance_string)
-        mem_usage = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0, 1)
+        mem_usage = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 1)
         logging.debug('Memory usage : %2.2f MB', mem_usage)
 
         verbose = tuning_options.verbose
@@ -418,7 +421,8 @@ class DeviceInterface(object):
             return None
 
         #obtain the kernel_string and prepare additional files, if any
-        name, kernel_string, temp_files = kernel_source.prepare_list_of_files(kernel_options.kernel_name, params, grid, threads, kernel_options.block_size_names)
+        name, kernel_string, temp_files = kernel_source.prepare_list_of_files(kernel_options.kernel_name, params, grid, threads,
+                                                                              kernel_options.block_size_names)
 
         #collect everything we know about this instance and return it
         return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
@@ -452,11 +456,9 @@ class DeviceInterface(object):
                 raise e
         return True
 
-
     def __exit__(self, *exc):
         if hasattr(self, 'dev'):
             self.dev.__exit__(*exc)
-
 
 
 def _default_verify_function(instance, answer, result_host, atol, verbose):
@@ -467,30 +469,24 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         raise TypeError("The length of argument list and provided results do not match.")
     #for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
-        if answer[i] is not None: #skip None elements in the answer list
+        if answer[i] is not None:    #skip None elements in the answer list
             if isinstance(answer[i], numpy.ndarray) and isinstance(arg, numpy.ndarray):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError("Element " + str(i)
-                                    + " of the expected results list is not of the same dtype as the kernel output: "
-                                    + str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+                    raise TypeError("Element " + str(i) + " of the expected results list is not of the same dtype as the kernel output: " +
+                                    str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
                 if answer[i].size != arg.size:
-                    raise TypeError("Element " + str(i)
-                                    + " of the expected results list has a size different from "
-                                    + "the kernel argument: "
-                                    + str(answer[i].size) + " != " + str(arg.size) + ".")
+                    raise TypeError("Element " + str(i) + " of the expected results list has a size different from " + "the kernel argument: " +
+                                    str(answer[i].size) + " != " + str(arg.size) + ".")
             elif isinstance(answer[i], numpy.number) and isinstance(arg, numpy.number):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError("Element " + str(i)
-                                    + " of the expected results list is not the same as the kernel output: "
-                                    + str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+                    raise TypeError("Element " + str(i) + " of the expected results list is not the same as the kernel output: " + str(answer[i].dtype) +
+                                    " != " + str(arg.dtype) + ".")
             else:
                 #either answer[i] and argument have different types or answer[i] is not a numpy type
                 if not isinstance(answer[i], numpy.ndarray) or not isinstance(answer[i], numpy.number):
-                    raise TypeError("Element " + str(i)
-                                    + " of expected results list is not a numpy array or numpy scalar.")
+                    raise TypeError("Element " + str(i) + " of expected results list is not a numpy array or numpy scalar.")
                 else:
-                    raise TypeError("Element " + str(i)
-                                    + " of expected results list and kernel arguments have different types.")
+                    raise TypeError("Element " + str(i) + " of expected results list and kernel arguments have different types.")
 
     def _ravel(a):
         if hasattr(a, 'ravel') and len(a.shape) > 1:
@@ -513,7 +509,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
 
             if not output_test and verbose:
                 print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
-                print("this error occured when checking value of the %oth kernel argument" % (i,))
+                print("this error occured when checking value of the %oth kernel argument" % (i, ))
                 print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
                 numpy.set_printoptions(edgeitems=50)
                 print("Kernel output:")
