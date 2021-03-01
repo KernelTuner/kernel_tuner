@@ -518,7 +518,7 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </div>
 </div>
 <p>Now that we have our input and output data structures created, we can look at how to run our naive kernel on this data, by calling <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code>. The run_kernel function has the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">run_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_source</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>run_kernel(kernel_name, kernel_source, problem_size, arguments, params, ...)
 </pre></div>
 </div>
 <p>The ellipsis here indicate that there are many more optional arguments, which we won’t need right now. If you’re interested, the complete API documentation of run_kernel can be found <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.run_kernel">here</a>.</p>
@@ -546,7 +546,7 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </div>
 </div>
 <p>The <strong>arguments</strong> is a list of arguments that are used to run the kernel on the GPU. <strong>arguments</strong> should be specified as a list of Numpy objects (arrays and/or scalars) that correspond with the function arguments of our CUDA kernel. Our naive convolution kernel has the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="n">void</span> <span class="n">convolution_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">output</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="nb">input</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="nb">filter</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>__global__ void convolution_kernel(float *output, float *input, float *filter) { }
 </pre></div>
 </div>
 <p>Therefore, our list of Numpy objects should contain the output image, the input image, and the convolution filter, and exactly in that order, matching the type (32-bit floating-point arrays) and dimensions that are expected by the kernel.</p>
@@ -560,11 +560,11 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </div>
 </div>
 <p>The final required argument is <strong>params</strong>, which is a dictionary with the user-defined parameters of the kernel. Remember that the user, is you! You can specify anything here and Kernel Tuner will insert a C-preprocessor <code class="docutils literal notranslate"><span class="pre">#define</span></code> statement into the kernel with the value that you specify. For example, if you were to create a dictionary like so:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;I_like_convolutions&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">}</span>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>params = {&quot;I_like_convolutions&quot;: 42}
 </pre></div>
 </div>
 <p>Kernel Tuner will insert the following line into our naive convolution kernel:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define I_like_convolutions 42</span>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#define I_like_convolutions 42
 </pre></div>
 </div>
 <p>While we do like convolutions, this definition won’t have much effect on the performance of our kernel. Unless of course somewhere in our kernel we are doing something differently depending on the definition or the value of this preprocessor token.</p>
@@ -624,7 +624,7 @@ the GPU in a list of Numpy arrays that we have named <strong>answer</strong> in 
 </div>
 </div>
 <p>Tuning a kernel with Kernel Tuner is done using the <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> function. The interface should look familiar, because it’s exactly like <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params, ...)
 </pre></div>
 </div>
 <p>The only difference is that the <strong>params</strong> dictionary is replaced by a <strong>tune_params</strong> dictionary that works similarly, but instead of a single value per parameter <strong>tune_params</strong> should contain a list of possible values for that parameter.</p>
