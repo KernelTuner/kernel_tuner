@@ -6,6 +6,8 @@ import logging
 
 from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output, get_instance_string
 
+logger=logging.getLogger(__name__)
+
 
 class SimulationLangFunction(object):
     """Compatibility class for supplying simulated device information based on CudaFunctions"""
@@ -86,7 +88,7 @@ class SimulationDeviceInterface(object):
         """
         lang = kernel_source.lang
 
-        logging.debug('DeviceInterface instantiated, lang=%s', lang)
+        logger.debug('DeviceInterface instantiated, lang=%s', lang)
 
         if lang not in ('CUDA', 'OpenCL', 'C'):
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
@@ -112,25 +114,25 @@ class SimulationDeviceInterface(object):
 
     def benchmark(self, func, gpu_args, instance, verbose):
         """benchmark the kernel instance"""
-        logging.debug('benchmark ' + instance.name)
-        logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
-        logging.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
+        logger.debug('benchmark ' + instance.name)
+        logger.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
+        logger.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
         raise self.device_access_error
 
     def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
-        logging.debug('check_kernel_output')
+        logger.debug('check_kernel_output')
         raise self.device_access_error
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
         instance_string = get_instance_string(params)
-        logging.debug('compile_and_benchmark ' + instance_string)
+        logger.debug('compile_and_benchmark ' + instance_string)
         raise self.device_access_error
 
     def compile_kernel(self, instance, verbose):
         """compile the kernel for this specific instance"""
-        logging.debug('compile_kernel ' + instance.name)
+        logger.debug('compile_kernel ' + instance.name)
         raise self.device_access_error
 
     def copy_constant_memory_args(self, cmem_args):
@@ -159,9 +161,9 @@ class SimulationDeviceInterface(object):
 
     def run_kernel(self, func, gpu_args, instance):
         """ Run a compiled kernel instance on a device """
-        logging.debug('run_kernel %s', instance.name)
-        logging.debug('thread block dims (%d, %d, %d)', *instance.threads)
-        logging.debug('grid dims (%d, %d, %d)', *instance.grid)
+        logger.debug('run_kernel %s', instance.name)
+        logger.debug('thread block dims (%d, %d, %d)', *instance.threads)
+        logger.debug('grid dims (%d, %d, %d)', *instance.grid)
         raise self.device_access_error
 
     def __exit__(self, *exc):
@@ -220,7 +222,7 @@ class SimulationRunner(object):
         :rtype: list(dict()), dict()
 
         """
-        logging.debug('simulation runner started for ' + kernel_options.kernel_name)
+        logger.debug('simulation runner started for ' + kernel_options.kernel_name)
 
         results = []
 
@@ -234,7 +236,7 @@ class SimulationRunner(object):
                 continue
 
             # if the element is not in the cache, raise an error
-            logging.debug('parameter element not in cache')
+            logger.debug('parameter element not in cache')
             raise ValueError("Parameter element not in cache - in simulation mode, all parameter elements must be present in the cache")
 
         return results, self.dev.get_environment()

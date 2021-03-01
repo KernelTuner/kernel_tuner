@@ -2,7 +2,9 @@ from __future__ import print_function
 
 from datetime import datetime
 import logging
-logging.basicConfig(filename="pytest" + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=logging.DEBUG)
+
+logger=logging.getLogger(__name__)
+logger.basicConfig(filename="pytest" + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=logging.DEBUG)
 
 import numpy as np
 import ctypes as C
