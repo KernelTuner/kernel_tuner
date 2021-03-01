@@ -8,6 +8,8 @@ import numpy
 import scipy.optimize
 from kernel_tuner import util
 
+logger=logging.getLogger(__name__)
+
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
 
@@ -60,8 +62,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     """ Cost function used by minimize """
 
     error_time = 1e20
-    logging.debug('_cost_func called')
-    logging.debug('x: ' + str(x))
+    logger.debug('_cost_func called')
+    logger.debug('x: ' + str(x))
 
     # snap values in x to nearest actual value for each parameter unscale x if needed
     if tuning_options.scaling:
@@ -69,7 +71,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     else:
         params = snap_to_nearest_config(x, tuning_options.tune_params)
 
-    logging.debug('params ' + str(params))
+    logger.debug('params ' + str(params))
 
     # we cache snapped values, since those correspond to results for an actual instance of the kernel
     x_int = ",".join([str(i) for i in params])
@@ -127,10 +129,10 @@ def get_bounds_x0_eps(tuning_options):
             eps = min(eps, numpy.amin(numpy.gradient(vals)))
 
     tuning_options["eps"] = eps
-    logging.debug('get_bounds_x0_eps called')
-    logging.debug('bounds ' + str(bounds))
-    logging.debug('x0 ' + str(x0))
-    logging.debug('eps ' + str(eps))
+    logger.debug('get_bounds_x0_eps called')
+    logger.debug('bounds ' + str(bounds))
+    logger.debug('x0 ' + str(x0))
+    logger.debug('eps ' + str(eps))
 
     return bounds, x0, eps
 

@@ -55,6 +55,8 @@ strategy_map = {
     "bayes_opt": bayes_opt
 }
 
+logger=logging.getLogger(__name__)
+
 
 class Options(OrderedDict):
     """read-only class for passing options around"""
@@ -384,7 +386,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
                 cache=None, metrics=None, simulation_mode=False, observers=None):
 
     if log:
-        logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
+        logger.setLevel(log)
+        filename=kernel_name + datetime.now().strftime('%Y%m%d-%H%M%S') + '.log'
+        logger.addHandler(logging.FileHandler(filename))
 
     kernel_source = core.KernelSource(kernel_string, lang)
 
@@ -405,10 +409,10 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
-    logging.debug('tune_kernel called')
-    logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
-    logging.debug('tuning_options: %s', util.get_config_string(tuning_options))
-    logging.debug('device_options: %s', util.get_config_string(device_options))
+    logger.debug('tune_kernel called')
+    logger.debug('kernel_options: %s', util.get_config_string(kernel_options))
+    logger.debug('tuning_options: %s', util.get_config_string(tuning_options))
+    logger.debug('device_options: %s', util.get_config_string(device_options))
 
     if strategy:
         if strategy in strategy_map:
@@ -512,7 +516,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
                smem_args=None, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None, block_size_names=None, quiet=False, log=None):
 
     if log:
-        logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
+        logger.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
     kernel_source = core.KernelSource(kernel_string, lang)
 

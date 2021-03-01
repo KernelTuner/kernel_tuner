@@ -12,6 +12,8 @@ from kernel_tuner.c import CFunctions
 from kernel_tuner.nvml import NVMLObserver
 import kernel_tuner.util as util
 
+logger=logging.getLogger(__name__)
+
 _KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
 
 
@@ -70,8 +72,8 @@ class KernelSource(object):
         :returns: A string containing the kernel code.
         :rtype: string
         """
-        #logging.debug('get_kernel_string called with %s', str(kernel_source))
-        logging.debug('get_kernel_string called')
+        #logger.debug('get_kernel_string called with %s', str(kernel_source))
+        logger.debug('get_kernel_string called')
 
         kernel_source = self.kernel_sources[index]
         return util.get_kernel_string(kernel_source, params)
@@ -173,7 +175,7 @@ class KernelSource(object):
             if not callable(f):
                 util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments)
             else:
-                logging.debug("Checking of arguments list not supported yet for code generators.")
+                logger.debug("Checking of arguments list not supported yet for code generators.")
 
 
 class DeviceInterface(object):
@@ -211,7 +213,7 @@ class DeviceInterface(object):
         """
         lang = kernel_source.lang
 
-        logging.debug('DeviceInterface instantiated, lang=%s', lang)
+        logger.debug('DeviceInterface instantiated, lang=%s', lang)
 
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
@@ -244,9 +246,9 @@ class DeviceInterface(object):
 
     def benchmark(self, func, gpu_args, instance, verbose):
         """benchmark the kernel instance"""
-        logging.debug('benchmark ' + instance.name)
-        logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
-        logging.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
+        logger.debug('benchmark ' + instance.name)
+        logger.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
+        logger.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
 
         if self.use_nvml:
             if "nvml_pwr_limit" in instance.params:
@@ -270,18 +272,18 @@ class DeviceInterface(object):
             #and proceed to try the next one
             skippable_exceptions = ["too many resources requested for launch", "OUT_OF_RESOURCES", "INVALID_WORK_GROUP_SIZE"]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
-                logging.debug('benchmark fails due to runtime failure too many resources required')
+                logger.debug('benchmark fails due to runtime failure too many resources required')
                 if verbose:
                     print("skipping config", instance.name, "reason: too many resources requested for launch")
             else:
-                logging.debug('benchmark encountered runtime failure: ' + str(e))
+                logger.debug('benchmark encountered runtime failure: ' + str(e))
                 print("Error while benchmarking:", instance.name)
                 raise e
         return result
 
     def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
-        logging.debug('check_kernel_output')
+        logger.debug('check_kernel_output')
 
         #if not using custom verify function, check if the length is the same
         if not verify and len(instance.arguments) != len(answer):
@@ -323,9 +325,9 @@ class DeviceInterface(object):
 
         instance_string = util.get_instance_string(params)
 
-        logging.debug('compile_and_benchmark ' + instance_string)
+        logger.debug('compile_and_benchmark ' + instance_string)
         mem_usage = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 1)
-        logging.debug('Memory usage : %2.2f MB', mem_usage)
+        logger.debug('Memory usage : %2.2f MB', mem_usage)
 
         verbose = tuning_options.verbose
 
@@ -369,7 +371,7 @@ class DeviceInterface(object):
 
     def compile_kernel(self, instance, verbose):
         """compile the kernel for this specific instance"""
-        logging.debug('compile_kernel ' + instance.name)
+        logger.debug('compile_kernel ' + instance.name)
 
         #compile kernel_string into device func
         func = None
@@ -381,11 +383,11 @@ class DeviceInterface(object):
             #skip over this configuration and try the next one
             shared_mem_error_messages = ["uses too much shared data", "local memory limit exceeded"]
             if any(msg in str(e) for msg in shared_mem_error_messages):
-                logging.debug('compile_kernel failed due to kernel using too much shared memory')
+                logger.debug('compile_kernel failed due to kernel using too much shared memory')
                 if verbose:
                     print("skipping config", instance.name, "reason: too much shared memory used")
             else:
-                logging.debug('compile_kernel failed due to error: ' + str(e))
+                logger.debug('compile_kernel failed due to error: ' + str(e))
                 print("Error while compiling:", instance.name)
                 raise e
         return func
@@ -441,18 +443,18 @@ class DeviceInterface(object):
 
     def run_kernel(self, func, gpu_args, instance):
         """ Run a compiled kernel instance on a device """
-        logging.debug('run_kernel %s', instance.name)
-        logging.debug('thread block dims (%d, %d, %d)', *instance.threads)
-        logging.debug('grid dims (%d, %d, %d)', *instance.grid)
+        logger.debug('run_kernel %s', instance.name)
+        logger.debug('thread block dims (%d, %d, %d)', *instance.threads)
+        logger.debug('grid dims (%d, %d, %d)', *instance.grid)
 
         try:
             self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid)
         except Exception as e:
             if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
-                logging.debug('ignoring runtime failure due to too many resources required')
+                logger.debug('ignoring runtime failure due to too many resources required')
                 return False
             else:
-                logging.debug('encountered unexpected runtime failure: ' + str(e))
+                logger.debug('encountered unexpected runtime failure: ' + str(e))
                 raise e
         return True
 
@@ -519,6 +521,6 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             correct = correct and output_test
 
     if not correct:
-        logging.debug('correctness check has found a correctness issue')
+        logger.debug('correctness check has found a correctness issue')
 
     return correct

@@ -14,6 +14,8 @@ import numpy.ctypeslib
 
 from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file
 
+logger=logging.getLogger(__name__)
+
 dtype_map = {"int8": C.c_int8,
              "int16": C.c_int16,
              "int32": C.c_int32,
@@ -123,7 +125,7 @@ class CFunctions(object):
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
-        logging.debug('compiling ' + kernel_instance.name)
+        logger.debug('compiling ' + kernel_instance.name)
 
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
@@ -135,7 +137,7 @@ class CFunctions(object):
 
         #detect openmp
         if "#include <omp.h>" in kernel_string or "use omp_lib" in kernel_string:
-            logging.debug('set using_openmp to true')
+            logger.debug('set using_openmp to true')
             self.using_openmp = True
             if self.compiler == "pgfortran":
                 compiler_options.append("-mp")
@@ -182,9 +184,9 @@ class CFunctions(object):
         if "CL/cl.h" in kernel_string:
             lib_args = ["-lOpenCL"]
 
-        logging.debug('using compiler ' + self.compiler)
-        logging.debug('compiler_options ' + " ".join(compiler_options))
-        logging.debug('lib_args ' + " ".join(lib_args))
+        logger.debug('using compiler ' + self.compiler)
+        logger.debug('compiler_options ' + " ".join(compiler_options))
+        logger.debug('lib_args ' + " ".join(lib_args))
 
         source_file = get_temp_filename(suffix=suffix)
         filename = ".".join(source_file.split(".")[:-1])
@@ -302,8 +304,8 @@ class CFunctions(object):
         :returns: A robust average of values returned by the C function.
         :rtype: float
         """
-        logging.debug("run_kernel")
-        logging.debug("arguments=" + str([str(arg.ctypes) for arg in c_args]))
+        logger.debug("run_kernel")
+        logger.debug("arguments=" + str([str(arg.ctypes) for arg in c_args]))
 
         time = func(*[arg.ctypes for arg in c_args])
 
@@ -350,7 +352,7 @@ class CFunctions(object):
         if not self.using_openmp:
             #this if statement is necessary because shared libraries that use
             #OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
-            logging.debug('unloading shared library')
+            logger.debug('unloading shared library')
             _ctypes.dlclose(self.lib._handle)
 
     units = {}

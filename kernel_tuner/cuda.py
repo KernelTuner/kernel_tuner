@@ -8,6 +8,8 @@ import numpy as np
 from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.nvml import nvml
 
+logger=logging.getLogger(__name__)
+
 #embedded in try block to be able to generate documentation
 #and run tests without pycuda installed
 try:
@@ -243,15 +245,15 @@ class CudaFunctions(object):
             to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
-        logging.debug('copy_constant_memory_args called')
-        logging.debug('current module: ' + str(self.current_module))
+        logger.debug('copy_constant_memory_args called')
+        logger.debug('current module: ' + str(self.current_module))
         for k, v in cmem_args.items():
             symbol = self.current_module.get_global(k)[0]
-            logging.debug('copying to symbol: ' + str(symbol))
-            logging.debug('array to be copied: ')
-            logging.debug(v.nbytes)
-            logging.debug(v.dtype)
-            logging.debug(v.flags)
+            logger.debug('copying to symbol: ' + str(symbol))
+            logger.debug('array to be copied: ')
+            logger.debug(v.nbytes)
+            logger.debug(v.dtype)
+            logger.debug(v.flags)
             drv.memcpy_htod(symbol, v)
 
     def copy_shared_memory_args(self, smem_args):
@@ -274,22 +276,22 @@ class CudaFunctions(object):
                              'mirror': drv.address_mode.MIRROR,
                              'wrap': drv.address_mode.WRAP }
 
-        logging.debug('copy_texture_memory_args called')
-        logging.debug('current module: ' + str(self.current_module))
+        logger.debug('copy_texture_memory_args called')
+        logger.debug('current module: ' + str(self.current_module))
         self.texrefs = []
         for k, v in texmem_args.items():
             tex = self.current_module.get_texref(k)
             self.texrefs.append(tex)
 
-            logging.debug('copying to texture: ' + str(k))
+            logger.debug('copying to texture: ' + str(k))
             if not isinstance(v, dict):
                 data = v
             else:
                 data = v['array']
-            logging.debug('texture to be copied: ')
-            logging.debug(data.nbytes)
-            logging.debug(data.dtype)
-            logging.debug(data.flags)
+            logger.debug('texture to be copied: ')
+            logger.debug(data.nbytes)
+            logger.debug(data.dtype)
+            logger.debug(data.flags)
 
             drv.matrix_to_texref(data, tex, order="C")
 

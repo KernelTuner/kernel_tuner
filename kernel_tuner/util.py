@@ -12,6 +12,8 @@ import re
 
 import numpy as np
 
+logger=logging.getLogger(__name__)
+
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 
@@ -246,8 +248,8 @@ def get_kernel_string(kernel_source, params=None):
     :returns: A string containing the kernel code.
     :rtype: string
     """
-    # logging.debug('get_kernel_string called with %s', str(kernel_source))
-    logging.debug('get_kernel_string called')
+    # logger.debug('get_kernel_string called with %s', str(kernel_source))
+    logger.debug('get_kernel_string called')
 
     kernel_string = None
     if callable(kernel_source):
@@ -362,7 +364,7 @@ def process_metrics(params, metrics):
 
 def looks_like_a_filename(kernel_source):
     """ attempt to detect whether source code or a filename was passed """
-    logging.debug('looks_like_a_filename called')
+    logger.debug('looks_like_a_filename called')
     result = False
     if isinstance(kernel_source, str):
         result = True
@@ -380,7 +382,7 @@ def looks_like_a_filename(kernel_source):
         # string must contain substring ".c", ".opencl", or ".F"
         result = result and any(
             [s in kernel_source for s in (".c", ".opencl", ".F")])
-    logging.debug('kernel_source is a filename: %s' % str(result))
+    logger.debug('kernel_source is a filename: %s' % str(result))
     return result
 
 
@@ -419,7 +421,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads,
     :rtype: string
 
     """
-    logging.debug('prepare_kernel_string called for %s', kernel_name)
+    logger.debug('prepare_kernel_string called for %s', kernel_name)
 
     grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
     for i, g in enumerate(grid):
@@ -646,7 +648,7 @@ def store_cache(key, params, tuning_options):
         else:
             return obj.__str__()
 
-    logging.debug('store_cache called, cache=%s, cachefile=%s' %
+    logger.debug('store_cache called, cache=%s, cachefile=%s' %
                   (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict):
         if not key in tuning_options.cache:

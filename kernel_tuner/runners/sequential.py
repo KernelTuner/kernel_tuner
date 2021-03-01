@@ -7,6 +7,7 @@ import logging
 from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output
 from kernel_tuner.core import DeviceInterface
 
+logger=logging.getLogger(__name__)
 
 class SequentialRunner(object):
     """ SequentialRunner is used for tuning with a single process/thread """
@@ -65,7 +66,7 @@ class SequentialRunner(object):
         :rtype: list(dict()), dict()
 
         """
-        logging.debug('sequential runner started for ' + kernel_options.kernel_name)
+        logger.debug('sequential runner started for ' + kernel_options.kernel_name)
 
         results = []
 
@@ -87,7 +88,7 @@ class SequentialRunner(object):
 
             result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
             if result is None:
-                logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
+                logger.debug ('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
                 params.update({ "time": 1e20 })
                 store_cache(x_int, params, tuning_options)
                 continue
