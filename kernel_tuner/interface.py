@@ -88,7 +88,7 @@ _kernel_options = Options([("kernel_name", ("""The name of the kernel in the cod
             the kernel.""", "string or list and/or callable")),
                            ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA",
+        the language using this argument, currently supported: "CUDA", "Cupy",
         "OpenCL", or "C".""", "string")),
                            ("problem_size", ("""The size of the domain from which the grid dimensions
             of the kernel are computed.
@@ -386,7 +386,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = core.KernelSource(kernel_string, lang)
+    kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
 
     _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
 
@@ -514,7 +514,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = core.KernelSource(kernel_string, lang)
+    kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
 
     _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
 

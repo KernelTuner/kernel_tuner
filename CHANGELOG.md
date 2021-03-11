@@ -14,6 +14,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - option to control measurements using observers
 - support for NVML tunable parameters
 - option to simulate auto-tuning searches from existing cache files
+- Cupy backend to support C++ templated CUDA kernels
 
 ## [0.3.2] - 2020-11-04
 ### Added
