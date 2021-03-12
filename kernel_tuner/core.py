@@ -8,7 +8,7 @@ import numpy as np
 
 try:
     import cupy as cp
-except:
+except ImportError:
     cp = np
 
 from kernel_tuner.cupy import CupyFunctions
@@ -303,9 +303,8 @@ class DeviceInterface(object):
         #re-copy original contents of output arguments to GPU memory, to overwrite any changes
         #by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
-            if verify or answer[i] is not None:
-                if isinstance(arg, (np.ndarray, cp.ndarray)):
-                    self.dev.memcpy_htod(gpu_args[i], arg)
+            if verify or answer[i] is not None and isinstance(arg, (np.ndarray, cp.ndarray)):
+                self.dev.memcpy_htod(gpu_args[i], arg)
 
         #run the kernel
         check = self.run_kernel(func, gpu_args, instance)
