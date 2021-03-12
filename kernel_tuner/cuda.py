@@ -76,6 +76,7 @@ class CudaFunctions(object):
         self.cc = str(cc[0])+str(cc[1])
         self.iterations = iterations
         self.current_module = None
+        self.func = None
         self.compiler_options = compiler_options or []
 
         #select PyCUDA source module
@@ -173,8 +174,8 @@ class CudaFunctions(object):
                                              code=('sm_' + self.cc) if self.cc != "00" else None,
                                              cache_dir=False, no_extern_c=no_extern_c)
 
-            func = self.current_module.get_function(kernel_name)
-            return func
+            self.func = self.current_module.get_function(kernel_name)
+            return self.func
         except drv.CompileError as e:
             if "uses too much shared data" in e.stderr:
                 raise Exception("uses too much shared data")
