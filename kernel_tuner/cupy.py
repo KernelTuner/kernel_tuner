@@ -56,7 +56,7 @@ class CupyFunctions(object):
         self.allocations = []
         self.texrefs = []
         if not cp:
-            raise ImportError("Error: cupy not installed, please install e.g. using 'pip install cupy'.")
+            raise ImportError("Error: cupy not installed, please install e.g. using 'pip install cupy-cuda111', please check https://github.com/cupy/cupy.")
 
         #select device
         self.dev = dev = cp.cuda.Device(device)
@@ -123,7 +123,7 @@ class CupyFunctions(object):
                 alloc = cp.array(arg)
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
-            else: # if not an array, just pass argument along
+            else: # if not a numpy array, just pass argument along
                 gpu_args.append(arg)
         return gpu_args
 
@@ -144,34 +144,17 @@ class CupyFunctions(object):
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
 
-        #try:
-        if True:
-            #no_extern_c = 'extern "C"' in kernel_string
+        compiler_options = self.compiler_options
+        if not any(['--std=' in opt for opt in self.compiler_options]):
+            compiler_options = ['--std=c++11'] + self.compiler_options
 
-            compiler_options = ['--std=c++11']  #['-Xcompiler=-Wall']
-            if self.compiler_options:
-                compiler_options += self.compiler_options
+        options = tuple(compiler_options)
 
-            #self.current_module = self.source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
-            #                                 arch=('compute_' + self.cc) if self.cc != "00" else None,
-            #                                 code=('sm_' + self.cc) if self.cc != "00" else None,
-            #                                 cache_dir=False, no_extern_c=no_extern_c)
+        self.current_module = cp.RawModule(code=kernel_string, options=options,
+                                           name_expressions=[kernel_name])
 
-            options = tuple(compiler_options)
-
-            self.current_module = cp.RawModule(code=kernel_string, options=options,
-                                               name_expressions=[kernel_name])
-
-            func = self.current_module.get_function(kernel_name)
-            self.func = func
-            return func
-
-        #except drv.CompileError as e:
-        #    if "uses too much shared data" in e.stderr:
-        #        raise Exception("uses too much shared data")
-        #    else:
-        #        raise e
-        
+        self.func = self.current_module.get_function(kernel_name)
+        return self.func
 
 
     def benchmark(self, func, gpu_args, threads, grid):
@@ -236,17 +219,7 @@ class CupyFunctions(object):
         """
         logging.debug('copy_constant_memory_args called')
         logging.debug('current module: ' + str(self.current_module))
-
-        """
-        for k, v in cmem_args.items():
-            symbol = self.current_module.get_global(k)[0]
-            logging.debug('copying to symbol: ' + str(symbol))
-            logging.debug('array to be copied: ')
-            logging.debug(v.nbytes)
-            logging.debug(v.dtype)
-            logging.debug(v.flags)
-            drv.memcpy_htod(symbol, v)
-        """
+        raise NotImplementedError('CuPy backend does not yet support constant memory')
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
@@ -259,56 +232,7 @@ class CupyFunctions(object):
             device texture memory. See tune_kernel().
         :type texmem_args: dict
         """
-        filter_mode_map = { 'point': drv.filter_mode.POINT,
-                            'linear': drv.filter_mode.LINEAR }
-        address_mode_map = { 'border': drv.address_mode.BORDER,
-                             'clamp': drv.address_mode.CLAMP,
-                             'mirror': drv.address_mode.MIRROR,
-                             'wrap': drv.address_mode.WRAP }
-
-        logging.debug('copy_texture_memory_args called')
-        logging.debug('current module: ' + str(self.current_module))
-
-        """
-        self.texrefs = []
-        for k, v in texmem_args.items():
-            tex = self.current_module.get_texref(k)
-            self.texrefs.append(tex)
-
-            logging.debug('copying to texture: ' + str(k))
-            if not isinstance(v, dict):
-                data = v
-            else:
-                data = v['array']
-            logging.debug('texture to be copied: ')
-            logging.debug(data.nbytes)
-            logging.debug(data.dtype)
-            logging.debug(data.flags)
-
-            drv.matrix_to_texref(data, tex, order="C")
-
-            if isinstance(v, dict):
-                if 'address_mode' in v and v['address_mode'] is not None:
-                    # address_mode is set per axis
-                    amode = v['address_mode']
-                    if not isinstance(amode, list):
-                        amode = [ amode ] * data.ndim
-                    for i, m in enumerate(amode):
-                        try:
-                            if m is not None:
-                                tex.set_address_mode(i, address_mode_map[m])
-                        except KeyError:
-                            raise ValueError('Unknown address mode: ' + m)
-                if 'filter_mode' in v and v['filter_mode'] is not None:
-                    fmode = v['filter_mode']
-                    try:
-                        tex.set_filter_mode(filter_mode_map[fmode])
-                    except KeyError:
-                        raise ValueError('Unknown filter mode: ' + fmode)
-                if 'normalized_coordinates' in v and v['normalized_coordinates']:
-                    tex.set_flags(tex.get_flags() | drv.TRSF_NORMALIZED_COORDINATES)
-
-        """
+        raise NotImplementedError('CuPy backend does not yet support constant memory')
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'
@@ -329,7 +253,6 @@ class CupyFunctions(object):
             of the grid
         :type grid: tuple(int, int)
         """
-        #func(*gpu_args, block=threads, grid=grid, stream=stream, shared=self.smem_size, texrefs=self.texrefs)
         func(grid, threads, gpu_args, stream=stream, shared_mem=self.smem_size)
 
     def memset(self, allocation, value, size):
@@ -346,8 +269,6 @@ class CupyFunctions(object):
 
         """
         allocation[:] = value
-        #drv.memset_d8(allocation, value, size)
-
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
@@ -358,11 +279,6 @@ class CupyFunctions(object):
         :param src: A GPU memory allocation unit
         :type src: cupy.ndarray
         """
-        #
-        #if isinstance(src, drv.DeviceAllocation):
-        #    drv.memcpy_dtoh(dest, src)
-        #else:
-        #    dest = src
         if isinstance(dest, np.ndarray):
             tmp = cp.asnumpy(src)
             np.copyto(dest, tmp)
@@ -370,7 +286,6 @@ class CupyFunctions(object):
             cp.copyto(dest, src)
         else:
             raise ValueError("dest type not supported")
-        #dest[:] = cp.asnumpy(src)
 
     def memcpy_htod(self, dest, src):
         """perform a host to device memory copy
@@ -381,13 +296,8 @@ class CupyFunctions(object):
         :param src: A numpy array in host memory to store the data
         :type src: numpy.ndarray
         """
-        #if isinstance(dest, drv.DeviceAllocation):
-        #    drv.memcpy_htod(dest, src)
-        #else:
-        #    dest = src
         if isinstance(src, np.ndarray):
             src = cp.asarray(src)
         cp.copyto(dest, src)
-        #dest = cp.asarray(src)
 
     units = {'time': 'ms'}
