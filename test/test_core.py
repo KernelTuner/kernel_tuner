@@ -35,10 +35,11 @@ def env():
     args = get_vector_add_args()
     params = {"block_size_x": 128}
 
+    kernel_name = "vector_add"
     lang = "CUDA"
-    kernel_source = core.KernelSource(kernel_string, lang)
+    kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
     verbose = True
-    kernel_options = Options(kernel_name="vector_add", kernel_string=kernel_string, problem_size=args[-1],
+    kernel_options = Options(kernel_name=kernel_name, kernel_string=kernel_string, problem_size=args[-1],
                              arguments=args, lang=lang, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                              cmem_args=None, texmem_args=None, block_size_names=None)
     device_options = Options(device=0, platform=0, quiet=False, compiler=None, compiler_options=None)
@@ -93,7 +94,7 @@ def test_default_verify_function(env):
 def test_check_kernel_output(dev_func_interface):
     dev_func_interface.configure_mock(**mock_config)
 
-    dev = core.DeviceInterface(core.KernelSource("", lang="CUDA"))
+    dev = core.DeviceInterface(core.KernelSource("name", "", lang="CUDA"))
     dfi = dev.dev
 
     answer = [np.zeros(4).astype(np.float32)]

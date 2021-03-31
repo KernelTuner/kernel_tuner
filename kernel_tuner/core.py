@@ -4,8 +4,14 @@ from __future__ import print_function
 from collections import namedtuple
 import resource
 import logging
-import numpy
+import numpy as np
 
+try:
+    import cupy as cp
+except ImportError:
+    cp = np
+
+from kernel_tuner.cupy import CupyFunctions
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
@@ -42,10 +48,11 @@ class KernelSource(object):
     must be filenames.
     """
 
-    def __init__(self, kernel_sources, lang):
+    def __init__(self, kernel_name, kernel_sources, lang):
         if not isinstance(kernel_sources, list):
             kernel_sources = [kernel_sources]
         self.kernel_sources = kernel_sources
+        self.kernel_name = kernel_name
         if lang is None:
             if callable(self.kernel_sources[0]):
                 raise TypeError("Please specify language when using a code generator function")
@@ -215,6 +222,8 @@ class DeviceInterface(object):
 
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
+        elif lang.upper() == "CUPY":
+            dev = CupyFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "C":
@@ -290,9 +299,8 @@ class DeviceInterface(object):
         #re-copy original contents of output arguments to GPU memory, to overwrite any changes
         #by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
-            if verify or answer[i] is not None:
-                if isinstance(arg, numpy.ndarray):
-                    self.dev.memcpy_htod(gpu_args[i], arg)
+            if verify or answer[i] is not None and isinstance(arg, (np.ndarray, cp.ndarray)):
+                self.dev.memcpy_htod(gpu_args[i], arg)
 
         #run the kernel
         check = self.run_kernel(func, gpu_args, instance)
@@ -302,8 +310,8 @@ class DeviceInterface(object):
         #retrieve gpu results to host memory
         result_host = []
         for i, arg in enumerate(instance.arguments):
-            if (verify or answer[i] is not None) and isinstance(arg, numpy.ndarray):
-                result_host.append(numpy.zeros_like(arg))
+            if (verify or answer[i] is not None) and isinstance(arg, (np.ndarray, cp.ndarray)):
+                result_host.append(np.zeros_like(arg))
                 self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
             else:
                 result_host.append(None)
@@ -415,7 +423,7 @@ class DeviceInterface(object):
 
         #setup thread block and grid dimensions
         threads, grid = util.setup_block_and_grid(kernel_options.problem_size, grid_div, params, kernel_options.block_size_names)
-        if numpy.prod(threads) > self.dev.max_threads:
+        if np.prod(threads) > self.dev.max_threads:
             if verbose:
                 print("skipping config", instance_string, "reason: too many threads per block")
             return None
@@ -462,7 +470,7 @@ class DeviceInterface(object):
 
 
 def _default_verify_function(instance, answer, result_host, atol, verbose):
-    """default verify function based on numpy.allclose"""
+    """default verify function based on np.allclose"""
 
     #first check if the length is the same
     if len(instance.arguments) != len(answer):
@@ -470,20 +478,20 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     #for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:    #skip None elements in the answer list
-            if isinstance(answer[i], numpy.ndarray) and isinstance(arg, numpy.ndarray):
+            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
                 if answer[i].dtype != arg.dtype:
                     raise TypeError("Element " + str(i) + " of the expected results list is not of the same dtype as the kernel output: " +
                                     str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
                 if answer[i].size != arg.size:
                     raise TypeError("Element " + str(i) + " of the expected results list has a size different from " + "the kernel argument: " +
                                     str(answer[i].size) + " != " + str(arg.size) + ".")
-            elif isinstance(answer[i], numpy.number) and isinstance(arg, numpy.number):
+            elif isinstance(answer[i], np.number) and isinstance(arg, np.number):
                 if answer[i].dtype != arg.dtype:
                     raise TypeError("Element " + str(i) + " of the expected results list is not the same as the kernel output: " + str(answer[i].dtype) +
                                     " != " + str(arg.dtype) + ".")
             else:
                 #either answer[i] and argument have different types or answer[i] is not a numpy type
-                if not isinstance(answer[i], numpy.ndarray) or not isinstance(answer[i], numpy.number):
+                if not isinstance(answer[i], np.ndarray) or not isinstance(answer[i], np.number):
                     raise TypeError("Element " + str(i) + " of expected results list is not a numpy array or numpy scalar.")
                 else:
                     raise TypeError("Element " + str(i) + " of expected results list and kernel arguments have different types.")
@@ -505,13 +513,16 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
 
             result = _ravel(result_host[i])
             expected = _flatten(expected)
-            output_test = numpy.allclose(expected, result, atol=atol)
+            if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
+                output_test = cp.allclose(expected, result, atol=atol)
+            else:
+                output_test = np.allclose(expected, result, atol=atol)
 
             if not output_test and verbose:
                 print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
                 print("this error occured when checking value of the %oth kernel argument" % (i, ))
                 print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
-                numpy.set_printoptions(edgeitems=50)
+                np.set_printoptions(edgeitems=50)
                 print("Kernel output:")
                 print(result)
                 print("Expected:")

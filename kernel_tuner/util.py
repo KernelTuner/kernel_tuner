@@ -11,6 +11,10 @@ import warnings
 import re
 
 import numpy as np
+try:
+    import cupy as cp
+except ImportError:
+    cp = np
 
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
@@ -57,7 +61,7 @@ def check_argument_list(kernel_name, kernel_string, args):
         for (i, arg) in enumerate(args):
             kernel_argument = arguments[i]
 
-            if not isinstance(arg, (np.ndarray, np.generic)):
+            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray)):
                 raise TypeError(
                     "Argument at position " + str(i) + " of type: " +
                     str(type(arg)) +
