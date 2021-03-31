@@ -220,10 +220,6 @@ class DeviceInterface(object):
 
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
-        #if there is a template specification in the kernel name switch to cupy backend
-        if lang == "CUDA" and "<" in kernel_source.kernel_name:
-            lang = "CUPY"
-
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() == "CUPY":
