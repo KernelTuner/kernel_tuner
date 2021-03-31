@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - support for NVML tunable parameters
 - option to simulate auto-tuning searches from existing cache files
 - Cupy backend to support C++ templated CUDA kernels
+- support for templated CUDA kernels using PyCUDA backend
 
 ## [0.3.2] - 2020-11-04
 ### Added
