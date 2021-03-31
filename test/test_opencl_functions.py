@@ -45,7 +45,7 @@ def test_compile():
     }
     """
 
-    kernel_sources = KernelSource(original_kernel, "opencl")
+    kernel_sources = KernelSource("sum", original_kernel, "opencl")
     kernel_string = original_kernel.replace("shared_size", str(1024))
     kernel_instance = KernelInstance("sum", kernel_sources, kernel_string, [], None, None, dict(), [])
 
