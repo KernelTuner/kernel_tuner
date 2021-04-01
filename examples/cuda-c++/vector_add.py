@@ -9,7 +9,7 @@ def tune():
 
     kernel_string = """
 template<typename T>
-__global__ void vector_add(T *c, T *__restrict__ a, T *b, int n) {
+__global__ void vector_add(T *c, T *a, T *b, int n) {
     auto i = blockIdx.x * block_size_x + threadIdx.x;
     if (i<n) {
         c[i] = a[i] + b[i];

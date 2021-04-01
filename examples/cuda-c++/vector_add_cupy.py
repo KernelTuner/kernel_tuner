@@ -2,13 +2,14 @@
 """This is the minimal example from the README converted to C++11"""
 
 import json
-import numpy
+import numpy as np
+import cupy as cp
 from kernel_tuner import tune_kernel
 
 def tune():
 
     kernel_string = """
-template<typename T>__global__ void vector_add(T *c, T *__restrict__ a, T *b, int n) {
+template<typename T>__global__ void vector_add(T *__restrict__ c, const T *__restrict__ a, const T *__restrict__ b, int n) {
     auto i = blockIdx.x * block_size_x + threadIdx.x;
     if (i<n) {
         c[i] = a[i] + b[i];
@@ -18,10 +19,10 @@ template<typename T>__global__ void vector_add(T *c, T *__restrict__ a, T *b, in
 
     size = 10000000
 
-    a = numpy.random.randn(size).astype(numpy.float32)
-    b = numpy.random.randn(size).astype(numpy.float32)
-    c = numpy.zeros_like(b)
-    n = numpy.int32(size)
+    a = cp.random.randn(size).astype(cp.float32)
+    b = cp.random.randn(size).astype(cp.float32)
+    c = cp.zeros_like(b)
+    n = np.int32(size)
 
     args = [c, a, b, n]
 
