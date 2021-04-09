@@ -259,7 +259,13 @@ example of what it’s like to tune a templated kernel with Kernel Tuner.</p>
 </td></tr></table></div>
 <p>What you can see is that in the Python code we specify the template instantiation to use. Kernel Tuner will detect the use of templated kernels when the kernel_name positional argument to tune_kernel contains a template argument.</p>
 <p>This feature also allows use to auto-tune template parameters to the kernel. We could for example define a tunable parameter:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;my_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="s2">&quot;double&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
 <p>and call tune_kernel using a tunable parameter inside the template arguments:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&lt;my_type&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;vector_add.cu&quot;</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="selecting-a-backend">
 <h2>Selecting a backend<a class="headerlink" href="#selecting-a-backend" title="Permalink to this headline">¶</a></h2>
