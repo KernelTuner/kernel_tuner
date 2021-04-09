@@ -51,11 +51,13 @@ What you can see is that in the Python code we specify the template instantiatio
 This feature also allows use to auto-tune template parameters to the kernel. We could for example define a tunable parameter:
 
 .. code-block:: python
+
     tune_params["my_type"] = ["float", "double"]
 
 and call tune_kernel using a tunable parameter inside the template arguments:
 
 .. code-block:: python
+
     tune_kernel("vector_add<my_type>", "vector_add.cu", size, args, tune_params)
 
 Selecting a backend

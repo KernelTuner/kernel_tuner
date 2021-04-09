@@ -542,17 +542,20 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     the cache file is stored using JSON and uses the following format:
 
-    { device_name: "name of device"
-      kernel_name: "name of kernel"
-      tune_params_keys: list
-      tune_params:
-      cache: {
-      "x1,x2,..xN": {"block_size_x": x1, ..., time=0.234342},
-      "y1,y2,..yN": {"block_size_x": y1, ..., time=0.134233},
-      }
-    }
+    .. code-block:: python
 
-    The last two closing brackets "}\n}" are not required, and everything
+        { device_name: "name of device"
+          kernel_name: "name of kernel"
+          tune_params_keys: list
+          tune_params:
+          cache: {
+            "x1,x2,..xN": {"block_size_x": x1, ..., time=0.234342},
+            "y1,y2,..yN": {"block_size_x": y1, ..., time=0.134233},
+          }
+        }
+
+
+    The last two closing brackets are not required, and everything
     should work as expected if these are missing. This is to allow to continue
     from an earlier (abruptly ended) tuning session.
 
