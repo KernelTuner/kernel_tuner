@@ -4,11 +4,6 @@ This roadmap presents an overview of the features we are currently planning to
 implement. Please note that this is a living document that will evolve as
 priorities grow and shift.
 
-## version 0.4.0
-
- * Support for C++ templated kernels through NVRTC and template parameter tuning
- * Document a vocabulary of reserved/special tunable parameter names
-
 ## version 0.5.0
 
  * Allow strategies to tune for a metric other than time

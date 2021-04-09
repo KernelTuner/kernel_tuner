@@ -1,6 +1,7 @@
 """ Module for grouping the core functionality needed by most runners """
 from __future__ import print_function
 
+import re
 from collections import namedtuple
 import resource
 import logging
@@ -432,6 +433,10 @@ class DeviceInterface(object):
         name, kernel_string, temp_files = kernel_source.prepare_list_of_files(kernel_options.kernel_name, params, grid, threads,
                                                                               kernel_options.block_size_names)
 
+        #check for templated kernel
+        if kernel_source.lang == "CUDA" and "<" in name and ">" in name:
+            kernel_string, name = wrap_templated_kernel(kernel_string, name)
+
         #collect everything we know about this instance and return it
         return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
 
@@ -533,3 +538,85 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         logging.debug('correctness check has found a correctness issue')
 
     return correct
+
+
+
+#these functions facilitate compiling templated kernels with PyCuda
+def split_argument_list(argument_list):
+    """split all arguments in a list into types and names"""
+    regex = r"(.*[\s*]+)(.*)?"
+    type_list = []
+    name_list = []
+    for arg in argument_list:
+        match = re.match(regex, arg, re.S)
+        if not match:
+            raise ValueError("error parsing templated kernel argument list")
+        type_list.append(re.sub(r"\s+", " ", match.group(1).strip(), re.S))
+        name_list.append(match.group(2).strip())
+    return type_list, name_list
+
+def apply_template_typenames(type_list, templated_typenames):
+    """replace the typename tokens in type_list with their templated typenames"""
+    def replace_typename_token(matchobj):
+        """function for a whitespace preserving token regex replace"""
+        #replace only the match, leaving the whitespace around it as is
+        return matchobj.group(1) + templated_typenames[matchobj.group(2)] + matchobj.group(3)
+    for i, arg_type in enumerate(type_list):
+        for k,v in templated_typenames.items():
+            #if the templated typename occurs as a token in the string, meaning that it is enclosed in
+            #beginning of string or whitespace, and end of string, whitespace or star
+            regex = r"(^|\s+)(" + k + r")($|\s+|\*)"
+            sub = re.sub(regex, replace_typename_token, arg_type, re.S)
+            type_list[i] = sub
+
+def get_templated_typenames(template_parameters, template_arguments):
+    """based on the template parameters and arguments, create dict with templated typenames"""
+    templated_typenames = {}
+    for i, param in enumerate(template_parameters):
+        if "typename " in param:
+            typename = param[9:]
+            templated_typenames[typename] = template_arguments[i]
+    return templated_typenames
+
+def wrap_templated_kernel(kernel_string, kernel_name):
+    """rewrite kernel_string to insert wrapper function for templated kernel"""
+    #parse kernel_name to find template_arguments and real kernel name
+    name = kernel_name.split("<")[0]
+    template_arguments = re.search(r".*?<(.*)>", kernel_name, re.S).group(1).split(',')
+
+    #parse templated kernel definition
+    #relatively strict regex that does not allow nested template parameters like vector<TF>
+    #within the template parameter list
+    regex = r"template\s*<([^>]*?)>\s*__global__\s+void\s+" + name + r"\s*\((.*?)\)\s*\{"
+    match = re.search(regex, kernel_string, re.S)
+    if not match:
+        raise ValueError("could not find templated kernel definition")
+
+    template_parameters = match.group(1).split(',')
+    argument_list = match.group(2).split(',')
+    argument_list = [s.strip() for s in argument_list] #remove extra whitespace around 'type name' strings
+
+    type_list, name_list = split_argument_list(argument_list)
+
+    templated_typenames = get_templated_typenames(template_parameters, template_arguments)
+    apply_template_typenames(type_list, templated_typenames)
+
+    #replace __global__ with __device__ in the templated kernel definition
+    #could do a more precise replace, but __global__ cannot be used elsewhere in the definition
+    definition = match.group(0).replace("__global__", "__device__")
+
+    #generate code for the compile-time template instantiation
+    template_instantiation = f"template __device__ void {kernel_name}(" + ", ".join(type_list) + ");\n"
+
+    #generate code for the wrapper kernel
+    new_arg_list = ", ".join([" ".join((a, b)) for a, b in zip(type_list, name_list)])
+    wrapper_function = "\nextern \"C\" __global__ void " + name + "_wrapper(" + new_arg_list + ") {\n  " + \
+       kernel_name + "(" + ", ".join(name_list) + ");\n}\n"
+
+    #copy kernel_string, replace definition and append template instantiation and wrapper function
+    new_kernel_string = kernel_string[:]
+    new_kernel_string = new_kernel_string.replace(match.group(0), definition)
+    new_kernel_string += "\n" + template_instantiation
+    new_kernel_string += wrapper_function
+
+    return new_kernel_string, name + "_wrapper"

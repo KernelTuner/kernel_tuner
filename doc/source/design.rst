@@ -96,7 +96,7 @@ kernel_tuner.runners.sequential.SequentialRunner
 
 kernel_tuner.runners.sequential.SimulationRunner
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.runners.sequential.SimulationRunner
+.. autoclass:: kernel_tuner.runners.simulation.SimulationRunner
     :special-members: __init__
     :members:
 
