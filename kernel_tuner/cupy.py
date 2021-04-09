@@ -199,6 +199,7 @@ class CupyFunctions(object):
             while not self.end.done:
                 for obs in self.observers:
                     obs.during()
+                time.sleep(1e-6)
             for obs in self.observers:
                 obs.after_finish()
 
