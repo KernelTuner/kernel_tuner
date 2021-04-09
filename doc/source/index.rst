@@ -19,6 +19,7 @@ Contents:
    matrix_multiplication
    correctness
    hostcode
+   templates
    user-api
    design
    contributing
