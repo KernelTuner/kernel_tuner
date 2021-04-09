@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-"""This is the minimal example from the README converted to C++11"""
+""" This is the example demonstrates how to use Kernel Tuner
+    to insert tunable parameters into template arguments
+"""
 
 import json
 import numpy
@@ -8,9 +10,9 @@ from kernel_tuner import tune_kernel
 def tune():
 
     kernel_string = """
-template<typename T>
+template<typename T, int blockSize>
 __global__ void vector_add(T *c, T *a, T *b, int n) {
-    auto i = blockIdx.x * block_size_x + threadIdx.x;
+    auto i = blockIdx.x * blockSize + threadIdx.x;
     if (i<n) {
         c[i] = a[i] + b[i];
     }
@@ -29,7 +31,7 @@ __global__ void vector_add(T *c, T *a, T *b, int n) {
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    result, env = tune_kernel("vector_add<float>", kernel_string, size, args, tune_params)
+    result, env = tune_kernel("vector_add<float, block_size_x>", kernel_string, size, args, tune_params)
 
     with open("vector_add.json", 'w') as fp:
         json.dump(result, fp)
