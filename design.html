@@ -40,7 +40,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Contribution guide" href="contributing.html" />
-    <link rel="prev" title="API Documentation" href="user-api.html" /> 
+    <link rel="prev" title="Parameter Vocabulary" href="vocabulary.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -98,7 +98,9 @@
 <li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Design documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#strategies">Strategies</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.brute_force">kernel_tuner.strategies.brute_force</a></li>
@@ -517,6 +519,54 @@ about the hardware/software environment on which the tuning took place.</p>
 </div>
 <div class="section" id="kernel-tuner-runners-sequential-simulationrunner">
 <h3>kernel_tuner.runners.sequential.SimulationRunner<a class="headerlink" href="#kernel-tuner-runners-sequential-simulationrunner" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt id="kernel_tuner.runners.simulation.SimulationRunner">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">kernel_tuner.runners.simulation.</span></code><code class="sig-name descname"><span class="pre">SimulationRunner</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.simulation.SimulationRunner" title="Permalink to this definition">¶</a></dt>
+<dd><p>SimulationRunner is used for tuning with a single process/thread</p>
+<dl class="py method">
+<dt id="kernel_tuner.runners.simulation.SimulationRunner.__init__">
+<code class="sig-name descname"><span class="pre">__init__</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.simulation.SimulationRunner.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate the SimulationRunner</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel source</p></li>
+<li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
+<li><p><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the device
+on which the kernel should be tuned.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em>) – The number of iterations used for benchmarking
+each kernel instance.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="kernel_tuner.runners.simulation.SimulationRunner.run">
+<code class="sig-name descname"><span class="pre">run</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.simulation.SimulationRunner.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate through the entire parameter space using a single Python process</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter_space</strong> (<em>iterable</em>) – The parameter space as an iterable.</p></li>
+<li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
+<li><p><strong>tuning_options</strong> (<em>kernel_tuner.iterface.Options</em>) – A dictionary with all options regarding the tuning
+process.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of dictionaries for executed kernel configurations and their
+execution times. And a dictionary that contains information
+about the hardware/software environment on which the tuning took place.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list(dict()), dict()</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="device-interfaces">
@@ -1408,7 +1458,7 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="contributing.html" class="btn btn-neutral float-right" title="Contribution guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="user-api.html" class="btn btn-neutral float-left" title="API Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vocabulary.html" class="btn btn-neutral float-left" title="Parameter Vocabulary" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

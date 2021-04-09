@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Python Module Index &mdash; Kernel Tuner 0.3.2 documentation</title>
+  <title>Parameter Vocabulary &mdash; Kernel Tuner 0.3.2 documentation</title>
   
 
   
@@ -39,9 +39,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
- 
-
-
+    <link rel="next" title="Design documentation" href="design.html" />
+    <link rel="prev" title="API Documentation" href="user-api.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -90,7 +89,7 @@
               
             
             
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
@@ -101,7 +100,7 @@
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parameter Vocabulary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
@@ -152,10 +151,16 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Python Module Index</li>
+      <li>Parameter Vocabulary</li>
     
     
       <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/vocabulary.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
         
       </li>
     
@@ -167,60 +172,77 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
 
-   <h1>Python Module Index</h1>
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
 
-   <div class="modindex-jumpbox">
-   <a href="#cap-k"><strong>k</strong></a>
-   </div>
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
 
-   <table class="indextable modindextable">
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-k"><td></td><td>
-       <strong>k</strong></td><td></td></tr>
-     <tr>
-       <td><img src="_static/minus.png" class="toggler"
-              id="toggle-1" style="display: none" alt="-" /></td>
-       <td>
-       <code class="xref">kernel_tuner</code></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="design.html#module-kernel_tuner.strategies.basinhopping"><code class="xref">kernel_tuner.strategies.basinhopping</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="design.html#module-kernel_tuner.strategies.brute_force"><code class="xref">kernel_tuner.strategies.brute_force</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="design.html#module-kernel_tuner.strategies.diff_evo"><code class="xref">kernel_tuner.strategies.diff_evo</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="design.html#module-kernel_tuner.strategies.minimize"><code class="xref">kernel_tuner.strategies.minimize</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="design.html#module-kernel_tuner.strategies.random_sample"><code class="xref">kernel_tuner.strategies.random_sample</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="design.html#module-kernel_tuner.util"><code class="xref">kernel_tuner.util</code></a></td><td>
-       <em></em></td></tr>
-   </table>
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="parameter-vocabulary">
+<h1>Parameter Vocabulary<a class="headerlink" href="#parameter-vocabulary" title="Permalink to this headline">¶</a></h1>
+<p>There are certain tunable parameters that have special meaning in Kernel Tuner.
+This document specifies which parameters are special and what there uses are when auto-tuning GPU kernels.</p>
+<p>In general, it is best to avoid using these parameter names for purposes other than the ones indicated in this document.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_tuner</span> <span class="c1">#is inserted by Kernel Tuner to signal the code is compiled using the tuner</span>
+
+<span class="n">block_size_</span><span class="o">*</span> <span class="c1">#reserved for thread block dimensions</span>
+<span class="n">grid_size_</span><span class="o">*</span> <span class="c1">#reserved for grid dimensions, if you want to tune these use problem_size</span>
+
+<span class="n">compiler_opt_</span><span class="o">*</span> <span class="c1">#reserved for future support for tuning compiler options</span>
+
+<span class="n">loop_unroll_factor_</span><span class="o">*</span> <span class="c1">#reserved for tunable parameters that specify loop unrolling factors</span>
+
+<span class="n">nvml_</span><span class="o">*</span> <span class="c1">#reserved for tunable parameters and outputs related to NVML</span>
+<span class="n">nvml_pwr_limit</span> <span class="c1">#use NVML to set power limit</span>
+<span class="n">nvml_gr_clock</span> <span class="c1">#use NVML to set graphics clock</span>
+<span class="n">nvml_mem_clock</span> <span class="c1">#use NVML to set memory clock</span>
+</pre></div>
+</div>
+<p>There are also a number of names that Kernel Tuner uses for reporting benchmarking results.
+Because these are reported along with the tunable parameters, it is generally a good idea to not use these names for any tunable parameters.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">time</span><span class="o">*</span> <span class="c1">#reserved for time measurements</span>
+
+<span class="n">Information</span> <span class="n">that</span> <span class="n">can</span> <span class="n">be</span> <span class="n">observed</span> <span class="n">using</span> <span class="n">kernel_tuner</span><span class="o">.</span><span class="n">nvml</span><span class="o">.</span><span class="n">NVMLObserver</span><span class="p">:</span>
+<span class="n">nvml_energy</span>
+<span class="n">nvml_power</span>
+<span class="n">power_readings</span>
+<span class="n">core_freq</span>
+<span class="n">mem_freq</span>
+<span class="n">temperature</span>
+
+<span class="n">ps_energy</span>  <span class="c1"># Energy as measured by PowerSensor</span>
+<span class="n">ps_power</span>   <span class="c1"># Power as measured by PowerSensor</span>
+</pre></div>
+</div>
+</div>
 
 
            </div>
            
           </div>
           <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="design.html" class="btn btn-neutral float-right" title="Design documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="user-api.html" class="btn btn-neutral float-left" title="API Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 
