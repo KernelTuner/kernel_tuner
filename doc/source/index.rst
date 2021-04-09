@@ -21,6 +21,7 @@ Contents:
    hostcode
    templates
    user-api
+   vocabulary
    design
    contributing
 
