@@ -580,13 +580,14 @@ def get_templated_typenames(template_parameters, template_arguments):
 
 def wrap_templated_kernel(kernel_string, kernel_name):
     """rewrite kernel_string to insert wrapper function for templated kernel"""
-
     #parse kernel_name to find template_arguments and real kernel name
     name = kernel_name.split("<")[0]
     template_arguments = re.search(r".*?<(.*)>", kernel_name, re.S).group(1).split(',')
 
     #parse templated kernel definition
-    regex = r"template\s*<(.*?)>\s*__global__\s+void\s+" + name + r"\s*\((.*?)\)\s*\{"
+    #relatively strict regex that does not allow nested template parameters like vector<TF>
+    #within the template parameter list
+    regex = r"template\s*<([^>]*?)>\s*__global__\s+void\s+" + name + r"\s*\((.*?)\)\s*\{"
     match = re.search(regex, kernel_string, re.S)
     if not match:
         raise ValueError("could not find templated kernel definition")
