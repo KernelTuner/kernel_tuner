@@ -4,6 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [0.4.0] - 2021-04-09
 ### Added
 - support for (lambda) function instead of list of strings for restrictions
 - support for (lambda) function instead of list for specifying grid divisors
