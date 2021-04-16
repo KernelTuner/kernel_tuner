@@ -39,11 +39,14 @@ def tune(runner, kernel_options, device_options, tuning_options):
     crossover = supported_methods[options.get("method", "uniform")]
     mutation_chance = options.get("mutation_chance", 10)
 
+    max_fevals = options.get("max_fevals", 100)
+
     tuning_options["scaling"] = False
     tune_params = tuning_options.tune_params
 
     best_time = 1e20
     all_results = []
+    unique_results = {}
 
     population = random_population(pop_size, tune_params)
 
@@ -66,6 +69,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
         # 'best_time' is used only for printing
         if tuning_options.verbose and all_results:
             best_time = min(all_results, key=lambda x: x["time"])["time"]
+
+        unique_results.update({",".join([str(i) for i in dna]): time for dna, time in weighted_population})
+        if len(unique_results) > max_fevals:
+            break
 
         # population is sorted such that better configs have higher chance of reproducing
         weighted_population.sort(key=lambda x: x[1])
