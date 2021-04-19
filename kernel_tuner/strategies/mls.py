@@ -96,6 +96,8 @@ def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuni
                 if time < best:
                     best = time
                     best_pos = pos[:]
+                    #greedely replace start_pos with pos to continue from this point
+                    start_pos = pos[:]
 
                 unique_results.update({",".join([str(v) for k,v in record.items() if k in tune_params]):record["time"] for record in current_results})
                 fevals = len(unique_results)
