@@ -2,7 +2,6 @@
 import random
 
 from kernel_tuner import util
-
 from kernel_tuner.strategies.minimize import _cost_func
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -28,7 +27,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :rtype: list(dict()), dict()
 
     """
-
     results = []
 
     # MLS works with real parameter values and does not need scaling
@@ -43,8 +41,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     all_results = []
     unique_results = {}
-    best_global = 1e20
-    best = 1e20
 
     #while searching
     while fevals < max_fevals:
@@ -56,64 +52,69 @@ def tune(runner, kernel_options, device_options, tuning_options):
         if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
             continue
 
-        #get time for this position
-        time = _cost_func(pos, kernel_options, tuning_options, runner, all_results)
-        if time < best:
-            best = time
-
-        #store the start pos before hill climbing
-        start_pos = pos[:]
-
-        best_global = best #starting new hill climbin search, no need to remember past best global
-
-        found_improved = True
-        while found_improved:
-            found_improved = False
-
-            if fevals >= max_fevals:
-                break
-
-            current_results = []
-            pos = start_pos[:]
-
-            index = 0
-            #in each dimension see the possible values
-            for key, values in tune_params.items():
-
-                #for each value in this dimension
-                for v in values:
-                    pos[index] = v
-
-                    #check restrictions
-                    if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
-                        continue
-
-                    #get time for this position
-                    time = _cost_func(pos, kernel_options, tuning_options, runner, current_results)
-                    if time < best:
-                        best = time
-                        best_pos = pos[:]
-
-                #restore and move to next dimension
-                pos[index] = start_pos[index]
-                index = index + 1
-
-
-            #see if there was improvement, update start_pos set found_improved to True
-            if best < best_global:
-                found_improved = True
-                start_pos = best_pos
-                best_global = best
-                #print("found improved")
-                #print(f"{current_results=}")
-
-
-            #append current_results to all_results
-            all_results += current_results
-            unique_results.update({",".join([str(v) for k,v in record.items() if k in tune_params]):record["time"] for record in current_results})
-            fevals = len(unique_results)
-            #print(fevals, start_pos)
-
-
+        hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
+        fevals = len(unique_results)
 
     return all_results, runner.dev.get_environment()
+
+
+def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner):
+    tune_params = tuning_options.tune_params
+    restrictions = tuning_options.restrictions
+    fevals = len(unique_results)
+
+    #measure start point time
+    time = _cost_func(pos, kernel_options, tuning_options, runner, all_results)
+
+    #starting new hill climbing search, no need to remember past best
+    best_global = best = time
+
+    #store the start pos before hill climbing
+    start_pos = pos[:]
+
+    found_improved = True
+    while found_improved:
+        found_improved = False
+
+        current_results = []
+        pos = start_pos[:]
+
+        index = 0
+        #in each dimension see the possible values
+        for key, values in tune_params.items():
+
+            #for each value in this dimension
+            for v in values:
+                pos[index] = v
+
+                #check restrictions
+                if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
+                    continue
+
+                #get time for this position
+                time = _cost_func(pos, kernel_options, tuning_options, runner, current_results)
+                if time < best:
+                    best = time
+                    best_pos = pos[:]
+
+                unique_results.update({",".join([str(v) for k,v in record.items() if k in tune_params]):record["time"] for record in current_results})
+                fevals = len(unique_results)
+                if fevals >= max_fevals:
+                    all_results += current_results
+                    return
+
+            #restore and move to next dimension
+            pos[index] = start_pos[index]
+            index = index + 1
+
+        #see if there was improvement, update start_pos set found_improved to True
+        if best < best_global:
+            found_improved = True
+            start_pos = best_pos
+            best_global = best
+
+        #append current_results to all_results
+        all_results += current_results
+
+
+
