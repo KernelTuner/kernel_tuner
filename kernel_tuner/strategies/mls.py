@@ -31,7 +31,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # MLS works with real parameter values and does not need scaling
     tuning_options["scaling"] = False
-    args = (kernel_options, tuning_options, runner, results)
     tune_params = tuning_options.tune_params
     restrictions = tuning_options.restrictions
 
@@ -59,6 +58,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
 
 def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner):
+    """ simple hillclimbing search until max_fevals is reached or no improvement is found """
     tune_params = tuning_options.tune_params
     restrictions = tuning_options.restrictions
     fevals = len(unique_results)
@@ -81,11 +81,11 @@ def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuni
 
         index = 0
         #in each dimension see the possible values
-        for key, values in tune_params.items():
+        for values in tune_params.values():
 
             #for each value in this dimension
-            for v in values:
-                pos[index] = v
+            for value in values:
+                pos[index] = value
 
                 #check restrictions
                 if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
@@ -115,6 +115,3 @@ def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuni
 
         #append current_results to all_results
         all_results += current_results
-
-
-
