@@ -1,4 +1,4 @@
-
+""" Module for functions related to hyperparameter optimizaiton """
 
 def tune_hyper_params(strategy, hyper_params, *args, **kwargs):
     """ Tune hyperparameters for a given strategy and kernel
