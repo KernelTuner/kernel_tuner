@@ -235,6 +235,7 @@ class SimulationRunner(object):
 
             # if the element is not in the cache, raise an error
             logging.debug('parameter element not in cache')
+            print(element)
             raise ValueError("Parameter element not in cache - in simulation mode, all parameter elements must be present in the cache")
 
         return results, self.dev.get_environment()

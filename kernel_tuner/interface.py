@@ -40,7 +40,7 @@ import kernel_tuner.core as core
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt, bayes_opt_old
 
 strategy_map = {
     "brute_force": brute_force,
@@ -52,7 +52,8 @@ strategy_map = {
     "pso": pso,
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt
+    "bayes_opt": bayes_opt,
+    "bayes_opt_old": bayes_opt_old,
 }
 
 
@@ -404,6 +405,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
+    tuning_options["snap"] = True
 
     logging.debug('tune_kernel called')
     logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
