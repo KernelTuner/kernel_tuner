@@ -1,7 +1,7 @@
 """ A simple genetic algorithm for parameter search """
-from __future__ import print_function
 
 import random
+from collections import OrderedDict
 import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
@@ -41,6 +41,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     max_fevals = options.get("max_fevals", 100)
 
+    max_threads = runner.dev.max_threads
+
     tuning_options["scaling"] = False
     tune_params = tuning_options.tune_params
 
@@ -48,53 +50,57 @@ def tune(runner, kernel_options, device_options, tuning_options):
     all_results = []
     unique_results = {}
 
-    population = random_population(pop_size, tune_params, tuning_options.restrictions)
+    population = random_population(pop_size, tune_params, tuning_options, max_threads)
 
     for generation in range(generations):
-
-        if tuning_options.verbose:
-            print("Generation %d, best_time %f" % (generation, best_time))
-            for dna in population:
-                print(dna)
-            diversity = len(population)
-            for dna1 in population:
-                for dna2 in population:
-                    if dna1 == dna2:
-                        diversity = diversity - 1
-            print(f"diversity {diversity}")
 
         # determine fitness of population members
         weighted_population = []
         for dna in population:
             time = _cost_func(dna, kernel_options, tuning_options, runner, all_results)
             weighted_population.append((dna, time))
-        population = []
+
+        # population is sorted such that better configs have higher chance of reproducing
+        weighted_population.sort(key=lambda x: x[1])
 
         # 'best_time' is used only for printing
         if tuning_options.verbose and all_results:
             best_time = min(all_results, key=lambda x: x["time"])["time"]
 
+        if tuning_options.verbose:
+            print("Generation %d, best_time %f" % (generation, best_time))
+            for dna in weighted_population:
+                print(dna)
+            diversity = len(population)
+            for dna1 in population:
+                for dna2 in population:
+                    if dna1 == dna2:
+                        diversity = diversity - 1
+            print(f"{diversity=}")
+
+        old_population = population[:]
+        population = []
+
         unique_results.update({",".join([str(i) for i in dna]): time for dna, time in weighted_population})
-        if len(unique_results) > max_fevals:
+        if len(unique_results) >= max_fevals:
             break
 
-        # population is sorted such that better configs have higher chance of reproducing
-        weighted_population.sort(key=lambda x: x[1])
-
         # crossover and mutate
-        #set1 = weighted_choice(weighted_population, pop_size//2)
-        #set2 = weighted_choice(weighted_population, pop_size//2)
-        #for dna1, dna2 in zip(set1, set2):
-        for _ in range(pop_size//2):
+        while len(population) < pop_size:
             dna1, dna2 = weighted_choice(weighted_population, 2)
 
             children = crossover(dna1, dna2)
 
             for child in children:
-                child = mutate(child, tune_params, mutation_chance, tuning_options.restrictions)
-                #if child in population:
-                #    child = mutate(child, tune_params, 1.0, tuning_options.restrictions)
-                population.append(child)
+                child = mutate(child, tune_params, mutation_chance, tuning_options, max_threads)
+
+                if child not in population and config_valid(child, tuning_options, max_threads):
+                    population.append(child)
+
+                if len(population) >= pop_size:
+                    break
+
+        # could combine old + new generation here and do a selection
 
 
     return all_results, runner.dev.get_environment()
@@ -132,17 +138,14 @@ def weighted_choice(population, n):
     return [population[ind][0] for ind in chosen]
 
 
-def random_population(pop_size, tune_params, restrictions):
+def random_population(pop_size, tune_params, tuning_options, max_threads):
     """create a random population of pop_size unique members"""
     population = []
     option_space = np.prod([len(v) for v in tune_params.values()])
     assert pop_size < option_space
     while len(population) < pop_size:
         dna = [random.choice(v) for v in tune_params.values()]
-        legal = True
-        if restrictions:
-            legal = util.check_restrictions(restrictions, dna, tune_params.keys(), False)
-        if not dna in population and legal:
+        if not dna in population and config_valid(dna, tuning_options, max_threads):
             population.append(dna)
     return population
 
@@ -153,7 +156,7 @@ def random_val(index, tune_params):
     return random.choice(tune_params[key])
 
 
-def mutate(dna, tune_params, mutation_chance, restrictions):
+def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
     """Mutate DNA with 1/mutation_chance chance"""
     dna_out = dna[:]
     if int(random.random() * mutation_chance) == 0:
@@ -164,10 +167,7 @@ def mutate(dna, tune_params, mutation_chance, restrictions):
             dna_out = dna[:]
             dna_out[i] = random_val(i, tune_params)
 
-            legal = True
-            if restrictions:
-                legal = util.check_restrictions(restrictions, dna_out, tune_params.keys(), False)
-            if not dna_out == dna and legal:
+            if not dna_out == dna and config_valid(dna_out, tuning_options, max_threads):
                 return dna_out
             attempts = attempts - 1
     return dna
@@ -175,13 +175,14 @@ def mutate(dna, tune_params, mutation_chance, restrictions):
 
 def single_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at a random index"""
-    pos = int(random.random() * len(dna1))
+    #pos = 1+int(random.random() * (len(dna1)-2))
+    pos = int(random.random() * (len(dna1)))
     return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
 
 
 def two_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at 2 random indices"""
-    pos1, pos2 = sorted(random.sample(range(len(dna1)), 2))
+    pos1, pos2 = sorted(random.sample(range(1,len(dna1)-1), 2))
     child1 = dna1[:pos1] + dna2[pos1:pos2] + dna1[pos2:]
     child2 = dna2[:pos1] + dna1[pos1:pos2] + dna2[pos2:]
     return (child1, child2)
@@ -224,4 +225,14 @@ supported_methods = {
     "uniform": uniform_crossover,
     "disruptive_uniform": disruptive_uniform_crossover
 }
+
+
+def config_valid(config, tuning_options, max_threads):
+    legal = True
+    if tuning_options.restrictions:
+        legal = util.check_restrictions(tuning_options.restrictions, config, tuning_options.tune_params.keys(), False)
+    params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
+    dims = util.get_thread_block_dimensions(params, tuning_options.get("block_size_names", None))
+    return legal and np.prod(dims) <= max_threads
+
 

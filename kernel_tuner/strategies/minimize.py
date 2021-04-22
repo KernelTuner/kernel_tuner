@@ -132,6 +132,7 @@ def get_bounds_x0_eps(tuning_options):
     logging.debug('x0 ' + str(x0))
     logging.debug('eps ' + str(eps))
 
+    print(f"{bounds=}, {x0=}, {eps=}")
     return bounds, x0, eps
 
 

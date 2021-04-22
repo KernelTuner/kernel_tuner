@@ -3,6 +3,7 @@ import random
 
 from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
+from kernel_tuner.strategies.genetic_algorithm import config_valid
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -37,6 +38,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     options = tuning_options.strategy_options
     max_fevals = options.get("max_fevals", 100)
     fevals = 0
+    max_threads = runner.dev.max_threads
 
     all_results = []
     unique_results = {}
@@ -48,7 +50,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
         pos = [random.choice(v) for v in tune_params.values()]
 
         #if we have restrictions and config fails restrictions, try again
-        if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
+        #if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
+        if not config_valid(pos, tuning_options, max_threads):
             continue
 
         hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
@@ -62,6 +65,7 @@ def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuni
     tune_params = tuning_options.tune_params
     restrictions = tuning_options.restrictions
     fevals = len(unique_results)
+    max_threads = runner.dev.max_threads
 
     #measure start point time
     time = _cost_func(pos, kernel_options, tuning_options, runner, all_results)
@@ -88,7 +92,9 @@ def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuni
                 pos[index] = value
 
                 #check restrictions
-                if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
+                #if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
+                #    continue
+                if not config_valid(pos, tuning_options, max_threads):
                     continue
 
                 #get time for this position
