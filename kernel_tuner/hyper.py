@@ -1,4 +1,10 @@
-""" Module for functions related to hyperparameter optimizaiton """
+""" Module for functions related to hyperparameter optimization """
+
+import itertools
+import numpy as np
+import kernel_tuner
+
+from kernel_tuner.util import get_config_string
 
 def tune_hyper_params(strategy, hyper_params, *args, **kwargs):
     """ Tune hyperparameters for a given strategy and kernel
@@ -63,11 +69,11 @@ def tune_hyper_params(strategy, hyper_params, *args, **kwargs):
             fevals.append(len(unique_fevals))
             p_of_opt.append(optimum / min(results, key=lambda p:p["time"])["time"] * 100)
 
-        strategy_options["fevals"] = numpy.average(fevals)
-        strategy_options["fevals_std"] = numpy.std(fevals)
+        strategy_options["fevals"] = np.average(fevals)
+        strategy_options["fevals_std"] = np.std(fevals)
 
-        strategy_options["p_of_opt"] = numpy.average(p_of_opt)
-        strategy_options["p_of_opt_std"] = numpy.std(p_of_opt)
+        strategy_options["p_of_opt"] = np.average(p_of_opt)
+        strategy_options["p_of_opt_std"] = np.std(p_of_opt)
 
         print(get_config_string(strategy_options))
         all_results.append(strategy_options)
