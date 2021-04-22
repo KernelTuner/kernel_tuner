@@ -94,7 +94,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
             for child in children:
                 child = mutate(child, tune_params, mutation_chance, tuning_options, max_threads)
 
-                if child not in population and config_valid(child, tuning_options, max_threads):
+                if child not in population and util.config_valid(child, tuning_options, max_threads):
                     population.append(child)
 
                 if len(population) >= pop_size:
@@ -145,7 +145,7 @@ def random_population(pop_size, tune_params, tuning_options, max_threads):
     assert pop_size < option_space
     while len(population) < pop_size:
         dna = [random.choice(v) for v in tune_params.values()]
-        if not dna in population and config_valid(dna, tuning_options, max_threads):
+        if not dna in population and util.config_valid(dna, tuning_options, max_threads):
             population.append(dna)
     return population
 
@@ -167,7 +167,7 @@ def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
             dna_out = dna[:]
             dna_out[i] = random_val(i, tune_params)
 
-            if not dna_out == dna and config_valid(dna_out, tuning_options, max_threads):
+            if not dna_out == dna and util.config_valid(dna_out, tuning_options, max_threads):
                 return dna_out
             attempts = attempts - 1
     return dna
@@ -225,14 +225,3 @@ supported_methods = {
     "uniform": uniform_crossover,
     "disruptive_uniform": disruptive_uniform_crossover
 }
-
-
-def config_valid(config, tuning_options, max_threads):
-    legal = True
-    if tuning_options.restrictions:
-        legal = util.check_restrictions(tuning_options.restrictions, config, tuning_options.tune_params.keys(), False)
-    params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
-    dims = util.get_thread_block_dimensions(params, tuning_options.get("block_size_names", None))
-    return legal and np.prod(dims) <= max_threads
-
-

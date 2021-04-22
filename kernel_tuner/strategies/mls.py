@@ -3,7 +3,6 @@ import random
 
 from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner.strategies.genetic_algorithm import config_valid
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -51,7 +50,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         #if we have restrictions and config fails restrictions, try again
         #if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
-        if not config_valid(pos, tuning_options, max_threads):
+        if not util.config_valid(pos, tuning_options, max_threads):
             continue
 
         hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
@@ -94,7 +93,7 @@ def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuni
                 #check restrictions
                 #if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
                 #    continue
-                if not config_valid(pos, tuning_options, max_threads):
+                if not util.config_valid(pos, tuning_options, max_threads):
                     continue
 
                 #get time for this position
