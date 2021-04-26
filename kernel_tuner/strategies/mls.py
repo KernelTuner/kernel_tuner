@@ -4,6 +4,7 @@ import random
 from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
 
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -104,7 +105,8 @@ def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuni
                     #greedely replace start_pos with pos to continue from this point
                     start_pos = pos[:]
 
-                unique_results.update({",".join([str(v) for k,v in record.items() if k in tune_params]):record["time"] for record in current_results})
+                unique_results.update({",".join([str(v) for k, v in record.items() if k in tune_params]): record["time"]
+                                       for record in current_results})
                 fevals = len(unique_results)
                 if fevals >= max_fevals:
                     all_results += current_results

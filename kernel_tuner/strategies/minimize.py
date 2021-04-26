@@ -134,7 +134,6 @@ def get_bounds_x0_eps(tuning_options):
     logging.debug('x0 ' + str(x0))
     logging.debug('eps ' + str(eps))
 
-    print(f"{bounds=}, {x0=}, {eps=}")
     return bounds, x0, eps
 
 
@@ -190,7 +189,7 @@ def snap_to_nearest_config(x, tune_params, resolution=1):
     for i, k in enumerate(tune_params.keys()):
         values = numpy.array(tune_params[k])
         idx = numpy.abs(values - x[i]).argmin()
-        params.append(int(values[idx]))
+        params.append(values[idx])
     return params
 
 

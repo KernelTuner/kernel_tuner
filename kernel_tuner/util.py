@@ -136,7 +136,7 @@ def config_valid(config, tuning_options, max_threads):
 
 
 def delete_temp_file(filename):
-    """ delete a temporary file, don't complain if is no longer exists """
+    """ delete a temporary file, don't complain if no longer exists """
     try:
         os.remove(filename)
     except OSError as e:

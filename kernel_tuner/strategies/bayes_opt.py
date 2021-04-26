@@ -56,26 +56,32 @@ def tune(runner, kernel_options, device_options, tuning_options):
     if not bayes_opt_present:
         raise ImportError("Error: optional dependencies for Bayesian Optimization not installed")
 
-    def normalize_tune_params(tune_params: dict, params_min: list, params_max: list, param_bounds: list) -> dict:
-        normalize = lambda x, x_min, x_max: (x - x_min) / (x_max - x_min)
-        normalized = OrderedDict()
-        for i, key in enumerate(tune_params.keys()):
-            normalized[key] = list(param_bounds[i][1] * normalize(x, params_min[i], params_max[i]) for x in tune_params[key])
-        return normalized
+    def generate_normalized_param_dicts(tune_params: dict, eps: float) -> dict:
+        """ Generates normalization and denormalization dictionaries """
+        original_to_normalized = dict()
+        normalized_to_original = dict()
+        for param_name in tune_params.keys():
+            original_to_normalized_dict = dict()
+            normalized_to_original_dict = dict()
+            for value_index, value in enumerate(tune_params[param_name]):
+                normalized_value = eps * value_index + 0.5 * eps
+                normalized_to_original_dict[normalized_value] = value
+                original_to_normalized_dict[value] = normalized_value
+            original_to_normalized[param_name] = original_to_normalized_dict
+            normalized_to_original[param_name] = normalized_to_original_dict
+        return original_to_normalized, normalized_to_original
 
-    def normalize_parameter_space(param_space: list, params_min: list, params_max: list, param_bounds: list) -> list:
-        normalize = lambda x, x_min, x_max: (x - x_min) / (x_max - x_min)
-        denormalize = lambda x, x_min, x_max: x_min + x * (x_max - x_min)
-        # TODO not sure if param_bounds[i][1] * is appropriate? Probably is
-        param_space_normalized = list(
-            tuple(param_bounds[i][1] * normalize(v, params_min[i], params_max[i]) for i, v in enumerate(params)) for params in param_space)
+    def normalize_parameter_space(param_space: list, tune_params: dict, normalized: dict) -> list:
+        keys = list(tune_params.keys())
+        param_space_normalized = list(tuple(normalized[keys[i]][v] for i, v in enumerate(params)) for params in param_space)
         return param_space_normalized
 
     # get strategy options or defaults
     acq = tuning_options.strategy_options.get("method", "ei")
     acq_num = tuning_options.strategy_options.get("numacquisition", 1)
     init_points = tuning_options.strategy_options.get("popsize", 20)
-    n_iter = tuning_options.strategy_options.get("maxiter", 100)
+    max_iter = tuning_options.strategy_options.get("maxiter", 100)
+    max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     sampling_method = tuning_options.strategy_options.get("samplingmethod", "lhs")
     sampling_crit = tuning_options.strategy_options.get("samplingcriterion", None)
     sampling_iter = tuning_options.strategy_options.get("samplingiterations", 1000)
@@ -83,16 +89,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
     tuning_options["scaling"] = True
-    params_min = list(min(param) for param in tune_params.values())
-    params_max = list(max(param) for param in tune_params.values())
-    bounds, _, _ = minimize.get_bounds_x0_eps(tuning_options)
-    # # normalize tunable parameters to [0,1]
-    # tune_params_normalized = normalize_tune_params(tune_params, params_min, params_max, bounds)
-
-    # tuning_options["eps"] = 1 / max(len(x) for x in tune_params.values())
-    # print("EPS: " + str(tuning_options["eps"]))
-    # tuning_options["eps"] = 1e-5
-    # tuning_options["snap"] = False
+    _, _, eps = minimize.get_bounds_x0_eps(tuning_options)
 
     # compute cartesian product of all tunable parameters
     parameter_space = itertools.product(*tune_params.values())
@@ -101,50 +98,38 @@ def tune(runner, kernel_options, device_options, tuning_options):
         parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
     parameter_space = list(parameter_space)
     # normalize search space to [0,1]
-    parameter_space = normalize_parameter_space(parameter_space, params_min, params_max, bounds)
+    normalize_dict, denormalize_dict = generate_normalized_param_dicts(tune_params, eps)
+    parameter_space = normalize_parameter_space(parameter_space, tune_params, normalize_dict)
 
-    # # # print parameter space gaps
-    # results = []
-    # observations = []
-    # for param in parameter_space:
-    #     obs = minimize._cost_func(param, kernel_options, tuning_options, runner, results)
-    #     # string = "o" if obs != 1e20 else " "
-    #     # print(string, end='')
-    #     if obs != 1e20:
-    #         observations.append(obs)
-    # observations = np.array(observations)
-    # # print("Search space observations: minimum {}, mean {}, std {}, size {}, valid {} ({}%)".format(round(min(observations), 3), round(np.mean(observations), 3),
-    # #                                                                                                round(np.std(observations), 3), len(parameter_space),
-    # #                                                                                                len(observations),
-    # #                                                                                                round((len(observations) / len(parameter_space)) * 100, 1)))
-
-    # time_init = time.perf_counter()
-    bo = BayesianOptimization(parameter_space, tune_params, bounds, params_min, params_max, kernel_options, tuning_options, runner, init_points,
-                              acquisition_function=acq, acquisition_function_num=acq_num, sampling_method=sampling_method, sampling_crit=sampling_crit,
-                              sampling_iter=sampling_iter)
-    # time_opt = time.perf_counter()
-    results = bo.optimize(n_iter)
-    # time_end = time.perf_counter()
-    # print("Total: {} | Init: {} | Opt: {}".format(round(time_end - time_init, 3), round(time_opt - time_init, 3), round(time_end - time_opt, 3)))
+    # initialize
+    time_init = time.perf_counter()
+    bo = BayesianOptimization(parameter_space, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner, init_points, acquisition_function=acq,
+                              acquisition_function_num=acq_num, sampling_method=sampling_method, sampling_crit=sampling_crit, sampling_iter=sampling_iter)
+    # optimize
+    time_opt = time.perf_counter()
+    results = bo.optimize(max_iter, max_fevals)
+    time_end = time.perf_counter()
+    print("Total: {} | Init: {} | Opt: {}".format(round(time_end - time_init, 3), round(time_opt - time_init, 3), round(time_end - time_opt, 3)))
     return results, runner.dev.get_environment()
 
 
 class BayesianOptimization():
 
-    def __init__(self, searchspace: list, tune_params: dict, param_bounds: dict, params_min: list, params_max: list, kernel_options: dict, tuning_options: dict,
-                 runner, num_initial_samples: int, opt_direction='min', acquisition_function='ei', acquisition_function_num=1, acq_func_params=None,
+    def __init__(self, searchspace: list, kernel_options: dict, tuning_options: dict, normalize_dict: dict, denormalize_dict: dict, runner,
+                 num_initial_samples: int, opt_direction='min', acquisition_function='ei', acquisition_function_num=1, acq_func_params=None,
                  sampling_method='lhs', sampling_crit=None, sampling_iter=1000):
         # set arguments
-        self.tune_params = tune_params
-        self.param_bounds = param_bounds
-        self.params_min = params_min
-        self.params_max = params_max
         self.kernel_options = kernel_options
         self.tuning_options = tuning_options
+        self.tune_params = tuning_options.tune_params
+        self.param_names = list(self.tune_params.keys())
+        self.normalized_dict = normalize_dict
+        self.denormalized_dict = denormalize_dict
         self.sampling_method = sampling_method
         self.sampling_crit = sampling_crit
         self.sampling_iter = sampling_iter
         self.runner = runner
+        self.max_threads = runner.dev.max_threads
         self.num_initial_samples = num_initial_samples
 
         # set optimization constants
@@ -195,6 +180,8 @@ class BayesianOptimization():
         self.__visited_searchspace_indices = [False] * self.searchspace_size
         self.__observations = [np.NaN] * self.searchspace_size
         self.__valid_observation_indices = [False] * self.searchspace_size
+        self.__valid_params = list()
+        self.__valid_observations = list()
         self.unvisited_cache = self.unvisited()
         kernel = ConstantKernel(1.0, constant_value_bounds="fixed") * RBF(1.0, length_scale_bounds="fixed")
         self.__model = GaussianProcessRegressor(kernel=kernel)
@@ -230,6 +217,7 @@ class BayesianOptimization():
 
     def get_current_optimum(self) -> (list, float):
         """ Return the current optimum parameter configuration and its value """
+        # TODO deprecated, no longer valid
         params, observations = self.valid_params_observations()
         if len(params) == 0:
             raise ValueError("No valid observation found, so no optimum either")
@@ -238,10 +226,15 @@ class BayesianOptimization():
 
     def valid_params_observations(self) -> (list, list):
         """ Returns a list of valid observations and their parameter configurations """
-        # TODO optimize this?
-        # validity_mask = list(index for index, valid in enumerate(self.__valid_observation_indices) if valid is True)
-        params = list(self.searchspace[index] for index, valid in enumerate(self.__valid_observation_indices) if valid is True)
-        observations = list(self.observations[index] for index, valid in enumerate(self.__valid_observation_indices) if valid is True)
+        # if you do this every iteration, better keep it as cache and update in update_after_evaluation
+        params = list()
+        observations = list()
+        for index, valid in enumerate(self.__valid_observation_indices):
+            if valid is True:
+                params.append(self.searchspace[index])
+                observations.append(self.observations[index])
+        # params = list(self.searchspace[index] for index, valid in enumerate(self.__valid_observation_indices) if valid is True)
+        # observations = list(self.observations[index] for index, valid in enumerate(self.__valid_observation_indices) if valid is True)
         return params, observations
 
     def unvisited(self) -> list:
@@ -259,18 +252,27 @@ class BayesianOptimization():
 
     def normalize_param_config(self, param_config: tuple) -> tuple:
         """ Normalizes a parameter configuration """
-        normalize = lambda x, x_min, x_max: (x - x_min) / (x_max - x_min)
-        return tuple(self.param_bounds[i][1] * normalize(x, self.params_min[i], self.params_max[i]) for i, x in enumerate(param_config))
+        normalized = tuple(self.normalized_dict[self.param_names[index]][param_value] for index, param_value in enumerate(param_config))
+        return normalized
+
+    def denormalize_param_config(self, param_config: tuple) -> tuple:
+        """ Denormalizes a parameter configuration """
+        denormalized = tuple(self.denormalized_dict[self.param_names[index]][param_value] for index, param_value in enumerate(param_config))
+        return denormalized
 
     def update_after_evaluation(self, observation: float, index: int, param_config: tuple):
         """ Adjust the visited and valid index records accordingly """
+        validity = self.is_valid(observation)
         self.__visited_num += 1
         self.__observations[index] = observation
         self.__visited_searchspace_indices[index] = True
         del self.unvisited_cache[self.find_param_config_unvisited_index(param_config)]
-        self.__valid_observation_indices[index] = self.is_valid(observation)
-        if self.is_valid(observation) and self.is_better_than(observation, self.current_optimum):
-            self.current_optimum = observation
+        self.__valid_observation_indices[index] = validity
+        if validity is True:
+            self.__valid_params.append(param_config)
+            self.__valid_observations.append(observation)
+            if self.is_better_than(observation, self.current_optimum):
+                self.current_optimum = observation
 
     def predict(self, x) -> (float, float):
         """ Returns a mean and standard deviation predicted by the surrogate model for the parameter configuration """
@@ -285,15 +287,14 @@ class BayesianOptimization():
 
     def fit_observations_to_model(self):
         """ Update the model based on the current list of observations """
-        params, observations = self.valid_params_observations()
-        # TODO perhaps only fit on current observation?
-        self.__model.fit(params, observations)
+        self.__model.fit(self.__valid_params, self.__valid_observations)
         # TODO this seems only marginally faster: self.predictions_cache = self.predict_list(self.unvisited_cache)
 
     def evaluate_objective_function(self, param_config: tuple) -> float:
         """ Evaluates the objective function """
-        args = param_config
-        return minimize._cost_func(args, self.kernel_options, self.tuning_options, self.runner, self.results)
+        if not util.config_valid(self.denormalize_param_config(param_config), self.tuning_options, self.max_threads):
+            return self.invalid_value
+        return minimize._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)
 
     def dimensions(self) -> list:
         """ List of parameter values per parameter """
@@ -355,7 +356,7 @@ class BayesianOptimization():
                 collected_samples += 1
         self.fit_observations_to_model()
 
-    def get_candidate(self) -> list:
+    def get_candidates(self) -> list:
         """ Get the next candidate observation """
         if self.__visited_num >= self.searchspace_size:
             raise ValueError("The search space has been fully observed")
@@ -364,7 +365,7 @@ class BayesianOptimization():
     def do_next(self):
         """ Find the next best candidate configuration(s), evaluate those and update the model accordingly """
         # time_af = time.perf_counter()
-        list_of_acquisition_values = self.get_candidate()
+        list_of_acquisition_values = self.get_candidates()
         # afterwards select the best AF value
         # time_select = time.perf_counter()
         if self.af_num == 1:
@@ -391,17 +392,11 @@ class BayesianOptimization():
         #     round(time_end - time_fit, 3),
         # ))
 
-    def optimize(self, max_evaluations=round(1e6)):
-        total_max_eval = max_evaluations + self.__visited_num
-        while self.__visited_num < total_max_eval:
+    def optimize(self, max_iterations, max_function_evaluations):
+        iterations = 0
+        while iterations < max_iterations and self.__visited_num < max_function_evaluations:
             self.do_next()
-            # _, obs_values = self.valid_params_observations()
-            # mean = round(np.mean(obs_values), 3)
-            # std = round(np.std(obs_values), 3)
-            # optimum_params, optimum_value = self.get_current_optimum()
-            # print(
-            #     "Optimum {}, parameter configuration: {} | mean {}, std {} | results size {} after {} iterations".format(
-            #         round(optimum_value, 3), optimum_params, mean, std, len(self.results), itr + 1), flush=True)
+            iterations += 1
         return self.results
 
     def af_random(self) -> list:
