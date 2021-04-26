@@ -12,7 +12,7 @@ try:
     from sklearn.gaussian_process.kernels import ConstantKernel, RBF
     from skopt.sampler import Lhs
     from copy import deepcopy
-    from random import randint, seed
+    from random import randint, seed, shuffle
     from random import uniform as randuni
     import itertools
     import warnings
@@ -73,6 +73,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # get strategy options or defaults
     acq = tuning_options.strategy_options.get("method", "ei")
+    acq_num = tuning_options.strategy_options.get("numacquisition", 1)
     init_points = tuning_options.strategy_options.get("popsize", 20)
     n_iter = tuning_options.strategy_options.get("maxiter", 100)
     sampling_method = tuning_options.strategy_options.get("samplingmethod", "lhs")
@@ -117,12 +118,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # #                                                                                                len(observations),
     # #                                                                                                round((len(observations) / len(parameter_space)) * 100, 1)))
 
-    time_init = time.perf_counter()
+    # time_init = time.perf_counter()
     bo = BayesianOptimization(parameter_space, tune_params, bounds, params_min, params_max, kernel_options, tuning_options, runner, init_points,
-                              acquisition_function=acq, sampling_method=sampling_method, sampling_crit=sampling_crit, sampling_iter=sampling_iter)
-    time_opt = time.perf_counter()
+                              acquisition_function=acq, acquisition_function_num=acq_num, sampling_method=sampling_method, sampling_crit=sampling_crit,
+                              sampling_iter=sampling_iter)
+    # time_opt = time.perf_counter()
     results = bo.optimize(n_iter)
-    time_end = time.perf_counter()
+    # time_end = time.perf_counter()
     # print("Total: {} | Init: {} | Opt: {}".format(round(time_end - time_init, 3), round(time_opt - time_init, 3), round(time_end - time_opt, 3)))
     return results, runner.dev.get_environment()
 
@@ -130,8 +132,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
 class BayesianOptimization():
 
     def __init__(self, searchspace: list, tune_params: dict, param_bounds: dict, params_min: list, params_max: list, kernel_options: dict, tuning_options: dict,
-                 runner, num_initial_samples: int, opt_direction='min', acquisition_function='ei', acq_func_params=None, sampling_method='lhs',
-                 sampling_crit=None, sampling_iter=1000):
+                 runner, num_initial_samples: int, opt_direction='min', acquisition_function='ei', acquisition_function_num=1, acq_func_params=None,
+                 sampling_method='lhs', sampling_crit=None, sampling_iter=1000):
+        # set arguments
         self.tune_params = tune_params
         self.param_bounds = param_bounds
         self.params_min = params_min
@@ -142,7 +145,6 @@ class BayesianOptimization():
         self.sampling_crit = sampling_crit
         self.sampling_iter = sampling_iter
         self.runner = runner
-        self.results = []
         self.num_initial_samples = num_initial_samples
 
         # set optimization constants
@@ -151,13 +153,19 @@ class BayesianOptimization():
         if opt_direction == 'min':
             self.worst_value = np.PINF
             self.argopt = np.argmin
+            self.af_num_partition = acquisition_function_num
         elif opt_direction == 'max':
             self.worst_value = np.NINF
             self.argopt = np.argmax
+            self.af_num_partition = -1 * acquisition_function_num
         else:
             raise ValueError("Invalid optimization direction '{}'".format(opt_direction))
+        self.af_num_cutoff = slice(self.af_num_partition)
 
         # set acquisition function
+        if acquisition_function_num < 1:
+            raise ValueError("Invalid number of acquisition function top values")
+        self.af_num = acquisition_function_num
         self.af_params = acq_func_params
         self.predicted_unvisited = None
         self.cached_af_list = None
@@ -178,6 +186,8 @@ class BayesianOptimization():
         else:
             raise ValueError("Acquisition function must be one of {}, is {}".format(supported_methods, acquisition_function))
 
+        # set remaining values
+        self.results = []
         self.__searchspace = searchspace
         self.searchspace_size = len(self.searchspace)
         self.__current_optimum = self.worst_value
@@ -263,11 +273,11 @@ class BayesianOptimization():
             self.current_optimum = observation
 
     def predict(self, x) -> (float, float):
-        """ Returns a list of values predicted by the surrogate model for the parameter configuration """
+        """ Returns a mean and standard deviation predicted by the surrogate model for the parameter configuration """
         return self.__model.predict([x], return_std=True)
 
     def predict_list(self, lst: list) -> list:
-        """ Returns a list of values predicted by the surrogate model for the parameter configurations """
+        """ Returns a list of means and standard deviations predicted by the surrogate model for the parameter configurations """
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             mu, std = self.__model.predict(lst, return_std=True)
@@ -276,7 +286,9 @@ class BayesianOptimization():
     def fit_observations_to_model(self):
         """ Update the model based on the current list of observations """
         params, observations = self.valid_params_observations()
+        # TODO perhaps only fit on current observation?
         self.__model.fit(params, observations)
+        # TODO this seems only marginally faster: self.predictions_cache = self.predict_list(self.unvisited_cache)
 
     def evaluate_objective_function(self, param_config: tuple) -> float:
         """ Evaluates the objective function """
@@ -289,8 +301,10 @@ class BayesianOptimization():
 
     def draw_random_sample(self) -> (list, int):
         """ Draw a random sample from the unvisited parameter configurations """
-        params, index, _ = self.af_random()
-        return params, index
+        index = randint(0, len(self.unvisited_cache) - 1)
+        param_config = self.unvisited_cache[index]
+        actual_index = self.find_param_config_index(param_config)
+        return param_config, actual_index
 
     def draw_latin_hypercube_samples(self, num_samples: int) -> list:
         """ Draws an LHS-distributed sample from the search space """
@@ -341,27 +355,45 @@ class BayesianOptimization():
                 collected_samples += 1
         self.fit_observations_to_model()
 
-    def get_candidate(self):
+    def get_candidate(self) -> list:
         """ Get the next candidate observation """
         if self.__visited_num >= self.searchspace_size:
             raise ValueError("The search space has been fully observed")
         return self.__af()
 
     def do_next(self):
-        """ Find the next best candidate configuration, execute it and update the model accordingly """
-        candidate_params, candidate_index, list_of_acquisition_values = self.get_candidate()
-        # if len(list_of_acquisition_values) > 0: list_of_acquisition_values = np.concatenate(list_of_acquisition_values)
-        # est_mu, est_std = self.predict(candidate)
-        observation = self.evaluate_objective_function(candidate_params)
-        # print("{} Config {} resulted in {}".format(candidate_index, candidate_params, observation))
-        # print("{} estimate: {} ({} std), observed: {}".format(observation.get_as_list(), est_mu, est_std, observation.observation))
-        self.update_after_evaluation(observation, candidate_index, candidate_params)
+        """ Find the next best candidate configuration(s), evaluate those and update the model accordingly """
+        # time_af = time.perf_counter()
+        list_of_acquisition_values = self.get_candidate()
+        # afterwards select the best AF value
+        # time_select = time.perf_counter()
+        if self.af_num == 1:
+            highest_af = self.argopt(list_of_acquisition_values)
+            candidate_params = self.unvisited_cache[highest_af]
+            candidate_index = self.find_param_config_index(candidate_params)
+            observation = self.evaluate_objective_function(candidate_params)
+            self.update_after_evaluation(observation, candidate_index, candidate_params)
+        else:
+            # if we need N candidates per AF execution, we take the top N and evaluate those (if they are not too close to each other?)
+            top = np.argpartition(list_of_acquisition_values, self.af_num_partition)[self.af_num_cutoff]
+            for top_index in top:
+                candidate_params = self.unvisited_cache[top_index]
+                candidate_index = self.find_param_config_index(candidate_params)
+                observation = self.evaluate_objective_function(candidate_params)
+                self.update_after_evaluation(observation, candidate_index, candidate_params)
+        # time_fit = time.perf_counter()
         self.fit_observations_to_model()
-        return observation, candidate_index, list_of_acquisition_values
+        # time_end = time.perf_counter()
+        # print("Total {} s | AF {} | Select {} | Fit {}".format(
+        #     round(time_end - time_af, 3),
+        #     round(time_select - time_af, 3),
+        #     round(time_fit - time_select, 3),
+        #     round(time_end - time_fit, 3),
+        # ))
 
     def optimize(self, max_evaluations=round(1e6)):
-        # print("Searchspace size: {}, max. evaluations: {}".format(self.searchspace_size, max_evaluations))
-        for itr in range(max_evaluations):
+        total_max_eval = max_evaluations + self.__visited_num
+        while self.__visited_num < total_max_eval:
             self.do_next()
             # _, obs_values = self.valid_params_observations()
             # mean = round(np.mean(obs_values), 3)
@@ -372,14 +404,13 @@ class BayesianOptimization():
             #         round(optimum_value, 3), optimum_params, mean, std, len(self.results), itr + 1), flush=True)
         return self.results
 
-    def af_random(self) -> (list, int, list):
-        """ Acquisition function returning a random candidate for comparison """
-        index = randint(0, len(self.unvisited_cache) - 1)
-        param_config = self.unvisited_cache[index]
-        actual_index = self.find_param_config_index(param_config)
-        return param_config, actual_index, list()
+    def af_random(self) -> list:
+        """ Acquisition function returning a randomly shuffled list for comparison """
+        list_random = range(len(self.unvisited_cache))
+        shuffle(list_random)
+        return list_random
 
-    def af_probability_of_improvement(self) -> (list, int, list):
+    def af_probability_of_improvement(self) -> list:
         """ Acquisition function Probability of Improvement (PI) """
 
         # prefetch required data
@@ -392,25 +423,25 @@ class BayesianOptimization():
         # compute probability of improvement with CDF in bulk
         list_prob_improvement = norm.cdf(list_diff_improvement)
 
-        # afterwards select the best AF value and return it as candidate
-        highest_ei = self.argopt(list_prob_improvement)
-        param_config = self.unvisited_cache[highest_ei]
-        actual_index = self.find_param_config_index(param_config)
-        return param_config, actual_index, list_prob_improvement
+        return list_prob_improvement
 
-    def af_expected_improvement(self) -> (list, int, list):
+    def af_expected_improvement(self) -> list:
         """ Acquisition function Expected Improvement (EI) """
 
         # prefetch required data
+        # time_prefetch = time.perf_counter()
         predictions = self.predict_list(self.unvisited_cache)
         fplus = self.current_optimum + self.af_params['explorationfactor']
 
         # precompute difference of improvement, CDF and PDF in bulk
+        # time_precompute = time.perf_counter()
         list_diff_improvement = list((x_mu - fplus) / (x_std + 1E-9) for (x_mu, x_std) in predictions)
         list_cdf = norm.cdf(list_diff_improvement)
         list_pdf = norm.pdf(list_diff_improvement)
 
         # specify AF calculation
+        # time_calc = time.perf_counter()
+
         def exp_improvement(index) -> float:
             x_mu, x_std = predictions[index]
             return (x_mu - fplus) * list_cdf[index] + x_std * list_pdf[index]
@@ -418,8 +449,14 @@ class BayesianOptimization():
         # calculate AF
         list_exp_improvement = list(map(exp_improvement, range(len(predictions) - 1)))
 
-        # afterwards select the best AF value and return it as candidate
-        highest_ei = self.argopt(list_exp_improvement)
-        param_config = self.unvisited_cache[highest_ei]
-        actual_index = self.find_param_config_index(param_config)
-        return param_config, actual_index, list_exp_improvement
+        # time_end = time.perf_counter()
+        # print("Total {} s | prefetch {} | precompute {} | calc {}".format(
+        #     round(time_end - time_prefetch, 3),
+        #     round(time_precompute - time_prefetch, 3),
+        #     round(time_calc - time_precompute, 3),
+        #     round(time_end - time_calc, 3),
+        # ))
+        return list_exp_improvement
+
+    # def af_upper_confidence_bound(self) -> (list, int, list):
+    #     """ Acquisition function Upper Confidence Bound (UCB) """
