@@ -11,6 +11,10 @@ import warnings
 import re
 
 import numpy as np
+try:
+    import cupy as cp
+except ImportError:
+    cp = np
 
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
@@ -52,7 +56,7 @@ def check_argument_list(kernel_name, kernel_string, args):
         for (i, arg) in enumerate(args):
             kernel_argument = arguments[i]
 
-            if not isinstance(arg, (np.ndarray, np.generic)):
+            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray)):
                 raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type np.ndarray or numpy scalar")
 
             correct = True
@@ -119,6 +123,16 @@ def check_restrictions(restrictions, element, keys, verbose):
     if not valid and verbose:
         print("skipping config", get_instance_string(params), "reason: config fails restriction")
     return valid
+
+
+def config_valid(config, tuning_options, max_threads):
+    """ combines restrictions and a check on the max thread block dimension to check config validity """
+    legal = True
+    if tuning_options.restrictions:
+        legal = check_restrictions(tuning_options.restrictions, config, tuning_options.tune_params.keys(), False)
+    params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
+    dims = get_thread_block_dimensions(params, tuning_options.get("block_size_names", None))
+    return legal and np.prod(dims) <= max_threads
 
 
 def delete_temp_file(filename):
@@ -492,17 +506,20 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     the cache file is stored using JSON and uses the following format:
 
-    { device_name: "name of device"
-      kernel_name: "name of kernel"
-      tune_params_keys: list
-      tune_params:
-      cache: {
-      "x1,x2,..xN": {"block_size_x": x1, ..., time=0.234342},
-      "y1,y2,..yN": {"block_size_x": y1, ..., time=0.134233},
-      }
-    }
+    .. code-block:: python
 
-    The last two closing brackets "}\n}" are not required, and everything
+        { device_name: "name of device"
+          kernel_name: "name of kernel"
+          tune_params_keys: list
+          tune_params:
+          cache: {
+            "x1,x2,..xN": {"block_size_x": x1, ..., time=0.234342},
+            "y1,y2,..yN": {"block_size_x": y1, ..., time=0.134233},
+          }
+        }
+
+
+    The last two closing brackets are not required, and everything
     should work as expected if these are missing. This is to allow to continue
     from an earlier (abruptly ended) tuning session.
 

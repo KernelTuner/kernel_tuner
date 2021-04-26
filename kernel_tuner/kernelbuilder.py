@@ -30,7 +30,7 @@ class PythonKernel(object):
 
         """
         #construct device interface
-        kernel_source = core.KernelSource(kernel_string, lang)
+        kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
         self.dev = core.DeviceInterface(kernel_source, device=device, quiet=True)
         if not params:
             params = {}

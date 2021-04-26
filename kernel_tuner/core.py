@@ -1,11 +1,18 @@
 """ Module for grouping the core functionality needed by most runners """
 from __future__ import print_function
 
+import re
 from collections import namedtuple
 import resource
 import logging
-import numpy
+import numpy as np
 
+try:
+    import cupy as cp
+except ImportError:
+    cp = np
+
+from kernel_tuner.cupy import CupyFunctions
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
@@ -42,10 +49,11 @@ class KernelSource(object):
     must be filenames.
     """
 
-    def __init__(self, kernel_sources, lang):
+    def __init__(self, kernel_name, kernel_sources, lang):
         if not isinstance(kernel_sources, list):
             kernel_sources = [kernel_sources]
         self.kernel_sources = kernel_sources
+        self.kernel_name = kernel_name
         if lang is None:
             if callable(self.kernel_sources[0]):
                 raise TypeError("Please specify language when using a code generator function")
@@ -215,6 +223,8 @@ class DeviceInterface(object):
 
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
+        elif lang.upper() == "CUPY":
+            dev = CupyFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "C":
@@ -234,6 +244,7 @@ class DeviceInterface(object):
         self.dev = dev
         self.units = dev.units
         self.name = dev.name
+        self.max_threads = dev.max_threads
         if not quiet:
             print("Using: " + self.dev.name)
 
@@ -290,9 +301,8 @@ class DeviceInterface(object):
         #re-copy original contents of output arguments to GPU memory, to overwrite any changes
         #by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
-            if verify or answer[i] is not None:
-                if isinstance(arg, numpy.ndarray):
-                    self.dev.memcpy_htod(gpu_args[i], arg)
+            if verify or answer[i] is not None and isinstance(arg, (np.ndarray, cp.ndarray)):
+                self.dev.memcpy_htod(gpu_args[i], arg)
 
         #run the kernel
         check = self.run_kernel(func, gpu_args, instance)
@@ -302,8 +312,8 @@ class DeviceInterface(object):
         #retrieve gpu results to host memory
         result_host = []
         for i, arg in enumerate(instance.arguments):
-            if (verify or answer[i] is not None) and isinstance(arg, numpy.ndarray):
-                result_host.append(numpy.zeros_like(arg))
+            if (verify or answer[i] is not None) and isinstance(arg, (np.ndarray, cp.ndarray)):
+                result_host.append(np.zeros_like(arg))
                 self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
             else:
                 result_host.append(None)
@@ -415,7 +425,7 @@ class DeviceInterface(object):
 
         #setup thread block and grid dimensions
         threads, grid = util.setup_block_and_grid(kernel_options.problem_size, grid_div, params, kernel_options.block_size_names)
-        if numpy.prod(threads) > self.dev.max_threads:
+        if np.prod(threads) > self.dev.max_threads:
             if verbose:
                 print("skipping config", instance_string, "reason: too many threads per block")
             return None
@@ -423,6 +433,10 @@ class DeviceInterface(object):
         #obtain the kernel_string and prepare additional files, if any
         name, kernel_string, temp_files = kernel_source.prepare_list_of_files(kernel_options.kernel_name, params, grid, threads,
                                                                               kernel_options.block_size_names)
+
+        #check for templated kernel
+        if kernel_source.lang == "CUDA" and "<" in name and ">" in name:
+            kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         #collect everything we know about this instance and return it
         return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
@@ -462,7 +476,7 @@ class DeviceInterface(object):
 
 
 def _default_verify_function(instance, answer, result_host, atol, verbose):
-    """default verify function based on numpy.allclose"""
+    """default verify function based on np.allclose"""
 
     #first check if the length is the same
     if len(instance.arguments) != len(answer):
@@ -470,20 +484,20 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     #for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:    #skip None elements in the answer list
-            if isinstance(answer[i], numpy.ndarray) and isinstance(arg, numpy.ndarray):
+            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
                 if answer[i].dtype != arg.dtype:
                     raise TypeError("Element " + str(i) + " of the expected results list is not of the same dtype as the kernel output: " +
                                     str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
                 if answer[i].size != arg.size:
                     raise TypeError("Element " + str(i) + " of the expected results list has a size different from " + "the kernel argument: " +
                                     str(answer[i].size) + " != " + str(arg.size) + ".")
-            elif isinstance(answer[i], numpy.number) and isinstance(arg, numpy.number):
+            elif isinstance(answer[i], np.number) and isinstance(arg, np.number):
                 if answer[i].dtype != arg.dtype:
                     raise TypeError("Element " + str(i) + " of the expected results list is not the same as the kernel output: " + str(answer[i].dtype) +
                                     " != " + str(arg.dtype) + ".")
             else:
                 #either answer[i] and argument have different types or answer[i] is not a numpy type
-                if not isinstance(answer[i], numpy.ndarray) or not isinstance(answer[i], numpy.number):
+                if not isinstance(answer[i], np.ndarray) or not isinstance(answer[i], np.number):
                     raise TypeError("Element " + str(i) + " of expected results list is not a numpy array or numpy scalar.")
                 else:
                     raise TypeError("Element " + str(i) + " of expected results list and kernel arguments have different types.")
@@ -505,13 +519,16 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
 
             result = _ravel(result_host[i])
             expected = _flatten(expected)
-            output_test = numpy.allclose(expected, result, atol=atol)
+            if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
+                output_test = cp.allclose(expected, result, atol=atol)
+            else:
+                output_test = np.allclose(expected, result, atol=atol)
 
             if not output_test and verbose:
                 print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
                 print("this error occured when checking value of the %oth kernel argument" % (i, ))
                 print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
-                numpy.set_printoptions(edgeitems=50)
+                np.set_printoptions(edgeitems=50)
                 print("Kernel output:")
                 print(result)
                 print("Expected:")
@@ -522,3 +539,85 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         logging.debug('correctness check has found a correctness issue')
 
     return correct
+
+
+
+#these functions facilitate compiling templated kernels with PyCuda
+def split_argument_list(argument_list):
+    """split all arguments in a list into types and names"""
+    regex = r"(.*[\s*]+)(.*)?"
+    type_list = []
+    name_list = []
+    for arg in argument_list:
+        match = re.match(regex, arg, re.S)
+        if not match:
+            raise ValueError("error parsing templated kernel argument list")
+        type_list.append(re.sub(r"\s+", " ", match.group(1).strip(), re.S))
+        name_list.append(match.group(2).strip())
+    return type_list, name_list
+
+def apply_template_typenames(type_list, templated_typenames):
+    """replace the typename tokens in type_list with their templated typenames"""
+    def replace_typename_token(matchobj):
+        """function for a whitespace preserving token regex replace"""
+        #replace only the match, leaving the whitespace around it as is
+        return matchobj.group(1) + templated_typenames[matchobj.group(2)] + matchobj.group(3)
+    for i, arg_type in enumerate(type_list):
+        for k,v in templated_typenames.items():
+            #if the templated typename occurs as a token in the string, meaning that it is enclosed in
+            #beginning of string or whitespace, and end of string, whitespace or star
+            regex = r"(^|\s+)(" + k + r")($|\s+|\*)"
+            sub = re.sub(regex, replace_typename_token, arg_type, re.S)
+            type_list[i] = sub
+
+def get_templated_typenames(template_parameters, template_arguments):
+    """based on the template parameters and arguments, create dict with templated typenames"""
+    templated_typenames = {}
+    for i, param in enumerate(template_parameters):
+        if "typename " in param:
+            typename = param[9:]
+            templated_typenames[typename] = template_arguments[i]
+    return templated_typenames
+
+def wrap_templated_kernel(kernel_string, kernel_name):
+    """rewrite kernel_string to insert wrapper function for templated kernel"""
+    #parse kernel_name to find template_arguments and real kernel name
+    name = kernel_name.split("<")[0]
+    template_arguments = re.search(r".*?<(.*)>", kernel_name, re.S).group(1).split(',')
+
+    #parse templated kernel definition
+    #relatively strict regex that does not allow nested template parameters like vector<TF>
+    #within the template parameter list
+    regex = r"template\s*<([^>]*?)>\s*__global__\s+void\s+" + name + r"\s*\((.*?)\)\s*\{"
+    match = re.search(regex, kernel_string, re.S)
+    if not match:
+        raise ValueError("could not find templated kernel definition")
+
+    template_parameters = match.group(1).split(',')
+    argument_list = match.group(2).split(',')
+    argument_list = [s.strip() for s in argument_list] #remove extra whitespace around 'type name' strings
+
+    type_list, name_list = split_argument_list(argument_list)
+
+    templated_typenames = get_templated_typenames(template_parameters, template_arguments)
+    apply_template_typenames(type_list, templated_typenames)
+
+    #replace __global__ with __device__ in the templated kernel definition
+    #could do a more precise replace, but __global__ cannot be used elsewhere in the definition
+    definition = match.group(0).replace("__global__", "__device__")
+
+    #generate code for the compile-time template instantiation
+    template_instantiation = f"template __device__ void {kernel_name}(" + ", ".join(type_list) + ");\n"
+
+    #generate code for the wrapper kernel
+    new_arg_list = ", ".join([" ".join((a, b)) for a, b in zip(type_list, name_list)])
+    wrapper_function = "\nextern \"C\" __global__ void " + name + "_wrapper(" + new_arg_list + ") {\n  " + \
+       kernel_name + "(" + ", ".join(name_list) + ");\n}\n"
+
+    #copy kernel_string, replace definition and append template instantiation and wrapper function
+    new_kernel_string = kernel_string[:]
+    new_kernel_string = new_kernel_string.replace(match.group(0), definition)
+    new_kernel_string += "\n" + template_instantiation
+    new_kernel_string += wrapper_function
+
+    return new_kernel_string, name + "_wrapper"

@@ -41,8 +41,9 @@ def test_compile():
     }
     """
 
-    kernel_sources = KernelSource(kernel_string, "cuda")
-    kernel_instance = KernelInstance("vector_add", kernel_sources, kernel_string, [], None, None, dict(), [])
+    kernel_name = "vector_add"
+    kernel_sources = KernelSource(kernel_name, kernel_string, "cuda")
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
     with cuda.CudaFunctions(0) as dev:
         try:
             dev.compile(kernel_instance)

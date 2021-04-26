@@ -35,10 +35,11 @@ def env():
     args = get_vector_add_args()
     params = {"block_size_x": 128}
 
+    kernel_name = "vector_add"
     lang = "CUDA"
-    kernel_source = core.KernelSource(kernel_string, lang)
+    kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
     verbose = True
-    kernel_options = Options(kernel_name="vector_add", kernel_string=kernel_string, problem_size=args[-1],
+    kernel_options = Options(kernel_name=kernel_name, kernel_string=kernel_string, problem_size=args[-1],
                              arguments=args, lang=lang, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                              cmem_args=None, texmem_args=None, block_size_names=None)
     device_options = Options(device=0, platform=0, quiet=False, compiler=None, compiler_options=None)
@@ -93,7 +94,7 @@ def test_default_verify_function(env):
 def test_check_kernel_output(dev_func_interface):
     dev_func_interface.configure_mock(**mock_config)
 
-    dev = core.DeviceInterface(core.KernelSource("", lang="CUDA"))
+    dev = core.DeviceInterface(core.KernelSource("name", "", lang="CUDA"))
     dfi = dev.dev
 
     answer = [np.zeros(4).astype(np.float32)]
@@ -173,3 +174,46 @@ def test_default_verify_function_scalar():
             assert True
 
     assert core._default_verify_function(instance, answer, result_host, 0.1, False)
+
+
+def test_split_argument_list():
+    test_string = "T *c, const T *__restrict__ a, T\n *\n b\n , int n"
+    ans1, ans2 = core.split_argument_list([s.strip() for s in test_string.split(',')])
+    assert ans1 == ["T *", "const T *__restrict__", "T *", "int"]
+    assert ans2 == ["c", "a", "b", "n"]
+
+def test_apply_template_typenames():
+    type_list = ["T *", "CONST __restrict__", "double"]
+    templated_typenames = {"T": "test"}
+    core.apply_template_typenames(type_list, templated_typenames)
+    assert type_list == ["test *", "CONST __restrict__", "double"]
+
+def test_get_templated_typenames():
+    template_arguments = ["double", "32"]
+    template_parameters = ["typename TF", "test1", "test2"]
+
+    ans = core.get_templated_typenames(template_parameters, template_arguments)
+
+    assert len(ans) == 1
+    assert ans["TF"] == "double"
+
+def test_wrap_templated_kernel():
+    kernel_string = """
+template<typename TF> __global__ void vector_add(TF *c, const TF *__restrict__ a, TF * b , int n) {
+    auto i = blockIdx.x * block_size_x + threadIdx.x;
+    if (i<n) {
+        c[i] = a[i] + b[i];
+    }
+}
+"""
+    kernel_name = "vector_add<float>"
+    ans, _ = core.wrap_templated_kernel(kernel_string, kernel_name)
+    #check __global__ in templated definition is replaced with __device__
+    assert "template<typename TF> __device__ void vector_add" in ans
+    #check if template instantiation is inserted
+    assert "template __device__ void vector_add<float>(float *, const float *__restrict__, float *, int);" in ans
+    #check if wrapper functions with C linkage is inserted
+    assert "extern \"C\" __global__ void vector_add" in ans
+    #check if original kernel is called
+    assert "vector_add<float>(c, a, b, n);" in ans
+

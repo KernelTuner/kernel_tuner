@@ -92,6 +92,7 @@ class SimulationDeviceInterface(object):
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
         self.lang = lang
         self.dev = SimulationLangFunction(self.lang, device, iterations, compiler_options)
+        self.max_threads = 1024
         self.units = None
         self._name = self.dev.name
         self.quiet = quiet

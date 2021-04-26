@@ -57,8 +57,9 @@ def test_compile(drv, *args):
 
         # call compile
         kernel_string = "__global__ void vector_add()"
-        kernel_sources = KernelSource(kernel_string, "cuda")
-        kernel_instance = KernelInstance("vector_add", kernel_sources, kernel_string, [], None, None, dict(), [])
+        kernel_name = "vector_add"
+        kernel_sources = KernelSource(kernel_name, kernel_string, "cuda")
+        kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
         func = dev.compile(kernel_instance)
 
         # verify behavior

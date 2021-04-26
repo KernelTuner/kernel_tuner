@@ -40,7 +40,7 @@ import kernel_tuner.core as core
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt, bayes_opt_old
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, mls, pso, simulated_annealing, firefly_algorithm, bayes_opt, bayes_opt_old
 
 strategy_map = {
     "brute_force": brute_force,
@@ -49,6 +49,7 @@ strategy_map = {
     "basinhopping": basinhopping,
     "diff_evo": diff_evo,
     "genetic_algorithm": genetic_algorithm,
+    "mls": mls,
     "pso": pso,
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
@@ -89,7 +90,7 @@ _kernel_options = Options([("kernel_name", ("""The name of the kernel in the cod
             the kernel.""", "string or list and/or callable")),
                            ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA",
+        the language using this argument, currently supported: "CUDA", "Cupy",
         "OpenCL", or "C".""", "string")),
                            ("problem_size", ("""The size of the domain from which the grid dimensions
             of the kernel are computed.
@@ -387,7 +388,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = core.KernelSource(kernel_string, lang)
+    kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
 
     _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
 
@@ -516,7 +517,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = core.KernelSource(kernel_string, lang)
+    kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
 
     _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
 

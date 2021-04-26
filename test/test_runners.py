@@ -11,6 +11,8 @@ from kernel_tuner import util
 
 from .context import skip_if_no_cuda
 
+cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
+
 
 @pytest.fixture
 def env():
@@ -35,40 +37,6 @@ def env():
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
-
-def test_random_sample():
-
-    kernel_string = "float test_kernel(float *a) { return 1.0f; }"
-    a = np.arange(4, dtype=np.float32)
-
-    tune_params = {
-        "block_size_x": range(1, 25)
-    }
-    print(tune_params)
-
-    result, _ = kernel_tuner.tune_kernel("test_kernel", kernel_string, (1, 1), [a], tune_params, strategy="random_sample", strategy_options={ "fraction": 0.1 })
-
-    print(result)
-
-    # check that number of benchmarked kernels is 10% (rounded up)
-    assert len(result) == 3
-
-    # check all returned results make sense
-    for v in result:
-        assert v['time'] == 1.0
-
-
-@skip_if_no_cuda
-def test_diff_evo(env):
-    result, _ = kernel_tuner.tune_kernel(*env, strategy="diff_evo", verbose=True)
-    assert len(result) > 0
-
-
-@skip_if_no_cuda
-def test_genetic_algorithm(env):
-    options = dict(method="uniform", popsize=10, maxiter=2, mutation_change=1)
-    result, _ = kernel_tuner.tune_kernel(*env, strategy="genetic_algorithm", strategy_options=options, verbose=True)
-    assert len(result) > 0
 
 
 @skip_if_no_cuda
@@ -102,7 +70,24 @@ def test_sequential_runner_alt_block_size_names(env):
 
 
 def test_simulation_runner(env):
-    cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
     result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, simulation_mode=True, verbose=True)
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])
+
+def test_diff_evo(env):
+    result, _ = kernel_tuner.tune_kernel(*env, strategy="diff_evo", verbose=True, cache=cache_filename, simulation_mode=True)
+    assert len(result) > 0
+
+def test_genetic_algorithm(env):
+    options = dict(method="uniform", popsize=10, maxiter=2, mutation_change=1)
+    result, _ = kernel_tuner.tune_kernel(*env, strategy="genetic_algorithm", strategy_options=options, verbose=True, cache=cache_filename, simulation_mode=True)
+    assert len(result) > 0
+
+def test_random_sample(env):
+    result, _ = kernel_tuner.tune_kernel(*env, strategy="random_sample", strategy_options={"fraction": 0.1}, cache=cache_filename, simulation_mode=True)
+    # check that number of benchmarked kernels is 10% (rounded up)
+    assert len(result) == 2
+    # check all returned results make sense
+    for v in result:
+        assert v['time'] > 0.0 and v['time'] < 1.0
+
