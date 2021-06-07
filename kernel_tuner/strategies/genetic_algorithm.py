@@ -182,7 +182,11 @@ def single_point_crossover(dna1, dna2):
 
 def two_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at 2 random indices"""
-    pos1, pos2 = sorted(random.sample(range(1,len(dna1)-1), 2))
+    if len(dna1) < 5:
+        start, end = 0, len(dna1)
+    else:
+        start, end = 1, len(dna1)-1
+    pos1, pos2 = sorted(random.sample(list(range(start,end)), 2))
     child1 = dna1[:pos1] + dna2[pos1:pos2] + dna1[pos2:]
     child2 = dna2[:pos1] + dna1[pos1:pos2] + dna2[pos2:]
     return (child1, child2)
