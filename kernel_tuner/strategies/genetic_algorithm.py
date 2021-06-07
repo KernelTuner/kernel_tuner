@@ -78,7 +78,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
                         diversity = diversity - 1
             print(f"{diversity=}")
 
-        #old_population = population[:]
         population = []
 
         unique_results.update({",".join([str(i) for i in dna]): time for dna, time in weighted_population})
