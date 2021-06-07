@@ -60,7 +60,7 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
 
         fevals = []
         p_of_opt = []
-        for i in range(100):
+        for _ in range(100):
             #measure
             results, env = kernel_tuner.tune_kernel(*args, **kwargs)
 

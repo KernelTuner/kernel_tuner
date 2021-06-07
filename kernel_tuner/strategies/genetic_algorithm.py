@@ -78,7 +78,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
                         diversity = diversity - 1
             print(f"{diversity=}")
 
-        old_population = population[:]
+        #old_population = population[:]
         population = []
 
         unique_results.update({",".join([str(i) for i in dna]): time for dna, time in weighted_population})
@@ -101,6 +101,11 @@ def tune(runner, kernel_options, device_options, tuning_options):
                     break
 
         # could combine old + new generation here and do a selection
+
+
+
+
+
 
 
     return all_results, runner.dev.get_environment()
@@ -175,7 +180,6 @@ def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
 
 def single_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at a random index"""
-    #pos = 1+int(random.random() * (len(dna1)-2))
     pos = int(random.random() * (len(dna1)))
     return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
 

@@ -27,12 +27,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :rtype: list(dict()), dict()
 
     """
-    results = []
-
     # MLS works with real parameter values and does not need scaling
     tuning_options["scaling"] = False
     tune_params = tuning_options.tune_params
-    restrictions = tuning_options.restrictions
 
     options = tuning_options.strategy_options
     max_fevals = options.get("max_fevals", 100)
@@ -62,8 +59,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 def hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner):
     """ simple hillclimbing search until max_fevals is reached or no improvement is found """
     tune_params = tuning_options.tune_params
-    restrictions = tuning_options.restrictions
-    fevals = len(unique_results)
     max_threads = runner.dev.max_threads
 
     #measure start point time

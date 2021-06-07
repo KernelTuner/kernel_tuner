@@ -64,7 +64,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     xi = tuning_options.strategy_options.get("xi", 0.0)
     init_points = tuning_options.strategy_options.get("popsize", 5)
     n_iter = tuning_options.strategy_options.get("maxiter", 25)
-    #alpha = tuning_options.strategy_options.get("alpha", 1e-6)
 
     tuning_options["scaling"] = True
 
