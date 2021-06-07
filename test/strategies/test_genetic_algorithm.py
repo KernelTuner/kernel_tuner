@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from collections import OrderedDict
 from kernel_tuner.strategies import genetic_algorithm as ga
 from kernel_tuner.interface import Options
