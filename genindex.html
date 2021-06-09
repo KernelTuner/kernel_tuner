@@ -13,6 +13,8 @@
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
 
   
   
@@ -29,6 +31,7 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
@@ -175,11 +178,9 @@
 
 <div class="genindex-jumpbox">
  <a href="#_"><strong>_</strong></a>
- | <a href="#A"><strong>A</strong></a>
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
- | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#K"><strong>K</strong></a>
@@ -214,14 +215,6 @@
         <li><a href="design.html#kernel_tuner.runners.simulation.SimulationRunner.__init__">(kernel_tuner.runners.simulation.SimulationRunner method)</a>
 </li>
       </ul></li>
-  </ul></td>
-</tr></table>
-
-<h2 id="A">A</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.simulated_annealing.acceptance_prob">acceptance_prob() (in module kernel_tuner.strategies.simulated_annealing)</a>
-</li>
   </ul></td>
 </tr></table>
 
@@ -278,6 +271,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.Firefly.compute_intensity">compute_intensity() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.util.config_valid">config_valid() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.copy_constant_memory_args">copy_constant_memory_args() (kernel_tuner.core.DeviceInterface method)</a>
 
       <ul>
@@ -300,8 +295,6 @@
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.copy_texture_memory_args">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
       </ul></li>
-      <li><a href="user-api.html#kernel_tuner.create_device_targets">create_device_targets() (in module kernel_tuner)</a>
-</li>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.create_kernel_instance">create_kernel_instance() (kernel_tuner.core.DeviceInterface method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.cuda.CudaFunctions">CudaFunctions (class in kernel_tuner.cuda)</a>
@@ -322,17 +315,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface">DeviceInterface (class in kernel_tuner.core)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.disruptive_uniform_crossover">disruptive_uniform_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
-</li>
       <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.Firefly.distance_to">distance_to() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="E">E</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.ensure_diversity">ensure_diversity() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -404,13 +387,6 @@
         <li><a href="design.html#module-kernel_tuner.strategies.firefly_algorithm">module</a>
 </li>
       </ul></li>
-      <li>
-    kernel_tuner.strategies.genetic_algorithm
-
-      <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.genetic_algorithm">module</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li>
@@ -432,13 +408,6 @@
 
       <ul>
         <li><a href="design.html#module-kernel_tuner.strategies.random_sample">module</a>
-</li>
-      </ul></li>
-      <li>
-    kernel_tuner.strategies.simulated_annealing
-
-      <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.simulated_annealing">module</a>
 </li>
       </ul></li>
       <li>
@@ -508,32 +477,22 @@
 </li>
         <li><a href="design.html#module-kernel_tuner.strategies.firefly_algorithm">kernel_tuner.strategies.firefly_algorithm</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.genetic_algorithm">kernel_tuner.strategies.genetic_algorithm</a>
-</li>
         <li><a href="design.html#module-kernel_tuner.strategies.minimize">kernel_tuner.strategies.minimize</a>
 </li>
         <li><a href="design.html#module-kernel_tuner.strategies.pso">kernel_tuner.strategies.pso</a>
 </li>
         <li><a href="design.html#module-kernel_tuner.strategies.random_sample">kernel_tuner.strategies.random_sample</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.simulated_annealing">kernel_tuner.strategies.simulated_annealing</a>
-</li>
         <li><a href="design.html#module-kernel_tuner.util">kernel_tuner.util</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.Firefly.move_towards">move_towards() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.mutate">mutate() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
   </ul></td>
 </tr></table>
 
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.simulated_annealing.neighbor">neighbor() (in module kernel_tuner.strategies.simulated_annealing)</a>
-</li>
-  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.normalize_verify_function">normalize_verify_function() (in module kernel_tuner.util)</a>
 </li>
@@ -567,10 +526,6 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.random_population">random_population() (in module kernel_tuner.strategies.genetic_algorithm)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.random_val">random_val() (in module kernel_tuner.strategies.genetic_algorithm)</a>
-</li>
       <li><a href="design.html#kernel_tuner.util.read_file">read_file() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.c.CFunctions.ready_argument_list">ready_argument_list() (kernel_tuner.c.CFunctions method)</a>
@@ -585,21 +540,19 @@
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.ready_argument_list">(kernel_tuner.opencl.OpenCLFunctions method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.replace_param_occurrences">replace_param_occurrences() (in module kernel_tuner.util)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner.run">run() (kernel_tuner.runners.sequential.SequentialRunner method)</a>
 
       <ul>
         <li><a href="design.html#kernel_tuner.runners.simulation.SimulationRunner.run">(kernel_tuner.runners.simulation.SimulationRunner method)</a>
 </li>
       </ul></li>
-      <li><a href="user-api.html#kernel_tuner.run_kernel">run_kernel() (in module kernel_tuner)</a>
+      <li><a href="design.html#kernel_tuner.c.CFunctions.run_kernel">run_kernel() (kernel_tuner.c.CFunctions method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.c.CFunctions.run_kernel">(kernel_tuner.c.CFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.core.DeviceInterface.run_kernel">(kernel_tuner.core.DeviceInterface method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.run_kernel">(kernel_tuner.cuda.CudaFunctions method)</a>
@@ -621,19 +574,15 @@
 </li>
       <li><a href="design.html#kernel_tuner.strategies.minimize.setup_method_arguments">setup_method_arguments() (in module kernel_tuner.strategies.minimize)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.minimize.setup_method_options">setup_method_options() (in module kernel_tuner.strategies.minimize)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.runners.simulation.SimulationRunner">SimulationRunner (class in kernel_tuner.runners.simulation)</a>
+      <li><a href="design.html#kernel_tuner.strategies.minimize.setup_method_options">setup_method_options() (in module kernel_tuner.strategies.minimize)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.single_point_crossover">single_point_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
+      <li><a href="design.html#kernel_tuner.runners.simulation.SimulationRunner">SimulationRunner (class in kernel_tuner.runners.simulation)</a>
 </li>
       <li><a href="design.html#kernel_tuner.strategies.minimize.snap_to_nearest_config">snap_to_nearest_config() (in module kernel_tuner.strategies.minimize)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.store_cache">store_cache() (in module kernel_tuner.util)</a>
-</li>
-      <li><a href="user-api.html#kernel_tuner.store_results">store_results() (in module kernel_tuner)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -650,32 +599,18 @@
 </li>
         <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.tune">(in module kernel_tuner.strategies.firefly_algorithm)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.tune">(in module kernel_tuner.strategies.genetic_algorithm)</a>
-</li>
         <li><a href="design.html#kernel_tuner.strategies.minimize.tune">(in module kernel_tuner.strategies.minimize)</a>
 </li>
         <li><a href="design.html#kernel_tuner.strategies.pso.tune">(in module kernel_tuner.strategies.pso)</a>
 </li>
         <li><a href="design.html#kernel_tuner.strategies.random_sample.tune">(in module kernel_tuner.strategies.random_sample)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.simulated_annealing.tune">(in module kernel_tuner.strategies.simulated_annealing)</a>
-</li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="user-api.html#kernel_tuner.tune_kernel">tune_kernel() (in module kernel_tuner)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.two_point_crossover">two_point_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.uniform_crossover">uniform_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
-</li>
-  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.strategies.minimize.unscale_and_snap_to_nearest">unscale_and_snap_to_nearest() (in module kernel_tuner.strategies.minimize)</a>
 </li>
@@ -684,10 +619,6 @@
 
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.weighted_choice">weighted_choice() (in module kernel_tuner.strategies.genetic_algorithm)</a>
-</li>
-  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.write_file">write_file() (in module kernel_tuner.util)</a>
 </li>
