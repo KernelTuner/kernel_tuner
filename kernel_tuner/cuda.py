@@ -7,6 +7,7 @@ import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.nvml import nvml
+from kernel_tuner.util import TorchPlaceHolder
 
 #embedded in try block to be able to generate documentation
 #and run tests without pycuda installed
@@ -26,7 +27,9 @@ except ImportError:
 try:
     import torch
 except ImportError:
-    torch = None
+    torch = TorchPlaceHolder()
+
+
 
 class Holder(drv.PointerHolderBase):
     """ class to interoperate torch device memory allocations with PyCUDA """
