@@ -64,7 +64,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     xi = tuning_options.strategy_options.get("xi", 0.0)
     init_points = tuning_options.strategy_options.get("popsize", 5)
     n_iter = tuning_options.strategy_options.get("maxiter", 25)
-    alpha = tuning_options.strategy_options.get("alpha", 1e-6)
 
     tuning_options["scaling"] = True
 
@@ -82,7 +81,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     if tuning_options.verbose:
         verbose=2
 
-    optimizer = BayesianOptimization(f=func, pbounds=pbounds, verbose=verbose, alpha=alpha)
+    optimizer = BayesianOptimization(f=func, pbounds=pbounds, verbose=verbose)
 
     optimizer.maximize(init_points=init_points, n_iter=n_iter, acq=acq, kappa=kappa, xi=xi)
 

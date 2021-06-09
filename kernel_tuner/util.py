@@ -147,6 +147,16 @@ def check_restrictions(restrictions, element, keys, verbose):
     return valid
 
 
+def config_valid(config, tuning_options, max_threads):
+    """ combines restrictions and a check on the max thread block dimension to check config validity """
+    legal = True
+    if tuning_options.restrictions:
+        legal = check_restrictions(tuning_options.restrictions, config, tuning_options.tune_params.keys(), False)
+    params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
+    dims = get_thread_block_dimensions(params, tuning_options.get("block_size_names", None))
+    return legal and np.prod(dims) <= max_threads
+
+
 def delete_temp_file(filename):
     """ delete a temporary file, don't complain if is no longer exists """
     try:

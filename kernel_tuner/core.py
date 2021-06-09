@@ -244,6 +244,7 @@ class DeviceInterface(object):
         self.dev = dev
         self.units = dev.units
         self.name = dev.name
+        self.max_threads = dev.max_threads
         if not quiet:
             print("Using: " + self.dev.name)
 

@@ -225,6 +225,7 @@ class CudaFunctions(object):
             while not self.end.query():
                 for obs in self.observers:
                     obs.during()
+                time.sleep(1e-6) #one microsecond
             self.end.synchronize()
             for obs in self.observers:
                 obs.after_finish()
