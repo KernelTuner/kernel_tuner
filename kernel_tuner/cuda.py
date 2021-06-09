@@ -23,6 +23,21 @@ try:
 except ImportError:
     DynamicSourceModule = None
 
+try:
+    import torch
+except ImportError:
+    torch = None
+
+class Holder(drv.PointerHolderBase):
+    """ class to interoperate torch device memory allocations with PyCUDA """
+    def __init__(self, t):
+        super(Holder, self).__init__()
+        self.t = t
+        self.gpudata = t.data_ptr()
+
+    def get_pointer():
+        return self.t.data_ptr()
+
 
 class CudaRuntimeObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
@@ -141,6 +156,8 @@ class CudaFunctions(object):
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
                 drv.memcpy_htod(gpu_args[-1], arg)
+            elif isinstance(arg, torch.Tensor):
+                gpu_args.append(Holder(arg))
             else: # if not an array, just pass argument along
                 gpu_args.append(arg)
         return gpu_args
