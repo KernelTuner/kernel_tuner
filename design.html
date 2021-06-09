@@ -111,10 +111,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.minimize">kernel_tuner.strategies.minimize</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.basinhopping">kernel_tuner.strategies.basinhopping</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.diff_evo">kernel_tuner.strategies.diff_evo</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-strategies-genetic-algorithm">kernel_tuner.strategies.genetic_algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.genetic_algorithm">kernel_tuner.strategies.genetic_algorithm</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.pso">kernel_tuner.strategies.pso</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.firefly_algorithm">kernel_tuner.strategies.firefly_algorithm</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-strategies-simulated-annealing">kernel_tuner.strategies.simulated_annealing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.simulated_annealing">kernel_tuner.strategies.simulated_annealing</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#runners">Runners</a><ul>
@@ -474,8 +474,88 @@ about the hardware/software environment on which the tuning took place.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="kernel-tuner-strategies-genetic-algorithm">
-<h3>kernel_tuner.strategies.genetic_algorithm<a class="headerlink" href="#kernel-tuner-strategies-genetic-algorithm" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="module-kernel_tuner.strategies.genetic_algorithm">
+<span id="kernel-tuner-strategies-genetic-algorithm"></span><h3>kernel_tuner.strategies.genetic_algorithm<a class="headerlink" href="#module-kernel_tuner.strategies.genetic_algorithm" title="Permalink to this headline">¶</a></h3>
+<p>A simple genetic algorithm for parameter search</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.disruptive_uniform_crossover">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">disruptive_uniform_crossover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dna1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dna2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.disruptive_uniform_crossover" title="Permalink to this definition">¶</a></dt>
+<dd><p>disruptive uniform crossover</p>
+<p>uniformly crossover genes between dna1 and dna2,
+with children guaranteed to be different from parents,
+if the number of differences between parents is larger than 1</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.mutate">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">mutate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dna</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutation_chance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_threads</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.mutate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mutate DNA with 1/mutation_chance chance</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.random_population">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">random_population</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pop_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_threads</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.random_population" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a random population of pop_size unique members</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.random_val">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">random_val</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.random_val" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a random value for a parameter</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.single_point_crossover">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">single_point_crossover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dna1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dna2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.single_point_crossover" title="Permalink to this definition">¶</a></dt>
+<dd><p>crossover dna1 and dna2 at a random index</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.tune">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">tune</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.tune" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the best performing kernel configuration in the parameter space</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params runner</dt>
+<dd class="field-odd"><p>A runner from kernel_tuner.runners</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
+<li><p><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the device
+on which the kernel should be tuned.</p></li>
+<li><p><strong>tuning_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options regarding the tuning
+process.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A list of dictionaries for executed kernel configurations and their
+execution times. And a dictionary that contains a information
+about the hardware/software environment on which the tuning took place.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list(dict()), dict()</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.two_point_crossover">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">two_point_crossover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dna1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dna2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.two_point_crossover" title="Permalink to this definition">¶</a></dt>
+<dd><p>crossover dna1 and dna2 at 2 random indices</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.uniform_crossover">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">uniform_crossover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dna1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dna2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.uniform_crossover" title="Permalink to this definition">¶</a></dt>
+<dd><p>randomly crossover genes between dna1 and dna2</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.weighted_choice">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">weighted_choice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">population</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.weighted_choice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Randomly select n unique individuals from a weighted population, fitness determines probability of being selected</p>
+</dd></dl>
+
 </div>
 <div class="section" id="module-kernel_tuner.strategies.pso">
 <span id="kernel-tuner-strategies-pso"></span><h3>kernel_tuner.strategies.pso<a class="headerlink" href="#module-kernel_tuner.strategies.pso" title="Permalink to this headline">¶</a></h3>
@@ -565,8 +645,49 @@ about the hardware/software environment on which the tuning took place.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="kernel-tuner-strategies-simulated-annealing">
-<h3>kernel_tuner.strategies.simulated_annealing<a class="headerlink" href="#kernel-tuner-strategies-simulated-annealing" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="module-kernel_tuner.strategies.simulated_annealing">
+<span id="kernel-tuner-strategies-simulated-annealing"></span><h3>kernel_tuner.strategies.simulated_annealing<a class="headerlink" href="#module-kernel_tuner.strategies.simulated_annealing" title="Permalink to this headline">¶</a></h3>
+<p>The strategy that uses particle swarm optimization</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.simulated_annealing.acceptance_prob">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.simulated_annealing.</span></span><span class="sig-name descname"><span class="pre">acceptance_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_cost</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_cost</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.simulated_annealing.acceptance_prob" title="Permalink to this definition">¶</a></dt>
+<dd><p>annealing equation, with modifications to work towards a lower value</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.simulated_annealing.neighbor">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.simulated_annealing.</span></span><span class="sig-name descname"><span class="pre">neighbor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.simulated_annealing.neighbor" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a random neighbor of pos</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.simulated_annealing.tune">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.simulated_annealing.</span></span><span class="sig-name descname"><span class="pre">tune</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.simulated_annealing.tune" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the best performing kernel configuration in the parameter space</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params runner</dt>
+<dd class="field-odd"><p>A runner from kernel_tuner.runners</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>kernel_options</strong> (<em>dict</em>) – A dictionary with all options for the kernel.</p></li>
+<li><p><strong>device_options</strong> (<em>dict</em>) – A dictionary with all options for the device
+on which the kernel should be tuned.</p></li>
+<li><p><strong>tuning_options</strong> (<em>dict</em>) – A dictionary with all options regarding the tuning
+process.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A list of dictionaries for executed kernel configurations and their
+execution times. And a dictionary that contains a information
+about the hardware/software environment on which the tuning took place.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list(dict()), dict()</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="runners">
