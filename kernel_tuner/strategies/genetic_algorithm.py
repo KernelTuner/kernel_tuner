@@ -69,14 +69,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         if tuning_options.verbose:
             print("Generation %d, best_time %f" % (generation, best_time))
-            for dna in weighted_population:
-                print(dna)
-            diversity = len(population)
-            for dna1 in population:
-                for dna2 in population:
-                    if dna1 == dna2:
-                        diversity = diversity - 1
-            print(f"{diversity=}")
 
         population = []
 
