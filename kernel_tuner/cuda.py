@@ -17,7 +17,7 @@ try:
 except ImportError:
     class PyCudaPlaceHolder():
         def __init__(self):
-            self.drv.PointerHolderBase = object
+            self.PointerHolderBase = object
     drv = PyCudaPlaceHolder()
     pycuda_available = False
 
