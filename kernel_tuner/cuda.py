@@ -384,6 +384,8 @@ class CudaFunctions(object):
         """
         if isinstance(src, drv.DeviceAllocation):
             drv.memcpy_dtoh(dest, src)
+        elif isinstance(src, torch.Tensor):
+            dest = src.cpu()
         else:
             dest = src
 
