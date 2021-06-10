@@ -33,10 +33,10 @@ except ImportError:
 
 class Holder(drv.PointerHolderBase):
     """ class to interoperate torch device memory allocations with PyCUDA """
-    def __init__(self, t):
+    def __init__(self, tensor):
         super(Holder, self).__init__()
-        self.t = t
-        self.gpudata = t.data_ptr()
+        self.tensor = tensor
+        self.gpudata = tensor.data_ptr()
 
     def get_pointer(self):
         return self.t.data_ptr()
@@ -160,7 +160,10 @@ class CudaFunctions(object):
                 gpu_args.append(alloc)
                 drv.memcpy_htod(gpu_args[-1], arg)
             elif isinstance(arg, torch.Tensor):
-                gpu_args.append(Holder(arg))
+                if arg.is_cuda:
+                    gpu_args.append(Holder(arg))
+                else:
+                    gpu_args.append(Holder(arg.cuda()))
             else: # if not an array, just pass argument along
                 gpu_args.append(arg)
         return gpu_args
@@ -385,7 +388,7 @@ class CudaFunctions(object):
         if isinstance(src, drv.DeviceAllocation):
             drv.memcpy_dtoh(dest, src)
         elif isinstance(src, torch.Tensor):
-            dest = src.cpu()
+            dest[:] = src
         else:
             dest = src
 

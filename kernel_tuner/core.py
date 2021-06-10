@@ -19,6 +19,14 @@ from kernel_tuner.c import CFunctions
 from kernel_tuner.nvml import NVMLObserver
 import kernel_tuner.util as util
 
+
+try:
+    import torch
+except ImportError:
+    torch = util.TorchPlaceHolder()
+
+
+
 _KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
 
 
@@ -301,7 +309,7 @@ class DeviceInterface(object):
         #re-copy original contents of output arguments to GPU memory, to overwrite any changes
         #by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
-            if verify or answer[i] is not None and isinstance(arg, (np.ndarray, cp.ndarray)):
+            if verify or answer[i] is not None and isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)):
                 self.dev.memcpy_htod(gpu_args[i], arg)
 
         #run the kernel
@@ -315,6 +323,13 @@ class DeviceInterface(object):
             if (verify or answer[i] is not None) and isinstance(arg, (np.ndarray, cp.ndarray)):
                 result_host.append(np.zeros_like(arg))
                 self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+            elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
+                if not answer[i].is_cuda:
+                    #if the answer is on the host, copy gpu output to host as well
+                    result_host.append(torch.zeros_like(answer[i]))
+                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+                else:
+                    result_host.append(gpu_args[i].tensor)
             else:
                 result_host.append(None)
 
@@ -491,14 +506,22 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                 if answer[i].size != arg.size:
                     raise TypeError("Element " + str(i) + " of the expected results list has a size different from " + "the kernel argument: " +
                                     str(answer[i].size) + " != " + str(arg.size) + ".")
+            elif isinstance(answer[i], torch.Tensor) and isinstance(arg, torch.Tensor):
+                if answer[i].dtype != arg.dtype:
+                    raise TypeError("Element " + str(i) + " of the expected results list is not of the same dtype as the kernel output: " +
+                                    str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+                if answer[i].size() != arg.size():
+                    raise TypeError("Element " + str(i) + " of the expected results list has a size different from " + "the kernel argument: " +
+                                    str(answer[i].size) + " != " + str(arg.size) + ".")
+
             elif isinstance(answer[i], np.number) and isinstance(arg, np.number):
                 if answer[i].dtype != arg.dtype:
                     raise TypeError("Element " + str(i) + " of the expected results list is not the same as the kernel output: " + str(answer[i].dtype) +
                                     " != " + str(arg.dtype) + ".")
             else:
                 #either answer[i] and argument have different types or answer[i] is not a numpy type
-                if not isinstance(answer[i], np.ndarray) or not isinstance(answer[i], np.number):
-                    raise TypeError("Element " + str(i) + " of expected results list is not a numpy array or numpy scalar.")
+                if not isinstance(answer[i], (np.ndarray, cp.ndarray, torch.Tensor)) or not isinstance(answer[i], np.number):
+                    raise TypeError("Element " + str(i) + " of expected results list is not a numpy/cupy ndarray, torch Tensor or numpy scalar.")
                 else:
                     raise TypeError("Element " + str(i) + " of expected results list and kernel arguments have different types.")
 
@@ -521,7 +544,10 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             expected = _flatten(expected)
             if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
                 output_test = cp.allclose(expected, result, atol=atol)
+            if isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
+                output_test = torch.allclose(expected, result, atol=atol)
             else:
+                print(f"ended up in numpy comparison for some reason for argument {i} {expected=} {result=}")
                 output_test = np.allclose(expected, result, atol=atol)
 
             if not output_test and verbose:
