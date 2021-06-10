@@ -85,7 +85,7 @@ class CudaFunctions(object):
         """
         self.allocations = []
         self.texrefs = []
-        if not pycuda_available:
+        if not pycuda_available and isinstance(drv, PyCudaPlaceHolder): #and part to allow mocking
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
         drv.init()
