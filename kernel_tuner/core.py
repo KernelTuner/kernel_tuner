@@ -551,10 +551,9 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             expected = _flatten(expected)
             if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
                 output_test = cp.allclose(expected, result, atol=atol)
-            if isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
+            elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
                 output_test = torch.allclose(expected, result, atol=atol)
             else:
-                print(f"ended up in numpy comparison for some reason for argument {i} {expected=} {result=}")
                 output_test = np.allclose(expected, result, atol=atol)
 
             if not output_test and verbose:
