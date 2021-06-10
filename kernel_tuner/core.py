@@ -415,6 +415,13 @@ class DeviceInterface(object):
                 raise e
         return func
 
+    def copy_shared_memory_args(self, smem_args):
+        """adds shared memory arguments to the most recently compiled module, if using CUDA"""
+        if self.lang == "CUDA":
+            self.dev.copy_shared_memory_args(smem_args)
+        else:
+            raise Exception("Error cannot copy shared memory arguments when language is not CUDA")
+
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module, if using CUDA"""
         if self.lang == "CUDA":
