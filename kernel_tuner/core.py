@@ -238,7 +238,7 @@ class DeviceInterface(object):
         elif lang == "C":
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         else:
-            raise Exception("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
 
         #look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
@@ -340,7 +340,7 @@ class DeviceInterface(object):
             correct = _default_verify_function(instance, answer, result_host, atol, verbose)
 
         if not correct:
-            raise Exception("Kernel result verification failed for: " + util.get_config_string(instance.params))
+            raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
         return True
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
@@ -420,21 +420,21 @@ class DeviceInterface(object):
         if self.lang == "CUDA":
             self.dev.copy_shared_memory_args(smem_args)
         else:
-            raise Exception("Error cannot copy shared memory arguments when language is not CUDA")
+            raise RuntimeError("Error cannot copy shared memory arguments when language is not CUDA")
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module, if using CUDA"""
         if self.lang == "CUDA":
             self.dev.copy_constant_memory_args(cmem_args)
         else:
-            raise Exception("Error cannot copy constant memory arguments when language is not CUDA")
+            raise RuntimeError("Error cannot copy constant memory arguments when language is not CUDA")
 
     def copy_texture_memory_args(self, texmem_args):
         """adds texture memory arguments to the most recently compiled module, if using CUDA"""
         if self.lang == "CUDA":
             self.dev.copy_texture_memory_args(texmem_args)
         else:
-            raise Exception("Error cannot copy texture memory arguments when language is not CUDA")
+            raise RuntimeError("Error cannot copy texture memory arguments when language is not CUDA")
 
     def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
