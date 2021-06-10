@@ -40,6 +40,11 @@ import kernel_tuner.core as core
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 
+try:
+    import torch
+except ImportError:
+    torch = util.TorchPlaceHolder()
+
 from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, mls, pso, simulated_annealing, firefly_algorithm, bayes_opt
 
 strategy_map = {
@@ -545,6 +550,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
             if func is None:
                 raise Exception("cannot compile kernel, too much shared memory used")
 
+            #add shared memory arguments to compiled module
+            if smem_args is not None:
+                dev.copy_shared_memory_args(smem_args)
             #add constant memory arguments to compiled module
             if cmem_args is not None:
                 dev.copy_constant_memory_args(cmem_args)
@@ -565,6 +573,8 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
         for i, arg in enumerate(arguments):
             if numpy.isscalar(arg):
                 results.append(arg)
+            elif isinstance(arg, torch.Tensor):
+                results.append(arg.cpu())
             else:
                 results.append(numpy.zeros_like(arg))
                 dev.memcpy_dtoh(results[-1], gpu_args[i])

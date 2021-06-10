@@ -7,6 +7,7 @@ import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.nvml import nvml
+from kernel_tuner.util import TorchPlaceHolder
 
 #embedded in try block to be able to generate documentation
 #and run tests without pycuda installed
@@ -22,6 +23,23 @@ try:
     from pycuda.compiler import DynamicSourceModule
 except ImportError:
     DynamicSourceModule = None
+
+try:
+    import torch
+except ImportError:
+    torch = TorchPlaceHolder()
+
+
+
+class Holder(drv.PointerHolderBase):
+    """ class to interoperate torch device memory allocations with PyCUDA """
+    def __init__(self, tensor):
+        super(Holder, self).__init__()
+        self.tensor = tensor
+        self.gpudata = tensor.data_ptr()
+
+    def get_pointer(self):
+        return self.t.data_ptr()
 
 
 class CudaRuntimeObserver(BenchmarkObserver):
@@ -141,6 +159,11 @@ class CudaFunctions(object):
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
                 drv.memcpy_htod(gpu_args[-1], arg)
+            elif isinstance(arg, torch.Tensor):
+                if arg.is_cuda:
+                    gpu_args.append(Holder(arg))
+                else:
+                    gpu_args.append(Holder(arg.cuda()))
             else: # if not an array, just pass argument along
                 gpu_args.append(arg)
         return gpu_args
@@ -364,6 +387,8 @@ class CudaFunctions(object):
         """
         if isinstance(src, drv.DeviceAllocation):
             drv.memcpy_dtoh(dest, src)
+        elif isinstance(src, torch.Tensor):
+            dest[:] = src
         else:
             dest = src
 

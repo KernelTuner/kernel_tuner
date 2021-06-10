@@ -16,6 +16,14 @@ try:
 except ImportError:
     cp = np
 
+class TorchPlaceHolder():
+    def __init__(self):
+        self.Tensor = Exception #using Exception here as a type that will never be among kernel arguments
+try:
+    import torch
+except ImportError:
+    torch = TorchPlaceHolder()
+
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 
@@ -61,7 +69,7 @@ def check_argument_list(kernel_name, kernel_string, args):
         for (i, arg) in enumerate(args):
             kernel_argument = arguments[i]
 
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray)):
+            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
                 raise TypeError(
                     "Argument at position " + str(i) + " of type: " +
                     str(type(arg)) +
