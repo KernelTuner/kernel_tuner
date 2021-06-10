@@ -13,8 +13,14 @@ from kernel_tuner.util import TorchPlaceHolder
 #and run tests without pycuda installed
 try:
     import pycuda.driver as drv
+    pycuda_available = True
 except ImportError:
-    drv = None
+    class PyCudaPlaceHolder():
+    def __init__(self):
+        self.drv.PointerHolderBase = object
+    drv = PyCudaPlaceHolder()
+    pycuda_available = False
+
 try:
     from pycuda.compiler import SourceModule
 except ImportError:
@@ -79,7 +85,7 @@ class CudaFunctions(object):
         """
         self.allocations = []
         self.texrefs = []
-        if not drv:
+        if not pycuda_available:
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
         drv.init()
