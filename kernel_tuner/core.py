@@ -364,7 +364,7 @@ class DeviceInterface(object):
             if func is None:
                 return None
 
-            #add constant memory arguments to compiled module
+            #add shared memory arguments to compiled module
             if kernel_options.smem_args is not None:
                 self.dev.copy_shared_memory_args(kernel_options.smem_args)
             #add constant memory arguments to compiled module

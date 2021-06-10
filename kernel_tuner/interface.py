@@ -550,6 +550,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
             if func is None:
                 raise Exception("cannot compile kernel, too much shared memory used")
 
+            #add shared memory arguments to compiled module
+            if smem_args is not None:
+                dev.copy_shared_memory_args(smem_args)
             #add constant memory arguments to compiled module
             if cmem_args is not None:
                 dev.copy_constant_memory_args(cmem_args)
