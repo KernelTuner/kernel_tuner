@@ -16,8 +16,8 @@ try:
     pycuda_available = True
 except ImportError:
     class PyCudaPlaceHolder():
-    def __init__(self):
-        self.drv.PointerHolderBase = object
+        def __init__(self):
+            self.drv.PointerHolderBase = object
     drv = PyCudaPlaceHolder()
     pycuda_available = False
 
