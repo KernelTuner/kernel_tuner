@@ -69,6 +69,15 @@ def test_sequential_runner_alt_block_size_names(env):
     assert len(result) == len(tune_params["block_dim_x"])
 
 
+@skip_if_no_cuda
+def test_smem_args(env):
+    result, _ = kernel_tuner.tune_kernel(*env, smem_args=dict(size="block_size_x*4"), verbose=True)
+    tune_params = env[-1]
+    assert len(result) == len(tune_params["block_size_x"])
+    result, _ = kernel_tuner.tune_kernel(*env, smem_args=dict(size=lambda p: p['block_size_x']*4), verbose=True)
+    tune_params = env[-1]
+    assert len(result) == len(tune_params["block_size_x"])
+
 def test_simulation_runner(env):
     result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, simulation_mode=True, verbose=True)
     tune_params = env[-1]
