@@ -314,6 +314,7 @@ def get_smem_args(smem_args, params):
         elif isinstance(size, str):
             size = replace_param_occurrences(size, params)
             size = int(eval(size))
+        result['size'] = size
     return result
 
 
