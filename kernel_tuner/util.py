@@ -304,6 +304,19 @@ def get_problem_size(problem_size, params):
     return current_problem_size
 
 
+def get_smem_args(smem_args, params):
+    """ return a dict with kernel instance specific size """
+    result = smem_args.copy()
+    if 'size' in result:
+        size = result['size']
+        if callable(size):
+            size = size(params)
+        elif isinstance(size, str):
+            size = util.replace_param_occurrences(size, params)
+            size = int(eval(size))
+    return result
+
+
 def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
     file = tempfile.mkstemp(

@@ -552,7 +552,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
 
             #add shared memory arguments to compiled module
             if smem_args is not None:
-                dev.copy_shared_memory_args(smem_args)
+                dev.copy_shared_memory_args(util.get_smem_args(smem_args, params))
             #add constant memory arguments to compiled module
             if cmem_args is not None:
                 dev.copy_constant_memory_args(cmem_args)
