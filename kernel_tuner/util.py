@@ -312,7 +312,7 @@ def get_smem_args(smem_args, params):
         if callable(size):
             size = size(params)
         elif isinstance(size, str):
-            size = util.replace_param_occurrences(size, params)
+            size = replace_param_occurrences(size, params)
             size = int(eval(size))
     return result
 
