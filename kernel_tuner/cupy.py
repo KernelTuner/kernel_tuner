@@ -1,14 +1,12 @@
 """This module contains all Cupy specific kernel_tuner functions"""
 from __future__ import print_function
 
-import re
 
 import logging
 import time
 import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
-from kernel_tuner.nvml import nvml
 
 #embedded in try block to be able to generate documentation
 #and run tests without cupy installed
@@ -36,7 +34,7 @@ class CupyRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class CupyFunctions(object):
+class CupyFunctions:
     """Class that groups the Cupy functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
@@ -56,7 +54,8 @@ class CupyFunctions(object):
         self.allocations = []
         self.texrefs = []
         if not cp:
-            raise ImportError("Error: cupy not installed, please install e.g. using 'pip install cupy-cuda111', please check https://github.com/cupy/cupy.")
+            raise ImportError("Error: cupy not installed, please install e.g. " +
+                            "using 'pip install cupy-cuda111', please check https://github.com/cupy/cupy.")
 
         #select device
         self.dev = dev = cp.cuda.Device(device).__enter__()
@@ -68,6 +67,7 @@ class CupyFunctions(object):
 
         self.iterations = iterations
         self.current_module = None
+        self.func = None
         self.compiler_options = compiler_options or []
 
         #create a stream and events
