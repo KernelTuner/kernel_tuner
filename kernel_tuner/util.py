@@ -467,9 +467,9 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads,
             # this handles the special case that in CUDA
             # pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
             # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
-            if v > 0:  # using 0 to disable loop unrolling for this loop
-                kernel_string = "const int " + k + " = " + str(v) + ";\n" + kernel_string
-            else:
+            # using 0 to disable specifying a loop unrolling factor for this loop
+            kernel_string = "constexpr int " + k + " = " + str(v) + ";\n" + kernel_string
+            if v==0:
                 kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
         elif k not in block_size_names:
             kernel_string = f"#define {k} {v}\n" + kernel_string
