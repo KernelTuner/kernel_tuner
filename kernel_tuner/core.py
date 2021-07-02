@@ -309,7 +309,7 @@ class DeviceInterface(object):
         #re-copy original contents of output arguments to GPU memory, to overwrite any changes
         #by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
-            if verify or answer[i] is not None and isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)):
+            if (verify or answer[i] is not None) and isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)):
                 self.dev.memcpy_htod(gpu_args[i], arg)
 
         #run the kernel
