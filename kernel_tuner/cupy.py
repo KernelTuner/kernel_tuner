@@ -189,9 +189,10 @@ class CupyFunctions:
         result = dict()
         self.dev.synchronize()
         for _ in range(self.iterations):
-            self.start.record(stream=self.stream)
             for obs in self.observers:
                 obs.before_start()
+            self.dev.synchronize()
+            self.start.record(stream=self.stream)
             self.run_kernel(func, gpu_args, threads, grid, stream=self.stream)
             self.end.record(stream=self.stream)
             for obs in self.observers:
