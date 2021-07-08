@@ -89,7 +89,7 @@ def test_benchmark(drv, *args):
         res = dev.benchmark(dummy_func, [1, 2], (1, 2), (1, 2))
         assert res["time"] > 0
 
-        assert dev.context.synchronize.call_count == 1
+        assert dev.context.synchronize.call_count > 1
         assert drv.Event.return_value.synchronize.call_count == dev.iterations
         assert drv.Event.return_value.record.call_count == 2*dev.iterations
         assert drv.Event.return_value.time_since.call_count == dev.iterations
