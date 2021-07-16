@@ -16,6 +16,18 @@ try:
 except ImportError:
     cp = np
 
+
+class TorchPlaceHolder():
+
+    def __init__(self):
+        self.Tensor = Exception    #using Exception here as a type that will never be among kernel arguments
+
+
+try:
+    import torch
+except ImportError:
+    torch = TorchPlaceHolder()
+
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 
@@ -56,7 +68,7 @@ def check_argument_list(kernel_name, kernel_string, args):
         for (i, arg) in enumerate(args):
             kernel_argument = arguments[i]
 
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray)):
+            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
                 raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type np.ndarray or numpy scalar")
 
             correct = True
@@ -265,6 +277,20 @@ def get_problem_size(problem_size, params):
     return current_problem_size
 
 
+def get_smem_args(smem_args, params):
+    """ return a dict with kernel instance specific size """
+    result = smem_args.copy()
+    if 'size' in result:
+        size = result['size']
+        if callable(size):
+            size = size(params)
+        elif isinstance(size, str):
+            size = replace_param_occurrences(size, params)
+            size = int(eval(size))
+        result['size'] = size
+    return result
+
+
 def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
     file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd())    # or "" for Python 2 compatibility
@@ -406,9 +432,9 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             # this handles the special case that in CUDA
             # pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
             # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
-            if v > 0:    # using 0 to disable loop unrolling for this loop
-                kernel_string = "const int " + k + " = " + str(v) + ";\n" + kernel_string
-            else:
+            # using 0 to disable specifying a loop unrolling factor for this loop
+            kernel_string = "constexpr int " + k + " = " + str(v) + ";\n" + kernel_string
+            if v == 0:
                 kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)    # + r"[^\S]*"
         elif k not in block_size_names:
             kernel_string = f"#define {k} {v}\n" + kernel_string

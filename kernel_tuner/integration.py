@@ -197,8 +197,11 @@ def store_results(results_filename, kernel_name, kernel_string, tune_params, pro
         meta = {}
         meta["version_number"] = "1.0"
         meta["kernel_name"] = kernel_name
-        if kernel_string:
-            meta["kernel_string"] = kernel_string
+        if kernel_string and not callable(kernel_string) and not isinstance(kernel_string, list):
+            if util.looks_like_a_filename(kernel_string):
+                meta["kernel_string"] = util.read_file(kernel_string)
+            else:
+                meta["kernel_string"] = kernel_string
         meta["objective"] = objective
         meta["objective_higher_is_better"] = objective_higher_is_better
         meta["tunable_parameters"] = list(tune_params.keys())
@@ -229,7 +232,7 @@ def store_results(results_filename, kernel_name, kernel_string, tune_params, pro
     #write output file
     meta["data"] = data
     with open(results_filename, 'w') as fh:
-        fh.write(json.dumps(meta))
+        fh.write(json.dumps(meta, indent=""))
 
 
 def create_device_targets(header_filename, results_filename, objective=None, objective_higher_is_better=None):

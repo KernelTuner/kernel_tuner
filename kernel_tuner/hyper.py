@@ -8,7 +8,7 @@ import warnings
 from kernel_tuner.util import get_config_string
 
 
-def tune_hyper_params(strategy, hyper_params, *args, **kwargs):
+def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
     """ Tune hyperparameters for a given strategy and kernel
 
     This function is to be called just like tune_kernel, except that you specify a strategy
@@ -18,8 +18,8 @@ def tune_hyper_params(strategy, hyper_params, *args, **kwargs):
     tuner first tunes the kernel with a brute force search. If your cachefile is not yet complete
     this may take very long.
 
-    :param strategy: Specify the strategy for which to tune hyperparameters
-    :type strategy: string
+    :param target_strategy: Specify the strategy for which to tune hyperparameters
+    :type target_strategy: string
 
     :param hyper_params: A dictionary containing the hyperparameters as keys and
         lists the possible values per key
@@ -47,11 +47,12 @@ def tune_hyper_params(strategy, hyper_params, *args, **kwargs):
     tune_params = args[-1]
 
     #find optimum
+    kwargs["strategy"] = "brute_force"
     results, env = kernel_tuner.tune_kernel(*args, **kwargs)
     optimum = min(results, key=lambda p: p["time"])["time"]
 
     #could throw a warning for the kwargs that will be overwritten, strategy(_options)
-    kwargs["strategy"] = strategy
+    kwargs["strategy"] = target_strategy
 
     parameter_space = itertools.product(*hyper_params.values())
     all_results = []
@@ -63,7 +64,7 @@ def tune_hyper_params(strategy, hyper_params, *args, **kwargs):
 
         fevals = []
         p_of_opt = []
-        for i in range(10):
+        for _ in range(100):
             #measure
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")

@@ -153,6 +153,7 @@ class OpenCLFunctions():
         for _ in range(self.iterations):
             for obs in self.observers:
                 obs.before_start()
+            self.queue.finish()
             self.event = func(self.queue, global_size, local_size, *gpu_args)
             for obs in self.observers:
                 obs.after_start()

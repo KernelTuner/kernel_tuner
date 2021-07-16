@@ -4,6 +4,15 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Added
+- support for PyTorch Tensors as input data type for kernels
+- support for smem_args in run_kernel
+- support for (lambda) function and string for dynamic shared memory size
+
+### Changed
+- optionally store the kernel_string with store_results
+
+
 ## [0.4.0] - 2021-04-09
 ### Added
 - support for (lambda) function instead of list of strings for restrictions

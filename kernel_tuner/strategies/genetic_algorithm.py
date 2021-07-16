@@ -69,16 +69,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         if tuning_options.verbose:
             print("Generation %d, best_time %f" % (generation, best_time))
-            for dna in weighted_population:
-                print(dna)
-            diversity = len(population)
-            for dna1 in population:
-                for dna2 in population:
-                    if dna1 == dna2:
-                        diversity = diversity - 1
-            print(f"{diversity=}")
 
-        old_population = population[:]
         population = []
 
         unique_results.update({",".join([str(i) for i in dna]): time for dna, time in weighted_population})
@@ -101,6 +92,11 @@ def tune(runner, kernel_options, device_options, tuning_options):
                     break
 
         # could combine old + new generation here and do a selection
+
+
+
+
+
 
 
     return all_results, runner.dev.get_environment()
@@ -175,14 +171,17 @@ def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
 
 def single_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at a random index"""
-    #pos = 1+int(random.random() * (len(dna1)-2))
     pos = int(random.random() * (len(dna1)))
     return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
 
 
 def two_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at 2 random indices"""
-    pos1, pos2 = sorted(random.sample(range(1,len(dna1)-1), 2))
+    if len(dna1) < 5:
+        start, end = 0, len(dna1)
+    else:
+        start, end = 1, len(dna1)-1
+    pos1, pos2 = sorted(random.sample(list(range(start,end)), 2))
     child1 = dna1[:pos1] + dna2[pos1:pos2] + dna1[pos2:]
     child2 = dna2[:pos1] + dna1[pos1:pos2] + dna2[pos2:]
     return (child1, child2)
