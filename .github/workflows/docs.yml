@@ -25,6 +25,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        conda install -c conda-forge pandoc
         pip install .[doc]
     - name: Build and Commit
       uses: sphinx-notes/pages@master
