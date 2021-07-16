@@ -1,4 +1,4 @@
-""" BayesianOptimization strategy from https://github.com/fmfn/BayesianOptimization """
+""" BayesianOptimization package from https://github.com/fmfn/BayesianOptimization """
 from __future__ import print_function
 
 from collections import OrderedDict

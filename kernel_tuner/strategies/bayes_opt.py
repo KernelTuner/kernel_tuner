@@ -18,9 +18,8 @@ try:
     from sklearn.gaussian_process.kernels import ConstantKernel, RBF, Matern
     from sklearn.exceptions import ConvergenceWarning
     from skopt.sampler import Lhs
-    from random import randint, seed, shuffle
+    from random import randint, shuffle
     from random import sample as randsample
-    from random import uniform as randuni
     import itertools
     import warnings
     import time    # for time.perf_counter()
@@ -31,9 +30,47 @@ except Exception:
 from kernel_tuner.strategies import minimize
 from kernel_tuner import util
 
-supported_cov_kernels = ["constantrbf", "rbf", "matern32", "matern52"]
-supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "ts", "multi", "multi-advanced", "multi-advanced-precise", "multi-fast"]
-supported_sampling_methods = ["random", "lhs"]
+
+def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
+    """ Generates normalization and denormalization dictionaries """
+    original_to_normalized = dict()
+    normalized_to_original = dict()
+    for param_name in tune_params.keys():
+        original_to_normalized_dict = dict()
+        normalized_to_original_dict = dict()
+        for value_index, value in enumerate(tune_params[param_name]):
+            normalized_value = eps * value_index + 0.5 * eps
+            normalized_to_original_dict[normalized_value] = value
+            original_to_normalized_dict[value] = normalized_value
+        original_to_normalized[param_name] = original_to_normalized_dict
+        normalized_to_original[param_name] = normalized_to_original_dict
+    return original_to_normalized, normalized_to_original
+
+
+def normalize_parameter_space(param_space: list, tune_params: dict, normalized: dict) -> list:
+    """ Normalize the parameter space given a normalization dictionary """
+    keys = list(tune_params.keys())
+    param_space_normalized = list(tuple(normalized[keys[i]][v] for i, v in enumerate(params)) for params in param_space)
+    return param_space_normalized
+
+
+def prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict):
+    """ Pruning of the parameter space to remove dimensions that have a constant parameter """
+    pruned_tune_params_mask = list()
+    removed_tune_params = list()
+    param_names = list(tune_params.keys())
+    for index, key in enumerate(tune_params.keys()):
+        pruned_tune_params_mask.append(len(tune_params[key]) > 1)
+        if len(tune_params[key]) > 1:
+            removed_tune_params.append(None)
+        else:
+            value = tune_params[key][0]
+            normalized = normalize_dict[param_names[index]][value]
+            removed_tune_params.append(normalized)
+    if 'verbose' in tuning_options and tuning_options.verbose is True and len(tune_params.keys()) != sum(pruned_tune_params_mask):
+        print(f"Number of parameters (dimensions): {len(tune_params.keys())}, after pruning: {sum(pruned_tune_params_mask)}")
+    parameter_space = list(tuple(itertools.compress(param_config, pruned_tune_params_mask)) for param_config in parameter_space)
+    return parameter_space, removed_tune_params
 
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -50,7 +87,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type device_options: kernel_tuner.interface.Options
 
     :param tuning_options: A dictionary with all options regarding the tuning
-        process.
+        process. Allows setting hyperparameters via the strategy_options key.
     :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
@@ -60,68 +97,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
+    max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
+    prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
         raise ImportError("Error: optional dependencies for Bayesian Optimization not installed")
 
-    def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
-        """ Generates normalization and denormalization dictionaries """
-        original_to_normalized = dict()
-        normalized_to_original = dict()
-        for param_name in tune_params.keys():
-            original_to_normalized_dict = dict()
-            normalized_to_original_dict = dict()
-            for value_index, value in enumerate(tune_params[param_name]):
-                normalized_value = eps * value_index + 0.5 * eps
-                normalized_to_original_dict[normalized_value] = value
-                original_to_normalized_dict[value] = normalized_value
-            original_to_normalized[param_name] = original_to_normalized_dict
-            normalized_to_original[param_name] = normalized_to_original_dict
-        return original_to_normalized, normalized_to_original
-
-    def normalize_parameter_space(param_space: list, tune_params: dict, normalized: dict) -> list:
-        keys = list(tune_params.keys())
-        param_space_normalized = list(tuple(normalized[keys[i]][v] for i, v in enumerate(params)) for params in param_space)
-        return param_space_normalized
-
-    time_start = time.perf_counter()
-
-    # get strategy options or defaults
-    prune_parameter_space = tuning_options.strategy_options.get("pruneparameterspace", True)
-    cov_kernel = tuning_options.strategy_options.get("covariancekernel", "matern32")
-    cov_kernel_lengthscale = tuning_options.strategy_options.get("covariancelengthscale", 1.5)
-    acq = tuning_options.strategy_options.get("method", "multi-advanced")
-    acq_params = tuning_options.strategy_options.get("methodparams", {})
-    acq_num = tuning_options.strategy_options.get("numacquisition", 1)
-    multi_af_names = tuning_options.strategy_options.get("multi_af_names", ['lcb', 'poi', 'ei'] if acq == 'multi-advanced-precise' else ['ei', 'poi', 'lcb'])
-    multi_afs_discount_factor = tuning_options.strategy_options.get("multi_af_discount_factor",
-                                                                    0.65 if acq == 'multi' else 0.75 if acq == 'multi-advanced' else 0.95)
-    multi_afs_required_improvement_factor = tuning_options.strategy_options.get("multi_afs_required_improvement_factor",
-                                                                                0.15 if acq == 'multi-advanced-precise' else 0.1)
-    init_points = tuning_options.strategy_options.get("popsize", 20)
-    max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
-    sampling_method = tuning_options.strategy_options.get("samplingmethod", "lhs")
-    sampling_crit = tuning_options.strategy_options.get("samplingcriterion", 'maximin')
-    sampling_iter = tuning_options.strategy_options.get("samplingiterations", 1000)
-
-    # set acq param defaults where missing
-    if 'explorationfactor' not in acq_params:
-        acq_params['explorationfactor'] = 'CV'
-    if 'zeta' not in acq_params:
-        acq_params['zeta'] = 1
-    if 'skip_duplicate_after' not in acq_params:
-        if acq == 'multi-advanced':
-            # both 5 and 15 work well
-            acq_params['skip_duplicate_after'] = 5
-        elif acq == "multi-advanced-precise":
-            # 3 is best by quite a lot, doesn't matter a lot for GPU kernels
-            acq_params['skip_duplicate_after'] = 3
-        else:
-            # both 5 and 3 work well
-            acq_params['skip_duplicate_after'] = 5
-
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
-    param_names = list(tune_params.keys())
     tuning_options["scaling"] = True
     _, _, eps = minimize.get_bounds_x0_eps(tuning_options)
 
@@ -143,63 +125,70 @@ def tune(runner, kernel_options, device_options, tuning_options):
     normalize_dict, denormalize_dict = generate_normalized_param_dicts(tune_params, eps)
     parameter_space = normalize_parameter_space(parameter_space, tune_params, normalize_dict)
 
-    # # print search space size and number of invalids
-    # invalid_count = 0
-    # results = []
-    # print(tune_params)
-    # for param_config in parameter_space:
-    #     result = minimize._cost_func(param_config, kernel_options, tuning_options, runner, results)
-    #     # print(result, str(param_config))
-    #     if result == 1e20:
-    #         invalid_count += 1
-    # print(
-    #     f"Search space size: {len(list(itertools.product(*tune_params.values())))}, after filtering: {len(parameter_space)}, invalid: {invalid_count}, minimum: {min(list(res['time'] for res in results))}"
-    # )
-    # exit(0)
-
     # prune the parameter space to remove dimensions that have a constant parameter
-    if prune_parameter_space:
-        pruned_tune_params_mask = list()
-        removed_tune_params = list()
-        for index, key in enumerate(tune_params.keys()):
-            pruned_tune_params_mask.append(len(tune_params[key]) > 1)
-            if len(tune_params[key]) > 1:
-                removed_tune_params.append(None)
-            else:
-                value = tune_params[key][0]
-                normalized = normalize_dict[param_names[index]][value]
-                removed_tune_params.append(normalized)
-        if tuning_options.verbose is True and len(tune_params.keys()) != sum(pruned_tune_params_mask):
-            print(f"Number of parameters (dimensions): {len(tune_params.keys())}, after pruning: {sum(pruned_tune_params_mask)}")
-        parameter_space = list(tuple(itertools.compress(param_config, pruned_tune_params_mask)) for param_config in parameter_space)
+    if prune_parameterspace:
+        parameter_space, removed_tune_params = prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict)
     else:
         parameter_space = list(parameter_space)
         removed_tune_params = [None] * len(tune_params.keys())
 
     # initialize
-    time_init = time.perf_counter()
-    bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner, init_points,
-                              cov_kernel_name=cov_kernel, cov_kernel_lengthscale=cov_kernel_lengthscale, acquisition_function=acq,
-                              acquisition_function_num=acq_num, acq_func_params=acq_params, multi_af_names=multi_af_names,
-                              multi_afs_discount_factor=multi_afs_discount_factor, multi_afs_required_improvement_factor=multi_afs_required_improvement_factor,
-                              sampling_method=sampling_method, sampling_crit=sampling_crit, sampling_iter=sampling_iter)
+    bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner)
+
     # optimize
-    time_opt = time.perf_counter()
     results = bo.optimize(max_fevals)
-    time_end = time.perf_counter()
-    # bo.visualize_after_opt()
-    # print("Total: {} | Preprocessing: {} | Init: {} | Opt: {}".format(round(time_end - time_init, 3), round(time_init - time_start, 3),
-    #                                                                   round(time_opt - time_init, 3), round(time_end - time_opt, 3)))
+
     return results, runner.dev.get_environment()
 
 
 class BayesianOptimization():
 
     def __init__(self, searchspace: list, removed_tune_params: list, kernel_options: dict, tuning_options: dict, normalize_dict: dict, denormalize_dict: dict,
-                 runner, num_initial_samples: int, opt_direction='min', cov_kernel_name='default', cov_kernel_lengthscale=1.0, acquisition_function='ei',
-                 acquisition_function_num=1, acq_func_params=None, multi_af_names=['ei', 'poi', 'lcb'], multi_afs_discount_factor=0.9,
-                 multi_afs_required_improvement_factor=0.1, sampling_method='lhs', sampling_crit=None, sampling_iter=1000):
+                 runner, opt_direction='min'):
         time_start = time.perf_counter_ns()
+
+        # supported hyperparameter values
+        self.supported_cov_kernels = ["constantrbf", "rbf", "matern32", "matern52"]
+        self.supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "ts", "multi", "multi-advanced", "multi-advanced-precise", "multi-fast"]
+        self.supported_sampling_methods = ["random", "lhs"]
+        self.supported_sampling_criterion = ["correlation", "ratio", "maximin", None]
+
+        def get_hyperparam(name: str, default, supported_values=list()):
+            value = tuning_options.strategy_options.get(name, default)
+            if len(supported_values) > 0 and value not in supported_values:
+                raise ValueError(f"'{name}' is set to {value}, but must be one of {supported_values}")
+            return value
+
+        # get hyperparameters
+        cov_kernel_name = get_hyperparam("covariancekernel", "matern32", self.supported_cov_kernels)
+        cov_kernel_lengthscale = get_hyperparam("covariancelengthscale", 1.5)
+        acquisition_function = get_hyperparam("method", "multi-advanced", self.supported_methods)
+        acq = acquisition_function
+        acq_params = get_hyperparam("methodparams", {})
+        multi_af_names = get_hyperparam("multi_af_names", ['lcb', 'poi', 'ei'] if acq == 'multi-advanced-precise' else ['ei', 'poi', 'lcb'])
+        self.multi_afs_discount_factor = get_hyperparam("multi_af_discount_factor", 0.65 if acq == 'multi' else 0.75 if acq == 'multi-advanced' else 0.95)
+        self.multi_afs_required_improvement_factor = get_hyperparam("multi_afs_required_improvement_factor", 0.15 if acq == 'multi-advanced-precise' else 0.1)
+        self.num_initial_samples = get_hyperparam("popsize", 20)
+        self.sampling_method = get_hyperparam("samplingmethod", "lhs", self.supported_sampling_methods)
+        self.sampling_crit = get_hyperparam("samplingcriterion", 'maximin', self.supported_sampling_criterion)
+        self.sampling_iter = get_hyperparam("samplingiterations", 1000)
+
+        # set acquisition function hyperparameter defaults where missing
+        if 'explorationfactor' not in acq_params:
+            acq_params['explorationfactor'] = 'CV'
+        if 'zeta' not in acq_params:
+            acq_params['zeta'] = 1
+        if 'skip_duplicate_after' not in acq_params:
+            if acq == 'multi-advanced':
+                # both 5 and 15 work well
+                acq_params['skip_duplicate_after'] = 5
+            elif acq == "multi-advanced-precise":
+                # 3 is best by quite a lot, doesn't matter a lot for GPU kernels
+                acq_params['skip_duplicate_after'] = 3
+            else:
+                # both 5 and 3 work well
+                acq_params['skip_duplicate_after'] = 5
+
         # set arguments
         self.kernel_options = kernel_options
         self.tuning_options = tuning_options
@@ -207,12 +196,8 @@ class BayesianOptimization():
         self.param_names = list(self.tune_params.keys())
         self.normalized_dict = normalize_dict
         self.denormalized_dict = denormalize_dict
-        self.sampling_method = sampling_method
-        self.sampling_crit = sampling_crit
-        self.sampling_iter = sampling_iter
         self.runner = runner
         self.max_threads = runner.dev.max_threads
-        self.num_initial_samples = num_initial_samples
         self.log_timings = False
 
         # set optimization constants
@@ -221,26 +206,17 @@ class BayesianOptimization():
         if opt_direction == 'min':
             self.worst_value = np.PINF
             self.argopt = np.argmin
-            self.af_num_partition = acquisition_function_num
         elif opt_direction == 'max':
             self.worst_value = np.NINF
             self.argopt = np.argmax
-            self.af_num_partition = -1 * acquisition_function_num
         else:
             raise ValueError("Invalid optimization direction '{}'".format(opt_direction))
-        self.af_num_cutoff = slice(self.af_num_partition)
 
         # set acquisition function
         self.optimize = self.__optimize
-        if acquisition_function_num < 1:
-            raise ValueError("Invalid number of acquisition function top values")
         self.af_name = acquisition_function
-        self.af_num = acquisition_function_num
-        self.af_params = acq_func_params
-        self.cached_af_list = None
+        self.af_params = acq_params
         self.multi_afs = list(self.get_af_by_name(af_name) for af_name in multi_af_names)
-        self.multi_afs_discount_factor = multi_afs_discount_factor
-        self.multi_afs_required_improvement_factor = multi_afs_required_improvement_factor
         if acquisition_function == 'poi':
             self.__af = self.af_probability_of_improvement
         elif acquisition_function == 'ei':
@@ -262,7 +238,7 @@ class BayesianOptimization():
         elif acquisition_function == 'multi-fast':
             self.optimize = self.__optimize_multi_fast
         else:
-            raise ValueError("Acquisition function must be one of {}, is {}".format(supported_methods, acquisition_function))
+            raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_methods, acquisition_function))
 
         # set kernel and Gaussian process
         if cov_kernel_name == "constantrbf":
@@ -274,7 +250,7 @@ class BayesianOptimization():
         elif cov_kernel_name == "matern52":
             kernel = Matern(length_scale=cov_kernel_lengthscale, nu=2.5, length_scale_bounds="fixed")
         else:
-            raise ValueError("Acquisition function must be one of {}, is {}".format(supported_cov_kernels, cov_kernel_name))
+            raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_cov_kernels, cov_kernel_name))
         # self.__model = GaussianProcessRegressor(kernel=kernel, alpha=1e-5, normalize_y=True)
         self.__model = GaussianProcessRegressor(kernel=kernel, alpha=1e-10, normalize_y=True)
 
@@ -285,6 +261,7 @@ class BayesianOptimization():
         self.searchspace_size = len(self.searchspace)
         self.num_dimensions = len(self.dimensions())
         self.__current_optimum = self.worst_value
+        self.cv_norm_maximum = None
         self.fevals = 0
         self.__visited_num = 0
         self.__visited_valid_num = 0
@@ -297,8 +274,11 @@ class BayesianOptimization():
         time_setup = time.perf_counter_ns()
 
         # take initial sample
-        self.initial_sample()
-        time_initial_sample = time.perf_counter_ns()
+        if self.num_initial_samples > 0:
+            self.initial_sample()
+            time_initial_sample = time.perf_counter_ns()
+
+        # print timings
         if self.log_timings:
             time_taken_setup = round(time_setup - time_start, 3) / 1000
             time_taken_initial_sample = round(time_initial_sample - time_setup, 3) / 1000
@@ -332,15 +312,6 @@ class BayesianOptimization():
     def is_valid(self, observation: float) -> bool:
         """ Returns whether an observation is valid """
         return not (observation == None or observation == self.invalid_value or observation == np.NaN)
-
-    def get_current_optimum(self) -> Tuple[list, float]:
-        """ Return the current optimum parameter configuration and its value """
-        # TODO deprecated, no longer valid
-        params, observations = self.valid_params_observations()
-        if len(params) == 0:
-            raise ValueError("No valid observation found, so no optimum either")
-        index = self.argopt(observations)
-        return params[index], observations[index]
 
     def get_af_by_name(self, name: str):
         """ Get the basic acquisition functions by their name """
@@ -460,7 +431,6 @@ class BayesianOptimization():
         """ Draws an LHS-distributed sample from the search space """
         if self.searchspace_size < num_samples:
             raise ValueError("Can't sample more than the size of the search space")
-        # TODO test which is the best, maximin or other criterion is probably best but takes longer due to iterations
         if self.sampling_crit is None:
             lhs = Lhs(lhs_type="centered", criterion=None)
         else:
@@ -489,7 +459,7 @@ class BayesianOptimization():
         elif self.sampling_method == 'random':
             samples = list()
         else:
-            raise ValueError("Sampling method must be one of {}, is {}".format(supported_sampling_methods, self.sampling_method))
+            raise ValueError("Sampling method must be one of {}, is {}".format(self.supported_sampling_methods, self.sampling_method))
         # collect the samples
         collected_samples = 0
         for params, index in samples:
@@ -519,17 +489,12 @@ class BayesianOptimization():
             return None
         if self.opt_direction == 'min':
             if self.current_optimum < 0:
-                # TODO doesn't work well for minimization beyond 0, should that even be a thing?
+                # doesn't work well for minimization beyond 0, should that even be a thing?
                 return abs(np.mean(std) / self.current_optimum)
             cv = np.mean(std) / (self.initial_sample_mean / self.current_optimum)
             # normalize if available
             if self.cv_norm_maximum:
                 cv = cv / self.cv_norm_maximum
-            # if self.af_name == 'poi' or self.af_name == 'ei':
-            #     # POI and EI need to be more greedy?
-            #     visited = max((self.fevals - self.num_initial_samples), 1)
-            #     iteration_weight = np.sqrt(1 / visited)
-            #     cv = cv * iteration_weight
             return cv
         return np.mean(std) / self.current_optimum
 
@@ -931,7 +896,7 @@ class BayesianOptimization():
         """ Visualize the model after the optimization """
         print(self.__model.kernel_.get_params())
         print(self.__model.log_marginal_likelihood())
-        import matplotlib.pyplot as plt    # TODO remove from production
+        import matplotlib.pyplot as plt
         _, mu, std = self.predict_list(self.searchspace)
         brute_force_observations = list()
         for param_config in self.searchspace:

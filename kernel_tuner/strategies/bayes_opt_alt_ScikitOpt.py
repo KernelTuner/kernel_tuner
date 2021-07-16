@@ -1,4 +1,4 @@
-""" SciKitOpt's Bayesian Optimization implementation from https://scikit-optimize.github.io/stable/auto_examples/bayesian-optimization.html"""
+""" SciKitOpt's Bayesian Optimization implementation from https://scikit-optimize.github.io/stable/auto_examples/bayesian-optimization.html """
 from __future__ import print_function
 
 from collections import OrderedDict
