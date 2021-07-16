@@ -44,7 +44,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     if not bayes_opt_present:
         raise ImportError("Error: optional dependency Bayesian Optimization not installed")
-    init_points = tuning_options.strategy_options.get("popsize", 20)
     n_iter = tuning_options.strategy_options.get("max_fevals", 100)
     tuning_options["scaling"] = True
     results = []
@@ -60,18 +59,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
             }
         return minimize._cost_func(param_config, kernel_options, tuning_options, runner, results)
 
-    bounds, _, _ = minimize.get_bounds_x0_eps(tuning_options)    # necessary to have EPS set
+    minimize.get_bounds_x0_eps(tuning_options)    # necessary to have EPS set
     tune_params = tuning_options.tune_params
     space = dict()
     for tune_param in tune_params.keys():
         space[tune_param] = hp.choice(tune_param, tune_params[tune_param])
-    # parameter_space = itertools.product(*tune_params.values())
 
-    # print(tune_params)
-    # space = hp.choice(tune_params)
-
-    # space = hp.choice('a', [('case 1', 1 + hp.lognormal('c1', 0, 1)), ('case 2', hp.uniform('c2', -10, 10))])
     trials = base.Trials()
-    best = fmin(func, space, algo=tpe.suggest, max_evals=n_iter, trials=trials)
+    fmin(func, space, algo=tpe.suggest, max_evals=n_iter, trials=trials)
 
     return results, runner.dev.get_environment()

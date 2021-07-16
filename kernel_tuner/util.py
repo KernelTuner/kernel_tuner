@@ -650,7 +650,6 @@ def store_cache(key, params, tuning_options):
 
 def dump_cache(obj: str, tuning_options):
     """ dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility! """
-    if isinstance(tuning_options.cache, dict):
-        if tuning_options.cachefile:
-            with open(tuning_options.cachefile, "a") as cachefile:
-                cachefile.write(obj)
+    if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
+        with open(tuning_options.cachefile, "a") as cachefile:
+            cachefile.write(obj)

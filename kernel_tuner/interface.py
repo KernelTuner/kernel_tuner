@@ -448,8 +448,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
         strategy = brute_force
 
     # select the runner for this job based on input
-    SelectedRunner = SimulationRunner if simulation_mode is True else SequentialRunner
-    with SelectedRunner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
+    selected_runner = SimulationRunner if simulation_mode is True else SequentialRunner
+    with selected_runner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.

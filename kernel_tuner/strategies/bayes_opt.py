@@ -1,13 +1,6 @@
 """ Bayesian Optimization implementation from the thesis by Willemsen """
 from __future__ import print_function
-
-from collections import OrderedDict
 from copy import deepcopy
-import enum
-from os import dup
-import re
-
-from numpy.core.fromnumeric import mean
 
 # BO imports
 try:
@@ -19,16 +12,19 @@ try:
     from sklearn.exceptions import ConvergenceWarning
     from skopt.sampler import Lhs
     from random import randint, shuffle
-    from random import sample as randsample
     import itertools
     import warnings
     import time    # for time.perf_counter()
     bayes_opt_present = True
 except Exception:
     bayes_opt_present = False
+    import_error_text = "Error: optional dependencies for Bayesian Optimization not installed"
+    raise ImportError(import_error_text)
 
 from kernel_tuner.strategies import minimize
 from kernel_tuner import util
+
+supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast"]
 
 
 def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
@@ -100,7 +96,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
-        raise ImportError("Error: optional dependencies for Bayesian Optimization not installed")
+        raise ImportError(import_error_text)
 
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
@@ -113,7 +109,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # check for search space restrictions
     if tuning_options.restrictions is not None:
         tuning_options.verbose = False
-        # parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
     parameter_space = filter(lambda p: util.config_valid(p, tuning_options, runner.dev.max_threads), parameter_space)
     parameter_space = list(parameter_space)
     if len(parameter_space) < 1:
@@ -132,10 +127,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
         parameter_space = list(parameter_space)
         removed_tune_params = [None] * len(tune_params.keys())
 
-    # initialize
+    # initialize and optimize
     bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner)
-
-    # optimize
     results = bo.optimize(max_fevals)
 
     return results, runner.dev.get_environment()
@@ -149,7 +142,7 @@ class BayesianOptimization():
 
         # supported hyperparameter values
         self.supported_cov_kernels = ["constantrbf", "rbf", "matern32", "matern52"]
-        self.supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "ts", "multi", "multi-advanced", "multi-advanced-precise", "multi-fast"]
+        self.supported_methods = supported_methods
         self.supported_sampling_methods = ["random", "lhs"]
         self.supported_sampling_criterion = ["correlation", "ratio", "maximin", None]
 
@@ -165,8 +158,8 @@ class BayesianOptimization():
         acquisition_function = get_hyperparam("method", "multi-advanced", self.supported_methods)
         acq = acquisition_function
         acq_params = get_hyperparam("methodparams", {})
-        multi_af_names = get_hyperparam("multi_af_names", ['lcb', 'poi', 'ei'] if acq == 'multi-advanced-precise' else ['ei', 'poi', 'lcb'])
-        self.multi_afs_discount_factor = get_hyperparam("multi_af_discount_factor", 0.65 if acq == 'multi' else 0.75 if acq == 'multi-advanced' else 0.95)
+        multi_af_names = get_hyperparam("multi_af_names", ['ei', 'poi', 'lcb'])
+        self.multi_afs_discount_factor = get_hyperparam("multi_af_discount_factor", 0.65 if acq == 'multi' else 0.95)
         self.multi_afs_required_improvement_factor = get_hyperparam("multi_afs_required_improvement_factor", 0.15 if acq == 'multi-advanced-precise' else 0.1)
         self.num_initial_samples = get_hyperparam("popsize", 20)
         self.sampling_method = get_hyperparam("samplingmethod", "lhs", self.supported_sampling_methods)
@@ -179,15 +172,7 @@ class BayesianOptimization():
         if 'zeta' not in acq_params:
             acq_params['zeta'] = 1
         if 'skip_duplicate_after' not in acq_params:
-            if acq == 'multi-advanced':
-                # both 5 and 15 work well
-                acq_params['skip_duplicate_after'] = 5
-            elif acq == "multi-advanced-precise":
-                # 3 is best by quite a lot, doesn't matter a lot for GPU kernels
-                acq_params['skip_duplicate_after'] = 3
-            else:
-                # both 5 and 3 work well
-                acq_params['skip_duplicate_after'] = 5
+            acq_params['skip_duplicate_after'] = 5
 
         # set arguments
         self.kernel_options = kernel_options
@@ -212,47 +197,13 @@ class BayesianOptimization():
         else:
             raise ValueError("Invalid optimization direction '{}'".format(opt_direction))
 
-        # set acquisition function
+        # set the acquisition function and surrogate model
         self.optimize = self.__optimize
         self.af_name = acquisition_function
         self.af_params = acq_params
         self.multi_afs = list(self.get_af_by_name(af_name) for af_name in multi_af_names)
-        if acquisition_function == 'poi':
-            self.__af = self.af_probability_of_improvement
-        elif acquisition_function == 'ei':
-            self.__af = self.af_expected_improvement
-        elif acquisition_function == 'lcb':
-            self.__af = self.af_lower_confidence_bound
-        elif acquisition_function == 'lcb-srinivas':
-            self.__af = self.af_lower_confidence_bound_srinivas
-        elif acquisition_function == 'ts':
-            self.__af = self.af_thompson_sampling
-        elif acquisition_function == 'random':
-            self.__af = self.af_random
-        elif acquisition_function == 'multi':
-            self.optimize = self.__optimize_multi
-        elif acquisition_function == 'multi-advanced':
-            self.optimize = self.__optimize_multi_advanced
-        elif acquisition_function == 'multi-advanced-precise':
-            self.optimize = self.__optimize_multi_advanced_precise
-        elif acquisition_function == 'multi-fast':
-            self.optimize = self.__optimize_multi_fast
-        else:
-            raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_methods, acquisition_function))
-
-        # set kernel and Gaussian process
-        if cov_kernel_name == "constantrbf":
-            kernel = ConstantKernel(1.0, constant_value_bounds="fixed") * RBF(cov_kernel_lengthscale, length_scale_bounds="fixed")
-        elif cov_kernel_name == "rbf":
-            kernel = RBF(length_scale=cov_kernel_lengthscale, length_scale_bounds="fixed")
-        elif cov_kernel_name == "matern32":
-            kernel = Matern(length_scale=cov_kernel_lengthscale, nu=1.5, length_scale_bounds="fixed")
-        elif cov_kernel_name == "matern52":
-            kernel = Matern(length_scale=cov_kernel_lengthscale, nu=2.5, length_scale_bounds="fixed")
-        else:
-            raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_cov_kernels, cov_kernel_name))
-        # self.__model = GaussianProcessRegressor(kernel=kernel, alpha=1e-5, normalize_y=True)
-        self.__model = GaussianProcessRegressor(kernel=kernel, alpha=1e-10, normalize_y=True)
+        self.set_acquisition_function(acquisition_function)
+        self.set_surrogate_model(cov_kernel_name, cov_kernel_lengthscale)
 
         # set remaining values
         self.results = []
@@ -272,13 +223,14 @@ class BayesianOptimization():
         self.__valid_observations = list()
         self.unvisited_cache = self.unvisited()
         time_setup = time.perf_counter_ns()
+        self.error_message_searchspace_fully_observed = "The search space has been fully observed"
 
         # take initial sample
         if self.num_initial_samples > 0:
             self.initial_sample()
             time_initial_sample = time.perf_counter_ns()
 
-        # print timings
+        # print the timings
         if self.log_timings:
             time_taken_setup = round(time_setup - time_start, 3) / 1000
             time_taken_initial_sample = round(time_initial_sample - time_setup, 3) / 1000
@@ -324,6 +276,41 @@ class BayesianOptimization():
             return self.af_lower_confidence_bound
         raise ValueError(f"{name} not in {basic_af_names}")
 
+    def set_acquisition_function(self, acquisition_function: str):
+        """ Set the acquisition function """
+        if acquisition_function == 'poi':
+            self.__af = self.af_probability_of_improvement
+        elif acquisition_function == 'ei':
+            self.__af = self.af_expected_improvement
+        elif acquisition_function == 'lcb':
+            self.__af = self.af_lower_confidence_bound
+        elif acquisition_function == 'lcb-srinivas':
+            self.__af = self.af_lower_confidence_bound_srinivas
+        elif acquisition_function == 'random':
+            self.__af = self.af_random
+        elif acquisition_function == 'multi':
+            self.optimize = self.__optimize_multi
+        elif acquisition_function == 'multi-advanced':
+            self.optimize = self.__optimize_multi_advanced
+        elif acquisition_function == 'multi-fast':
+            self.optimize = self.__optimize_multi_fast
+        else:
+            raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_methods, acquisition_function))
+
+    def set_surrogate_model(self, cov_kernel_name: str, cov_kernel_lengthscale: float):
+        """ Set the surrogate model with a covariance function and lengthscale """
+        if cov_kernel_name == "constantrbf":
+            kernel = ConstantKernel(1.0, constant_value_bounds="fixed") * RBF(cov_kernel_lengthscale, length_scale_bounds="fixed")
+        elif cov_kernel_name == "rbf":
+            kernel = RBF(length_scale=cov_kernel_lengthscale, length_scale_bounds="fixed")
+        elif cov_kernel_name == "matern32":
+            kernel = Matern(length_scale=cov_kernel_lengthscale, nu=1.5, length_scale_bounds="fixed")
+        elif cov_kernel_name == "matern52":
+            kernel = Matern(length_scale=cov_kernel_lengthscale, nu=2.5, length_scale_bounds="fixed")
+        else:
+            raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_cov_kernels, cov_kernel_name))
+        self.__model = GaussianProcessRegressor(kernel=kernel, alpha=1e-10, normalize_y=True)    # maybe change alpha to a higher value such as 1e-5?
+
     def valid_params_observations(self) -> Tuple[list, list]:
         """ Returns a list of valid observations and their parameter configurations """
         # if you do this every iteration, better keep it as cache and update in update_after_evaluation
@@ -333,8 +320,6 @@ class BayesianOptimization():
             if valid is True:
                 params.append(self.searchspace[index])
                 observations.append(self.observations[index])
-        # params = list(self.searchspace[index] for index, valid in enumerate(self.__valid_observation_indices) if valid is True)
-        # observations = list(self.observations[index] for index, valid in enumerate(self.__valid_observation_indices) if valid is True)
         return params, observations
 
     def unvisited(self) -> list:
@@ -370,7 +355,7 @@ class BayesianOptimization():
             else:
                 unpruned.append(param_config[pruned_count])
                 pruned_count += 1
-        return unpruned
+        return tuple(unpruned)
 
     def update_after_evaluation(self, observation: float, index: int, param_config: tuple):
         """ Adjust the visited and valid index records accordingly """
@@ -400,8 +385,6 @@ class BayesianOptimization():
 
     def fit_observations_to_model(self):
         """ Update the model based on the current list of observations """
-        # with warnings.catch_warnings():
-        #     warnings.filterwarnings("ignore", category=ConvergenceWarning)
         self.__model.fit(self.__valid_params, self.__valid_observations)
 
     def evaluate_objective_function(self, param_config: tuple) -> float:
@@ -422,7 +405,7 @@ class BayesianOptimization():
         """ Draw a random sample from the unvisited parameter configurations """
         if len(self.unvisited_cache) < 1:
             raise ValueError("Searchspace exhausted during random sample draw as no valid configurations were found")
-        index = randint(0, len(self.unvisited_cache) - 1)
+        index = randint(0, len(self.unvisited_cache) - 1)    # NOSONAR
         param_config = self.unvisited_cache[index]
         actual_index = self.find_param_config_index(param_config)
         return param_config, actual_index
@@ -478,20 +461,24 @@ class BayesianOptimization():
         self.fit_observations_to_model()
         _, _, std = self.predict_list(self.unvisited_cache)
         self.initial_sample_mean = np.mean(self.__valid_observations)
+        # Alternatively:
         # self.initial_sample_std = np.std(self.__valid_observations)
         # self.initial_sample_mean = np.mean(predictions)
         self.initial_std = np.mean(std)
         self.cv_norm_maximum = self.initial_std
 
-    def contextual_variance(self, std: list) -> float:
+    def contextual_variance(self, std: list):
         """ Contextual improvement to decide explore / exploit, based on CI proposed by (Jasrasaria, 2018) """
         if not self.af_params['explorationfactor'] == 'CV':
             return None
         if self.opt_direction == 'min':
-            if self.current_optimum < 0:
+            if self.current_optimum == self.worst_value:
+                return 0.01
+            if self.current_optimum <= 0:
                 # doesn't work well for minimization beyond 0, should that even be a thing?
                 return abs(np.mean(std) / self.current_optimum)
-            cv = np.mean(std) / (self.initial_sample_mean / self.current_optimum)
+            improvement_over_initial_sample = self.initial_sample_mean / self.current_optimum
+            cv = np.mean(std) / improvement_over_initial_sample
             # normalize if available
             if self.cv_norm_maximum:
                 cv = cv / self.cv_norm_maximum
@@ -500,35 +487,19 @@ class BayesianOptimization():
 
     def __optimize(self, max_fevals):
         """ Find the next best candidate configuration(s), evaluate those and update the model accordingly """
-        # first_cv = 0
         while self.fevals < max_fevals:
-            # time_af = time.perf_counter()
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError("The search space has been fully observed")
+                raise ValueError(self.error_message_searchspace_fully_observed)
             predictions, _, std = self.predict_list(self.unvisited_cache)
             hyperparam = self.contextual_variance(std)
             list_of_acquisition_values = self.__af(predictions, hyperparam)
             # afterwards select the best AF value
-            # time_select = time.perf_counter()
             best_af = self.argopt(list_of_acquisition_values)
             candidate_params = self.unvisited_cache[best_af]
             candidate_index = self.find_param_config_index(candidate_params)
             observation = self.evaluate_objective_function(candidate_params)
             self.update_after_evaluation(observation, candidate_index, candidate_params)
-            # time_fit = time.perf_counter()
             self.fit_observations_to_model()
-            # time_end = time.perf_counter()
-            # print("Total {} s | AF {} | Select {} | Fit {}".format(
-            #     round(time_end - time_af, 3),
-            #     round(time_select - time_af, 3),
-            #     round(time_fit - time_select, 3),
-            #     round(time_end - time_fit, 3),
-            # ))
-            # if self.__visited_num == self.__visited_initial_num + 1:
-            #     first_cv = hyperparam
-            # if self.__visited_num == max_fevals:
-            #     last_cv = hyperparam
-            #     print(f"First: {round(first_cv, 3)}, Last: {round(last_cv, 3)} | Result: {round(self.current_optimum, 3)}")
         return self.results
 
     def __optimize_multi(self, max_fevals):
@@ -541,8 +512,8 @@ class BayesianOptimization():
         skip_if_duplicate_n_times = self.af_params['skip_duplicate_after']
         discount_factor = self.multi_afs_discount_factor
         # setup the registration of duplicates and runtimes
-        duplicate_count_template = [0 for x in range(skip_if_duplicate_n_times)]
-        duplicate_candidate_af_count = list(deepcopy(duplicate_count_template) for x in range(3))
+        duplicate_count_template = [0 for _ in range(skip_if_duplicate_n_times)]
+        duplicate_candidate_af_count = list(deepcopy(duplicate_count_template) for _ in range(3))
         skip_af_index = list()
         af_runtimes = [0, 0, 0]
         af_observations = [list(), list(), list()]
@@ -554,7 +525,7 @@ class BayesianOptimization():
             predictions, _, std = self.predict_list(self.unvisited_cache)
             hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError("The search space has been fully observed")
+                raise ValueError(self.error_message_searchspace_fully_observed)
             time_predictions = time.perf_counter_ns()
             actual_candidate_params = list()
             actual_candidate_indices = list()
@@ -616,7 +587,6 @@ class BayesianOptimization():
                     candidates_for_skip.append(af_index)
             # do not skip the AF with the lowest runtime
             if len(candidates_for_skip) > 1:
-                # candidates_for_skip_runtimes = list(af_runtimes[af_index] for af_index in candidates_for_skip)
                 candidates_for_skip_discounted = list(
                     sum(list(obs * discount_factor**(len(observations) - 1 - i) for i, obs in enumerate(observations)))
                     for af_index, observations in enumerate(af_observations) if af_index in candidates_for_skip)
@@ -627,8 +597,6 @@ class BayesianOptimization():
                         duplicate_candidate_af_count[af_index] = deepcopy(duplicate_count_template)
                         continue
                     skip_af_index.append(af_index)
-                    # print(f"Skipping {af_index} after {self.__visited_num} iterations, keeping {af_not_to_skip}")
-                    # print(f"{af_runtimes[af_index]} versus {af_runtimes[af_not_to_skip]}")
                     if len(skip_af_index) >= len(aqfs):
                         raise ValueError("There are no acquisition functions left! This should not happen...")
             time_af_selection = time.perf_counter_ns()
@@ -647,7 +615,6 @@ class BayesianOptimization():
 
     def __optimize_multi_advanced(self, max_fevals, increase_precision=False):
         """ Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once, unless increase_precision is true. Skips AFs if they are consistently worse than the mean of discounted observations, promotes AFs if they are consistently better than this mean. """
-        # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
         if self.opt_direction != 'min':
             raise ValueError(f"Optimization direction must be minimization ('min'), is {self.opt_direction}")
         aqfs = self.multi_afs
@@ -665,7 +632,7 @@ class BayesianOptimization():
             if single_af:
                 return self.__optimize(max_fevals)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError("The search space has been fully observed")
+                raise ValueError(self.error_message_searchspace_fully_observed)
             observations_median = np.median(self.__valid_observations)
             if increase_precision is False:
                 predictions, _, std = self.predict_list(self.unvisited_cache)
@@ -697,89 +664,76 @@ class BayesianOptimization():
                     af_observations[af_index].append(reg_invalid_observation)
             if increase_precision is False:
                 self.fit_observations_to_model()
+
             # calculate the mean of discounted observations over the remaining acquisition functions
             discounted_obs = list(
                 sum(list(obs * discount_factor**(len(observations) - 1 - i) for i, obs in enumerate(observations))) for observations in af_observations)
             disc_obs_mean = np.mean(list(discounted_obs[af_index] for af_index, _ in enumerate(aqfs) if af_index not in skip_af_index))
+
             # register which AFs perform more than 10% better than average and which more than 10% worse than average
             for af_index, discounted_observation in enumerate(discounted_obs):
                 if discounted_observation > disc_obs_mean * required_improvement_worse:
                     af_performs_worse_count[af_index] += 1
                 elif discounted_observation < disc_obs_mean * required_improvement_better:
                     af_performs_better_count[af_index] += 1
+
             # find the worst AF, discounted observations is leading for a draw
             worst_count = max(list(count for af_index, count in enumerate(af_performs_worse_count) if af_index not in skip_af_index))
             af_index_worst = -1
             if worst_count >= min_required_count:
                 for af_index, count in enumerate(af_performs_worse_count):
-                    if af_index not in skip_af_index and count == worst_count:
-                        if af_index_worst == -1 or discounted_obs[af_index] > discounted_obs[af_index_worst]:
-                            af_index_worst = af_index
+                    if af_index not in skip_af_index and count == worst_count and (af_index_worst == -1
+                                                                                   or discounted_obs[af_index] > discounted_obs[af_index_worst]):
+                        af_index_worst = af_index
+
             # skip the worst AF
             if af_index_worst > -1:
                 skip_af_index.append(af_index_worst)
                 # reset the counts to even the playing field for the remaining AFs
                 af_performs_worse_count = [0, 0, 0]
                 af_performs_better_count = [0, 0, 0]
-                # print(f"- | Skipping AF {af_index_worst}")
                 # if there is only one AF left, register as single AF
                 if len(aqfs) <= len(skip_af_index) + 1:
                     single_af = True
                     af_indices_left = list(af_index for af_index, _ in enumerate(aqfs) if af_index not in skip_af_index)
                     assert len(af_indices_left) == 1
                     self.__af = aqfs[af_indices_left[0]]
-                    # print(f"+ | Single AF {af_indices_left[0]}")
             else:
                 # find the best AF, discounted observations is leading for a draw
                 best_count = max(list(count for af_index, count in enumerate(af_performs_better_count) if af_index not in skip_af_index))
                 af_index_best = -1
                 if best_count >= min_required_count:
                     for af_index, count in enumerate(af_performs_better_count):
-                        if af_index not in skip_af_index and count == best_count:
-                            if af_index_best == -1 or discounted_obs[af_index] < discounted_obs[af_index_best]:
-                                af_index_best = af_index
+                        if af_index not in skip_af_index and count == best_count and (af_index_best == -1
+                                                                                      or discounted_obs[af_index] < discounted_obs[af_index_best]):
+                            af_index_best = af_index
                 # make the best AF single
                 if af_index_best > -1:
                     single_af = True
                     self.__af = aqfs[af_index_best]
-                    # print(f"+ | Switching to single AF {af_index_best}")
+
         return self.results
 
-    def __optimize_multi_advanced_precise(self, max_fevals):
-        return self.__optimize_multi_advanced(max_fevals, increase_precision=True)
-
-    def __optimize_multi_fast(self, max_fevals, fast=True):
-        """ Optimize with a portfolio of multiple acquisition functions. If fast is True, predictions are only taken once. """
+    def __optimize_multi_fast(self, max_fevals):
+        """ Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once. """
         while self.fevals < max_fevals:
-            # if we take the prediction for every acquisition function, we want to go from most exploring to most exploiting, because new information is added
-            # aqfs = [self.af_lower_confidence_bound, self.af_probability_of_improvement, self.af_expected_improvement]
-            # aqfs = list(self.get_af_by_name(af_name) for af_name in self.af_params['multi_af_list'])
             aqfs = self.multi_afs
-            if fast:
-                # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
-                # aqfs = [self.af_expected_improvement, self.af_probability_of_improvement, self.af_lower_confidence_bound]
-                predictions, _, std = self.predict_list(self.unvisited_cache)
-                hyperparam = self.contextual_variance(std)
+            # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
+            predictions, _, std = self.predict_list(self.unvisited_cache)
+            hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError("The search space has been fully observed")
+                raise ValueError(self.error_message_searchspace_fully_observed)
             for af in aqfs:
                 if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
                     break
-                if not fast:
-                    predictions, _, std = self.predict_list(self.unvisited_cache)
-                    hyperparam = self.contextual_variance(std)
                 list_of_acquisition_values = af(predictions, hyperparam)
                 best_af = self.argopt(list_of_acquisition_values)
-                if fast:
-                    del predictions[best_af]    # to avoid going out of bounds
+                del predictions[best_af]    # to avoid going out of bounds
                 candidate_params = self.unvisited_cache[best_af]
                 candidate_index = self.find_param_config_index(candidate_params)
                 observation = self.evaluate_objective_function(candidate_params)
                 self.update_after_evaluation(observation, candidate_index, candidate_params)
-                if not fast:
-                    self.fit_observations_to_model()
-            if fast:
-                self.fit_observations_to_model()
+            self.fit_observations_to_model()
         return self.results
 
     def af_random(self, predictions=None, hyperparam=None) -> list:
@@ -810,7 +764,6 @@ class BayesianOptimization():
         """ Acquisition function Expected Improvement (EI) """
 
         # prefetch required data
-        # time_prefetch = time.perf_counter()
         if predictions is None:
             predictions, _, _ = self.predict_list(self.unvisited_cache)
         if hyperparam is None:
@@ -818,29 +771,18 @@ class BayesianOptimization():
         fplus = self.current_optimum - hyperparam
 
         # precompute difference of improvement, CDF and PDF in bulk
-        # time_precompute = time.perf_counter()
         list_diff_improvement = list((fplus - x_mu) / (x_std + 1E-9) for (x_mu, x_std) in predictions)
         list_cdf = norm.cdf(list_diff_improvement)
         list_pdf = norm.pdf(list_diff_improvement)
 
         # specify AF calculation
-        # time_calc = time.perf_counter()
-
         def exp_improvement(index) -> float:
             x_mu, x_std = predictions[index]
             ei = (fplus - x_mu) * list_cdf[index] + x_std * list_pdf[index]
             return -ei
 
         # calculate AF
-        list_exp_improvement = list(map(exp_improvement, range(len(predictions) - 1)))
-
-        # time_end = time.perf_counter()
-        # print("Total {} s | prefetch {} | precompute {} | calc {}".format(
-        #     round(time_end - time_prefetch, 3),
-        #     round(time_precompute - time_prefetch, 3),
-        #     round(time_calc - time_precompute, 3),
-        #     round(time_end - time_calc, 3),
-        # ))
+        list_exp_improvement = list(map(exp_improvement, range(len(predictions))))
         return list_exp_improvement
 
     def af_lower_confidence_bound(self, predictions=None, hyperparam=None) -> list:
@@ -876,21 +818,6 @@ class BayesianOptimization():
         # compute UCB in bulk
         list_lower_confidence_bound = list(x_mu - beta * x_std for (x_mu, x_std) in predictions)
         return list_lower_confidence_bound
-
-    def af_thompson_sampling(self, predictions=None, hyperparam=None) -> list:
-        """ Acquisition function Thompson Sampling (TS) """
-
-        # prefetch required data
-        # time_start = time.perf_counter()
-        random_indices = randsample(range(0, len(self.unvisited_cache) - 1), 400)
-        random_samples = [self.unvisited_cache[i] for i in random_indices]
-        samples = self.__model.sample_y(random_samples, 1)
-        # print(round(time.perf_counter() - time_start, 3))
-        # print(samples)
-        transposed = samples.T[0]
-        # print(transposed)
-
-        return transposed
 
     def visualize_after_opt(self):
         """ Visualize the model after the optimization """

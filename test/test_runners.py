@@ -96,9 +96,11 @@ def test_genetic_algorithm(env):
 
 
 def test_bayesian_optimization(env):
-    options = dict(popsize=5, max_fevals=10)
-    result, _ = kernel_tuner.tune_kernel(*env, strategy="bayes_opt", strategy_options=options, verbose=True, cache=cache_filename, simulation_mode=True)
-    assert len(result) > 0
+    for method in ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast"]:
+        print(method, flush=True)
+        options = dict(popsize=5, max_fevals=10, method=method)
+        result, _ = kernel_tuner.tune_kernel(*env, strategy="bayes_opt", strategy_options=options, verbose=True, cache=cache_filename, simulation_mode=True)
+        assert len(result) > 0
 
 
 def test_random_sample(env):

@@ -67,7 +67,7 @@ def test_prune_parameter_space():
         assert len(parameter_space[index]) - len(pruned_parameter_space[index]) == 1
 
 
-def test_BO_initialization():
+def test_bo_initialization():
     assert BO.num_initial_samples == 0
     assert callable(BO.optimize)
     assert len(BO.results) == 0
@@ -77,7 +77,7 @@ def test_BO_initialization():
     assert BO.current_optimum == np.PINF
 
 
-def test_BO_is_better_than():
+def test_bo_is_better_than():
     BO.opt_direction = 'max'
     assert BO.is_better_than(2, 1)
     assert BO.is_better_than(-0.1, -0.2)
@@ -86,44 +86,49 @@ def test_BO_is_better_than():
     assert BO.is_better_than(-0.2, -0.1)
 
 
-def test_BO_is_not_visited():
+def test_bo_is_not_visited():
     for index, _ in enumerate(BO.searchspace):
         assert BO.is_not_visited(index)
 
 
-def test_BO_get_af_by_name():
+def test_bo_get_af_by_name():
     for basic_af in ['ei', 'poi', 'lcb']:
         assert callable(BO.get_af_by_name(basic_af))
 
 
-def test_BO_unvisited():
+def test_bo_set_acquisition_function():
+    BO.set_acquisition_function('multi-fast')
+    assert callable(BO.optimize)
+
+
+def test_bo_unvisited():
     assert BO.unvisited() == BO.unvisited_cache
 
 
-def test_BO_find_param_config_index():
+def test_bo_find_param_config_index():
     for index, param_config in enumerate(BO.searchspace):
         assert BO.find_param_config_index(param_config) == index
 
 
-def test_BO_de_normalize_param_config():
+def test_bo_de_normalize_param_config():
     for param_config in BO.searchspace:
         denormalized = BO.denormalize_param_config(param_config)
         normalized = BO.normalize_param_config(denormalized)
         assert param_config == normalized
 
 
-def test_BO_unprune_param_config():
+def test_bo_unprune_param_config():
     for param_config in BO.searchspace:
         unpruned = BO.unprune_param_config(param_config)
         assert len(unpruned) - len(param_config) == 1
 
 
-def test_BO_contextual_variance():
+def test_bo_contextual_variance():
     BO.initial_sample_mean = 1.0
     assert isinstance(BO.contextual_variance(std), float)
 
 
-def test_BO_observation_added():
+def test_bo_observation_added():
     observations = list()
     for index, param_config in enumerate(BO.searchspace):
         observation = randfloat(0.1, 10)

@@ -59,16 +59,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
         counter.append(1)
         if len(counter) % 50 == 0:
             print(len(counter), flush=True)
-        # if not util.config_valid(args, tuning_options, runner.dev.max_threads):
-        # print("Invalid", flush=True)
-        # return 1e20
         val = minimize._cost_func(args, kernel_options, tuning_options, runner, results)
-        # print(f"{len(counter)} | {len(results)} | {val} |   {list(res['time'] for res in results)}", flush=True)
         return val
 
     bounds, _, _ = minimize.get_bounds_x0_eps(tuning_options)
-    # pbounds = OrderedDict(zip(tuning_options.tune_params.keys(), bounds))
-
     res = gp_minimize(func, bounds, acq_func=acq, n_calls=n_iter, n_initial_points=init_points, n_jobs=-1)
 
     if tuning_options.verbose:
