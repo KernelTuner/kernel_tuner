@@ -169,7 +169,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
                 value = tune_params[key][0]
                 normalized = normalize_dict[param_names[index]][value]
                 removed_tune_params.append(normalized)
-        if tuning_options.verbose:
+        if tuning_options.verbose is True and len(tune_params.keys()) != sum(pruned_tune_params_mask):
             print(f"Number of parameters (dimensions): {len(tune_params.keys())}, after pruning: {sum(pruned_tune_params_mask)}")
         parameter_space = list(tuple(itertools.compress(param_config, pruned_tune_params_mask)) for param_config in parameter_space)
     else:
