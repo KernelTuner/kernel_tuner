@@ -25,7 +25,7 @@ def test__cost_func():
 
     x = [1, 4]
     kernel_options = None
-    tuning_options = Options(scaling=False, tune_params=tune_params, restrictions=None, strategy_options={}, cache={})
+    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params, restrictions=None, strategy_options={}, cache={})
     runner = fake_runner()
     results = []
 
@@ -43,6 +43,7 @@ def test__cost_func():
     # check if restrictions are properly handled
     restrictions = ["False"]
     tuning_options = Options(scaling=False,
+                             snap=False,
                              tune_params=tune_params,
                              restrictions=restrictions,
                              strategy_options={},
