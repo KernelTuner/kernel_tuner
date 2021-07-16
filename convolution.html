@@ -462,11 +462,10 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="2D-Convolution-example">
 <h2>2D Convolution example<a class="headerlink" href="#2D-Convolution-example" title="Permalink to this headline">¶</a></h2>
 <p>Convolution operations are essential to signal and image processing applications and are the main operation in convolutional neural networks used for deep learning. A convolution operation computes the linear combination of the weights in a <em>convolution filter</em> and a range of pixels from the input image for each output pixel. A 2D convolution of an input image <span class="math notranslate nohighlight">\(I\)</span> of size <span class="math notranslate nohighlight">\((w\times h)\)</span> and a convolution filter <span class="math notranslate nohighlight">\(F\)</span> of size <span class="math notranslate nohighlight">\((F_w\times F_h)\)</span> computes an output image
-<span class="math notranslate nohighlight">\(O\)</span> of size <span class="math notranslate nohighlight">\(((w-F_w)\times (h-F_h))\)</span>:</p>
-<div class="math notranslate nohighlight">
-\begin{equation}\nonumber
+<span class="math notranslate nohighlight">\(O\)</span> of size <span class="math notranslate nohighlight">\(((w-F_w)\times (h-F_h))\)</span>: <span class="math">\begin{equation}\nonumber
 O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
-\end{equation}</div><p>A naive CUDA kernel for 2D Convolution parallelizes the operation by creating one thread for each output pixel. Note that to avoid confusion around the term <em>kernel</em>, we refer to the convolution filter as a <em>filter</em>.</p>
+\end{equation}</span></p>
+<p>A naive CUDA kernel for 2D Convolution parallelizes the operation by creating one thread for each output pixel. Note that to avoid confusion around the term <em>kernel</em>, we refer to the convolution filter as a <em>filter</em>.</p>
 <p>The kernel code is shown in the following code block, make sure you execute all code blocks in this tutorial by selecting them and pressing <strong>shift+enter</strong>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
@@ -612,8 +611,8 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </pre></div>
 </div>
 </div>
-<p>If you execute the above cell it will allocate GPU memory, move the contents of the <strong>arguments</strong> list to GPU memory, compile the kernel specified in <strong>kernel_source</strong>, and run the kernel name <strong>kernel_name</strong> with the thread block dimensions specified in <strong>params</strong> and the grid dimensions derived from the <strong>problem_size</strong>. After executing the kernel, <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> will also retrieve the results from GPU memory, and free GPU memory. The <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> function returns the data retrieved from
-the GPU in a list of Numpy arrays that we have named <strong>answer</strong> in the above example.</p>
+<p>If you execute the above cell it will allocate GPU memory, move the contents of the <strong>arguments</strong> list to GPU memory, compile the kernel specified in <strong>kernel_source</strong>, and run the kernel name <strong>kernel_name</strong> with the thread block dimensions specified in <strong>params</strong> and the grid dimensions derived from the <strong>problem_size</strong>. After executing the kernel, <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> will also retrieve the results from GPU memory, and free GPU memory. The <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> function returns the data retrieved from the
+GPU in a list of Numpy arrays that we have named <strong>answer</strong> in the above example.</p>
 <p>The <strong>answer</strong> list contains Numpy objects (arrays and/or scalars) in the same order and of the same type as the <strong>arguments</strong> list that we used to call the kernel with, but in contrast to <strong>arguments</strong> it contains the data that was stored in GPU memory after our naive convolution kernel had finished executing. This feature is particularly useful for implementing tests for your GPU kernels. You can perform the same operation in Python and compare the results.</p>
 </div>
 <div class="section" id="Tuning-2D-Convolution">
