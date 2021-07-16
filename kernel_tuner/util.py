@@ -118,8 +118,11 @@ def check_restrictions(restrictions, element, keys, verbose):
         valid = restrictions(params)
     else:
         for restrict in restrictions:
-            if not eval(replace_param_occurrences(restrict, params)):
-                valid = False
+            try:
+                if not eval(replace_param_occurrences(restrict, params)):
+                    valid = False
+            except ZeroDivisionError:
+                pass
     if not valid and verbose:
         print("skipping config", get_instance_string(params), "reason: config fails restriction")
     return valid

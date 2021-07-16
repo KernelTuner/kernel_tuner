@@ -1,4 +1,4 @@
-""" A simple genetic algorithm for parameter search """
+""" BayesianOptimization strategy from https://github.com/fmfn/BayesianOptimization """
 from __future__ import print_function
 
 from collections import OrderedDict
@@ -40,37 +40,21 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
-    #Bayesian Optimization strategy seems to need some hyper parameter tuning to
-    #become better than random sampling for auto-tuning GPU kernels.
-
-    #alpha, normalize_y, and n_restarts_optimizer are options to
-    #https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html
-    #defaults used by Baysian Optimization are:
-    #   alpha=1e-6,  #1e-3 recommended for very noisy or discrete search spaces
-    #   n_restarts_optimizer=5,
-    #   normalize_y=True,
-
-    #several exploration friendly settings are: (default is acq="ucb", kappa=2.576)
-    #   acq="poi", xi=1e-1
-    #   acq="ei", xi=1e-1
-    #   acq="ucb", kappa=10
-
     if not bayes_opt_present:
         raise ImportError("Error: optional dependency Bayesian Optimization not installed")
+    init_points = tuning_options.strategy_options.get("popsize", 20)
+    n_iter = tuning_options.strategy_options.get("max_fevals", 100)
 
-    #defaults as used by Bayesian Optimization Python package
-    acq = tuning_options.strategy_options.get("method", "poi")
+    # defaults as used by Bayesian Optimization Python package
+    acq = tuning_options.strategy_options.get("method", "ucb")
     kappa = tuning_options.strategy_options.get("kappa", 2.576)
     xi = tuning_options.strategy_options.get("xi", 0.0)
-    init_points = tuning_options.strategy_options.get("popsize", 5)
-    n_iter = tuning_options.strategy_options.get("maxiter", 25)
-    alpha = tuning_options.strategy_options.get("alpha", 1e-6)
 
     tuning_options["scaling"] = True
 
     results = []
 
-    #function to pass to the optimizer
+    # function to pass to the optimizer
     def func(**kwargs):
         args = [kwargs[key] for key in tuning_options.tune_params.keys()]
         return -1.0 * minimize._cost_func(args, kernel_options, tuning_options, runner, results)
