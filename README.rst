@@ -164,8 +164,9 @@ Related work
 You may also like `CLTune <https://github.com/CNugteren/CLTune>`__ by
 Cedric Nugteren. CLTune is a C++ library for kernel tuning.
 
-.. |Build Status| image:: https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master
-   :target: https://travis-ci.org/benvanwerkhoven/kernel_tuner
+
+.. |Build Status| image:: https://github.com/benvanwerkhoven/kernel_tuner/actions/workflows/python-app.yml/badge.svg
+   :target: https://github.com/benvanwerkhoven/kernel_tuner/actions/workflows/python-app.yml
 .. |CodeCov Badge| image:: https://codecov.io/gh/benvanwerkhoven/kernel_tuner/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benvanwerkhoven/kernel_tuner
 .. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue 
