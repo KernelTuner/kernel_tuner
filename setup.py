@@ -53,7 +53,7 @@ setup(
         'dev': [
             'numpy>=1.13.3', 'scipy>=0.18.1', 'mock>=2.0.0',
             'pytest>=3.0.3', 'Sphinx>=1.4.8',
-            'scikit-learn>=0.24.2', 'scikit-optimize>=0.8.1'
+            'scikit-learn>=0.24.2', 'scikit-optimize>=0.8.1',
             'sphinx-rtd-theme>=0.1.9', 'nbsphinx>=0.2.13',
             'jupyter>=1.0.0', 'matplotlib>=1.5.3', 'pandas>=0.19.1',
             'pylint>=1.7.1', 'bayesian-optimization>=1.0.1']
