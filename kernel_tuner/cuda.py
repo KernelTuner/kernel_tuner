@@ -15,9 +15,12 @@ try:
     import pycuda.driver as drv
     pycuda_available = True
 except ImportError:
+
     class PyCudaPlaceHolder():
+
         def __init__(self):
             self.PointerHolderBase = object
+
     drv = PyCudaPlaceHolder()
     pycuda_available = False
 
@@ -36,9 +39,9 @@ except ImportError:
     torch = TorchPlaceHolder()
 
 
-
 class Holder(drv.PointerHolderBase):
     """ class to interoperate torch device memory allocations with PyCUDA """
+
     def __init__(self, tensor):
         super(Holder, self).__init__()
         self.tensor = tensor
@@ -50,6 +53,7 @@ class Holder(drv.PointerHolderBase):
 
 class CudaRuntimeObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
+
     def __init__(self, dev):
         self.dev = dev
         self.stream = dev.stream
@@ -58,10 +62,13 @@ class CudaRuntimeObserver(BenchmarkObserver):
         self.times = []
 
     def after_finish(self):
-        self.times.append(self.end.time_since(self.start)) #ms
+        self.times.append(self.end.time_since(self.start))    #ms
 
     def get_results(self):
-        results = {"time": np.average(self.times), "times": self.times.copy()}
+        results = {
+            "time": np.average(self.times),
+            "times": self.times.copy()
+        }
         self.times = []
         return results
 
@@ -85,19 +92,20 @@ class CudaFunctions(object):
         """
         self.allocations = []
         self.texrefs = []
-        if not pycuda_available and isinstance(drv, PyCudaPlaceHolder): #and part to allow mocking
+        if not pycuda_available and isinstance(drv, PyCudaPlaceHolder):    #and part to allow mocking
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
         drv.init()
         self.context = drv.Device(device).make_context()
 
         #inspect device properties
-        devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
+        devprops = {str(k): v
+                    for (k, v) in self.context.get_device().get_attributes().items()}
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
         cc = str(devprops.get('COMPUTE_CAPABILITY_MAJOR', '0')) + str(devprops.get('COMPUTE_CAPABILITY_MINOR', '0'))
         if cc == "00":
             cc = self.context.get_device().compute_capability()
-        self.cc = str(cc[0])+str(cc[1])
+        self.cc = str(cc[0]) + str(cc[1])
         self.iterations = iterations
         self.current_module = None
         self.func = None
@@ -109,7 +117,8 @@ class CudaFunctions(object):
         else:
             self.source_mod = SourceModule
         if not self.source_mod:
-            raise ImportError("Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
+            raise ImportError(
+                "Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
 
         #create a stream and events
         self.stream = drv.Stream()
@@ -141,7 +150,7 @@ class CudaFunctions(object):
 
     def __exit__(self, *exc):
         for gpu_mem in self.allocations:
-            if hasattr(gpu_mem, 'free'): #if needed for when using mocks during testing
+            if hasattr(gpu_mem, 'free'):    #if needed for when using mocks during testing
                 gpu_mem.free()
         if hasattr(self, 'context'):
             self.context.pop()
@@ -170,10 +179,9 @@ class CudaFunctions(object):
                     gpu_args.append(Holder(arg))
                 else:
                     gpu_args.append(Holder(arg.cuda()))
-            else: # if not an array, just pass argument along
+            else:    # if not an array, just pass argument along
                 gpu_args.append(arg)
         return gpu_args
-
 
     def compile(self, kernel_instance):
         """call the CUDA compiler to compile the kernel, return the device function
@@ -199,9 +207,8 @@ class CudaFunctions(object):
                 compiler_options += self.compiler_options
 
             self.current_module = self.source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
-                                             arch=('compute_' + self.cc) if self.cc != "00" else None,
-                                             code=('sm_' + self.cc) if self.cc != "00" else None,
-                                             cache_dir=False, no_extern_c=no_extern_c)
+                                                  arch=('compute_' + self.cc) if self.cc != "00" else None, code=('sm_' + self.cc) if self.cc != "00" else None,
+                                                  cache_dir=False, no_extern_c=no_extern_c)
 
             self.func = self.current_module.get_function(kernel_name)
             return self.func
@@ -210,7 +217,6 @@ class CudaFunctions(object):
                 raise Exception("uses too much shared data")
             else:
                 raise e
-
 
     def benchmark(self, func, gpu_args, threads, grid):
         """runs the kernel and measures time repeatedly, returns average time
@@ -255,7 +261,7 @@ class CudaFunctions(object):
             while not self.end.query():
                 for obs in self.observers:
                     obs.during()
-                time.sleep(1e-6) #one microsecond
+                time.sleep(1e-6)    #one microsecond
             self.end.synchronize()
             for obs in self.observers:
                 obs.after_finish()
@@ -298,13 +304,16 @@ class CudaFunctions(object):
         :type texmem_args: dict
         """
 
-
-        filter_mode_map = { 'point': drv.filter_mode.POINT,
-                            'linear': drv.filter_mode.LINEAR }
-        address_mode_map = { 'border': drv.address_mode.BORDER,
-                             'clamp': drv.address_mode.CLAMP,
-                             'mirror': drv.address_mode.MIRROR,
-                             'wrap': drv.address_mode.WRAP }
+        filter_mode_map = {
+            'point': drv.filter_mode.POINT,
+            'linear': drv.filter_mode.LINEAR
+        }
+        address_mode_map = {
+            'border': drv.address_mode.BORDER,
+            'clamp': drv.address_mode.CLAMP,
+            'mirror': drv.address_mode.MIRROR,
+            'wrap': drv.address_mode.WRAP
+        }
 
         logging.debug('copy_texture_memory_args called')
         logging.debug('current module: ' + str(self.current_module))
@@ -330,7 +339,7 @@ class CudaFunctions(object):
                     # address_mode is set per axis
                     amode = v['address_mode']
                     if not isinstance(amode, list):
-                        amode = [ amode ] * data.ndim
+                        amode = [amode] * data.ndim
                     for i, m in enumerate(amode):
                         try:
                             if m is not None:
@@ -382,7 +391,6 @@ class CudaFunctions(object):
         """
         drv.memset_d8(allocation, value, size)
 
-
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
 
@@ -413,6 +421,8 @@ class CudaFunctions(object):
         else:
             dest = src
 
-    units = {'time': 'ms',
-             'power': 's,mW',
-             'energy': 'J'}
+    units = {
+        'time': 'ms',
+        'power': 's,mW',
+        'energy': 'J'
+    }

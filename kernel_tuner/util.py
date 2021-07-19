@@ -16,9 +16,13 @@ try:
 except ImportError:
     cp = np
 
+
 class TorchPlaceHolder():
+
     def __init__(self):
-        self.Tensor = Exception #using Exception here as a type that will never be among kernel arguments
+        self.Tensor = Exception    #using Exception here as a type that will never be among kernel arguments
+
+
 try:
     import torch
 except ImportError:
@@ -35,9 +39,7 @@ def check_argument_type(dtype, kernel_argument):
         "uint16": ["ushort", "unsigned short", "uint16_t"],
         "int16": ["short", "int16_t"],
         "uint32": ["uint", "unsigned int", "uint32_t"],
-        "int32":
-        ["int", "int32_t"
-         ],  # discrepancy between OpenCL and C here, long may be 32bits in C
+        "int32": ["int", "int32_t"],    # discrepancy between OpenCL and C here, long may be 32bits in C
         "uint64": ["ulong", "unsigned long", "uint64_t"],
         "int64": ["long", "int64_t"],
         "float16": ["half"],
@@ -46,48 +48,38 @@ def check_argument_type(dtype, kernel_argument):
     }
     if dtype in types_map:
         return any([substr in kernel_argument for substr in types_map[dtype]])
-    return False  # unknown dtype. do not throw exception to still allow kernel to run.
+    return False    # unknown dtype. do not throw exception to still allow kernel to run.
 
 
 def check_argument_list(kernel_name, kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
     kernel_arguments = list()
     collected_errors = list()
-    for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(",
-                                kernel_string):
+    for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
         kernel_end = kernel_string.find(")", kernel_start)
         if kernel_start != 0:
-            kernel_arguments.append(
-                kernel_string[kernel_start:kernel_end].split(","))
+            kernel_arguments.append(kernel_string[kernel_start:kernel_end].split(","))
     for arguments_set, arguments in enumerate(kernel_arguments):
         collected_errors.append(list())
         if len(arguments) != len(args):
-            collected_errors[arguments_set].append(
-                "Kernel and host argument lists do not match in size.")
+            collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
             continue
         for (i, arg) in enumerate(args):
             kernel_argument = arguments[i]
 
             if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
-                raise TypeError(
-                    "Argument at position " + str(i) + " of type: " +
-                    str(type(arg)) +
-                    " should be of type np.ndarray or numpy scalar")
+                raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type np.ndarray or numpy scalar")
 
             correct = True
             if isinstance(arg, np.ndarray) and not "*" in kernel_argument:
-                correct = False  # array is passed to non-pointer kernel argument
+                correct = False    # array is passed to non-pointer kernel argument
 
-            if correct and check_argument_type(str(arg.dtype),
-                                               kernel_argument):
+            if correct and check_argument_type(str(arg.dtype), kernel_argument):
                 continue
 
-            collected_errors[arguments_set].append("Argument at position " +
-                                                   str(i) + " of dtype: " +
-                                                   str(arg.dtype) +
-                                                   " does not match " +
-                                                   kernel_argument + ".")
+            collected_errors[arguments_set].append("Argument at position " + str(i) + " of dtype: " + str(arg.dtype) + " does not match " + kernel_argument +
+                                                   ".")
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one
             # it is the right one
@@ -102,8 +94,7 @@ def check_tune_params_list(tune_params):
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
-            raise ValueError("Tune parameter " + name + " with value " +
-                             str(param) + " has a forbidden name!")
+            raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
 
 
 def check_block_size_names(block_size_names):
@@ -112,10 +103,8 @@ def check_block_size_names(block_size_names):
         if not isinstance(block_size_names, list):
             raise ValueError("block_size_names should be a list of strings!")
         if len(block_size_names) > 3:
-            raise ValueError(
-                "block_size_names should not contain more than 3 names!")
-        if not all(
-            [isinstance(name, "".__class__) for name in block_size_names]):
+            raise ValueError("block_size_names should not contain more than 3 names!")
+        if not all([isinstance(name, "".__class__) for name in block_size_names]):
             raise ValueError("block_size_names should contain only strings!")
         # ensure there is always at least three names
         for i, name in enumerate(default_block_size_names):
@@ -127,16 +116,10 @@ def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:
         for name in block_size_names:
             if name not in tune_params.keys():
-                warnings.warn(
-                    "Block size name " + name +
-                    " is not specified in the tunable parameters list!",
-                    UserWarning)
-    else:  # if default block size names are used
-        if not any([k in default_block_size_names
-                    for k in tune_params.keys()]):
-            warnings.warn(
-                "None of the tunable parameters specify thread block dimensions!",
-                UserWarning)
+                warnings.warn("Block size name " + name + " is not specified in the tunable parameters list!", UserWarning)
+    else:    # if default block size names are used
+        if not any([k in default_block_size_names for k in tune_params.keys()]):
+            warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
 
 
 def check_restrictions(restrictions, element, keys, verbose):
@@ -147,11 +130,13 @@ def check_restrictions(restrictions, element, keys, verbose):
         valid = restrictions(params)
     else:
         for restrict in restrictions:
-            if not eval(replace_param_occurrences(restrict, params)):
-                valid = False
+            try:
+                if not eval(replace_param_occurrences(restrict, params)):
+                    valid = False
+            except ZeroDivisionError:
+                pass
     if not valid and verbose:
-        print("skipping config", get_instance_string(params),
-              "reason: config fails restriction")
+        print("skipping config", get_instance_string(params), "reason: config fails restriction")
     return valid
 
 
@@ -166,7 +151,7 @@ def config_valid(config, tuning_options, max_threads):
 
 
 def delete_temp_file(filename):
-    """ delete a temporary file, don't complain if is no longer exists """
+    """ delete a temporary file, don't complain if no longer exists """
     try:
         os.remove(filename)
     except OSError as e:
@@ -187,6 +172,7 @@ def detect_language(kernel_string):
 
 def get_config_string(params, keys=None, units=None):
     """ return a compact string representation of a measurement """
+
     def compact_number(v):
         if isinstance(v, float):
             return "{:.3f}".format(round(v, 3))
@@ -200,9 +186,7 @@ def get_config_string(params, keys=None, units=None):
     for k, v in params.items():
         if k in keys:
             unit = ""
-            if isinstance(
-                    units, dict
-            ):  # check if not None not enough, units could be mocked which causes errors
+            if isinstance(units, dict):    # check if not None not enough, units could be mocked which causes errors
                 unit = units.get(k, "")
             compact_str_items.append(k + "=" + compact_number(v) + unit)
     # and finally join them
@@ -210,9 +194,9 @@ def get_config_string(params, keys=None, units=None):
     return compact_str
 
 
-def get_grid_dimensions(current_problem_size, params, grid_div,
-                        block_size_names):
+def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """compute grid dims based on problem sizes and listed grid divisors"""
+
     def get_dimension_divisor(divisor_list, default, params):
         if divisor_list is None:
             if default in params:
@@ -222,18 +206,10 @@ def get_grid_dimensions(current_problem_size, params, grid_div,
         if callable(divisor_list):
             return divisor_list(params)
         else:
-            return np.prod([
-                int(eval(replace_param_occurrences(s, params)))
-                for s in divisor_list
-            ])
+            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
 
-    divisors = [
-        get_dimension_divisor(d, block_size_names[i], params)
-        for i, d in enumerate(grid_div)
-    ]
-    return tuple(
-        int(np.ceil(float(current_problem_size[i]) / float(d)))
-        for i, d in enumerate(divisors))
+    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
+    return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
 
 
 def get_instance_string(params):
@@ -280,8 +256,7 @@ def get_kernel_string(kernel_source, params=None):
         else:
             kernel_string = kernel_source
     else:
-        raise TypeError(
-            "Error kernel_source is not a string nor a callable function")
+        raise TypeError("Error kernel_source is not a string nor a callable function")
     return kernel_string
 
 
@@ -294,13 +269,11 @@ def get_problem_size(problem_size, params):
     current_problem_size = [1, 1, 1]
     for i, s in enumerate(problem_size):
         if isinstance(s, str):
-            current_problem_size[i] = int(
-                eval(replace_param_occurrences(s, params)))
+            current_problem_size[i] = int(eval(replace_param_occurrences(s, params)))
         elif isinstance(s, (int, np.integer)):
             current_problem_size[i] = s
         else:
-            raise TypeError(
-                "Error: problem_size should only contain strings or integers")
+            raise TypeError("Error: problem_size should only contain strings or integers")
     return current_problem_size
 
 
@@ -320,9 +293,7 @@ def get_smem_args(smem_args, params):
 
 def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
-    file = tempfile.mkstemp(
-        suffix=suffix or "", prefix="temp_",
-        dir=os.getcwd())  # or "" for Python 2 compatibility
+    file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd())    # or "" for Python 2 compatibility
     os.close(file[0])
     return file[1]
 
@@ -377,22 +348,18 @@ def process_metrics(params, metrics):
 
     """
     if not isinstance(metrics, OrderedDict):
-        raise ValueError(
-            "metrics should be an OrderedDict to preserve order and support composability"
-        )
+        raise ValueError("metrics should be an OrderedDict to preserve order and support composability")
     for k, v in metrics.items():
         if isinstance(v, str):
             value = eval(replace_param_occurrences(v, params))
         elif callable(v):
             value = v(params)
         else:
-            raise ValueError(
-                "metric dicts values should be strings or callable")
+            raise ValueError("metric dicts values should be strings or callable")
         if not k in params:
             params[k] = value
         else:
-            raise ValueError(
-                "metric dicts keys should not already exist in params")
+            raise ValueError("metric dicts keys should not already exist in params")
     return params
 
 
@@ -414,14 +381,12 @@ def looks_like_a_filename(kernel_source):
             if s in kernel_source:
                 result = False
         # string must contain substring ".c", ".opencl", or ".F"
-        result = result and any(
-            [s in kernel_source for s in (".c", ".opencl", ".F")])
+        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
     logging.debug('kernel_source is a filename: %s' % str(result))
     return result
 
 
-def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads,
-                          block_size_names, lang):
+def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names, lang):
     """ prepare kernel string for compilation
 
     Prepends the kernel with a series of C preprocessor defines specific
@@ -469,8 +434,8 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads,
             # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
             # using 0 to disable specifying a loop unrolling factor for this loop
             kernel_string = "constexpr int " + k + " = " + str(v) + ";\n" + kernel_string
-            if v==0:
-                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
+            if v == 0:
+                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)    # + r"[^\S]*"
         elif k not in block_size_names:
             kernel_string = f"#define {k} {v}\n" + kernel_string
 
@@ -498,15 +463,11 @@ def replace_param_occurrences(string, params):
     return string
 
 
-def setup_block_and_grid(problem_size,
-                         grid_div,
-                         params,
-                         block_size_names=None):
+def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     """compute problem size, thread block and grid dimensions for this kernel"""
     threads = get_thread_block_dimensions(params, block_size_names)
     current_problem_size = get_problem_size(problem_size, params)
-    grid = get_grid_dimensions(current_problem_size, params, grid_div,
-                               block_size_names)
+    grid = get_grid_dimensions(current_problem_size, params, grid_div, block_size_names)
     return threads, grid
 
 
@@ -608,7 +569,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         c["tune_params"] = tuning_options.tune_params
         c["cache"] = {}
 
-        contents = json.dumps(c, indent="")[:-3]  # except the last "}\n}"
+        contents = json.dumps(c, indent="")[:-3]    # except the last "}\n}"
 
         # write the header to the cachefile
         with open(cache, "w") as cachefile:
@@ -641,18 +602,11 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != runner.dev.name:
-            raise ValueError(
-                "Cannot load cache which contains results for different device"
-            )
+            raise ValueError("Cannot load cache which contains results for different device")
         if cached_data["kernel_name"] != kernel_options.kernel_name:
-            raise ValueError(
-                "Cannot load cache which contains results for different kernel"
-            )
-        if cached_data["tune_params_keys"] != list(
-                tuning_options.tune_params.keys()):
-            raise ValueError(
-                "Cannot load cache which contains results obtained with different tunable parameters"
-            )
+            raise ValueError("Cannot load cache which contains results for different kernel")
+        if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
+            raise ValueError("Cannot load cache which contains results obtained with different tunable parameters")
 
         tuning_options.cachefile = cache
         tuning_options.cache = cached_data["cache"]
@@ -685,14 +639,17 @@ def store_cache(key, params, tuning_options):
         else:
             return obj.__str__()
 
-    logging.debug('store_cache called, cache=%s, cachefile=%s' %
-                  (tuning_options.cache, tuning_options.cachefile))
+    logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict):
         if not key in tuning_options.cache:
             tuning_options.cache[key] = params
             if tuning_options.cachefile:
                 with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write(
-                        "\n" +
-                        json.dumps({key: params}, default=npconverter)[1:-1] +
-                        ",")
+                    cachefile.write("\n" + json.dumps({ key: params }, default=npconverter)[1:-1] + ",")
+
+
+def dump_cache(obj: str, tuning_options):
+    """ dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility! """
+    if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
+        with open(tuning_options.cachefile, "a") as cachefile:
+            cachefile.write(obj)

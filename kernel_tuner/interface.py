@@ -58,7 +58,7 @@ strategy_map = {
     "pso": pso,
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt
+    "bayes_opt": bayes_opt,
 }
 
 
@@ -410,6 +410,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
+    tuning_options["snap"] = True
 
     logging.debug('tune_kernel called')
     logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
@@ -447,8 +448,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
         strategy = brute_force
 
     # select the runner for this job based on input
-    SelectedRunner = SimulationRunner if simulation_mode else SequentialRunner
-    with SelectedRunner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
+    selected_runner = SimulationRunner if simulation_mode is True else SequentialRunner
+    with selected_runner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.

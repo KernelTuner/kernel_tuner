@@ -4,7 +4,6 @@ from collections import OrderedDict
 from kernel_tuner.strategies import minimize
 from kernel_tuner.interface import Options
 
-
 try:
     from mock import Mock
 except ImportError:
@@ -12,7 +11,9 @@ except ImportError:
 
 
 def fake_runner():
-    fake_result = {'time': 5}
+    fake_result = {
+        'time': 5
+    }
     runner = Mock()
     runner.run.return_value = [[fake_result], None]
     return runner
@@ -25,7 +26,7 @@ def test__cost_func():
 
     x = [1, 4]
     kernel_options = None
-    tuning_options = Options(scaling=False, tune_params=tune_params, restrictions=None, strategy_options={}, cache={})
+    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params, restrictions=None, strategy_options={}, cache={})
     runner = fake_runner()
     results = []
 
@@ -42,12 +43,7 @@ def test__cost_func():
 
     # check if restrictions are properly handled
     restrictions = ["False"]
-    tuning_options = Options(scaling=False,
-                             tune_params=tune_params,
-                             restrictions=restrictions,
-                             strategy_options={},
-                             verbose=True,
-                             cache={})
+    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params, restrictions=restrictions, strategy_options={}, verbose=True, cache={})
     time = minimize._cost_func(x, kernel_options, tuning_options, runner, results)
     assert time == 1e20
 
