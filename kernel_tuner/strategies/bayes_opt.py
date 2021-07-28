@@ -1,25 +1,23 @@
 """ Bayesian Optimization implementation from the thesis by Willemsen """
-from __future__ import print_function
 from copy import deepcopy
+from random import randint, shuffle
+import itertools
+import warnings
+import time
+
+import numpy as np
 
 # BO imports
 try:
-    import numpy as np
     from typing import Tuple
     from scipy.stats import norm
     from sklearn.gaussian_process import GaussianProcessRegressor
     from sklearn.gaussian_process.kernels import ConstantKernel, RBF, Matern
     from sklearn.exceptions import ConvergenceWarning
     from skopt.sampler import Lhs
-    from random import randint, shuffle
-    import itertools
-    import warnings
-    import time    # for time.perf_counter()
     bayes_opt_present = True
-except Exception:
+except ImportError:
     bayes_opt_present = False
-    import_error_text = "Error: optional dependencies for Bayesian Optimization not installed"
-    raise ImportError(import_error_text)
 
 from kernel_tuner.strategies import minimize
 from kernel_tuner import util
@@ -96,7 +94,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
-        raise ImportError(import_error_text)
+        raise ImportError("Error: optional dependencies for Bayesian Optimization not installed")
 
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
