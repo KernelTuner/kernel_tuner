@@ -242,7 +242,7 @@ class DeviceInterface(object):
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
                 logging.debug('benchmark fails due to runtime failure too many resources required')
                 if verbose:
-                    print("skipping config", instance.name, "reason: too many resources requested for launch")
+                    print("skipping config", util.get_instance_string(instance.params), "reason: too many resources requested for launch")
             else:
                 logging.debug('benchmark encountered runtime failure: ' + str(e))
                 print("Error while benchmarking:", instance.name)
@@ -353,7 +353,7 @@ class DeviceInterface(object):
             if any(msg in str(e) for msg in shared_mem_error_messages):
                 logging.debug('compile_kernel failed due to kernel using too much shared memory')
                 if verbose:
-                    print("skipping config", instance.name, "reason: too much shared memory used")
+                    print("skipping config", util.get_instance_string(instance.params), "reason: too much shared memory used")
             else:
                 logging.debug('compile_kernel failed due to error: ' + str(e))
                 print("Error while compiling:", instance.name)
@@ -387,7 +387,7 @@ class DeviceInterface(object):
         threads, grid = util.setup_block_and_grid(kernel_options.problem_size, grid_div, params, kernel_options.block_size_names)
         if numpy.prod(threads) > self.dev.max_threads:
             if verbose:
-                print("skipping config", instance_string, "reason: too many threads per block")
+                print("skipping config", util.get_instance_string(params), "reason: too many threads per block")
             return None
 
         #obtain the kernel_string and prepare additional files, if any
