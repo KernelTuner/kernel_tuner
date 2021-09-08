@@ -5,6 +5,7 @@ Thank you for considering to contribute to Kernel Tuner!
 Reporting Issues
 ----------------
 Not all contributions are code, creating an issue also helps us to improve. When you create an issue about a problem, please ensure the following:
+
 * Describe what you expected to happen.
 * If possible, include a minimal example to help us reproduce the issue.
 * Describe what actually happened, including the output of any errors printed.

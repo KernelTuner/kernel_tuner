@@ -11,26 +11,45 @@ import warnings
 import re
 
 import numpy as np
+try:
+    import cupy as cp
+except ImportError:
+    cp = np
+
+
+class TorchPlaceHolder():
+
+    def __init__(self):
+        self.Tensor = Exception    #using Exception here as a type that will never be among kernel arguments
+
+
+try:
+    import torch
+except ImportError:
+    torch = TorchPlaceHolder()
 
 default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 
 def check_argument_type(dtype, kernel_argument):
     """check if the numpy.dtype matches the type used in the code"""
-    types_map = {"uint8": ["uchar", "unsigned char", "uint8_t"],
-                 "int8": ["char", "int8_t"],
-                 "uint16": ["ushort", "unsigned short", "uint16_t"],
-                 "int16": ["short", "int16_t"],
-                 "uint32": ["uint", "unsigned int", "uint32_t"],
-                 "int32": ["int", "int32_t"],   #discrepancy between OpenCL and C here, long may be 32bits in C
-                 "uint64": ["ulong", "unsigned long", "uint64_t"],
-                 "int64": ["long", "int64_t"],
-                 "float16": ["half"],
-                 "float32": ["float"],
-                 "float64": ["double"]}
+    types_map = {
+        "uint8": ["uchar", "unsigned char", "uint8_t"],
+        "int8": ["char", "int8_t"],
+        "uint16": ["ushort", "unsigned short", "uint16_t"],
+        "int16": ["short", "int16_t"],
+        "uint32": ["uint", "unsigned int", "uint32_t"],
+        "int32": ["int", "int32_t"],    # discrepancy between OpenCL and C here, long may be 32bits in C
+        "uint64": ["ulong", "unsigned long", "uint64_t"],
+        "int64": ["long", "int64_t"],
+        "float16": ["half"],
+        "float32": ["float"],
+        "float64": ["double"]
+    }
     if dtype in types_map:
         return any([substr in kernel_argument for substr in types_map[dtype]])
-    return False # unknown dtype. do not throw exception to still allow kernel to run.
+    return False    # unknown dtype. do not throw exception to still allow kernel to run.
+
 
 def check_argument_list(kernel_name, kernel_string, args):
     """ raise an exception if a kernel arguments do not match host arguments """
@@ -49,25 +68,26 @@ def check_argument_list(kernel_name, kernel_string, args):
         for (i, arg) in enumerate(args):
             kernel_argument = arguments[i]
 
-            if not isinstance(arg, (np.ndarray, np.generic)):
+            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
                 raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type np.ndarray or numpy scalar")
 
             correct = True
             if isinstance(arg, np.ndarray) and not "*" in kernel_argument:
-                correct = False  #array is passed to non-pointer kernel argument
+                correct = False    # array is passed to non-pointer kernel argument
 
             if correct and check_argument_type(str(arg.dtype), kernel_argument):
                 continue
 
-            collected_errors[arguments_set].append("Argument at position " + str(i) + " of dtype: " + str(arg.dtype) +
-                                                   " does not match " + kernel_argument + ".")
+            collected_errors[arguments_set].append("Argument at position " + str(i) + " of dtype: " + str(arg.dtype) + " does not match " + kernel_argument +
+                                                   ".")
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one
             # it is the right one
             return
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
-        #raise TypeError(errors[0])
+        # raise TypeError(errors[0])
+
 
 def check_tune_params_list(tune_params):
     """ raise an exception if a tune parameter has a forbidden name """
@@ -76,26 +96,28 @@ def check_tune_params_list(tune_params):
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
 
+
 def check_block_size_names(block_size_names):
     if block_size_names is not None:
-        #do some type checks for the user input
+        # do some type checks for the user input
         if not isinstance(block_size_names, list):
             raise ValueError("block_size_names should be a list of strings!")
         if len(block_size_names) > 3:
             raise ValueError("block_size_names should not contain more than 3 names!")
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
             raise ValueError("block_size_names should contain only strings!")
-        #ensure there is always at least three names
+        # ensure there is always at least three names
         for i, name in enumerate(default_block_size_names):
-            if len(block_size_names) < i+1:
+            if len(block_size_names) < i + 1:
                 block_size_names.append(name)
+
 
 def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:
         for name in block_size_names:
             if name not in tune_params.keys():
                 warnings.warn("Block size name " + name + " is not specified in the tunable parameters list!", UserWarning)
-    else: #if default block size names are used
+    else:    # if default block size names are used
         if not any([k in default_block_size_names for k in tune_params.keys()]):
             warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
 
@@ -108,19 +130,34 @@ def check_restrictions(restrictions, element, keys, verbose):
         valid = restrictions(params)
     else:
         for restrict in restrictions:
-            if not eval(replace_param_occurrences(restrict, params)):
-                valid = False
+            try:
+                if not eval(replace_param_occurrences(restrict, params)):
+                    valid = False
+            except ZeroDivisionError:
+                pass
     if not valid and verbose:
         print("skipping config", get_instance_string(params), "reason: config fails restriction")
     return valid
 
+
+def config_valid(config, tuning_options, max_threads):
+    """ combines restrictions and a check on the max thread block dimension to check config validity """
+    legal = True
+    if tuning_options.restrictions:
+        legal = check_restrictions(tuning_options.restrictions, config, tuning_options.tune_params.keys(), False)
+    params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
+    dims = get_thread_block_dimensions(params, tuning_options.get("block_size_names", None))
+    return legal and np.prod(dims) <= max_threads
+
+
 def delete_temp_file(filename):
-    """ delete a temporary file, don't complain if is no longer exists """
+    """ delete a temporary file, don't complain if no longer exists """
     try:
         os.remove(filename)
     except OSError as e:
         if e.errno != errno.ENOENT:
             raise e
+
 
 def detect_language(kernel_string):
     """attempt to detect language from the kernel_string"""
@@ -135,6 +172,7 @@ def detect_language(kernel_string):
 
 def get_config_string(params, keys=None, units=None):
     """ return a compact string representation of a measurement """
+
     def compact_number(v):
         if isinstance(v, float):
             return "{:.3f}".format(round(v, 3))
@@ -148,7 +186,7 @@ def get_config_string(params, keys=None, units=None):
     for k, v in params.items():
         if k in keys:
             unit = ""
-            if isinstance(units, dict): #check if not None not enough, units could be mocked which causes errors
+            if isinstance(units, dict):    # check if not None not enough, units could be mocked which causes errors
                 unit = units.get(k, "")
             compact_str_items.append(k + "=" + compact_number(v) + unit)
     # and finally join them
@@ -158,6 +196,7 @@ def get_config_string(params, keys=None, units=None):
 
 def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """compute grid dims based on problem sizes and listed grid divisors"""
+
     def get_dimension_divisor(divisor_list, default, params):
         if divisor_list is None:
             if default in params:
@@ -168,14 +207,17 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
             return divisor_list(params)
         else:
             return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
     return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
+
 
 def get_instance_string(params):
     """ combine the parameters to a string mostly used for debug output
         use of OrderedDict is advised
     """
     return "_".join([str(i) for i in params.values()])
+
 
 def get_kernel_string(kernel_source, params=None):
     """ retrieve the kernel source and return as a string
@@ -202,7 +244,7 @@ def get_kernel_string(kernel_source, params=None):
     :returns: A string containing the kernel code.
     :rtype: string
     """
-    #logging.debug('get_kernel_string called with %s', str(kernel_source))
+    # logging.debug('get_kernel_string called with %s', str(kernel_source))
     logging.debug('get_kernel_string called')
 
     kernel_string = None
@@ -216,6 +258,7 @@ def get_kernel_string(kernel_source, params=None):
     else:
         raise TypeError("Error kernel_source is not a string nor a callable function")
     return kernel_string
+
 
 def get_problem_size(problem_size, params):
     """compute current problem size"""
@@ -233,11 +276,27 @@ def get_problem_size(problem_size, params):
             raise TypeError("Error: problem_size should only contain strings or integers")
     return current_problem_size
 
+
+def get_smem_args(smem_args, params):
+    """ return a dict with kernel instance specific size """
+    result = smem_args.copy()
+    if 'size' in result:
+        size = result['size']
+        if callable(size):
+            size = size(params)
+        elif isinstance(size, str):
+            size = replace_param_occurrences(size, params)
+            size = int(eval(size))
+        result['size'] = size
+    return result
+
+
 def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
-    file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd()) # or "" for Python 2 compatibility
+    file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd())    # or "" for Python 2 compatibility
     os.close(file[0])
     return file[1]
+
 
 def get_thread_block_dimensions(params, block_size_names=None):
     """thread block size from tuning params, currently using convention"""
@@ -249,14 +308,16 @@ def get_thread_block_dimensions(params, block_size_names=None):
     block_size_z = params.get(block_size_names[2], 1)
     return (int(block_size_x), int(block_size_y), int(block_size_z))
 
+
 def print_config_output(tune_params, params, quiet, metrics, units):
     """print the configuration string with tunable parameters and benchmark results"""
-    print_keys = list(tune_params.keys())+["time"]
+    print_keys = list(tune_params.keys()) + ["time"]
     if metrics:
         print_keys += metrics.keys()
     output_string = get_config_string(params, print_keys, units)
     if not quiet:
         print(output_string)
+
 
 def process_metrics(params, metrics):
     """ process user-defined metrics for derived benchmark results
@@ -302,28 +363,28 @@ def process_metrics(params, metrics):
     return params
 
 
-
 def looks_like_a_filename(kernel_source):
     """ attempt to detect whether source code or a filename was passed """
     logging.debug('looks_like_a_filename called')
     result = False
     if isinstance(kernel_source, str):
         result = True
-        #test if not too long
+        # test if not too long
         if len(kernel_source) > 250:
             result = False
-        #test if not contains special characters
+        # test if not contains special characters
         for c in "();{}\\":
             if c in kernel_source:
                 result = False
-        #just a safeguard for stuff that looks like code
+        # just a safeguard for stuff that looks like code
         for s in ["__global__ ", "__kernel ", "void ", "float "]:
             if s in kernel_source:
                 result = False
-        #string must contain substring ".c", ".opencl", or ".F"
+        # string must contain substring ".c", ".opencl", or ".F"
         result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
     logging.debug('kernel_source is a filename: %s' % str(result))
     return result
+
 
 def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names, lang):
     """ prepare kernel string for compilation
@@ -363,29 +424,30 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
     grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
     for i, g in enumerate(grid):
-        kernel_string = "#define " + grid_dim_names[i] + " " + str(g) + "\n" + kernel_string
+        kernel_string = f"#define {grid_dim_names[i]} {g}\n" + kernel_string
     for i, g in enumerate(threads):
-        kernel_string = "#define " + block_size_names[i] + " " + str(g) + "\n" + kernel_string
+        kernel_string = f"#define {block_size_names[i]} {g}\n" + kernel_string
     for k, v in params.items():
         if "loop_unroll_factor" in k and lang == "CUDA":
-            #this handles the special case that in CUDA
-            #pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
-            #in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
-            if v > 0: # using 0 to disable loop unrolling for this loop
-                kernel_string = "const int " + k + " = " + str(v) + ";\n" + kernel_string
-            else:
-                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
+            # this handles the special case that in CUDA
+            # pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
+            # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
+            # using 0 to disable specifying a loop unrolling factor for this loop
+            kernel_string = "constexpr int " + k + " = " + str(v) + ";\n" + kernel_string
+            if v == 0:
+                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)    # + r"[^\S]*"
         elif k not in block_size_names:
-            kernel_string = "#define " + k + " " + str(v) + "\n" + kernel_string
+            kernel_string = f"#define {k} {v}\n" + kernel_string
 
     name = kernel_name
 
-    #also insert kernel_tuner token
+    # also insert kernel_tuner token
     kernel_string = "#define kernel_tuner 1\n" + kernel_string
-    #name = kernel_name + "_" + get_instance_string(params)
-    #kernel_string = kernel_string.replace(kernel_name, name)
+    # name = kernel_name + "_" + get_instance_string(params)
+    # kernel_string = kernel_string.replace(kernel_name, name)
 
     return name, kernel_string
+
 
 def read_file(filename):
     """ return the contents of the file named filename or None if file not found """
@@ -393,11 +455,13 @@ def read_file(filename):
         with open(filename, 'r') as f:
             return f.read()
 
+
 def replace_param_occurrences(string, params):
     """replace occurrences of the tuning params with their current value"""
     for k, v in params.items():
         string = string.replace(k, str(v))
     return string
+
 
 def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     """compute problem size, thread block and grid dimensions for this kernel"""
@@ -406,10 +470,11 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     grid = get_grid_dimensions(current_problem_size, params, grid_div, block_size_names)
     return threads, grid
 
+
 def write_file(filename, string):
     """dump the contents of string to a file called filename"""
     import sys
-    #ugly fix, hopefully we can find a better one
+    # ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:
         with open(filename, 'w', encoding="utf-8") as f:
             f.write(string)
@@ -433,11 +498,13 @@ def normalize_verify_function(v):
         from inspect import signature
         sig = signature(func)
         return name in sig.parameters
+
     # python 3.0+
     def _has_kw_argument_fullarg(func, name):
         from inspect import getfullargspec
         spec = getfullargspec(func)
         return (name in spec.args) or (name in spec.kwonlyargs)
+
     # python 2.6+
     def _has_kw_argument_arg(func, name):
         from inspect import getargspec
@@ -468,27 +535,33 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     the cache file is stored using JSON and uses the following format:
 
-    { device_name: "name of device"
-      kernel_name: "name of kernel"
-      tune_params_keys: list
-      tune_params:
-      cache: {
-      "x1,x2,..xN": {"block_size_x": x1, ..., time=0.234342},
-      "y1,y2,..yN": {"block_size_x": y1, ..., time=0.134233},
-      }
-    }
+    .. code-block:: python
 
-    The last two closing brackets "}\n}" are not required, and everything
+        { device_name: "name of device"
+          kernel_name: "name of kernel"
+          tune_params_keys: list
+          tune_params:
+          cache: {
+            "x1,x2,..xN": {"block_size_x": x1, ..., time=0.234342},
+            "y1,y2,..yN": {"block_size_x": y1, ..., time=0.134233},
+          }
+        }
+
+
+    The last two closing brackets are not required, and everything
     should work as expected if these are missing. This is to allow to continue
     from an earlier (abruptly ended) tuning session.
 
     """
-    #caching only works correctly if tunable_parameters are stored in a OrderedDict
+    # caching only works correctly if tunable_parameters are stored in a OrderedDict
     if not isinstance(tuning_options.tune_params, OrderedDict):
         raise ValueError("Caching only works correctly when tunable parameters are stored in a OrderedDict")
 
-    #if file does not exist, create new cache
+    # if file does not exist, create new cache
     if not os.path.isfile(cache):
+        if tuning_options.simulation_mode:
+            raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
+
         c = OrderedDict()
         c["device_name"] = runner.dev.name
         c["kernel_name"] = kernel_options.kernel_name
@@ -496,34 +569,38 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         c["tune_params"] = tuning_options.tune_params
         c["cache"] = {}
 
-        contents = json.dumps(c, indent="")[:-3] #except the last "}\n}"
+        contents = json.dumps(c, indent="")[:-3]    # except the last "}\n}"
 
-        #write the header to the cachefile
+        # write the header to the cachefile
         with open(cache, "w") as cachefile:
             cachefile.write(contents)
 
         tuning_options.cachefile = cache
         tuning_options.cache = {}
 
-    #if file exists
+    # if file exists
     else:
         with open(cache, "r") as cachefile:
             filestr = cachefile.read().strip()
 
-        #if file was not properly closed, pretend it was properly closed
+        # if file was not properly closed, pretend it was properly closed
         if not filestr[-3:] == "}\n}":
-            #remove the trailing comma if any, and append closing brackets
+            # remove the trailing comma if any, and append closing brackets
             if filestr[-1] == ",":
                 filestr = filestr[:-1]
-            filestr = filestr + "}\n}" 
+            filestr = filestr + "}\n}"
         else:
-            #if it was properly closed, open it for appending new entries
+            # if it was properly closed, open it for appending new entries
             with open(cache, "w") as cachefile:
                 cachefile.write(filestr[:-3] + ",")
 
         cached_data = json.loads(filestr)
 
-        #check if it is safe to continue tuning from this cache
+        # if in simulation mode, use the device name from the cache file as the runner device name
+        if runner.simulation_mode:
+            runner.dev.name = cached_data["device_name"]
+
+        # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != runner.dev.name:
             raise ValueError("Cannot load cache which contains results for different device")
         if cached_data["kernel_name"] != kernel_options.kernel_name:
@@ -542,7 +619,7 @@ def close_cache(cache):
     with open(cache, "r") as fh:
         contents = fh.read()
 
-    #close to file to make sure it can be read by JSON parsers
+    # close to file to make sure it can be read by JSON parsers
     if contents[-1] == ",":
         with open(cache, "w") as fh:
             fh.write(contents[:-1] + "}\n}")
@@ -550,6 +627,7 @@ def close_cache(cache):
 
 def store_cache(key, params, tuning_options):
     """ stores a new entry (key, params) to the cachefile """
+
     # create converter for dumping numpy objects to JSON
     def npconverter(obj):
         if isinstance(obj, np.integer):
@@ -567,5 +645,11 @@ def store_cache(key, params, tuning_options):
             tuning_options.cache[key] = params
             if tuning_options.cachefile:
                 with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({key: params}, default=npconverter)[1:-1] + ",")
+                    cachefile.write("\n" + json.dumps({ key: params }, default=npconverter)[1:-1] + ",")
 
+
+def dump_cache(obj: str, tuning_options):
+    """ dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility! """
+    if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
+        with open(tuning_options.cachefile, "a") as cachefile:
+            cachefile.write(obj)

@@ -3,10 +3,13 @@ import numpy as np
 from kernel_tuner import core
 from kernel_tuner.interface import Options, _kernel_options
 
+from kernel_tuner.integration import TuneResults
+
 class PythonKernel(object):
 
-    def __init__(self, kernel_name, kernel_string, problem_size, arguments, params, inputs=None, outputs=None, device=0, platform=0,
-                 block_size_names=None, grid_div_x=None, grid_div_y=None, grid_div_z=None, verbose=True, lang=None):
+    def __init__(self, kernel_name, kernel_string, problem_size, arguments, params=None, inputs=None, outputs=None, device=0, platform=0,
+                 block_size_names=None, grid_div_x=None, grid_div_y=None, grid_div_z=None, verbose=True, lang=None,
+                 results_file=None):
         """ Construct Python helper object to compile and call the kernel from Python
 
             This object compiles a GPU kernel parameterized using the parameters in params.
@@ -27,8 +30,16 @@ class PythonKernel(object):
 
         """
         #construct device interface
-        kernel_source = core.KernelSource(kernel_string, lang)
-        self.dev = core.DeviceInterface(kernel_source, device=device)
+        kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
+        self.dev = core.DeviceInterface(kernel_source, device=device, quiet=True)
+        if not params:
+            params = {}
+
+        #if results_file is passed use the results file to lookup tunable parameters
+        if results_file:
+            results = TuneResults(results_file)
+            params.update(results.get_best_config(self.dev.name, problem_size))
+        self.params = params
 
         #construct kernel_options to hold information about the kernel
         opts = locals()
@@ -96,3 +107,7 @@ class PythonKernel(object):
         :type *args: np.ndarray or np.generic
         """
         return self.run_kernel(args)
+
+    def __del__(self):
+        if hasattr(self, 'dev'):
+            self.dev.__exit__([None, None, None])

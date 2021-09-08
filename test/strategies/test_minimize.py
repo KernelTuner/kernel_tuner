@@ -1,63 +1,55 @@
 from __future__ import print_function
 
 from collections import OrderedDict
-import numpy as np
-import pytest
-
-import kernel_tuner
 from kernel_tuner.strategies import minimize
 from kernel_tuner.interface import Options
 
-
 try:
-    from mock import patch, Mock
+    from mock import Mock
 except ImportError:
-    from unittest.mock import patch, Mock
+    from unittest.mock import Mock
 
 
 def fake_runner():
-    fake_result = {'time': 5}
+    fake_result = {
+        'time': 5
+    }
     runner = Mock()
     runner.run.return_value = [[fake_result], None]
     return runner
 
-tune_params = OrderedDict([("x", [1, 2, 3]), ("y",[4, 5, 6])])
 
+tune_params = OrderedDict([("x", [1, 2, 3]), ("y", [4, 5, 6])])
 
 
 def test__cost_func():
 
     x = [1, 4]
     kernel_options = None
-    tuning_options = Options(scaling=False, tune_params=tune_params, restrictions=None, strategy_options={}, cache={})
+    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params, restrictions=None, strategy_options={}, cache={})
     runner = fake_runner()
     results = []
 
     time = minimize._cost_func(x, kernel_options, tuning_options, runner, results)
     assert time == 5
 
-    tuning_options.cache["1,4"] = OrderedDict([("x",1), ("y",4), ("time",5)])
+    tuning_options.cache["1,4"] = OrderedDict([("x", 1), ("y", 4), ("time", 5)])
 
     time = minimize._cost_func(x, kernel_options, tuning_options, runner, results)
 
     assert time == 5
-    #check if 1st run is properly cached and runner is only called once
+    # check if 1st run is properly cached and runner is only called once
     assert runner.run.call_count == 1
 
-    #check if restrictions are properly handled
+    # check if restrictions are properly handled
     restrictions = ["False"]
-    tuning_options = Options(scaling=False,
-                             tune_params=tune_params,
-                             restrictions=restrictions,
-                             strategy_options={},
-                             verbose=True,
-                             cache={})
+    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params, restrictions=restrictions, strategy_options={}, verbose=True, cache={})
     time = minimize._cost_func(x, kernel_options, tuning_options, runner, results)
     assert time == 1e20
 
 
 def test_setup_method_arguments():
-    #check if returns a dict, the specific options depend on scipy
+    # check if returns a dict, the specific options depend on scipy
     assert isinstance(minimize.setup_method_arguments("bla", 5), dict)
 
 
@@ -68,5 +60,4 @@ def test_setup_method_options():
     assert isinstance(method_options, dict)
     assert method_options["eps"] == 1e-5
     assert method_options["maxfun"] == 100
-    assert method_options["disp"] == True
-
+    assert method_options["disp"] is True

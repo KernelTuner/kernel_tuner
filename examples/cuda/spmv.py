@@ -40,9 +40,9 @@ def tune():
     #compute reference answer using scipy.sparse
     row_ind = list(chain.from_iterable([[i] * (rows[i+1]-rows[i]) for i in range(nrows)]))
     matrix = csr_matrix((vals, (row_ind, cols)), shape=(nrows, ncols))
-    start = time.clock()
+    start = time.time()
     expected_y = matrix.dot(x)
-    end = time.clock()
+    end = time.time()
     print("computing reference using scipy.sparse took: " + str(start-end / 1000.0) + " ms.")
 
     answer = [expected_y, None, None, None, None, None]

@@ -73,6 +73,12 @@ class CFunctions(object):
         self.env = env
         self.name = platform.processor()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        pass
+
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the C function
 
@@ -110,12 +116,9 @@ class CFunctions(object):
     def compile(self, kernel_instance):
         """call the C compiler to compile the kernel, return the function
 
-        :param kernel_name: The name of the kernel to be compiled, used to lookup the
-            function after compilation.
-        :type kernel_name: string
-
-        :param kernel_string: The C code that contains the function `kernel_name`
-        :type kernel_string: string
+        :param kernel_instance: An object representing the specific instance of the tunable kernel
+            in the parameter space.
+        :type kernel_instance: kernel_tuner.core.KernelInstance
 
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
@@ -123,6 +126,7 @@ class CFunctions(object):
         logging.debug('compiling ' + kernel_instance.name)
 
         kernel_string = kernel_instance.kernel_string
+        kernel_name = kernel_instance.name
 
         if self.lib != None:
             self.cleanup_lib()
@@ -136,7 +140,10 @@ class CFunctions(object):
             if self.compiler == "pgfortran":
                 compiler_options.append("-mp")
             else:
-                compiler_options.append("-fopenmp")
+                if "#pragma acc" in kernel_string or "!$acc" in kernel_string:
+                    compiler_options.append("-fopenacc")
+                else:
+                    compiler_options.append("-fopenmp")
 
         #if filename is known, use that one
         suffix = kernel_instance.kernel_source.get_user_suffix()
@@ -191,6 +198,10 @@ class CFunctions(object):
                 kernel_name = match.group(1) + "_mp_" + kernel_name + "_"
             elif self.compiler == "pgfortran":
                 kernel_name = match.group(1) + "_" + kernel_name + "_"
+        else:
+            #for functions outside of modules
+            if self.compiler in ["gfortran", "ftn", "ifort", "pgfortran"]:
+                kernel_name = kernel_name + "_"
 
         try:
             write_file(source_file, kernel_string)
@@ -202,9 +213,8 @@ class CFunctions(object):
             subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
             subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
 
-
             self.lib = numpy.ctypeslib.load_library(filename, '.')
-            func = getattr(self.lib, kernel_instance.name)
+            func = getattr(self.lib, kernel_name)
             func.restype = C.c_float
 
         finally:

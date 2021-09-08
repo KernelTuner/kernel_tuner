@@ -1,6 +1,9 @@
 """This module contains all OpenCL specific kernel_tuner functions"""
 from __future__ import print_function
-import numpy
+import time
+import numpy as np
+
+from kernel_tuner.observers import BenchmarkObserver
 
 #embedded in try block to be able to generate documentation
 try:
@@ -9,10 +12,26 @@ except ImportError:
     cl = None
 
 
-class OpenCLFunctions(object):
+class OpenCLObserver(BenchmarkObserver):
+    """ Observer that measures time using CUDA events during benchmarking """
+    def __init__(self, dev):
+        self.dev = dev
+        self.times = []
+
+    def after_finish(self):
+        event = self.dev.event
+        self.times.append((event.profile.end - event.profile.start)*1e-6) #ms
+
+    def get_results(self):
+        results = {"time": np.average(self.times), "times": self.times.copy()}
+        self.times = []
+        return results
+
+
+class OpenCLFunctions():
     """Class that groups the OpenCL functions on maintains some state about the device"""
 
-    def __init__(self, device=0, platform=0, iterations=7, compiler_options=None):
+    def __init__(self, device=0, platform=0, iterations=7, compiler_options=None, observers=None):
         """Creates OpenCL device context and reads device properties
 
         :param device: The ID of the OpenCL device to use for benchmarking
@@ -35,6 +54,13 @@ class OpenCLFunctions(object):
         self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE)
         self.compiler_options = compiler_options or []
 
+        #observer stuff
+        self.observers = observers or []
+        self.observers.append(OpenCLObserver(self))
+        self.event = None
+        for obs in self.observers:
+            obs.register_device(self)
+
         #collect environment information
         dev = self.ctx.devices[0]
         env = dict()
@@ -48,6 +74,12 @@ class OpenCLFunctions(object):
         env["compiler_options"] = compiler_options
         self.env = env
         self.name = dev.name
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        pass
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
@@ -63,7 +95,7 @@ class OpenCLFunctions(object):
         gpu_args = []
         for arg in arguments:
             # if arg i is a numpy array copy to device
-            if isinstance(arg, numpy.ndarray):
+            if isinstance(arg, np.ndarray):
                 gpu_args.append(cl.Buffer(self.ctx, self.mf.READ_WRITE | self.mf.COPY_HOST_PTR, hostbuf=arg))
             else: # if not an array, just pass argument along
                 gpu_args.append(arg)
@@ -116,15 +148,24 @@ class OpenCLFunctions(object):
         :rtype: dict()
         """
         result = dict()
-        result["times"] = []
         global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
         local_size = threads
-        time = []
         for _ in range(self.iterations):
-            event = func(self.queue, global_size, local_size, *gpu_args)
-            event.wait()
-            result["times"].append((event.profile.end - event.profile.start)*1e-6)
-        result["time"] = numpy.mean(result["times"])
+            for obs in self.observers:
+                obs.before_start()
+            self.queue.finish()
+            self.event = func(self.queue, global_size, local_size, *gpu_args)
+            for obs in self.observers:
+                obs.after_start()
+            while self.event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) != 0:
+                for obs in self.observers:
+                    obs.during()
+                time.sleep(1e-6)
+            self.event.wait()
+            for obs in self.observers:
+                obs.after_finish()
+        for obs in self.observers:
+            result.update(obs.get_results())
         return result
 
     def run_kernel(self, func, gpu_args, threads, grid):
@@ -166,9 +207,9 @@ class OpenCLFunctions(object):
         """
         if isinstance(buffer, cl.Buffer):
             try:
-                cl.enqueue_fill_buffer(self.queue, buffer, numpy.uint32(value), 0, size)
+                cl.enqueue_fill_buffer(self.queue, buffer, np.uint32(value), 0, size)
             except AttributeError:
-                src=numpy.zeros(size, dtype='uint8')+numpy.uint8(value)
+                src=np.zeros(size, dtype='uint8')+np.uint8(value)
                 cl.enqueue_copy(self.queue, buffer, src)
 
     def memcpy_dtoh(self, dest, src):

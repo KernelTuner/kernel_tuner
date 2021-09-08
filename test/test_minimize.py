@@ -1,11 +1,10 @@
 from collections import OrderedDict
 
 import random
-import numpy
+import numpy as np
 
 from kernel_tuner.interface import Options
 import kernel_tuner.strategies.minimize as minimize
-
 
 
 def test_get_bounds_x0_eps():
@@ -31,8 +30,6 @@ def test_get_bounds_x0_eps():
     assert bounds == [(0, 4)]
     assert x0 == [2.0]
     assert eps == 1.0
-
-
 
 
 def test_get_bounds():
@@ -68,12 +65,12 @@ def test_unscale():
 
     params = OrderedDict()
     params['x'] = [2**i for i in range(4, 9)]
-    eps = 1.0/len(params['x'])
+    eps = 1.0 / len(params['x'])
 
     assert minimize.unscale_and_snap_to_nearest([0], params, eps)[0] == params['x'][0]
     assert minimize.unscale_and_snap_to_nearest([1], params, eps)[0] == params['x'][-1]
 
-    intervals = numpy.linspace(0, 1, len(params['x'])*10)
+    intervals = np.linspace(0, 1, len(params['x']) * 10)
 
     freq = dict()
     for i in intervals:
@@ -90,4 +87,3 @@ def test_unscale():
         assert v == freq[params['x'][0]]
 
     assert len(freq.keys()) == len(params['x'])
-

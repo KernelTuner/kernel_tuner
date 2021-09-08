@@ -5,9 +5,28 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 
 ### Added
+- support for PyTorch Tensors as input data type for kernels
+- support for smem_args in run_kernel
+- support for (lambda) function and string for dynamic shared memory size
+- a new Bayesian Optimization strategy
+
+### Changed
+- optionally store the kernel_string with store_results
+
+## [0.4.0] - 2021-04-09
+### Added
 - support for (lambda) function instead of list of strings for restrictions
 - support for (lambda) function instead of list for specifying grid divisors
 - support for (lambda) function instead of tuple for specifying problem_size
+- function to store the top tuning results
+- function to create header file with device targets from stored results
+- support for using tuning results in PythonKernel
+- option to control measurements using observers
+- support for NVML tunable parameters
+- option to simulate auto-tuning searches from existing cache files
+- Cupy backend to support C++ templated CUDA kernels
+- support for templated CUDA kernels using PyCUDA backend
+- documentation on tunable parameter vocabulary
 
 ## [0.3.2] - 2020-11-04
 ### Added

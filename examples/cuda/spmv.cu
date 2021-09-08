@@ -38,8 +38,8 @@ __global__ void spmv_kernel(float *y, int *rows, int *cols, float* values, float
         #if (threads_per_row == 32)
         //reduce result to single value per warp
         #pragma unroll
-        for (unsigned int s=warp_size/2; s>0; s>>=1) {
-            local_y += __shfl_xor(local_y, s);
+        for (int s=warp_size/2; s>0; s>>=1) {
+            local_y += __shfl_xor_sync(0xffffffff, local_y, s);
         }
         #endif
 

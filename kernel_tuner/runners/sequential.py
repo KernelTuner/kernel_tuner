@@ -11,7 +11,7 @@ from kernel_tuner.core import DeviceInterface
 class SequentialRunner(object):
     """ SequentialRunner is used for tuning with a single process/thread """
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
         """ Instantiate the SequentialRunner
 
         :param kernel_source: The kernel source
@@ -30,16 +30,21 @@ class SequentialRunner(object):
         """
 
         #detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_source, iterations=iterations, **device_options)
+        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options).__enter__()
+
         self.units = self.dev.units
         self.quiet = device_options.quiet
         self.kernel_source = kernel_source
 
         self.warmed_up = False
 
+        self.simulation_mode = False
+
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
+    def __enter__(self):
+        return self
 
     def run(self, parameter_space, kernel_options, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
@@ -55,7 +60,7 @@ class SequentialRunner(object):
         :type tuning_options: kernel_tuner.iterface.Options
 
         :returns: A list of dictionaries for executed kernel configurations and their
-            execution times. And a dictionary that contains a information
+            execution times. And a dictionary that contains information
             about the hardware/software environment on which the tuning took place.
         :rtype: list(dict()), dict()
 
@@ -83,7 +88,7 @@ class SequentialRunner(object):
             result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
             if result is None:
                 logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
-                params.update({"time": 1e20})
+                params.update({ "time": 1e20 })
                 store_cache(x_int, params, tuning_options)
                 continue
 
@@ -98,7 +103,6 @@ class SequentialRunner(object):
             if isinstance(result, dict):
                 params.update(result)
 
-
             if tuning_options.metrics:
                 params = process_metrics(params, tuning_options.metrics)
 
@@ -109,11 +113,6 @@ class SequentialRunner(object):
 
         return results, self.dev.get_environment()
 
-
-    def __del__(self):
+    def __exit__(self, *exc):
         if hasattr(self, 'dev'):
-            del self.dev
-
-
-
-
+            self.dev.__exit__(*exc)

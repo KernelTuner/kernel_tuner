@@ -6,6 +6,7 @@ import numpy
 
 from kernel_tuner import util
 
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Tune a random sample of sample_fraction fraction in the parameter space
 
@@ -34,24 +35,21 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     fraction = tuning_options.strategy_options.get("fraction", 0.1)
 
-    #compute cartesian product of all tunable parameters
+    # compute cartesian product of all tunable parameters
     parameter_space = itertools.product(*tune_params.values())
 
-    #check for search space restrictions
+    # check for search space restrictions
     if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p,
-                                                                   tune_params.keys(),
-                                                                   tuning_options.verbose),
-                                 parameter_space)
+        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
 
-    #reduce parameter space to a random sample using sample_fraction
+    # reduce parameter space to a random sample using sample_fraction
     parameter_space = numpy.array(list(parameter_space))
     size = len(parameter_space)
     fraction = int(numpy.ceil(size * fraction))
     sample_indices = numpy.random.choice(range(size), size=fraction, replace=False)
     parameter_space = parameter_space[sample_indices]
 
-    #call the runner
+    # call the runner
     results, env = runner.run(parameter_space, kernel_options, tuning_options)
 
     return results, env

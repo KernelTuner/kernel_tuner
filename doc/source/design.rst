@@ -37,18 +37,21 @@ The runners are implemented on top of a high-level *Device Interface*,
 which wraps all the functionality for compiling and benchmarking
 kernel configurations based on the low-level *Device Function Interface*.
 Currently, we have 
-three different implementations of the device function interface, which 
+four different implementations of the device function interface, which 
 basically abstracts the different backends into a set of simple 
 functions such as ``ready_argument_list`` which allocates GPU memory and 
 moves data to the GPU, and functions like ``compile``, ``benchmark``, or 
 ``run_kernel``. The functions in the core are basically the main 
 building blocks for implementing runners.
 
-At the bottom, the three backends that we currently have are shown. 
-PyCUDA and PyOpenCL are for tuning either CUDA or OpenCL kernels. The C 
+At the bottom, three of the backends are shown. 
+PyCUDA and PyOpenCL are for tuning either CUDA or OpenCL kernels.
+A relatively new addition is the Cupy backend based on Cupy for tuning
+CUDA kernels using the NVRTC compiler.
+The C 
 Functions implementation can actually call any compiler, typically NVCC 
 or GCC is used. This backend was created not just to be able to tune C 
-functions, but mostly to tune C functions that also launch GPU kernels.
+functions, but mostly to tune C functions that in turn launch GPU kernels.
 
 The rest of this section contains the API documentation of the modules 
 discussed above. For the documentation of the user API see the 
@@ -84,6 +87,27 @@ kernel_tuner.strategies.diff_evo
 .. automodule:: kernel_tuner.strategies.diff_evo
     :members:
 
+kernel_tuner.strategies.genetic_algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.genetic_algorithm
+    :members:
+
+kernel_tuner.strategies.pso
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.pso
+    :members:
+
+kernel_tuner.strategies.firefly_algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.firefly_algorithm
+    :members:
+
+kernel_tuner.strategies.simulated_annealing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.simulated_annealing
+    :members:
+
+
 
 Runners
 -------
@@ -91,6 +115,12 @@ Runners
 kernel_tuner.runners.sequential.SequentialRunner
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.runners.sequential.SequentialRunner
+    :special-members: __init__
+    :members:
+
+kernel_tuner.runners.sequential.SimulationRunner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.runners.simulation.SimulationRunner
     :special-members: __init__
     :members:
 
@@ -107,6 +137,12 @@ kernel_tuner.core.DeviceInterface
 kernel_tuner.cuda.CudaFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.cuda.CudaFunctions
+    :special-members: __init__
+    :members:
+
+kernel_tuner.cupy.CupyFunctions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.cupy.CupyFunctions
     :special-members: __init__
     :members:
 

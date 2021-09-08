@@ -5,6 +5,7 @@ import numpy as np
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps
 from kernel_tuner.strategies.pso import Particle
 
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -31,10 +32,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     results = []
 
-    #scale variables in x because PSO works with velocities to visit different configurations
+    # scale variables in x because PSO works with velocities to visit different configurations
     tuning_options["scaling"] = True
 
-    #using this instead of get_bounds because scaling is used
+    # using this instead of get_bounds because scaling is used
     bounds, _, _ = get_bounds_x0_eps(tuning_options)
 
     args = (kernel_options, tuning_options, runner, results)
@@ -42,7 +43,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     num_particles = tuning_options.strategy_options.get("popsize", 20)
     maxiter = tuning_options.strategy_options.get("maxiter", 100)
 
-    #parameters needed by the Firefly Algorithm
+    # parameters needed by the Firefly Algorithm
     B0 = tuning_options.strategy_options.get("B0", 1.0)
     gamma = tuning_options.strategy_options.get("gamma", 1.0)
     alpha = tuning_options.strategy_options.get("alpha", 0.2)

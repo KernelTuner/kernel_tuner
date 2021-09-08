@@ -10,6 +10,7 @@ from kernel_tuner import util
 
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -38,7 +39,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     method = tuning_options.strategy_options.get("method", "L-BFGS-B")
 
-    #scale variables in x to make 'eps' relevant for multiple variables
+    # scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
 
     bounds, x0, _ = get_bounds_x0_eps(tuning_options)
@@ -62,20 +63,23 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     logging.debug('_cost_func called')
     logging.debug('x: ' + str(x))
 
-    #snap values in x to nearest actual value for each parameter unscale x if needed
-    if tuning_options.scaling:
-        params = unscale_and_snap_to_nearest(x, tuning_options.tune_params, tuning_options.eps)
+    # snap values in x to nearest actual value for each parameter unscale x if needed
+    if tuning_options.snap:
+        if tuning_options.scaling:
+            params = unscale_and_snap_to_nearest(x, tuning_options.tune_params, tuning_options.eps)
+        else:
+            params = snap_to_nearest_config(x, tuning_options.tune_params)
     else:
-        params = snap_to_nearest_config(x, tuning_options.tune_params)
-
+        params = x
     logging.debug('params ' + str(params))
 
-    #we cache snapped values, since those correspond to results for an actual instance of the kernel
+    # we cache snapped values, since those correspond to results for an actual instance of the kernel
     x_int = ",".join([str(i) for i in params])
     if x_int in tuning_options.cache:
+        results.append(tuning_options.cache[x_int])
         return tuning_options.cache[x_int]["time"]
 
-    #check if this is a legal (non-restricted) parameter instance
+    # check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:
         legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
         if not legal:
@@ -84,16 +88,15 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
             tuning_options.cache[x_int] = error_result
             return error_time
 
-    #compile and benchmark this instance
+    # compile and benchmark this instance
     res, _ = runner.run([params], kernel_options, tuning_options)
 
-    #append to tuning results
+    # append to tuning results
     if res:
         results.append(res[0])
         return res[0]['time']
 
     return error_time
-
 
 
 def get_bounds_x0_eps(tuning_options):
@@ -106,20 +109,20 @@ def get_bounds_x0_eps(tuning_options):
         x0 = None
 
     if tuning_options.scaling:
-        eps = numpy.amin([1.0/len(v) for v in values])
+        eps = numpy.amin([1.0 / len(v) for v in values])
 
-        #reducing interval from [0, 1] to [0, eps*len(v)]
-        bounds = [(0, eps*len(v)) for v in values]
+        # reducing interval from [0, 1] to [0, eps*len(v)]
+        bounds = [(0, eps * len(v)) for v in values]
         if x0:
-            #x0 has been supplied by the user, map x0 into [0, eps*len(v)]
+            # x0 has been supplied by the user, map x0 into [0, eps*len(v)]
             for i, e in enumerate(values):
-                x0[i] = eps*values[i].index(x0[i])
+                x0[i] = eps * values[i].index(x0[i])
         else:
-            x0 = [0.5*eps*len(v) for v in values]
+            x0 = [0.5 * eps * len(v) for v in values]
     else:
         bounds = get_bounds(tuning_options.tune_params)
         if not x0:
-            x0 = [(min_v+max_v)/2.0 for (min_v, max_v) in bounds]
+            x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
         eps = 1e9
         for v_list in values:
             vals = numpy.sort(v_list)
@@ -146,7 +149,7 @@ def get_bounds(tune_params):
 def setup_method_arguments(method, bounds):
     """ prepare method specific arguments """
     kwargs = {}
-    #pass bounds to methods that support it
+    # pass bounds to methods that support it
     if method in ["L-BFGS-B", "TNC", "SLSQP"]:
         kwargs['bounds'] = bounds
     return kwargs
@@ -156,7 +159,7 @@ def setup_method_options(method, tuning_options):
     """ prepare method specific options """
     kwargs = {}
 
-    #Note that not all methods iterpret maxiter in the same manner
+    # Note that not all methods iterpret maxiter in the same manner
     if "maxiter" in tuning_options.strategy_options:
         maxiter = tuning_options.strategy_options.maxiter
     else:
@@ -167,26 +170,26 @@ def setup_method_options(method, tuning_options):
     elif method == "L-BFGS-B":
         kwargs['maxfun'] = maxiter
 
-    #pass eps to methods that support it
+    # pass eps to methods that support it
     if method in ["CG", "BFGS", "L-BFGS-B", "TNC", "SLSQP"]:
         kwargs['eps'] = tuning_options.eps
     elif method == "COBYLA":
         kwargs['rhobeg'] = tuning_options.eps
 
-    #not all methods support 'disp' option
+    # not all methods support 'disp' option
     if not method in ['TNC']:
         kwargs['disp'] = tuning_options.verbose
 
     return kwargs
 
 
-def snap_to_nearest_config(x, tune_params):
+def snap_to_nearest_config(x, tune_params, resolution=1):
     """helper func that for each param selects the closest actual value"""
     params = []
     for i, k in enumerate(tune_params.keys()):
         values = numpy.array(tune_params[k])
-        idx = numpy.abs(values-x[i]).argmin()
-        params.append(int(values[idx]))
+        idx = numpy.abs(values - x[i]).argmin()
+        params.append(values[idx])
     return params
 
 
@@ -194,18 +197,18 @@ def unscale_and_snap_to_nearest(x, tune_params, eps):
     """helper func that snaps a scaled variable to the nearest config"""
     x_u = [i for i in x]
     for i, v in enumerate(tune_params.values()):
-        #create an evenly spaced linear space to map [0,1]-interval
-        #to actual values, giving each value an equal chance
-        #pad = 0.5/len(v)  #use when interval is [0,1]
-        pad = 0.5*eps      #use when interval is [0, eps*len(v)]
-        linspace = numpy.linspace(pad, (eps*len(v))-pad, len(v))
+        # create an evenly spaced linear space to map [0,1]-interval
+        # to actual values, giving each value an equal chance
+        # pad = 0.5/len(v)  #use when interval is [0,1]
+        pad = 0.5 * eps    # use when interval is [0, eps*len(v)]
+        linspace = numpy.linspace(pad, (eps * len(v)) - pad, len(v))
 
-        #snap value to nearest point in space, store index
-        idx = numpy.abs(linspace-x[i]).argmin()
+        # snap value to nearest point in space, store index
+        idx = numpy.abs(linspace - x[i]).argmin()
 
-        #safeguard that should not be needed
-        idx = min(max(idx, 0), len(v)-1)
+        # safeguard that should not be needed
+        idx = min(max(idx, 0), len(v) - 1)
 
-        #use index into array of actual values
+        # use index into array of actual values
         x_u[i] = v[idx]
     return x_u

@@ -3,16 +3,27 @@ from __future__ import print_function
 
 import logging
 import time
-import numpy
+import numpy as np
 
+from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.nvml import nvml
+from kernel_tuner.util import TorchPlaceHolder
 
 #embedded in try block to be able to generate documentation
 #and run tests without pycuda installed
 try:
     import pycuda.driver as drv
+    pycuda_available = True
 except ImportError:
-    drv = None
+
+    class PyCudaPlaceHolder():
+
+        def __init__(self):
+            self.PointerHolderBase = object
+
+    drv = PyCudaPlaceHolder()
+    pycuda_available = False
+
 try:
     from pycuda.compiler import SourceModule
 except ImportError:
@@ -22,11 +33,50 @@ try:
 except ImportError:
     DynamicSourceModule = None
 
+try:
+    import torch
+except ImportError:
+    torch = TorchPlaceHolder()
+
+
+class Holder(drv.PointerHolderBase):
+    """ class to interoperate torch device memory allocations with PyCUDA """
+
+    def __init__(self, tensor):
+        super(Holder, self).__init__()
+        self.tensor = tensor
+        self.gpudata = tensor.data_ptr()
+
+    def get_pointer(self):
+        return self.t.data_ptr()
+
+
+class CudaRuntimeObserver(BenchmarkObserver):
+    """ Observer that measures time using CUDA events during benchmarking """
+
+    def __init__(self, dev):
+        self.dev = dev
+        self.stream = dev.stream
+        self.start = dev.start
+        self.end = dev.end
+        self.times = []
+
+    def after_finish(self):
+        self.times.append(self.end.time_since(self.start))    #ms
+
+    def get_results(self):
+        results = {
+            "time": np.average(self.times),
+            "times": self.times.copy()
+        }
+        self.times = []
+        return results
+
 
 class CudaFunctions(object):
     """Class that groups the CUDA functions on maintains state about the device"""
 
-    def __init__(self, device=0, iterations=7, compiler_options=None):
+    def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """instantiate CudaFunctions object used for interacting with the CUDA device
 
         Instantiating this object will inspect and store certain device properties at
@@ -42,28 +92,23 @@ class CudaFunctions(object):
         """
         self.allocations = []
         self.texrefs = []
-        if not drv:
+        if not pycuda_available and isinstance(drv, PyCudaPlaceHolder):    #and part to allow mocking
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
         drv.init()
         self.context = drv.Device(device).make_context()
 
-        try:
-            self.nvml = nvml(device)
-            self.nvml.pwr_usage()
-            self.use_nvml = True
-        except:
-            self.use_nvml = False
-
         #inspect device properties
-        devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
+        devprops = {str(k): v
+                    for (k, v) in self.context.get_device().get_attributes().items()}
         self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
         cc = str(devprops.get('COMPUTE_CAPABILITY_MAJOR', '0')) + str(devprops.get('COMPUTE_CAPABILITY_MINOR', '0'))
         if cc == "00":
             cc = self.context.get_device().compute_capability()
-        self.cc = str(cc[0])+str(cc[1])
+        self.cc = str(cc[0]) + str(cc[1])
         self.iterations = iterations
         self.current_module = None
+        self.func = None
         self.compiler_options = compiler_options or []
 
         #select PyCUDA source module
@@ -72,13 +117,22 @@ class CudaFunctions(object):
         else:
             self.source_mod = SourceModule
         if not self.source_mod:
-            raise ImportError("Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
+            raise ImportError(
+                "Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
 
-        #create a stream
+        #create a stream and events
         self.stream = drv.Stream()
+        self.start = drv.Event()
+        self.end = drv.Event()
 
         #default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
+
+        #setup observers
+        self.observers = observers or []
+        self.observers.append(CudaRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
         #collect environment information
         env = dict()
@@ -91,9 +145,12 @@ class CudaFunctions(object):
         self.env = env
         self.name = env["device_name"]
 
-    def __del__(self):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
         for gpu_mem in self.allocations:
-            if hasattr(gpu_mem, 'free'): #if needed for when using mocks during testing
+            if hasattr(gpu_mem, 'free'):    #if needed for when using mocks during testing
                 gpu_mem.free()
         if hasattr(self, 'context'):
             self.context.pop()
@@ -112,15 +169,19 @@ class CudaFunctions(object):
         gpu_args = []
         for arg in arguments:
             # if arg i is a numpy array copy to device
-            if isinstance(arg, numpy.ndarray):
+            if isinstance(arg, np.ndarray):
                 alloc = drv.mem_alloc(arg.nbytes)
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
                 drv.memcpy_htod(gpu_args[-1], arg)
-            else: # if not an array, just pass argument along
+            elif isinstance(arg, torch.Tensor):
+                if arg.is_cuda:
+                    gpu_args.append(Holder(arg))
+                else:
+                    gpu_args.append(Holder(arg.cuda()))
+            else:    # if not an array, just pass argument along
                 gpu_args.append(arg)
         return gpu_args
-
 
     def compile(self, kernel_instance):
         """call the CUDA compiler to compile the kernel, return the device function
@@ -146,18 +207,16 @@ class CudaFunctions(object):
                 compiler_options += self.compiler_options
 
             self.current_module = self.source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
-                                             arch=('compute_' + self.cc) if self.cc != "00" else None,
-                                             code=('sm_' + self.cc) if self.cc != "00" else None,
-                                             cache_dir=False, no_extern_c=no_extern_c)
+                                                  arch=('compute_' + self.cc) if self.cc != "00" else None, code=('sm_' + self.cc) if self.cc != "00" else None,
+                                                  cache_dir=False, no_extern_c=no_extern_c)
 
-            func = self.current_module.get_function(kernel_name)
-            return func
+            self.func = self.current_module.get_function(kernel_name)
+            return self.func
         except drv.CompileError as e:
             if "uses too much shared data" in e.stderr:
                 raise Exception("uses too much shared data")
             else:
                 raise e
-
 
     def benchmark(self, func, gpu_args, threads, grid):
         """runs the kernel and measures time repeatedly, returns average time
@@ -189,40 +248,27 @@ class CudaFunctions(object):
         :rtype: dict()
         """
         result = dict()
-        result["times"] = []
-        result["power"] = []
-        energy = []
-        start = drv.Event()
-        end = drv.Event()
         self.context.synchronize()
         for _ in range(self.iterations):
-            power_readings = []
-            start.record(stream=self.stream)
+            for obs in self.observers:
+                obs.before_start()
+            self.context.synchronize()
+            self.start.record(stream=self.stream)
             self.run_kernel(func, gpu_args, threads, grid, stream=self.stream)
-            end.record(stream=self.stream)
-            #measure power usage until kernel is done
-            t0 = time.time()
-            while not end.query():
-                if self.use_nvml:
-                    power_readings.append([time.time()-t0, self.nvml.pwr_usage()])
-            end.synchronize()
-            execution_time = end.time_since(start) #ms
-            result["times"].append(execution_time)
+            self.end.record(stream=self.stream)
+            for obs in self.observers:
+                obs.after_start()
+            while not self.end.query():
+                for obs in self.observers:
+                    obs.during()
+                time.sleep(1e-6)    #one microsecond
+            self.end.synchronize()
+            for obs in self.observers:
+                obs.after_finish()
 
-            #pre and postfix to start at 0 and end at kernel end
-            if power_readings:
-                power_readings = [[0.0, power_readings[0][1]]] + power_readings
-                power_readings = power_readings + [[execution_time / 1000.0, power_readings[-1][1]]]
-                result["power"].append(power_readings) #time in s, power usage in milliwatts
+        for obs in self.observers:
+            result.update(obs.get_results())
 
-                #compute energy consumption as area under curve
-                x = [d[0] for d in power_readings]
-                y = [d[1]/1000.0 for d in power_readings] #convert to watts
-                energy.append(numpy.trapz(y,x)) #in Joule
-
-        result["time"] = numpy.mean(result["times"])
-        if (self.iterations > 10) and energy:
-            result["energy"] = numpy.mean(energy[10:])
         return result
 
     def copy_constant_memory_args(self, cmem_args):
@@ -258,13 +304,16 @@ class CudaFunctions(object):
         :type texmem_args: dict
         """
 
-
-        filter_mode_map = { 'point': drv.filter_mode.POINT,
-                            'linear': drv.filter_mode.LINEAR }
-        address_mode_map = { 'border': drv.address_mode.BORDER,
-                             'clamp': drv.address_mode.CLAMP,
-                             'mirror': drv.address_mode.MIRROR,
-                             'wrap': drv.address_mode.WRAP }
+        filter_mode_map = {
+            'point': drv.filter_mode.POINT,
+            'linear': drv.filter_mode.LINEAR
+        }
+        address_mode_map = {
+            'border': drv.address_mode.BORDER,
+            'clamp': drv.address_mode.CLAMP,
+            'mirror': drv.address_mode.MIRROR,
+            'wrap': drv.address_mode.WRAP
+        }
 
         logging.debug('copy_texture_memory_args called')
         logging.debug('current module: ' + str(self.current_module))
@@ -290,7 +339,7 @@ class CudaFunctions(object):
                     # address_mode is set per axis
                     amode = v['address_mode']
                     if not isinstance(amode, list):
-                        amode = [ amode ] * data.ndim
+                        amode = [amode] * data.ndim
                     for i, m in enumerate(amode):
                         try:
                             if m is not None:
@@ -342,7 +391,6 @@ class CudaFunctions(object):
         """
         drv.memset_d8(allocation, value, size)
 
-
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
 
@@ -354,6 +402,8 @@ class CudaFunctions(object):
         """
         if isinstance(src, drv.DeviceAllocation):
             drv.memcpy_dtoh(dest, src)
+        elif isinstance(src, torch.Tensor):
+            dest[:] = src
         else:
             dest = src
 
@@ -371,6 +421,8 @@ class CudaFunctions(object):
         else:
             dest = src
 
-    units = {'time': 'ms',
-             'power': 's,mW',
-             'energy': 'J'}
+    units = {
+        'time': 'ms',
+        'power': 's,mW',
+        'energy': 'J'
+    }
