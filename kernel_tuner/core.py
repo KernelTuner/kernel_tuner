@@ -216,7 +216,7 @@ class DeviceInterface(object):
         elif lang == "C":
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         else:
-            raise Exception("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
         self.lang = lang
         self.dev = dev
         self.units = dev.units
@@ -242,7 +242,7 @@ class DeviceInterface(object):
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
                 logging.debug('benchmark fails due to runtime failure too many resources required')
                 if verbose:
-                    print("skipping config", util.get_instance_string(instance.params), "reason: too many resources requested for launch")
+                    print(f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch")
             else:
                 logging.debug('benchmark encountered runtime failure: ' + str(e))
                 print("Error while benchmarking:", instance.name)
@@ -260,9 +260,8 @@ class DeviceInterface(object):
         #re-copy original contents of output arguments to GPU memory, to overwrite any changes
         #by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
-            if verify or answer[i] is not None:
-                if isinstance(arg, numpy.ndarray):
-                    self.dev.memcpy_htod(gpu_args[i], arg)
+            if (verify or answer[i] is not None) and isinstance(arg, numpy.ndarray):
+                self.dev.memcpy_htod(gpu_args[i], arg)
 
         #run the kernel
         check = self.run_kernel(func, gpu_args, instance)
@@ -285,7 +284,7 @@ class DeviceInterface(object):
             correct = _default_verify_function(instance, answer, result_host, atol, verbose)
 
         if not correct:
-            raise Exception("Kernel result verification failed for: " + util.get_config_string(instance.params))
+            raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
         return True
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
@@ -353,7 +352,7 @@ class DeviceInterface(object):
             if any(msg in str(e) for msg in shared_mem_error_messages):
                 logging.debug('compile_kernel failed due to kernel using too much shared memory')
                 if verbose:
-                    print("skipping config", util.get_instance_string(instance.params), "reason: too much shared memory used")
+                    print(f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used")
             else:
                 logging.debug('compile_kernel failed due to error: ' + str(e))
                 print("Error while compiling:", instance.name)
@@ -365,18 +364,17 @@ class DeviceInterface(object):
         if self.lang == "CUDA":
             self.dev.copy_constant_memory_args(cmem_args)
         else:
-            raise Exception("Error cannot copy constant memory arguments when language is not CUDA")
+            raise RuntimeError("Error cannot copy constant memory arguments when language is not CUDA")
 
     def copy_texture_memory_args(self, texmem_args):
         """adds texture memory arguments to the most recently compiled module, if using CUDA"""
         if self.lang == "CUDA":
             self.dev.copy_texture_memory_args(texmem_args)
         else:
-            raise Exception("Error cannot copy texture memory arguments when language is not CUDA")
+            raise RuntimeError("Error cannot copy texture memory arguments when language is not CUDA")
 
     def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
-        instance_string = util.get_instance_string(params)
         grid_div = (kernel_options.grid_div_x, kernel_options.grid_div_y, kernel_options.grid_div_z)
 
         #insert default block_size_names if needed
@@ -387,7 +385,7 @@ class DeviceInterface(object):
         threads, grid = util.setup_block_and_grid(kernel_options.problem_size, grid_div, params, kernel_options.block_size_names)
         if numpy.prod(threads) > self.dev.max_threads:
             if verbose:
-                print("skipping config", util.get_instance_string(params), "reason: too many threads per block")
+                print(f"skipping config {util.get_instance_string(params)} reason: too many threads per block")
             return None
 
         #obtain the kernel_string and prepare additional files, if any
@@ -443,27 +441,22 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         if answer[i] is not None: #skip None elements in the answer list
             if isinstance(answer[i], numpy.ndarray) and isinstance(arg, numpy.ndarray):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError("Element " + str(i)
-                                    + " of the expected results list is not of the same dtype as the kernel output: "
+                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: "
                                     + str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
                 if answer[i].size != arg.size:
-                    raise TypeError("Element " + str(i)
-                                    + " of the expected results list has a size different from "
+                    raise TypeError(f"Element {i} of the expected results list has a size different from "
                                     + "the kernel argument: "
                                     + str(answer[i].size) + " != " + str(arg.size) + ".")
             elif isinstance(answer[i], numpy.number) and isinstance(arg, numpy.number):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError("Element " + str(i)
-                                    + " of the expected results list is not the same as the kernel output: "
+                    raise TypeError(f"Element {i} of the expected results list is not the same as the kernel output: "
                                     + str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
             else:
                 #either answer[i] and argument have different types or answer[i] is not a numpy type
                 if not isinstance(answer[i], numpy.ndarray) or not isinstance(answer[i], numpy.number):
-                    raise TypeError("Element " + str(i)
-                                    + " of expected results list is not a numpy array or numpy scalar.")
+                    raise TypeError("Element {i} of expected results list is not a numpy array or numpy scalar.")
                 else:
-                    raise TypeError("Element " + str(i)
-                                    + " of expected results list and kernel arguments have different types.")
+                    raise TypeError("Element {i} of expected results list and kernel arguments have different types.")
 
     def _ravel(a):
         if hasattr(a, 'ravel') and len(a.shape) > 1:
