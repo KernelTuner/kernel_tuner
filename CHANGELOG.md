@@ -4,6 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [0.4.1] - 2021-09-10
 ### Added
 - support for PyTorch Tensors as input data type for kernels
 - support for smem_args in run_kernel
@@ -12,6 +13,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - optionally store the kernel_string with store_results
+- improved reporting of skipped configurations
 
 ## [0.4.0] - 2021-04-09
 ### Added
