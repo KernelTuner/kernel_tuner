@@ -4,13 +4,13 @@ from random import randint, shuffle
 import itertools
 import warnings
 import time
+from typing import Tuple
 
 import numpy as np
+from scipy.stats import norm
 
 # BO imports
 try:
-    from typing import Tuple
-    from scipy.stats import norm
     from sklearn.gaussian_process import GaussianProcessRegressor
     from sklearn.gaussian_process.kernels import ConstantKernel, RBF, Matern
     from sklearn.exceptions import ConvergenceWarning
@@ -94,7 +94,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
-        raise ImportError("Error: optional dependencies for Bayesian Optimization not installed")
+        raise ImportError("Error: optional dependencies for Bayesian Optimization not installed, please install scikit-learn and scikit-optimize")
 
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
