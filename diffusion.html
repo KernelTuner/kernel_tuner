@@ -1,36 +1,16 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Tutorial: From physics to tuned GPU kernels &mdash; Kernel Tuner 0.4.1 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
@@ -38,43 +18,23 @@
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Kernel Tuner Examples" href="examples.html" />
     <link rel="prev" title="Getting Started" href="convolution.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="index.html" class="icon icon-home"> Kernel Tuner
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
                 0.4.1
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -82,18 +42,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
@@ -119,73 +68,30 @@
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Kernel Tuner</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
       <li>Tutorial: From physics to tuned GPU kernels</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
-            
               <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/diffusion.ipynb" class="fa fa-github"> Edit on GitHub</a>
-            
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   
 <style>
 /* CSS for nbsphinx extension */
@@ -456,7 +362,7 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Tutorial:-From-physics-to-tuned-GPU-kernels">
+<section id="Tutorial:-From-physics-to-tuned-GPU-kernels">
 <h1>Tutorial: From physics to tuned GPU kernels<a class="headerlink" href="#Tutorial:-From-physics-to-tuned-GPU-kernels" title="Permalink to this headline">¶</a></h1>
 <p>This tutorial is designed to show you the whole process starting from modeling a physical process to a Python implementation to creating optimized and auto-tuned GPU application using Kernel Tuner.</p>
 <p>In this tutorial, we will use <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion">diffusion</a> as an example application.</p>
@@ -464,7 +370,7 @@ div.rendered_html tbody tr:hover {
 <div class="admonition note">
 <p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
 </div>
-<div class="section" id="Diffusion">
+<section id="Diffusion">
 <h2>Diffusion<a class="headerlink" href="#Diffusion" title="Permalink to this headline">¶</a></h2>
 <p>Put simply, diffusion is the redistribution of something from a region of high concentration to a region of low concentration without bulk motion. The concept of diffusion is widely used in many fields, including physics, chemistry, biology, and many more.</p>
 <p>Suppose that we take a metal sheet, in which the temperature is exactly equal to one degree everywhere in the sheet. Now if we were to heat a number of points on the sheet to a very high temperature, say a thousand degrees, in an instant by some method. We could see the heat diffuse from these hotspots to the cooler areas. We are assuming that the metal does not melt. In addition, we will ignore any heat loss from radiation or other causes in this example.</p>
@@ -500,8 +406,8 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( \left( u_{x_{i+1},y}-2u_{{x_i},y}+u_
 <p><span class="math">\begin{equation*}
 u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i},y}+u_{x_{i-1},y}+u_{x,y_{i-1}} \right)
 \end{equation*}</span></p>
-</div>
-<div class="section" id="Python-implementation">
+</section>
+<section id="Python-implementation">
 <h2>Python implementation<a class="headerlink" href="#Python-implementation" title="Permalink to this headline">¶</a></h2>
 <p>We can create a Python function that implements the numerical approximation defined in the above equation. For simplicity we’ll use the assumption of a free boundary condition.</p>
 <div class="nbinput nblast docutils container">
@@ -606,8 +512,8 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 <img alt="_images/diffusion_9_2.png" src="_images/diffusion_9_2.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Computing-on-the-GPU">
+</section>
+<section id="Computing-on-the-GPU">
 <h2>Computing on the GPU<a class="headerlink" href="#Computing-on-the-GPU" title="Permalink to this headline">¶</a></h2>
 <p>The next step in this tutorial is to implement a GPU kernel that will allow us to run our problem on the GPU. We store the kernel code in a Python string, because we can directly compile and run the kernel from Python. In this tutorial, we’ll use the CUDA programming model to implement our kernels.</p>
 <blockquote>
@@ -739,8 +645,8 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 </div>
 </div>
 <p>Also, if you think the Python boilerplate code to call a GPU kernel was a bit messy, we’ve got good news for you! From now on, we’ll only use the Kernel Tuner to compile and benchmark GPU kernels, which we can do with much cleaner Python code.</p>
-</div>
-<div class="section" id="Auto-Tuning-with-the-Kernel-Tuner">
+</section>
+<section id="Auto-Tuning-with-the-Kernel-Tuner">
 <h2>Auto-Tuning with the Kernel Tuner<a class="headerlink" href="#Auto-Tuning-with-the-Kernel-Tuner" title="Permalink to this headline">¶</a></h2>
 <p>Remember that previously we’ve set the thread block dimensions to 16 by 16. But how do we actually know if that is the best performing setting? That is where auto-tuning comes into play. Basically, it is very difficult to provide an answer through performance modeling and as such, we’d rather use the Kernel Tuner to compile and benchmark all possible kernel configurations.</p>
 <p>But before we continue, we’ll increase the problem size, because the GPU is very likely underutilized.</p>
@@ -840,8 +746,8 @@ of convenience, the Kernel Tuner also prints the best performing combination of 
 <p>In addtion, you may notice that not all possible combinations of values for <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code> are among the results. For example, 128x32 is not among the results. This is because some configuration require more threads per thread block than allowed on our GPU. The Kernel Tuner checks the limitations of your GPU at runtime and automatically skips over configurations that use too many threads per block. It will also do this for kernels that cannot be compiled because they use
 too much shared memory. And likewise for kernels that use too many registers to be launched at runtime. If you’d like to know about which configurations were skipped automatically you can pass the optional parameter <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code> to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>.</p>
 <p>However, knowing the best performing combination of tunable parameters becomes even more important when we start to further optimize our CUDA kernel. In the next section, we’ll add a simple code optimization and show how this affects performance.</p>
-</div>
-<div class="section" id="Using-Shared-Memory">
+</section>
+<section id="Using-Shared-Memory">
 <h2>Using Shared Memory<a class="headerlink" href="#Using-Shared-Memory" title="Permalink to this headline">¶</a></h2>
 <p>Shared memory, is a special type of the memory available in CUDA. Shared memory can be used by threads within the same thread block to exchange and share values. It is in fact, one of the very few ways for threads to communicate on the GPU.</p>
 <p>The idea is that we’ll try improve the performance of our kernel by using shared memory as a software controlled cache. There are already caches on the GPU, but most GPUs only cache accesses to global memory in L2. Shared memory is closer to the multiprocessors where the thread blocks are executed, comparable to an L1 cache.</p>
@@ -924,8 +830,8 @@ block_size_x=128, block_size_y=8, time=1.12000002861,
 best performing configuration: block_size_x=64, block_size_y=4, time=1.04807043076,
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="Tiling-GPU-Code">
+</section>
+<section id="Tiling-GPU-Code">
 <h2>Tiling GPU Code<a class="headerlink" href="#Tiling-GPU-Code" title="Permalink to this headline">¶</a></h2>
 <p>One very useful code optimization is called tiling, sometimes also called thread-block-merge. You can look at it in this way, currently we have many thread blocks that together work on the entire domain. If we were to use only half of the number of thread blocks, every thread block would need to double the amount of work it performs to cover the entire domain. However, the threads may be able to reuse part of the data and computation that is required to process a single output element for every
 element beyond the first.</p>
@@ -1233,8 +1139,8 @@ block_size_x=128, block_size_y=2, tile_size_x=2, tile_size_y=4, time=0.542937588
 block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540383994579,
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="Storing-the-results">
+</section>
+<section id="Storing-the-results">
 <h2>Storing the results<a class="headerlink" href="#Storing-the-results" title="Permalink to this headline">¶</a></h2>
 <p>While it’s nice that the Kernel Tuner prints the tuning results to stdout, it’s not that great if we’d have to parse what is printed to get the results. That is why the <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> returns a data structure that holds all the results. We’ve actually already used this data in the above bit of Python code.</p>
 <p><code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> returns a list of dictionaries, where each benchmarked kernel is represented by a dictionary containing the tunable parameters for that particular kernel configuration and one more entry called ‘time’. The list of dictionaries format is very flexible and can easily be converted other formats that are easy to parse formats, like json or csv, for further analysis.</p>
@@ -1256,55 +1162,38 @@ block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540383994
 </pre></div>
 </div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="examples.html" class="btn btn-neutral float-right" title="Kernel Tuner Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="convolution.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Kernel Tuner Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2016, Ben van Werkhoven.
-
-    </p>
+    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

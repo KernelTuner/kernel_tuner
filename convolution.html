@@ -1,36 +1,16 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Getting Started &mdash; Kernel Tuner 0.4.1 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
@@ -38,43 +18,23 @@
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Tutorial: From physics to tuned GPU kernels" href="diffusion.html" />
     <link rel="prev" title="Installation Guide" href="install.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="index.html" class="icon icon-home"> Kernel Tuner
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
                 0.4.1
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -82,18 +42,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
@@ -116,73 +65,30 @@
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Kernel Tuner</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
       <li>Getting Started</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
-            
               <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/convolution.ipynb" class="fa fa-github"> Edit on GitHub</a>
-            
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   
 <style>
 /* CSS for nbsphinx extension */
@@ -453,13 +359,13 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Getting-Started">
+<section id="Getting-Started">
 <h1>Getting Started<a class="headerlink" href="#Getting-Started" title="Permalink to this headline">¶</a></h1>
 <p>This tutorial is meant to get you started with writing your tests and tuning scripts using Kernel Tuner. We’ll use a simple 2D Convolution kernel as an example kernel, but as you will find out shortly, much of the scripts that you write with Kernel Tuner can be reused for testing and tuning other kernels.</p>
 <div class="admonition note">
 <p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
 </div>
-<div class="section" id="2D-Convolution-example">
+<section id="2D-Convolution-example">
 <h2>2D Convolution example<a class="headerlink" href="#2D-Convolution-example" title="Permalink to this headline">¶</a></h2>
 <p>Convolution operations are essential to signal and image processing applications and are the main operation in convolutional neural networks used for deep learning. A convolution operation computes the linear combination of the weights in a <em>convolution filter</em> and a range of pixels from the input image for each output pixel. A 2D convolution of an input image <span class="math notranslate nohighlight">\(I\)</span> of size <span class="math notranslate nohighlight">\((w\times h)\)</span> and a convolution filter <span class="math notranslate nohighlight">\(F\)</span> of size <span class="math notranslate nohighlight">\((F_w\times F_h)\)</span> computes an output image
 <span class="math notranslate nohighlight">\(O\)</span> of size <span class="math notranslate nohighlight">\(((w-F_w)\times (h-F_h))\)</span>: <span class="math">\begin{equation}\nonumber
@@ -495,8 +401,8 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="Implement-a-test">
+</section>
+<section id="Implement-a-test">
 <h2>Implement a test<a class="headerlink" href="#Implement-a-test" title="Permalink to this headline">¶</a></h2>
 <p>We will start with using Kernel Tuner’s <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> function to call our naive 2D convolution kernel. But first we will have to create some input data, which we will do as follows:</p>
 <div class="nbinput nblast docutils container">
@@ -614,8 +520,8 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 <p>If you execute the above cell it will allocate GPU memory, move the contents of the <strong>arguments</strong> list to GPU memory, compile the kernel specified in <strong>kernel_source</strong>, and run the kernel name <strong>kernel_name</strong> with the thread block dimensions specified in <strong>params</strong> and the grid dimensions derived from the <strong>problem_size</strong>. After executing the kernel, <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> will also retrieve the results from GPU memory, and free GPU memory. The <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> function returns the data retrieved from the
 GPU in a list of Numpy arrays that we have named <strong>answer</strong> in the above example.</p>
 <p>The <strong>answer</strong> list contains Numpy objects (arrays and/or scalars) in the same order and of the same type as the <strong>arguments</strong> list that we used to call the kernel with, but in contrast to <strong>arguments</strong> it contains the data that was stored in GPU memory after our naive convolution kernel had finished executing. This feature is particularly useful for implementing tests for your GPU kernels. You can perform the same operation in Python and compare the results.</p>
-</div>
-<div class="section" id="Tuning-2D-Convolution">
+</section>
+<section id="Tuning-2D-Convolution">
 <h2>Tuning 2D Convolution<a class="headerlink" href="#Tuning-2D-Convolution" title="Permalink to this headline">¶</a></h2>
 <p>In many cases there are more tunable parameters than just the thread block dimensions. We have included a highly-optimized 2D Convolution kernel that contains many parametrized code optimizations. It’s a bit long to include here, so instead we just point to the file, you may need to adjust the path a little bit depending on where you’ve stored the Kernel Tuner’s source code and where this notebook is executing.</p>
 <div class="nbinput nblast docutils container">
@@ -662,8 +568,8 @@ GPU in a list of Numpy arrays that we have named <strong>answer</strong> in the 
 <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. Note that other errors, like an out-of-bounds memory access will not be ignored.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> function returns two things. The first is the results, which is a list of records that show the execution time of each benchmarked kernel and the parameters used to compile and run that specific kernel configuration. Secondly, tune_kernel returns a dictionary that describes the environment in which the tuning experiment took place. That means all the inputs to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> are recorded, but also the software versions of your CUDA installation, OS and so on, along with GPU
 device information. This second dictionary can be stored along with the results so that you can always find out under what circumstances those results were obtained.</p>
-</div>
-<div class="section" id="More-tunable-parameters">
+</section>
+<section id="More-tunable-parameters">
 <h2>More tunable parameters<a class="headerlink" href="#More-tunable-parameters" title="Permalink to this headline">¶</a></h2>
 <p>I promised that we would use more tunable parameters than just thread block dimensions. Our 2D Convolution kernel also also supports tiling factors in the x and y dimensions. Tiling factors indicate that the amount of work performed by the thread block in a particular dimension is increased with a certain factor.</p>
 <div class="nbinput nblast docutils container">
@@ -726,55 +632,38 @@ tunable parameters and benchmark results of the kernel configuration.</p>
 </div>
 </div>
 <p>And that’s it for this tutorial! We have seen how to call run_kernel and tune_kernel for a 2D Convolution kernel using different thread block dimensions and other tunable parameters. You now know enough to be able to start tuning your own CUDA and/or OpenCL kernels!</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="diffusion.html" class="btn btn-neutral float-right" title="Tutorial: From physics to tuned GPU kernels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="install.html" class="btn btn-neutral float-left" title="Installation Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="diffusion.html" class="btn btn-neutral float-right" title="Tutorial: From physics to tuned GPU kernels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2016, Ben van Werkhoven.
-
-    </p>
+    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
