@@ -44,6 +44,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
     num_particles = tuning_options.strategy_options.get("popsize", 20)
     maxiter = tuning_options.strategy_options.get("maxiter", 100)
 
+    w = tuning_options.strategy_options.get("w", 0.5)       # inertia constant
+    c1 = tuning_options.strategy_options.get("c1", 2.0)     # cognitive constant
+    c2 = tuning_options.strategy_options.get("c2", 1.0)     # social constant
+
     best_time_global = 1e20
     best_position_global = []
 
@@ -67,7 +71,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         # update particle velocities and positions
         for j in range(0, num_particles):
-            swarm[j].update_velocity(best_position_global)
+            swarm[j].update_velocity(best_position_global, w, c1, c2)
             swarm[j].update_position(bounds)
 
     if tuning_options.verbose:
@@ -96,10 +100,7 @@ class Particle:
             self.best_pos = self.position
             self.best_time = self.time
 
-    def update_velocity(self, best_position_global):
-        w = 0.5       # inertia constant
-        c1 = 2        # cognitive constant
-        c2 = 1        # social constant
+    def update_velocity(self, best_position_global, w, c1, c2):
         r1 = random.random()
         r2 = random.random()
         vc = c1 * r1 * (self.best_pos - self.position)
