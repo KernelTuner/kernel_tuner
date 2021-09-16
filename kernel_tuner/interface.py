@@ -253,28 +253,28 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
         Strategy-specific parameters and options are explained under strategy_options.
 
         """, "")),
-                           ("strategy_options", ("""A dict with options specifically the tuning strategy.
+                           ("strategy_options", ("""A dict with options specific to the selected tuning strategy.
 
 
-            * **"random_sample"** takes a random sample of the search space.
+            * **"random_sample"**
 
               * "fraction", float, fraction of the search space to cover in [0,1], default 0.1.
 
-            * **"minimize"** uses a local minimization algorithm.
+            * **"minimize"**
 
               * "method", string, any of "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", or "SLSQP", default "L-BFGS-B".
 
-            * **"basinhopping"** combines global stepping with a local minimization at each step.
+            * **"basinhopping"**
 
               * "method", string, any of "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", or "SLSQP", default "L-BFGS-B".
 
               * "T", float, Temperature parameter for the accept or reject criterion, default 1.0.
 
-            * **"diff_evo"** differential evolution.
+            * **"diff_evo"**
 
               * "method", string, any of "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin", default "best1bin".
 
-            * **"genetic_algorithm"** a genetic algorithm optimization strategy.
+            * **"genetic_algorithm"**
 
               * "popsize", integer, population size, default 20.
 
@@ -286,11 +286,11 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
 
-            * **"mls"** multi-start local search
+            * **"mls"**
 
               * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
 
-            * **"pso"** particle swarm optimization
+            * **"pso"**
 
               * "popsize", integer, population size, default 20.
 
@@ -302,7 +302,7 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "c2", float, social constant, default 1.0.
 
-            * **"firefly_algorithm"** firefly algorithm strategy.
+            * **"firefly_algorithm"**
 
               * "popsize", integer, population size, default 20.
 
@@ -314,7 +314,7 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "alpha", float, alpha parameter, default 0.2.
 
-            * **"simulated_annealing"** simulated annealing strategy.
+            * **"simulated_annealing"**
 
               * "T", float, starting temperature parameter, default 1.0.
 
@@ -324,7 +324,7 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "maxiter", integer, number of iterations of possibly accepting neighboring points, default 20.
 
-            * **"bayes_opt"** Bayesian Optimization strategy.
+            * **"bayes_opt"**
 
               * "method": any of "poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", default "multi-advanced".
 
