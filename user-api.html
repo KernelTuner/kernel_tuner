@@ -112,7 +112,7 @@
 <p>This file provides all the details you need about how to call the Kernel Tuner’s functions, including all the optional arguments.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.tune_kernel">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">tune_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verify</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">simulation_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">tune_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verify</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">simulation_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tune a CUDA kernel given a set of tunable parameters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -276,90 +276,93 @@ False when the output fails the test.</p>
 parameter space, choose from:</p>
 <blockquote>
 <div><ul>
-<li><p>”brute_force” (default),</p></li>
-<li><p>”random_sample”, specify: <em>sample_fraction</em>,</p></li>
-<li><p>”minimize” or “basinhopping”, specify: <em>method</em>,</p></li>
-<li><p>”diff_evo”, specify: <em>method</em>.</p></li>
-<li><p>”genetic_algorithm”</p></li>
-<li><p>”pso”</p></li>
-<li><p>”firefly_algorithm”</p></li>
-<li><p>”simulated_annealing”</p></li>
-<li><p>”bayes_opt”</p></li>
+<li><p>”brute_force” (default) iterates through the entire search space.</p></li>
+<li><p>”random_sample” takes a random sample of the search space.</p></li>
+<li><p>”minimize” uses a local minimization algorithm.</p></li>
+<li><p>”basinhopping” combines global stepping with a local minimization at each step.</p></li>
+<li><p>”diff_evo” differential evolution.</p></li>
+<li><p>”genetic_algorithm” a genetic algorithm optimization strategy.</p></li>
+<li><p>”mls” multi-start local search</p></li>
+<li><p>”pso” particle swarm optimization</p></li>
+<li><p>”firefly_algorithm” firefly algorithm strategy.</p></li>
+<li><p>”simulated_annealing” simulated annealing strategy.</p></li>
+<li><p>”bayes_opt” Bayesian Optimization strategy.</p></li>
 </ul>
 </div></blockquote>
-<p>”brute_force” is the default and iterates over the entire search
-space.</p>
-<p>”random_sample” can be used to only benchmark a fraction of the
-search space, specify a <em>sample_fraction</em> in the interval [0, 1].</p>
-<p>”minimize” and “basinhopping” strategies use minimizers to
-limit the search through the parameter space.</p>
-<p>”diff_evo” uses differential evolution.</p>
-<p>”genetic_algorithm” implements a Genetic Algorithm, default
-setting uses a population size of 20 for 100 generations.</p>
-<p>”pso” implements Particle Swarm Optimization, using the default
-setting of 20 particles for 100 iterations.</p>
-<p>”firefly_algorithm” implements the Firefly Algorithm, using 20
-fireflies for 100 iterations.</p>
-<p>”simulated_annealing” uses Simulated Annealing.</p>
-<p>”bayes_opt” uses Bayesian Optimization.</p>
+<p>Strategy-specific parameters and options are explained under strategy_options.</p>
 </p></li>
-<li><p><strong>strategy_options</strong> (<em>dict</em>) – <p>A dict with options for the tuning strategy</p>
-<p>Example usage:</p>
-<blockquote>
-<div><ul>
-<li><p>strategy=”basinhopping”,
-strategy_options={“method”: “BFGS”,</p>
-<blockquote>
-<div><p>”maxiter”: 100,
-“T”: 1.0}</p>
-</div></blockquote>
+<li><p><strong>strategy_options</strong> (<em>dict</em>) – <p>A dict with options specifically the tuning strategy.</p>
+<ul>
+<li><p><strong>”random_sample”</strong> takes a random sample of the search space.</p>
+<ul>
+<li><p>”fraction”, float, fraction of the search space to cover in [0,1], default 0.1.</p></li>
+</ul>
 </li>
-<li><p>strategy=”diff_evo”,
-strategy_options={“method”: “best1bin”,</p>
-<blockquote>
-<div><p>”popsize”: 20}</p>
-</div></blockquote>
+<li><p><strong>”minimize”</strong> uses a local minimization algorithm.</p>
+<ul>
+<li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
+</ul>
 </li>
-<li><p>strategy=”genetic_algorithm”,
-strategy_options={“method”: “uniform”,</p>
-<blockquote>
-<div><p>”popsize”: 20,
-“maxiter”: 100}</p>
-</div></blockquote>
+<li><p><strong>”basinhopping”</strong> combines global stepping with a local minimization at each step.</p>
+<ul>
+<li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
+<li><p>”T”, float, Temperature parameter for the accept or reject criterion, default 1.0.</p></li>
+</ul>
+</li>
+<li><p><strong>”diff_evo”</strong> differential evolution.</p>
+<ul>
+<li><p>”method”, string, any of “best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”, “rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”, default “best1bin”.</p></li>
+</ul>
+</li>
+<li><p><strong>”genetic_algorithm”</strong> a genetic algorithm optimization strategy.</p>
+<ul>
+<li><p>”popsize”, integer, population size, default 20.</p></li>
+<li><p>”maxiter”, integer, number of generations, default 50.</p></li>
+<li><p>”method”, string, crossover method any of “single_point”, “two_point”, “uniform”, “disruptive_uniform”, default “uniform”.</p></li>
+<li><p>”mutation_chance”, integer, specifies the 1 in mutation_chance of a mutation, default 10.</p></li>
+<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
+</ul>
+</li>
+<li><p><strong>”mls”</strong> multi-start local search</p>
+<ul>
+<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
+</ul>
+</li>
+<li><p><strong>”pso”</strong> particle swarm optimization</p>
+<ul>
+<li><p>”popsize”, integer, population size, default 20.</p></li>
+<li><p>”maxiter”, integer, number of generations, default 100.</p></li>
+<li><p>”w”, float, inertia constant, default 0.5.</p></li>
+<li><p>”c1”, float, cognitive constant, default 2.0.</p></li>
+<li><p>”c2”, float, social constant, default 1.0.</p></li>
+</ul>
+</li>
+<li><p><strong>”firefly_algorithm”</strong> firefly algorithm strategy.</p>
+<ul>
+<li><p>”popsize”, integer, population size, default 20.</p></li>
+<li><p>”maxiter”, integer, number of generations, default 100.</p></li>
+<li><p>”B0”, float, B0 parameter, default 1.0.</p></li>
+<li><p>”gamma”, float, gamma parameter, default 1.0.</p></li>
+<li><p>”alpha”, float, alpha parameter, default 0.2.</p></li>
+</ul>
+</li>
+<li><p><strong>”simulated_annealing”</strong> simulated annealing strategy.</p>
+<ul>
+<li><p>”T”, float, starting temperature parameter, default 1.0.</p></li>
+<li><p>”T_min”, float, end temperature parameter, default 0.001.</p></li>
+<li><p>”alpha”, float, alpha parameter, default 0.9.</p></li>
+<li><p>”maxiter”, integer, number of iterations of possibly accepting neighboring points, default 20.</p></li>
+</ul>
+</li>
+<li><p><strong>”bayes_opt”</strong> Bayesian Optimization strategy.</p>
+<ul>
+<li><p>”method”: any of “poi”, “ei”, “lcb”, “lcb-srinivas”, “multi”, “multi-advanced”, “multi-fast”, default “multi-advanced”.</p></li>
+<li><p>”covariancekernel”, any of “constantrbf”, “rbf”, “matern32”, “matern52”, default “matern32”.</p></li>
+<li><p>”covariancelengthscale”, float, default 1.5.</p></li>
+<li><p>”samplingmethod” any of “random”, “lhs”, default “lhs”.</p></li>
+</ul>
 </li>
 </ul>
-</div></blockquote>
-<p>strategy=”minimize” and strategy=”basinhopping”, support the following
-options for “method”:
-“Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”,
-“TNC”, “COBYLA”, or “SLSQP”. It is also possible to pass a function
-that implements a custom minimization strategy.
-The default is “L-BFGS-B”.
-strategy=”basinhopping” also supports “T”, which is 1.0 by default.</p>
-<p>strategy=”diff_evo” supports the following creation “method” options:
-“best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”,
-“rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”.
-The default is “best1bin”.</p>
-<p>strategy=”genetic_algorithm” uses “method” to select the crossover
-method, options are: “single_point”, “two_point”, “uniform”, and
-“disruptive_uniform”.
-The default is “uniform”.
-Also “mutation_chance” can be set to control the chance of a mutation,
-which is separately evaluated for each dimension. For example, set
-to 100 for a probability of 0.01 of a mutation per tunable parameter.</p>
-<p>strategy=”random_sample” supports “fraction” to specify
-the fraction of the search space to sample in the interval [0,1].</p>
-<p>strategy=”firefly_algorithm” supports the following parameters:
-B0 = 1.0, gamma = 1.0, alpha = 0.20.</p>
-<p>strategy=”simulated_annealing” supports parameters:
-T = 1.0, T_min = 0.001, alpha = 0.9.</p>
-<p>strategy=”bayes_opt” supports acquisition methods: “poi” (default),
-“ei”, “ucb”. And parameters, popsize (initial random guesses),
-maxiter, alpha, kappa, xi.</p>
-<p>”maxiter” is supported by “minimize”, “basinhopping”, “diff_evo”
-“firefly_algorithm”, “pso”, “genetic_algorithm”, “bayes_opt”. Note
-that maxiter generally refers to iterations of the strategy, not
-the maximum number of function evaluations.</p>
 </p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – The number of times a kernel should be executed and
 its execution time measured when benchmarking a kernel, 7 by default.</p></li>
@@ -410,7 +413,7 @@ version info, and so on.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.run_kernel">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compile and run a single kernel</p>
 <p>Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
 However, instead of measuring execution time run_kernel returns the output of the kernel.
@@ -561,25 +564,29 @@ function, containing the output after kernel execution.</p>
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">store_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.store_results" title="Permalink to this definition">¶</a></dt>
 <dd><p>stores tuning results to a JSON file</p>
 <p>Stores the top (3% by default) best kernel configurations in a JSON file.
-The results are stored for a specific device (retrieved by env.device_name)
-and for a specific problem_size. Any previous results stored in the file
-for this specific device and problem_size will be overwritten.</p>
+The results are stored for a specific device (retrieved using env[‘device_name’])
+and for a specific problem_size. If the file already exists, new results for
+this device and problem_size will be appended. Any previous results already stored
+in the file for this specific device and problem_size will be overwritten.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>results_filename</strong> (<em>string</em>) – Filename of JSON file in which the results will be stored.
-Existing files may be overwritten.</p></li>
+<li><p><strong>results_filename</strong> (<em>string</em>) – Filename of the JSON file in which the results will be stored.
+Results will be appended if the file already exists. Existing results within the
+file for the same device and problem_size will be overwritten.</p></li>
 <li><p><strong>tune_params</strong> (<em>dict</em>) – The tunable parameters of this kernel.</p></li>
-<li><p><strong>problem_size</strong> (<em>tuple</em>) – problem size used during tuning</p></li>
+<li><p><strong>problem_size</strong> (<em>tuple</em>) – The problem_size this kernel was tuned for</p></li>
 <li><p><strong>results</strong> (<em>list</em><em>(</em><em>dict</em><em>)</em>) – A list of dictionaries of all executed kernel configurations and their
-execution times, and possibly other user-defined metrics.</p></li>
-<li><p><strong>env</strong> (<em>dict</em>) – And a dictionary with information about the environment
+execution times, and possibly other user-defined metrics, as returned by
+tune_kernel().</p></li>
+<li><p><strong>env</strong> (<em>dict</em>) – A dictionary with information about the environment
 in which the tuning took place. This records device name, properties,
-version info, and so on. Typicaly this dictionary is returned by tune_kernel.</p></li>
+version info, and so on. Typicaly this dictionary is returned by tune_kernel().</p></li>
 <li><p><strong>top</strong> (<em>float</em>) – Denotes the top percentage of results to store in the results file</p></li>
-<li><p><strong>objective</strong> (<em>tuple</em><em>(</em><em>string</em><em>, </em><em>callable</em><em>)</em>) – optimization objective to sort results on, consisting of a string that also
-occurs in results as a metric and a function, i.e. Python built-in functions min
-or max, that will be used to compare results.</p></li>
+<li><p><strong>objective</strong> (<em>string</em>) – Optimization objective to sort results on, consisting of a string
+that also occurs in results as a metric.</p></li>
+<li><p><strong>objective_higher_is_better</strong> (<em>bool</em>) – A boolean that specifies whether the objective should
+be maximized or minimized.</p></li>
 </ul>
 </dd>
 </dl>
@@ -608,9 +615,10 @@ on different devices.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>header_filename</strong> (<em>string</em>) – Filename of the to be created header file.</p></li>
 <li><p><strong>results_filename</strong> (<em>string</em>) – Filename of the JSON file that stores the tuning results.</p></li>
-<li><p><strong>objective</strong> (<em>tuple</em><em>(</em><em>string</em><em>, </em><em>callable</em><em>)</em>) – optimization objective to sort results on, consisting of a string that also
-occurs in results as a metric and a function, i.e. Python built-in functions min
-or max, that will be used to compare results.</p></li>
+<li><p><strong>objective</strong> (<em>string</em>) – Optimization objective to sort results on, consisting of a string
+that also occurs in results as a metric.</p></li>
+<li><p><strong>objective_higher_is_better</strong> (<em>bool</em>) – A boolean that specifies whether the objective should
+be maximized or minimized.</p></li>
 </ul>
 </dd>
 </dl>
