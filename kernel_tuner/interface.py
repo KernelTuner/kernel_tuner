@@ -392,7 +392,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 #"""
 
 
-def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
+def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
                 cache=None, metrics=None, simulation_mode=False, observers=None):
@@ -400,9 +400,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
+    kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
 
-    _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
+    _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params)
@@ -457,7 +457,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
 
     # select the runner for this job based on input
     selected_runner = SimulationRunner if simulation_mode is True else SequentialRunner
-    with selected_runner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
+    with selected_runner(kernelsource, kernel_options, device_options, iterations, observers) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.
@@ -523,15 +523,15 @@ _run_kernel_docstring = """Compile and run a single kernel
 """ % _get_docstring(_kernel_options) + _get_docstring(_device_options)
 
 
-def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid_div_x=None, grid_div_y=None, grid_div_z=None, lang=None, device=0, platform=0,
+def run_kernel(kernel_name, kernel_source, problem_size, arguments, params, grid_div_x=None, grid_div_y=None, grid_div_z=None, lang=None, device=0, platform=0,
                smem_args=None, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None, block_size_names=None, quiet=False, log=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
+    kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
 
-    _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
+    _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     #sort options into separate dicts
     opts = locals()
@@ -539,7 +539,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
     #detect language and create the right device function interface
-    with core.DeviceInterface(kernel_source, iterations=1, **device_options) as dev:
+    with core.DeviceInterface(kernelsource, iterations=1, **device_options) as dev:
 
         #move data to the GPU
         gpu_args = dev.ready_argument_list(arguments)
@@ -547,7 +547,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
         instance = None
         try:
             #create kernel instance
-            instance = dev.create_kernel_instance(kernel_source, kernel_options, params, False)
+            instance = dev.create_kernel_instance(kernelsource, kernel_options, params, False)
             if instance is None:
                 raise Exception("cannot create kernel instance, too many threads per block")
 
@@ -594,9 +594,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
 run_kernel.__doc__ = _run_kernel_docstring
 
 
-def _check_user_input(kernel_name, kernel_source, arguments, block_size_names):
+def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
     # see if the kernel arguments have correct type
-    kernel_source.check_argument_lists(kernel_name, arguments)
+    kernelsource.check_argument_lists(kernel_name, arguments)
 
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)
