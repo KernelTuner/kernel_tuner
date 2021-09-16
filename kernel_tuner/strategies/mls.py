@@ -1,4 +1,5 @@
 """ The strategy that uses multi-start local search """
+import itertools
 import random
 
 from kernel_tuner import util
@@ -34,6 +35,16 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     options = tuning_options.strategy_options
     max_fevals = options.get("max_fevals", 100)
+
+    # limit max_fevals to max size of the parameter space
+    parameter_space = itertools.product(*tune_params.values())
+    if tuning_options.restrictions is not None:
+        parameter_space = filter(lambda p: util.check_restrictions(restrictions, p, tune_params.keys(),
+                                 tuning_options.verbose), parameter_space)
+    max_elems = len(list(parameter_space))
+    if max_elems < max_fevals:
+        max_fevals = max_elems
+
     fevals = 0
     max_threads = runner.dev.max_threads
 
