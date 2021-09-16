@@ -291,30 +291,30 @@ parameter space, choose from:</p>
 </div></blockquote>
 <p>Strategy-specific parameters and options are explained under strategy_options.</p>
 </p></li>
-<li><p><strong>strategy_options</strong> (<em>dict</em>) – <p>A dict with options specifically the tuning strategy.</p>
+<li><p><strong>strategy_options</strong> (<em>dict</em>) – <p>A dict with options specific to the selected tuning strategy.</p>
 <ul>
-<li><p><strong>”random_sample”</strong> takes a random sample of the search space.</p>
+<li><p><strong>”random_sample”</strong></p>
 <ul>
 <li><p>”fraction”, float, fraction of the search space to cover in [0,1], default 0.1.</p></li>
 </ul>
 </li>
-<li><p><strong>”minimize”</strong> uses a local minimization algorithm.</p>
+<li><p><strong>”minimize”</strong></p>
 <ul>
 <li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
 </ul>
 </li>
-<li><p><strong>”basinhopping”</strong> combines global stepping with a local minimization at each step.</p>
+<li><p><strong>”basinhopping”</strong></p>
 <ul>
 <li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
 <li><p>”T”, float, Temperature parameter for the accept or reject criterion, default 1.0.</p></li>
 </ul>
 </li>
-<li><p><strong>”diff_evo”</strong> differential evolution.</p>
+<li><p><strong>”diff_evo”</strong></p>
 <ul>
 <li><p>”method”, string, any of “best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”, “rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”, default “best1bin”.</p></li>
 </ul>
 </li>
-<li><p><strong>”genetic_algorithm”</strong> a genetic algorithm optimization strategy.</p>
+<li><p><strong>”genetic_algorithm”</strong></p>
 <ul>
 <li><p>”popsize”, integer, population size, default 20.</p></li>
 <li><p>”maxiter”, integer, number of generations, default 50.</p></li>
@@ -323,12 +323,12 @@ parameter space, choose from:</p>
 <li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
 </ul>
 </li>
-<li><p><strong>”mls”</strong> multi-start local search</p>
+<li><p><strong>”mls”</strong></p>
 <ul>
 <li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
 </ul>
 </li>
-<li><p><strong>”pso”</strong> particle swarm optimization</p>
+<li><p><strong>”pso”</strong></p>
 <ul>
 <li><p>”popsize”, integer, population size, default 20.</p></li>
 <li><p>”maxiter”, integer, number of generations, default 100.</p></li>
@@ -337,7 +337,7 @@ parameter space, choose from:</p>
 <li><p>”c2”, float, social constant, default 1.0.</p></li>
 </ul>
 </li>
-<li><p><strong>”firefly_algorithm”</strong> firefly algorithm strategy.</p>
+<li><p><strong>”firefly_algorithm”</strong></p>
 <ul>
 <li><p>”popsize”, integer, population size, default 20.</p></li>
 <li><p>”maxiter”, integer, number of generations, default 100.</p></li>
@@ -346,7 +346,7 @@ parameter space, choose from:</p>
 <li><p>”alpha”, float, alpha parameter, default 0.2.</p></li>
 </ul>
 </li>
-<li><p><strong>”simulated_annealing”</strong> simulated annealing strategy.</p>
+<li><p><strong>”simulated_annealing”</strong></p>
 <ul>
 <li><p>”T”, float, starting temperature parameter, default 1.0.</p></li>
 <li><p>”T_min”, float, end temperature parameter, default 0.001.</p></li>
@@ -354,7 +354,7 @@ parameter space, choose from:</p>
 <li><p>”maxiter”, integer, number of iterations of possibly accepting neighboring points, default 20.</p></li>
 </ul>
 </li>
-<li><p><strong>”bayes_opt”</strong> Bayesian Optimization strategy.</p>
+<li><p><strong>”bayes_opt”</strong></p>
 <ul>
 <li><p>”method”: any of “poi”, “ei”, “lcb”, “lcb-srinivas”, “multi”, “multi-advanced”, “multi-fast”, default “multi-advanced”.</p></li>
 <li><p>”covariancekernel”, any of “constantrbf”, “rbf”, “matern32”, “matern52”, default “matern32”.</p></li>
