@@ -516,7 +516,7 @@ def test_process_cache():
 
         # check that exceptions are raised when using a cache file for
         # a different kernel, device, or parameter set
-        with pytest.raises(ValueError) as excp:
+        with pytest.raises(ValueError) as excep:
             kernel_options.kernel_name = "wrong_kernel"
             process_cache(cache, kernel_options, tuning_options, runner)
             assert "kernel" in str(excep.value)
