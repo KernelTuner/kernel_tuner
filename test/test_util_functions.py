@@ -516,17 +516,17 @@ def test_process_cache():
 
         # check that exceptions are raised when using a cache file for
         # a different kernel, device, or parameter set
-        with pytest.raises(ValueError) as excp:
+        with pytest.raises(ValueError) as excep:
             kernel_options.kernel_name = "wrong_kernel"
             process_cache(cache, kernel_options, tuning_options, runner)
             assert "kernel" in str(excep.value)
 
-        with pytest.raises(ValueError) as excp:
+        with pytest.raises(ValueError) as excep:
             runner.dev.name = "wrong_device"
             process_cache(cache, kernel_options, tuning_options, runner)
             assert "device" in str(excep.value)
 
-        with pytest.raises(ValueError) as excp:
+        with pytest.raises(ValueError) as excep:
             tuning_options.tune_params["y"] = ["a", "b"]
             process_cache(cache, kernel_options, tuning_options, runner)
             assert "parameter" in str(excep.value)
