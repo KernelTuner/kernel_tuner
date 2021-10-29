@@ -234,7 +234,7 @@ class CupyFunctions:
             device texture memory. See tune_kernel().
         :type texmem_args: dict
         """
-        raise NotImplementedError('CuPy backend does not yet support constant memory')
+        raise NotImplementedError('CuPy backend does not yet support texture memory')
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'
