@@ -422,6 +422,10 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     """
     logging.debug('prepare_kernel_string called for %s', kernel_name)
 
+    # since we insert defines above the original kernel code, the line numbers will be incorrect
+    # the following preprocessor directive informs the compiler that lines should be counted from 1
+    kernel_string = "#line 1\n" + kernel_string
+
     grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
     for i, g in enumerate(grid):
         kernel_string = f"#define {grid_dim_names[i]} {g}\n" + kernel_string

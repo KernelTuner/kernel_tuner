@@ -153,6 +153,7 @@ def test_prepare_kernel_string():
                "#define block_size_x 1\n" \
                "#define grid_size_y 7\n" \
                "#define grid_size_x 3\n" \
+               "#line 1\n" \
                "this is a weird kernel"
     assert output == expected
 
