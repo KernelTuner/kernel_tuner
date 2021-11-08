@@ -1,10 +1,14 @@
-""" The strategy that uses multi-start local search """
+""" A greedy multi-start local search algorithm for parameter search that traverses variables in order."""
+
 import itertools
 import random
+from collections import OrderedDict
+import numpy as np
 
-from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner.strategies.hillclimbers import best_improvement_hillclimb
+from kernel_tuner import util
+from kernel_tuner.strategies.hillclimbers import ordered_greedy_hillclimb
+from kernel_tuner.strategies.greedy_mls import random_candidate
 
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -14,15 +18,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type runner: kernel_tuner.runner
 
     :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
+    :type kernel_options: kernel_tuner.interface.Options
 
     :param device_options: A dictionary with all options for the device
         on which the kernel should be tuned.
-    :type device_options: dict
+    :type device_options: kernel_tuner.interface.Options
 
     :param tuning_options: A dictionary with all options regarding the tuning
         process.
-    :type tuning_options: dict
+    :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
         execution times. And a dictionary that contains a information
@@ -30,12 +34,18 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :rtype: list(dict()), dict()
 
     """
-    # MLS works with real parameter values and does not need scaling
-    tuning_options["scaling"] = False
-    tune_params = tuning_options.tune_params
+
+    dna_size = len(tuning_options.tune_params.keys())
 
     options = tuning_options.strategy_options
+
+    neighbour = options.get("neighbor", "Hamming")
+    restart = options.get("restart", True)
+    order = options.get("restart", None)
     max_fevals = options.get("max_fevals", 100)
+
+    tuning_options["scaling"] = False
+    tune_params = tuning_options.tune_params
 
     # limit max_fevals to max size of the parameter space
     parameter_space = itertools.product(*tune_params.values())
@@ -47,23 +57,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     fevals = 0
     max_threads = runner.dev.max_threads
-
     all_results = []
     unique_results = {}
 
     #while searching
     while fevals < max_fevals:
+        candidate = random_candidate(tune_params, tuning_options, max_threads)
 
-        #get random starting position that is valid
-        pos = [random.choice(v) for v in tune_params.values()]
-
-        #if we have restrictions and config fails restrictions, try again
-        #if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
-        if not util.config_valid(pos, tuning_options, max_threads):
-            continue
-
-        best_improvement_hillclimb(pos, max_fevals, all_results, unique_results,
-                     kernel_options, tuning_options, runner)
+        ordered_greedy_hillclimb(candidate, order, restart, neighbour, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
         fevals = len(unique_results)
-
     return all_results, runner.dev.get_environment()
