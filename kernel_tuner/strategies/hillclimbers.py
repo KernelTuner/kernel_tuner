@@ -9,14 +9,14 @@ def greedy_hillclimb(base_sol, restart, neighbor_method, max_fevals, all_results
         Greedy hillclimbing evaluates all neighbouring solutions in a random order
         and immediately moves to the neighbour if it is an improvement.
     """
-    return base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True)
+    return base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None)
 
 def best_improvement_hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner):
     """ Hillclimbing search until max_fevals is reached or no improvement is found.
         Best-improvement hillclimbing evaluates all neighbouring solutions and moves
         to the best one every iteration.
     """
-    base_hillclimb(pos, "Hamming", max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=False)
+    base_hillclimb(pos, "Hamming", max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=False, order=None)
 
 
 def ordered_greedy_hillclimb(base_sol, order, restart, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner):
@@ -24,7 +24,7 @@ def ordered_greedy_hillclimb(base_sol, order, restart, neighbor_method, max_feva
         Ordered greedy hillclimbing evaluates all neighbouring solutions in a prescribed
         order and immediately moves to the neighbour if it is an improvement.
     """
-    return base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=False)
+    return base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=False, order=order)
 
 
 def get_neighbors(neighbor_method, values, element, randomize):
@@ -47,7 +47,7 @@ def get_neighbors(neighbor_method, values, element, randomize):
     return neighbors
 
 
-def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True):
+def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None):
     """ Hillclimbing search until max_fevals is reached or no improvement is found.
         Greedy hillclimbing evaluates all neighbouring solutions in a random order
         and immediately moves to the neighbour if it is an improvement.
@@ -66,11 +66,16 @@ def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_re
         child = base_sol[:]
         found_improved = False
 
+        current_results = []
+
         vals = list(tune_params.values())
-        indices = list(range(len(vals)))
+        if order is None:
+            indices = list(range(len(vals)))
+        else:
+            indices = order
         if randomize:
             random.shuffle(indices)
-        current_results = []
+
         # in each dimension see the possible values
         for index in indices:
             values = vals[index]
