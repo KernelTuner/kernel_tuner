@@ -10,7 +10,7 @@ from kernel_tuner.interface import strategy_map
 cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/../test_cache_file.json"
 
 @pytest.fixture
-def env():
+def vector_add():
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_size_x + threadIdx.x;
@@ -33,12 +33,12 @@ def env():
     return ["vector_add", kernel_string, size, args, tune_params]
 
 
-def test_strategies(env):
+@pytest.mark.parametrize('strategy', strategy_map)
+def test_strategies(vector_add, strategy):
 
     options = dict(popsize=5, max_fevals=15)
 
-    for strategy in strategy_map:
-        print(f"testing {strategy}")
-        result, _ = kernel_tuner.tune_kernel(*env, strategy=strategy, strategy_options=options,
+    print(f"testing {strategy}")
+    result, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=options,
                                              verbose=False, cache=cache_filename, simulation_mode=True)
-        assert len(result) > 0
+    assert len(result) > 0
