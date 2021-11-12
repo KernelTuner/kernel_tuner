@@ -41,9 +41,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # limit max_fevals to max size of the parameter space
     max_threads = runner.dev.max_threads
-    max_elems = util.get_number_of_valid_configs(tuning_options, max_threads)
-    if max_elems < max_fevals:
-        max_fevals = max_elems
+    max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
 
     fevals = 0
     all_results = []
