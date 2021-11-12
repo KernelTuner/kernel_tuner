@@ -1,12 +1,9 @@
 """ A simple greedy iterative local search algorithm for parameter search """
 
-import itertools
-import random
-
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
-from kernel_tuner.strategies.hillclimbers import greedy_hillclimb
-from kernel_tuner.strategies.genetic_algorithm import random_val, mutate, random_population
+from kernel_tuner.strategies.hillclimbers import base_hillclimb
+from kernel_tuner.strategies.genetic_algorithm import mutate, random_population
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -37,7 +34,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     options = tuning_options.strategy_options
 
-    neighbour = options.get("neighbor", "Hamming")
+    neighbor = options.get("neighbor", "Hamming")
     restart = options.get("restart", True)
     no_improvement = options.get("no_improvement", 50)
     randomwalk = options.get("random_walk", 0.3)
@@ -49,25 +46,22 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = False
 
     # limit max_fevals to max size of the parameter space
-    parameter_space = itertools.product(*tune_params.values())
-    if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
-    max_elems = len(list(parameter_space))
+    max_threads = runner.dev.max_threads
+    max_elems = util.get_number_of_valid_configs(tuning_options, max_threads)
     if max_elems < max_fevals:
         max_fevals = max_elems
 
     fevals = 0
-    max_threads = runner.dev.max_threads
     all_results = []
     unique_results = {}
 
     #while searching
     candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
-    best_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results) 
+    best_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results)
 
     last_improvement = 0
     while fevals < max_fevals:
-        candidate = greedy_hillclimb(candidate, restart, neighbour, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
+        candidate = base_hillclimb(candidate, neighbor, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=True)
 
         fevals = len(unique_results)
 
@@ -87,6 +81,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 def random_walk(indiv, permutation_size, no_improve, last_improve, tune_params, tuning_options, max_threads):
     if last_improve >= no_improve:
         return random_population(1, tune_params, tuning_options, max_threads)[0]
-    for k in range(permutation_size):
+    for _ in range(permutation_size):
         indiv = mutate(indiv, tune_params, 0, tuning_options, max_threads)
     return indiv
