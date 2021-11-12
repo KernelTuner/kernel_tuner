@@ -1,10 +1,10 @@
 """ Module for functions related to hyperparameter optimization """
 
 import itertools
-import numpy as np
-import kernel_tuner
 import warnings
+import numpy as np
 
+import kernel_tuner
 from kernel_tuner.util import get_config_string
 
 
@@ -32,11 +32,11 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
     :type kwargs: dict
 
     """
-    if not "cache" in kwargs:
+    if "cache" not in kwargs:
         raise ValueError("Please specify a cachefile to store benchmarking data when tuning hyperparameters")
 
-    def put_if_not_present(d, key, value):
-        d[key] = value if not key in d else d[key]
+    def put_if_not_present(target_dict, key, value):
+        target_dict[key] = value if not key in target_dict else target_dict[key]
 
     put_if_not_present(kwargs, "verbose", False)
     put_if_not_present(kwargs, "quiet", True)
@@ -48,7 +48,7 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
 
     #find optimum
     kwargs["strategy"] = "brute_force"
-    results, env = kernel_tuner.tune_kernel(*args, **kwargs)
+    results, _ = kernel_tuner.tune_kernel(*args, **kwargs)
     optimum = min(results, key=lambda p: p["time"])["time"]
 
     #could throw a warning for the kwargs that will be overwritten, strategy(_options)
@@ -68,14 +68,13 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
             #measure
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                results, env = kernel_tuner.tune_kernel(*args, **kwargs)
+                results, _ = kernel_tuner.tune_kernel(*args, **kwargs)
 
             #get unique function evaluations
             unique_fevals = {",".join([str(v) for k, v in record.items() if k in tune_params])
                              for record in results}
 
             fevals.append(len(unique_fevals))
-            # p_of_opt.append(optimum / min(results, key=lambda p: p["time"])["time"] * 100)
             p_of_opt.append(min(results, key=lambda p: p["time"])["time"] / optimum * 100)
 
         strategy_options["fevals"] = np.average(fevals)
