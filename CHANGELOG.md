@@ -4,6 +4,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Added
+- new optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
+
 ## [0.4.1] - 2021-09-10
 ### Added
 - support for PyTorch Tensors as input data type for kernels

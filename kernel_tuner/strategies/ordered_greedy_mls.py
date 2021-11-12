@@ -1,9 +1,5 @@
-""" The strategy that uses multi-start local search """
-import itertools
-import random
+""" A greedy multi-start local search algorithm for parameter search that traverses variables in order."""
 
-from kernel_tuner import util
-from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner.strategies.greedy_mls import tune as mls_tune
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -13,15 +9,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type runner: kernel_tuner.runner
 
     :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
+    :type kernel_options: kernel_tuner.interface.Options
 
     :param device_options: A dictionary with all options for the device
         on which the kernel should be tuned.
-    :type device_options: dict
+    :type device_options: kernel_tuner.interface.Options
 
     :param tuning_options: A dictionary with all options regarding the tuning
         process.
-    :type tuning_options: dict
+    :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
         execution times. And a dictionary that contains a information
@@ -30,8 +26,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
-    # Default MLS uses 'best improvement' hillclimbing, so disable greedy hillclimbing
+    # disable randomization and enable greedy hillclimbing
     options = tuning_options.strategy_options
-    options["restart"] = False
-    options["neighbor"] = "Hamming"
+    options["restart"] = True
+    options["randomize"] = False
     return mls_tune(runner, kernel_options, device_options, tuning_options)
