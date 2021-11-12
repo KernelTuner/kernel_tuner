@@ -41,7 +41,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     neighbour = options.get("neighbor", "Hamming")
     restart = options.get("restart", True)
-    order = options.get("restart", None)
+    order = options.get("order", None)
     max_fevals = options.get("max_fevals", 100)
 
     tuning_options["scaling"] = False
