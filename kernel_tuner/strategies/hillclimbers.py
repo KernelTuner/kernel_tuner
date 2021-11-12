@@ -48,12 +48,59 @@ def get_neighbors(neighbor_method, values, element, randomize):
 
 
 def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None):
-    """ Hillclimbing search until max_fevals is reached or no improvement is found.
-        Greedy hillclimbing evaluates all neighbouring solutions in a random order
-        and immediately moves to the neighbour if it is an improvement.
+    """ Hillclimbing search until max_fevals is reached or no improvement is found
+
+    Base hillclimber that evaluates neighbouring solutions in a random or fixed order
+    and possibly immediately moves to the neighbour if it is an improvement.
+
+    :params base_sol: Starting position for hillclimbing
+    :type base_sol: list
+
+    :params neighbor_method: Method to use to select neighboring positions to visit
+        during hillclimbing, either "Hamming" or "adjacent" are supported.
+    :type neighbor_method: string
+
+    :params max_fevals: Maximum number of unique function evaluations that is allowed
+         during the search.
+    :type max_fevals: int
+
+    :params all_results: List of dictionaries with all benchmarked configurations
+    :type all_results: list(dict)
+
+    :params unique_results: Dictionaries that records all unique function evaluations
+        that count towards max_fevals.
+    :type unique_results: dict
+
+    :param kernel_options: A dictionary with all options for the kernel.
+    :type kernel_options: dict
+
+    :param tuning_options: A dictionary with all options regarding the tuning
+        process.
+    :type tuning_options: dict
+
+    :params runner: A runner from kernel_tuner.runners
+    :type runner: kernel_tuner.runner
+
+    :params restart: Boolean that controls whether to greedely restart hillclimbing
+        from a new position as soon as an improved position is found. True by default.
+    :type restart: bool
+
+    :params randomize: Boolean that controls whether the dimensions of the tunable
+        parameters are randomized.
+    :type randomize: bool
+
+    :params order: Fixed order among the dimensions of the tunable parameters are
+        to be evaluated by the hillclimber.
+    :type order: list
+
+    :returns: The final position that was reached when hillclimbing halted.
+    :rtype: list
+
     """
     if neighbor_method not in ["Hamming", "adjacent"]:
         raise ValueError("Unknown neighbour method.")
+    if randomize and order:
+        raise ValueError("Using a preset order and randomize at the same time is not supported.")
 
     tune_params = tuning_options.tune_params
     max_threads = runner.dev.max_threads
@@ -96,7 +143,7 @@ def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_re
                 time = _cost_func(child, kernel_options, tuning_options, runner, current_results)
                 unique_results.update({",".join([str(v) for k, v in record.items() if k in tune_params]): record["time"] for record in current_results})
 
-                #TODO: generalize this to other tuning objectives
+                # generalize this to other tuning objectives
                 if time < best_time:
                     best_time = time
                     base_sol = child[:]
@@ -116,4 +163,3 @@ def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_re
         # append current_results to all_results
         all_results += current_results
     return base_sol
-
