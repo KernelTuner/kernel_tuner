@@ -4,8 +4,7 @@ import random
 
 from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner.strategies.hillclimbers import best_improvement_hillclimb
-
+from kernel_tuner.strategies.greedy_mls import tune as mls_tune
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -30,40 +29,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :rtype: list(dict()), dict()
 
     """
-    # MLS works with real parameter values and does not need scaling
-    tuning_options["scaling"] = False
-    tune_params = tuning_options.tune_params
 
+    # Default MLS uses 'best improvement' hillclimbing, so disable greedy hillclimbing
     options = tuning_options.strategy_options
-    max_fevals = options.get("max_fevals", 100)
-
-    # limit max_fevals to max size of the parameter space
-    parameter_space = itertools.product(*tune_params.values())
-    if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
-    max_elems = len(list(parameter_space))
-    if max_elems < max_fevals:
-        max_fevals = max_elems
-
-    fevals = 0
-    max_threads = runner.dev.max_threads
-
-    all_results = []
-    unique_results = {}
-
-    #while searching
-    while fevals < max_fevals:
-
-        #get random starting position that is valid
-        pos = [random.choice(v) for v in tune_params.values()]
-
-        #if we have restrictions and config fails restrictions, try again
-        #if restrictions and not util.check_restrictions(restrictions, pos, tune_params.keys(), False):
-        if not util.config_valid(pos, tuning_options, max_threads):
-            continue
-
-        best_improvement_hillclimb(pos, max_fevals, all_results, unique_results,
-                     kernel_options, tuning_options, runner)
-        fevals = len(unique_results)
-
-    return all_results, runner.dev.get_environment()
+    options["restart"] = False
+    options["neighbor"] = "Hamming"
+    return mls_tune(runner, kernel_options, device_options, tuning_options)

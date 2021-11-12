@@ -1,11 +1,7 @@
 """ A greedy multi-start local search algorithm for parameter search """
 
-import itertools
-import random
-
-from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
-from kernel_tuner.strategies.hillclimbers import greedy_hillclimb
+from kernel_tuner.strategies.hillclimbers import base_hillclimb
 from kernel_tuner.strategies.genetic_algorithm import random_population
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -32,27 +28,24 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
-    dna_size = len(tuning_options.tune_params.keys())
-
+    # retrieve options with defaults
     options = tuning_options.strategy_options
-
-    neighbour = options.get("neighbor", "Hamming")
+    neighbor = options.get("neighbor", "Hamming")
     restart = options.get("restart", True)
+    order = options.get("order", None)
+    randomize = options.get("randomize", True)
     max_fevals = options.get("max_fevals", 100)
 
     tuning_options["scaling"] = False
     tune_params = tuning_options.tune_params
 
     # limit max_fevals to max size of the parameter space
-    parameter_space = itertools.product(*tune_params.values())
-    if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
-    max_elems = len(list(parameter_space))
+    max_threads = runner.dev.max_threads
+    max_elems = util.get_number_of_valid_configs(tuning_options, max_threads)
     if max_elems < max_fevals:
         max_fevals = max_elems
 
     fevals = 0
-    max_threads = runner.dev.max_threads
     all_results = []
     unique_results = {}
 
@@ -60,7 +53,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     while fevals < max_fevals:
         candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
 
-        _ = greedy_hillclimb(candidate, restart, neighbour, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
+        base_hillclimb(candidate, neighbor, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=randomize, order=order)
         fevals = len(unique_results)
-    return all_results, runner.dev.get_environment()
 
+    return all_results, runner.dev.get_environment()

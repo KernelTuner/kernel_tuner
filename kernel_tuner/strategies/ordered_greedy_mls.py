@@ -7,9 +7,7 @@ import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
-from kernel_tuner.strategies.hillclimbers import ordered_greedy_hillclimb
-from kernel_tuner.strategies.genetic_algorithm import random_population
-
+from kernel_tuner.strategies.greedy_mls import tune as mls_tune
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -35,35 +33,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
-    dna_size = len(tuning_options.tune_params.keys())
-
+    # disable randomization and enable greedy hillclimbing
     options = tuning_options.strategy_options
-
-    neighbour = options.get("neighbor", "Hamming")
-    restart = options.get("restart", True)
-    order = options.get("order", None)
-    max_fevals = options.get("max_fevals", 100)
-
-    tuning_options["scaling"] = False
-    tune_params = tuning_options.tune_params
-
-    # limit max_fevals to max size of the parameter space
-    parameter_space = itertools.product(*tune_params.values())
-    if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
-    max_elems = len(list(parameter_space))
-    if max_elems < max_fevals:
-        max_fevals = max_elems
-
-    fevals = 0
-    max_threads = runner.dev.max_threads
-    all_results = []
-    unique_results = {}
-
-    #while searching
-    while fevals < max_fevals:
-        candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
-
-        ordered_greedy_hillclimb(candidate, order, restart, neighbour, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
-        fevals = len(unique_results)
-    return all_results, runner.dev.get_environment()
+    options["restart"] = True
+    options["randomize"] = False
+    return mls_tune(runner, kernel_options, device_options, tuning_options)

@@ -4,29 +4,6 @@ from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
 
 
-def greedy_hillclimb(base_sol, restart, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner):
-    """ Hillclimbing search until max_fevals is reached or no improvement is found.
-        Greedy hillclimbing evaluates all neighbouring solutions in a random order
-        and immediately moves to the neighbour if it is an improvement.
-    """
-    return base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None)
-
-def best_improvement_hillclimb(pos, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner):
-    """ Hillclimbing search until max_fevals is reached or no improvement is found.
-        Best-improvement hillclimbing evaluates all neighbouring solutions and moves
-        to the best one every iteration.
-    """
-    base_hillclimb(pos, "Hamming", max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=False, order=None)
-
-
-def ordered_greedy_hillclimb(base_sol, order, restart, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner):
-    """ Hillclimbing search until max_fevals is reached or no improvement is found.
-        Ordered greedy hillclimbing evaluates all neighbouring solutions in a prescribed
-        order and immediately moves to the neighbour if it is an improvement.
-    """
-    return base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=False, order=order)
-
-
 def get_neighbors(neighbor_method, values, element, randomize):
     """ get the list of neighboring elements of element in values """
     # If Hamming neighbors, all values are possible neighbors
