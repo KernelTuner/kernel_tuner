@@ -39,7 +39,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     #scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
 
-    bounds, x0, eps = get_bounds_x0_eps(tuning_options)
+    bounds, _, _ = get_bounds_x0_eps(tuning_options)
 
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
@@ -48,9 +48,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     args = (kernel_options, tuning_options, runner, results)
 
     minimizer_kwargs = dict()
-    #minimizer_kwargs = dict(**kwargs)
     minimizer_kwargs["method"] = method
-    #minimizer_kwargs["args"] = args
 
     opt_result = scipy.optimize.dual_annealing(_cost_func, bounds,
             args= args, local_search_options=minimizer_kwargs)

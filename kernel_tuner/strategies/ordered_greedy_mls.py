@@ -1,12 +1,5 @@
 """ A greedy multi-start local search algorithm for parameter search that traverses variables in order."""
 
-import itertools
-import random
-from collections import OrderedDict
-import numpy as np
-
-from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner import util
 from kernel_tuner.strategies.greedy_mls import tune as mls_tune
 
 def tune(runner, kernel_options, device_options, tuning_options):
