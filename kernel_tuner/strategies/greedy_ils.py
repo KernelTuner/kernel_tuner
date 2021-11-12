@@ -5,8 +5,8 @@ import random
 
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
-from kernel_tuner.strategies.greedy_mls import random_candidate
 from kernel_tuner.strategies.hillclimbers import greedy_hillclimb
+from kernel_tuner.strategies.genetic_algorithm import random_val, mutate, random_population
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -62,7 +62,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     unique_results = {}
 
     #while searching
-    candidate = random_candidate(tune_params, tuning_options, max_threads)
+    candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
     best_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results) 
 
     last_improvement = 0
@@ -78,33 +78,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
             new_time = best_time
         else:
             last_improvement += 1
-        
+
         # Instead of full restart, permute the starting candidate
         candidate = random_walk(candidate, perm_size, no_improvement, last_improvement, tune_params, tuning_options, max_threads)
     return all_results, runner.dev.get_environment()
 
-def random_val(index, tune_params):
-    """return a random value for a parameter"""
-    key = list(tune_params.keys())[index]
-    return random.choice(tune_params[key])
-
-def point_mutate(dna, tune_params, tuning_options, max_threads):
-    """Mutate DNA with 1/mutation_chance chance"""
-    attempts = 50
-    while attempts > 0:
-        #decide which parameter to mutate
-        i = random.choice(range(len(dna)))
-        dna_out = dna[:]
-        dna_out[i] = random_val(i, tune_params)
-
-        if not dna_out == dna and util.config_valid(dna_out, tuning_options, max_threads):
-            return dna_out
-        attempts = attempts - 1
-    return dna
 
 def random_walk(indiv, permutation_size, no_improve, last_improve, tune_params, tuning_options, max_threads):
     if last_improve >= no_improve:
-        return random_candidate(tune_params, tuning_options, max_threads)
+        return random_population(1, tune_params, tuning_options, max_threads)[0]
     for k in range(permutation_size):
-        indiv = point_mutate(indiv, tune_params, tuning_options, max_threads)
+        indiv = mutate(indiv, tune_params, 0, tuning_options, max_threads)
     return indiv

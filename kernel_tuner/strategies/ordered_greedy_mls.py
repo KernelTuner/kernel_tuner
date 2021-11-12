@@ -8,7 +8,7 @@ import numpy as np
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
 from kernel_tuner.strategies.hillclimbers import ordered_greedy_hillclimb
-from kernel_tuner.strategies.greedy_mls import random_candidate
+from kernel_tuner.strategies.genetic_algorithm import random_population
 
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -62,7 +62,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     #while searching
     while fevals < max_fevals:
-        candidate = random_candidate(tune_params, tuning_options, max_threads)
+        candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
 
         ordered_greedy_hillclimb(candidate, order, restart, neighbour, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
         fevals = len(unique_results)

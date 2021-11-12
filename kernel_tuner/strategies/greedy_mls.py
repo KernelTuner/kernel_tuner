@@ -6,7 +6,7 @@ import random
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
 from kernel_tuner.strategies.hillclimbers import greedy_hillclimb
-
+from kernel_tuner.strategies.genetic_algorithm import random_population
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -58,20 +58,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     #while searching
     while fevals < max_fevals:
-        candidate = random_candidate(tune_params, tuning_options, max_threads)
+        candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
 
         _ = greedy_hillclimb(candidate, restart, neighbour, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner)
         fevals = len(unique_results)
     return all_results, runner.dev.get_environment()
 
-
-def random_candidate(tune_params, tuning_options, max_threads):
-    """create a random member of the search space with a valid configuration"""
-    candidate = None
-    while candidate is None:
-        #NOTE: Is this unsafe? kernel tuners genetic algorithm 
-        # has such a while as well though
-        dna = [random.choice(v) for v in tune_params.values()]
-        if util.config_valid(dna, tuning_options, max_threads):
-            candidate = dna
-    return candidate
