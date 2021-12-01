@@ -1,6 +1,5 @@
 """ Module for kernel tuner utility functions """
-from __future__ import print_function
-
+import itertools
 import json
 from collections import OrderedDict
 import os
@@ -260,6 +259,14 @@ def get_kernel_string(kernel_source, params=None):
     return kernel_string
 
 
+def get_number_of_valid_configs(tuning_options, max_threads):
+    """compute number of valid configurations in a search space based on restrictions and max_threads"""
+    parameter_space = itertools.product(*tuning_options.tune_params.values())
+    if tuning_options.restrictions is not None:
+        parameter_space = filter(lambda p: util.config_valid(p, tuning_options, max_threads), parameter_space)
+    return len(list(parameter_space))
+
+
 def get_problem_size(problem_size, params):
     """compute current problem size"""
     if callable(problem_size):
@@ -421,6 +428,10 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
     """
     logging.debug('prepare_kernel_string called for %s', kernel_name)
+
+    # since we insert defines above the original kernel code, the line numbers will be incorrect
+    # the following preprocessor directive informs the compiler that lines should be counted from 1
+    kernel_string = "#line 1\n" + kernel_string
 
     grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
     for i, g in enumerate(grid):

@@ -40,10 +40,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tune_params = tuning_options.tune_params
 
     # optimization parameters
-    T = 1.0
-    T_min = 0.001
-    alpha = 0.9
-    niter = 20
+    T = tuning_options.strategy_options.get("T", 1.0)
+    T_min = tuning_options.strategy_options.get("T_min", 0.001)
+    alpha = tuning_options.strategy_options.get("alpha", 0.9)
+    niter = tuning_options.strategy_options.get("maxiter", 20)
 
     # generate random starting point and evaluate cost
     pos = []

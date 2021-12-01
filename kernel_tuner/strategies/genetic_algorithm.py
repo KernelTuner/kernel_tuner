@@ -1,7 +1,6 @@
 """ A simple genetic algorithm for parameter search """
 
 import random
-from collections import OrderedDict
 import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
@@ -31,8 +30,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
-    dna_size = len(tuning_options.tune_params.keys())
-
     options = tuning_options.strategy_options
     pop_size = options.get("popsize", 20)
     generations = options.get("maxiter", 50)
@@ -41,7 +38,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     max_fevals = options.get("max_fevals", 100)
 
+    # limit max_fevals to max size of the parameter space
     max_threads = runner.dev.max_threads
+    max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
 
     tuning_options["scaling"] = False
     tune_params = tuning_options.tune_params
