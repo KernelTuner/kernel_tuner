@@ -45,7 +45,7 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, mls, pso, simulated_annealing, firefly_algorithm, bayes_opt
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, mls, pso, simulated_annealing, firefly_algorithm, bayes_opt, bayes_opt_old, bayes_opt_GPyTorch, bayes_opt_alt_BOTorch
 
 strategy_map = {
     "brute_force": brute_force,
@@ -59,6 +59,9 @@ strategy_map = {
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
+    "bayes_opt_old": bayes_opt_old,
+    "bayes_opt_GPyTorch": bayes_opt_GPyTorch,
+    "bayes_opt_BOTorch": bayes_opt_alt_BOTorch,
 }
 
 
