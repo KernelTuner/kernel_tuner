@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - new optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
 
+### Removed
+- Alternative Bayesian Optimization strategies that could not be used directly
+- C++ wrapper module that was too specific and hardly used
+
 ## [0.4.1] - 2021-09-10
 ### Added
 - support for PyTorch Tensors as input data type for kernels
