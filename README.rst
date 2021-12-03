@@ -143,8 +143,7 @@ Please see the `Contributions Guide <http://benvanwerkhoven.github.io/kernel_tun
 
 Citation
 --------
-The paper about `Kernel Tuner is published (Open Access) <https://www.sciencedirect.com/science/article/pii/S0167739X18313359>`__, please cite
-Kernel Tuner as follows:
+If you use Kernel Tuner in research or research software, please cite the most relevant among the following publications:
 
 .. code:: latex
 
@@ -155,8 +154,21 @@ Kernel Tuner as follows:
       year = {2019},
       volume  = {90},
       pages = {347-358},
+      url = {https://www.sciencedirect.com/science/article/pii/S0167739X18313359}
       doi = {https://doi.org/10.1016/j.future.2018.08.004},
     }
+
+
+    @article{willemsen2021bayesian,
+      title = {Bayesian Optimization for auto-tuning GPU kernels},
+      journal = {International Workshop on Performance Modeling, Benchmarking and Simulation of High Performance Computer Systems (PMBS) at Supercomputing (SC21)},
+      author = {Willemsen, Floris-Jan and Van Nieuwpoort, Rob and Van Werkhoven, Ben},
+      url = {https://arxiv.org/abs/2111.14991},
+      year = {2021},
+    }
+
+
+
 
 Related work
 ------------
