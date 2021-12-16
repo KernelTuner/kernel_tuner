@@ -235,7 +235,7 @@ class DeviceInterface(object):
             dev = CupyFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
-        elif lang == "C":
+        elif lang.upper() in ["C", "FORTRAN"]:
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
