@@ -23,7 +23,7 @@ def test():
     tune_params["N"] = size
     tune_params["NTHREADS"] = 4
 
-    answer = run_kernel("vector_add", kernel_string, size, args, tune_params, lang="C", compiler="pgfortran")
+    answer = run_kernel("vector_add", kernel_string, size, args, tune_params, lang="fortran", compiler="gfortran")
 
     assert np.allclose(answer[0], a+b, atol=1e-8)
 
