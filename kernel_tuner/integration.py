@@ -22,7 +22,7 @@ objective_default_map = {
 }
 
 def get_objective_defaults(objective, objective_higher_is_better):
-    #use time as default objective and attempt to lookup objective_higher_is_better for known objectives
+    """ Uses time as default objective and attempts to lookup objective_higher_is_better for known objectives """
     objective = objective or "time"
     if objective_higher_is_better is None and objective in objective_default_map:
         objective_higher_is_better = objective_default_map[objective]
@@ -124,36 +124,42 @@ def store_results(results_filename, kernel_name, kernel_string, tune_params, pro
     """ stores tuning results to a JSON file
 
         Stores the top (3% by default) best kernel configurations in a JSON file.
-        The results are stored for a specific device (retrieved by env.device_name)
-        and for a specific problem_size. Any previous results stored in the file
-        for this specific device and problem_size will be overwritten.
+        The results are stored for a specific device (retrieved using env['device_name'])
+        and for a specific problem_size. If the file already exists, new results for
+        this device and problem_size will be appended. Any previous results already stored
+        in the file for this specific device and problem_size will be overwritten.
 
-        :param results_filename: Filename of JSON file in which the results will be stored.
-            Existing files may be overwritten.
+        :param results_filename: Filename of the JSON file in which the results will be stored.
+            Results will be appended if the file already exists. Existing results within the
+            file for the same device and problem_size will be overwritten.
         :type results_filename: string
 
         :param tune_params: The tunable parameters of this kernel.
         :type tune_params: dict
 
-        :param problem_size: problem size used during tuning
+        :param problem_size: The problem_size this kernel was tuned for
         :type problem_size: tuple
 
         :param results: A list of dictionaries of all executed kernel configurations and their
-            execution times, and possibly other user-defined metrics.
+            execution times, and possibly other user-defined metrics, as returned by
+            tune_kernel().
         :type results: list(dict)
 
-        :param env: And a dictionary with information about the environment
+        :param env: A dictionary with information about the environment
             in which the tuning took place. This records device name, properties,
-            version info, and so on. Typicaly this dictionary is returned by tune_kernel.
+            version info, and so on. Typicaly this dictionary is returned by tune_kernel().
         :type env: dict
 
         :param top: Denotes the top percentage of results to store in the results file
         :type top: float
 
-        :param objective: optimization objective to sort results on, consisting of a string that also
-            occurs in results as a metric and a function, i.e. Python built-in functions min
-            or max, that will be used to compare results.
-        :type objective: tuple(string, callable)
+        :param objective: Optimization objective to sort results on, consisting of a string
+            that also occurs in results as a metric.
+        :type objective: string
+
+        :param objective_higher_is_better: A boolean that specifies whether the objective should
+            be maximized or minimized.
+        :type objective_higher_is_better: bool
 
     """
 
@@ -197,8 +203,11 @@ def store_results(results_filename, kernel_name, kernel_string, tune_params, pro
         meta = {}
         meta["version_number"] = "1.0"
         meta["kernel_name"] = kernel_name
-        if kernel_string:
-            meta["kernel_string"] = kernel_string
+        if kernel_string and not callable(kernel_string) and not isinstance(kernel_string, list):
+            if util.looks_like_a_filename(kernel_string):
+                meta["kernel_string"] = util.read_file(kernel_string)
+            else:
+                meta["kernel_string"] = kernel_string
         meta["objective"] = objective
         meta["objective_higher_is_better"] = objective_higher_is_better
         meta["tunable_parameters"] = list(tune_params.keys())
@@ -229,7 +238,7 @@ def store_results(results_filename, kernel_name, kernel_string, tune_params, pro
     #write output file
     meta["data"] = data
     with open(results_filename, 'w') as fh:
-        fh.write(json.dumps(meta))
+        fh.write(json.dumps(meta, indent=""))
 
 
 def create_device_targets(header_filename, results_filename, objective=None, objective_higher_is_better=None):
@@ -260,10 +269,14 @@ def create_device_targets(header_filename, results_filename, objective=None, obj
         :param results_filename: Filename of the JSON file that stores the tuning results.
         :type results_filename: string
 
-        :param objective: optimization objective to sort results on, consisting of a string that also
-            occurs in results as a metric and a function, i.e. Python built-in functions min
-            or max, that will be used to compare results.
-        :type objective: tuple(string, callable)
+        :param objective: Optimization objective to sort results on, consisting of a string
+            that also occurs in results as a metric.
+        :type objective: string
+
+        :param objective_higher_is_better: A boolean that specifies whether the objective should
+            be maximized or minimized.
+        :type objective_higher_is_better: bool
+
     """
     objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
 

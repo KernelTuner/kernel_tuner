@@ -153,6 +153,7 @@ def test_prepare_kernel_string():
                "#define block_size_x 1\n" \
                "#define grid_size_y 7\n" \
                "#define grid_size_x 3\n" \
+               "#line 1\n" \
                "this is a weird kernel"
     assert output == expected
 
@@ -211,7 +212,7 @@ def test_detect_language3():
 @skip_if_no_cuda
 def test_get_device_interface1():
     lang = "CUDA"
-    with core.DeviceInterface(core.KernelSource("", lang=lang)) as dev:
+    with core.DeviceInterface(core.KernelSource("", "", lang=lang)) as dev:
         assert isinstance(dev, core.DeviceInterface)
         assert isinstance(dev.dev, cuda.CudaFunctions)
 
@@ -219,7 +220,7 @@ def test_get_device_interface1():
 @skip_if_no_opencl
 def test_get_device_interface2():
     lang = "OpenCL"
-    with core.DeviceInterface(core.KernelSource("", lang=lang)) as dev:
+    with core.DeviceInterface(core.KernelSource("", "", lang=lang)) as dev:
         assert isinstance(dev, core.DeviceInterface)
         assert isinstance(dev.dev, opencl.OpenCLFunctions)
 
@@ -516,17 +517,17 @@ def test_process_cache():
 
         # check that exceptions are raised when using a cache file for
         # a different kernel, device, or parameter set
-        with pytest.raises(ValueError) as excp:
+        with pytest.raises(ValueError) as excep:
             kernel_options.kernel_name = "wrong_kernel"
             process_cache(cache, kernel_options, tuning_options, runner)
             assert "kernel" in str(excep.value)
 
-        with pytest.raises(ValueError) as excp:
+        with pytest.raises(ValueError) as excep:
             runner.dev.name = "wrong_device"
             process_cache(cache, kernel_options, tuning_options, runner)
             assert "device" in str(excep.value)
 
-        with pytest.raises(ValueError) as excp:
+        with pytest.raises(ValueError) as excep:
             tuning_options.tune_params["y"] = ["a", "b"]
             process_cache(cache, kernel_options, tuning_options, runner)
             assert "parameter" in str(excep.value)

@@ -143,8 +143,7 @@ Please see the `Contributions Guide <http://benvanwerkhoven.github.io/kernel_tun
 
 Citation
 --------
-The paper about `Kernel Tuner is published (Open Access) <https://www.sciencedirect.com/science/article/pii/S0167739X18313359>`__, please cite
-Kernel Tuner as follows:
+If you use Kernel Tuner in research or research software, please cite the most relevant among the following publications:
 
 .. code:: latex
 
@@ -155,8 +154,19 @@ Kernel Tuner as follows:
       year = {2019},
       volume  = {90},
       pages = {347-358},
-      doi = {https://doi.org/10.1016/j.future.2018.08.004},
+      url = {https://www.sciencedirect.com/science/article/pii/S0167739X18313359},
+      doi = {https://doi.org/10.1016/j.future.2018.08.004}
     }
+
+    @article{willemsen2021bayesian,
+      author = {Willemsen, Floris-Jan and Van Nieuwpoort, Rob and Van Werkhoven, Ben},
+      title = {Bayesian Optimization for auto-tuning GPU kernels},
+      journal = {International Workshop on Performance Modeling, Benchmarking and Simulation
+         of High Performance Computer Systems (PMBS) at Supercomputing (SC21)},
+      year = {2021},
+      url = {https://arxiv.org/abs/2111.14991}
+    }
+
 
 Related work
 ------------
@@ -164,8 +174,9 @@ Related work
 You may also like `CLTune <https://github.com/CNugteren/CLTune>`__ by
 Cedric Nugteren. CLTune is a C++ library for kernel tuning.
 
-.. |Build Status| image:: https://api.travis-ci.org/benvanwerkhoven/kernel_tuner.svg?branch=master
-   :target: https://travis-ci.org/benvanwerkhoven/kernel_tuner
+
+.. |Build Status| image:: https://github.com/benvanwerkhoven/kernel_tuner/actions/workflows/python-app.yml/badge.svg
+   :target: https://github.com/benvanwerkhoven/kernel_tuner/actions/workflows/python-app.yml
 .. |CodeCov Badge| image:: https://codecov.io/gh/benvanwerkhoven/kernel_tuner/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/benvanwerkhoven/kernel_tuner
 .. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue 

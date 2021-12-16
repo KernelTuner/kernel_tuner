@@ -92,6 +92,7 @@ class SimulationDeviceInterface(object):
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
         self.lang = lang
         self.dev = SimulationLangFunction(self.lang, device, iterations, compiler_options)
+        self.max_threads = 1024
         self.units = None
         self._name = self.dev.name
         self.quiet = quiet
@@ -235,6 +236,7 @@ class SimulationRunner(object):
 
             # if the element is not in the cache, raise an error
             logging.debug('parameter element not in cache')
+            print(element)
             raise ValueError("Parameter element not in cache - in simulation mode, all parameter elements must be present in the cache")
 
         return results, self.dev.get_environment()

@@ -57,8 +57,9 @@ def test_compile(drv, *args):
 
         # call compile
         kernel_string = "__global__ void vector_add()"
-        kernel_sources = KernelSource(kernel_string, "cuda")
-        kernel_instance = KernelInstance("vector_add", kernel_sources, kernel_string, [], None, None, dict(), [])
+        kernel_name = "vector_add"
+        kernel_sources = KernelSource(kernel_name, kernel_string, "cuda")
+        kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
         func = dev.compile(kernel_instance)
 
         # verify behavior
@@ -88,7 +89,7 @@ def test_benchmark(drv, *args):
         res = dev.benchmark(dummy_func, [1, 2], (1, 2), (1, 2))
         assert res["time"] > 0
 
-        assert dev.context.synchronize.call_count == 1
+        assert dev.context.synchronize.call_count > 1
         assert drv.Event.return_value.synchronize.call_count == dev.iterations
         assert drv.Event.return_value.record.call_count == 2*dev.iterations
         assert drv.Event.return_value.time_since.call_count == dev.iterations

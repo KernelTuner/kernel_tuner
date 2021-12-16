@@ -40,7 +40,12 @@ import kernel_tuner.core as core
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, pso, simulated_annealing, firefly_algorithm, bayes_opt
+try:
+    import torch
+except ImportError:
+    torch = util.TorchPlaceHolder()
+
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, mls, pso, simulated_annealing, firefly_algorithm, bayes_opt, greedy_mls, greedy_ils, ordered_greedy_mls, dual_annealing
 
 strategy_map = {
     "brute_force": brute_force,
@@ -49,10 +54,15 @@ strategy_map = {
     "basinhopping": basinhopping,
     "diff_evo": diff_evo,
     "genetic_algorithm": genetic_algorithm,
+    "greedy_mls": greedy_mls,
+    "ordered_greedy_mls": ordered_greedy_mls,
+    "greedy_ils": greedy_ils,
+    "dual_annealing": dual_annealing,
+    "mls": mls,
     "pso": pso,
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt
+    "bayes_opt": bayes_opt,
 }
 
 
@@ -88,7 +98,7 @@ _kernel_options = Options([("kernel_name", ("""The name of the kernel in the cod
             the kernel.""", "string or list and/or callable")),
                            ("lang", ("""Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA",
+        the language using this argument, currently supported: "CUDA", "Cupy",
         "OpenCL", or "C".""", "string")),
                            ("problem_size", ("""The size of the domain from which the grid dimensions
             of the kernel are computed.
@@ -232,95 +242,103 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
                            ("strategy", ("""Specify the strategy to use for searching through the
         parameter space, choose from:
 
-            * "brute_force" (default),
-            * "random_sample", specify: *sample_fraction*,
-            * "minimize" or "basinhopping", specify: *method*,
-            * "diff_evo", specify: *method*.
-            * "genetic_algorithm"
-            * "pso"
-            * "firefly_algorithm"
-            * "simulated_annealing"
-            * "bayes_opt"
+            * "brute_force" (default) iterates through the entire search space.
+            * "random_sample" takes a random sample of the search space.
+            * "minimize" uses a local minimization algorithm.
+            * "basinhopping" combines global stepping with a local minimization at each step.
+            * "diff_evo" differential evolution.
+            * "genetic_algorithm" a genetic algorithm optimization strategy.
+            * "mls" multi-start local search
+            * "pso" particle swarm optimization
+            * "firefly_algorithm" firefly algorithm strategy.
+            * "simulated_annealing" simulated annealing strategy.
+            * "bayes_opt" Bayesian Optimization strategy.
 
-        "brute_force" is the default and iterates over the entire search
-        space.
-
-        "random_sample" can be used to only benchmark a fraction of the
-        search space, specify a *sample_fraction* in the interval [0, 1].
-
-        "minimize" and "basinhopping" strategies use minimizers to
-        limit the search through the parameter space.
-
-        "diff_evo" uses differential evolution.
-
-        "genetic_algorithm" implements a Genetic Algorithm, default
-        setting uses a population size of 20 for 100 generations.
-
-        "pso" implements Particle Swarm Optimization, using the default
-        setting of 20 particles for 100 iterations.
-
-        "firefly_algorithm" implements the Firefly Algorithm, using 20
-        fireflies for 100 iterations.
-
-        "simulated_annealing" uses Simulated Annealing.
-
-        "bayes_opt" uses Bayesian Optimization.
+        Strategy-specific parameters and options are explained under strategy_options.
 
         """, "")),
-                           ("strategy_options", ("""A dict with options for the tuning strategy
+                           ("strategy_options", ("""A dict with options specific to the selected tuning strategy.
 
-        Example usage:
 
-         * strategy="basinhopping",
-           strategy_options={"method": "BFGS",
-                             "maxiter": 100,
-                             "T": 1.0}
-         * strategy="diff_evo",
-           strategy_options={"method": "best1bin",
-                             "popsize": 20}
-         * strategy="genetic_algorithm",
-           strategy_options={"method": "uniform",
-                             "popsize": 20,
-                             "maxiter": 100}
+            * **"random_sample"**
 
-        strategy="minimize" and strategy="basinhopping", support the following
-        options for "method":
-        "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B",
-        "TNC", "COBYLA", or "SLSQP". It is also possible to pass a function
-        that implements a custom minimization strategy.
-        The default is "L-BFGS-B".
-        strategy="basinhopping" also supports "T", which is 1.0 by default.
+              * "fraction", float, fraction of the search space to cover in [0,1], default 0.1.
 
-        strategy="diff_evo" supports the following creation "method" options:
-        "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp",
-        "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin".
-        The default is "best1bin".
+            * **"minimize"**
 
-        strategy="genetic_algorithm" uses "method" to select the crossover
-        method, options are: "single_point", "two_point", "uniform", and
-        "disruptive_uniform".
-        The default is "uniform".
-        Also "mutation_chance" can be set to control the chance of a mutation,
-        which is separately evaluated for each dimension. For example, set
-        to 100 for a probability of 0.01 of a mutation per tunable parameter.
+              * "method", string, any of "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", or "SLSQP", default "L-BFGS-B".
 
-        strategy="random_sample" supports "fraction" to specify
-        the fraction of the search space to sample in the interval [0,1].
+            * **"basinhopping"**
 
-        strategy="firefly_algorithm" supports the following parameters:
-        B0 = 1.0, gamma = 1.0, alpha = 0.20.
+              * "method", string, any of "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", or "SLSQP", default "L-BFGS-B".
 
-        strategy="simulated_annealing" supports parameters:
-        T = 1.0, T_min = 0.001, alpha = 0.9.
+              * "T", float, Temperature parameter for the accept or reject criterion, default 1.0.
 
-        strategy="bayes_opt" supports acquisition methods: "poi" (default),
-        "ei", "ucb". And parameters, popsize (initial random guesses),
-        maxiter, alpha, kappa, xi.
+            * **"diff_evo"**
 
-        "maxiter" is supported by "minimize", "basinhopping", "diff_evo"
-        "firefly_algorithm", "pso", "genetic_algorithm", "bayes_opt". Note
-        that maxiter generally refers to iterations of the strategy, not
-        the maximum number of function evaluations.
+              * "method", string, any of "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin", default "best1bin".
+
+            * **"genetic_algorithm"**
+
+              * "popsize", integer, population size, default 20.
+
+              * "maxiter", integer, number of generations, default 50.
+
+              * "method", string, crossover method any of "single_point", "two_point", "uniform", "disruptive_uniform", default "uniform".
+
+              * "mutation_chance", integer, specifies the 1 in mutation_chance of a mutation, default 10.
+
+              * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
+
+            * **"mls"**
+
+              * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
+
+            * **"pso"**
+
+              * "popsize", integer, population size, default 20.
+
+              * "maxiter", integer, number of generations, default 100.
+
+              * "w", float, inertia constant, default 0.5.
+
+              * "c1", float, cognitive constant, default 2.0.
+
+              * "c2", float, social constant, default 1.0.
+
+            * **"firefly_algorithm"**
+
+              * "popsize", integer, population size, default 20.
+
+              * "maxiter", integer, number of generations, default 100.
+
+              * "B0", float, B0 parameter, default 1.0.
+
+              * "gamma", float, gamma parameter, default 1.0.
+
+              * "alpha", float, alpha parameter, default 0.2.
+
+            * **"simulated_annealing"**
+
+              * "T", float, starting temperature parameter, default 1.0.
+
+              * "T_min", float, end temperature parameter, default 0.001.
+
+              * "alpha", float, alpha parameter, default 0.9.
+
+              * "maxiter", integer, number of iterations of possibly accepting neighboring points, default 20.
+
+            * **"bayes_opt"**
+
+              * "method": any of "poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", default "multi-advanced".
+
+              * "covariancekernel", any of "constantrbf", "rbf", "matern32", "matern52", default "matern32".
+
+              * "covariancelengthscale", float, default 1.5.
+
+              * "samplingmethod" any of "random", "lhs", default "lhs".
+
+
 
     """, "dict")),
                            ("iterations", ("""The number of times a kernel should be executed and
@@ -378,7 +396,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 #"""
 
 
-def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
+def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
                 cache=None, metrics=None, simulation_mode=False, observers=None):
@@ -386,9 +404,9 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = core.KernelSource(kernel_string, lang)
+    kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
 
-    _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
+    _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params)
@@ -404,6 +422,7 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
+    tuning_options["snap"] = True
 
     logging.debug('tune_kernel called')
     logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
@@ -441,8 +460,8 @@ def tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params
         strategy = brute_force
 
     # select the runner for this job based on input
-    SelectedRunner = SimulationRunner if simulation_mode else SequentialRunner
-    with SelectedRunner(kernel_source, kernel_options, device_options, iterations, observers) as runner:
+    selected_runner = SimulationRunner if simulation_mode is True else SequentialRunner
+    with selected_runner(kernelsource, kernel_options, device_options, iterations, observers) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.
@@ -508,15 +527,15 @@ _run_kernel_docstring = """Compile and run a single kernel
 """ % _get_docstring(_kernel_options) + _get_docstring(_device_options)
 
 
-def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid_div_x=None, grid_div_y=None, grid_div_z=None, lang=None, device=0, platform=0,
+def run_kernel(kernel_name, kernel_source, problem_size, arguments, params, grid_div_x=None, grid_div_y=None, grid_div_z=None, lang=None, device=0, platform=0,
                smem_args=None, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None, block_size_names=None, quiet=False, log=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernel_source = core.KernelSource(kernel_string, lang)
+    kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
 
-    _check_user_input(kernel_name, kernel_source, arguments, block_size_names)
+    _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     #sort options into separate dicts
     opts = locals()
@@ -524,7 +543,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
     #detect language and create the right device function interface
-    with core.DeviceInterface(kernel_source, iterations=1, **device_options) as dev:
+    with core.DeviceInterface(kernelsource, iterations=1, **device_options) as dev:
 
         #move data to the GPU
         gpu_args = dev.ready_argument_list(arguments)
@@ -532,7 +551,7 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
         instance = None
         try:
             #create kernel instance
-            instance = dev.create_kernel_instance(kernel_source, kernel_options, params, False)
+            instance = dev.create_kernel_instance(kernelsource, kernel_options, params, False)
             if instance is None:
                 raise Exception("cannot create kernel instance, too many threads per block")
 
@@ -544,6 +563,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
             if func is None:
                 raise Exception("cannot compile kernel, too much shared memory used")
 
+            #add shared memory arguments to compiled module
+            if smem_args is not None:
+                dev.copy_shared_memory_args(util.get_smem_args(smem_args, params))
             #add constant memory arguments to compiled module
             if cmem_args is not None:
                 dev.copy_constant_memory_args(cmem_args)
@@ -564,6 +586,8 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
         for i, arg in enumerate(arguments):
             if numpy.isscalar(arg):
                 results.append(arg)
+            elif isinstance(arg, torch.Tensor):
+                results.append(arg.cpu())
             else:
                 results.append(numpy.zeros_like(arg))
                 dev.memcpy_dtoh(results[-1], gpu_args[i])
@@ -574,9 +598,9 @@ def run_kernel(kernel_name, kernel_string, problem_size, arguments, params, grid
 run_kernel.__doc__ = _run_kernel_docstring
 
 
-def _check_user_input(kernel_name, kernel_source, arguments, block_size_names):
+def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
     # see if the kernel arguments have correct type
-    kernel_source.check_argument_lists(kernel_name, arguments)
+    kernelsource.check_argument_lists(kernel_name, arguments)
 
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)

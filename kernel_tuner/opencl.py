@@ -1,5 +1,6 @@
 """This module contains all OpenCL specific kernel_tuner functions"""
 from __future__ import print_function
+import time
 import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
@@ -152,12 +153,14 @@ class OpenCLFunctions():
         for _ in range(self.iterations):
             for obs in self.observers:
                 obs.before_start()
+            self.queue.finish()
             self.event = func(self.queue, global_size, local_size, *gpu_args)
             for obs in self.observers:
                 obs.after_start()
             while self.event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) != 0:
                 for obs in self.observers:
                     obs.during()
+                time.sleep(1e-6)
             self.event.wait()
             for obs in self.observers:
                 obs.after_finish()

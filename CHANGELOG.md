@@ -5,6 +5,25 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 
 ### Added
+- new optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
+
+### Removed
+- Alternative Bayesian Optimization strategies that could not be used directly
+- C++ wrapper module that was too specific and hardly used
+
+## [0.4.1] - 2021-09-10
+### Added
+- support for PyTorch Tensors as input data type for kernels
+- support for smem_args in run_kernel
+- support for (lambda) function and string for dynamic shared memory size
+- a new Bayesian Optimization strategy
+
+### Changed
+- optionally store the kernel_string with store_results
+- improved reporting of skipped configurations
+
+## [0.4.0] - 2021-04-09
+### Added
 - support for (lambda) function instead of list of strings for restrictions
 - support for (lambda) function instead of list for specifying grid divisors
 - support for (lambda) function instead of tuple for specifying problem_size
@@ -14,6 +33,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - option to control measurements using observers
 - support for NVML tunable parameters
 - option to simulate auto-tuning searches from existing cache files
+- Cupy backend to support C++ templated CUDA kernels
+- support for templated CUDA kernels using PyCUDA backend
+- documentation on tunable parameter vocabulary
 
 ## [0.3.2] - 2020-11-04
 ### Added

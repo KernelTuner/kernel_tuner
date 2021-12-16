@@ -64,11 +64,13 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     logging.debug('x: ' + str(x))
 
     # snap values in x to nearest actual value for each parameter unscale x if needed
-    if tuning_options.scaling:
-        params = unscale_and_snap_to_nearest(x, tuning_options.tune_params, tuning_options.eps)
+    if tuning_options.snap:
+        if tuning_options.scaling:
+            params = unscale_and_snap_to_nearest(x, tuning_options.tune_params, tuning_options.eps)
+        else:
+            params = snap_to_nearest_config(x, tuning_options.tune_params)
     else:
-        params = snap_to_nearest_config(x, tuning_options.tune_params)
-
+        params = x
     logging.debug('params ' + str(params))
 
     # we cache snapped values, since those correspond to results for an actual instance of the kernel
@@ -181,13 +183,13 @@ def setup_method_options(method, tuning_options):
     return kwargs
 
 
-def snap_to_nearest_config(x, tune_params):
+def snap_to_nearest_config(x, tune_params, resolution=1):
     """helper func that for each param selects the closest actual value"""
     params = []
     for i, k in enumerate(tune_params.keys()):
         values = numpy.array(tune_params[k])
         idx = numpy.abs(values - x[i]).argmin()
-        params.append(int(values[idx]))
+        params.append(values[idx])
     return params
 
 

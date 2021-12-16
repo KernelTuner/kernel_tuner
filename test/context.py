@@ -22,6 +22,13 @@ except Exception:
 
 gfortran_present = shutil.which("gfortran") is not None
 
+try:
+    import cupy
+    cupy_present = True
+except Exception:
+    cupy_present = False
+
 skip_if_no_cuda = pytest.mark.skipif(not cuda_present, reason="PyCuda not installed or no CUDA device detected")
+skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed")
 skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected")
 skip_if_no_gfortran = pytest.mark.skipif(not gfortran_present, reason="No gfortran on PATH")
