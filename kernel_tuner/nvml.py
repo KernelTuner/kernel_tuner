@@ -1,3 +1,4 @@
+import subprocess
 import time
 import numpy as np
 
@@ -11,11 +12,13 @@ except ImportError:
 class nvml():
     """Class that gathers the NVML functionality for one device"""
 
-    def __init__(self, device_id=0):
+    def __init__(self, device_id=0, nvidia_smi_fallback=None):
         """Create object to control device using NVML"""
 
         pynvml.nvmlInit()
         self.dev = pynvml.nvmlDeviceGetHandleByIndex(device_id)
+        self.id = device_id
+        self.nvidia_smi = nvidia_smi_fallback
 
         try:
             self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
@@ -82,7 +85,15 @@ class nvml():
     def pwr_limit(self, new_limit):
         if not self.pwr_constraints[0] <= new_limit <= self.pwr_constraints[1]:
             raise ValueError(f"Power limit {new_limit} out of range [{self.pwr_constraints[0]}, {self.pwr_constraints[1]}]")
-        pynvml.nvmlDeviceSetPowerManagementLimit(self.dev, new_limit)
+        if new_limit == pynvml.nvmlDeviceGetPowerManagementLimit(self.dev):
+            return
+        try:
+            pynvml.nvmlDeviceSetPowerManagementLimit(self.dev, new_limit)
+        except pynvml.NVMLError_NoPermission:
+            if self.nvidia_smi:
+                new_limit_watt = int(new_limit / 1000.0) # nvidia-smi expects Watts rather than milliwatts
+                args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--power-limit="+str(new_limit_watt)]
+                out = subprocess.run(args, check=True)
         self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
 
     @property
@@ -103,7 +114,13 @@ class nvml():
             raise ValueError("Illegal value for memory clock")
         if not gr_clock in self.supported_gr_clocks[mem_clock]:
             raise ValueError("Graphics clock incompatible with memory clock")
-        pynvml.nvmlDeviceSetApplicationsClocks(self.dev, mem_clock, gr_clock)
+        try:
+            pynvml.nvmlDeviceSetApplicationsClocks(self.dev, mem_clock, gr_clock)
+        except pynvml.NVMLError_NoPermission:
+            if self.nvidia_smi:
+                args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--applications-clocks="+str(mem_clock)+","+str(gr_clock)]
+                out = subprocess.run(args, check=True)
+
         self._gr_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
         self._sm_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_SM)
         self._mem_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
@@ -115,7 +132,8 @@ class nvml():
 
     @gr_clock.setter
     def gr_clock(self, new_clock):
-        self.set_clocks(self._mem_clock, new_clock)
+        if new_clock != pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS):
+            self.set_clocks(self._mem_clock, new_clock)
 
     @property
     def mem_clock(self):
@@ -124,7 +142,8 @@ class nvml():
 
     @mem_clock.setter
     def mem_clock(self, new_clock):
-        self.set_clocks(new_clock, self._gr_clock)
+        if new_clock != pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM):
+            self.set_clocks(new_clock, self._gr_clock)
 
     @property
     def temperature(self):
@@ -151,8 +170,8 @@ class nvml():
 
 class NVMLObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
-    def __init__(self, observables, device=0, save_all=False):
-        self.nvml = nvml(device)
+    def __init__(self, observables, device=0, save_all=False, nvidia_smi_fallback=None):
+        self.nvml = nvml(device, nvidia_smi_fallback=nvidia_smi_fallback)
         self.save_all = save_all
 
         supported = ["power_readings", "nvml_power", "nvml_energy", "core_freq", "mem_freq", "temperature"]
