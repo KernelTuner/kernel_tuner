@@ -151,8 +151,9 @@ class nvml():
 
 class NVMLObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
-    def __init__(self, observables, device=0):
+    def __init__(self, observables, device=0, save_all=False):
         self.nvml = nvml(device)
+        self.save_all = save_all
 
         supported = ["power_readings", "nvml_power", "nvml_energy", "core_freq", "mem_freq", "temperature"]
         for obs in observables:
@@ -219,6 +220,10 @@ class NVMLObserver(BenchmarkObserver):
         #return averaged results, except for power_readings
         for obs in self.observables:
             if not obs == "power_readings":
+                #save all information, if the user requested
+                if self.save_all:
+                    averaged_results[obs + "s"] = self.results[obs]
+                #save averaged results, default
                 averaged_results[obs] = np.average(self.results[obs])
         if "power_readings" in self.observables:
             averaged_results["power_readings"] = self.results["power_readings"].copy()
