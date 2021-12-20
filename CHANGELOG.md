@@ -6,6 +6,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - new optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
+- support for constant memory in cupy backend
 
 ### Removed
 - Alternative Bayesian Optimization strategies that could not be used directly
