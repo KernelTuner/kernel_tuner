@@ -219,9 +219,10 @@ class CupyFunctions:
             to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
-        logging.debug('copy_constant_memory_args called')
-        logging.debug('current module: ' + str(self.current_module))
-        raise NotImplementedError('CuPy backend does not yet support constant memory')
+        for k, v in cmem_args.items():
+            symbol = self.current_module.get_global(k)
+            constant_mem = cp.ndarray(v.shape,v.dtype,symbol)
+            constant_mem[:] = cp.asarray(v)
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
