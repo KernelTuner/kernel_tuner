@@ -17,9 +17,11 @@ except ImportError:
 
 
 class TorchPlaceHolder():
-
     def __init__(self):
         self.Tensor = Exception    #using Exception here as a type that will never be among kernel arguments
+
+class SkippableFailure(Exception):
+    """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected"""
 
 
 try:
@@ -85,7 +87,6 @@ def check_argument_list(kernel_name, kernel_string, args):
             return
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
-        # raise TypeError(errors[0])
 
 
 def check_tune_params_list(tune_params):
@@ -454,8 +455,6 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
     # also insert kernel_tuner token
     kernel_string = "#define kernel_tuner 1\n" + kernel_string
-    # name = kernel_name + "_" + get_instance_string(params)
-    # kernel_string = kernel_string.replace(kernel_name, name)
 
     return name, kernel_string
 

@@ -553,7 +553,7 @@ def run_kernel(kernel_name, kernel_source, problem_size, arguments, params, grid
             #create kernel instance
             instance = dev.create_kernel_instance(kernelsource, kernel_options, params, False)
             if instance is None:
-                raise Exception("cannot create kernel instance, too many threads per block")
+                raise RuntimeError("cannot create kernel instance, too many threads per block")
 
             # see if the kernel arguments have correct type
             util.check_argument_list(instance.name, instance.kernel_string, arguments)
@@ -561,7 +561,7 @@ def run_kernel(kernel_name, kernel_source, problem_size, arguments, params, grid
             #compile the kernel
             func = dev.compile_kernel(instance, False)
             if func is None:
-                raise Exception("cannot compile kernel, too much shared memory used")
+                raise RuntimeError("cannot compile kernel, too much shared memory used")
 
             #add shared memory arguments to compiled module
             if smem_args is not None:
@@ -579,7 +579,7 @@ def run_kernel(kernel_name, kernel_source, problem_size, arguments, params, grid
 
         #run the kernel
         if not dev.run_kernel(func, gpu_args, instance):
-            raise Exception("runtime error occured, too many resources requested")
+            raise RuntimeError("runtime error occured, too many resources requested")
 
         #copy data in GPU memory back to the host
         results = []

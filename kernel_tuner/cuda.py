@@ -7,7 +7,7 @@ import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.nvml import nvml
-from kernel_tuner.util import TorchPlaceHolder
+from kernel_tuner.util import TorchPlaceHolder, SkippableFailure
 
 #embedded in try block to be able to generate documentation
 #and run tests without pycuda installed
@@ -214,7 +214,7 @@ class CudaFunctions(object):
             return self.func
         except drv.CompileError as e:
             if "uses too much shared data" in e.stderr:
-                raise Exception("uses too much shared data")
+                raise SkippableFailure("uses too much shared data")
             else:
                 raise e
 
@@ -404,8 +404,6 @@ class CudaFunctions(object):
             drv.memcpy_dtoh(dest, src)
         elif isinstance(src, torch.Tensor):
             dest[:] = src
-        else:
-            dest = src
 
     def memcpy_htod(self, dest, src):
         """perform a host to device memory copy
@@ -418,8 +416,6 @@ class CudaFunctions(object):
         """
         if isinstance(dest, drv.DeviceAllocation):
             drv.memcpy_htod(dest, src)
-        else:
-            dest = src
 
     units = {
         'time': 'ms',

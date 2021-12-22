@@ -12,7 +12,7 @@ import _ctypes
 import numpy
 import numpy.ctypeslib
 
-from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file
+from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file, SkippableFailure
 
 dtype_map = {"int8": C.c_int8,
              "int16": C.c_int16,
@@ -77,7 +77,7 @@ class CFunctions(object):
         return self
 
     def __exit__(self, *exc):
-        pass
+        """CFunctions does not claim any resources that need to be released."""
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the C function
@@ -96,7 +96,6 @@ class CFunctions(object):
             if not isinstance(arg, (numpy.ndarray, numpy.number)):
                 raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
             dtype_str = str(arg.dtype)
-            #data = arg.copy()
             if isinstance(arg, numpy.ndarray):
                 if dtype_str in dtype_map.keys():
                     # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
@@ -109,7 +108,6 @@ class CFunctions(object):
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, numpy.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
-            #ctype_args[i] = Argument(numpy=data, ctypes=data_ctypes)
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
         return ctype_args
 
@@ -128,7 +126,7 @@ class CFunctions(object):
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
 
-        if self.lib != None:
+        if self.lib is not None:
             self.cleanup_lib()
 
         compiler_options = ["-fPIC"]
@@ -154,9 +152,8 @@ class CFunctions(object):
             suffix = ".cu"
 
         #detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
-        if (suffix == ".cu") or ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string):
-            if self.compiler == "g++" and self.nvcc_available:
-                self.compiler = "nvcc"
+        if ((suffix == ".cu") or ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string)) and self.compiler == "g++" and self.nvcc_available:
+            self.compiler = "nvcc"
 
         if suffix is None:
             #select right suffix based on compiler
@@ -170,9 +167,8 @@ class CFunctions(object):
 
         #this basically checks if we aren't compiling Fortran
         #at the moment any C, C++, or CUDA code is assumed to use extern "C" linkage
-        if ".c" in suffix:
-            if not "extern \"C\"" in kernel_string:
-                kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
+        if ".c" in suffix and "extern \"C\"" not in kernel_string:
+            kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
 
         #copy user specified compiler options to current list
         if self.compiler_options:
