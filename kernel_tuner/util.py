@@ -259,12 +259,17 @@ def get_kernel_string(kernel_source, params=None):
     return kernel_string
 
 
-def get_number_of_valid_configs(tuning_options, max_threads):
-    """compute number of valid configurations in a search space based on restrictions and max_threads"""
+def get_valid_configs(tuning_options, max_threads) -> list:
+    """ compute valid configurations in a search space based on restrictions and max_threads"""
     parameter_space = itertools.product(*tuning_options.tune_params.values())
     if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.config_valid(p, tuning_options, max_threads), parameter_space)
-    return len(list(parameter_space))
+        parameter_space = filter(lambda p: config_valid(p, tuning_options, max_threads), parameter_space)
+    return list(parameter_space)
+
+
+def get_number_of_valid_configs(tuning_options, max_threads) -> int:
+    """compute number of valid configurations in a search space based on restrictions and max_threads"""
+    return len(get_valid_configs(tuning_options, max_threads))
 
 
 def get_problem_size(problem_size, params):
@@ -388,7 +393,7 @@ def looks_like_a_filename(kernel_source):
             if s in kernel_source:
                 result = False
         # string must contain substring ".c", ".opencl", or ".F"
-        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
+        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F", ".py")])
     logging.debug('kernel_source is a filename: %s' % str(result))
     return result
 

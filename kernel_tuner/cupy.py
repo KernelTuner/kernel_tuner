@@ -1,7 +1,6 @@
 """This module contains all Cupy specific kernel_tuner functions"""
 from __future__ import print_function
 
-
 import logging
 import time
 import numpy as np
@@ -18,6 +17,7 @@ except ImportError:
 
 class CupyRuntimeObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
+
     def __init__(self, dev):
         self.dev = dev
         self.stream = dev.stream
@@ -26,10 +26,13 @@ class CupyRuntimeObserver(BenchmarkObserver):
         self.times = []
 
     def after_finish(self):
-        self.times.append(cp.cuda.get_elapsed_time(self.start, self.end)) #ms
+        self.times.append(cp.cuda.get_elapsed_time(self.start, self.end))    #ms
 
     def get_results(self):
-        results = {"time": np.average(self.times), "times": self.times.copy()}
+        results = {
+            "time": np.average(self.times),
+            "times": self.times.copy()
+        }
         self.times = []
         return results
 
@@ -55,7 +58,7 @@ class CupyFunctions:
         self.texrefs = []
         if not cp:
             raise ImportError("Error: cupy not installed, please install e.g. " +
-                            "using 'pip install cupy-cuda111', please check https://github.com/cupy/cupy.")
+                              "using 'pip install cupy-cuda111', please check https://github.com/cupy/cupy.")
 
         #select device
         self.dev = dev = cp.cuda.Device(device).__enter__()
@@ -87,7 +90,8 @@ class CupyFunctions:
         #collect environment information
         env = dict()
         cupy_info = str(cp._cupyx.get_runtime_info()).split("\n")[:-1]
-        info_dict = {s.split(":")[0].strip():s.split(":")[1].strip() for s in cupy_info}
+        info_dict = {s.split(":")[0].strip(): s.split(":")[1].strip()
+                     for s in cupy_info}
         env["device_name"] = info_dict[f'Device {device} Name']
 
         env["cuda_version"] = cp.cuda.runtime.driverGetVersion()
@@ -123,10 +127,9 @@ class CupyFunctions:
                 alloc = cp.array(arg)
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
-            else: # if not a numpy array, just pass argument along
+            else:    # if not a numpy array, just pass argument along
                 gpu_args.append(arg)
         return gpu_args
-
 
     def compile(self, kernel_instance):
         """call the CUDA compiler to compile the kernel, return the device function
@@ -150,12 +153,10 @@ class CupyFunctions:
 
         options = tuple(compiler_options)
 
-        self.current_module = cp.RawModule(code=kernel_string, options=options,
-                                           name_expressions=[kernel_name])
+        self.current_module = cp.RawModule(code=kernel_string, options=options, name_expressions=[kernel_name])
 
         self.func = self.current_module.get_function(kernel_name)
         return self.func
-
 
     def benchmark(self, func, gpu_args, threads, grid):
         """runs the kernel and measures time repeatedly, returns average time
@@ -219,9 +220,10 @@ class CupyFunctions:
             to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
-        logging.debug('copy_constant_memory_args called')
-        logging.debug('current module: ' + str(self.current_module))
-        raise NotImplementedError('CuPy backend does not yet support constant memory')
+        for k, v in cmem_args.items():
+            symbol = self.current_module.get_global(k)
+            constant_mem = cp.ndarray(v.shape, v.dtype, symbol)
+            constant_mem[:] = cp.asarray(v)
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
@@ -302,4 +304,6 @@ class CupyFunctions:
             src = cp.asarray(src)
         cp.copyto(dest, src)
 
-    units = {'time': 'ms'}
+    units = {
+        'time': 'ms'
+    }

@@ -16,16 +16,14 @@ from kernel_tuner.cupy import CupyFunctions
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
+from kernel_tuner.python import PythonFunctions
 from kernel_tuner.nvml import NVMLObserver
 import kernel_tuner.util as util
-
 
 try:
     import torch
 except ImportError:
     torch = util.TorchPlaceHolder()
-
-
 
 _KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
 
@@ -173,7 +171,8 @@ class KernelSource(object):
         _suffixes = {
             'CUDA': '.cu',
             'OpenCL': '.cl',
-            'C': '.c'
+            'C': '.c',
+            'Python': '.py'
         }
         try:
             return _suffixes[self.lang]
@@ -237,6 +236,8 @@ class DeviceInterface(object):
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "C":
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
+        elif lang == "Python":
+            dev = PythonFunctions(iterations=iterations)
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
 
@@ -507,23 +508,23 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         if answer[i] is not None:    #skip None elements in the answer list
             if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: " +
-                                    str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: " + str(answer[i].dtype) +
+                                    " != " + str(arg.dtype) + ".")
                 if answer[i].size != arg.size:
-                    raise TypeError(f"Element {i} of the expected results list has a size different from " + "the kernel argument: " +
-                                    str(answer[i].size) + " != " + str(arg.size) + ".")
+                    raise TypeError(f"Element {i} of the expected results list has a size different from " + "the kernel argument: " + str(answer[i].size) +
+                                    " != " + str(arg.size) + ".")
             elif isinstance(answer[i], torch.Tensor) and isinstance(arg, torch.Tensor):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: " +
-                                    str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: " + str(answer[i].dtype) +
+                                    " != " + str(arg.dtype) + ".")
                 if answer[i].size() != arg.size():
-                    raise TypeError(f"Element {i} of the expected results list has a size different from " + "the kernel argument: " +
-                                    str(answer[i].size) + " != " + str(arg.size) + ".")
+                    raise TypeError(f"Element {i} of the expected results list has a size different from " + "the kernel argument: " + str(answer[i].size) +
+                                    " != " + str(arg.size) + ".")
 
             elif isinstance(answer[i], np.number) and isinstance(arg, np.number):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError(f"Element {i} of the expected results list is not the same as the kernel output: " + str(answer[i].dtype) +
-                                    " != " + str(arg.dtype) + ".")
+                    raise TypeError(f"Element {i} of the expected results list is not the same as the kernel output: " + str(answer[i].dtype) + " != " +
+                                    str(arg.dtype) + ".")
             else:
                 #either answer[i] and argument have different types or answer[i] is not a numpy type
                 if not isinstance(answer[i], (np.ndarray, cp.ndarray, torch.Tensor)) or not isinstance(answer[i], np.number):
@@ -572,7 +573,6 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     return correct
 
 
-
 #these functions facilitate compiling templated kernels with PyCuda
 def split_argument_list(argument_list):
     """split all arguments in a list into types and names"""
@@ -587,19 +587,23 @@ def split_argument_list(argument_list):
         name_list.append(match.group(2).strip())
     return type_list, name_list
 
+
 def apply_template_typenames(type_list, templated_typenames):
     """replace the typename tokens in type_list with their templated typenames"""
+
     def replace_typename_token(matchobj):
         """function for a whitespace preserving token regex replace"""
         #replace only the match, leaving the whitespace around it as is
         return matchobj.group(1) + templated_typenames[matchobj.group(2)] + matchobj.group(3)
+
     for i, arg_type in enumerate(type_list):
-        for k,v in templated_typenames.items():
+        for k, v in templated_typenames.items():
             #if the templated typename occurs as a token in the string, meaning that it is enclosed in
             #beginning of string or whitespace, and end of string, whitespace or star
             regex = r"(^|\s+)(" + k + r")($|\s+|\*)"
             sub = re.sub(regex, replace_typename_token, arg_type, re.S)
             type_list[i] = sub
+
 
 def get_templated_typenames(template_parameters, template_arguments):
     """based on the template parameters and arguments, create dict with templated typenames"""
@@ -609,6 +613,7 @@ def get_templated_typenames(template_parameters, template_arguments):
             typename = param[9:]
             templated_typenames[typename] = template_arguments[i]
     return templated_typenames
+
 
 def wrap_templated_kernel(kernel_string, kernel_name):
     """rewrite kernel_string to insert wrapper function for templated kernel"""
@@ -626,7 +631,7 @@ def wrap_templated_kernel(kernel_string, kernel_name):
 
     template_parameters = match.group(1).split(',')
     argument_list = match.group(2).split(',')
-    argument_list = [s.strip() for s in argument_list] #remove extra whitespace around 'type name' strings
+    argument_list = [s.strip() for s in argument_list]    #remove extra whitespace around 'type name' strings
 
     type_list, name_list = split_argument_list(argument_list)
 

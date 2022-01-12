@@ -49,7 +49,7 @@ def normalize_parameter_space(param_space: list, tune_params: dict, normalized: 
     return param_space_normalized
 
 
-def prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict):
+def prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict: dict, max_threads: int):
     """ Pruning of the parameter space to remove dimensions that have a constant parameter """
     pruned_tune_params_mask = list()
     removed_tune_params = list()
@@ -64,6 +64,10 @@ def prune_parameter_space(parameter_space, tuning_options, tune_params, normaliz
             removed_tune_params.append(normalized)
     if 'verbose' in tuning_options and tuning_options.verbose is True and len(tune_params.keys()) != sum(pruned_tune_params_mask):
         print(f"Number of parameters (dimensions): {len(tune_params.keys())}, after pruning: {sum(pruned_tune_params_mask)}")
+    # TODO check whether the number of pruned parameters is correct
+    # print(
+    #     f"Number of parameters (dimensions): {len(tune_params.keys())}, after pruning: {sum(pruned_tune_params_mask)}, by util: {util.get_number_of_valid_configs(tuning_options, max_threads)}"
+    # )
     parameter_space = list(tuple(itertools.compress(param_config, pruned_tune_params_mask)) for param_config in parameter_space)
     return parameter_space, removed_tune_params
 
@@ -121,7 +125,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # prune the parameter space to remove dimensions that have a constant parameter
     if prune_parameterspace:
-        parameter_space, removed_tune_params = prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict)
+        parameter_space, removed_tune_params = prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict, runner.dev.max_threads)
     else:
         parameter_space = list(parameter_space)
         removed_tune_params = [None] * len(tune_params.keys())
@@ -139,7 +143,7 @@ class ExactGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ZeroMean()    # TODO maybe try ConstantMean or LinearMean
-        self.covar_module = gpytorch.kernels.MaternKernel(nu=1.5)    # TODO maybe try ScaleKernel(MaternKernel)
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=1.5))    # TODO maybe try ScaleKernel(MaternKernel)
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -400,6 +404,7 @@ class BayesianOptimization():
     def predict_list(self, lst: list) -> Tuple[np.ndarray, np.ndarray]:
         """ Returns a list of means and standard deviations predicted by the surrogate model for the parameter configurations, and separate lists of means and standard deviations """
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
+            # TODO use torch.cuda for GPU
             test_x = torch.Tensor(lst)
             observed_pred = self.__likelihood(self.__model(test_x))
             mu = observed_pred.mean
@@ -510,7 +515,7 @@ class BayesianOptimization():
         # set the hyperparameters globally for reference
         self.hyperparams = {
             'loss': loss.item(),
-            'lengthscale': self.__model.covar_module.lengthscale.item(),
+            'lengthscale': self.__model.covar_module.base_kernel.lengthscale.item(),
             'noise': self.__model.likelihood.noise.item(),
         }
         # print(f"Loss: {self.hyperparams['loss']}, lengthscale: {self.hyperparams['lengthscale']}, noise: {self.hyperparams['noise']}")
@@ -540,6 +545,7 @@ class BayesianOptimization():
             # check for validity to avoid having no actual initial samples
             if self.is_valid(observation):
                 collected_samples += 1
+
         # instantiate the model with the initial sample
         self.__likelihood = gpytorch.likelihoods.GaussianLikelihood()
         self.__tparams = torch.Tensor(self.__valid_params)
