@@ -276,37 +276,39 @@ False when the output fails the test.</p>
 parameter space, choose from:</p>
 <blockquote>
 <div><ul>
-<li><p>”brute_force” (default) iterates through the entire search space.</p></li>
-<li><p>”random_sample” takes a random sample of the search space.</p></li>
-<li><p>”minimize” uses a local minimization algorithm.</p></li>
-<li><p>”basinhopping” combines global stepping with a local minimization at each step.</p></li>
-<li><p>”diff_evo” differential evolution.</p></li>
-<li><p>”genetic_algorithm” a genetic algorithm optimization strategy.</p></li>
-<li><p>”mls” multi-start local search</p></li>
+<li><p>”basinhopping” Basin Hopping</p></li>
+<li><p>”bayes_opt” Bayesian Optimization</p></li>
+<li><p>”brute_force” (default) iterates through the entire search space</p></li>
+<li><p>”minimize” uses a local minimization algorithm</p></li>
+<li><p>”dual annealing” dual annealing</p></li>
+<li><p>”diff_evo” differential evolution</p></li>
+<li><p>”firefly_algorithm” firefly algorithm strategy</p></li>
+<li><p>”genetic_algorithm” a genetic algorithm optimization</p></li>
+<li><p>”greedy_ils” greedy randomized iterative local search</p></li>
+<li><p>”greedy_mls” greedy randomized multi-start local search</p></li>
+<li><p>”mls” best-improvement multi-start local search</p></li>
+<li><p>”ordered_greedy_mls” multi-start local search that uses a fixed order</p></li>
 <li><p>”pso” particle swarm optimization</p></li>
-<li><p>”firefly_algorithm” firefly algorithm strategy.</p></li>
-<li><p>”simulated_annealing” simulated annealing strategy.</p></li>
-<li><p>”bayes_opt” Bayesian Optimization strategy.</p></li>
+<li><p>”random_sample” takes a random sample of the search space</p></li>
+<li><p>”simulated_annealing” simulated annealing strategy</p></li>
 </ul>
 </div></blockquote>
 <p>Strategy-specific parameters and options are explained under strategy_options.</p>
 </p></li>
 <li><p><strong>strategy_options</strong> (<em>dict</em>) – <p>A dict with options specific to the selected tuning strategy.</p>
 <ul>
-<li><p><strong>”random_sample”</strong></p>
-<ul>
-<li><p>”fraction”, float, fraction of the search space to cover in [0,1], default 0.1.</p></li>
-</ul>
-</li>
-<li><p><strong>”minimize”</strong></p>
-<ul>
-<li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
-</ul>
-</li>
 <li><p><strong>”basinhopping”</strong></p>
 <ul>
 <li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
 <li><p>”T”, float, Temperature parameter for the accept or reject criterion, default 1.0.</p></li>
+</ul>
+</li>
+<li><p><strong>”bayes_opt”</strong></p>
+<ul>
+<li><p>”covariancekernel”, any of “constantrbf”, “rbf”, “matern32”, “matern52”, default “matern32”.</p></li>
+<li><p>”covariancelengthscale”, float, default 1.5.</p></li>
+<li><p>”method”: any of “poi”, “ei”, “lcb”, “lcb-srinivas”, “multi”, “multi-advanced”, “multi-fast”, default “multi-advanced”.</p></li>
+<li><p>”samplingmethod” any of “random”, “lhs”, default “lhs”.</p></li>
 </ul>
 </li>
 <li><p><strong>”diff_evo”</strong></p>
@@ -314,52 +316,78 @@ parameter space, choose from:</p>
 <li><p>”method”, string, any of “best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”, “rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”, default “best1bin”.</p></li>
 </ul>
 </li>
+<li><p><strong>”firefly_algorithm”</strong></p>
+<ul>
+<li><p>”alpha”, float, alpha parameter, default 0.2.</p></li>
+<li><p>”B0”, float, B0 parameter, default 1.0.</p></li>
+<li><p>”gamma”, float, gamma parameter, default 1.0.</p></li>
+<li><p>”maxiter”, integer, number of generations, default 100.</p></li>
+<li><p>”popsize”, integer, population size, default 20.</p></li>
+</ul>
+</li>
 <li><p><strong>”genetic_algorithm”</strong></p>
 <ul>
-<li><p>”popsize”, integer, population size, default 20.</p></li>
 <li><p>”maxiter”, integer, number of generations, default 50.</p></li>
 <li><p>”method”, string, crossover method any of “single_point”, “two_point”, “uniform”, “disruptive_uniform”, default “uniform”.</p></li>
 <li><p>”mutation_chance”, integer, specifies the 1 in mutation_chance of a mutation, default 10.</p></li>
 <li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
+<li><p>”popsize”, integer, population size, default 20.</p></li>
+</ul>
+</li>
+<li><p><strong>”greedy_ils”</strong></p>
+<ul>
+<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
+<li><p>”neighbor”, string, either “Hamming” or “adjacent” specifies how to consider two configurations being neighbors, default Hamming.</p></li>
+<li><p>”no_improvement”, integer, number of evaluations to exceed without improvement before restarting, default 50.</p></li>
+<li><p>”randomwalk”, float, controls how aggressively to permute the configuration in case no improvement is found, default 0.3.</p></li>
+<li><p>”restart”, bool, controls greedyness, i.e. whether to restart from a position as soon as an improvement is found, default True.</p></li>
+</ul>
+</li>
+<li><p><strong>”greedy_mls”</strong></p>
+<ul>
+<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
+<li><p>”neighbor”, string, either “Hamming” or “adjacent” specifies how to consider two configurations being neighbors, default Hamming.</p></li>
+<li><p>”restart”, bool, controls greedyness, i.e. whether to restart from a position as soon as an improvement is found, default True.</p></li>
+</ul>
+</li>
+<li><p><strong>”minimize”</strong></p>
+<ul>
+<li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
 </ul>
 </li>
 <li><p><strong>”mls”</strong></p>
 <ul>
 <li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
+<li><p>”neighbor”, string, either “Hamming” or “adjacent” specifies how to consider two configurations being neighbors, default Hamming.</p></li>
+</ul>
+</li>
+<li><p><strong>”ordered_greedy_mls”</strong></p>
+<ul>
+<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
+<li><p>”neighbor”, string, either “Hamming” or “adjacent” specifies how to consider two configurations being neighbors, default Hamming.</p></li>
+<li><p>”order”, list, list of integers that describes the order of dimensions in which to look for neighbors, default uses the tune_params specified order.</p></li>
 </ul>
 </li>
 <li><p><strong>”pso”</strong></p>
 <ul>
+<li><p>”c1”, float, cognitive constant, default 2.0.</p></li>
+<li><p>”c2”, float, social constant, default 1.0.</p></li>
 <li><p>”popsize”, integer, population size, default 20.</p></li>
 <li><p>”maxiter”, integer, number of generations, default 100.</p></li>
 <li><p>”w”, float, inertia constant, default 0.5.</p></li>
-<li><p>”c1”, float, cognitive constant, default 2.0.</p></li>
-<li><p>”c2”, float, social constant, default 1.0.</p></li>
 </ul>
 </li>
-<li><p><strong>”firefly_algorithm”</strong></p>
+<li><p><strong>”random_sample”</strong></p>
 <ul>
-<li><p>”popsize”, integer, population size, default 20.</p></li>
-<li><p>”maxiter”, integer, number of generations, default 100.</p></li>
-<li><p>”B0”, float, B0 parameter, default 1.0.</p></li>
-<li><p>”gamma”, float, gamma parameter, default 1.0.</p></li>
-<li><p>”alpha”, float, alpha parameter, default 0.2.</p></li>
+<li><p>”fraction”, float, fraction of the search space to cover in [0,1], default 0.1.</p></li>
 </ul>
 </li>
 <li><p><strong>”simulated_annealing”</strong></p>
 <ul>
-<li><p>”T”, float, starting temperature parameter, default 1.0.</p></li>
-<li><p>”T_min”, float, end temperature parameter, default 0.001.</p></li>
 <li><p>”alpha”, float, alpha parameter, default 0.9.</p></li>
 <li><p>”maxiter”, integer, number of iterations of possibly accepting neighboring points, default 20.</p></li>
-</ul>
-</li>
-<li><p><strong>”bayes_opt”</strong></p>
-<ul>
-<li><p>”method”: any of “poi”, “ei”, “lcb”, “lcb-srinivas”, “multi”, “multi-advanced”, “multi-fast”, default “multi-advanced”.</p></li>
-<li><p>”covariancekernel”, any of “constantrbf”, “rbf”, “matern32”, “matern52”, default “matern32”.</p></li>
-<li><p>”covariancelengthscale”, float, default 1.5.</p></li>
-<li><p>”samplingmethod” any of “random”, “lhs”, default “lhs”.</p></li>
+<li><p>”T”, float, starting temperature parameter, default 1.0.</p></li>
+<li><p>”T_min”, float, end temperature parameter, default 0.001.</p></li>
 </ul>
 </li>
 </ul>
