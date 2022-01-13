@@ -242,17 +242,21 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
                            ("strategy", ("""Specify the strategy to use for searching through the
         parameter space, choose from:
 
-            * "brute_force" (default) iterates through the entire search space.
-            * "random_sample" takes a random sample of the search space.
-            * "minimize" uses a local minimization algorithm.
-            * "basinhopping" combines global stepping with a local minimization at each step.
-            * "diff_evo" differential evolution.
-            * "genetic_algorithm" a genetic algorithm optimization strategy.
-            * "mls" multi-start local search
+            * "basinhopping" Basin Hopping
+            * "bayes_opt" Bayesian Optimization
+            * "brute_force" (default) iterates through the entire search space
+            * "minimize" uses a local minimization algorithm
+            * "dual annealing" dual annealing
+            * "diff_evo" differential evolution
+            * "firefly_algorithm" firefly algorithm strategy
+            * "genetic_algorithm" a genetic algorithm optimization
+            * "greedy_ils" greedy randomized iterative local search
+            * "greedy_mls" greedy randomized multi-start local search
+            * "mls" best-improvement multi-start local search
+            * "ordered_greedy_mls" multi-start local search that uses a fixed order
             * "pso" particle swarm optimization
-            * "firefly_algorithm" firefly algorithm strategy.
-            * "simulated_annealing" simulated annealing strategy.
-            * "bayes_opt" Bayesian Optimization strategy.
+            * "random_sample" takes a random sample of the search space
+            * "simulated_annealing" simulated annealing strategy
 
         Strategy-specific parameters and options are explained under strategy_options.
 
@@ -260,27 +264,39 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
                            ("strategy_options", ("""A dict with options specific to the selected tuning strategy.
 
 
-            * **"random_sample"**
-
-              * "fraction", float, fraction of the search space to cover in [0,1], default 0.1.
-
-            * **"minimize"**
-
-              * "method", string, any of "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", or "SLSQP", default "L-BFGS-B".
-
             * **"basinhopping"**
 
               * "method", string, any of "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", or "SLSQP", default "L-BFGS-B".
 
               * "T", float, Temperature parameter for the accept or reject criterion, default 1.0.
 
+            * **"bayes_opt"**
+
+              * "covariancekernel", any of "constantrbf", "rbf", "matern32", "matern52", default "matern32".
+
+              * "covariancelengthscale", float, default 1.5.
+
+              * "method": any of "poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", default "multi-advanced".
+
+              * "samplingmethod" any of "random", "lhs", default "lhs".
+
             * **"diff_evo"**
 
               * "method", string, any of "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin", default "best1bin".
 
-            * **"genetic_algorithm"**
+            * **"firefly_algorithm"**
+
+              * "alpha", float, alpha parameter, default 0.2.
+
+              * "B0", float, B0 parameter, default 1.0.
+
+              * "gamma", float, gamma parameter, default 1.0.
+
+              * "maxiter", integer, number of generations, default 100.
 
               * "popsize", integer, population size, default 20.
+
+            * **"genetic_algorithm"**
 
               * "maxiter", integer, number of generations, default 50.
 
@@ -290,11 +306,51 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
 
+              * "popsize", integer, population size, default 20.
+
+            * **"greedy_ils"**
+
+              * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
+
+              * "neighbor", string, either "Hamming" or "adjacent" specifies how to consider two configurations being neighbors, default Hamming.
+
+              * "no_improvement", integer, number of evaluations to exceed without improvement before restarting, default 50.
+
+              * "randomwalk", float, controls how aggressively to permute the configuration in case no improvement is found, default 0.3.
+
+              * "restart", bool, controls greedyness, i.e. whether to restart from a position as soon as an improvement is found, default True.
+
+            * **"greedy_mls"**
+
+              * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
+
+              * "neighbor", string, either "Hamming" or "adjacent" specifies how to consider two configurations being neighbors, default Hamming.
+
+              * "restart", bool, controls greedyness, i.e. whether to restart from a position as soon as an improvement is found, default True.
+
+            * **"minimize"**
+
+              * "method", string, any of "Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", or "SLSQP", default "L-BFGS-B".
+
             * **"mls"**
 
               * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
 
+              * "neighbor", string, either "Hamming" or "adjacent" specifies how to consider two configurations being neighbors, default Hamming.
+
+            * **"ordered_greedy_mls"**
+
+              * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
+
+              * "neighbor", string, either "Hamming" or "adjacent" specifies how to consider two configurations being neighbors, default Hamming.
+
+              * "order", list, list of integers that describes the order of dimensions in which to look for neighbors, default uses the tune_params specified order.
+
             * **"pso"**
+
+              * "c1", float, cognitive constant, default 2.0.
+
+              * "c2", float, social constant, default 1.0.
 
               * "popsize", integer, population size, default 20.
 
@@ -302,41 +358,19 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "w", float, inertia constant, default 0.5.
 
-              * "c1", float, cognitive constant, default 2.0.
+            * **"random_sample"**
 
-              * "c2", float, social constant, default 1.0.
-
-            * **"firefly_algorithm"**
-
-              * "popsize", integer, population size, default 20.
-
-              * "maxiter", integer, number of generations, default 100.
-
-              * "B0", float, B0 parameter, default 1.0.
-
-              * "gamma", float, gamma parameter, default 1.0.
-
-              * "alpha", float, alpha parameter, default 0.2.
+              * "fraction", float, fraction of the search space to cover in [0,1], default 0.1.
 
             * **"simulated_annealing"**
-
-              * "T", float, starting temperature parameter, default 1.0.
-
-              * "T_min", float, end temperature parameter, default 0.001.
 
               * "alpha", float, alpha parameter, default 0.9.
 
               * "maxiter", integer, number of iterations of possibly accepting neighboring points, default 20.
 
-            * **"bayes_opt"**
+              * "T", float, starting temperature parameter, default 1.0.
 
-              * "method": any of "poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", default "multi-advanced".
-
-              * "covariancekernel", any of "constantrbf", "rbf", "matern32", "matern52", default "matern32".
-
-              * "covariancelengthscale", float, default 1.5.
-
-              * "samplingmethod" any of "random", "lhs", default "lhs".
+              * "T_min", float, end temperature parameter, default 0.001.
 
 
 
