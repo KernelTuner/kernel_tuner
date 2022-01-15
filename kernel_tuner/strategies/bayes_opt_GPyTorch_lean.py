@@ -1,20 +1,16 @@
 """ Lean implementation of Bayesian Optimization with GPyTorch """
 from copy import deepcopy
 from typing import Any, Tuple
-from random import randint, shuffle
-from math import floor, ceil
+from random import randint, shuffle, choice
+from math import ceil
 import numpy as np
-from numpy.lib.function_base import diff
+from numpy.lib.arraysetops import unique
+from numpy.random import default_rng
 import torch
 import gpytorch
 
-from skopt.sampler import Lhs
-from scipy.stats import norm
-
 from kernel_tuner.util import get_valid_configs, config_valid
 from kernel_tuner.strategies import minimize
-from torch.functional import Tensor
-from torch.nn import parameter
 
 supported_initial_sample_methods = ['lhs', 'index', 'random']
 supported_methods = ['ei', 'poi', 'random']
@@ -48,8 +44,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     # set CUDA availability
-    cuda_available = torch.cuda.is_available()
-    cuda_available = False
+    use_cuda = False
+    cuda_available = torch.cuda.is_available() and use_cuda
     device = torch.device("cuda:0" if cuda_available else "cpu")
     if cuda_available:
         print(f"CUDA is available, device: {torch.cuda.get_device_name(device)}")
@@ -69,7 +65,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = False
 
     # prune the search space using restrictions
-    # TODO look into the efficiency, especially for GEMM (56.47%)
     parameter_space = get_valid_configs(tuning_options, max_threads)
 
     # limit max_fevals to max size of the parameter space
@@ -119,9 +114,10 @@ class BayesianOptimization:
         self.max_threads = runner.dev.max_threads
 
         # get tuning options
-        self.initial_sample_method = self.get_hyperparam("initialsamplemethod", "index", supported_initial_sample_methods)
+        self.initial_sample_method = self.get_hyperparam("initialsamplemethod", "lhs", supported_initial_sample_methods)
+        self.initial_sample_random_offset_factor = self.get_hyperparam("initialsamplerandomoffsetfactor", 0.1)
         self.initial_training_iter = self.get_hyperparam("initialtrainingiter", 50)
-        self.training_iter = self.get_hyperparam("trainingiter", 0)
+        self.training_iter = self.get_hyperparam("trainingiter", 3)
         self.cov_kernel_name = self.get_hyperparam("covariancekernel", "matern_scalekernel", supported_cov_kernels)
         self.cov_kernel_lengthscale = self.get_hyperparam("covariancelengthscale", 1.5)
         self.likelihood_name = self.get_hyperparam("likelihood", "Gaussian", supported_likelihoods)
@@ -143,7 +139,7 @@ class BayesianOptimization:
         self.dtype = torch.double
         self.size = len(parameter_space)
         self.unvisited_configs = torch.ones(self.size, dtype=torch.bool).to(device)
-        self.index_counter = torch.tensor(range(self.size))
+        self.index_counter = torch.arange(self.size)
         self.valid_configs = torch.zeros(self.size, dtype=torch.bool).to(device)
         self.inital_sample_configs = torch.zeros(self.size, dtype=torch.bool).to(device)
         self.results = torch.zeros(self.size, dtype=self.dtype).to(device) * np.nan             # x (param configs) and y (results) must be the same type
@@ -228,29 +224,13 @@ class BayesianOptimization:
     def true_param_config_index(self, target_index: int) -> int:
         """ The index required to get the true config param index when dealing with test_x """
         # get the index of the #index-th True (for example the 9th+1 True could be index 13 because there are 4 Falses in between)
-
-        counter_masked = self.index_counter[self.unvisited_configs]
-        return counter_masked[target_index]
+        masked_counter = self.index_counter[self.unvisited_configs]
+        return masked_counter[target_index]
 
     def true_param_config_indices(self, target_indices: torch.Tensor) -> torch.Tensor:
-        """ Same as true_param_config_index, but for an array of targets in O(n) instead of O(n^2). Assumes the array is sorted in ascending order. """
-        # TODO same trick as true_param_config_index
-
-        true_indices = torch.full_like(target_indices, -1).to(self.device)
-        target_index_index = 0
-        target_index = target_indices[target_index_index]
-        count = -1
-        for index, value in enumerate(self.unvisited_configs):
-            if value == True:
-                count += 1
-            if count == target_index:
-                true_indices[target_index_index] = index
-                target_index_index += 1
-                if target_index_index == len(target_indices):
-                    break
-                target_index = target_indices[target_index_index]
-
-        return true_indices
+        """ Same as true_param_config_index, but for an array of targets instead. """
+        masked_counter = self.index_counter[self.unvisited_configs]
+        return masked_counter.index_select(0, target_indices)
 
     def initialize_model(self):
         """ Initialize the surrogate model """
@@ -280,28 +260,35 @@ class BayesianOptimization:
 
     def initial_sample(self):
         """ Take an initial sample of the parameter space """
-        param_configs = list()
+        list_param_config_indices = list()
+
+        # generate a random offset from a normal distribution to add to the sample indices
+        rng = default_rng()
+        if self.initial_sample_random_offset_factor > 0.5:
+            raise ValueError("Random offset factor should not be greater than 0.5 to avoid overlapping index offsets")
+        random_offset_size = (self.size / self.num_initial_samples) * self.initial_sample_random_offset_factor
+        random_offsets = np.round(rng.standard_normal(self.num_initial_samples) * random_offset_size)
 
         # first apply the initial sampling method
         if self.initial_sample_method == 'lhs':
-            indices, param_configs = self.get_lhs_sample()
-            for index in indices:
-                # indices may be -1 because of parameter filtering etc., so we replace those with index-spaces samples
-                if index != -1:
-                    self.evaluate_config(index)
+            indices = self.get_lhs_samples(random_offsets)
+            for param_config_index in indices.tolist():
+                list_param_config_indices.append(param_config_index)
+                self.evaluate_config(param_config_index)
         elif self.initial_sample_method == 'random':
             while self.fevals < self.num_initial_samples:
                 param_config_index = randint(0, self.size - 1)
-                param_config = tuple(self.param_configs_scaled[param_config_index].tolist())
-                if param_config in param_configs:
+                if param_config_index in list_param_config_indices:
                     continue
-                param_configs.append(param_config)
+                list_param_config_indices.append(param_config_index)
                 self.evaluate_config(param_config_index)
 
         # then take index-spaced samples until all samples are valid
         while self.fevals < self.num_initial_samples:
             least_evaluated_region_index = self.get_middle_index_of_least_evaluated_region()
-            self.evaluate_config(least_evaluated_region_index)
+            param_config_index = min(max(int(least_evaluated_region_index + random_offsets[self.fevals].item()), 0), self.size-1)
+            list_param_config_indices.append(param_config_index)
+            self.evaluate_config(param_config_index)
 
         # set the current optimum, initial sample mean and initial sample std
         self.current_optimum = self.opt(self.train_y).item()
@@ -311,10 +298,11 @@ class BayesianOptimization:
         # save a boolean mask of the initial samples
         self.inital_sample_configs = self.valid_configs.detach().clone()
 
-    def get_lhs_sample(self) -> Tuple[list, list]:
-        """ Get a centered Latin Hypercube Sample """
-        param_configs = list()
+    def get_lhs_samples(self, random_offsets: np.ndarray) -> torch.Tensor:
+        """ Get a centered Latin Hypercube Sample with a random offset """
         n_samples = self.num_initial_samples
+
+        # first get the seperate parameter values to make possibly fictional distributed parameter configurations
         temp_param_configs = [[] for _ in range(n_samples)]
         for param_values in self.tune_params.values():
             l = len(param_values)
@@ -331,34 +319,59 @@ class BayesianOptimization:
                 index = ceil(offset + interval * (i + 1)) - 1
                 temp_param_configs[i].append(param_values[index])
 
-        # set the actual parameter configurations
-        for param_config in temp_param_configs:
-            param_config = tuple(param_config)
-            param_configs.append(param_config)
-        param_configs = torch.tensor(param_configs, dtype=self.dtype).to(self.device)
+        # create a tensor of the possibly fictional parameter configurations
+        param_configs = torch.tensor(list(tuple(param_config) for param_config in temp_param_configs), dtype=self.dtype).to(self.device)
+        param_configs = param_configs.unique(dim=0) # remove duplicates
+        n_samples_unique = len(param_configs)
 
-        # get the indices of the parameter configurations in O(n^2)
-        param_configs_indices = [-1 for _ in range(n_samples)]
-        for index, param_config in enumerate(self.param_configs):
-            for selected_index, selected_param_config in enumerate(param_configs):
-                if torch.allclose(selected_param_config, param_config, equal_nan=False) and index not in param_configs_indices:
-                    param_configs_indices[selected_index] = index
+        # get the indices of the parameter configurations
+        num_params = len(self.param_configs[0])
+        minimum_required_num_matching_params = round(num_params * 0.75)  # set the number of parameter matches allowed to be dropped before the search is stopped
+        param_configs_indices = torch.full((n_samples_unique,), -1, dtype=torch.int)
+        for selected_index, selected_param_config in enumerate(param_configs):
+            # for each parameter configuration, count the number of matching parameters
+            required_num_matching_params = num_params
+            matching_params = torch.count_nonzero(self.param_configs == selected_param_config, -1)
+            match_mask = (matching_params == required_num_matching_params)
+            # if there is not at least one matching parameter configuration, lower the required number of matching parameters
+            found_num_matching_param_configs = match_mask.count_nonzero()
+            while found_num_matching_param_configs < 1 and required_num_matching_params > minimum_required_num_matching_params:
+                required_num_matching_params -= 1
+                match_mask = (matching_params == required_num_matching_params)
+                found_num_matching_param_configs = match_mask.count_nonzero()
 
-        if param_configs_indices.count(-1) > n_samples / 2:
-            print(f"No good fit was found in {param_configs_indices.count(-1)} out of the {n_samples} samples. Perhaps try something other than LHS.")
-        return param_configs_indices, param_configs
+            # if more than one possible parameter configuration has been found, pick a random one
+            if found_num_matching_param_configs > 1:
+                index = choice(self.index_counter[match_mask])
+            elif found_num_matching_param_configs == 1:
+                index = self.index_counter[match_mask].item()
+            else:
+                # if no matching parameter configurations were found
+                continue
+
+            # set the selected index
+            param_configs_indices[selected_index] = min(max(int(index + random_offsets[selected_index].item()), 0), self.size-1)
+
+        # filter -1 indices and duplicates that occurred because of the random offset
+        param_configs_indices = param_configs_indices[param_configs_indices >= 0]
+        param_configs_indices = param_configs_indices.unique().type(torch.int)
+        if len(param_configs_indices) < n_samples / 2:
+            print(f"{n_samples - len(param_configs_indices)} out of the {n_samples} LHS samples were duplicates or -1.",
+                  f"This might be because you have few initial samples ({n_samples}) relative to the number of parameters ({num_params}).",
+                  "Perhaps try something other than LHS.")
+        return param_configs_indices
 
     def get_middle_index_of_least_evaluated_region(self) -> int:
         """ Get the middle index of the region of parameter configurations that is the least visited """
         # This uses the largest distance between visited parameter configurations. That means it does not properly take the parameters into account, only the index of the parameter configurations, whereas LHS does.
-        distance_counter = -1
-        distance_tensor = torch.zeros_like(self.unvisited_configs, dtype=torch.int)     # TODO check if .to(self.device) is faster or slower
-        for index, unvisited in enumerate(self.unvisited_configs):
-            if unvisited:
-                distance_counter += 1
-            if not unvisited:
-                distance_counter = 0
-            distance_tensor[index] = distance_counter
+        distance_tensor = torch.arange(self.size)
+
+        # first get the indices that were visited (must be in ascending order)
+        indices_visited = self.index_counter[~self.unvisited_configs]
+
+        # then reset the range after the visited index
+        for index_visited in indices_visited:
+            distance_tensor[index_visited:] = torch.arange(self.size - index_visited)
 
         biggest_distance_index = distance_tensor.argmax()
         biggest_distance = distance_tensor[biggest_distance_index].item()
@@ -542,7 +555,8 @@ class BayesianOptimization:
             improvement_over_current_sample = (abs(self.current_optimum) - self.train_y.mean().item()) / std.mean().item()
             improvement_diff = improvement_over_current_sample - improvement_over_initial_sample
             # the closer the improvement over the current sample is to the improvement over the initial sample, the greater the exploration
-            cv = max(np.log(1 - improvement_diff) + 0.1, 0.001)
+            x = 1 - min(max(1 - improvement_diff, 0.2), 0.0)
+            cv = np.log10(x) + 0.1    # at x=0.0, y=0.1; at x=0.2057, y=0.0.
             return cv
         else:
             raise NotImplementedError("Contextual Variance has not yet been implemented for non-scaled outputs")
@@ -573,7 +587,6 @@ class BayesianOptimization:
         if hyperparam is None:
             hyperparam = self.af_params['explorationfactor']
         fplus = self.current_optimum - hyperparam
-        # fplus = torch.full_like(y_mu, fplus) TODO does this make a difference for performance?
 
         diff_improvement = self.get_diff_improvement(y_mu, y_std, fplus)
         normal = torch.distributions.Normal(torch.zeros_like(diff_improvement), torch.ones_like(diff_improvement))
@@ -615,37 +628,33 @@ class BayesianOptimization:
 
     def apply_scaling_to_inputs(self):
         """ Scale the inputs using min-max normalization (0-1) and remove constant parameters """
-        # TODO look into the efficiency, especially for GEMM (18.54%)
-        self.scaled_inputs = torch.zeros_like(self.param_configs)
         param_configs_scaled = torch.zeros_like(self.param_configs)
 
         # first get the scaling factors of each parameter
         v_min_list = list()
-        v_max_list = list()
+        v_diff_list = list()
         unchanging_params_list = list()
         for param_values in self.tune_params.values():
             v_min = min(param_values)
             v_max = max(param_values)
             v_min_list.append(v_min)
-            v_max_list.append(v_max)
+            v_diff_list.append(v_max - v_min)
             unchanging_params_list.append(v_min == v_max)
 
         # then set each parameter value to the scaled value
         for param_index in range(len(self.param_configs[0])):
             v_min = v_min_list[param_index]
-            v_max = v_max_list[param_index]
-            v_diff = v_max - v_min
-            for param_config_index, param_config in enumerate(self.param_configs):
-                param_configs_scaled[param_config_index][param_index] = (param_config[param_index] - v_min) / v_diff
+            v_diff = v_diff_list[param_index]
+            param_configs_scaled[:,param_index] = torch.sub(self.param_configs[:,param_index], v_min).div(v_diff)
 
         # finally remove parameters that are constant by applying a mask
-        unchanging_params_tensor = torch.tensor(unchanging_params_list, dtype=torch.bool)
-        if torch.all(unchanging_params_tensor == True):
+        unchanging_params_tensor = ~torch.tensor(unchanging_params_list, dtype=torch.bool)
+        if torch.all(unchanging_params_tensor == False):
             raise ValueError(f"All of the parameter configurations ({self.size}) are the same: {self.param_configs[0]}, nothing to optimize")
-        nonstatic_param_count = torch.count_nonzero(~unchanging_params_tensor)
+        nonstatic_param_count = torch.count_nonzero(unchanging_params_tensor)
         self.param_configs_scaled = torch.zeros([len(param_configs_scaled), nonstatic_param_count], dtype=self.dtype)
         for param_config_index, param_config in enumerate(param_configs_scaled):
-            self.param_configs_scaled[param_config_index] = param_config[~unchanging_params_tensor]
+            self.param_configs_scaled[param_config_index] = param_config[unchanging_params_tensor]
 
     def transform_nonnumerical_params(self, parameter_space: list) -> Tuple[torch.Tensor, dict]:
         """ transform non-numerical or mixed-type parameters to numerical Tensor, also return new tune_params """
@@ -709,7 +718,7 @@ class BayesianOptimization:
                 x_axis_param_configs = param_configs
                 test_x_x_axis = self.test_x_unscaled.squeeze().to(self.out_device).numpy()
             else:
-                x_axis_param_configs = torch.tensor(range(self.size))
+                x_axis_param_configs = torch.arange(self.size)
                 test_x_x_axis = x_axis_param_configs[self.unvisited_configs].to(self.out_device)
 
             # Get upper and lower confidence bounds

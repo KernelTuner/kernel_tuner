@@ -8,6 +8,7 @@ import tempfile
 import logging
 import warnings
 import re
+from types import FunctionType
 
 import numpy as np
 try:
@@ -669,3 +670,54 @@ def dump_cache(obj: str, tuning_options):
     if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
         with open(tuning_options.cachefile, "a") as cachefile:
             cachefile.write(obj)
+
+
+def parse_restrictions(restrictions: str):
+    """" parses restrictions from a list of strings into a callable function """
+    operators = [ '+', '-', '*', '/', '%', '==', '!=', '(', ')', '[', ']' ]
+
+    suffix = ' and '
+    parsed_restrictions = ""
+    for restriction in restrictions:
+        new = ""
+
+        # first make sure everything that should be space-seperated is
+        for index in range(len(restriction)):
+            if restriction[index] in operators and index > 0 and restriction[index-1] != ' ':
+                new += ' '
+            new += restriction[index]
+            if restriction[index] in operators and index < len(restriction) - 1 and restriction[index+1] != ' ':
+                new += ' '
+
+        restriction = new
+
+        # then parse each part
+        new = ""
+        words = restriction.split(" ")
+        for word in words:
+
+            # filter spaces and empty words
+            if word == ' ' or word == '':
+                continue
+
+            # filter the operators
+            if word in operators:
+                new += word + ' '
+                continue
+
+            # filter numbers
+            if np.char.isnumeric(word):
+                new += word + ' '
+                continue
+
+            # make variables a dictionary 'p' lookup
+            word = f"params['{word}']"
+            new += word
+            new += ' '
+
+        parsed_restrictions += (new + suffix)
+
+    parsed_restrictions = "def restrictions(params): \n return " + parsed_restrictions[:-len(suffix)]
+    code_object = compile(parsed_restrictions, '<string>', 'exec')
+    func = FunctionType(code_object.co_consts[0], globals())
+    return func

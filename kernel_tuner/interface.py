@@ -418,6 +418,10 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
 
+    # if the restrictions are not callable, make them (increases restrictions check performance significantly)
+    if restrictions is not None and not callable(restrictions):
+        restrictions = util.parse_restrictions(restrictions)
+
     if iterations < 1:
         raise ValueError("Iterations should be at least one!")
 
