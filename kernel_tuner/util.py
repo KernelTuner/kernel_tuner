@@ -590,21 +590,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     # if file exists
     else:
-        with open(cache, "r") as cachefile:
-            filestr = cachefile.read().strip()
-
-        # if file was not properly closed, pretend it was properly closed
-        if not filestr[-3:] == "}\n}":
-            # remove the trailing comma if any, and append closing brackets
-            if filestr[-1] == ",":
-                filestr = filestr[:-1]
-            filestr = filestr + "}\n}"
-        else:
-            # if it was properly closed, open it for appending new entries
-            with open(cache, "w") as cachefile:
-                cachefile.write(filestr[:-3] + ",")
-
-        cached_data = json.loads(filestr)
+        cached_data = read_cache(cache)
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
@@ -620,6 +606,26 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         tuning_options.cachefile = cache
         tuning_options.cache = cached_data["cache"]
+
+
+def read_cache(cache, open_cache=True):
+    """ Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending """
+    with open(cache, "r") as cachefile:
+        filestr = cachefile.read().strip()
+
+    # if file was not properly closed, pretend it was properly closed
+    if not filestr[-3:] == "}\n}":
+        # remove the trailing comma if any, and append closing brackets
+        if filestr[-1] == ",":
+            filestr = filestr[:-1]
+        filestr = filestr + "}\n}"
+    else:
+        if open_cache:
+            # if it was properly closed, open it for appending new entries
+            with open(cache, "w") as cachefile:
+                cachefile.write(filestr[:-3] + ",")
+
+    return json.loads(filestr)
 
 
 def close_cache(cache):
