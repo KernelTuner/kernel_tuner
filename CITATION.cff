@@ -1,6 +1,6 @@
 # YAML 1.2
 ---
-cff-version: "1.0.3"
+cff-version: 1.2.0
 authors:
   - affiliation: "Netherlands eScience Center"
     family-names: Werkhoven
