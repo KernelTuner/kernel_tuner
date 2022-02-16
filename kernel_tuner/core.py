@@ -194,7 +194,8 @@ class KernelSource(object):
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7, observers=None):
+    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7, observers=None,
+                 parallel_mode=False):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param kernel_source The kernel sources
@@ -228,6 +229,9 @@ class DeviceInterface(object):
 
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
+        if parallel_mode and lang != "Python":
+            raise NotImplementedError("Parallel mode has not been implemented for languages other than Python")
+
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() == "CUPY":
@@ -237,7 +241,7 @@ class DeviceInterface(object):
         elif lang == "C":
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         elif lang == "Python":
-            dev = PythonFunctions(iterations=iterations)
+            dev = PythonFunctions(iterations=iterations, observers=observers, parallel_mode=parallel_mode, show_progressbar=True)
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
 

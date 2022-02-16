@@ -606,7 +606,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
             if filestr[-1] == ",":
                 filestr = filestr[:-1]
             filestr = filestr + "}\n}"
-        else:
+        elif not tuning_options.simulation_mode:    # don't do this in simulation mode because the cache must have no race conditions in case of parallel execution
             # if it was properly closed, open it for appending new entries
             with open(cache, "w") as cachefile:
                 cachefile.write(filestr[:-3] + ",")
@@ -672,52 +672,22 @@ def dump_cache(obj: str, tuning_options):
             cachefile.write(obj)
 
 
-def parse_restrictions(restrictions: str):
+def parse_restrictions(restrictions: list):
     """" parses restrictions from a list of strings into a callable function """
-    operators = [ '+', '-', '*', '/', '%', '==', '!=', '(', ')', '[', ']' ]
 
+    regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
     suffix = ' and '
     parsed_restrictions = ""
     for restriction in restrictions:
-        new = ""
+        parsed_restrictions += re.sub(regex_match_variable, r'params["\1"]', restriction) + suffix
 
-        # first make sure everything that should be space-seperated is
-        for index in range(len(restriction)):
-            if restriction[index] in operators and index > 0 and restriction[index-1] != ' ':
-                new += ' '
-            new += restriction[index]
-            if restriction[index] in operators and index < len(restriction) - 1 and restriction[index+1] != ' ':
-                new += ' '
+    # tidy up the code by removing the last suffix and unecessary spaces
+    parsed_restrictions = parsed_restrictions[:-len(suffix)]
+    parsed_restrictions = parsed_restrictions.strip()
+    parsed_restrictions = " ".join(parsed_restrictions.split())
 
-        restriction = new
-
-        # then parse each part
-        new = ""
-        words = restriction.split(" ")
-        for word in words:
-
-            # filter spaces and empty words
-            if word == ' ' or word == '':
-                continue
-
-            # filter the operators
-            if word in operators:
-                new += word + ' '
-                continue
-
-            # filter numbers
-            if np.char.isnumeric(word):
-                new += word + ' '
-                continue
-
-            # make variables a dictionary 'p' lookup
-            word = f"params['{word}']"
-            new += word
-            new += ' '
-
-        parsed_restrictions += (new + suffix)
-
-    parsed_restrictions = "def restrictions(params): \n return " + parsed_restrictions[:-len(suffix)]
+    # compile into a function
+    parsed_restrictions = f"def restrictions(params): return {parsed_restrictions} \n"
     code_object = compile(parsed_restrictions, '<string>', 'exec')
     func = FunctionType(code_object.co_consts[0], globals())
     return func

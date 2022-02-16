@@ -56,7 +56,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     return results, runner.dev.get_environment()
 
 
-def _cost_func(x, kernel_options, tuning_options, runner, results):
+def _cost_func(x, kernel_options, tuning_options, runner, results, check_restrictions=True):
     """ Cost function used by minimize """
 
     error_time = 1e20
@@ -80,7 +80,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
         return tuning_options.cache[x_int]["time"]
 
     # check if this is a legal (non-restricted) parameter instance
-    if tuning_options.restrictions:
+    if check_restrictions and tuning_options.restrictions:
         legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
         if not legal:
             error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
