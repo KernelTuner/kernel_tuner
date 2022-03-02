@@ -1,6 +1,7 @@
 import subprocess
 import time
 import numpy as np
+import re
 
 from kernel_tuner.observers import BenchmarkObserver
 
@@ -12,7 +13,7 @@ except ImportError:
 class nvml():
     """Class that gathers the NVML functionality for one device"""
 
-    def __init__(self, device_id=0, nvidia_smi_fallback=None):
+    def __init__(self, device_id=0, nvidia_smi_fallback='nvidia-smi'):
         """Create object to control device using NVML"""
 
         pynvml.nvmlInit()
@@ -167,6 +168,13 @@ class nvml():
         """Return current power usage in milliwatts"""
         return pynvml.nvmlDeviceGetPowerUsage(self.dev)
 
+    def gr_voltage(self):
+        """Return current graphics voltage in millivolts"""
+        args = ["nvidia-smi", "-i", str(self.id), "-q",  "-d", "VOLTAGE"]
+        result = subprocess.run(args, check=True, capture_output=True)
+        m = re.search(r"(\d+\.\d+) mV", result.stdout.decode())
+        voltage = float(m.group(1))
+        return voltage
 
 class NVMLObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
@@ -174,7 +182,7 @@ class NVMLObserver(BenchmarkObserver):
         self.nvml = nvml(device, nvidia_smi_fallback=nvidia_smi_fallback)
         self.save_all = save_all
 
-        supported = ["power_readings", "nvml_power", "nvml_energy", "core_freq", "mem_freq", "temperature"]
+        supported = ["power_readings", "nvml_power", "nvml_energy", "core_freq", "mem_freq", "temperature", "gr_voltage"]
         for obs in observables:
             if not obs in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
@@ -186,6 +194,11 @@ class NVMLObserver(BenchmarkObserver):
             self.measure_power = True
             self.power_readings = []
 
+        self.record_gr_voltage = False
+        if "gr_voltage" in observables:
+            self.record_gr_voltage = True
+            self.gr_voltage_readings = []
+
         self.results = dict()
         for obs in observables:
             self.results[obs] = []
@@ -193,6 +206,8 @@ class NVMLObserver(BenchmarkObserver):
     def before_start(self):
         if self.measure_power:
             self.power_readings = []
+        if self.record_gr_voltage:
+            self.gr_voltage_readings = []
 
     def after_start(self):
         self.t0 = time.time()
@@ -200,6 +215,8 @@ class NVMLObserver(BenchmarkObserver):
     def during(self):
         if self.measure_power:
             self.power_readings.append([time.time()-self.t0, self.nvml.pwr_usage()])
+        if self.record_gr_voltage:
+            self.gr_voltage_readings.append([time.time()-self.t0, self.nvml.gr_voltage()])
 
     def after_finish(self):
         if self.measure_power:
@@ -232,6 +249,12 @@ class NVMLObserver(BenchmarkObserver):
             self.results["core_freq"].append(self.nvml.gr_clock)
         if "mem_freq" in self.observables:
             self.results["mem_freq"].append(self.nvml.mem_clock)
+
+        if "gr_voltage" in self.observables:
+            gr_voltage_readings = self.gr_voltage_readings
+            gr_voltage_readings = [[0.0, gr_voltage_readings[0][1]]] + gr_voltage_readings
+            gr_voltage_readings = gr_voltage_readings + [[execution_time, gr_voltage_readings[-1][1]]]
+            self.results["gr_voltage"].append(np.average(gr_voltage_readings[:][:][1])) #time in s, graphics voltage in millivolts
 
     def get_results(self):
         averaged_results = dict()
