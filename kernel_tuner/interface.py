@@ -448,6 +448,9 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
 
+    # ensure there is always at least three names
+    util.append_default_block_size_names(block_size_names)
+
     if iterations < 1:
         raise ValueError("Iterations should be at least one!")
 

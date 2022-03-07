@@ -106,11 +106,11 @@ def check_block_size_names(block_size_names):
             raise ValueError("block_size_names should not contain more than 3 names!")
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
             raise ValueError("block_size_names should contain only strings!")
-        # ensure there is always at least three names
-        for i, name in enumerate(default_block_size_names):
-            if len(block_size_names) < i + 1:
-                block_size_names.append(name)
 
+def append_default_block_size_names(block_size_names):
+    for i, name in enumerate(default_block_size_names):
+        if len(block_size_names) < i + 1:
+            block_size_names.append(name)
 
 def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:
