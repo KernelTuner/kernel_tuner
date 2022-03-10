@@ -6,6 +6,7 @@ from collections import namedtuple
 import resource
 import logging
 import numpy as np
+import time
 
 try:
     import cupy as cp
@@ -256,6 +257,9 @@ class DeviceInterface(object):
         if not quiet:
             print("Using: " + self.dev.name)
 
+        self.time_before_compilation = None
+        self.time_after_compilation = None
+
         dev.__enter__()
 
     def __enter__(self):
@@ -344,7 +348,7 @@ class DeviceInterface(object):
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
-
+        self.time_before_compilation = 1000*time.time()
         instance_string = util.get_instance_string(params)
 
         logging.debug('compile_and_benchmark ' + instance_string)
@@ -377,6 +381,7 @@ class DeviceInterface(object):
             if tuning_options.answer is not None or tuning_options.verify is not None:
                 self.check_kernel_output(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
 
+            self.time_after_compilation = 1000*time.time()
             #benchmark
             result = self.benchmark(func, gpu_args, instance, verbose)
 
