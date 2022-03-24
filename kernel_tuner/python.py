@@ -33,7 +33,7 @@ invalid_value = 1e20
 class PythonFunctions(object):
     """Class that groups the code for running and compiling C functions"""
 
-    def __init__(self, iterations=7, observers=None, parallel_mode=False, show_progressbar=False):
+    def __init__(self, iterations=7, observers=None, parallel_mode=False, hyperparam_mode=False, show_progressbar=False):
         """instantiate PythonFunctions object used for interacting with Python code
 
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
@@ -49,7 +49,12 @@ class PythonFunctions(object):
         self.env = env
         self.name = platform.processor()
         self.observers = observers or []
-        self.parallel_mode = parallel_mode
+        self.num_unused_cores = 1    # do not use all cores to do other work
+        self.num_cores = max(min(cpu_count() - self.num_unused_cores, self.iterations), 1)    # assumes cpu_count does not change during the life of this class!
+        self.parallel_mode = parallel_mode and self.num_cores > 1
+        self.hyperparam_mode = hyperparam_mode
+
+        self.benchmark = self.benchmark_normal if not self.hyperparam_mode else self.benchmark_hyperparams
 
         self.benchmark_times = []
 
@@ -87,22 +92,10 @@ class PythonFunctions(object):
         delete_temp_file(source_file)
         return func
 
-    def benchmark(self, func, args, threads, grid):
-        """runs the kernel repeatedly, returns averaged returned value
+    def benchmark_normal(self, func, args, threads, grid):
+        """runs the kernel repeatedly, returns times
 
-        The C function tuning is a little bit more flexible than direct CUDA
-        or OpenCL kernel tuning. The C function needs to measure time, or some
-        other quality metric you wish to tune on, on its own and should
-        therefore return a single floating-point value.
-
-        Benchmark runs the C function repeatedly and returns the average of the
-        values returned by the C function. The number of iterations is set
-        during the creation of the CFunctions object. For all measurements the
-        lowest and highest values are discarded and the rest is included in the
-        average. The reason for this is to be robust against initialization
-        artifacts and other exceptional cases.
-
-        :param func: A C function compiled for this specific configuration
+        :param func: A Python function for this specific configuration
         :type func: ctypes._FuncPtr
 
         :param args: A list of arguments to the function, order should match the
@@ -118,7 +111,64 @@ class PythonFunctions(object):
             interface as CudaFunctions and OpenCLFunctions.
         :type grid: any
 
-        :returns: All execution times.
+        :returns: All times.
+        :rtype: dict()
+        """
+
+        result = dict()
+        result["times"] = []
+        iterator = range(self.iterations) if not self.show_progressbar or self.parallel_mode else progressbar.progressbar(
+            range(self.iterations), min_value=0, max_value=self.iterations, redirect_stdout=True)
+
+        # new implementation
+        start_time = perf_counter()
+        if self.parallel_mode:
+            logging.debug(f"Running benchmark in parallel on {self.num_cores} processors")
+            manager = Manager()
+            invalid_flag = manager.Value('i', int(False))
+            values = manager.list()
+            runtimes = manager.list()
+            with get_context('spawn').Pool(self.num_cores) as pool:    # spawn alternative is forkserver, creates a reusable server
+                args = func, args, self.params, invalid_flag
+                values, runtimes = zip(*pool.starmap(run_kernel_and_observers, zip(iterator, repeat(args))))
+                values, runtimes = list(values), list(runtimes)
+            result["strategy_time"] = np.mean(runtimes)
+        else:
+            values = list()
+            for _ in range(self.iterations):
+                value = self.run_kernel(func, args, threads, grid)
+                if value < 0.0:
+                    raise Exception("too many resources requested for launch")
+                values.append(value)
+
+        benchmark_time = perf_counter() - start_time
+        self.benchmark_times.append(benchmark_time)
+
+        result["times"] = values
+        result["time"] = np.mean(values)
+        # print(f"Mean: {np.mean(values)}, std: {np.std(values)} in {round(benchmark_time, 3)} seconds, mean: {round(np.mean(self.benchmark_times), 3)}\n")
+        return result
+
+    def benchmark_hyperparams(self, func, args, threads, grid):
+        """runs the kernel repeatedly, returns grandmedian for hyperparameter tuning
+
+        :param func: A Python function for this specific configuration
+        :type func: ctypes._FuncPtr
+
+        :param args: A list of arguments to the function, order should match the
+            order in the code. The list should be prepared using
+            ready_argument_list().
+        :type args: list(Argument)
+
+        :param threads: Ignored, but left as argument for now to have the same
+            interface as CudaFunctions and OpenCLFunctions.
+        :type threads: any
+
+        :param grid: Ignored, but left as argument for now to have the same
+            interface as CudaFunctions and OpenCLFunctions.
+        :type grid: any
+
+        :returns: All execution hyperparameter scores in the same format as times.
         :rtype: dict()
         """
 
@@ -137,18 +187,17 @@ class PythonFunctions(object):
 
         # new implementation
         start_time = perf_counter()
-        if self.parallel_mode and cpu_count() > 1:
-            num_procs = max(min(cpu_count() - 2, self.iterations), 1)
-            logging.debug(f"Running benchmark in parallel on {num_procs} processors")
+        if self.parallel_mode:
+            logging.debug(f"Running hyperparameter benchmark in parallel on {self.num_cores} processors")
             manager = Manager()
             invalid_flag = manager.Value('i', int(False))
-            MNE_values = manager.list()
+            MWP_values = manager.list()
             runtimes = manager.list()
             warnings_dicts = manager.list()
-            with get_context('spawn').Pool(num_procs) as pool:    # spawn alternative is forkserver, creates a reusable server
+            with get_context('spawn').Pool(self.num_cores) as pool:    # spawn alternative is forkserver, creates a reusable server
                 args = func, args, self.params, invalid_flag
-                MNE_values, runtimes, warnings_dicts = zip(*pool.starmap(run_kernel_and_observers, zip(iterator, repeat(args))))
-                MNE_values, runtimes, warnings_dicts = list(MNE_values), list(runtimes), list(warnings_dicts)
+                MWP_values, runtimes, warnings_dicts = zip(*pool.starmap(run_kernel_and_observers, zip(iterator, repeat(args))))
+                MWP_values, runtimes, warnings_dicts = list(MWP_values), list(runtimes), list(warnings_dicts)
             result["strategy_time"] = np.mean(runtimes)
             warning_dict = warnings_dicts[0]
             for key in warning_dict.keys():
@@ -159,12 +208,13 @@ class PythonFunctions(object):
 
         benchmark_time = perf_counter() - start_time
         self.benchmark_times.append(benchmark_time)
-        print(f"Time taken: {round(benchmark_time, 3)} seconds, mean: {round(np.mean(self.benchmark_times), 3)}")
 
-        grandmean, times = get_grandmedian_and_times(MNE_values, invalid_value, min_valid_iterations)
+        grandmean, times = get_hyperparam_grandmedian_and_times(MWP_values, invalid_value, min_valid_iterations)
         result["times"] = times
         result["time"] = grandmean
-        print(f"Grandmean over kernels: {grandmean}, mean MNE per iteration: {np.mean(times)}, std MNE per iteration: {np.std(times)}")
+        print(f"Grandmean: {grandmean} in {round(benchmark_time, 3)} seconds, mean: {round(np.mean(self.benchmark_times), 3)}\n")
+        # print(f"Grandmean: {grandmean}, mean MWP per iteration: {np.mean(times)}, std MWP per iteration: {np.std(times)}")
+        # print(f"In {round(benchmark_time, 3)} seconds, mean: {round(np.mean(self.benchmark_times), 3)}")
         return result
 
         start_time = perf_counter()
@@ -221,10 +271,10 @@ class PythonFunctions(object):
         result["time"] = mean_mean_MRE
         return result
 
-    def run_kernel(self, func, args):
+    def run_kernel(self, func, args, threads, grid):
         """runs the kernel once, returns whatever the kernel returns
 
-        :param func: A C function compiled for this specific configuration
+        :param func: A Python function for this specific configuration
         :type func: ctypes._FuncPtr
 
         :param args: A list of arguments to the function, order should match the
@@ -253,12 +303,12 @@ class PythonFunctions(object):
     units = {}
 
 
-def run_kernel_and_observers(iter, args) -> Tuple[list, float, dict]:
-    """ Function to run a kernel directly for parallel processing. Must be outside the class to avoid pickling issues due to large scope. """
+def run_hyperparam_kernel_and_observers(iter, args) -> Tuple[list, float, dict]:
+    """ Function to run a hyperparam kernel directly for parallel processing. Must be outside the class to avoid pickling issues due to large scope. """
     PID = getpid()
-    print(f"Iter {iter+1}, PID {PID}", flush=True)
+    # print(f"Iter {iter+1}, PID {PID}", flush=True)
     func, funcargs, params, invalid_flag = args
-    logging.debug(f"run_kernel as subprocess {iter} (PID {PID})")
+    logging.debug(f"run_kernel iter {iter} (PID {PID})")
     logging.debug("arguments=" + str([str(arg) for arg in funcargs]))
 
     # run the kernel
@@ -270,8 +320,8 @@ def run_kernel_and_observers(iter, args) -> Tuple[list, float, dict]:
     return values, runtime, warning_dict
 
 
-def run_kernel_as_subprocess(iter, args):
-    """ Function to run a kernel as a subprocess for parallel processing. Must be outside the class to avoid pickling issues due to large scope. Significantly slower than run_kernel, but guaranteed to be a different process. Observers are not implemented."""
+def run_hyperparam_kernel_as_subprocess(iter, args):
+    """ Function to run a hyperparam kernel as a subprocess for parallel processing. Must be outside the class to avoid pickling issues due to large scope. Significantly slower than run_kernel, but guaranteed to be a different process. Observers are not implemented."""
     func, args, params = args
     PID = getpid()
     # print(f"Iter {iter}, PID {PID}", flush=True)
@@ -298,47 +348,52 @@ def run_kernel_as_subprocess(iter, args):
     return time
 
 
-def get_grandmedian_and_times(MNE_values, invalid_value, min_valid_iterations=1):
-    """ Get the grandmean (mean of median MNE per kernel) and mean MNE per iteration """
-    MNE_values = np.array(MNE_values)
-    median_MNEs = np.array([])
-    valid_MNE_times = list()
-    # get the mean MNE per kernel
-    for i in range(len(MNE_values[0])):
-        MNE_kernel_values = MNE_values[:, i]
-        valid_MNE_mask = (MNE_kernel_values < invalid_value) & (MNE_kernel_values >= 0)
-        valid_MNE_kernel_values = MNE_kernel_values[valid_MNE_mask]
-        if len(valid_MNE_kernel_values) >= min_valid_iterations:
+def get_hyperparam_grandmedian_and_times(MWP_values, invalid_value, min_valid_iterations=1):
+    """ Get the grandmean (mean of median MWP per kernel) and mean MWP per iteration """
+    MWP_values = np.array(MWP_values)
+    median_MWPs = np.array([])
+    median_MWPs_vars = np.array([])
+    valid_MWP_times = list()
+    # get the mean MWP per kernel
+    for i in range(len(MWP_values[0])):
+        MWP_kernel_values = MWP_values[:, i]
+        valid_MWP_mask = (MWP_kernel_values < invalid_value) & (MWP_kernel_values >= 0)
+        valid_MWP_kernel_values = MWP_kernel_values[valid_MWP_mask]
+        if len(valid_MWP_kernel_values) >= min_valid_iterations:
             # # filter outliers by keeping only values that are within two times the Median Absolute Deviation
-            # AD = np.abs(valid_MNE_kernel_values - np.median(valid_MNE_kernel_values))
+            # AD = np.abs(valid_MWP_kernel_values - np.median(valid_MWP_kernel_values))
             # MAD = np.median(AD)
-            # selected_MNE_kernel_values = valid_MNE_kernel_values[AD < MAD * 3]
-            # print(f"Removed {len(valid_MNE_kernel_values) - len(selected_MNE_kernel_values)}")
-            # median_MNEs = np.append(median_MNEs, np.median(selected_MNE_kernel_values))
-            # median_MNEs = np.append(median_MNEs, np.mean(valid_MNE_kernel_values))
+            # selected_MWP_kernel_values = valid_MWP_kernel_values[AD < MAD * 3]
+            # print(f"Removed {len(valid_MWP_kernel_values) - len(selected_MWP_kernel_values)}")
+            # median_MWPs = np.append(median_MWPs, np.median(selected_MWP_kernel_values))
+            # median_MWPs = np.append(median_MWPs, np.mean(valid_MWP_kernel_values))
 
             # filter outliers by keeping only values that are within three times the Median Absolute Deviation
-            AD = np.abs(valid_MNE_kernel_values - np.median(valid_MNE_kernel_values))
+            AD = np.abs(valid_MWP_kernel_values - np.median(valid_MWP_kernel_values))
             MAD = np.median(AD)
             MAD_score = AD / MAD if MAD else 0.0
-            selected_MNE_kernel_values = valid_MNE_kernel_values[MAD_score < 3]
-            median_MNEs = np.append(median_MNEs, np.median(selected_MNE_kernel_values))
+            selected_MWP_kernel_values = valid_MWP_kernel_values[MAD_score < 3]
+            median_MWPs = np.append(median_MWPs, np.median(selected_MWP_kernel_values))
+            median_MWPs_vars = np.append(median_MWPs_vars, np.std(selected_MWP_kernel_values))
         else:
-            median_MNEs = np.append(median_MNEs, invalid_value)
+            median_MWPs = np.append(median_MWPs, invalid_value)
+            median_MWPs_vars = np.append(median_MWPs_vars, 1)
 
-    # get the mean MNE per iteration
-    for i in range(len(MNE_values)):
-        MNE_iteration_values = MNE_values[i]
-        valid_MNE_mask = (MNE_iteration_values < invalid_value) & (MNE_iteration_values >= 0)
-        valid_MNE_iteration_values = MNE_iteration_values[valid_MNE_mask]
-        if len(valid_MNE_iteration_values) > 0:
-            valid_MNE_times.append(np.mean(valid_MNE_iteration_values))
+    # get the mean MWP per iteration
+    for i in range(len(MWP_values)):
+        MWP_iteration_values = MWP_values[i]
+        valid_MWP_mask = (MWP_iteration_values < invalid_value) & (MWP_iteration_values >= 0)
+        valid_MWP_iteration_values = MWP_iteration_values[valid_MWP_mask]
+        if len(valid_MWP_iteration_values) > 0:
+            valid_MWP_times.append(np.mean(valid_MWP_iteration_values))
         else:
-            valid_MNE_times.append(invalid_value)
+            valid_MWP_times.append(invalid_value)
 
-    # get the grandmean by taking the mean over the median MNE per iteration, invalid if one of the kernels is invalid
-    print(median_MNEs)
-    grandmean_MNE = np.mean(median_MNEs)
-    if np.isnan(grandmean_MNE) or len(median_MNEs[median_MNEs >= invalid_value]) > 0:
-        grandmean_MNE = invalid_value
-    return grandmean_MNE, valid_MNE_times
+    # get the grandmean by taking the inverse-variance weighted average over the median MWP per kernel, invalid if one of the kernels is invalid
+    print(median_MWPs)
+    print(median_MWPs / median_MWPs_vars, np.sum(1 / median_MWPs_vars), np.std(median_MWPs / median_MWPs_vars))
+    inverse_variance_weighted_average = np.sum(median_MWPs / median_MWPs_vars) / np.sum(1 / median_MWPs_vars)
+    grandmean_MWP = inverse_variance_weighted_average
+    if np.isnan(grandmean_MWP) or len(median_MWPs[median_MWPs >= invalid_value]) > 0:
+        grandmean_MWP = invalid_value
+    return grandmean_MWP, valid_MWP_times

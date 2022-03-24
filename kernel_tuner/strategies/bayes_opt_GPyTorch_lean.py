@@ -82,7 +82,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = False
 
     # prune the search space using restrictions
-    parameter_space = get_valid_configs(tuning_options, max_threads)
+    parameter_space = util.get_valid_configs(tuning_options, max_threads)
 
     # limit max_fevals to max size of the parameter space
     max_fevals = min(len(parameter_space), max_fevals)
@@ -139,11 +139,11 @@ class BayesianOptimization:
 
         # get tuning options
         self.initial_sample_method = self.get_hyperparam("initialsamplemethod", "lhs", supported_initial_sample_methods)
-        self.initial_sample_random_offset_factor = self.get_hyperparam("initialsamplerandomoffsetfactor", 0.1, type=float)
-        self.initial_training_iter = self.get_hyperparam("initialtrainingiter", 5, type=int)
-        self.training_iter = self.get_hyperparam("trainingiter", 1, type=int)
+        self.initial_sample_random_offset_factor = self.get_hyperparam("initialsamplerandomoffsetfactor", 0.1, type=float)    # 0.1
+        self.initial_training_iter = self.get_hyperparam("initialtrainingiter", 5, type=int)    # 5
+        self.training_after_iter = self.get_hyperparam("trainingafteriter", 1, type=int)    # 1
         self.cov_kernel_name = self.get_hyperparam("covariancekernel", "matern_scalekernel", supported_cov_kernels)
-        self.cov_kernel_lengthscale = self.get_hyperparam("covariancelengthscale", 0.5, type=float)
+        self.cov_kernel_lengthscale = self.get_hyperparam("covariancelengthscale", 1.5, type=float)
         self.likelihood_name = self.get_hyperparam("likelihood", "Gaussian", supported_likelihoods)
         self.optimizer_name = self.get_hyperparam("optimizer", "LBFGS", supported_optimizers)
         self.optimizer_learningrate = self.get_hyperparam("optimizer_learningrate", self.optimizer_name, type=float, cast=default_optimizer_learningrates)
@@ -153,7 +153,7 @@ class BayesianOptimization:
         # set acquisition function options
         self.set_acquisition_function(acquisition_function_name)
         if 'explorationfactor' not in af_params:
-            af_params['explorationfactor'] = 0.1
+            af_params['explorationfactor'] = 0.1    # 0.1
         self.af_params = af_params
 
         # set Tensors
@@ -208,6 +208,10 @@ class BayesianOptimization:
             'lengthscale': np.array([]),
             'noise': np.array([]),
         }
+
+        # initialize the model
+        if not self.runner.simulation_mode:
+            self.import_cached_evaluations()
         self.initialize_model()
 
     @property
@@ -230,7 +234,7 @@ class BayesianOptimization:
         """ Get the error on the valid results """
         std = self.results_std[self.valid_configs]
         if self.scaled_output and std.std() > 0.0:
-            std = (std - std.mean()) / std.std()
+            std = (std - std.mean()) / std.std()    # use z-score to get normalized variability
         return std
 
     @property
@@ -242,6 +246,12 @@ class BayesianOptimization:
     def test_x_unscaled(self):
         """ Get the unscaled, not yet visited parameter configurations """
         return self.param_configs[self.unvisited_configs]
+
+    @property
+    def test_y_err(self):
+        """ Get the expected error on the test set """
+        train_y_err = self.train_y_err
+        return torch.full((self.size - len(train_y_err), ), torch.mean(train_y_err))
 
     @property
     def invalid_x(self):
@@ -262,17 +272,17 @@ class BayesianOptimization:
 
     def initialize_model(self, take_initial_sample=True, train_hyperparams=True):
         """ Initialize the surrogate model """
-        if not self.runner.simulation_mode:
-            self.import_cached_evaluations()
-        self.initial_sample_std = self.min_std
+        # self.initial_sample_std = self.min_std
         if take_initial_sample:
             self.initial_sample()
 
         # create the model
         if self.likelihood_name == 'Gaussian':
             self.likelihood = gpytorch.likelihoods.GaussianLikelihood()
+        elif self.likelihood_name == 'GaussianPrior':
+            raise NotImplementedError("Gaussian Prior likelihood has not been implemented yet")
         elif self.likelihood_name == 'FixedNoise':
-            self.likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=self.train_y_err.clamp(min=self.min_std), learn_additional_noise=False)
+            self.likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=self.train_y_err.clamp(min=self.min_std), learn_additional_noise=True)
         self.likelihood = self.likelihood.to(self.device)
         self.model = ExactGPModel(self.train_x, self.train_y, self.likelihood, self.cov_kernel_name, self.cov_kernel_lengthscale)
 
@@ -360,8 +370,8 @@ class BayesianOptimization:
         # set the current optimum, initial sample mean and initial sample std
         self.current_optimum = self.opt(self.train_y).item()
         self.initial_sample_mean = self.train_y.mean().item()
-        # self.initial_sample_std = self.train_y.std().item()
-        self.initial_sample_std = self.min_std    # temporary until the predictive posterior has been taken
+        self.initial_sample_std = self.train_y.std().item()
+        # self.initial_sample_std = self.min_std    # temporary until the predictive posterior has been taken
 
         # save a boolean mask of the initial samples
         self.inital_sample_configs = self.valid_configs.detach().clone()
@@ -471,6 +481,8 @@ class BayesianOptimization:
             except gpytorch.utils.errors.NotPSDError:
                 warnings.warn("Matrix not positive definite during training", NotPSDTrainingWarning)
                 return np.nan
+            except RuntimeError as e:
+                warnings.warn(str(e), RuntimeWarning)
 
         loss = None
         for _ in range(training_iter):
@@ -481,6 +493,9 @@ class BayesianOptimization:
                 loss = _loss
             except gpytorch.utils.errors.NanError:
                 warnings.warn("PSD_safe_Cholesky failed due to too many NaN", NaNTrainingWarning)
+                break
+            except TypeError as e:
+                warnings.warn(str(e), RuntimeWarning)
                 break
 
         # set the hyperparams to the new values
@@ -518,8 +533,8 @@ class BayesianOptimization:
                 predictions_tuple = self.remove_from_predict_list(predictions_tuple, short_param_config_index)
             else:
                 predictions_tuple = self.predict_list()
-                if self.initial_sample_std <= self.min_std:
-                    self.initial_sample_std = min(max(predictions_tuple[1].mean().item(), self.min_std), 10.0)
+                # if self.initial_sample_std <= self.min_std:
+                # self.initial_sample_std = min(max(predictions_tuple[1].mean().item(), self.min_std), 10.0)
             # if there are NaN or all of the predicted std are the same, take from the least evaluated region
             mean_has_NaN = bool(torch.any(torch.isnan(predictions_tuple[0])).item())
             std_has_NaN = bool(torch.any(torch.isnan(predictions_tuple[1])).item())
@@ -536,7 +551,7 @@ class BayesianOptimization:
                 warnings.warn(
                     f"After {self.fevals}/{max_fevals} fevals, {warning_reason}, picking one from the least evaluated region and resetting the surrogate model",
                     ResetModelWarning)
-                self.initialize_model(take_initial_sample=False, train_hyperparams=False)
+                self.initialize_model(take_initial_sample=False, train_hyperparams=True)
             else:
                 # otherwise, optimize the acquisition function to find the next candidate
                 hyperparam = self.contextual_variance(predictions_tuple[0], predictions_tuple[1]) if use_contextual_variance else None
@@ -569,8 +584,8 @@ class BayesianOptimization:
                 last_invalid = False
                 self.model.set_train_data(self.train_x, self.train_y, strict=False)
                 # do not train if there are multiple minima, because it introduces numerical instability or insolvability
-                if self.training_iter > 0:
-                    self.train_hyperparams(training_iter=self.training_iter)
+                if self.training_after_iter > 0 and (self.fevals % self.training_after_iter == 0):
+                    self.train_hyperparams(training_iter=1)    # TODO experiment with other training iter
                 # set the current optimum
                 self.current_optimum = self.opt(self.train_y).item()
             # print(f"Valid: {len(self.train_x)}, unvisited: {len(self.test_x)}, invalid: {len(self.invalid_x)}, last invalid: {last_invalid}")
@@ -603,7 +618,7 @@ class BayesianOptimization:
         if result != self.invalid_value:
             self.valid_configs[param_config_index] = True
             self.results[param_config_index] = result
-            assert last_result['time'] == result
+            # assert last_result['time'] == result TODO remove
             self.results_std[param_config_index] = max(np.std(last_result['times']), self.min_std)
 
         # add the current model parameters to the last entry of the results dict
@@ -634,6 +649,9 @@ class BayesianOptimization:
             except gpytorch.utils.errors.NotPSDError:
                 warnings.warn("NotPSD error during predictions", NotPSDPredictionWarning)
                 return torch.ones_like(self.test_x), torch.zeros_like(self.test_x)
+            except RuntimeError as e:
+                warnings.warn(str(e), RuntimeWarning)
+                return torch.ones_like(self.test_x), torch.zeros_like(self.test_x)
 
     def get_diff_improvement(self, y_mu, y_std, fplus) -> torch.Tensor:
         """ compute probability of improvement by assuming normality on the difference in improvement """
@@ -656,14 +674,12 @@ class BayesianOptimization:
             improvement_over_current_sample = (abs(self.current_optimum) - self.train_y.mean().item()) / std.mean().item()
             improvement_diff = improvement_over_current_sample - improvement_over_initial_sample
             # the closer the improvement over the current sample is to the improvement over the initial sample, the greater the exploration
-            x = 1 - min(max(1 - improvement_diff, 0.2), 0.0)
-            # x = 1 - min(max(improvement_diff, 1) * 0.2, 0.0)
+            # x = 1 - max(max(1 - improvement_diff, 0.2), 0.0)
+            x = 1 - max(min(improvement_diff, 1) * 0.2, 0.0)
             # the smaller the difference between the initial sample error and current sample error, the greater the exploration
             # x = 1 - min(max(self.initial_sample_std - std.mean().item(), 1.0), 0.8)
             # print(self.initial_sample_std, std.mean().item())
-            # print(x)
             cv = np.log10(x) + 0.1    # at x=0.0, y=0.1; at x=0.2, y=0.003; at x=0.2057, y=0.0.
-            # print(cv)
             return cv
         else:
             raise NotImplementedError("Contextual Variance has not yet been implemented for non-scaled outputs")
@@ -821,57 +837,10 @@ class BayesianOptimization:
 
         return torch.tensor(parameter_space, dtype=self.dtype).to(self.device), tune_params
 
-    def to_xarray(self):
-        # print(self.tuning_options['tune_params'])
-        # print(az.convert_to_inference_data(self.tuning_options['tune_params']).posterior)
-        with torch.no_grad(), gpytorch.settings.fast_pred_samples(), gpytorch.settings.fast_pred_var():
-            posterior = self.model(self.param_configs_scaled)
-            predictive_posterior = self.likelihood(posterior)
-            # print(posterior.variance)
-            # print(az.convert_to_inference_data(posterior.to_data_independent_dist()))
-            # print(len(posterior.covariance_matrix))
-            # print(len(posterior.covariance_matrix[0]))
-            # exit(0)
-
-            # data = az.load_arviz_data('centered_eight')
-            # az.plot_posterior(data, show=True)
-
-            param_configs = list(tuple(pc) for pc in self.param_configs.tolist())
-            # posterior_dict = dict(zip(param_configs, posterior.get_base_samples()))
-            posterior_dict = {
-                'mu': posterior.mean,
-                'var': posterior.variance
-            }
-            predictive_posterior_dict = {
-                'mu': predictive_posterior.mean,
-                'var': predictive_posterior.variance
-            }
-            print(posterior_dict)
-            # predictive_posterior_dict = dict(zip(str(self.param_configs_scaled.numpy()), predictive_posterior.get_base_samples()))
-            # log_prob_dict = dict(zip(self.param_configs_scaled, predictive_posterior.log_prob()))
-            tune_param_keys = np.array(list(self.tune_params.keys()))[self.nonstatic_params]
-            tune_param_values = np.array(list(self.tune_params.values()), dtype=object)[self.nonstatic_params]
-            coordinates = dict(zip(tune_param_keys, tune_param_values))
-            dimensions = dict(zip(tune_param_keys, ([k] for k in tune_param_keys)))
-            print(coordinates)
-            print(dimensions)
-            data = az.from_dict(posterior_dict, posterior_predictive=predictive_posterior_dict)
-            print(az.summary(data))
-            print(data.posterior)
-            print(data.posterior_predictive)
-            az.plot_trace(data, show=True)
-            exit(0)
-            print(data.posterior_predictive)
-
-            # print(az.convert_to_inference_data(posterior.get_base_samples()))
-        # TODO create InferenceData
-        # print(predictive_posterior.sample())
-        # print(az.from_dict())
-        # print(az.convert_to_inference_data(predictive_posterior))
-        exit(0)
-
     def visualize(self):
         """ Visualize the surrogate model and observations in a plot """
+        if self.fevals < 220:
+            return None
         from matplotlib import pyplot as plt
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             # Initialize plot

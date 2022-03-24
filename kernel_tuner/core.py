@@ -195,7 +195,7 @@ class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
     def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7, observers=None,
-                 parallel_mode=False):
+                 parallel_mode=False, hyperparam_mode=False):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param kernel_source The kernel sources
@@ -212,7 +212,7 @@ class DeviceInterface(object):
         :type device: int
 
         :param lang: Specifies the language used for GPU kernels.
-            Currently supported: "CUDA", "OpenCL", or "C"
+            Currently supported: "CUDA", "OpenCL", "C" or "Python"
         :type lang: string
 
         :param compiler_options: The compiler options to use when compiling kernels for this device.
@@ -241,7 +241,8 @@ class DeviceInterface(object):
         elif lang == "C":
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         elif lang == "Python":
-            dev = PythonFunctions(iterations=iterations, observers=observers, parallel_mode=parallel_mode, show_progressbar=True)
+            dev = PythonFunctions(iterations=iterations, observers=observers, parallel_mode=parallel_mode, hyperparam_mode=hyperparam_mode,
+                                  show_progressbar=True)
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
 

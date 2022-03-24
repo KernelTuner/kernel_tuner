@@ -39,7 +39,7 @@ setup(
         'Topic :: System :: Distributed Computing',
         'Development Status :: 5 - Production/Stable',
     ],
-    install_requires=['numpy>=1.13.3', 'scipy>=0.18.1', 'jsonschema'],
+    install_requires=['numpy>=1.13.3', 'scipy>=0.18.1', 'jsonschema', 'python-constraint>=1.4.0'],
     extras_require={
         'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx', 'pytest', 'ipython'],
         'cuda': ['pycuda', pynvml],

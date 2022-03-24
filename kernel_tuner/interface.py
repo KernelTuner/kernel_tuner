@@ -33,6 +33,7 @@ from datetime import datetime
 import logging
 import sys
 import numpy
+from constraint import Constraint
 
 import kernel_tuner.util as util
 import kernel_tuner.core as core
@@ -403,7 +404,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, simulation_mode=False, parallel_mode=False, observers=None):
+                cache=None, metrics=None, simulation_mode=False, parallel_mode=False, hyperparam_mode=False, observers=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -418,8 +419,8 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
 
-    # if the restrictions are not callable, make them (increases restrictions check performance significantly)
-    if restrictions is not None and not callable(restrictions):
+    # if the restrictions are not constraints or a callable, the restrictions are strings, so parse them to functions (increases restrictions check performance significantly)
+    if restrictions is not None and not callable(restrictions) and not any(isinstance(r, Constraint) for r in restrictions):
         restrictions = util.parse_restrictions(restrictions)
 
     if iterations < 1:
@@ -469,7 +470,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
 
     # select the runner for this job based on input
     selected_runner = SimulationRunner if simulation_mode is True else SequentialRunner
-    with selected_runner(kernelsource, kernel_options, device_options, iterations, observers, parallel_mode) as runner:
+    with selected_runner(kernelsource, kernel_options, device_options, iterations, observers, parallel_mode, hyperparam_mode) as runner:
 
         #the user-specified function may or may not have an optional atol argument;
         #we normalize it so that it always accepts atol.

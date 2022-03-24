@@ -4,6 +4,7 @@ import json
 from collections import OrderedDict
 import os
 import errno
+from tabnanny import verbose
 import tempfile
 import logging
 import warnings
@@ -11,6 +12,7 @@ import re
 from types import FunctionType
 
 import numpy as np
+from constraint import Problem, Constraint, FunctionConstraint
 try:
     import cupy as cp
 except ImportError:
@@ -122,9 +124,8 @@ def check_block_size_params_names_list(block_size_names, tune_params):
             warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
 
 
-def check_restrictions(restrictions, element, keys, verbose):
+def check_restrictions(restrictions, params, verbose):
     """ check whether a specific instance meets the search space restrictions """
-    params = OrderedDict(zip(keys, element))
     valid = True
     if callable(restrictions):
         valid = restrictions(params)
@@ -140,14 +141,23 @@ def check_restrictions(restrictions, element, keys, verbose):
     return valid
 
 
+def check_thread_block_dimensions(params, max_threads, block_size_names=None):
+    """ check on maximum thread block dimensions """
+    dims = get_thread_block_dimensions(params, block_size_names)
+    return np.prod(dims) <= max_threads
+
+
 def config_valid(config, tuning_options, max_threads):
     """ combines restrictions and a check on the max thread block dimension to check config validity """
     legal = True
-    if tuning_options.restrictions:
-        legal = check_restrictions(tuning_options.restrictions, config, tuning_options.tune_params.keys(), False)
     params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
-    dims = get_thread_block_dimensions(params, tuning_options.get("block_size_names", None))
-    return legal and np.prod(dims) <= max_threads
+    if tuning_options.restrictions:
+        legal = check_restrictions(tuning_options.restrictions, params, False)
+        if not legal:
+            return False
+    block_size_names = tuning_options.get("block_size_names", None)
+    valid_thread_block_dimensions = check_thread_block_dimensions(params, max_threads, block_size_names)
+    return legal and valid_thread_block_dimensions
 
 
 def delete_temp_file(filename):
@@ -262,10 +272,42 @@ def get_kernel_string(kernel_source, params=None):
 
 def get_valid_configs(tuning_options, max_threads) -> list:
     """ compute valid configurations in a search space based on restrictions and max_threads"""
-    parameter_space = itertools.product(*tuning_options.tune_params.values())
-    if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: config_valid(p, tuning_options, max_threads), parameter_space)
-    return list(parameter_space)
+    restrictions = tuning_options.restrictions
+    tune_params = tuning_options.tune_params
+    param_names = list(tune_params.keys())
+
+    # instantiate the parameter space with all the variables
+    parameter_space = Problem()
+    for param_name, param_values in tune_params.items():
+        parameter_space.addVariable(param_name, param_values)
+
+    # add the user-specified restrictions as constraints on the parameter space
+    if isinstance(restrictions, list):
+        for restriction in restrictions:
+            if isinstance(restriction, FunctionConstraint):
+                parameter_space.addConstraint(restriction, param_names)
+            elif isinstance(restriction, Constraint):
+                parameter_space.addConstraint(restriction)
+            else:
+                raise ValueError(f"Unrecognized restriction {restriction}")
+    # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
+    elif callable(restrictions):
+        restrictions_wrapper = lambda *args: check_restrictions(restrictions, dict(zip(param_names, args)), False)
+        parameter_space.addConstraint(restrictions_wrapper, param_names)
+
+    # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
+    block_size_names = tuning_options.get("block_size_names", default_block_size_names)
+    block_size_names = list(block_size_name for block_size_name in block_size_names if block_size_name in param_names)
+    if len(block_size_names) > 0:
+        parameter_space.addConstraint(MaxProdConstraint(max_threads), block_size_names)
+
+    # construct the parameter space with the constraints applied
+    parameter_space = parameter_space.getSolutions()
+    # form the parameter tuples in the order specified by tune_params.keys()
+    parameter_space_list = list()
+    for params in parameter_space:
+        parameter_space_list.append(tuple(params[param_name] for param_name in param_names))
+    return parameter_space_list
 
 
 def get_number_of_valid_configs(tuning_options, max_threads) -> int:
@@ -691,3 +733,55 @@ def parse_restrictions(restrictions: list):
     code_object = compile(parsed_restrictions, '<string>', 'exec')
     func = FunctionType(code_object.co_consts[0], globals())
     return func
+
+
+class MaxProdConstraint(Constraint):
+    """
+    Constraint enforcing that values of given variables prod up to
+    a given amount
+    Example:
+    >>> problem = Problem()
+    >>> problem.addVariables(["a", "b"], [1, 2])
+    >>> problem.addConstraint(MaxProdConstraint(3))
+    >>> sorted(sorted(x.items()) for x in problem.getSolutions())
+    [[('a', 1), ('b', 1)], [('a', 1), ('b', 2)], [('a', 2), ('b', 1)]]
+    """
+
+    def __init__(self, maxprod):
+        """
+        @param maxprod: Value to be considered as the maximum prod
+        @type  maxprod: number
+        @param multipliers: If given, variable values will be multiplied by
+                            the given factors before being prodmed to be checked
+        """
+        self._maxprod = maxprod
+
+    def preProcess(self, variables, domains, constraints, vconstraints):
+        Constraint.preProcess(self, variables, domains, constraints, vconstraints)
+        maxprod = self._maxprod
+        for variable in variables:
+            domain = domains[variable]
+            for value in domain[:]:
+                if value > maxprod:
+                    domain.remove(value)
+
+    def __call__(self, variables, domains, assignments, forwardcheck=False):
+        maxprod = self._maxprod
+        prod = 1
+        for variable in variables:
+            if variable in assignments:
+                prod *= assignments[variable]
+        if type(prod) is float:
+            prod = round(prod, 10)
+        if prod > maxprod:
+            return False
+        if forwardcheck:
+            for variable in variables:
+                if variable not in assignments:
+                    domain = domains[variable]
+                    for value in domain[:]:
+                        if prod + value > maxprod:
+                            domain.hideValue(value)
+                    if not domain:
+                        return False
+        return True
