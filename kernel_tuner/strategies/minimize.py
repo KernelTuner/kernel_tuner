@@ -81,7 +81,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
 
     # check if this is a legal (non-restricted) parameter instance
     if check_restrictions and tuning_options.restrictions:
-        legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
+        legal = util.config_valid(params, tuning_options, runner.dev.max_threads)
         if not legal:
             error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
             error_result["time"] = error_time

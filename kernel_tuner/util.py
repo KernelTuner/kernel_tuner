@@ -1,4 +1,5 @@
 """ Module for kernel tuner utility functions """
+from argparse import ArgumentError
 import itertools
 import json
 from collections import OrderedDict
@@ -12,7 +13,7 @@ import re
 from types import FunctionType
 
 import numpy as np
-from constraint import Problem, Constraint, FunctionConstraint
+from constraint import Problem, Constraint, AllDifferentConstraint, AllEqualConstraint, MaxSumConstraint, ExactSumConstraint, MinSumConstraint, InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint, FunctionConstraint
 try:
     import cupy as cp
 except ImportError:
@@ -135,13 +136,46 @@ def check_restrictions(restrictions, params, verbose):
     else:
         for restrict in restrictions:
             try:
-                if not eval(replace_param_occurrences(restrict, params)):
+                # if it's a python-constraint, convert to function and execute
+                if isinstance(restrict, Constraint):
+                    restrict = convert_constraint_restriction(restrict)
+                    if not restrict(params.values()):
+                        valid = False
+                        break
+                # if it's a string, fill in the parameters and evaluate
+                elif not eval(replace_param_occurrences(restrict, params)):
                     valid = False
+                    break
             except ZeroDivisionError:
                 pass
     if not valid and verbose:
         print("skipping config", get_instance_string(params), "reason: config fails restriction")
     return valid
+
+
+def convert_constraint_restriction(restrict: Constraint):
+    """ Convert the python-constraint to a function for backwards compatibility """
+    if isinstance(restrict, FunctionConstraint):
+        f_restrict = lambda p: restrict._func(*p)
+    elif isinstance(restrict, AllDifferentConstraint):
+        f_restrict = lambda p: len(set(p)) == len(p)
+    elif isinstance(restrict, AllEqualConstraint):
+        f_restrict = lambda p: all(x == p[0] for x in p)
+    elif isinstance(restrict, MaxProdConstraint):
+        f_restrict = lambda p: np.prod(p) <= restrict._exactsum
+    elif isinstance(restrict, MaxSumConstraint):
+        f_restrict = lambda p: sum(p) <= restrict._exactsum
+    elif isinstance(restrict, ExactSumConstraint):
+        f_restrict = lambda p: sum(p) == restrict._exactsum
+    elif isinstance(restrict, MinSumConstraint):
+        f_restrict = lambda p: sum(p) >= restrict._exactsum
+    elif isinstance(restrict, (InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint)):
+        raise NotImplementedError(
+            f"Restriction of the type {type(restrict)} is explicitely not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
+        )
+    else:
+        raise TypeError(f"Unrecognized restriction {restrict}")
+    return f_restrict
 
 
 def check_thread_block_dimensions(params, max_threads, block_size_names=None):
