@@ -25,6 +25,10 @@ class TorchPlaceHolder():
         self.Tensor = Exception    #using Exception here as a type that will never be among kernel arguments
 
 
+class SkippableFailure(Exception):
+    """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected"""
+
+
 try:
     import torch
 except ImportError:
@@ -88,7 +92,6 @@ def check_argument_list(kernel_name, kernel_string, args):
             return
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
-        # raise TypeError(errors[0])
 
 
 def check_tune_params_list(tune_params):
@@ -502,8 +505,6 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
     # also insert kernel_tuner token
     kernel_string = "#define kernel_tuner 1\n" + kernel_string
-    # name = kernel_name + "_" + get_instance_string(params)
-    # kernel_string = kernel_string.replace(kernel_name, name)
 
     return name, kernel_string
 
@@ -639,21 +640,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     # if file exists
     else:
-        with open(cache, "r") as cachefile:
-            filestr = cachefile.read().strip()
-
-        # if file was not properly closed, pretend it was properly closed
-        if not filestr[-3:] == "}\n}":
-            # remove the trailing comma if any, and append closing brackets
-            if filestr[-1] == ",":
-                filestr = filestr[:-1]
-            filestr = filestr + "}\n}"
-        elif not tuning_options.simulation_mode:    # don't do this in simulation mode because the cache must have no race conditions in case of parallel execution
-            # if it was properly closed, open it for appending new entries
-            with open(cache, "w") as cachefile:
-                cachefile.write(filestr[:-3] + ",")
-
-        cached_data = json.loads(filestr)
+        cached_data = read_cache(cache, not tuning_options.simulation_mode)    # don't open the cache in (parallel) simulation mode to avoid race conditions
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
@@ -669,6 +656,25 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         tuning_options.cachefile = cache
         tuning_options.cache = cached_data["cache"]
+
+
+def read_cache(cache, open_cache=True):
+    """ Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending """
+    with open(cache, "r") as cachefile:
+        filestr = cachefile.read().strip()
+
+    # if file was not properly closed, pretend it was properly closed
+    if not filestr[-3:] == "}\n}":
+        # remove the trailing comma if any, and append closing brackets
+        if filestr[-1] == ",":
+            filestr = filestr[:-1]
+        filestr = filestr + "}\n}"
+    elif open_cache:
+        # if it was properly closed, open it for appending new entries
+        with open(cache, "w") as cachefile:
+            cachefile.write(filestr[:-3] + ",")
+
+    return json.loads(filestr)
 
 
 def close_cache(cache):
@@ -699,12 +705,11 @@ def store_cache(key, params, tuning_options):
             return obj.__str__()
 
     logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
-    if isinstance(tuning_options.cache, dict):
-        if not key in tuning_options.cache:
-            tuning_options.cache[key] = params
-            if tuning_options.cachefile:
-                with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({ key: params }, default=npconverter)[1:-1] + ",")
+    if isinstance(tuning_options.cache, dict) and not key in tuning_options.cache:
+        tuning_options.cache[key] = params
+        if tuning_options.cachefile:
+            with open(tuning_options.cachefile, "a") as cachefile:
+                cachefile.write("\n" + json.dumps({ key: params }, default=npconverter)[1:-1] + ",")
 
 
 def dump_cache(obj: str, tuning_options):

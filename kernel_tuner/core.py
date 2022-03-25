@@ -238,7 +238,7 @@ class DeviceInterface(object):
             dev = CupyFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
-        elif lang == "C":
+        elif lang.upper() in ["C", "FORTRAN"]:
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         elif lang == "Python":
             dev = PythonFunctions(iterations=iterations, observers=observers, parallel_mode=parallel_mode, hyperparam_mode=hyperparam_mode,
@@ -321,7 +321,7 @@ class DeviceInterface(object):
         #run the kernel
         check = self.run_kernel(func, gpu_args, instance)
         if not check:
-            return True    #runtime failure occured that should be ignored, skip correctness check
+            return #runtime failure occured that should be ignored, skip correctness check
 
         #retrieve gpu results to host memory
         result_host = []
@@ -347,7 +347,6 @@ class DeviceInterface(object):
 
         if not correct:
             raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
-        return True
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """

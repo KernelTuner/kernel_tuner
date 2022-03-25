@@ -82,7 +82,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = False
 
     # prune the search space using restrictions
-    parameter_space = util.get_valid_configs(tuning_options, max_threads)
+    parameter_space = get_valid_configs(tuning_options, max_threads)
 
     # limit max_fevals to max size of the parameter space
     max_fevals = min(len(parameter_space), max_fevals)

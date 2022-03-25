@@ -102,7 +102,7 @@ def test_check_kernel_output(dev_func_interface):
     wrong = [np.array([1, 2, 3, 4]).astype(np.float32)]
     atol = 1e-6
 
-    test = dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
+    dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
 
     dfi.memcpy_htod.assert_called_once_with(answer[0], answer[0])
     dfi.run_kernel.assert_called_once_with('func', answer, (256, 1, 1), (1, 1, 1))
@@ -115,7 +115,6 @@ def test_check_kernel_output(dev_func_interface):
         if name == 'memcpy_dtoh':
             assert all(args[0] == answer[0])
             assert all(args[1] == answer[0])
-    assert test
 
     # the following call to check_kernel_output is expected to fail because
     # the answer is non-zero, while the memcpy_dtoh function on the Mocked object

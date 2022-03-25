@@ -6,12 +6,6 @@ def readme():
     with open('README.rst') as f:
         return f.read()
 
-
-if sys.version_info[0] >= 3:
-    pynvml = 'nvidia-ml-py3'
-else:
-    pynvml = 'nvidia-ml-py'
-
 setup(
     name="kernel_tuner",
     version="0.4.1",
@@ -42,7 +36,7 @@ setup(
     install_requires=['numpy>=1.13.3', 'scipy>=0.18.1', 'jsonschema', 'python-constraint>=1.4.0'],
     extras_require={
         'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx', 'pytest', 'ipython'],
-        'cuda': ['pycuda', pynvml],
+        'cuda': ['pycuda', 'nvidia-ml-py'],
         'opencl': ['pyopencl'],
         'cuda_opencl': ['pycuda', 'pyopencl'],
         'tutorial': ['jupyter', 'matplotlib', 'pandas'],

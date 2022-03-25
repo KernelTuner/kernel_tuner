@@ -79,7 +79,7 @@ class OpenCLFunctions():
         return self
 
     def __exit__(self, *exc):
-        pass
+        """OpenCLFunctions does not claim any resources that need to be released"""
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
