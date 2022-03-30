@@ -45,7 +45,9 @@ def check_argument_type(dtype, kernel_argument):
         "int64": ["long", "int64_t"],
         "float16": ["half"],
         "float32": ["float"],
-        "float64": ["double"]
+        "float64": ["double"],
+        "complex64": ["float2"],
+        "complex128": ["double2"]
     }
     if dtype in types_map:
         return any([substr in kernel_argument for substr in types_map[dtype]])
