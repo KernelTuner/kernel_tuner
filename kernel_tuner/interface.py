@@ -443,6 +443,9 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
+    if iterations < 1:
+        raise ValueError("Iterations should be at least one!")
+
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
@@ -453,12 +456,12 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
 
+    # ensure there is always at least three names
+    util.append_default_block_size_names(block_size_names)
+
     # if the restrictions are not constraints or a callable, the restrictions are strings, so parse them to functions (increases restrictions check performance significantly)
     if restrictions is not None and not callable(restrictions) and not any(isinstance(r, Constraint) for r in restrictions):
         restrictions = util.parse_restrictions(restrictions)
-
-    if iterations < 1:
-        raise ValueError("Iterations should be at least one!")
 
     #sort all the options into separate dicts
     opts = locals()

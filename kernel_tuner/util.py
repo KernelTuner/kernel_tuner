@@ -51,7 +51,9 @@ def check_argument_type(dtype, kernel_argument):
         "int64": ["long", "int64_t"],
         "float16": ["half"],
         "float32": ["float"],
-        "float64": ["double"]
+        "float64": ["double"],
+        "complex64": ["float2"],
+        "complex128": ["double2"]
     }
     if dtype in types_map:
         return any([substr in kernel_argument for substr in types_map[dtype]])
@@ -112,11 +114,13 @@ def check_block_size_names(block_size_names):
             raise ValueError("block_size_names should not contain more than 3 names!")
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
             raise ValueError("block_size_names should contain only strings!")
-        # ensure there is always at least three names
-        for i, name in enumerate(default_block_size_names):
-            if len(block_size_names) < i + 1:
-                block_size_names.append(name)
 
+def append_default_block_size_names(block_size_names):
+    if block_size_names is None:
+        return
+    for i, name in enumerate(default_block_size_names):
+        if len(block_size_names) < i + 1:
+            block_size_names.append(name)
 
 def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:
