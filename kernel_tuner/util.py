@@ -343,7 +343,11 @@ def get_valid_configs(tuning_options, max_threads) -> list:
     # form the parameter tuples in the order specified by tune_params.keys()
     parameter_space_list = list()
     for params in parameter_space:
-        parameter_space_list.append(tuple(params[param_name] for param_name in param_names))
+        param_config = tuple(params[param_name] for param_name in param_names)
+        if param_config not in parameter_space_list:
+            parameter_space_list.append(param_config)
+        else:
+            print(f"Duplicate {param_config}")
     return parameter_space_list
 
 

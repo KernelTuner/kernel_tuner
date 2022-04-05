@@ -20,7 +20,7 @@ from kernel_tuner.strategies import minimize
 
 # set supported hyperparameter values
 supported_precisions = ['float', 'double']
-supported_initial_sample_methods = ['lhs', 'index', 'random']
+supported_initial_sample_methods = ['lhs', 'index', 'minmax','random']
 supported_methods = ['ei', 'poi', 'random']
 supported_cov_kernels = ['matern', 'matern_scalekernel']
 supported_likelihoods = ['Gaussian', 'GaussianPrior', 'FixedNoise']
@@ -354,6 +354,8 @@ class BayesianOptimization:
                     continue
                 list_param_config_indices.append(param_config_index)
                 self.evaluate_config(param_config_index)
+        elif self.initial_sample_method == 'minmax':
+            list_param_config_indices += self.take_min_max_initial_samples(list_param_config_indices)
 
         # then take index-spaced samples until all samples are valid
         while self.fevals < self.num_initial_samples:
@@ -440,6 +442,86 @@ class BayesianOptimization:
                     f"This might be because you have few initial samples ({n_samples}) relative to the number of parameters ({num_params})." +
                     "Perhaps try something other than LHS."))
         return param_configs_indices
+
+    def take_min_max_initial_samples(self, list_param_config_indices: list, samples_per_parameter=1) -> list:
+        """ Take the minimum parameters and the maximum for each parameter to establish the effect of individual parameters """
+        # number of samples required is at least (samples_per_parameter) * (number of parameters) + 1
+
+        # first get the individual parameter values and sort them
+        params_values = list(self.tune_params.values())
+        for param_values in params_values:
+            param_values.sort()
+
+        number_of_params = len(params_values)
+        if self.num_initial_samples - self.fevals < samples_per_parameter * number_of_params + 1:
+            raise ValueError(f"There are not enough initial samples available ({self.num_initial_samples - self.fevals}) to do minmax initial sampling. At least {samples_per_parameter * number_of_params + 1} samples are required.")
+
+        # then take the minimum parameter configuration using BFS, this is used as the base
+        # instead of BFS, you could also search for the minimal sum of indices
+        minimum_index = None
+        param_level = 0
+        param_moving_index = -1
+        while minimum_index is None and self.num_initial_samples - self.fevals:
+            # create the minimum base configuration and find it in the search space
+            selected_param_config = torch.tensor(tuple(param_values[param_level+1] if param_index == param_moving_index else param_values[min(param_level, len(param_values)-1)] for param_index, param_values in enumerate(params_values)), dtype=self.dtype).to(self.device)
+            matching_params = torch.count_nonzero(self.param_configs == selected_param_config, -1)
+            match_mask = (matching_params == number_of_params)
+            found_num_matching_param_configs = match_mask.count_nonzero()
+            temp_index = self.index_counter[match_mask]
+            # check if the configuration exists and is succesfully evaluated
+            if found_num_matching_param_configs == 1 and (temp_index.item() in list_param_config_indices or self.evaluate_config(temp_index.item()) < self.invalid_value):
+                minimum_index = temp_index.item()
+                minimum_config = self.param_configs[minimum_index]
+                if minimum_index not in list_param_config_indices:
+                    list_param_config_indices.append(minimum_index)
+            # if it doesn't exist and evaluate, do a breadth-first search for the minimum configuration
+            else:
+                proceed = False
+                while not proceed:
+                    # first look at the current level
+                    if param_moving_index < len(params_values) - 1:
+                        param_moving_index += 1
+                        # if the param_level + 1 exceeds the number of parameters, try the next parameter
+                        if len(params_values[param_moving_index]) <= param_level + 1:
+                            param_moving_index += 1
+                        else:
+                            proceed = True
+                    # if nothing is found, proceed to the next level
+                    else:
+                        param_level += 1
+                        param_moving_index = -1
+                        proceed = True
+        if minimum_index is None:
+            raise ValueError(f"Could not evaluate the minimum base configuration in {self.num_initial_samples} samples.")
+
+        # next take the maximum for each individual parameter using DFS
+        for param_index, param_values in enumerate(params_values):
+            if len(param_values) <= 1:
+                continue
+            maximum_index = None
+            param_moving_level = len(param_values) - 1
+            while maximum_index is None and self.num_initial_samples - self.fevals > 0:
+                # take the minimum configuration as base
+                selected_param_config = minimum_config.clone()
+                # change only the currently selected parameter and look up the configuration in the search space
+                selected_param_config[param_index] = param_values[param_moving_level]
+                matching_params = torch.count_nonzero(self.param_configs == selected_param_config, -1)
+                match_mask = (matching_params == number_of_params)
+                found_num_matching_param_configs = match_mask.count_nonzero()
+                temp_index = self.index_counter[match_mask]
+                if found_num_matching_param_configs == 1 and (temp_index.item() in list_param_config_indices or self.evaluate_config(temp_index.item()) < self.invalid_value):
+                    maximum_index = temp_index.item()
+                    if maximum_index not in list_param_config_indices:
+                        list_param_config_indices.append(maximum_index)
+                # if it doesn't exist and evaluate, move one parameter value down
+                else:
+                    param_moving_level -= 1
+                    if param_moving_level < 0:
+                        raise ValueError(f"No instance of parameter {param_index} is present in the search space and succesfully evaluated")
+            if maximum_index is None:
+                raise ValueError(f"Could not evaluate the maximum configuration for {param_index+1} out of {len(params_values)} within {self.num_initial_samples} samples.")
+
+        return list_param_config_indices
 
     def get_middle_index_of_least_evaluated_region(self) -> int:
         """ Get the middle index of the region of parameter configurations that is the least visited """
