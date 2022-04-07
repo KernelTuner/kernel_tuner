@@ -20,6 +20,7 @@ class SimulationLangFunction(object):
         self.iterations = iterations
         self.current_module = None
         self.compiler_options = compiler_options or []
+        self.last_strategy_start_time = None
 
         env = dict()
         env["device_name"] = "Simulation"

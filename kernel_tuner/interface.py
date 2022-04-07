@@ -33,7 +33,7 @@ from datetime import datetime
 import logging
 import sys
 import numpy
-import time
+from time import perf_counter
 
 import kernel_tuner.util as util
 import kernel_tuner.core as core
@@ -435,7 +435,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
                 cache=None, metrics=None, simulation_mode=False, observers=None):
-    start_time = 1000 * time.time()
+    start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
@@ -513,9 +513,8 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
             tuning_options.cachefile = None
 
         #call the strategy to execute the tuning process
-        method_time_begin = 1000*time.time()
+        selected_runner.last_strategy_start_time = perf_counter()
         results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
-        method_time = 1000*time.time() - method_time_begin
 
         #finished iterating over search space
         if not device_options.quiet:
@@ -530,29 +529,9 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         if cache:
             util.close_cache(cache)
 
-    end_time = 1000*time.time()
-    total_compile_time = 0
-    total_kernel_time = 0
-    if results:
-        for entry in results:
-            compile_time = entry['compile_time']
-            total_compile_time += compile_time
-            if 'times' in entry.keys():
-                kernel_times = entry['times']
-                sum_kernel_time = sum(kernel_times)
-            else:
-                sum_kernel_time = 0
-            total_kernel_time += sum_kernel_time
-
-    total_time = end_time - start_time
-    method_time = method_time - total_compile_time - total_kernel_time
-    framework_time = total_time - (method_time + total_compile_time + total_kernel_time)
-
-    env['total_compile_time'] = total_compile_time
-    env['total_kernel_time'] = total_kernel_time
-    env['method_time'] = method_time
-    env['framework_time'] = framework_time
-    env['total_time'] = total_time
+    # get the seperate timings for the benchmarking process
+    overhead_time = 1000 * (perf_counter() - start_overhead_time)
+    env = util.get_total_timings(results, env, overhead_time)
     print(env)
     return results, env
 

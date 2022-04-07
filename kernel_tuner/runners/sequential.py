@@ -44,6 +44,7 @@ class SequentialRunner(object):
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
         self.compile_time = None
+        self.last_strategy_start_time = None
 
     def __enter__(self):
         return self
@@ -82,28 +83,19 @@ class SequentialRunner(object):
 
             #check if element is in the cache
             x_int = ",".join([str(i) for i in element])
-            if tuning_options.cache:
-                if x_int in tuning_options.cache:
-                    results.append(tuning_options.cache[x_int])
-                    continue
+            if tuning_options.cache and x_int in tuning_options.cache:
+                results.append(tuning_options.cache[x_int])
+                continue
 
             result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
-            self.compile_time = self.dev.time_after_compilation - self.dev.time_before_compilation
-            params['compile_time'] = self.compile_time
+            params['compile_time'] = self.dev.last_compilation_time
+            params['verification_time'] = self.dev.last_verification_time
 
             if result is None:
                 logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
                 params.update({ "kernel_time": 1e20 })
                 store_cache(x_int, params, tuning_options)
                 continue
-
-            #print and append to results
-            if isinstance(result, dict):
-                time = result["time"]
-            else:
-                time = result
-
-            params['kernel_time'] = time
 
             if isinstance(result, dict):
                 params.update(result)

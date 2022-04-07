@@ -17,8 +17,10 @@ except ImportError:
 
 
 class TorchPlaceHolder():
+
     def __init__(self):
         self.Tensor = Exception    #using Exception here as a type that will never be among kernel arguments
+
 
 class SkippableFailure(Exception):
     """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected"""
@@ -315,6 +317,31 @@ def get_thread_block_dimensions(params, block_size_names=None):
     block_size_y = params.get(block_size_names[1], 1)
     block_size_z = params.get(block_size_names[2], 1)
     return (int(block_size_x), int(block_size_y), int(block_size_z))
+
+
+def get_total_timings(results, env, overhead_time):
+    """ Sum all timings and put their totals in the env """
+    total_framework_time = 0
+    total_strategy_time = 0
+    total_compile_time = 0
+    total_verification_time = 0
+    total_kernel_time = 0
+    if results:
+        for result in results:
+            total_framework_time += result['framework_time']
+            total_strategy_time += result['strategy_time']
+            total_compile_time += result['compile_time']
+            total_verification_time += result['verification_time']
+            total_kernel_time += sum(result['times']) if 'times' in result.keys() else 0
+
+    # add the seperate times to the environment dict
+    env['total_framework_time'] = total_framework_time
+    env['total_strategy_time'] = total_strategy_time
+    env['total_compile_time'] = total_compile_time
+    env['total_verification_time'] = total_verification_time
+    env['total_kernel_time'] = total_kernel_time
+    env['overhead_time'] = overhead_time - (total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_kernel_time)
+    return env
 
 
 def print_config_output(tune_params, params, quiet, metrics, units):
