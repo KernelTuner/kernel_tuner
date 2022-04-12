@@ -6,7 +6,6 @@ import logging
 from time import perf_counter
 
 import numpy
-from pytools import T
 import scipy.optimize
 from kernel_tuner import util
 
