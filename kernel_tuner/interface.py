@@ -494,8 +494,8 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     selected_runner = SimulationRunner if simulation_mode is True else SequentialRunner
     with selected_runner(kernelsource, kernel_options, device_options, iterations, observers) as runner:
 
-        #the user-specified function may or may not have an optional atol argument;
-        #we normalize it so that it always accepts atol.
+        # the user-specified function may or may not have an optional atol argument;
+        # we normalize it so that it always accepts atol.
         tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
         #process cache
@@ -508,7 +508,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
             tuning_options.cache = {}
             tuning_options.cachefile = None
 
-        #call the strategy to execute the tuning process
+        # call the strategy to execute the tuning process
         selected_runner.last_strategy_start_time = perf_counter()
         results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 

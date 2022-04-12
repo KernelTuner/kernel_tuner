@@ -35,16 +35,12 @@ class SequentialRunner(object):
         self.units = self.dev.units
         self.quiet = device_options.quiet
         self.kernel_source = kernel_source
-
         self.warmed_up = False
-
         self.simulation_mode = False
+        self.last_strategy_start_time = None
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
-
-        self.compile_time = None
-        self.last_strategy_start_time = None
 
     def __enter__(self):
         return self
@@ -88,8 +84,11 @@ class SequentialRunner(object):
                 continue
 
             result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
-            params['compile_time'] = self.dev.last_compilation_time
-            params['verification_time'] = self.dev.last_verification_time
+
+            if self.dev.last_compilation_time is not None:
+                params['compile_time'] = self.dev.last_compilation_time
+            if self.dev.last_verification_time is not None:
+                params['verification_time'] = self.dev.last_verification_time
 
             if result is None:
                 logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')

@@ -83,6 +83,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
         cached_result['strategy_time'] = last_strategy_time
         # TODO check if the new strategy time actually ends up in the returned results (not in the cache file!)
         results.append(cached_result)
+        # upon returning from this function control will be given back to the strategy, so reset the start time
         runner.last_strategy_start_time = perf_counter()
         return cached_result["time"]
 

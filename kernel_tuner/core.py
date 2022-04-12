@@ -251,11 +251,10 @@ class DeviceInterface(object):
         self.units = dev.units
         self.name = dev.name
         self.max_threads = dev.max_threads
+        self.last_compilation_time = None
+        self.last_verification_time = None
         if not quiet:
             print("Using: " + self.dev.name)
-
-        self.time_before_compilation = None
-        self.time_after_compilation = None
 
         dev.__enter__()
 
@@ -347,6 +346,10 @@ class DeviceInterface(object):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
         start_compilation = perf_counter()
         instance_string = util.get_instance_string(params)
+
+        # reset previous timers
+        self.last_compilation_time = None
+        self.last_verification_time = None
 
         logging.debug('compile_and_benchmark ' + instance_string)
         mem_usage = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 1)
