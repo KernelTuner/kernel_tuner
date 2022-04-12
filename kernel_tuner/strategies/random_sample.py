@@ -1,10 +1,8 @@
 """ Iterate over a random sample of the parameter space """
 from __future__ import print_function
-
-import itertools
 import numpy
 
-from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
 
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -31,25 +29,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
-    tune_params = tuning_options.tune_params
+    # create the search space
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
 
+    # get the samples
     fraction = tuning_options.strategy_options.get("fraction", 0.1)
-
-    # compute cartesian product of all tunable parameters
-    parameter_space = itertools.product(*tune_params.values())
-
-    # check for search space restrictions
-    if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(tuning_options.restrictions, p, tune_params.keys(), tuning_options.verbose), parameter_space)
-
-    # reduce parameter space to a random sample using sample_fraction
-    parameter_space = numpy.array(list(parameter_space))
-    size = len(parameter_space)
-    fraction = int(numpy.ceil(size * fraction))
-    sample_indices = numpy.random.choice(range(size), size=fraction, replace=False)
-    parameter_space = parameter_space[sample_indices]
+    num_samples = int(numpy.ceil(searchspace.size * fraction))
+    samples = searchspace.get_random_sample(num_samples)
 
     # call the runner
-    results, env = runner.run(parameter_space, kernel_options, tuning_options)
+    results, env = runner.run(samples, kernel_options, tuning_options)
 
     return results, env

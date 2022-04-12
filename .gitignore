@@ -15,3 +15,8 @@ examples/cuda/output
 deploy_key
 *.mod
 temp_*.*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
