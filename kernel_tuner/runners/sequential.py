@@ -93,9 +93,17 @@ class SequentialRunner(object):
 
             if result is None:
                 logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
-                params.update({ "kernel_time": 1e20 })
+                params.update({ "time": 1e20 })
                 store_cache(x_int, params, tuning_options)
                 continue
+
+            # print and append to results
+            if isinstance(result, dict):
+                time = result["time"]
+            else:
+                time = result
+
+            params['time'] = time
 
             if isinstance(result, dict):
                 params.update(result)

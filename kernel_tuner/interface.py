@@ -514,7 +514,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
 
         #finished iterating over search space
         if not device_options.quiet:
-            if results:    #checks if results is not empty
+            if results:    # checks if results is not empty
                 best_config = min(results, key=lambda x: x['time'])
                 units = getattr(runner, "units", None)
                 print("best performing configuration:")
