@@ -102,11 +102,12 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     # get the actual framework time by estimating based on other times
     total_time = 1000 * (perf_counter() - start_time)
     result = res[0]
-    compile_time = result['compile_time']
-    verification_time = result['verification_time']
-    total_kernel_time = sum(result['times']) if 'times' in result.keys() else 0
-    # substract the other times from the total time to determine the framework time
-    result['framework_time'] = max(total_time - (compile_time + verification_time + total_kernel_time), 0)
+    if isinstance(result, dict) and 'compile_time' in result and 'verification_time' in result and 'times' in result:
+        compile_time = result['compile_time']
+        verification_time = result['verification_time']
+        total_kernel_time = sum(result['times']) if 'times' in result.keys() else 0
+        # substract the other times from the total time to determine the framework time
+        result['framework_time'] = max(total_time - (compile_time + verification_time + total_kernel_time), 0)
     result['strategy_time'] = last_strategy_time
 
     # upon returning from this function control will be given back to the strategy, so reset the start time

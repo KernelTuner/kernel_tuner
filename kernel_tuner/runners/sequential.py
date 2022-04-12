@@ -103,7 +103,6 @@ class SequentialRunner(object):
                 time = result
 
             params['time'] = time
-
             if isinstance(result, dict):
                 params.update(result)
 
