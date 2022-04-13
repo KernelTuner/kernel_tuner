@@ -528,7 +528,6 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     # get the seperate timings for the benchmarking process
     overhead_time = 1000 * (perf_counter() - start_overhead_time)
     env = util.get_total_timings(results, env, overhead_time)
-    print(env)
     return results, env
 
 
