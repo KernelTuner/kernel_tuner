@@ -1,9 +1,7 @@
 """ The default strategy that iterates through the whole parameter space """
 from __future__ import print_function
 
-import itertools
-
-from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
 
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -30,18 +28,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
-    tune_params = tuning_options.tune_params
-    restrictions = tuning_options.restrictions
-    verbose = tuning_options.verbose
+    # create the searchspace
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
 
-    # compute cartesian product of all tunable parameters
-    parameter_space = itertools.product(*tune_params.values())
-
-    # check for search space restrictions
-    if restrictions is not None:
-        parameter_space = filter(lambda p: util.check_restrictions(restrictions, p, tune_params.keys(), verbose),
-                                 parameter_space)
-
-    results, env = runner.run(parameter_space, kernel_options, tuning_options)
+    # call the runner
+    results, env = runner.run(searchspace.list, kernel_options, tuning_options)
 
     return results, env
