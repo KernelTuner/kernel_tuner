@@ -6,6 +6,7 @@ from collections import namedtuple
 import resource
 import logging
 import numpy as np
+from time import perf_counter
 
 try:
     import cupy as cp
@@ -19,13 +20,10 @@ from kernel_tuner.c import CFunctions
 from kernel_tuner.nvml import NVMLObserver
 import kernel_tuner.util as util
 
-
 try:
     import torch
 except ImportError:
     torch = util.TorchPlaceHolder()
-
-
 
 _KernelInstance = namedtuple("_KernelInstance", ["name", "kernel_source", "kernel_string", "temp_files", "threads", "grid", "params", "arguments"])
 
@@ -253,6 +251,8 @@ class DeviceInterface(object):
         self.units = dev.units
         self.name = dev.name
         self.max_threads = dev.max_threads
+        self.last_compilation_time = None
+        self.last_verification_time = None
         if not quiet:
             print("Using: " + self.dev.name)
 
@@ -315,7 +315,7 @@ class DeviceInterface(object):
         #run the kernel
         check = self.run_kernel(func, gpu_args, instance)
         if not check:
-            return #runtime failure occured that should be ignored, skip correctness check
+            return    #runtime failure occured that should be ignored, skip correctness check
 
         #retrieve gpu results to host memory
         result_host = []
@@ -344,8 +344,12 @@ class DeviceInterface(object):
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
-
+        start_compilation = perf_counter()
         instance_string = util.get_instance_string(params)
+
+        # reset previous timers
+        self.last_compilation_time = None
+        self.last_verification_time = None
 
         logging.debug('compile_and_benchmark ' + instance_string)
         mem_usage = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 1)
@@ -373,11 +377,17 @@ class DeviceInterface(object):
             if kernel_options.texmem_args is not None:
                 self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
+            # stop compilation stopwatch and convert to miliseconds
+            self.last_compilation_time = 1000 * (perf_counter() - start_compilation)
+
             #test kernel for correctness and benchmark
+            start_verification = perf_counter()
             if tuning_options.answer is not None or tuning_options.verify is not None:
                 self.check_kernel_output(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
+            # stop verification stopwatch and convert to miliseconds
+            self.last_verification_time = 1000 * (perf_counter() - start_verification)
 
-            #benchmark
+            # benchmark
             result = self.benchmark(func, gpu_args, instance, verbose)
 
         except Exception as e:
@@ -506,23 +516,23 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         if answer[i] is not None:    #skip None elements in the answer list
             if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: " +
-                                    str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: " + str(answer[i].dtype) +
+                                    " != " + str(arg.dtype) + ".")
                 if answer[i].size != arg.size:
-                    raise TypeError(f"Element {i} of the expected results list has a size different from " + "the kernel argument: " +
-                                    str(answer[i].size) + " != " + str(arg.size) + ".")
+                    raise TypeError(f"Element {i} of the expected results list has a size different from " + "the kernel argument: " + str(answer[i].size) +
+                                    " != " + str(arg.size) + ".")
             elif isinstance(answer[i], torch.Tensor) and isinstance(arg, torch.Tensor):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: " +
-                                    str(answer[i].dtype) + " != " + str(arg.dtype) + ".")
+                    raise TypeError(f"Element {i} of the expected results list is not of the same dtype as the kernel output: " + str(answer[i].dtype) +
+                                    " != " + str(arg.dtype) + ".")
                 if answer[i].size() != arg.size():
-                    raise TypeError(f"Element {i} of the expected results list has a size different from " + "the kernel argument: " +
-                                    str(answer[i].size) + " != " + str(arg.size) + ".")
+                    raise TypeError(f"Element {i} of the expected results list has a size different from " + "the kernel argument: " + str(answer[i].size) +
+                                    " != " + str(arg.size) + ".")
 
             elif isinstance(answer[i], np.number) and isinstance(arg, np.number):
                 if answer[i].dtype != arg.dtype:
-                    raise TypeError(f"Element {i} of the expected results list is not the same as the kernel output: " + str(answer[i].dtype) +
-                                    " != " + str(arg.dtype) + ".")
+                    raise TypeError(f"Element {i} of the expected results list is not the same as the kernel output: " + str(answer[i].dtype) + " != " +
+                                    str(arg.dtype) + ".")
             else:
                 #either answer[i] and argument have different types or answer[i] is not a numpy type
                 if not isinstance(answer[i], (np.ndarray, cp.ndarray, torch.Tensor)) or not isinstance(answer[i], np.number):
@@ -571,7 +581,6 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     return correct
 
 
-
 #these functions facilitate compiling templated kernels with PyCuda
 def split_argument_list(argument_list):
     """split all arguments in a list into types and names"""
@@ -586,19 +595,23 @@ def split_argument_list(argument_list):
         name_list.append(match.group(2).strip())
     return type_list, name_list
 
+
 def apply_template_typenames(type_list, templated_typenames):
     """replace the typename tokens in type_list with their templated typenames"""
+
     def replace_typename_token(matchobj):
         """function for a whitespace preserving token regex replace"""
         #replace only the match, leaving the whitespace around it as is
         return matchobj.group(1) + templated_typenames[matchobj.group(2)] + matchobj.group(3)
+
     for i, arg_type in enumerate(type_list):
-        for k,v in templated_typenames.items():
+        for k, v in templated_typenames.items():
             #if the templated typename occurs as a token in the string, meaning that it is enclosed in
             #beginning of string or whitespace, and end of string, whitespace or star
             regex = r"(^|\s+)(" + k + r")($|\s+|\*)"
             sub = re.sub(regex, replace_typename_token, arg_type, re.S)
             type_list[i] = sub
+
 
 def get_templated_typenames(template_parameters, template_arguments):
     """based on the template parameters and arguments, create dict with templated typenames"""
@@ -608,6 +621,7 @@ def get_templated_typenames(template_parameters, template_arguments):
             typename = param[9:]
             templated_typenames[typename] = template_arguments[i]
     return templated_typenames
+
 
 def wrap_templated_kernel(kernel_string, kernel_name):
     """rewrite kernel_string to insert wrapper function for templated kernel"""
@@ -625,7 +639,7 @@ def wrap_templated_kernel(kernel_string, kernel_name):
 
     template_parameters = match.group(1).split(',')
     argument_list = match.group(2).split(',')
-    argument_list = [s.strip() for s in argument_list] #remove extra whitespace around 'type name' strings
+    argument_list = [s.strip() for s in argument_list]    #remove extra whitespace around 'type name' strings
 
     type_list, name_list = split_argument_list(argument_list)
 

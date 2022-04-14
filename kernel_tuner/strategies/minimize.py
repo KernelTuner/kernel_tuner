@@ -3,6 +3,7 @@ from __future__ import print_function
 
 from collections import OrderedDict
 import logging
+from time import perf_counter
 
 import numpy
 import scipy.optimize
@@ -58,6 +59,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
 def _cost_func(x, kernel_options, tuning_options, runner, results):
     """ Cost function used by minimize """
+    start_time = perf_counter()
+    last_strategy_time = 1000 * (start_time - runner.last_strategy_start_time)
 
     error_time = 1e20
     logging.debug('_cost_func called')
@@ -76,8 +79,13 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     # we cache snapped values, since those correspond to results for an actual instance of the kernel
     x_int = ",".join([str(i) for i in params])
     if x_int in tuning_options.cache:
-        results.append(tuning_options.cache[x_int])
-        return tuning_options.cache[x_int]["time"]
+        cached_result = tuning_options.cache[x_int]
+        cached_result['strategy_time'] = last_strategy_time
+        # TODO check if the new strategy time actually ends up in the returned results (not in the cache file!)
+        results.append(cached_result)
+        # upon returning from this function control will be given back to the strategy, so reset the start time
+        runner.last_strategy_start_time = perf_counter()
+        return cached_result["time"]
 
     # check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:
@@ -91,10 +99,24 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     # compile and benchmark this instance
     res, _ = runner.run([params], kernel_options, tuning_options)
 
+    # get the actual framework time by estimating based on other times
+    total_time = 1000 * (perf_counter() - start_time)
+    result = res[0]
+    if isinstance(result, dict) and 'compile_time' in result and 'verification_time' in result and 'times' in result:
+        compile_time = result['compile_time']
+        verification_time = result['verification_time']
+        total_kernel_time = sum(result['times']) if 'times' in result.keys() else 0
+        # substract the other times from the total time to determine the framework time
+        result['framework_time'] = max(total_time - (compile_time + verification_time + total_kernel_time), 0)
+    result['strategy_time'] = last_strategy_time
+
+    # upon returning from this function control will be given back to the strategy, so reset the start time
+    runner.last_strategy_start_time = perf_counter()
+
     # append to tuning results
     if res:
-        results.append(res[0])
-        return res[0]['time']
+        results.append(result)
+        return result['time']
 
     return error_time
 

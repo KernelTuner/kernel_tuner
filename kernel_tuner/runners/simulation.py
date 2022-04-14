@@ -1,7 +1,6 @@
 """ The simulation runner for sequentially tuning the parameter space based on cached data """
 from __future__ import print_function
 
-from collections import OrderedDict
 import logging
 
 from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output, get_instance_string
@@ -20,6 +19,7 @@ class SimulationLangFunction(object):
         self.iterations = iterations
         self.current_module = None
         self.compiler_options = compiler_options or []
+        self.last_strategy_start_time = None
 
         env = dict()
         env["device_name"] = "Simulation"

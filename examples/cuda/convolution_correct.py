@@ -47,7 +47,9 @@ def tune():
     tune_params["filter_width"] = [filter_size[0]]
     tune_params["filter_height"] = [filter_size[1]]
 
+    #tune_params["block_size_x"] = [16*i for i in range(1,3)]
     tune_params["block_size_x"] = [16*i for i in range(1,9)]
+    #tune_params["block_size_y"] = [2**i for i in range(1,5)]
     tune_params["block_size_y"] = [2**i for i in range(1,6)]
 
     tune_params["tile_size_x"] = [2**i for i in range(3)]
@@ -65,7 +67,7 @@ def tune():
     tune_params["filter_height"] = [filter_size[1]]
     results = kernel_tuner.run_kernel("convolution_naive", kernel_string,
         problem_size, args, params,
-        grid_div_y=["block_size_y"], grid_div_x=["block_size_x"])
+        grid_div_y=["block_size_y"], grid_div_x=["block_size_x"], lang='cupy')
 
     #set non-output fields to None
     answer = [results[0], None, None]
@@ -73,8 +75,17 @@ def tune():
     #start kernel tuning with correctness verification
     return kernel_tuner.tune_kernel("convolution_kernel", kernel_string,
         problem_size, args, tune_params,
-        grid_div_y=grid_div_y, grid_div_x=grid_div_x, verbose=True, cmem_args=cmem_args, answer=answer)
+        grid_div_y=grid_div_y, grid_div_x=grid_div_x, verbose=True, cmem_args=cmem_args, answer=answer, lang='cupy')
 
 
 if __name__ == "__main__":
-    tune()
+    import time
+    s1 = time.time()*1000
+    results = tune()
+
+    e1 = time.time()*1000
+    print("\n Actualy time used:", e1-s1)
+    import json
+    with open("convolution_RTX_2070.json", 'w') as fp:
+        json.dump(results, fp)
+
