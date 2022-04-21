@@ -451,6 +451,10 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
 
+    # if there are string in the restrictions, parse them to functions (increases restrictions check performance significantly)
+    if isinstance(restrictions, list) and len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions):
+        restrictions = util.parse_restrictions(restrictions)
+
     if iterations < 1:
         raise ValueError("Iterations should be at least one!")
 

@@ -8,6 +8,7 @@ import tempfile
 import logging
 import warnings
 import re
+from types import FunctionType
 
 import numpy as np
 from constraint import Constraint, AllDifferentConstraint, AllEqualConstraint, MaxSumConstraint, ExactSumConstraint, MinSumConstraint, InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint, FunctionConstraint
@@ -131,7 +132,7 @@ def check_block_size_params_names_list(block_size_names, tune_params):
             warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
 
 
-def check_restrictions(restrictions, params, verbose):
+def check_restrictions(restrictions, params: dict, verbose: bool):
     """ check whether a specific instance meets the search space restrictions """
     valid = True
     if callable(restrictions):
@@ -588,6 +589,28 @@ def normalize_verify_function(v):
     if has_kw_argument(v, 'atol'):
         return v
     return lambda answer, result_host, atol: v(answer, result_host)
+
+
+def parse_restrictions(restrictions: list):
+    """" parses restrictions from a list of strings into a callable function """
+
+    # rewrite the restrictions so variables are singled out
+    regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
+    suffix = ' and '
+    parsed_restrictions = ""
+    for restriction in restrictions:
+        parsed_restrictions += re.sub(regex_match_variable, r'params["\1"]', restriction) + suffix
+
+    # tidy up the code by removing the last suffix and unecessary spaces
+    parsed_restrictions = parsed_restrictions[:-len(suffix)]
+    parsed_restrictions = parsed_restrictions.strip()
+    parsed_restrictions = " ".join(parsed_restrictions.split())
+
+    # compile into a function
+    parsed_restrictions = f"def restrictions(params): return {parsed_restrictions} \n"
+    code_object = compile(parsed_restrictions, '<string>', 'exec')
+    func = FunctionType(code_object.co_consts[0], globals())
+    return func
 
 
 def process_cache(cache, kernel_options, tuning_options, runner):

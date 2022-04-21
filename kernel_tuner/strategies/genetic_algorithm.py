@@ -140,7 +140,7 @@ def random_population(pop_size, tune_params, tuning_options, max_threads):
     assert pop_size < option_space
     while len(population) < pop_size:
         dna = [random.choice(v) for v in tune_params.values()]
-        if not dna in population and util.config_valid(dna, tuning_options, max_threads):
+        if dna not in population and util.config_valid(dna, tuning_options, max_threads):
             population.append(dna)
     return population
 
@@ -153,6 +153,8 @@ def random_val(index, tune_params):
 
 def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
     """Mutate DNA with 1/mutation_chance chance"""
+    # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
+
     dna_out = dna[:]
     if int(random.random() * mutation_chance) == 0:
         attempts = 20
@@ -170,6 +172,7 @@ def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
 
 def single_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at a random index"""
+    # check if you can do the crossovers using the neighbor index: check which valid parameter configuration is closest to the crossover, probably best to use "adjacent" as it is least strict?
     pos = int(random.random() * (len(dna1)))
     return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
 
