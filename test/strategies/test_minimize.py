@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from collections import OrderedDict
+from time import perf_counter
 from kernel_tuner.strategies import minimize
 from kernel_tuner.interface import Options
 
@@ -15,6 +16,7 @@ def fake_runner():
         'time': 5
     }
     runner = Mock()
+    runner.last_strategy_start_time = perf_counter()
     runner.run.return_value = [[fake_result], None]
     return runner
 

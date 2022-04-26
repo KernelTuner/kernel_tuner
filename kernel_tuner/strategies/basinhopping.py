@@ -37,7 +37,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     method = tuning_options.strategy_options.get("method", "L-BFGS-B")
     T = tuning_options.strategy_options.get("T", 1.0)
 
-    #s cale variables in x to make 'eps' relevant for multiple variables
+    # scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
 
     bounds, x0, eps = get_bounds_x0_eps(tuning_options)

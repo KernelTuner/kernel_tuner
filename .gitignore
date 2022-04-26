@@ -16,7 +16,8 @@ deploy_key
 *.mod
 temp_*.*
 
-# macOS
+### macOS ###
+# General
 .DS_Store
 .AppleDouble
 .LSOverride
