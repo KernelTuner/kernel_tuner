@@ -18,10 +18,11 @@ max_threads = 1024
 
 # 9 combinations without restrictions
 simple_tune_params = OrderedDict()
-simple_tune_params['x'] = [1, 2, 3]
+simple_tune_params['x'] = [1, 1.5, 2, 3]
 simple_tune_params['y'] = [4, 5.5]
 simple_tune_params['z'] = ['string_1', 'string_2']
-simple_tuning_options = Options(dict(restrictions=[], tune_params=simple_tune_params))
+restrict = [lambda x, y, z: x != 1.5]
+simple_tuning_options = Options(dict(restrictions=restrict, tune_params=simple_tune_params))
 simple_searchspace = Searchspace(simple_tuning_options, max_threads)
 
 # 3.1 million combinations, of which 10600 pass the restrictions
@@ -73,7 +74,7 @@ def test_param_index_lookup():
     first = tuple([1, 4, 'string_1'])
     last = tuple([3, 5.5, 'string_2'])
     assert simple_searchspace.get_param_indices(first) == (0, 0, 0)
-    assert simple_searchspace.get_param_indices(last) == (2, 1, 1)
+    assert simple_searchspace.get_param_indices(last) == (3, 1, 1)
 
 
 def test_random_sample():
@@ -105,49 +106,62 @@ def test_random_sample():
         assert False
 
 
+def __test_neighbors_prebuilt(param_config: tuple, expected_neighbors: list, neighbor_method: str):
+    simple_searchspace_prebuilt = Searchspace(simple_tuning_options, max_threads, build_neighbors_index=True, neighbor_method=neighbor_method)
+    neighbors = simple_searchspace_prebuilt.get_neighbors(param_config)
+    assert param_config not in neighbors
+    for neighbor in neighbors:
+        assert neighbor in expected_neighbors
+    assert len(neighbors) == len(expected_neighbors)
+
+
+def __test_neighbors_direct(param_config: tuple, expected_neighbors: list, neighbor_method: str):
+    neighbors = simple_searchspace.get_neighbors(param_config, neighbor_method)
+    assert param_config not in neighbors
+    for neighbor in neighbors:
+        assert neighbor in expected_neighbors
+    assert len(neighbors) == len(expected_neighbors)
+
+
+def __test_neighbors(param_config: tuple, expected_neighbors: list, neighbor_method: str):
+    __test_neighbors_prebuilt(param_config, expected_neighbors, neighbor_method)
+    __test_neighbors_direct(param_config, expected_neighbors, neighbor_method)
+
+
 def test_neighbors_hamming():
     """ test whether the neighbors with Hamming distance are as expected """
     test_config = tuple([1, 4, 'string_1'])
     expected_neighbors = [(2, 4, 'string_1'), (3, 4, 'string_1'), (1, 5.5, 'string_1'), (1, 4, 'string_2')]
-
-    # prebuilt
-    simple_searchspace_prebuilt = Searchspace(simple_tuning_options, max_threads, build_neighbors_index=True, neighbor_method='Hamming')
-    neighbors = simple_searchspace_prebuilt.get_neighbors(test_config)
-    assert len(neighbors) == len(expected_neighbors)
-    assert test_config not in neighbors
-    for neighbor in neighbors:
-        assert neighbor in expected_neighbors
-
-    # direct
-    neighbors = simple_searchspace.get_neighbors(test_config, 'Hamming')
-    assert len(neighbors) == len(expected_neighbors)
-    assert test_config not in neighbors
-    for neighbor in neighbors:
-        assert neighbor in expected_neighbors
+    __test_neighbors(test_config, expected_neighbors, 'Hamming')
 
 
 def test_neighbors_strictlyadjacent():
     """ test whether the strictly adjacent neighbors are as expected """
     test_config = tuple([1, 4, 'string_1'])
-    expected_neighbors = [(2, 5.5, 'string_2'), (1, 5.5, 'string_2'), (2, 5.5, 'string_1'), (1, 5.5, 'string_1'), (2, 4, 'string_2'), (1, 4, 'string_2'),
-                          (2, 4, 'string_1')]
+    expected_neighbors = [(1, 5.5, 'string_2'), (1, 5.5, 'string_1'), (1, 4, 'string_2')]
 
-    # prebuilt
-    simple_searchspace_prebuilt = Searchspace(simple_tuning_options, max_threads, build_neighbors_index=True, neighbor_method='strictly-adjacent')
-    neighbors = simple_searchspace_prebuilt.get_neighbors(test_config)
-    assert len(neighbors) == len(expected_neighbors)
-    assert test_config not in neighbors
-    for neighbor in neighbors:
-        assert neighbor in expected_neighbors
-
-    # direct
-    neighbors = simple_searchspace.get_neighbors(test_config, 'strictly-adjacent')
-    assert len(neighbors) == len(expected_neighbors)
-    assert test_config not in neighbors
-    for neighbor in neighbors:
-        assert neighbor in expected_neighbors
+    __test_neighbors(test_config, expected_neighbors, 'strictly-adjacent')
 
 
 def test_neighbors_adjacent():
     """ test whether the adjacent neighbors are as expected """
-    pass
+    test_config = tuple([1, 4, 'string_1'])
+    # TODO check if the expected neighbors are correct
+    expected_neighbors = [(2, 5.5, 'string_2'), (1, 5.5, 'string_2'), (2, 5.5, 'string_1'), (1, 5.5, 'string_1'), (2, 4, 'string_2'), (1, 4, 'string_2'),
+                          (2, 4, 'string_1')]
+
+    __test_neighbors(test_config, expected_neighbors, 'adjacent')
+
+
+def test_neighbors_fictious():
+    """ test whether the neighbors are as expected for a fictious parameter configuration (i.e. not existing in the search space due to restrictions) """
+    test_config = tuple([1.5, 4, 'string_1'])
+    expected_neighbors_hamming = [(1, 4, 'string_1'), (2, 4, 'string_1'), (3, 4, 'string_1')]
+    expected_neighbors_strictlyadjacent = [(2, 5.5, 'string_2'), (1, 5.5, 'string_2'), (2, 5.5, 'string_1'), (1, 5.5, 'string_1'), (2, 4, 'string_2'),
+                                           (1, 4, 'string_2'), (2, 4, 'string_1'), (1, 4, 'string_1')]
+
+    expected_neighbors_adjacent = expected_neighbors_strictlyadjacent
+
+    __test_neighbors_direct(test_config, expected_neighbors_hamming, 'Hamming')
+    __test_neighbors_direct(test_config, expected_neighbors_strictlyadjacent, 'strictly-adjacent')
+    __test_neighbors_direct(test_config, expected_neighbors_adjacent, 'adjacent')

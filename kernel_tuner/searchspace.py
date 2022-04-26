@@ -134,18 +134,37 @@ class Searchspace():
         return matching_indices
 
     def __get_neighbors_indices_strictlyadjacent(self, param_config_index: int = None, param_config: tuple = None) -> List[int]:
-        """ get the neighbors using strictly adjacent distance from the parameter configuration """
+        """ get the neighbors using strictly adjacent distance from the parameter configuration (parameter index absolute difference == 1) """
         param_config_value_indices = self.get_param_indices(param_config) if param_config_index is None else self.params_values_indices[param_config_index]
         # calculate the absolute difference between the parameter value indices
         abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices)
         # get the param config indices where the difference is one or less for each position
-        matching_indices = (np.max(abs_index_difference, 1) <= 1).nonzero()[0]
+        matching_indices = (np.max(abs_index_difference, axis=1) <= 1).nonzero()[0]
         # as the selected param config does not differ anywhere, remove it from the matches
-        matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
+        if param_config_index is not None:
+            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
         return matching_indices
 
-    def __get_neighbors_indices_adjacent(self, param_config_index: int, param_config: tuple) -> List[int]:
-        """ get the neighbors using strictly adjacent distance from the parameter configuration """
+    def __get_neighbors_indices_adjacent(self, param_config_index: int = None, param_config: tuple = None) -> List[int]:
+        """ get the neighbors using adjacent distance from the parameter configuration (parameter index absolute difference >= 1)"""
+        print(param_config_index, param_config)
+        param_config_value_indices = self.get_param_indices(param_config) if param_config_index is None else self.params_values_indices[param_config_index]
+        # calculate the difference between the parameter value indices
+        index_difference = self.params_values_indices - param_config_value_indices
+        # transpose to get the param indices difference per parameter instead of per param config
+        index_difference_transposed = index_difference.transpose()
+        # for each parameter get the closest upper and lower parameter (absolute index difference >= 1)
+        upper_bound = tuple(
+            np.min(index_difference_transposed[p][(index_difference_transposed[p] > 0).nonzero()], initial=np.PINF) for p in range(self.num_params))
+        lower_bound = tuple(
+            np.max(index_difference_transposed[p][(index_difference_transposed[p] < 0).nonzero()], initial=np.NINF) for p in range(self.num_params))
+        # return the indices where each parameter is within bounds
+        matching_indices = np.logical_and(index_difference <= upper_bound, index_difference >= lower_bound).all(axis=1).nonzero()[0]
+        # as the selected param config does not differ anywhere, remove it from the matches
+        if param_config_index is not None:
+            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
+        return matching_indices
+
         # TODO this is not yet correct, maybe do it in the same style as __get_neighbors_indices_strictlyadjacent except using minimization?
         params_values_indices = self.params_values_indices[param_config_index]
         # for each parameter in the config, take one higher and lower parameter value, if these are valid they are neighbors
@@ -167,10 +186,13 @@ class Searchspace():
         # for each parameter configuration, find the neighboring parameter configurations
         self.__prepare_neighbors_index()
         if neighbor_method == 'strictly-adjacent':
-            return np.array(list(self.__get_neighbors_indices_strictlyadjacent(param_config_index) for param_config_index in self.indices))
+            return np.array(
+                list(
+                    self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
+                    for param_config_index, param_config in enumerate(self.list)))
         elif neighbor_method == 'adjacent':
             return np.array(
-                list(self.__get_neighbors_indices_adjacent(param_config, param_config_index) for param_config_index, param_config in enumerate(self.list)))
+                list(self.__get_neighbors_indices_adjacent(param_config_index, param_config) for param_config_index, param_config in enumerate(self.list)))
         else:
             raise NotImplementedError()
 
@@ -212,8 +234,7 @@ class Searchspace():
             return self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
         elif neighbor_method == 'adjacent':
             return self.__get_neighbors_indices_adjacent(param_config_index, param_config)
-        else:
-            raise ValueError(f"The neighbor method {neighbor_method} is not in {supported_neighbor_methods}")
+        raise ValueError(f"The neighbor method {neighbor_method} is not in {supported_neighbor_methods}")
 
     def get_neighbors(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
         """ Get the neighbors for a parameter configuration """
