@@ -16,6 +16,22 @@ except ImportError:
     cp = np
 
 
+# number of special values to insert when a configuration cannot be measured
+
+class ErrorConfig:
+    def __str__(self): return self.__class__.__name__
+    def __repr__(self): return self.__class__.__name__
+
+class InvalidConfig(ErrorConfig):
+    pass
+
+class CompilationFailedConfig(ErrorConfig):
+    pass
+
+class RuntimeFailedConfig(ErrorConfig):
+    pass
+
+
 class TorchPlaceHolder():
 
     def __init__(self):

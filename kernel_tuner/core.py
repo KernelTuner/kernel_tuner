@@ -292,6 +292,7 @@ class DeviceInterface(object):
                 logging.debug('benchmark fails due to runtime failure too many resources required')
                 if verbose:
                     print(f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch")
+                return util.RuntimeFailedConfig()
             else:
                 logging.debug('benchmark encountered runtime failure: ' + str(e))
                 print("Error while benchmarking:", instance.name)
@@ -358,14 +359,14 @@ class DeviceInterface(object):
         verbose = tuning_options.verbose
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
-        if instance is None:
-            return None
+        if isinstance(instance, util.ErrorConfig):
+            return instance
 
         try:
             #compile the kernel
             func = self.compile_kernel(instance, verbose)
             if func is None:
-                return None
+                return util.CompilationFailedConfig()
 
             #add shared memory arguments to compiled module
             if kernel_options.smem_args is not None:
@@ -458,7 +459,7 @@ class DeviceInterface(object):
         if np.prod(threads) > self.dev.max_threads:
             if verbose:
                 print(f"skipping config {util.get_instance_string(params)} reason: too many threads per block")
-            return None
+            return util.InvalidConfig()
 
         #obtain the kernel_string and prepare additional files, if any
         name, kernel_string, temp_files = kernel_source.prepare_list_of_files(kernel_options.kernel_name, params, grid, threads,

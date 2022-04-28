@@ -4,7 +4,7 @@ from __future__ import print_function
 from collections import OrderedDict
 import logging
 
-from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output
+from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output, ErrorConfig
 from kernel_tuner.core import DeviceInterface
 
 
@@ -90,9 +90,9 @@ class SequentialRunner(object):
             if self.dev.last_verification_time is not None:
                 params['verification_time'] = self.dev.last_verification_time
 
-            if result is None:
+            if isinstance(result, ErrorConfig):
                 logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
-                params.update({ "time": 1e20 })
+                params.update({ "time": result   })
                 store_cache(x_int, params, tuning_options)
                 continue
 
