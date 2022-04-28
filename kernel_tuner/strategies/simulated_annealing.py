@@ -5,7 +5,7 @@ import random
 import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner.strategies.genetic_algorithm import random_val
+from kernel_tuner.searchspace import Searchspace
 
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -38,6 +38,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = False
     args = (kernel_options, tuning_options, runner, results)
     tune_params = tuning_options.tune_params
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
 
     # optimization parameters
     T = tuning_options.strategy_options.get("T", 1.0)
@@ -45,10 +46,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
     alpha = tuning_options.strategy_options.get("alpha", 0.9)
     niter = tuning_options.strategy_options.get("maxiter", 20)
 
-    # generate random starting point and evaluate cost
-    pos = []
-    for i, _ in enumerate(tune_params.keys()):
-        pos.append(random_val(i, tune_params))
+    # get random starting point and evaluate cost
+    pos = list(searchspace.get_random_sample(1)[0])
     old_cost = _cost_func(pos, *args)
 
     if tuning_options.verbose:
@@ -59,9 +58,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
             print("iteration: ", c, "T", T, "cost: ", old_cost)
             c += 1
 
-        for i in range(niter):
+        for _ in range(niter):
 
-            new_pos = neighbor(pos, tune_params)
+            new_pos = neighbor(pos, searchspace)
             new_cost = _cost_func(new_pos, *args)
 
             ap = acceptance_prob(old_cost, new_cost, T)
@@ -76,7 +75,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
         T = T * alpha
 
     return results, runner.dev.get_environment()
-
 
 def acceptance_prob(old_cost, new_cost, T):
     """annealing equation, with modifications to work towards a lower value"""
@@ -93,26 +91,11 @@ def acceptance_prob(old_cost, new_cost, T):
     return np.exp(((old_cost-new_cost)/old_cost)/T)
 
 
-def neighbor(pos, tune_params):
+def neighbor(pos, searchspace: Searchspace):
     """return a random neighbor of pos"""
-    size = len(pos)
-    pos_out = []
-    # random mutation
-    # expected value is set that values all dimensions attempt to get mutated
-    for i in range(size):
-        key = list(tune_params.keys())[i]
-        values = tune_params[key]
-
-        if random.random() < 0.2:  # replace with random value
-            new_value = random_val(i, tune_params)
-        else:  # adjacent value
-            ind = values.index(pos[i])
-            if random.random() > 0.5:
-                ind += 1
-            else:
-                ind -= 1
-            ind = min(max(ind, 0), len(values)-1)
-            new_value = values[ind]
-
-        pos_out.append(new_value)
-    return pos_out
+    # Note: this is not the same as the previous implementation, because it is possible that non-edge parameters remain the same, but suggested configurations will all be within restrictions
+    neighbors = searchspace.get_neighbors(tuple(pos), neighbor_method='Hamming') if random.random() < 0.2 else searchspace.get_neighbors(tuple(pos), neighbor_method='strictly-adjacent')
+    if len(neighbors) > 0:
+        return list(random.choice(neighbors))
+    # if there are no neighbors, return a random configuration
+    return list(searchspace.get_random_sample(1)[0])

@@ -5,6 +5,7 @@ from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import MaxProdConstraint
 
 from constraint import Problem, Constraint, FunctionConstraint
+from random import choice
 import numpy as np
 
 supported_neighbor_methods = ['strictly-adjacent', 'adjacent', 'Hamming']
@@ -16,9 +17,9 @@ class Searchspace():
     def __init__(self, tuning_options: dict, max_threads: int, build_neighbors_index=False, neighbor_method=None) -> None:
         """ Build a searchspace using the variables and constraints.
             Optionally build the neighbors index - only faster if you repeatedly look up neighbors. Methods:
-                strictly-adjacent: differs +1 or -1 parameter value for each parameter (strictest)
-                adjacent: differs the least in each direction for each parameter    (least strict, hardest to implement)
-                Hamming: any parameter config with 1 different parameter is a neighbor  (easiest to implement)
+                strictly-adjacent: differs +1 or -1 parameter index value for each parameter
+                adjacent: picks closest parameter value in both directions for each parameter
+                Hamming: any parameter config with 1 different parameter value is a neighbor
         """
         self.tuning_options = tuning_options
         self.restrictions = tuning_options.restrictions
@@ -28,6 +29,7 @@ class Searchspace():
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
+        self.__neighbor_cache = dict()
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
@@ -35,6 +37,8 @@ class Searchspace():
         self.list, self.__numpy, self.__dict, self.size = self.__build_searchspace()
         self.num_params = len(self.list[0])
         self.indices = np.arange(self.size)
+        if neighbor_method is not None and neighbor_method != 'Hamming':
+            self.__prepare_neighbors_index()
         if build_neighbors_index:
             self.neighbors_index = self.__build_neighbors_index(neighbor_method)
 
@@ -92,6 +96,10 @@ class Searchspace():
 
         return parameter_space_list, parameter_space_numpy, parameter_space_dict, size_list
 
+    def is_param_config_valid(self, param_config: tuple) -> bool:
+        """ returns whether the parameter config is valid (i.e. is in the searchspace after restrictions) """
+        return self.get_param_config_index(param_config) is not None
+
     def get_list_dict(self) -> dict:
         """ get the internal dictionary """
         return self.__dict
@@ -147,7 +155,6 @@ class Searchspace():
 
     def __get_neighbors_indices_adjacent(self, param_config_index: int = None, param_config: tuple = None) -> List[int]:
         """ get the neighbors using adjacent distance from the parameter configuration (parameter index absolute difference >= 1)"""
-        print(param_config_index, param_config)
         param_config_value_indices = self.get_param_indices(param_config) if param_config_index is None else self.params_values_indices[param_config_index]
         # calculate the difference between the parameter value indices
         index_difference = self.params_values_indices - param_config_value_indices
@@ -165,18 +172,6 @@ class Searchspace():
             matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
         return matching_indices
 
-        # TODO this is not yet correct, maybe do it in the same style as __get_neighbors_indices_strictlyadjacent except using minimization?
-        params_values_indices = self.params_values_indices[param_config_index]
-        # for each parameter in the config, take one higher and lower parameter value, if these are valid they are neighbors
-        for index, param in param_config:
-            param_values = self.params_values[index]
-            param_values_index = param_values.index(param)
-            upper_params_values_indices = params_values_indices
-            lower_params_values_indices = params_values_indices
-            upper_params_values_indices[index] = self.params_values[param_values_index + 1] if len(param_values) > param_values_index else None
-            lower_params_values_indices[index] = self.params_values[param_values_index - 1] if param_values_index > 0 else None
-        raise NotImplementedError()
-
     def __build_neighbors_index(self, neighbor_method) -> np.ndarray:
         """ build an index of the neighbors for each parameter configuration """
         # for Hamming no preperation is necessary, find the neighboring parameter configurations
@@ -184,7 +179,8 @@ class Searchspace():
             return np.array(list(self.__get_neighbors_indices_hamming(param_config) for param_config in self.list))
 
         # for each parameter configuration, find the neighboring parameter configurations
-        self.__prepare_neighbors_index()
+        if self.params_values_indices is None:
+            self.__prepare_neighbors_index()
         if neighbor_method == 'strictly-adjacent':
             return np.array(
                 list(
@@ -206,8 +202,8 @@ class Searchspace():
         """ Get the parameter configurations for a random, non-conflicting sample (caution: not unique in consecutive calls) """
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
 
-    def get_neighbors_indices(self, param_config: tuple, neighbor_method=None) -> List[int]:
-        """ Get the neighbors indices for a parameter configuration """
+    def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None) -> List[int]:
+        """ Get the neighbors indices for a parameter configuration (does not check running cache, useful when mixing neighbor methods) """
         param_config_index = self.get_param_config_index(param_config)
 
         # this is the simplest case, just return the cached value
@@ -217,7 +213,7 @@ class Searchspace():
             return self.neighbors_index[param_config_index]
 
         # check if the neighbor methods do not differ
-        if self.neighbor_method != neighbor_method and self.neighbor_method is not None:
+        if self.neighbor_method != neighbor_method and self.neighbor_method is not None and neighbor_method is not None:
             raise ValueError(f"The neighbor method {neighbor_method} differs from the intially set {self.neighbor_method}")
         elif neighbor_method == None:
             neighbor_method = self.neighbor_method
@@ -236,6 +232,43 @@ class Searchspace():
             return self.__get_neighbors_indices_adjacent(param_config_index, param_config)
         raise ValueError(f"The neighbor method {neighbor_method} is not in {supported_neighbor_methods}")
 
+    def get_neighbors_indices(self, param_config: tuple, neighbor_method=None) -> List[int]:
+        """ Get the neighbors indices for a parameter configuration, possibly cached """
+        neighbors = self.__neighbor_cache.get(param_config, None)
+        if neighbors is None:
+            neighbors = self.get_neighbors_indices_no_cache(param_config, neighbor_method)
+            self.__neighbor_cache[param_config] = neighbors
+        return neighbors
+
+    def get_neighbors_no_cache(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
+        """ Get the neighbors for a parameter configuration (does not check running cache, useful when mixing neighbor methods) """
+        return self.get_param_configs_at_indices(self.get_neighbors_indices_no_cache(param_config, neighbor_method))
+
     def get_neighbors(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
         """ Get the neighbors for a parameter configuration """
         return self.get_param_configs_at_indices(self.get_neighbors_indices(param_config, neighbor_method))
+
+    def order_param_configs(self, param_configs: List[tuple], order: List[int]) -> List[tuple]:
+        """ Order a list of parameter configurations based on the indices of the parameters given, starting at 0 """
+        if len(order) != self.num_params:
+            raise ValueError(f"The length of the order ({len(order)}) must be equal to the number of parameters ({self.num_params})")
+        for i in range(self.num_params):
+            if i not in order:
+                raise ValueError(f"order needs to be a list of the parameter indices, but index {i} is missing")
+
+        # choose the comparison basis and add it as the first in the order
+        base_comparison = choice(param_configs)
+        ordered_param_configs = list([base_comparison])
+
+        # move through the parameters in order, if a configuration does not match the base comparison add it to the list
+        for param_index in order:
+            for param_config in param_configs:
+                if param_config[param_index] != base_comparison[param_index] and param_config not in ordered_param_configs:
+                    ordered_param_configs.append(param_config)
+
+        # check that the number of elements still matches before returning
+        if len(param_configs) != len(ordered_param_configs):
+            raise ValueError(
+                f"The number of ordered parameter configurations ({len(ordered_param_configs)}) differs from the original number of parameter configurations ({len(param_configs)})"
+            )
+        return ordered_param_configs

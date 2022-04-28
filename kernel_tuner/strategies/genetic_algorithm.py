@@ -4,6 +4,7 @@ import random
 import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
+from kernel_tuner.searchspace import Searchspace
 from kernel_tuner import util
 
 def tune(runner, kernel_options, device_options, tuning_options):
@@ -43,13 +44,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
     max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
 
     tuning_options["scaling"] = False
-    tune_params = tuning_options.tune_params
 
     best_time = 1e20
     all_results = []
     unique_results = {}
 
-    population = random_population(pop_size, tune_params, tuning_options, max_threads)
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+    population = list(list(p) for p in searchspace.get_random_sample(pop_size))
 
     for generation in range(generations):
 
@@ -82,21 +83,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
             children = crossover(dna1, dna2)
 
             for child in children:
-                child = mutate(child, tune_params, mutation_chance, tuning_options, max_threads)
+                child = mutate(child, mutation_chance, searchspace)
 
-                if child not in population and util.config_valid(child, tuning_options, max_threads):
+                if child not in population and searchspace.is_param_config_valid(tuple(child)):
                     population.append(child)
 
                 if len(population) >= pop_size:
                     break
 
-        # could combine old + new generation here and do a selection
-
-
-
-
-
-
+        # TODO could combine old + new generation here and do a selection
 
     return all_results, runner.dev.get_environment()
 
@@ -133,40 +128,14 @@ def weighted_choice(population, n):
     return [population[ind][0] for ind in chosen]
 
 
-def random_population(pop_size, tune_params, tuning_options, max_threads):
-    """create a random population of pop_size unique members"""
-    population = []
-    option_space = np.prod([len(v) for v in tune_params.values()])
-    assert pop_size < option_space
-    while len(population) < pop_size:
-        dna = [random.choice(v) for v in tune_params.values()]
-        if dna not in population and util.config_valid(dna, tuning_options, max_threads):
-            population.append(dna)
-    return population
-
-
-def random_val(index, tune_params):
-    """return a random value for a parameter"""
-    key = list(tune_params.keys())[index]
-    return random.choice(tune_params[key])
-
-
-def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
+def mutate(dna, mutation_chance, searchspace: Searchspace):
     """Mutate DNA with 1/mutation_chance chance"""
+
     # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
-
-    dna_out = dna[:]
     if int(random.random() * mutation_chance) == 0:
-        attempts = 20
-        while attempts > 0:
-            #decide which parameter to mutate
-            i = random.choice(range(len(dna)))
-            dna_out = dna[:]
-            dna_out[i] = random_val(i, tune_params)
-
-            if not dna_out == dna and util.config_valid(dna_out, tuning_options, max_threads):
-                return dna_out
-            attempts = attempts - 1
+        neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method='Hamming')
+        if len(neighbors) > 0:
+            return list(random.choice(neighbors))
     return dna
 
 

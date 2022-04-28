@@ -1,8 +1,8 @@
 """ A greedy multi-start local search algorithm for parameter search """
 
 from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
-from kernel_tuner.strategies.genetic_algorithm import random_population
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -37,11 +37,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
     max_fevals = options.get("max_fevals", 100)
 
     tuning_options["scaling"] = False
-    tune_params = tuning_options.tune_params
 
     # limit max_fevals to max size of the parameter space
-    max_threads = runner.dev.max_threads
-    max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+    max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0
     all_results = []
@@ -49,9 +48,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     #while searching
     while fevals < max_fevals:
-        candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
+        candidate = searchspace.get_random_sample(1)[0]
 
-        base_hillclimb(candidate, neighbor, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=randomize, order=order)
+        base_hillclimb(candidate, neighbor, max_fevals, searchspace, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=randomize, order=order)
         fevals = len(unique_results)
 
     return all_results, runner.dev.get_environment()

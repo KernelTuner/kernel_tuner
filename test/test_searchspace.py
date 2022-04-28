@@ -2,6 +2,7 @@ from __future__ import print_function
 from collections import OrderedDict
 from random import randrange, choice
 from math import ceil
+from time import perf_counter
 
 try:
     from mock import patch
@@ -108,7 +109,7 @@ def test_random_sample():
 
 def __test_neighbors_prebuilt(param_config: tuple, expected_neighbors: list, neighbor_method: str):
     simple_searchspace_prebuilt = Searchspace(simple_tuning_options, max_threads, build_neighbors_index=True, neighbor_method=neighbor_method)
-    neighbors = simple_searchspace_prebuilt.get_neighbors(param_config)
+    neighbors = simple_searchspace_prebuilt.get_neighbors_no_cache(param_config)
     assert param_config not in neighbors
     for neighbor in neighbors:
         assert neighbor in expected_neighbors
@@ -116,7 +117,7 @@ def __test_neighbors_prebuilt(param_config: tuple, expected_neighbors: list, nei
 
 
 def __test_neighbors_direct(param_config: tuple, expected_neighbors: list, neighbor_method: str):
-    neighbors = simple_searchspace.get_neighbors(param_config, neighbor_method)
+    neighbors = simple_searchspace.get_neighbors_no_cache(param_config, neighbor_method)
     assert param_config not in neighbors
     for neighbor in neighbors:
         assert neighbor in expected_neighbors
@@ -146,7 +147,6 @@ def test_neighbors_strictlyadjacent():
 def test_neighbors_adjacent():
     """ test whether the adjacent neighbors are as expected """
     test_config = tuple([1, 4, 'string_1'])
-    # TODO check if the expected neighbors are correct
     expected_neighbors = [(2, 5.5, 'string_2'), (1, 5.5, 'string_2'), (2, 5.5, 'string_1'), (1, 5.5, 'string_1'), (2, 4, 'string_2'), (1, 4, 'string_2'),
                           (2, 4, 'string_1')]
 
@@ -165,3 +165,67 @@ def test_neighbors_fictious():
     __test_neighbors_direct(test_config, expected_neighbors_hamming, 'Hamming')
     __test_neighbors_direct(test_config, expected_neighbors_strictlyadjacent, 'strictly-adjacent')
     __test_neighbors_direct(test_config, expected_neighbors_adjacent, 'adjacent')
+
+
+def test_neighbors_cached():
+    """ test whether retrieving a set of neighbors twice returns the cached version """
+    simple_searchspace_duplicate = Searchspace(simple_tuning_options, max_threads, neighbor_method='Hamming')
+    test_configs = simple_searchspace_duplicate.get_random_sample(10)
+    for test_config in test_configs:
+        start_time = perf_counter()
+        neighbors = simple_searchspace_duplicate.get_neighbors(test_config)
+        time_first = perf_counter() - start_time
+        start_time = perf_counter()
+        neighbors_2 = simple_searchspace_duplicate.get_neighbors(test_config)
+        time_second = perf_counter() - start_time
+        assert neighbors == neighbors_2
+        if abs(time_first - time_second) > 1e-7:
+            assert time_second < time_first
+
+
+@patch('kernel_tuner.searchspace.choice', lambda x: x[0])
+def test_order_param_configs():
+    """ test whether the ordering of parameter configurations according to parameter index happens as expected """
+    test_order = [1, 2, 0]
+    test_config = tuple([1, 4, 'string_1'])
+    expected_order = [(2, 5.5, 'string_2'), (2, 4, 'string_2'), (1, 4, 'string_2'), (2, 4, 'string_1'), (2, 5.5, 'string_1'), (1, 5.5, 'string_1'),
+                      (1, 5.5, 'string_2')]
+    neighbors = simple_searchspace.get_neighbors_no_cache(test_config, 'adjacent')
+
+    # test failsafe too few indices
+    try:
+        simple_searchspace.order_param_configs(neighbors, [1, 2])
+        print("Expected a ValueError to be raised")
+        assert False
+    except ValueError as e:
+        assert "must be equal to the number of parameters" in str(e)
+    except Exception:
+        print("Expected a ValueError to be raised")
+        assert False
+
+    # test failsafe too many indices
+    try:
+        simple_searchspace.order_param_configs(neighbors, [1, 2, 0, 2])
+        print("Expected a ValueError to be raised")
+        assert False
+    except ValueError as e:
+        assert "must be equal to the number of parameters" in str(e)
+    except Exception:
+        print("Expected a ValueError to be raised")
+        assert False
+
+    # test failsafe invalid indices
+    try:
+        simple_searchspace.order_param_configs(neighbors, [1, 3, 0])
+        print("Expected a ValueError to be raised")
+        assert False
+    except ValueError as e:
+        assert "order needs to be a list of the parameter indices, but index" in str(e)
+    except Exception:
+        print("Expected a ValueError to be raised")
+        assert False
+
+    # test usecase
+    ordered_neighbors = simple_searchspace.order_param_configs(neighbors, test_order)
+    for index, expected_param_config in enumerate(expected_order):
+        assert expected_param_config == ordered_neighbors[index]
