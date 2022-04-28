@@ -145,7 +145,7 @@ class CupyFunctions:
         kernel_name = kernel_instance.name
 
         compiler_options = self.compiler_options
-        if not any(['--std=' in opt for opt in self.compiler_options]):
+        if not any(['-std=' in opt for opt in self.compiler_options]):
             compiler_options = ['--std=c++11'] + self.compiler_options
 
         options = tuple(compiler_options)
