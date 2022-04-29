@@ -4,7 +4,6 @@ from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner.searchspace import Searchspace
 
-
 def get_neighbors(neighbor_method, values, element, randomize):
     """ get the list of neighboring elements of element in values """
     # If Hamming neighbors, all values are possible neighbors
@@ -84,41 +83,53 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
     tune_params = tuning_options.tune_params
 
     # measure start point time
-    best_time = _cost_func(base_sol, kernel_options, tuning_options, runner, all_results)
+    best_time = _cost_func(base_sol, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
 
     found_improved = True
     while found_improved:
+        child = list(base_sol[:])
         found_improved = False
+
         current_results = []
 
-        # get the neighbors
-        neighbors = searchspace.get_neighbors(tuple(base_sol), neighbor_method)
-        if order is not None:
-            neighbors = searchspace.order_param_configs(neighbors, order)
+        vals = list(tune_params.values())
+        if order is None:
+            indices = list(range(len(vals)))
+        else:
+            indices = order
         if randomize:
-            random.shuffle(neighbors)
+            random.shuffle(indices)
 
-        for child in neighbors:
-            # get time for this position
-            time = _cost_func(child, kernel_options, tuning_options, runner, current_results)
-            unique_results.update({",".join([str(v) for k, v in record.items() if k in tune_params]): record["time"] for record in current_results})
+        # in each dimension see the possible values
+        for index in indices:
+            neighbors = searchspace.get_param_neighbors(tuple(child), index, neighbor_method, randomize)
 
-            # generalize this to other tuning objectives
-            if time < best_time:
-                best_time = time
-                base_sol = child[:]
-                found_improved = True
-                # if an improvement has been found and restart is enabled, restart the hillclimbing from this point
-                if restart:
-                    break
+            # for each value in this dimension
+            for val in neighbors:
+                orig_val = child[index]
+                child[index] = val
 
-            # if the number of function evaluations exceeds the maximum function evaluations, stop the hillclimber
-            fevals = len(unique_results)
-            if fevals >= max_fevals:
-                all_results += current_results
-                return base_sol
+                # get time for this position
+                time = _cost_func(child, kernel_options, tuning_options, runner, current_results, check_restrictions=False)
+                unique_results.update({",".join([str(v) for k, v in record.items() if k in tune_params]): record["time"] for record in current_results})
+
+                # generalize this to other tuning objectives
+                if time < best_time:
+                    best_time = time
+                    base_sol = child[:]
+                    found_improved = True
+                    if restart:
+                        break
+                else:
+                    child[index] = orig_val
+
+                fevals = len(unique_results)
+                if fevals >= max_fevals:
+                    all_results += current_results
+                    return base_sol
+            if found_improved and restart:
+                break
 
         # append current_results to all_results
         all_results += current_results
-    # no improvement has been found
     return base_sol

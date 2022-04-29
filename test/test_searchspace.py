@@ -183,6 +183,19 @@ def test_neighbors_cached():
             assert time_second < time_first
 
 
+def test_param_neighbors():
+    """ test whether for a given parameter configuration and index the correct neighboring parameters are returned """
+    test_config = tuple([1.5, 4, 'string_1'])
+    expected_neighbors = [[1, 2], [5.5], ['string_2']]
+
+    for index in range(3):
+        neighbor_params = simple_searchspace.get_param_neighbors(test_config, index, 'adjacent', randomize=False)
+        print(neighbor_params)
+        assert len(neighbor_params) == len(expected_neighbors[index])
+        for param_index, param in enumerate(neighbor_params):
+            assert param == expected_neighbors[index][param_index]
+
+
 @patch('kernel_tuner.searchspace.choice', lambda x: x[0])
 def test_order_param_configs():
     """ test whether the ordering of parameter configurations according to parameter index happens as expected """
@@ -226,6 +239,12 @@ def test_order_param_configs():
         assert False
 
     # test usecase
-    ordered_neighbors = simple_searchspace.order_param_configs(neighbors, test_order)
+    ordered_neighbors = simple_searchspace.order_param_configs(neighbors, test_order, randomize_in_params=False)
     for index, expected_param_config in enumerate(expected_order):
         assert expected_param_config == ordered_neighbors[index]
+
+    # test randomize in params
+    ordered_neighbors = simple_searchspace.order_param_configs(neighbors, test_order, randomize_in_params=True)
+    for expected_param_config in expected_order:
+        assert expected_param_config in ordered_neighbors
+    assert len(ordered_neighbors) == len(expected_order)

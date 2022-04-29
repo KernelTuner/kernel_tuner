@@ -30,7 +30,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
+        execution times. And a dictionary that contains information
         about the hardware/software environment on which the tuning took place.
     :rtype: list(dict()), dict()
 
@@ -57,7 +57,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     return results, runner.dev.get_environment()
 
 
-def _cost_func(x, kernel_options, tuning_options, runner, results):
+def _cost_func(x, kernel_options, tuning_options, runner, results, check_restrictions=True):
     """ Cost function used by minimize """
     start_time = perf_counter()
     last_strategy_time = 1000 * (start_time - runner.last_strategy_start_time)
@@ -88,7 +88,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
         return cached_result["time"]
 
     # check if this is a legal (non-restricted) parameter instance
-    if tuning_options.restrictions:
+    if check_restrictions and tuning_options.restrictions:
         params_dict = OrderedDict(zip(tuning_options.tune_params.keys(), params))
         legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
         if not legal:

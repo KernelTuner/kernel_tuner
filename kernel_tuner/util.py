@@ -1,5 +1,4 @@
 """ Module for kernel tuner utility functions """
-import itertools
 import json
 from collections import OrderedDict
 import os
@@ -309,14 +308,6 @@ def get_kernel_string(kernel_source, params=None):
     else:
         raise TypeError("Error kernel_source is not a string nor a callable function")
     return kernel_string
-
-
-def get_number_of_valid_configs(tuning_options, max_threads):
-    """compute number of valid configurations in a search space based on restrictions and max_threads"""
-    parameter_space = itertools.product(*tuning_options.tune_params.values())
-    if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.config_valid(p, tuning_options, max_threads), parameter_space)
-    return len(list(parameter_space))
 
 
 def get_problem_size(problem_size, params):

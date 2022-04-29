@@ -26,7 +26,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type tuning_options: dict
 
     :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
+        execution times. And a dictionary that contains information
         about the hardware/software environment on which the tuning took place.
     :rtype: list(dict()), dict()
 
@@ -48,7 +48,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # get random starting point and evaluate cost
     pos = list(searchspace.get_random_sample(1)[0])
-    old_cost = _cost_func(pos, *args)
+    old_cost = _cost_func(pos, *args, check_restrictions=False)
 
     if tuning_options.verbose:
         c = 0
@@ -61,7 +61,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         for _ in range(niter):
 
             new_pos = neighbor(pos, searchspace)
-            new_cost = _cost_func(new_pos, *args)
+            new_cost = _cost_func(new_pos, *args, check_restrictions=False)
 
             ap = acceptance_prob(old_cost, new_cost, T)
             r = random.random()

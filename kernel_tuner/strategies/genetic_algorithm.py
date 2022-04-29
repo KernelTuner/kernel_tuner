@@ -7,6 +7,7 @@ from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner import util
 
+
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
@@ -25,7 +26,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
+        execution times. And a dictionary that contains information
         about the hardware/software environment on which the tuning took place.
     :rtype: list(dict()), dict()
 
@@ -39,10 +40,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     max_fevals = options.get("max_fevals", 100)
 
-    # limit max_fevals to max size of the parameter space
-    max_threads = runner.dev.max_threads
-    max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
-
     tuning_options["scaling"] = False
 
     best_time = 1e20
@@ -52,12 +49,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
     searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     population = list(list(p) for p in searchspace.get_random_sample(pop_size))
 
+    # limit max_fevals to max size of the parameter space
+    max_fevals = min(searchspace.size, max_fevals)
+
     for generation in range(generations):
 
         # determine fitness of population members
         weighted_population = []
         for dna in population:
-            time = _cost_func(dna, kernel_options, tuning_options, runner, all_results)
+            time = _cost_func(dna, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
             weighted_population.append((dna, time))
 
         # population is sorted such that better configs have higher chance of reproducing
@@ -72,7 +72,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         population = []
 
-        unique_results.update({",".join([str(i) for i in dna]): time for dna, time in weighted_population})
+        unique_results.update({",".join([str(i) for i in dna]): time
+                               for dna, time in weighted_population})
         if len(unique_results) >= max_fevals:
             break
 
@@ -151,8 +152,8 @@ def two_point_crossover(dna1, dna2):
     if len(dna1) < 5:
         start, end = 0, len(dna1)
     else:
-        start, end = 1, len(dna1)-1
-    pos1, pos2 = sorted(random.sample(list(range(start,end)), 2))
+        start, end = 1, len(dna1) - 1
+    pos1, pos2 = sorted(random.sample(list(range(start, end)), 2))
     child1 = dna1[:pos1] + dna2[pos1:pos2] + dna1[pos2:]
     child2 = dna2[:pos1] + dna1[pos1:pos2] + dna2[pos2:]
     return (child1, child2)

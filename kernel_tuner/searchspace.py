@@ -5,7 +5,7 @@ from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import MaxProdConstraint
 
 from constraint import Problem, Constraint, FunctionConstraint
-from random import choice
+from random import choice, shuffle
 import numpy as np
 
 supported_neighbor_methods = ['strictly-adjacent', 'adjacent', 'Hamming']
@@ -51,22 +51,7 @@ class Searchspace():
             parameter_space.addVariable(param_name, param_values)
 
         # add the user-specified restrictions as constraints on the parameter space
-        if isinstance(self.restrictions, list):
-            for restriction in self.restrictions:
-                if callable(restriction) and not isinstance(restriction, Constraint):
-                    restriction = FunctionConstraint(restriction)
-                if isinstance(restriction, FunctionConstraint):
-                    parameter_space.addConstraint(restriction, self.param_names)
-                elif isinstance(restriction, Constraint):
-                    parameter_space.addConstraint(restriction)
-                else:
-                    raise ValueError(f"Unrecognized restriction {restriction}")
-        # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
-        elif callable(self.restrictions):
-            restrictions_wrapper = lambda *args: check_instance_restrictions(self.restrictions, dict(zip(self.param_names, args)), False)
-            parameter_space.addConstraint(restrictions_wrapper, self.param_names)
-        elif self.restrictions is not None:
-            raise ValueError(f"The restrictions are of unsupported type {type(self.restrictions)}")
+        parameter_space = self.__add_restrictions(parameter_space)
 
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
         block_size_names = self.tuning_options.get("block_size_names", default_block_size_names)
@@ -95,6 +80,27 @@ class Searchspace():
             raise ValueError(f"{size_list - size_dict} duplicate parameter configurations in the searchspace, this should not happen")
 
         return parameter_space_list, parameter_space_numpy, parameter_space_dict, size_list
+
+    def __add_restrictions(self, parameter_space: Problem) -> Problem:
+        """ add the user-specified restrictions as constraints on the parameter space """
+        if isinstance(self.restrictions, list):
+            for restriction in self.restrictions:
+                if callable(restriction) and not isinstance(restriction, Constraint):
+                    restriction = FunctionConstraint(restriction)
+                if isinstance(restriction, FunctionConstraint):
+                    parameter_space.addConstraint(restriction, self.param_names)
+                elif isinstance(restriction, Constraint):
+                    parameter_space.addConstraint(restriction)
+                else:
+                    raise ValueError(f"Unrecognized restriction {restriction}")
+
+        # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
+        elif callable(self.restrictions):
+            restrictions_wrapper = lambda *args: check_instance_restrictions(self.restrictions, dict(zip(self.param_names, args)), False)
+            parameter_space.addConstraint(restrictions_wrapper, self.param_names)
+        elif self.restrictions is not None:
+            raise ValueError(f"The restrictions are of unsupported type {type(self.restrictions)}")
+        return parameter_space
 
     def is_param_config_valid(self, param_config: tuple) -> bool:
         """ returns whether the parameter config is valid (i.e. is in the searchspace after restrictions) """
@@ -248,8 +254,16 @@ class Searchspace():
         """ Get the neighbors for a parameter configuration """
         return self.get_param_configs_at_indices(self.get_neighbors_indices(param_config, neighbor_method))
 
-    def order_param_configs(self, param_configs: List[tuple], order: List[int]) -> List[tuple]:
-        """ Order a list of parameter configurations based on the indices of the parameters given, starting at 0 """
+    def get_param_neighbors(self, param_config: tuple, index: int, neighbor_method: str, randomize: bool) -> list:
+        """ Get the neighboring parameters at an index """
+        original_value = param_config[index]
+        params = list(set(neighbor[index] for neighbor in self.get_neighbors(param_config, neighbor_method) if neighbor[index] != original_value))
+        if randomize:
+            shuffle(params)
+        return params
+
+    def order_param_configs(self, param_configs: List[tuple], order: List[int], randomize_in_params=True) -> List[tuple]:
+        """ Order a list of parameter configurations based on the indices of the parameters given, starting at 0. If randomize_params is true, the order within parameters is shuffled. """
         if len(order) != self.num_params:
             raise ValueError(f"The length of the order ({len(order)}) must be equal to the number of parameters ({self.num_params})")
         for i in range(self.num_params):
@@ -262,9 +276,15 @@ class Searchspace():
 
         # move through the parameters in order, if a configuration does not match the base comparison add it to the list
         for param_index in order:
+            sublist = list()
             for param_config in param_configs:
                 if param_config[param_index] != base_comparison[param_index] and param_config not in ordered_param_configs:
                     ordered_param_configs.append(param_config)
+            # randomize the order within the parameters
+            if randomize_in_params:
+                shuffle(sublist)
+            # append to the ordered list
+            ordered_param_configs += sublist
 
         # check that the number of elements still matches before returning
         if len(param_configs) != len(ordered_param_configs):
