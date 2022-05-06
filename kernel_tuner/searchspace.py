@@ -167,10 +167,11 @@ class Searchspace():
         # transpose to get the param indices difference per parameter instead of per param config
         index_difference_transposed = index_difference.transpose()
         # for each parameter get the closest upper and lower parameter (absolute index difference >= 1)
+        # np.PINF has been replaced by 1e12 here, as on some systems np.PINF becomes np.NINF
         upper_bound = tuple(
-            np.min(index_difference_transposed[p][(index_difference_transposed[p] > 0).nonzero()], initial=np.PINF) for p in range(self.num_params))
+            np.min(index_difference_transposed[p][(index_difference_transposed[p] > 0).nonzero()], initial=1e12) for p in range(self.num_params))
         lower_bound = tuple(
-            np.max(index_difference_transposed[p][(index_difference_transposed[p] < 0).nonzero()], initial=np.NINF) for p in range(self.num_params))
+            np.max(index_difference_transposed[p][(index_difference_transposed[p] < 0).nonzero()], initial=-1e12) for p in range(self.num_params))
         # return the indices where each parameter is within bounds
         matching_indices = np.logical_and(index_difference <= upper_bound, index_difference >= lower_bound).all(axis=1).nonzero()[0]
         # as the selected param config does not differ anywhere, remove it from the matches
