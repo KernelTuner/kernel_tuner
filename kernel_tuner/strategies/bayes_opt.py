@@ -645,8 +645,11 @@ class BayesianOptimization():
                     hyperparam = self.contextual_variance(std)
                 list_of_acquisition_values = af(predictions, hyperparam)
                 best_af = self.argopt(list_of_acquisition_values)
-                np.delete(predictions[0], best_af)    # to avoid going out of bounds
-                np.delete(predictions[1], best_af)
+                predictions = (np.delete(predictions[0], best_af), np.delete(predictions[1], best_af))    # remove the visited configuration before the next iteration
+                print(list_of_acquisition_values)
+                print(best_af)
+                print(self.unvisited_cache)
+                print(self.unvisited_cache[best_af])
                 candidate_params = self.unvisited_cache[best_af]
                 candidate_index = self.find_param_config_index(candidate_params)
                 observation = self.evaluate_objective_function(candidate_params)
@@ -727,8 +730,7 @@ class BayesianOptimization():
                     break
                 list_of_acquisition_values = af(predictions, hyperparam)
                 best_af = self.argopt(list_of_acquisition_values)
-                del predictions[0][best_af]    # to avoid going out of bounds
-                del predictions[1][best_af]
+                predictions = (np.delete(predictions[0], best_af), np.delete(predictions[1], best_af))    # remove the visited configuration before the next iteration
                 candidate_params = self.unvisited_cache[best_af]
                 candidate_index = self.find_param_config_index(candidate_params)
                 observation = self.evaluate_objective_function(candidate_params)
