@@ -3,6 +3,7 @@ import json
 from collections import OrderedDict
 import os
 import errno
+from tabnanny import verbose
 import tempfile
 import logging
 import warnings
@@ -459,7 +460,7 @@ def looks_like_a_filename(kernel_source):
             if s in kernel_source:
                 result = False
         # string must contain substring ".c", ".opencl", or ".F"
-        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
+        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F", ".py")])
     logging.debug('kernel_source is a filename: %s' % str(result))
     return result
 
@@ -682,7 +683,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     # if file exists
     else:
-        cached_data = read_cache(cache)
+        cached_data = read_cache(cache, not tuning_options.simulation_mode)    # don't open the cache in (parallel) simulation mode to avoid race conditions
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
@@ -711,11 +712,10 @@ def read_cache(cache, open_cache=True):
         if filestr[-1] == ",":
             filestr = filestr[:-1]
         filestr = filestr + "}\n}"
-    else:
-        if open_cache:
-            # if it was properly closed, open it for appending new entries
-            with open(cache, "w") as cachefile:
-                cachefile.write(filestr[:-3] + ",")
+    elif open_cache:
+        # if it was properly closed, open it for appending new entries
+        with open(cache, "w") as cachefile:
+            cachefile.write(filestr[:-3] + ",")
 
     return json.loads(filestr)
 
@@ -748,12 +748,11 @@ def store_cache(key, params, tuning_options):
             return obj.__str__()
 
     logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
-    if isinstance(tuning_options.cache, dict):
-        if not key in tuning_options.cache:
-            tuning_options.cache[key] = params
-            if tuning_options.cachefile:
-                with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({ key: params }, default=npconverter)[1:-1] + ",")
+    if isinstance(tuning_options.cache, dict) and not key in tuning_options.cache:
+        tuning_options.cache[key] = params
+        if tuning_options.cachefile:
+            with open(tuning_options.cachefile, "a") as cachefile:
+                cachefile.write("\n" + json.dumps({ key: params }, default=npconverter)[1:-1] + ",")
 
 
 def dump_cache(obj: str, tuning_options):

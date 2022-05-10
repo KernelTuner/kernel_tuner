@@ -11,7 +11,8 @@ from scipy.stats import norm
 
 # BO imports
 try:
-    from sklearn.gaussian_process import GaussianProcessRegressor
+    import torch
+    import gpytorch
     from sklearn.gaussian_process.kernels import ConstantKernel, RBF, Matern
     from sklearn.exceptions import ConvergenceWarning
     from skopt.sampler import Lhs
@@ -48,7 +49,7 @@ def normalize_parameter_space(param_space: list, tune_params: dict, normalized: 
     return param_space_normalized
 
 
-def prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict):
+def prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict: dict, max_threads: int):
     """ Pruning of the parameter space to remove dimensions that have a constant parameter """
     pruned_tune_params_mask = list()
     removed_tune_params = list()
@@ -63,6 +64,10 @@ def prune_parameter_space(parameter_space, tuning_options, tune_params, normaliz
             removed_tune_params.append(normalized)
     if 'verbose' in tuning_options and tuning_options.verbose is True and len(tune_params.keys()) != sum(pruned_tune_params_mask):
         print(f"Number of parameters (dimensions): {len(tune_params.keys())}, after pruning: {sum(pruned_tune_params_mask)}")
+    # TODO check whether the number of pruned parameters is correct
+    # print(
+    #     f"Number of parameters (dimensions): {len(tune_params.keys())}, after pruning: {sum(pruned_tune_params_mask)}, by util: {util.get_number_of_valid_configs(tuning_options, max_threads)}"
+    # )
     parameter_space = list(tuple(itertools.compress(param_config, pruned_tune_params_mask)) for param_config in parameter_space)
     return parameter_space, removed_tune_params
 
@@ -120,7 +125,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # prune the parameter space to remove dimensions that have a constant parameter
     if prune_parameterspace:
-        parameter_space, removed_tune_params = prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict)
+        parameter_space, removed_tune_params = prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict, runner.dev.max_threads)
     else:
         parameter_space = list(parameter_space)
         removed_tune_params = [None] * len(tune_params.keys())
@@ -130,6 +135,20 @@ def tune(runner, kernel_options, device_options, tuning_options):
     results = bo.optimize(max_fevals)
 
     return results, runner.dev.get_environment()
+
+
+class ExactGPModel(gpytorch.models.ExactGP):
+    """ Very simple exact Gaussian Process model """
+
+    def __init__(self, train_x, train_y, likelihood):
+        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ZeroMean()    # TODO maybe try ConstantMean or LinearMean
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=1.5))    # TODO maybe try ScaleKernel(MaternKernel)
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 
 class BayesianOptimization():
@@ -159,6 +178,7 @@ class BayesianOptimization():
         multi_af_names = get_hyperparam("multi_af_names", ['ei', 'poi', 'lcb'])
         self.multi_afs_discount_factor = get_hyperparam("multi_af_discount_factor", 0.65 if acq == 'multi' else 0.95)
         self.multi_afs_required_improvement_factor = get_hyperparam("multi_afs_required_improvement_factor", 0.15 if acq == 'multi-advanced-precise' else 0.1)
+        self.training_iter = get_hyperparam("training_iter", 10)
         self.num_initial_samples = get_hyperparam("popsize", 20)
         self.sampling_method = get_hyperparam("samplingmethod", "lhs", self.supported_sampling_methods)
         self.sampling_crit = get_hyperparam("samplingcriterion", 'maximin', self.supported_sampling_criterion)
@@ -201,13 +221,18 @@ class BayesianOptimization():
         self.af_params = acq_params
         self.multi_afs = list(self.get_af_by_name(af_name) for af_name in multi_af_names)
         self.set_acquisition_function(acquisition_function)
-        self.set_surrogate_model(cov_kernel_name, cov_kernel_lengthscale)
+        # self.set_surrogate_model(cov_kernel_name, cov_kernel_lengthscale)
 
         # set remaining values
         self.results = []
         self.__searchspace = searchspace
         self.removed_tune_params = removed_tune_params
         self.searchspace_size = len(self.searchspace)
+        self.hyperparams = {
+            'loss': np.nan,
+            'lengthscale': np.nan,
+            'noise': np.nan,
+        }
         self.num_dimensions = len(self.dimensions())
         self.__current_optimum = self.worst_value
         self.cv_norm_maximum = None
@@ -224,9 +249,8 @@ class BayesianOptimization():
         self.error_message_searchspace_fully_observed = "The search space has been fully observed"
 
         # take initial sample
-        if self.num_initial_samples > 0:
-            self.initial_sample()
-            time_initial_sample = time.perf_counter_ns()
+        self.initial_sample()
+        time_initial_sample = time.perf_counter_ns()
 
         # print the timings
         if self.log_timings:
@@ -297,6 +321,7 @@ class BayesianOptimization():
 
     def set_surrogate_model(self, cov_kernel_name: str, cov_kernel_lengthscale: float):
         """ Set the surrogate model with a covariance function and lengthscale """
+        # TODO remove or adapt this
         if cov_kernel_name == "constantrbf":
             kernel = ConstantKernel(1.0, constant_value_bounds="fixed") * RBF(cov_kernel_lengthscale, length_scale_bounds="fixed")
         elif cov_kernel_name == "rbf":
@@ -306,8 +331,10 @@ class BayesianOptimization():
         elif cov_kernel_name == "matern52":
             kernel = Matern(length_scale=cov_kernel_lengthscale, nu=2.5, length_scale_bounds="fixed")
         else:
-            raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_cov_kernels, cov_kernel_name))
-        self.__model = GaussianProcessRegressor(kernel=kernel, alpha=1e-10, normalize_y=True)    # maybe change alpha to a higher value such as 1e-5?
+            raise ValueError(f"Acquisition function must be one of {self.supported_cov_kernels}, is {cov_kernel_name}")
+        likelihood = gpytorch.likelihoods.GaussianLikelihood()
+        self.__model = ExactGPModel(train_x, train_y, likelihood)
+        # self.__model = GaussianProcessRegressor(kernel=kernel, alpha=1e-10, normalize_y=True)    # maybe change alpha to a higher value such as 1e-5?
 
     def valid_params_observations(self) -> Tuple[list, list]:
         """ Returns a list of valid observations and their parameter configurations """
@@ -376,14 +403,13 @@ class BayesianOptimization():
 
     def predict_list(self, lst: list) -> Tuple[np.ndarray, np.ndarray]:
         """ Returns a list of means and standard deviations predicted by the surrogate model for the parameter configurations, and separate lists of means and standard deviations """
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            mu, std = self.__model.predict(lst, return_std=True)
-            return mu, std
-
-    def fit_observations_to_model(self):
-        """ Update the model based on the current list of observations """
-        self.__model.fit(self.__valid_params, self.__valid_observations)
+        with torch.no_grad(), gpytorch.settings.fast_pred_var():
+            # TODO use torch.cuda for GPU
+            test_x = torch.Tensor(lst)
+            observed_pred = self.__likelihood(self.__model(test_x))
+            mu = observed_pred.mean
+            std = observed_pred.variance
+            return mu.numpy(), std.numpy()
 
     def evaluate_objective_function(self, param_config: tuple) -> float:
         """ Evaluates the objective function """
@@ -393,7 +419,31 @@ class BayesianOptimization():
             return self.invalid_value
         val = minimize._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)
         self.fevals += 1
+        self.add_model_hyperparams_to_result(denormalized_param_config)
         return val
+
+    def add_model_hyperparams_to_result(self, param_config: tuple):
+        """ Add the model parameters (loss and noise) to the results dict at the last result """
+        # assert that the results index corresponds to the last index
+        assert self.find_config_index_in_results(param_config) == len(self.results) - 1
+
+        for key, value in self.hyperparams.items():
+            # print(f"{key}: {value}")
+            self.results[-1][key] = value
+
+    def find_config_index_in_results(self, param_config: tuple):
+        """ Find the index of a parameter configuration in the results. Beware that this can be very slow! """
+        found_indices = list()
+        for results_index, result_dict in enumerate(self.results):
+            keys = list(result_dict.keys())
+            found = True
+            for index, value in enumerate(param_config):
+                if result_dict[keys[index]] != value:
+                    found = False
+            if found is True:
+                found_indices.append(results_index)
+        assert len(found_indices) == 1
+        return found_indices[0]
 
     def dimensions(self) -> list:
         """ List of parameter values per parameter """
@@ -431,6 +481,45 @@ class BayesianOptimization():
                 continue
         return list(zip(normalized_param_configs, indices))
 
+    def train_model_hyperparams(self):
+        """ Train the model and likelihood hyperparameters """
+        # set to training modes
+        self.__model.train()
+        self.__likelihood.train()
+
+        # Use the adam optimizer
+        optimizer = torch.optim.Adam(self.__model.parameters(), lr=0.1)    # Includes GaussianLikelihood parameters
+
+        # "Loss" for GPs - the marginal log likelihood
+        mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.__likelihood, self.__model)
+
+        loss = 0
+        lengthscale = 0
+        noise = 0
+        for i in range(self.training_iter):
+            # Zero gradients from previous iteration
+            optimizer.zero_grad()
+            # Output from model
+            output = self.__model(self.__tparams)
+            # Calc loss and backprop gradients
+            loss = -mll(output, self.__tobservations)
+            loss.backward()
+            # print('Iter %d/%d - Loss: %.3f   lengthscale: %.3f   noise: %.3f' %
+            #       (i + 1, self.training_iter, loss.item(), self.__model.covar_module.base_kernel.lengthscale.item(), self.__model.likelihood.noise.item()))
+            optimizer.step()
+
+        # set to prediction mode
+        self.__model.eval()
+        self.__likelihood.eval()
+
+        # set the hyperparameters globally for reference
+        self.hyperparams = {
+            'loss': loss.item(),
+            'lengthscale': self.__model.covar_module.base_kernel.lengthscale.item(),
+            'noise': self.__model.likelihood.noise.item(),
+        }
+        # print(f"Loss: {self.hyperparams['loss']}, lengthscale: {self.hyperparams['lengthscale']}, noise: {self.hyperparams['noise']}")
+
     def initial_sample(self):
         """ Draws an initial sample using random sampling """
         if self.num_initial_samples <= 0:
@@ -456,7 +545,15 @@ class BayesianOptimization():
             # check for validity to avoid having no actual initial samples
             if self.is_valid(observation):
                 collected_samples += 1
-        self.fit_observations_to_model()
+
+        # instantiate the model with the initial sample
+        self.__likelihood = gpytorch.likelihoods.GaussianLikelihood()
+        self.__tparams = torch.Tensor(self.__valid_params)
+        self.__tobservations = torch.Tensor(self.__valid_observations)
+        self.__model = ExactGPModel(self.__tparams, self.__tobservations, self.__likelihood)
+        self.train_model_hyperparams()
+
+        # extract the predictions
         _, std = self.predict_list(self.unvisited_cache)
         self.initial_sample_mean = np.mean(self.__valid_observations)
         # Alternatively:
@@ -497,7 +594,7 @@ class BayesianOptimization():
             candidate_index = self.find_param_config_index(candidate_params)
             observation = self.evaluate_objective_function(candidate_params)
             self.update_after_evaluation(observation, candidate_index, candidate_params)
-            self.fit_observations_to_model()
+            self.train_model_hyperparams()
         return self.results
 
     def __optimize_multi(self, max_fevals):
@@ -573,7 +670,7 @@ class BayesianOptimization():
             for index, af_index in enumerate(duplicate_candidate_af_indices):
                 original_observation = af_observations[duplicate_candidate_original_af_indices[index]][-1]
                 af_observations[af_index].append(original_observation)
-            self.fit_observations_to_model()
+            self.train_model_hyperparams()
             time_eval = time.perf_counter_ns()
             # assert that all observation lists of non-skipped acquisition functions are of the same length
             non_skipped_af_indices = list(af_index for af_index, _ in enumerate(aqfs) if af_index not in skip_af_index)
@@ -641,18 +738,18 @@ class BayesianOptimization():
                 if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
                     break
                 if increase_precision is True:
-                    predictions, _, std = self.predict_list(self.unvisited_cache)
-                    hyperparam = self.contextual_variance(std)
+                    predictions = self.predict_list(self.unvisited_cache)
+                    hyperparam = self.contextual_variance(predictions[1])
                 list_of_acquisition_values = af(predictions, hyperparam)
                 best_af = self.argopt(list_of_acquisition_values)
-                np.delete(predictions[0], best_af)    # to avoid going out of bounds
-                np.delete(predictions[1], best_af)
+                # to avoid going out of bounds on the next iteration, remove the best_af
+                predictions = (np.delete(predictions[0], best_af), np.delete(predictions[1], best_af))
                 candidate_params = self.unvisited_cache[best_af]
                 candidate_index = self.find_param_config_index(candidate_params)
                 observation = self.evaluate_objective_function(candidate_params)
                 self.update_after_evaluation(observation, candidate_index, candidate_params)
                 if increase_precision is True:
-                    self.fit_observations_to_model()
+                    self.train_model_hyperparams()
                 # we use the registered observations for maximization of the discounted reward
                 if observation != self.invalid_value:
                     reg_observation = observation if self.opt_direction == 'min' else -1 * observation
@@ -662,7 +759,7 @@ class BayesianOptimization():
                     reg_invalid_observation = observations_median if self.opt_direction == 'min' else -1 * observations_median
                     af_observations[af_index].append(reg_invalid_observation)
             if increase_precision is False:
-                self.fit_observations_to_model()
+                self.train_model_hyperparams()
 
             # calculate the mean of discounted observations over the remaining acquisition functions
             discounted_obs = list(
@@ -733,7 +830,7 @@ class BayesianOptimization():
                 candidate_index = self.find_param_config_index(candidate_params)
                 observation = self.evaluate_objective_function(candidate_params)
                 self.update_after_evaluation(observation, candidate_index, candidate_params)
-            self.fit_observations_to_model()
+            self.train_model_hyperparams()
         return self.results
 
     def af_random(self, predictions=None, hyperparam=None) -> list:

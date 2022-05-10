@@ -38,7 +38,7 @@ runner_dict = {
 runner = namedtuple('Struct', runner_dict.keys())(*runner_dict.values())
 kernel_options = dict()
 BO = BayesianOptimization(pruned_parameter_space, removed_tune_params, kernel_options, tuning_options, original_to_normalized, normalized_to_original, runner)
-predictions, _, std = BO.predict_list(BO.unvisited_cache)
+_, std = BO.predict_list(BO.unvisited_cache)
 
 
 def test_generate_normalized_param_dicts():

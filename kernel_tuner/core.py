@@ -17,6 +17,7 @@ from kernel_tuner.cupy import CupyFunctions
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
+from kernel_tuner.python import PythonFunctions
 from kernel_tuner.nvml import NVMLObserver
 import kernel_tuner.util as util
 
@@ -171,7 +172,8 @@ class KernelSource(object):
         _suffixes = {
             'CUDA': '.cu',
             'OpenCL': '.cl',
-            'C': '.c'
+            'C': '.c',
+            'Python': '.py'
         }
         try:
             return _suffixes[self.lang]
@@ -193,7 +195,8 @@ class KernelSource(object):
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
 
-    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7, observers=None):
+    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7, observers=None,
+                 parallel_mode=False, hyperparam_mode=False):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
         :param kernel_source The kernel sources
@@ -210,7 +213,7 @@ class DeviceInterface(object):
         :type device: int
 
         :param lang: Specifies the language used for GPU kernels.
-            Currently supported: "CUDA", "OpenCL", or "C"
+            Currently supported: "CUDA", "OpenCL", "C" or "Python"
         :type lang: string
 
         :param compiler_options: The compiler options to use when compiling kernels for this device.
@@ -227,6 +230,9 @@ class DeviceInterface(object):
 
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
+        if parallel_mode and lang != "Python":
+            raise NotImplementedError("Parallel mode has not been implemented for languages other than Python")
+
         if lang == "CUDA":
             dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() == "CUPY":
@@ -235,6 +241,9 @@ class DeviceInterface(object):
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() in ["C", "FORTRAN"]:
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
+        elif lang == "Python":
+            dev = PythonFunctions(iterations=iterations, observers=observers, parallel_mode=parallel_mode, hyperparam_mode=hyperparam_mode,
+                                  show_progressbar=True)
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
 

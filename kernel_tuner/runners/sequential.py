@@ -11,7 +11,7 @@ from kernel_tuner.core import DeviceInterface
 class SequentialRunner(object):
     """ SequentialRunner is used for tuning with a single process/thread """
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, parallel_mode=False, hyperparam_mode=False):
         """ Instantiate the SequentialRunner
 
         :param kernel_source: The kernel source
@@ -30,12 +30,13 @@ class SequentialRunner(object):
         """
 
         #detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options).__enter__()
+        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, parallel_mode=parallel_mode, hyperparam_mode=hyperparam_mode,
+                                   **device_options).__enter__()
 
         self.units = self.dev.units
         self.quiet = device_options.quiet
         self.kernel_source = kernel_source
-        self.warmed_up = False
+        self.warmed_up = True if kernel_source.lang == 'Python' else False
         self.simulation_mode = False
         self.last_strategy_start_time = None
 
@@ -109,7 +110,7 @@ class SequentialRunner(object):
             if tuning_options.metrics:
                 params = process_metrics(params, tuning_options.metrics)
 
-            print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+            # print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units) # TODO uncomment
 
             store_cache(x_int, params, tuning_options)
             results.append(params)

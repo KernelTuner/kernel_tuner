@@ -4,13 +4,13 @@ from random import randint, shuffle
 import itertools
 import warnings
 import time
-from typing import Tuple
 
 import numpy as np
-from scipy.stats import norm
 
 # BO imports
 try:
+    from typing import Tuple
+    from scipy.stats import norm
     from sklearn.gaussian_process import GaussianProcessRegressor
     from sklearn.gaussian_process.kernels import ConstantKernel, RBF, Matern
     from sklearn.exceptions import ConvergenceWarning
@@ -94,7 +94,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
-        raise ImportError("Error: optional dependencies for Bayesian Optimization not installed, please install scikit-learn and scikit-optimize")
+        raise ImportError("Error: optional dependencies for Bayesian Optimization not installed")
 
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
@@ -374,12 +374,12 @@ class BayesianOptimization():
         """ Returns a mean and standard deviation predicted by the surrogate model for the parameter configuration """
         return self.__model.predict([x], return_std=True)
 
-    def predict_list(self, lst: list) -> Tuple[np.ndarray, np.ndarray]:
+    def predict_list(self, lst: list) -> Tuple[list, list, list]:
         """ Returns a list of means and standard deviations predicted by the surrogate model for the parameter configurations, and separate lists of means and standard deviations """
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             mu, std = self.__model.predict(lst, return_std=True)
-            return mu, std
+            return list(zip(mu, std)), mu, std
 
     def fit_observations_to_model(self):
         """ Update the model based on the current list of observations """
@@ -457,7 +457,7 @@ class BayesianOptimization():
             if self.is_valid(observation):
                 collected_samples += 1
         self.fit_observations_to_model()
-        _, std = self.predict_list(self.unvisited_cache)
+        _, _, std = self.predict_list(self.unvisited_cache)
         self.initial_sample_mean = np.mean(self.__valid_observations)
         # Alternatively:
         # self.initial_sample_std = np.std(self.__valid_observations)
@@ -488,8 +488,8 @@ class BayesianOptimization():
         while self.fevals < max_fevals:
             if self.__visited_num >= self.searchspace_size:
                 raise ValueError(self.error_message_searchspace_fully_observed)
-            predictions = self.predict_list(self.unvisited_cache)
-            hyperparam = self.contextual_variance(predictions[1])
+            predictions, _, std = self.predict_list(self.unvisited_cache)
+            hyperparam = self.contextual_variance(std)
             list_of_acquisition_values = self.__af(predictions, hyperparam)
             # afterwards select the best AF value
             best_af = self.argopt(list_of_acquisition_values)
@@ -520,8 +520,8 @@ class BayesianOptimization():
             time_start = time.perf_counter_ns()
             # the first acquisition function is never skipped, so that should be the best for the endgame (EI)
             aqfs = self.multi_afs
-            predictions = self.predict_list(self.unvisited_cache)
-            hyperparam = self.contextual_variance(predictions[1])
+            predictions, _, std = self.predict_list(self.unvisited_cache)
+            hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
                 raise ValueError(self.error_message_searchspace_fully_observed)
             time_predictions = time.perf_counter_ns()
@@ -633,8 +633,8 @@ class BayesianOptimization():
                 raise ValueError(self.error_message_searchspace_fully_observed)
             observations_median = np.median(self.__valid_observations)
             if increase_precision is False:
-                predictions = self.predict_list(self.unvisited_cache)
-                hyperparam = self.contextual_variance(predictions[1])
+                predictions, _, std = self.predict_list(self.unvisited_cache)
+                hyperparam = self.contextual_variance(std)
             for af_index, af in enumerate(aqfs):
                 if af_index in skip_af_index:
                     continue
@@ -645,8 +645,7 @@ class BayesianOptimization():
                     hyperparam = self.contextual_variance(std)
                 list_of_acquisition_values = af(predictions, hyperparam)
                 best_af = self.argopt(list_of_acquisition_values)
-                np.delete(predictions[0], best_af)    # to avoid going out of bounds
-                np.delete(predictions[1], best_af)
+                del predictions[best_af]    # to avoid going out of bounds
                 candidate_params = self.unvisited_cache[best_af]
                 candidate_index = self.find_param_config_index(candidate_params)
                 observation = self.evaluate_objective_function(candidate_params)
@@ -718,8 +717,8 @@ class BayesianOptimization():
         while self.fevals < max_fevals:
             aqfs = self.multi_afs
             # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
-            predictions = self.predict_list(self.unvisited_cache)
-            hyperparam = self.contextual_variance(predictions[1])
+            predictions, _, std = self.predict_list(self.unvisited_cache)
+            hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
                 raise ValueError(self.error_message_searchspace_fully_observed)
             for af in aqfs:
@@ -727,8 +726,7 @@ class BayesianOptimization():
                     break
                 list_of_acquisition_values = af(predictions, hyperparam)
                 best_af = self.argopt(list_of_acquisition_values)
-                del predictions[0][best_af]    # to avoid going out of bounds
-                del predictions[1][best_af]
+                del predictions[best_af]    # to avoid going out of bounds
                 candidate_params = self.unvisited_cache[best_af]
                 candidate_index = self.find_param_config_index(candidate_params)
                 observation = self.evaluate_objective_function(candidate_params)
@@ -746,53 +744,65 @@ class BayesianOptimization():
         """ Acquisition function Probability of Improvement (PI) """
 
         # prefetch required data
-        x_mu, x_std = predictions
+        if predictions is None:
+            predictions, _, _ = self.predict_list(self.unvisited_cache)
         if hyperparam is None:
             hyperparam = self.af_params['explorationfactor']
         fplus = self.current_optimum - hyperparam
 
         # precompute difference of improvement
-        list_diff_improvement = -((fplus - x_mu) / (x_std + 1E-9))
+        list_diff_improvement = list(-((fplus - x_mu) / (x_std + 1E-9)) for (x_mu, x_std) in predictions)
 
         # compute probability of improvement with CDF in bulk
         list_prob_improvement = norm.cdf(list_diff_improvement)
+
         return list_prob_improvement
 
     def af_expected_improvement(self, predictions=None, hyperparam=None) -> list:
         """ Acquisition function Expected Improvement (EI) """
 
         # prefetch required data
-        x_mu, x_std = predictions
+        if predictions is None:
+            predictions, _, _ = self.predict_list(self.unvisited_cache)
         if hyperparam is None:
             hyperparam = self.af_params['explorationfactor']
         fplus = self.current_optimum - hyperparam
 
         # precompute difference of improvement, CDF and PDF in bulk
-        list_diff_improvement = (fplus - x_mu) / (x_std + 1E-9)
+        list_diff_improvement = list((fplus - x_mu) / (x_std + 1E-9) for (x_mu, x_std) in predictions)
         list_cdf = norm.cdf(list_diff_improvement)
         list_pdf = norm.pdf(list_diff_improvement)
 
-        # compute expected improvement in bulk
-        list_exp_improvement = -((fplus - x_mu) * list_cdf + x_std * list_pdf)
+        # specify AF calculation
+        def exp_improvement(index) -> float:
+            x_mu, x_std = predictions[index]
+            ei = (fplus - x_mu) * list_cdf[index] + x_std * list_pdf[index]
+            return -ei
+
+        # calculate AF
+        list_exp_improvement = list(map(exp_improvement, range(len(predictions))))
         return list_exp_improvement
 
     def af_lower_confidence_bound(self, predictions=None, hyperparam=None) -> list:
         """ Acquisition function Lower Confidence Bound (LCB) """
 
-        x_mu, x_std = predictions
+        # prefetch required data
+        if predictions is None:
+            predictions, _, _ = self.predict_list(self.unvisited_cache)
         if hyperparam is None:
             hyperparam = self.af_params['explorationfactor']
         beta = hyperparam
 
         # compute LCB in bulk
-        list_lower_confidence_bound = (x_mu - beta * x_std)
+        list_lower_confidence_bound = list(x_mu - beta * x_std for (x_mu, x_std) in predictions)
         return list_lower_confidence_bound
 
     def af_lower_confidence_bound_srinivas(self, predictions=None, hyperparam=None) -> list:
         """ Acquisition function Lower Confidence Bound (UCB-S) after Srinivas, 2010 / Brochu, 2010 """
 
         # prefetch required data
-        x_mu, x_std = predictions
+        if predictions is None:
+            predictions, _, _ = self.predict_list(self.unvisited_cache)
         if hyperparam is None:
             hyperparam = self.af_params['explorationfactor']
 
@@ -804,7 +814,7 @@ class BayesianOptimization():
         beta = np.sqrt(zeta * (2 * np.log((t**(d / 2. + 2)) * (np.pi**2) / (3. * delta))))
 
         # compute UCB in bulk
-        list_lower_confidence_bound = (x_mu - beta * x_std)
+        list_lower_confidence_bound = list(x_mu - beta * x_std for (x_mu, x_std) in predictions)
         return list_lower_confidence_bound
 
     def visualize_after_opt(self):
@@ -812,7 +822,7 @@ class BayesianOptimization():
         print(self.__model.kernel_.get_params())
         print(self.__model.log_marginal_likelihood())
         import matplotlib.pyplot as plt
-        mu, std = self.predict_list(self.searchspace)
+        _, mu, std = self.predict_list(self.searchspace)
         brute_force_observations = list()
         for param_config in self.searchspace:
             obs = minimize._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)

@@ -30,6 +30,7 @@ from datetime import datetime
 import logging
 import numpy
 from time import perf_counter
+from constraint import Constraint
 
 import kernel_tuner.util as util
 import kernel_tuner.core as core
@@ -42,7 +43,7 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
-from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, mls, pso, simulated_annealing, firefly_algorithm, bayes_opt, greedy_mls, greedy_ils, ordered_greedy_mls, dual_annealing
+from kernel_tuner.strategies import brute_force, random_sample, diff_evo, minimize, basinhopping, genetic_algorithm, mls, pso, simulated_annealing, firefly_algorithm, bayes_opt, greedy_mls, greedy_ils, ordered_greedy_mls, dual_annealing, bayes_opt_old, bayes_opt_GPyTorch, bayes_opt_GPyTorch_lean, bayes_opt_alt_BOTorch
 
 strategy_map = {
     "brute_force": brute_force,
@@ -60,6 +61,10 @@ strategy_map = {
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
+    "bayes_opt_old": bayes_opt_old,
+    "bayes_opt_GPyTorch": bayes_opt_GPyTorch,
+    "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
+    "bayes_opt_BOTorch": bayes_opt_alt_BOTorch,
 }
 
 
@@ -430,10 +435,13 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, simulation_mode=False, observers=None):
+                cache=None, metrics=None, simulation_mode=False, parallel_mode=False, hyperparam_mode=False, observers=None):
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
+
+    if iterations < 1:
+        raise ValueError("Iterations should be at least one!")
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
 
@@ -499,7 +507,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
 
     # select the runner for this job based on input
     selected_runner = SimulationRunner if simulation_mode is True else SequentialRunner
-    with selected_runner(kernelsource, kernel_options, device_options, iterations, observers) as runner:
+    with selected_runner(kernelsource, kernel_options, device_options, iterations, observers, parallel_mode, hyperparam_mode) as runner:
 
         # the user-specified function may or may not have an optional atol argument;
         # we normalize it so that it always accepts atol.
@@ -529,7 +537,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
             else:
                 print("no results to report")
 
-        if cache:
+        if cache and not simulation_mode:
             util.close_cache(cache)
 
     # get the seperate timings for the benchmarking process

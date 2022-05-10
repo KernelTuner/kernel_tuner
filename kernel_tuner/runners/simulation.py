@@ -88,8 +88,8 @@ class SimulationDeviceInterface(object):
 
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
-        if lang not in ('CUDA', 'OpenCL', 'C'):
-            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+        if lang not in ('CUDA', 'OpenCL', 'C', 'Python'):
+            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, C or Python is not implemented yet")
         self.lang = lang
         self.dev = SimulationLangFunction(self.lang, device, iterations, compiler_options)
         self.max_threads = 1024
@@ -173,7 +173,7 @@ class SimulationDeviceInterface(object):
 class SimulationRunner(object):
     """ SimulationRunner is used for tuning with a single process/thread """
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, parallel_mode=False, hyperparam_mode=False):
         """ Instantiate the SimulationRunner
 
         :param kernel_source: The kernel source
