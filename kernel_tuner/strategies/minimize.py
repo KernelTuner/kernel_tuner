@@ -62,7 +62,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     start_time = perf_counter()
     last_strategy_time = 1000 * (start_time - runner.last_strategy_start_time)
 
-    error_time = 1e20
+    # error value to return for numeric optimizers that need a numerical value
+    error_value = 1e20
     logging.debug('_cost_func called')
     logging.debug('x: ' + str(x))
 
@@ -92,9 +93,9 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
         legal = util.check_restrictions(tuning_options.restrictions, params, tuning_options.tune_params.keys(), tuning_options.verbose)
         if not legal:
             error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
-            error_result["time"] = error_time
+            error_result["time"] = util.InvalidConfig()
             tuning_options.cache[x_int] = error_result
-            return error_time
+            return error_value
 
     # compile and benchmark this instance
     res, _ = runner.run([params], kernel_options, tuning_options)
@@ -118,7 +119,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
         results.append(result)
         return result['time']
 
-    return error_time
+    return error_value
 
 
 def get_bounds_x0_eps(tuning_options):
