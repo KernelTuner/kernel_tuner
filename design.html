@@ -264,6 +264,12 @@ about the hardware/software environment on which the tuning took place.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.minimize.scale_from_params">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.minimize.</span></span><span class="sig-name descname"><span class="pre">scale_from_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.scale_from_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper func to do the inverse of the ‘unscale’ function</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.minimize.setup_method_arguments">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.minimize.</span></span><span class="sig-name descname"><span class="pre">setup_method_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.minimize.setup_method_arguments" title="Permalink to this definition">¶</a></dt>
 <dd><p>prepare method specific arguments</p>
@@ -544,7 +550,7 @@ about the hardware/software environment on which the tuning took place.</p>
 <p>The strategy that uses particle swarm optimization</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.simulated_annealing.acceptance_prob">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.simulated_annealing.</span></span><span class="sig-name descname"><span class="pre">acceptance_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_cost</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_cost</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.simulated_annealing.acceptance_prob" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.simulated_annealing.</span></span><span class="sig-name descname"><span class="pre">acceptance_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_cost</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_cost</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.simulated_annealing.acceptance_prob" title="Permalink to this definition">¶</a></dt>
 <dd><p>annealing equation, with modifications to work towards a lower value</p>
 </dd></dl>
 
@@ -1861,12 +1867,6 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
 <dt class="sig sig-object py" id="kernel_tuner.util.setup_block_and_grid">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">setup_block_and_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_block_and_grid" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute problem size, thread block and grid dimensions for this kernel</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="kernel_tuner.util.sort_configs">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">sort_configs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.sort_configs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sort list of configs according to the objective</p>
 </dd></dl>
 
 <dl class="py function">
