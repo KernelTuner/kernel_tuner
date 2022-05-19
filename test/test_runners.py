@@ -85,7 +85,7 @@ def test_simulation_runner(env):
 
 
 def test_diff_evo(env):
-    result, _ = kernel_tuner.tune_kernel(*env, strategy="diff_evo", verbose=True, cache=cache_filename, simulation_mode=True)
+    result, _ = kernel_tuner.tune_kernel(*env, strategy="diff_evo", strategy_options=dict(popsize=5), verbose=True, cache=cache_filename, simulation_mode=True)
     assert len(result) > 0
 
 

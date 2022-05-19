@@ -91,19 +91,15 @@ class SequentialRunner(object):
 
             if isinstance(result, ErrorConfig):
                 logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
-                params.update({ "time": result })
+                params.update({ tuning_options.objective: result })
                 store_cache(x_int, params, tuning_options)
                 results.append(params)
                 continue
 
             # print and append to results
-            if isinstance(result, dict):
-                time = result["time"]
+            if not isinstance(result, dict):
+                params[tuning_options.objective] = result
             else:
-                time = result
-
-            params['time'] = time
-            if isinstance(result, dict):
                 params.update(result)
 
             if tuning_options.metrics:

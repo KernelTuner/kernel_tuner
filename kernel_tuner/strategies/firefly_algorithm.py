@@ -1,8 +1,9 @@
 """ The strategy that uses the firefly algorithm for optimization"""
-from __future__ import print_function
+import sys
 import numpy as np
 
-from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, scale_from_params
 from kernel_tuner.strategies.pso import Particle
 
 
@@ -36,7 +37,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = True
 
     # using this instead of get_bounds because scaling is used
-    bounds, _, _ = get_bounds_x0_eps(tuning_options)
+    bounds, _, eps = get_bounds_x0_eps(tuning_options)
 
     args = (kernel_options, tuning_options, runner, results)
 
@@ -48,7 +49,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     gamma = tuning_options.strategy_options.get("gamma", 1.0)
     alpha = tuning_options.strategy_options.get("alpha", 0.2)
 
-    best_time_global = 1e20
+    best_score_global = sys.float_info.max
     best_position_global = []
 
     # init particle swarm
@@ -56,13 +57,22 @@ def tune(runner, kernel_options, device_options, tuning_options):
     for i in range(0, num_particles):
         swarm.append(Firefly(bounds, args))
 
+    # ensure particles start from legal points
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+    population = list(list(p) for p in searchspace.get_random_sample(num_particles))
+    for i, particle in enumerate(swarm):
+        particle.position = scale_from_params(population[i], tuning_options.tune_params, eps)
+
     # compute initial intensities
     for j in range(num_particles):
         swarm[j].compute_intensity(_cost_func)
+        if swarm[j].score <= best_score_global:
+            best_position_global = swarm[j].position
+            best_score_global = swarm[j].score
 
     for c in range(maxiter):
         if tuning_options.verbose:
-            print("start iteration ", c, "best time global", best_time_global)
+            print("start iteration ", c, "best score global", best_score_global)
 
         # compare all to all and compute attractiveness
         for i in range(num_particles):
@@ -76,16 +86,16 @@ def tune(runner, kernel_options, device_options, tuning_options):
                     swarm[i].compute_intensity(_cost_func)
 
                     # update global best if needed, actually only used for printing
-                    if swarm[i].time <= best_time_global:
+                    if swarm[i].score <= best_score_global:
                         best_position_global = swarm[i].position
-                        best_time_global = swarm[i].time
+                        best_score_global = swarm[i].score
 
-        swarm.sort(key=lambda x: x.time)
+        swarm.sort(key=lambda x: x.score)
 
     if tuning_options.verbose:
         print('Final result:')
         print(best_position_global)
-        print(best_time_global)
+        print(best_score_global)
 
     return results, runner.dev.get_environment()
 
@@ -97,7 +107,7 @@ class Firefly(Particle):
         """Create Firefly at random position within bounds"""
         super().__init__(bounds, args)
         self.bounds = bounds
-        self.intensity = 1 / self.time
+        self.intensity = 1 / self.score
 
     def distance_to(self, other):
         """Return Euclidian distance between self and other Firefly"""
@@ -106,7 +116,10 @@ class Firefly(Particle):
     def compute_intensity(self, _cost_func):
         """Evaluate cost function and compute intensity at this position"""
         self.evaluate(_cost_func)
-        self.intensity = 1 / self.time
+        if self.score == sys.float_info.max:
+            self.intensity = -sys.float_info.max
+        else:
+            self.intensity = 1 / self.score
 
     def move_towards(self, other, beta, alpha):
         """Move firefly towards another given beta and alpha values"""

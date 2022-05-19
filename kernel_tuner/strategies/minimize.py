@@ -2,10 +2,11 @@
 from __future__ import print_function
 
 from collections import OrderedDict
+import sys
 import logging
 from time import perf_counter
 
-import numpy
+import numpy as np
 import scipy.optimize
 from kernel_tuner import util
 
@@ -63,9 +64,14 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
     last_strategy_time = 1000 * (start_time - runner.last_strategy_start_time)
 
     # error value to return for numeric optimizers that need a numerical value
-    error_value = 1e20
+    error_value = sys.float_info.max if not tuning_options.objective_higher_is_better else -sys.float_info.max
     logging.debug('_cost_func called')
     logging.debug('x: ' + str(x))
+
+    def return_value(record):
+        score = record[tuning_options.objective]
+        return_val = score if not isinstance(score, util.ErrorConfig) else error_value
+        return return_val if not tuning_options.objective_higher_is_better else -return_val
 
     # snap values in x to nearest actual value for each parameter unscale x if needed
     if tuning_options.snap:
@@ -85,7 +91,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
         results.append(cached_result)
         # upon returning from this function control will be given back to the strategy, so reset the start time
         runner.last_strategy_start_time = perf_counter()
-        return cached_result["time"] if not isinstance(cached_result["time"], util.ErrorConfig) else error_value
+        return return_value(cached_result)
 
     # check if this is a legal (non-restricted) parameter instance
     if check_restrictions and tuning_options.restrictions:
@@ -93,9 +99,9 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
         legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
         if not legal:
             error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
-            error_result["time"] = util.InvalidConfig()
+            error_result[tuning_options.objective] = util.InvalidConfig()
             tuning_options.cache[x_int] = error_result
-            return error_value
+            return return_value(error_result)
 
     # compile and benchmark this instance
     res, _ = runner.run([params], kernel_options, tuning_options)
@@ -111,14 +117,13 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
         result['framework_time'] = max(total_time - (compile_time + verification_time + total_kernel_time), 0)
     result['strategy_time'] = last_strategy_time
 
-    # upon returning from this function control will be given back to the strategy, so reset the start time
-    runner.last_strategy_start_time = perf_counter()
-
     # append to tuning results
     if res:
         results.append(result)
 
-    return result['time'] if not isinstance(result['time'], util.ErrorConfig) else error_value
+    # upon returning from this function control will be given back to the strategy, so reset the start time
+    runner.last_strategy_start_time = perf_counter()
+    return return_value(result)
 
 
 def get_bounds_x0_eps(tuning_options):
@@ -131,7 +136,7 @@ def get_bounds_x0_eps(tuning_options):
         x0 = None
 
     if tuning_options.scaling:
-        eps = numpy.amin([1.0 / len(v) for v in values])
+        eps = np.amin([1.0 / len(v) for v in values])
 
         # reducing interval from [0, 1] to [0, eps*len(v)]
         bounds = [(0, eps * len(v)) for v in values]
@@ -147,8 +152,8 @@ def get_bounds_x0_eps(tuning_options):
             x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
         eps = 1e9
         for v_list in values:
-            vals = numpy.sort(v_list)
-            eps = min(eps, numpy.amin(numpy.gradient(vals)))
+            vals = np.sort(v_list)
+            eps = min(eps, np.amin(np.gradient(vals)))
 
     tuning_options["eps"] = eps
     logging.debug('get_bounds_x0_eps called')
@@ -163,7 +168,7 @@ def get_bounds(tune_params):
     """ create a bounds array from the tunable parameters """
     bounds = []
     for values in tune_params.values():
-        sorted_values = numpy.sort(values)
+        sorted_values = np.sort(values)
         bounds.append((sorted_values[0], sorted_values[-1]))
     return bounds
 
@@ -209,8 +214,8 @@ def snap_to_nearest_config(x, tune_params, resolution=1):
     """helper func that for each param selects the closest actual value"""
     params = []
     for i, k in enumerate(tune_params.keys()):
-        values = numpy.array(tune_params[k])
-        idx = numpy.abs(values - x[i]).argmin()
+        values = np.array(tune_params[k])
+        idx = np.abs(values - x[i]).argmin()
         params.append(values[idx])
     return params
 
@@ -223,10 +228,10 @@ def unscale_and_snap_to_nearest(x, tune_params, eps):
         # to actual values, giving each value an equal chance
         # pad = 0.5/len(v)  #use when interval is [0,1]
         pad = 0.5 * eps    # use when interval is [0, eps*len(v)]
-        linspace = numpy.linspace(pad, (eps * len(v)) - pad, len(v))
+        linspace = np.linspace(pad, (eps * len(v)) - pad, len(v))
 
         # snap value to nearest point in space, store index
-        idx = numpy.abs(linspace - x[i]).argmin()
+        idx = np.abs(linspace - x[i]).argmin()
 
         # safeguard that should not be needed
         idx = min(max(idx, 0), len(v) - 1)
@@ -234,3 +239,11 @@ def unscale_and_snap_to_nearest(x, tune_params, eps):
         # use index into array of actual values
         x_u[i] = v[idx]
     return x_u
+
+
+def scale_from_params(params, tune_params, eps):
+    """helper func to do the inverse of the 'unscale' function"""
+    x = np.zeros(len(params))
+    for i, v in enumerate(tune_params.values()):
+        x[i] = 0.5 * eps + v.index(params[i])*eps
+    return x
