@@ -120,21 +120,8 @@ class Searchspace():
 
     def get_param_config_index(self, param_config: tuple):
         """ Lookup the index for a parameter configuration, returns None if not found """
-        # three options: use .get on python dict, use .index() on python list / tuple, or np.count_nonzero + np.nonzero mask
-
         #1 pros: constant time O(1) access - much faster than any other method, cons: need to keep a shadow dict of the search space
         return self.__dict.get(param_config, None)
-
-        #2 pros: ~4.5x speedup over numpy method (see test_index_performance.py), cons: need to keep a shadow list of the search space
-        try:
-            return self.__list.index(param_config)
-        except ValueError:
-            return None
-
-        #3 pros: pure numpy & no need to keep a shadow list, cons: does not stop on first occurance, much slower
-        num_matching_params = np.count_nonzero(self.__numpy == param_config, -1)
-        indices = (num_matching_params == self.num_params).nonzero()[0]
-        return indices[0] if len(indices) == 1 else None
 
     def __prepare_neighbors_index(self):
         """ prepare by calculating the indices for the individual parameters """
