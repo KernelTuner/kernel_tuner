@@ -55,7 +55,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     #while searching
     candidate = searchspace.get_random_sample(1)[0]
-    best_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
+    best_score = _cost_func(candidate, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
 
     last_improvement = 0
     while fevals < max_fevals:
@@ -63,9 +63,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         fevals = len(unique_results)
 
-        new_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
-        # How to do maximization?
-        if new_time < best_time:
+        new_score = _cost_func(candidate, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
+        if new_score < best_score:
             last_improvement = 0
         else:
             last_improvement += 1

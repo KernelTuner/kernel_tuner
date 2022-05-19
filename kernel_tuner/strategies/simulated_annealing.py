@@ -1,4 +1,5 @@
 """ The strategy that uses particle swarm optimization"""
+import sys
 import random
 import numpy as np
 
@@ -60,7 +61,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
             new_pos = neighbor(pos, searchspace)
             new_cost = _cost_func(new_pos, *args, check_restrictions=False)
 
-            ap = acceptance_prob(old_cost, new_cost, T)
+            ap = acceptance_prob(old_cost, new_cost, T, tuning_options)
             r = random.random()
 
             if ap > r:
@@ -73,18 +74,21 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     return results, runner.dev.get_environment()
 
-def acceptance_prob(old_cost, new_cost, T):
+def acceptance_prob(old_cost, new_cost, T, tuning_options):
     """annealing equation, with modifications to work towards a lower value"""
+    error_val = sys.float_info.max if not tuning_options.objective_higher_is_better else -sys.float_info.max
     # if start pos is not valid, always move
-    if old_cost == 1e20:
+    if old_cost == error_val:
         return 1.0
     # if we have found a valid ps before, never move to nonvalid pos
-    if new_cost == 1e20:
+    if new_cost == error_val:
         return 0.0
     # always move if new cost is better
     if new_cost < old_cost:
         return 1.0
     # maybe move if old cost is better than new cost depending on T and random value
+    if tuning_options.objective_higher_is_better:
+        return np.exp(((new_cost-old_cost)/new_cost)/T)
     return np.exp(((old_cost-new_cost)/old_cost)/T)
 
 

@@ -373,6 +373,10 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
     """, "dict")),
                            ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""", "int")),
+                           ("objective", ("""Optimization objective to sort results on, consisting of a string
+            that also occurs in results as a metric or observed quantity, default 'time'""", "string")),
+                           ("objective_higher_is_better", ("""boolean that specifies whether the objective should
+            be maximized (True) or minimized (False), default False.""", "bool")),
                            ("verbose", ("""Sets whether or not to report about configurations that
         were skipped during the search. This could be due to several reasons:
 
@@ -428,7 +432,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, simulation_mode=False, observers=None):
+                cache=None, metrics=None, simulation_mode=False, observers=None, objective=None, objective_higher_is_better=False):
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -436,6 +440,10 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
+
+    # default objective if none is specified
+    if objective is None:
+        objective = "time"
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params)
@@ -520,7 +528,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         # finished iterating over search space
         if not device_options.quiet:
             if results:    # checks if results is not empty
-                best_config = util.get_best_config(results, "time", False)
+                best_config = util.get_best_config(results, objective, objective_higher_is_better)
                 units = getattr(runner, "units", None)
                 print("best performing configuration:")
                 util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)

@@ -82,8 +82,8 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
 
     tune_params = tuning_options.tune_params
 
-    # measure start point time
-    best_time = _cost_func(base_sol, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
+    # measure start point score
+    best_score = _cost_func(base_sol, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
 
     found_improved = True
     while found_improved:
@@ -109,13 +109,13 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
                 orig_val = child[index]
                 child[index] = val
 
-                # get time for this position
-                time = _cost_func(child, kernel_options, tuning_options, runner, current_results, check_restrictions=False)
-                unique_results.update({",".join([str(v) for k, v in record.items() if k in tune_params]): record["time"] for record in current_results})
+                # get score for this position
+                score = _cost_func(child, kernel_options, tuning_options, runner, current_results, check_restrictions=False)
+                unique_results.update({",".join([str(v) for k, v in record.items() if k in tune_params]): record[tuning_options.objective] for record in current_results})
 
                 # generalize this to other tuning objectives
-                if time < best_time:
-                    best_time = time
+                if score < best_score:
+                    best_score = score
                     base_sol = child[:]
                     found_improved = True
                     if restart:

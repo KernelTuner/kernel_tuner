@@ -42,7 +42,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     tuning_options["scaling"] = False
 
-    best_time = 1e20
+    best_score = 1e20
     all_results = []
     unique_results = {}
 
@@ -63,12 +63,12 @@ def tune(runner, kernel_options, device_options, tuning_options):
         # population is sorted such that better configs have higher chance of reproducing
         weighted_population.sort(key=lambda x: x[1])
 
-        # 'best_time' is used only for printing
+        # 'best_score' is used only for printing
         if tuning_options.verbose and all_results:
-            best_time = util.get_best_config(all_results, "time")["time"]
+            best_score = util.get_best_config(all_results, tuning_options.objective, tuning_options.objective_higher_is_better)[tuning_options.objective]
 
         if tuning_options.verbose:
-            print("Generation %d, best_time %f" % (generation, best_time))
+            print("Generation %d, best_score %f" % (generation, best_score))
 
         population = []
 

@@ -240,7 +240,7 @@ def detect_language(kernel_string):
 def get_best_config(results, objective, objective_higher_is_better=False):
     """ Returns the best configuration from a list of results according to some objective """
     func = max if objective_higher_is_better else min
-    ignore_val = sys.float_info.min if objective_higher_is_better else sys.float_info.max
+    ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
     best_config = func(results, key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
     return best_config
 
@@ -574,13 +574,6 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     current_problem_size = get_problem_size(problem_size, params)
     grid = get_grid_dimensions(current_problem_size, params, grid_div, block_size_names)
     return threads, grid
-
-
-def sort_configs(results, objective, objective_higher_is_better=False):
-    """ Sort list of configs according to the objective """
-    func = max if objective_higher_is_better else min
-    ignore_val = sys.float_info.min if objective_higher_is_better else sys.float_info.max
-    results.sort(key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
 
 
 def write_file(filename, string):
