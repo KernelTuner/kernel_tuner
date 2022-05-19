@@ -94,7 +94,8 @@ def test_interface_handles_runtime_error(dev_interface):
 
     assert dev.compile.call_count == 2
     dev.benchmark.assert_called_with('compile', 'ready_argument_list', (256, 1, 1), (1, 1, 1))
-    assert len(results) == 0
+
+    assert len(results) == 1
 
 
 @patch('kernel_tuner.core.CudaFunctions')

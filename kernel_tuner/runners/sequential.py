@@ -1,8 +1,7 @@
 """ The default runner for sequentially tuning the parameter space """
-from __future__ import print_function
-
 from collections import OrderedDict
 import logging
+from time import perf_counter
 
 from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output, ErrorConfig
 from kernel_tuner.core import DeviceInterface
@@ -37,7 +36,7 @@ class SequentialRunner(object):
         self.kernel_source = kernel_source
         self.warmed_up = False
         self.simulation_mode = False
-        self.last_strategy_start_time = None
+        self.last_strategy_start_time = perf_counter()
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -91,9 +90,10 @@ class SequentialRunner(object):
                 params['verification_time'] = self.dev.last_verification_time
 
             if isinstance(result, ErrorConfig):
-                logging.debug('received benchmark result is None, kernel configuration was skipped silently due to compile or runtime failure')
-                params.update({ "time": result   })
+                logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
+                params.update({ "time": result })
                 store_cache(x_int, params, tuning_options)
+                results.append(params)
                 continue
 
             # print and append to results

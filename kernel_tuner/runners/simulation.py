@@ -1,6 +1,6 @@
 """ The simulation runner for sequentially tuning the parameter space based on cached data """
-from __future__ import print_function
 
+from time import perf_counter
 import logging
 
 from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output, get_instance_string
@@ -198,6 +198,7 @@ class SimulationRunner(object):
         self.kernel_source = kernel_source
 
         self.simulation_mode = True
+        self.last_strategy_start_time = perf_counter()
 
     def __enter__(self):
         return self

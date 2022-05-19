@@ -510,13 +510,13 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
             tuning_options.cachefile = None
 
         # call the strategy to execute the tuning process
-        selected_runner.last_strategy_start_time = perf_counter()
+        #selected_runner.last_strategy_start_time = perf_counter()
         results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
         # finished iterating over search space
         if not device_options.quiet:
             if results:    # checks if results is not empty
-                best_config = get_best_config(results, "time", False)
+                best_config = util.get_best_config(results, "time", False)
                 units = getattr(runner, "units", None)
                 print("best performing configuration:")
                 util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
@@ -530,14 +530,6 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     overhead_time = 1000 * (perf_counter() - start_overhead_time)
     env = util.get_total_timings(results, env, overhead_time)
     return results, env
-
-
-def get_best_config(results, objective, objective_higher_is_better=False):
-    """ Returns the best configuration from a list of results according to some objective """
-    func = max if objective_higher_is_better else min
-    ignore_val = sys.float_info.min if objective_higher_is_better else sys.float_info.max
-    best_config = func(results, key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
-    return best_config
 
 
 tune_kernel.__doc__ = _tune_kernel_docstring

@@ -84,7 +84,6 @@ class KernelSource(object):
         :returns: A string containing the kernel code.
         :rtype: string
         """
-        #logging.debug('get_kernel_string called with %s', str(kernel_source))
         logging.debug('get_kernel_string called')
 
         kernel_source = self.kernel_sources[index]

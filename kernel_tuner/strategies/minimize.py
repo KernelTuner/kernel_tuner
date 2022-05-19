@@ -82,11 +82,10 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     if x_int in tuning_options.cache:
         cached_result = tuning_options.cache[x_int]
         cached_result['strategy_time'] = last_strategy_time
-        # TODO check if the new strategy time actually ends up in the returned results (not in the cache file!)
         results.append(cached_result)
         # upon returning from this function control will be given back to the strategy, so reset the start time
         runner.last_strategy_start_time = perf_counter()
-        return cached_result["time"]
+        return cached_result["time"] if not isinstance(cached_result["time"], util.ErrorConfig) else error_value
 
     # check if this is a legal (non-restricted) parameter instance
     if tuning_options.restrictions:
@@ -117,9 +116,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results):
     # append to tuning results
     if res:
         results.append(result)
-        return result['time']
 
-    return error_value
+    return result['time'] if not isinstance(result['time'], util.ErrorConfig) else error_value
 
 
 def get_bounds_x0_eps(tuning_options):

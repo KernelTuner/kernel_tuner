@@ -3,6 +3,7 @@ import itertools
 import json
 from collections import OrderedDict
 import os
+import sys
 import errno
 import tempfile
 import logging
@@ -192,6 +193,14 @@ def detect_language(kernel_string):
     return lang
 
 
+def get_best_config(results, objective, objective_higher_is_better=False):
+    """ Returns the best configuration from a list of results according to some objective """
+    func = max if objective_higher_is_better else min
+    ignore_val = sys.float_info.min if objective_higher_is_better else sys.float_info.max
+    best_config = func(results, key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
+    return best_config
+
+
 def get_config_string(params, keys=None, units=None):
     """ return a compact string representation of a measurement """
 
@@ -286,7 +295,7 @@ def get_number_of_valid_configs(tuning_options, max_threads):
     """compute number of valid configurations in a search space based on restrictions and max_threads"""
     parameter_space = itertools.product(*tuning_options.tune_params.values())
     if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: util.config_valid(p, tuning_options, max_threads), parameter_space)
+        parameter_space = filter(lambda p: config_valid(p, tuning_options, max_threads), parameter_space)
     return len(list(parameter_space))
 
 
@@ -531,6 +540,13 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     return threads, grid
 
 
+def sort_configs(results, objective, objective_higher_is_better=False):
+    """ Sort list of configs according to the objective """
+    func = max if objective_higher_is_better else min
+    ignore_val = sys.float_info.min if objective_higher_is_better else sys.float_info.max
+    results.sort(key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
+
+
 def write_file(filename, string):
     """dump the contents of string to a file called filename"""
     import sys
@@ -706,7 +722,7 @@ def store_cache(key, params, tuning_options):
     """ stores a new entry (key, params) to the cachefile """
 
     # create converter for dumping numpy objects to JSON
-    def npconverter(obj):
+    def JSONconverter(obj):
         if isinstance(obj, np.integer):
             return int(obj)
         elif isinstance(obj, np.floating):
@@ -720,9 +736,16 @@ def store_cache(key, params, tuning_options):
     if isinstance(tuning_options.cache, dict):
         if not key in tuning_options.cache:
             tuning_options.cache[key] = params
+
+            # Convert ErrorConfig objects to string, wanted to do this inside the JSONconverter but couldn't get it to work
+            output_params = params.copy()
+            for k,v in output_params.items():
+                if isinstance(v, ErrorConfig):
+                    output_params[k] = str(v)
+
             if tuning_options.cachefile:
                 with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({ key: params }, default=npconverter)[1:-1] + ",")
+                    cachefile.write("\n" + json.dumps({ key: output_params }, default=JSONconverter)[1:-1] + ",")
 
 
 def dump_cache(obj: str, tuning_options):
