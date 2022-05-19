@@ -4,7 +4,9 @@ import random
 import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
+from kernel_tuner.searchspace import Searchspace
 from kernel_tuner import util
+
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -24,7 +26,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
+        execution times. And a dictionary that contains information
         about the hardware/software environment on which the tuning took place.
     :rtype: list(dict()), dict()
 
@@ -38,25 +40,24 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     max_fevals = options.get("max_fevals", 100)
 
-    # limit max_fevals to max size of the parameter space
-    max_threads = runner.dev.max_threads
-    max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
-
     tuning_options["scaling"] = False
-    tune_params = tuning_options.tune_params
 
     best_time = 1e20
     all_results = []
     unique_results = {}
 
-    population = random_population(pop_size, tune_params, tuning_options, max_threads)
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+    population = list(list(p) for p in searchspace.get_random_sample(pop_size))
+
+    # limit max_fevals to max size of the parameter space
+    max_fevals = min(searchspace.size, max_fevals)
 
     for generation in range(generations):
 
         # determine fitness of population members
         weighted_population = []
         for dna in population:
-            time = _cost_func(dna, kernel_options, tuning_options, runner, all_results)
+            time = _cost_func(dna, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
             weighted_population.append((dna, time))
 
         # population is sorted such that better configs have higher chance of reproducing
@@ -64,14 +65,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         # 'best_time' is used only for printing
         if tuning_options.verbose and all_results:
-            best_time = min(all_results, key=lambda x: x["time"])["time"]
+            best_time = util.get_best_config(all_results, "time")["time"]
 
         if tuning_options.verbose:
             print("Generation %d, best_time %f" % (generation, best_time))
 
         population = []
 
-        unique_results.update({",".join([str(i) for i in dna]): time for dna, time in weighted_population})
+        unique_results.update({",".join([str(i) for i in dna]): time
+                               for dna, time in weighted_population})
         if len(unique_results) >= max_fevals:
             break
 
@@ -82,21 +84,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
             children = crossover(dna1, dna2)
 
             for child in children:
-                child = mutate(child, tune_params, mutation_chance, tuning_options, max_threads)
+                child = mutate(child, mutation_chance, searchspace)
 
-                if child not in population and util.config_valid(child, tuning_options, max_threads):
+                if child not in population and searchspace.is_param_config_valid(tuple(child)):
                     population.append(child)
 
                 if len(population) >= pop_size:
                     break
 
         # could combine old + new generation here and do a selection
-
-
-
-
-
-
 
     return all_results, runner.dev.get_environment()
 
@@ -133,43 +129,20 @@ def weighted_choice(population, n):
     return [population[ind][0] for ind in chosen]
 
 
-def random_population(pop_size, tune_params, tuning_options, max_threads):
-    """create a random population of pop_size unique members"""
-    population = []
-    option_space = np.prod([len(v) for v in tune_params.values()])
-    assert pop_size < option_space
-    while len(population) < pop_size:
-        dna = [random.choice(v) for v in tune_params.values()]
-        if not dna in population and util.config_valid(dna, tuning_options, max_threads):
-            population.append(dna)
-    return population
-
-
-def random_val(index, tune_params):
-    """return a random value for a parameter"""
-    key = list(tune_params.keys())[index]
-    return random.choice(tune_params[key])
-
-
-def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
+def mutate(dna, mutation_chance, searchspace: Searchspace):
     """Mutate DNA with 1/mutation_chance chance"""
-    dna_out = dna[:]
-    if int(random.random() * mutation_chance) == 0:
-        attempts = 20
-        while attempts > 0:
-            #decide which parameter to mutate
-            i = random.choice(range(len(dna)))
-            dna_out = dna[:]
-            dna_out[i] = random_val(i, tune_params)
 
-            if not dna_out == dna and util.config_valid(dna_out, tuning_options, max_threads):
-                return dna_out
-            attempts = attempts - 1
+    # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
+    if int(random.random() * mutation_chance) == 0:
+        neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method='Hamming')
+        if len(neighbors) > 0:
+            return list(random.choice(neighbors))
     return dna
 
 
 def single_point_crossover(dna1, dna2):
     """crossover dna1 and dna2 at a random index"""
+    # check if you can do the crossovers using the neighbor index: check which valid parameter configuration is closest to the crossover, probably best to use "adjacent" as it is least strict?
     pos = int(random.random() * (len(dna1)))
     return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
 
@@ -179,8 +152,8 @@ def two_point_crossover(dna1, dna2):
     if len(dna1) < 5:
         start, end = 0, len(dna1)
     else:
-        start, end = 1, len(dna1)-1
-    pos1, pos2 = sorted(random.sample(list(range(start,end)), 2))
+        start, end = 1, len(dna1) - 1
+    pos1, pos2 = sorted(random.sample(list(range(start, end)), 2))
     child1 = dna1[:pos1] + dna2[pos1:pos2] + dna1[pos2:]
     child2 = dna2[:pos1] + dna1[pos1:pos2] + dna2[pos2:]
     return (child1, child2)

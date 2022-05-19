@@ -20,14 +20,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
+        execution times. And a dictionary that contains information
         about the hardware/software environment on which the tuning took place.
     :rtype: list(dict()), dict()
 
     """
 
     # disable randomization and enable greedy hillclimbing
-    options = tuning_options.strategy_options
-    options["restart"] = True
-    options["randomize"] = False
+    tuning_options.strategy_options["restart"] = True
+    tuning_options.strategy_options["randomize"] = False
     return mls_tune(runner, kernel_options, device_options, tuning_options)

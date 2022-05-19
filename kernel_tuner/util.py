@@ -1,5 +1,4 @@
 """ Module for kernel tuner utility functions """
-import itertools
 import json
 from collections import OrderedDict
 import os
@@ -9,8 +8,10 @@ import tempfile
 import logging
 import warnings
 import re
+from types import FunctionType
 
 import numpy as np
+from constraint import Constraint, AllDifferentConstraint, AllEqualConstraint, MaxSumConstraint, ExactSumConstraint, MinSumConstraint, InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint, FunctionConstraint
 try:
     import cupy as cp
 except ImportError:
@@ -128,12 +129,14 @@ def check_block_size_names(block_size_names):
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
             raise ValueError("block_size_names should contain only strings!")
 
+
 def append_default_block_size_names(block_size_names):
     if block_size_names is None:
         return
     for i, name in enumerate(default_block_size_names):
         if len(block_size_names) < i + 1:
             block_size_names.append(name)
+
 
 def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:
@@ -145,17 +148,24 @@ def check_block_size_params_names_list(block_size_names, tune_params):
             warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
 
 
-def check_restrictions(restrictions, element, keys, verbose):
+def check_restrictions(restrictions, params: dict, verbose: bool):
     """ check whether a specific instance meets the search space restrictions """
-    params = OrderedDict(zip(keys, element))
     valid = True
     if callable(restrictions):
         valid = restrictions(params)
     else:
         for restrict in restrictions:
             try:
-                if not eval(replace_param_occurrences(restrict, params)):
+                # if it's a python-constraint, convert to function and execute
+                if isinstance(restrict, Constraint):
+                    restrict = convert_constraint_restriction(restrict)
+                    if not restrict(params.values()):
+                        valid = False
+                        break
+                # if it's a string, fill in the parameters and evaluate
+                elif not eval(replace_param_occurrences(restrict, params)):
                     valid = False
+                    break
             except ZeroDivisionError:
                 pass
     if not valid and verbose:
@@ -163,14 +173,48 @@ def check_restrictions(restrictions, element, keys, verbose):
     return valid
 
 
+def convert_constraint_restriction(restrict: Constraint):
+    """ Convert the python-constraint to a function for backwards compatibility """
+    if isinstance(restrict, FunctionConstraint):
+        f_restrict = lambda p: restrict._func(*p)
+    elif isinstance(restrict, AllDifferentConstraint):
+        f_restrict = lambda p: len(set(p)) == len(p)
+    elif isinstance(restrict, AllEqualConstraint):
+        f_restrict = lambda p: all(x == p[0] for x in p)
+    elif isinstance(restrict, MaxProdConstraint):
+        f_restrict = lambda p: np.prod(p) <= restrict._exactsum
+    elif isinstance(restrict, MaxSumConstraint):
+        f_restrict = lambda p: sum(p) <= restrict._exactsum
+    elif isinstance(restrict, ExactSumConstraint):
+        f_restrict = lambda p: sum(p) == restrict._exactsum
+    elif isinstance(restrict, MinSumConstraint):
+        f_restrict = lambda p: sum(p) >= restrict._exactsum
+    elif isinstance(restrict, (InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint)):
+        raise NotImplementedError(
+            f"Restriction of the type {type(restrict)} is explicitely not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
+        )
+    else:
+        raise TypeError(f"Unrecognized restriction {restrict}")
+    return f_restrict
+
+
+def check_thread_block_dimensions(params, max_threads, block_size_names=None):
+    """ check on maximum thread block dimensions """
+    dims = get_thread_block_dimensions(params, block_size_names)
+    return np.prod(dims) <= max_threads
+
+
 def config_valid(config, tuning_options, max_threads):
     """ combines restrictions and a check on the max thread block dimension to check config validity """
     legal = True
-    if tuning_options.restrictions:
-        legal = check_restrictions(tuning_options.restrictions, config, tuning_options.tune_params.keys(), False)
     params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
-    dims = get_thread_block_dimensions(params, tuning_options.get("block_size_names", None))
-    return legal and np.prod(dims) <= max_threads
+    if tuning_options.restrictions:
+        legal = check_restrictions(tuning_options.restrictions, params, False)
+        if not legal:
+            return False
+    block_size_names = tuning_options.get("block_size_names", None)
+    valid_thread_block_dimensions = check_thread_block_dimensions(params, max_threads, block_size_names)
+    return legal and valid_thread_block_dimensions
 
 
 def delete_temp_file(filename):
@@ -289,14 +333,6 @@ def get_kernel_string(kernel_source, params=None):
     else:
         raise TypeError("Error kernel_source is not a string nor a callable function")
     return kernel_string
-
-
-def get_number_of_valid_configs(tuning_options, max_threads):
-    """compute number of valid configurations in a search space based on restrictions and max_threads"""
-    parameter_space = itertools.product(*tuning_options.tune_params.values())
-    if tuning_options.restrictions is not None:
-        parameter_space = filter(lambda p: config_valid(p, tuning_options, max_threads), parameter_space)
-    return len(list(parameter_space))
 
 
 def get_problem_size(problem_size, params):
@@ -606,6 +642,28 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
+def parse_restrictions(restrictions: list):
+    """" parses restrictions from a list of strings into a callable function """
+
+    # rewrite the restrictions so variables are singled out
+    regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
+    suffix = ' and '
+    parsed_restrictions = ""
+    for restriction in restrictions:
+        parsed_restrictions += re.sub(regex_match_variable, r'params["\1"]', restriction) + suffix
+
+    # tidy up the code by removing the last suffix and unecessary spaces
+    parsed_restrictions = parsed_restrictions[:-len(suffix)]
+    parsed_restrictions = parsed_restrictions.strip()
+    parsed_restrictions = " ".join(parsed_restrictions.split())
+
+    # compile into a function
+    parsed_restrictions = f"def restrictions(params): return {parsed_restrictions} \n"
+    code_object = compile(parsed_restrictions, '<string>', 'exec')
+    func = FunctionType(code_object.co_consts[0], globals())
+    return func
+
+
 def process_cache(cache, kernel_options, tuning_options, runner):
     """cache file for storing tuned configurations
 
@@ -753,3 +811,46 @@ def dump_cache(obj: str, tuning_options):
     if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
         with open(tuning_options.cachefile, "a") as cachefile:
             cachefile.write(obj)
+
+
+class MaxProdConstraint(Constraint):
+    """ Constraint enforcing that values of given variables create a product up to a given amount """
+
+    def __init__(self, maxprod):
+        """
+        @param maxprod: Value to be considered as the maximum product
+        @type  maxprod: number
+        @param multipliers: If given, variable values will be multiplied by
+                            the given factors before being prod to be checked
+        """
+        self._maxprod = maxprod
+
+    def preProcess(self, variables, domains, constraints, vconstraints):
+        Constraint.preProcess(self, variables, domains, constraints, vconstraints)
+        maxprod = self._maxprod
+        for variable in variables:
+            domain = domains[variable]
+            for value in domain[:]:
+                if value > maxprod:
+                    domain.remove(value)
+
+    def __call__(self, variables, domains, assignments, forwardcheck=False):
+        maxprod = self._maxprod
+        prod = 1
+        for variable in variables:
+            if variable in assignments:
+                prod *= assignments[variable]
+        if type(prod) is float:
+            prod = round(prod, 10)
+        if prod > maxprod:
+            return False
+        if forwardcheck:
+            for variable in variables:
+                if variable not in assignments:
+                    domain = domains[variable]
+                    for value in domain[:]:
+                        if prod + value > maxprod:
+                            domain.hideValue(value)
+                    if not domain:
+                        return False
+        return True

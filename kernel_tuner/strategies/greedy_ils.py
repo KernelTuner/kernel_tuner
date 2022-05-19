@@ -3,7 +3,8 @@
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
-from kernel_tuner.strategies.genetic_algorithm import mutate, random_population
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies.genetic_algorithm import mutate
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -23,14 +24,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
+        execution times. And a dictionary that contains information
         about the hardware/software environment on which the tuning took place.
     :rtype: list(dict()), dict()
 
     """
 
     dna_size = len(tuning_options.tune_params.keys())
-    tune_params = tuning_options.tune_params
 
     options = tuning_options.strategy_options
 
@@ -46,24 +46,24 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = False
 
     # limit max_fevals to max size of the parameter space
-    max_threads = runner.dev.max_threads
-    max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+    max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0
     all_results = []
     unique_results = {}
 
     #while searching
-    candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
-    best_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results)
+    candidate = searchspace.get_random_sample(1)[0]
+    best_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
 
     last_improvement = 0
     while fevals < max_fevals:
-        candidate = base_hillclimb(candidate, neighbor, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=True)
+        candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=True)
 
         fevals = len(unique_results)
 
-        new_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results)
+        new_time = _cost_func(candidate, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
         # How to do maximization?
         if new_time < best_time:
             last_improvement = 0
@@ -71,13 +71,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
             last_improvement += 1
 
         # Instead of full restart, permute the starting candidate
-        candidate = random_walk(candidate, perm_size, no_improvement, last_improvement, tune_params, tuning_options, max_threads)
+        candidate = random_walk(candidate, perm_size, no_improvement, last_improvement, searchspace)
     return all_results, runner.dev.get_environment()
 
 
-def random_walk(indiv, permutation_size, no_improve, last_improve, tune_params, tuning_options, max_threads):
+def random_walk(indiv, permutation_size, no_improve, last_improve, searchspace: Searchspace):
     if last_improve >= no_improve:
-        return random_population(1, tune_params, tuning_options, max_threads)[0]
+        return searchspace.get_random_sample(1)[0]
     for _ in range(permutation_size):
-        indiv = mutate(indiv, tune_params, 0, tuning_options, max_threads)
+        indiv = mutate(indiv, 0, searchspace)
     return indiv

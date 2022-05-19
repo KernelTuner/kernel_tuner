@@ -2,7 +2,7 @@ import random
 
 from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
-
+from kernel_tuner.searchspace import Searchspace
 
 def get_neighbors(neighbor_method, values, element, randomize):
     """ get the list of neighboring elements of element in values """
@@ -24,7 +24,7 @@ def get_neighbors(neighbor_method, values, element, randomize):
     return neighbors
 
 
-def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None):
+def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None):
     """ Hillclimbing search until max_fevals is reached or no improvement is found
 
     Base hillclimber that evaluates neighbouring solutions in a random or fixed order
@@ -33,13 +33,16 @@ def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_re
     :params base_sol: Starting position for hillclimbing
     :type base_sol: list
 
-    :params neighbor_method: Method to use to select neighboring positions to visit
-        during hillclimbing, either "Hamming" or "adjacent" are supported.
+    :params neighbor_method: Method to use to select neighboring parameter configurations to visit
+        during hillclimbing, either "Hamming", "strictly-adjacent" or "adjacent" are supported.
     :type neighbor_method: string
 
     :params max_fevals: Maximum number of unique function evaluations that is allowed
          during the search.
     :type max_fevals: int
+
+    :params searchspace: The searchspace object.
+    :type searchspace: Seachspace
 
     :params all_results: List of dictionaries with all benchmarked configurations
     :type all_results: list(dict)
@@ -74,20 +77,17 @@ def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_re
     :rtype: list
 
     """
-    if neighbor_method not in ["Hamming", "adjacent"]:
-        raise ValueError("Unknown neighbour method.")
     if randomize and order:
         raise ValueError("Using a preset order and randomize at the same time is not supported.")
 
     tune_params = tuning_options.tune_params
-    max_threads = runner.dev.max_threads
 
     # measure start point time
-    best_time = _cost_func(base_sol, kernel_options, tuning_options, runner, all_results)
+    best_time = _cost_func(base_sol, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
 
     found_improved = True
     while found_improved:
-        child = base_sol[:]
+        child = list(base_sol[:])
         found_improved = False
 
         current_results = []
@@ -102,22 +102,15 @@ def base_hillclimb(base_sol, neighbor_method, max_fevals, all_results, unique_re
 
         # in each dimension see the possible values
         for index in indices:
-            values = vals[index]
-
-            neighbors = get_neighbors(neighbor_method, values, child[index], randomize)
+            neighbors = searchspace.get_param_neighbors(tuple(child), index, neighbor_method, randomize)
 
             # for each value in this dimension
             for val in neighbors:
                 orig_val = child[index]
                 child[index] = val
 
-                # check restrictions
-                if not util.config_valid(child, tuning_options, max_threads):
-                    child[index] = orig_val
-                    continue
-
                 # get time for this position
-                time = _cost_func(child, kernel_options, tuning_options, runner, current_results)
+                time = _cost_func(child, kernel_options, tuning_options, runner, current_results, check_restrictions=False)
                 unique_results.update({",".join([str(v) for k, v in record.items() if k in tune_params]): record["time"] for record in current_results})
 
                 # generalize this to other tuning objectives

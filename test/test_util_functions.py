@@ -22,7 +22,10 @@ block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 def test_get_grid_dimensions1():
     problem_size = (1024, 1024, 1)
-    params = {"block_x": 41, "block_y": 37}
+    params = {
+        "block_x": 41,
+        "block_y": 37
+    }
 
     grid_div = (["block_x"], ["block_y"], None)
 
@@ -48,8 +51,7 @@ def test_get_grid_dimensions1():
     assert grid[1] == 28
     assert grid[2] == 1
 
-    grid = get_grid_dimensions(problem_size, params,
-                    (None, lambda p: p["block_x"], lambda p: p["block_y"]*p["block_x"]), block_size_names)
+    grid = get_grid_dimensions(problem_size, params, (None, lambda p: p["block_x"], lambda p: p["block_y"] * p["block_x"]), block_size_names)
 
     assert grid[0] == 1024
     assert grid[1] == 25
@@ -58,7 +60,10 @@ def test_get_grid_dimensions1():
 
 def test_get_grid_dimensions2():
     problem_size = (1024, 1024, 1)
-    params = {"block_x": 41, "block_y": 37}
+    params = {
+        "block_x": 41,
+        "block_y": 37
+    }
 
     grid_div_x = ["block_x*8"]
     grid_div_y = ["(block_y+2)/8"]
@@ -71,14 +76,16 @@ def test_get_grid_dimensions2():
 
 def test_get_grid_dimensions3():
     problem_size = (1024, 1024, 1)
-    params = {"block_x": 41, "block_y": 37}
+    params = {
+        "block_x": 41,
+        "block_y": 37
+    }
 
     grid_div_x = ["block_x", "block_y"]
     grid_div_y = ["(block_y+2)/8"]
 
     def assert_grid_dimensions(problem_size):
-        grid = get_grid_dimensions(problem_size, params,
-                                   (grid_div_x, grid_div_y, None), block_size_names)
+        grid = get_grid_dimensions(problem_size, params, (grid_div_x, grid_div_y, None), block_size_names)
         assert grid[0] == 1
         assert grid[1] == 256
         assert grid[2] == 1
@@ -91,7 +98,10 @@ def test_get_grid_dimensions3():
 
 def test_get_problem_size1():
     problem_size = ("num_blocks_x", "num_blocks_y*3")
-    params = {"num_blocks_x": 71, "num_blocks_y": 57}
+    params = {
+        "num_blocks_x": 71,
+        "num_blocks_y": 57
+    }
 
     answer = get_problem_size(problem_size, params)
     assert answer[0] == 71
@@ -101,7 +111,9 @@ def test_get_problem_size1():
 
 def test_get_problem_size2():
     problem_size = "num_blocks_x"
-    params = {"num_blocks_x": 71}
+    params = {
+        "num_blocks_x": 71
+    }
 
     answer = get_problem_size(problem_size, params)
     assert answer[0] == 71
@@ -112,12 +124,16 @@ def test_get_problem_size2():
 def test_get_problem_size3():
     with raises(TypeError):
         problem_size = (3.8, "num_blocks_y*3")
-        params = {"num_blocks_y": 57}
+        params = {
+            "num_blocks_y": 57
+        }
         get_problem_size(problem_size, params)
 
 
 def test_get_problem_size4():
-    params = {"num_blocks_x": 71}
+    params = {
+        "num_blocks_x": 71
+    }
 
     answer = get_problem_size(lambda p: (p["num_blocks_x"], 1, 13), params)
     assert answer[0] == 71
@@ -127,7 +143,10 @@ def test_get_problem_size4():
 
 def test_get_thread_block_dimensions():
 
-    params = {"block_size_x": 123, "block_size_y": 257}
+    params = {
+        "block_size_x": 123,
+        "block_size_y": 257
+    }
 
     threads = get_thread_block_dimensions(params)
     assert len(threads) == 3
@@ -177,16 +196,18 @@ def test_replace_param_occurrences():
 
 
 def test_check_restrictions():
-    params = {"a": 7, "b": 4, "c": 3}
+    params = {
+        "a": 7,
+        "b": 4,
+        "c": 3
+    }
     print(params.values())
     print(params.keys())
-    restrictions = [["a==b+c"], ["a==b+c", "b==b", "a-b==c"],
-                    ["a==b+c", "b!=b", "a-b==c"],
-                    lambda p:p["a"] == p["b"] + p["c"]]
+    restrictions = [["a==b+c"], ["a==b+c", "b==b", "a-b==c"], ["a==b+c", "b!=b", "a-b==c"], lambda p: p["a"] == p["b"] + p["c"]]
     expected = [True, True, False, True]
     # test the call returns expected
     for r, e in zip(restrictions, expected):
-        answer = check_restrictions(r, params.values(), params.keys(), False)
+        answer = check_restrictions(r, dict(zip(params.keys(), params.values())), False)
         print(answer)
         assert answer == e
 
@@ -314,9 +335,7 @@ def test_check_argument_list5():
             a[threadIdx.x] = b[blockIdx.x]*c*d;
         }
         """
-    args = [np.array([1, 2, 3]).astype(np.float64),
-            np.array([1, 2, 3]).astype(np.float32),
-            np.int32(6), np.int32(7)]
+    args = [np.array([1, 2, 3]).astype(np.float64), np.array([1, 2, 3]).astype(np.float32), np.int32(6), np.int32(7)]
     assert_no_user_warning(check_argument_list, [kernel_name, kernel_string, args])
 
 
@@ -352,8 +371,7 @@ def test_check_argument_list7():
 
 
 def test_check_tune_params_list():
-    tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it",
-                            "grid_size_y"], [1, 2, 3, 4]))
+    tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it", "grid_size_y"], [1, 2, 3, 4]))
     try:
         check_tune_params_list(tune_params)
         print("Expected a ValueError to be raised")
@@ -374,6 +392,7 @@ def test_check_tune_params_list2():
 
 
 def test_check_block_size_params_names_list():
+
     def test_warnings(function, args, number, warning_type):
         with warnings.catch_warnings(record=True) as w:
             # Cause all warnings to always be triggered.
@@ -410,7 +429,10 @@ def test_get_kernel_string_func():
     # test whether passing a function instead of string works
     def gen_kernel(params):
         return "__global__ void kernel_name() { %s }" % params["block_size_x"]
-    params = {"block_size_x": "//do that kernel thing!"}
+
+    params = {
+        "block_size_x": "//do that kernel thing!"
+    }
     expected = "__global__ void kernel_name() { //do that kernel thing! }"
     answer = get_kernel_string(gen_kernel, params)
     assert answer == expected
@@ -455,11 +477,13 @@ def test_normalize_verify_function():
 
     def verify1(answer, result_host):
         return True
+
     v = normalize_verify_function(verify1)
     assert v(1, 2, atol=3)
 
     def verify2(answer, result_host, atol):
         return True
+
     v = normalize_verify_function(verify2)
     assert v(1, 2, atol=3)
 
@@ -502,7 +526,10 @@ def test_process_cache():
         assert len(tuning_options.cache) == 0
 
         # store one entry in the cache
-        params = {"x": 4, "time": np.float32(0.1234)}
+        params = {
+            "x": 4,
+            "time": np.float32(0.1234)
+        }
         store_cache("4", params, tuning_options)
         assert len(tuning_options.cache) == 1
 
@@ -538,7 +565,10 @@ def test_process_cache():
 
 
 def test_process_metrics():
-    params = {"x": 15, "b": 12}
+    params = {
+        "x": 15,
+        "b": 12
+    }
     metrics = OrderedDict()
     metrics["y"] = lambda p: p["x"]
 
@@ -547,13 +577,19 @@ def test_process_metrics():
     assert params["y"] == params["x"]
 
     # test if we can do the same with a string
-    params = {"x": 15, "b": 12}
+    params = {
+        "x": 15,
+        "b": 12
+    }
     metrics["y"] = "x"
     params = process_metrics(params, metrics)
     assert params["y"] == params["x"]
 
     # test if composability works correctly
-    params = {"x": 15, "b": 12}
+    params = {
+        "x": 15,
+        "b": 12
+    }
     metrics = OrderedDict()
     metrics["y"] = "x"
     metrics["z"] = "y"
@@ -565,7 +601,10 @@ def test_process_metrics():
         params = process_metrics(params, {})
 
     # test ValueError is raised when b already exists in params
-    params = {"x": 15, "b": 12}
+    params = {
+        "x": 15,
+        "b": 12
+    }
     metrics = OrderedDict()
     metrics["b"] = "x"
     with pytest.raises(ValueError):
