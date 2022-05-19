@@ -92,7 +92,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
                 if len(population) >= pop_size:
                     break
 
-        # TODO could combine old + new generation here and do a selection
+        # could combine old + new generation here and do a selection
 
     return all_results, runner.dev.get_environment()
 

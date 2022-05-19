@@ -1,15 +1,14 @@
+from random import choice, shuffle
 from typing import Tuple, List
+
+from constraint import Problem, Constraint, FunctionConstraint
+import numpy as np
 
 from kernel_tuner.util import default_block_size_names
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import MaxProdConstraint
 
-from constraint import Problem, Constraint, FunctionConstraint
-from random import choice, shuffle
-import numpy as np
-
 supported_neighbor_methods = ['strictly-adjacent', 'adjacent', 'Hamming']
-
 
 class Searchspace():
     """ Class that offers the search space to strategies """
@@ -193,16 +192,15 @@ class Searchspace():
                 list(
                     self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
                     for param_config_index, param_config in enumerate(self.list)))
-        elif neighbor_method == 'adjacent':
+        if neighbor_method == 'adjacent':
             return np.array(
                 list(self.__get_neighbors_indices_adjacent(param_config_index, param_config) for param_config_index, param_config in enumerate(self.list)))
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
 
     def get_random_sample_indices(self, num_samples: int) -> np.ndarray:
         """ Get the list indices for a random, non-conflicting sample """
         if num_samples > self.size:
-            raise ValueError(f"The number of samples requested is greater than the searchspace size")
+            raise ValueError("The number of samples requested is greater than the searchspace size")
         return np.random.choice(self.indices, size=num_samples, replace=False)
 
     def get_random_sample(self, num_samples: int) -> List[tuple]:
@@ -222,7 +220,7 @@ class Searchspace():
         # check if the neighbor methods do not differ
         if self.neighbor_method != neighbor_method and self.neighbor_method is not None and neighbor_method is not None:
             raise ValueError(f"The neighbor method {neighbor_method} differs from the intially set {self.neighbor_method}")
-        elif neighbor_method == None:
+        if neighbor_method is None:
             neighbor_method = self.neighbor_method
 
         if neighbor_method == 'Hamming':
@@ -235,7 +233,7 @@ class Searchspace():
         # if the passed param_config is fictious, we can not use the pre-calculated neighbors index
         if neighbor_method == 'strictly-adjacent':
             return self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
-        elif neighbor_method == 'adjacent':
+        if neighbor_method == 'adjacent':
             return self.__get_neighbors_indices_adjacent(param_config_index, param_config)
         raise ValueError(f"The neighbor method {neighbor_method} is not in {supported_neighbor_methods}")
 

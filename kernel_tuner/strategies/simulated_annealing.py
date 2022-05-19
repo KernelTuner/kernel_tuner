@@ -1,6 +1,4 @@
 """ The strategy that uses particle swarm optimization"""
-
-from __future__ import print_function
 import random
 import numpy as np
 
@@ -37,7 +35,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # SA works with real parameter values and does not need scaling
     tuning_options["scaling"] = False
     args = (kernel_options, tuning_options, runner, results)
-    tune_params = tuning_options.tune_params
     searchspace = Searchspace(tuning_options, runner.dev.max_threads)
 
     # optimization parameters
