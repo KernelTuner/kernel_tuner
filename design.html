@@ -1606,6 +1606,12 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.get_best_config">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_best_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_best_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the best configuration from a list of results according to some objective</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.get_config_string">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_config_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_config_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>return a compact string representation of a measurement</p>
@@ -1823,6 +1829,12 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
 <dt class="sig sig-object py" id="kernel_tuner.util.setup_block_and_grid">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">setup_block_and_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.setup_block_and_grid" title="Permalink to this definition">¶</a></dt>
 <dd><p>compute problem size, thread block and grid dimensions for this kernel</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.sort_configs">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">sort_configs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.sort_configs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort list of configs according to the objective</p>
 </dd></dl>
 
 <dl class="py function">
