@@ -65,7 +65,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         # 'best_time' is used only for printing
         if tuning_options.verbose and all_results:
-            best_time = min(all_results, key=lambda x: x["time"])["time"]
+            best_time = util.get_best_config(all_results, "time")["time"]
 
         if tuning_options.verbose:
             print("Generation %d, best_time %f" % (generation, best_time))
