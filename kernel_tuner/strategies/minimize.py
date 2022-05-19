@@ -62,7 +62,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
     start_time = perf_counter()
     last_strategy_time = 1000 * (start_time - runner.last_strategy_start_time)
 
-    error_time = 1e20
+    # error value to return for numeric optimizers that need a numerical value
+    error_value = 1e20
     logging.debug('_cost_func called')
     logging.debug('x: ' + str(x))
 
@@ -81,21 +82,20 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
     if x_int in tuning_options.cache:
         cached_result = tuning_options.cache[x_int]
         cached_result['strategy_time'] = last_strategy_time
-        # TODO check if the new strategy time actually ends up in the returned results (not in the cache file!)
         results.append(cached_result)
         # upon returning from this function control will be given back to the strategy, so reset the start time
         runner.last_strategy_start_time = perf_counter()
-        return cached_result["time"]
+        return cached_result["time"] if not isinstance(cached_result["time"], util.ErrorConfig) else error_value
 
     # check if this is a legal (non-restricted) parameter instance
     if check_restrictions and tuning_options.restrictions:
         params_dict = OrderedDict(zip(tuning_options.tune_params.keys(), params))
         legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
         if not legal:
-            error_result = params_dict
-            error_result["time"] = error_time
+            error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
+            error_result["time"] = util.InvalidConfig()
             tuning_options.cache[x_int] = error_result
-            return error_time
+            return error_value
 
     # compile and benchmark this instance
     res, _ = runner.run([params], kernel_options, tuning_options)
@@ -117,9 +117,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
     # append to tuning results
     if res:
         results.append(result)
-        return result['time']
 
-    return error_time
+    return result['time'] if not isinstance(result['time'], util.ErrorConfig) else error_value
 
 
 def get_bounds_x0_eps(tuning_options):

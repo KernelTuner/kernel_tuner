@@ -23,8 +23,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import print_function
-
+import sys
 from collections import OrderedDict
 from datetime import datetime
 import logging
@@ -424,7 +423,6 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 
 """ % _get_docstring(_kernel_options) + _get_docstring(_tuning_options) + _get_docstring(_device_options)
 
-#"""
 
 
 def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
@@ -483,17 +481,17 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
                 raise ValueError('It is not possible to use fraction in combination with strategies other than "random_sample". ' \
                                  'Please set strategy="random_sample", when using "fraction" in strategy_options')
 
-            #check if method is supported by the selected strategy
+            # check if method is supported by the selected strategy
             if "method" in tuning_options.strategy_options:
                 method = tuning_options.strategy_options.method
                 if not method in strategy.supported_methods:
                     raise ValueError('Method %s is not supported for strategy %s' % (method, tuning_options.strategy))
 
-        #if no strategy_options dict has been passed, create empty dictionary
+        # if no strategy_options dict has been passed, create empty dictionary
         else:
             tuning_options.strategy_options = Options({})
 
-    #if no strategy selected
+    # if no strategy selected
     else:
         strategy = brute_force
 
@@ -505,7 +503,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         # we normalize it so that it always accepts atol.
         tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
-        #process cache
+        # process cache
         if cache:
             if cache[-5:] != ".json":
                 cache += ".json"
@@ -516,13 +514,13 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
             tuning_options.cachefile = None
 
         # call the strategy to execute the tuning process
-        selected_runner.last_strategy_start_time = perf_counter()
+        #selected_runner.last_strategy_start_time = perf_counter()
         results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
-        #finished iterating over search space
+        # finished iterating over search space
         if not device_options.quiet:
             if results:    # checks if results is not empty
-                best_config = min(results, key=lambda x: x['time'])
+                best_config = util.get_best_config(results, "time", False)
                 units = getattr(runner, "units", None)
                 print("best performing configuration:")
                 util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
