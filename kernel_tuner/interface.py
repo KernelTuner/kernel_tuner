@@ -259,6 +259,16 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
         """, "")),
                            ("strategy_options", ("""A dict with options specific to the selected tuning strategy.
 
+            All strategies support the following two options:
+
+            1. "max_fevals": the maximum number of unique valid function evaluations (i.e. compiling and
+            benchmarking a kernel configuration the strategy is allowed to perform as part of the optimization.
+            Note that some strategies implement a default max_fevals of 100.
+
+            2. "time_limit": the maximum amount of time in seconds the strategy is allowed to spent on trying to
+            find the optimal kernel configuration. There is no default time limit.
+
+            Strategy specific options are explained below:
 
             * **"basinhopping"**
 
@@ -280,6 +290,14 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "method", string, any of "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin", default "best1bin".
 
+              * "popsize", integer, population size, default 20.
+
+              * "maxiter", integer, number of generations, default 50.
+
+            * **"dual_annealing"**
+
+              * "method", string, any of 'COBYLA','L-BFGS-B','SLSQP','CG','Powell','Nelder-Mead', 'BFGS', 'trust-constr', default "Powell".
+
             * **"firefly_algorithm"**
 
               * "alpha", float, alpha parameter, default 0.2.
@@ -299,8 +317,6 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
               * "method", string, crossover method any of "single_point", "two_point", "uniform", "disruptive_uniform", default "uniform".
 
               * "mutation_chance", integer, specifies the 1 in mutation_chance of a mutation, default 10.
-
-              * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
 
               * "popsize", integer, population size, default 20.
 
@@ -467,6 +483,11 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
     tuning_options["snap"] = True
+    tuning_options["unique_results"] = {}
+    if strategy_options and "max_fevals" in strategy_options:
+        tuning_options["max_fevals"] = strategy_options["max_fevals"]
+    if strategy_options and "time_limit" in strategy_options:
+        tuning_options["time_limit"] = strategy_options["time_limit"]
 
     logging.debug('tune_kernel called')
     logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
@@ -479,12 +500,12 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         else:
             raise ValueError("Strategy %s not recognized" % strategy)
 
-        #make strategy_options into an Options object
+        # make strategy_options into an Options object
         if tuning_options.strategy_options:
             if not isinstance(strategy_options, Options):
                 tuning_options.strategy_options = Options(strategy_options)
 
-            #select strategy based on user options
+            # select strategy based on user options
             if "fraction" in tuning_options.strategy_options and not tuning_options.strategy == 'random_sample':
                 raise ValueError('It is not possible to use fraction in combination with strategies other than "random_sample". ' \
                                  'Please set strategy="random_sample", when using "fraction" in strategy_options')
@@ -522,7 +543,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
             tuning_options.cachefile = None
 
         # call the strategy to execute the tuning process
-        #selected_runner.last_strategy_start_time = perf_counter()
+        tuning_options["start_time"] = perf_counter()
         results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
         # finished iterating over search space

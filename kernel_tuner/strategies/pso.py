@@ -5,6 +5,7 @@ import numpy as np
 
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, scale_from_params
+from kernel_tuner import util
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -68,7 +69,12 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         # evaluate particle positions
         for j in range(num_particles):
-            swarm[j].evaluate(_cost_func)
+            try:
+                swarm[j].evaluate(_cost_func)
+            except util.StopCriterionReached as e:
+                if tuning_options.verbose:
+                    print(e)
+                return results, runner.dev.get_environment()
 
             # update global best if needed
             if swarm[j].score <= best_score_global:

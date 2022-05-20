@@ -38,44 +38,39 @@ def tune(runner, kernel_options, device_options, tuning_options):
     crossover = supported_methods[options.get("method", "uniform")]
     mutation_chance = options.get("mutation_chance", 10)
 
-    max_fevals = options.get("max_fevals", 100)
-
     tuning_options["scaling"] = False
 
     best_score = 1e20
-    all_results = []
-    unique_results = {}
+    results = []
 
     searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     population = list(list(p) for p in searchspace.get_random_sample(pop_size))
-
-    # limit max_fevals to max size of the parameter space
-    max_fevals = min(searchspace.size, max_fevals)
 
     for generation in range(generations):
 
         # determine fitness of population members
         weighted_population = []
         for dna in population:
-            time = _cost_func(dna, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
+            try:
+                time = _cost_func(dna, kernel_options, tuning_options, runner, results, check_restrictions=False)
+            except util.StopCriterionReached as e:
+                if tuning_options.verbose:
+                    print(e)
+                return results, runner.dev.get_environment()
+
             weighted_population.append((dna, time))
 
         # population is sorted such that better configs have higher chance of reproducing
         weighted_population.sort(key=lambda x: x[1])
 
         # 'best_score' is used only for printing
-        if tuning_options.verbose and all_results:
-            best_score = util.get_best_config(all_results, tuning_options.objective, tuning_options.objective_higher_is_better)[tuning_options.objective]
+        if tuning_options.verbose and results:
+            best_score = util.get_best_config(results, tuning_options.objective, tuning_options.objective_higher_is_better)[tuning_options.objective]
 
         if tuning_options.verbose:
             print("Generation %d, best_score %f" % (generation, best_score))
 
         population = []
-
-        unique_results.update({",".join([str(i) for i in dna]): time
-                               for dna, time in weighted_population})
-        if len(unique_results) >= max_fevals:
-            break
 
         # crossover and mutate
         while len(population) < pop_size:
@@ -94,7 +89,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         # could combine old + new generation here and do a selection
 
-    return all_results, runner.dev.get_environment()
+    return results, runner.dev.get_environment()
 
 
 def weighted_choice(population, n):

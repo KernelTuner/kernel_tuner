@@ -5,7 +5,7 @@ import numpy as np
 
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner.searchspace import Searchspace
-
+from kernel_tuner import util
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
@@ -59,7 +59,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
         for _ in range(niter):
 
             new_pos = neighbor(pos, searchspace)
-            new_cost = _cost_func(new_pos, *args, check_restrictions=False)
+            try:
+                new_cost = _cost_func(new_pos, *args, check_restrictions=False)
+            except util.StopCriterionReached as e:
+                if tuning_options.verbose:
+                    print(e)
+                return results, runner.dev.get_environment()
+
 
             ap = acceptance_prob(old_cost, new_cost, T, tuning_options)
             r = random.random()

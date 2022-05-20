@@ -5,19 +5,21 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 
 ### Added
-- new optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
+- sew optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
 - support for constant memory in cupy backend
 - constraint solver to cut down time spent in creating search spaces
 - support for custom tuning objectives
+- support for max_fevals and time_limit in strategy_options of all strategies
 
 ### Removed
-- Alternative Bayesian Optimization strategies that could not be used directly
+- alternative Bayesian Optimization strategies that could not be used directly
 - C++ wrapper module that was too specific and hardly used
 
 ### Changed
-- String-based restrictions are compiled into functions for improved performance
-- Genetic Algorithm, MLS, ILS, Random, and Simulated Annealing use new search space object
-- Diff Evo, Firefly, PSO are initialized using population of all valid configurations
+- string-based restrictions are compiled into functions for improved performance
+- genetic algorithm, MLS, ILS, random, and simulated annealing use new search space object
+- diff evo, firefly, PSO are initialized using population of all valid configurations
+- all strategies except brute_force strictly adhere to max_fevals and time_limit
 
 ## [0.4.1] - 2021-09-10
 ### Added

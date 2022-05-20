@@ -28,7 +28,7 @@ def test__cost_func():
     x = [1, 4]
     kernel_options = None
     tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
-                             restrictions=None, strategy_options={}, cache={},
+                             restrictions=None, strategy_options={}, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False)
     runner = fake_runner()
     results = []
@@ -48,7 +48,7 @@ def test__cost_func():
     restrictions = ["False"]
     tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
                              restrictions=restrictions, strategy_options={},
-                             verbose=True, cache={},
+                             verbose=True, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False)
     time = minimize._cost_func(x, kernel_options, tuning_options, runner, results)
     assert time == sys.float_info.max

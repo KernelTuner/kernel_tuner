@@ -126,10 +126,14 @@ def tune(runner, kernel_options, device_options, tuning_options):
         removed_tune_params = [None] * len(tune_params.keys())
 
     # initialize and optimize
-    bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner)
-    results = bo.optimize(max_fevals)
+    try:
+        bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner)
+        bo.optimize(max_fevals)
+    except util.StopCriterionReached as e:
+        if tuning_options.verbose:
+            print(e)
 
-    return results, runner.dev.get_environment()
+    return bo.results, runner.dev.get_environment()
 
 
 class BayesianOptimization():

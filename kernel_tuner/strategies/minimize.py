@@ -50,9 +50,14 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     args = (kernel_options, tuning_options, runner, results)
 
-    opt_result = scipy.optimize.minimize(_cost_func, x0, args=args, method=method, options=options, **kwargs)
+    opt_result = None
+    try:
+        opt_result = scipy.optimize.minimize(_cost_func, x0, args=args, method=method, options=options, **kwargs)
+    except util.StopCriterionReached as e:
+        if tuning_options.verbose:
+            print(e)
 
-    if tuning_options.verbose:
+    if opt_result and tuning_options.verbose:
         print(opt_result.message)
 
     return results, runner.dev.get_environment()
@@ -73,6 +78,9 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
         return_val = score if not isinstance(score, util.ErrorConfig) else error_value
         return return_val if not tuning_options.objective_higher_is_better else -return_val
 
+    # check if max_fevals is reached or time limit is exceeded
+    util.check_stop_criterion(tuning_options)
+
     # snap values in x to nearest actual value for each parameter unscale x if needed
     if tuning_options.snap:
         if tuning_options.scaling:
@@ -83,17 +91,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
         params = x
     logging.debug('params ' + str(params))
 
-    # we cache snapped values, since those correspond to results for an actual instance of the kernel
-    x_int = ",".join([str(i) for i in params])
-    if x_int in tuning_options.cache:
-        cached_result = tuning_options.cache[x_int]
-        cached_result['strategy_time'] = last_strategy_time
-        results.append(cached_result)
-        # upon returning from this function control will be given back to the strategy, so reset the start time
-        runner.last_strategy_start_time = perf_counter()
-        return return_value(cached_result)
-
     # check if this is a legal (non-restricted) parameter instance
+    x_int = ",".join([str(i) for i in params])
     if check_restrictions and tuning_options.restrictions:
         params_dict = OrderedDict(zip(tuning_options.tune_params.keys(), params))
         legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
@@ -102,6 +101,18 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
             error_result[tuning_options.objective] = util.InvalidConfig()
             tuning_options.cache[x_int] = error_result
             return return_value(error_result)
+
+    # we cache snapped values, since those correspond to results for an actual instance of the kernel
+    if x_int in tuning_options.cache:
+        cached_result = tuning_options.cache[x_int]
+        cached_result['strategy_time'] = last_strategy_time
+        results.append(cached_result)
+        if x_int not in tuning_options.unique_results:
+            util.print_config(cached_result, tuning_options, runner)
+            tuning_options.unique_results[x_int] = cached_result
+        # upon returning from this function control will be given back to the strategy, so reset the start time
+        runner.last_strategy_start_time = perf_counter()
+        return return_value(cached_result)
 
     # compile and benchmark this instance
     res, _ = runner.run([params], kernel_options, tuning_options)
@@ -119,6 +130,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
 
     # append to tuning results
     if res:
+        tuning_options.unique_results[x_int] = result
         results.append(result)
 
     # upon returning from this function control will be given back to the strategy, so reset the start time
