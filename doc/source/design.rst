@@ -22,9 +22,10 @@ The strategies are responsible for iterating over and searching through
 the search space. The default strategy is ``brute_force``, which 
 iterates over all valid kernel configurations in the search space. 
 ``random_sample`` simply takes a random sample of the search space. More 
-advanced strategies continuously being implemented and improved in Kernel Tuner.
-How to use these is explained in the :doc:`user-api`,
-see the options ``strategy`` and ``strategy_options``.
+advanced strategies are continuously being implemented and improved in 
+Kernel Tuner. The full list of supported strategies and how to use these
+is explained in the :doc:`user-api`, see the options ``strategy`` and
+``strategy_options``.
 
 The runners are responsible for compiling and benchmarking the kernel 
 configurations selected by the strategy. The sequential runner is currently
@@ -71,6 +72,11 @@ kernel_tuner.strategies.random_sample
 .. automodule:: kernel_tuner.strategies.random_sample
     :members:
 
+kernel_tuner.strategies.bayes_opt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.bayes_opt
+    :members:
+
 kernel_tuner.strategies.minimize
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. automodule:: kernel_tuner.strategies.minimize
@@ -84,6 +90,11 @@ kernel_tuner.strategies.basinhopping
 kernel_tuner.strategies.diff_evo
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. automodule:: kernel_tuner.strategies.diff_evo
+    :members:
+
+kernel_tuner.strategies.dual_annealing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.dual_annealing
     :members:
 
 kernel_tuner.strategies.genetic_algorithm
@@ -106,6 +117,25 @@ kernel_tuner.strategies.simulated_annealing
 .. automodule:: kernel_tuner.strategies.simulated_annealing
     :members:
 
+kernel_tuner.strategies.mls
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.mls
+    :members:
+
+kernel_tuner.strategies.greedy_mls
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.greedy_mls
+    :members:
+
+kernel_tuner.strategies.ordered_greedy_mls
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.ordered_greedy_mls
+    :members:
+
+kernel_tuner.strategies.greedy_ils
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.greedy_ils
+    :members:
 
 
 Runners
