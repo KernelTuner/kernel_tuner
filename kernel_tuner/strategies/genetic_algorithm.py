@@ -38,8 +38,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     crossover = supported_methods[options.get("method", "uniform")]
     mutation_chance = options.get("mutation_chance", 10)
 
-    max_fevals = options.get("max_fevals", 100)
-
     tuning_options["scaling"] = False
 
     best_score = 1e20
@@ -47,9 +45,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     population = list(list(p) for p in searchspace.get_random_sample(pop_size))
-
-    # limit max_fevals to max size of the parameter space
-    max_fevals = min(searchspace.size, max_fevals)
 
     for generation in range(generations):
 

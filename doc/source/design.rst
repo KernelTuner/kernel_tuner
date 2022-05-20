@@ -22,9 +22,8 @@ The strategies are responsible for iterating over and searching through
 the search space. The default strategy is ``brute_force``, which 
 iterates over all valid kernel configurations in the search space. 
 ``random_sample`` simply takes a random sample of the search space. More 
-advanced strategies currently implemented in Kernel Tuner are 
-``minimize``, ``basinhopping``, and differential evolution 
-(``diff_evo``). How to use these is explained in the :doc:`user-api`,
+advanced strategies continuously being implemented and improved in Kernel Tuner.
+How to use these is explained in the :doc:`user-api`,
 see the options ``strategy`` and ``strategy_options``.
 
 The runners are responsible for compiling and benchmarking the kernel 

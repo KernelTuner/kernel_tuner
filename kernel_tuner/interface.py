@@ -259,6 +259,16 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
         """, "")),
                            ("strategy_options", ("""A dict with options specific to the selected tuning strategy.
 
+            All strategies support the following two options:
+
+            1. "max_fevals": the maximum number of unique valid function evaluations (i.e. compiling and
+            benchmarking a kernel configuration the strategy is allowed to perform as part of the optimization.
+            Note that some strategies implement a default max_fevals of 100.
+
+            2. "time_limit": the maximum amount of time in seconds the strategy is allowed to spent on trying to
+            find the optimal kernel configuration. There is no default time limit.
+
+            Strategy specific options are explained below:
 
             * **"basinhopping"**
 
@@ -280,6 +290,14 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "method", string, any of "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin", default "best1bin".
 
+              * "popsize", integer, population size, default 20.
+
+              * "maxiter", integer, number of generations, default 50.
+
+            * **"dual_annealing"**
+
+              * "method", string, any of 'COBYLA','L-BFGS-B','SLSQP','CG','Powell','Nelder-Mead', 'BFGS', 'trust-constr', default "Powell".
+
             * **"firefly_algorithm"**
 
               * "alpha", float, alpha parameter, default 0.2.
@@ -299,8 +317,6 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
               * "method", string, crossover method any of "single_point", "two_point", "uniform", "disruptive_uniform", default "uniform".
 
               * "mutation_chance", integer, specifies the 1 in mutation_chance of a mutation, default 10.
-
-              * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
 
               * "popsize", integer, population size, default 20.
 
