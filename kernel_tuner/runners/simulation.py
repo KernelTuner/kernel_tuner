@@ -199,6 +199,7 @@ class SimulationRunner(object):
 
         self.simulation_mode = True
         self.last_strategy_start_time = perf_counter()
+        self.units = {}
 
     def __enter__(self):
         return self

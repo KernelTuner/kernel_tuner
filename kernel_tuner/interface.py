@@ -467,6 +467,11 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
     tuning_options["snap"] = True
+    tuning_options["unique_results"] = {}
+    if strategy_options and "max_fevals" in strategy_options:
+        tuning_options["max_fevals"] = strategy_options["max_fevals"]
+    if strategy_options and "time_limit" in strategy_options:
+        tuning_options["time_limit"] = strategy_options["time_limit"]
 
     logging.debug('tune_kernel called')
     logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
@@ -479,12 +484,12 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         else:
             raise ValueError("Strategy %s not recognized" % strategy)
 
-        #make strategy_options into an Options object
+        # make strategy_options into an Options object
         if tuning_options.strategy_options:
             if not isinstance(strategy_options, Options):
                 tuning_options.strategy_options = Options(strategy_options)
 
-            #select strategy based on user options
+            # select strategy based on user options
             if "fraction" in tuning_options.strategy_options and not tuning_options.strategy == 'random_sample':
                 raise ValueError('It is not possible to use fraction in combination with strategies other than "random_sample". ' \
                                  'Please set strategy="random_sample", when using "fraction" in strategy_options')
@@ -522,7 +527,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
             tuning_options.cachefile = None
 
         # call the strategy to execute the tuning process
-        #selected_runner.last_strategy_start_time = perf_counter()
+        tuning_options["start_time"] = perf_counter()
         results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
         # finished iterating over search space

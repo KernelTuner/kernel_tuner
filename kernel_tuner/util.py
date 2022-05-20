@@ -1,4 +1,6 @@
 """ Module for kernel tuner utility functions """
+import time
+from inspect import signature
 import json
 from collections import OrderedDict
 import os
@@ -42,6 +44,9 @@ class TorchPlaceHolder():
 
 class SkippableFailure(Exception):
     """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected"""
+
+class StopCriterionReached(Exception):
+    """Exception thrown when a stop criterion has been reached"""
 
 
 try:
@@ -109,6 +114,14 @@ def check_argument_list(kernel_name, kernel_string, args):
             return
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
+
+
+def check_stop_criterion(to):
+    """ checks if max_fevals is reached or time limit is exceeded """
+    if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
+        raise StopCriterionReached("max_fevals reached")
+    if "time_limit" in to and (time.perf_counter() - to.start_time > to.time_limit):
+        raise StopCriterionReached("time limit exceeded")
 
 
 def check_tune_params_list(tune_params):
@@ -412,6 +425,11 @@ def get_total_timings(results, env, overhead_time):
     return env
 
 
+def print_config(config, tuning_options, runner):
+    """print the configuration string with tunable parameters and benchmark results"""
+    print_config_output(tuning_options.tune_params, config, runner.quiet, tuning_options.metrics, runner.units)
+
+
 def print_config_output(tune_params, params, quiet, metrics, units):
     """print the configuration string with tunable parameters and benchmark results"""
     print_keys = list(tune_params.keys()) + ["time"]
@@ -578,7 +596,6 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
 
 def write_file(filename, string):
     """dump the contents of string to a file called filename"""
-    import sys
     # ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:
         with open(filename, 'w', encoding="utf-8") as f:
@@ -597,38 +614,13 @@ def normalize_verify_function(v):
 
     Undefined behaviour if the passed function does not match the required signatures.
     """
-
     # python 3.3+
-    def _has_kw_argument_sig(func, name):
-        from inspect import signature
+    def has_kw_argument(func, name):
         sig = signature(func)
         return name in sig.parameters
 
-    # python 3.0+
-    def _has_kw_argument_fullarg(func, name):
-        from inspect import getfullargspec
-        spec = getfullargspec(func)
-        return (name in spec.args) or (name in spec.kwonlyargs)
-
-    # python 2.6+
-    def _has_kw_argument_arg(func, name):
-        from inspect import getargspec
-        spec = getargspec(func)
-        return name in spec.args
-
     if v is None:
         return None
-
-    import inspect
-
-    if hasattr(inspect, 'signature'):
-        has_kw_argument = _has_kw_argument_sig
-    elif hasattr(inspect, 'getfullargspec'):
-        has_kw_argument = _has_kw_argument_fullarg
-    elif hasattr(inspect, 'getargspec'):
-        has_kw_argument = _has_kw_argument_arg
-    else:
-        raise RuntimeError('No suitable inspect function found')
 
     if has_kw_argument(v, 'atol'):
         return v
@@ -748,7 +740,7 @@ def read_cache(cache, open_cache=True):
 
     # replace strings with ErrorConfig instances
     cache_data = json.loads(filestr)
-    for key, element in cache_data["cache"].items():
+    for element in cache_data["cache"].values():
         for k, v in element.items():
             if isinstance(v, str) and v in error_configs:
                 element[k] = error_configs[v]
@@ -776,12 +768,11 @@ def store_cache(key, params, tuning_options):
     def JSONconverter(obj):
         if isinstance(obj, np.integer):
             return int(obj)
-        elif isinstance(obj, np.floating):
+        if isinstance(obj, np.floating):
             return float(obj)
-        elif isinstance(obj, np.ndarray):
+        if isinstance(obj, np.ndarray):
             return obj.tolist()
-        else:
-            return obj.__str__()
+        return obj.__str__()
 
     logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict):
@@ -833,7 +824,7 @@ class MaxProdConstraint(Constraint):
         for variable in variables:
             if variable in assignments:
                 prod *= assignments[variable]
-        if type(prod) is float:
+        if isinstance(prod, float):
             prod = round(prod, 10)
         if prod > maxprod:
             return False

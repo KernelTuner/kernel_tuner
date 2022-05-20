@@ -3,6 +3,7 @@ from scipy.optimize import differential_evolution
 
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.minimize import get_bounds, _cost_func, scale_from_params
+from kernel_tuner import util
 
 supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp",
                      "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
@@ -49,10 +50,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
     population = list(list(p) for p in searchspace.get_random_sample(popsize))
 
     # call the differential evolution optimizer
-    opt_result = differential_evolution(_cost_func, bounds, args, maxiter=maxiter, popsize=popsize, init=population,
+    opt_result = None
+    try:
+        opt_result = differential_evolution(_cost_func, bounds, args, maxiter=maxiter, popsize=popsize, init=population,
                                         polish=False, strategy=method, disp=tuning_options.verbose)
+    except util.StopCriterionReached as e:
+        if tuning_options.verbose:
+            print(e)
 
-    if tuning_options.verbose:
+    if opt_result and tuning_options.verbose:
         print(opt_result.message)
 
     return results, runner.dev.get_environment()

@@ -50,20 +50,24 @@ def tune(runner, kernel_options, device_options, tuning_options):
     max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0
-    all_results = []
-    unique_results = {}
+    results = []
 
     #while searching
     candidate = searchspace.get_random_sample(1)[0]
-    best_score = _cost_func(candidate, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
+    best_score = _cost_func(candidate, kernel_options, tuning_options, runner, results, check_restrictions=False)
 
     last_improvement = 0
     while fevals < max_fevals:
-        candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=True)
 
-        fevals = len(unique_results)
+        try:
+            candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, results, kernel_options, tuning_options, runner, restart=restart, randomize=True)
+            new_score = _cost_func(candidate, kernel_options, tuning_options, runner, results, check_restrictions=False)
+        except util.StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return results, runner.dev.get_environment()
 
-        new_score = _cost_func(candidate, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
+        fevals = len(tuning_options.unique_results)
         if new_score < best_score:
             last_improvement = 0
         else:
@@ -71,7 +75,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         # Instead of full restart, permute the starting candidate
         candidate = random_walk(candidate, perm_size, no_improvement, last_improvement, searchspace)
-    return all_results, runner.dev.get_environment()
+    return results, runner.dev.get_environment()
 
 
 def random_walk(indiv, permutation_size, no_improve, last_improve, searchspace: Searchspace):

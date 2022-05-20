@@ -1,9 +1,8 @@
 """ The strategy that uses the dual annealing optimization method """
-from __future__ import print_function
-
 import scipy.optimize
 
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, setup_method_arguments, setup_method_options
+from kernel_tuner import util
 
 supported_methods = ['COBYLA','L-BFGS-B','SLSQP','CG','Powell','Nelder-Mead', 'BFGS', 'trust-constr']
 
@@ -50,10 +49,14 @@ def tune(runner, kernel_options, device_options, tuning_options):
     minimizer_kwargs = dict()
     minimizer_kwargs["method"] = method
 
-    opt_result = scipy.optimize.dual_annealing(_cost_func, bounds,
-            args= args, local_search_options=minimizer_kwargs)
+    opt_result = None
+    try:
+        opt_result = scipy.optimize.dual_annealing(_cost_func, bounds, args=args, local_search_options=minimizer_kwargs)
+    except util.StopCriterionReached as e:
+        if tuning_options.verbose:
+            print(e)
 
-    if tuning_options.verbose:
+    if opt_result and tuning_options.verbose:
         print(opt_result.message)
 
     return results, runner.dev.get_environment()
