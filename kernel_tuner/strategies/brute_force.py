@@ -29,7 +29,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     """
 
     # create the searchspace
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads, sort=True)
 
     # call the runner
     results, env = runner.run(searchspace.list, kernel_options, tuning_options)
