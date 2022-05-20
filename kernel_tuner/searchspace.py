@@ -65,10 +65,6 @@ class Searchspace():
         # form the parameter tuples in the order specified by tune_params.keys()
         parameter_space_list = list((tuple(params[param_name] for param_name in self.param_names)) for params in parameter_space)
 
-        # in order to have the tuples as tuples in numpy, the types are set with a string, but this will make the type np.void
-        # type_string = ",".join(list(type(param).__name__ for param in parameter_space_list[0]))
-        parameter_space_numpy = np.array(parameter_space_list)
-
         # sort the parameter space on the order of parameters and their values as specified
         if sort is True:
             params_values_indices = list(self.get_param_indices(param_config) for param_config in parameter_space_list)
@@ -81,6 +77,11 @@ class Searchspace():
             new_order = [params_values_indices_dict.get(param_values_indices) for param_values_indices in params_values_indices]
             # apply the new order
             parameter_space_list = [parameter_space_list[i] for i in new_order]
+
+        # create a numpy array of the search space
+        # in order to have the tuples as tuples in numpy, the types are set with a string, but this will make the type np.void
+        # type_string = ",".join(list(type(param).__name__ for param in parameter_space_list[0]))
+        parameter_space_numpy = np.array(parameter_space_list)
 
         # create a dictionary with the hashed parameter configurations as keys and indices as values for fast lookups
         parameter_space_dict = dict(zip(parameter_space_list, list(range(parameter_space_numpy.size))))
