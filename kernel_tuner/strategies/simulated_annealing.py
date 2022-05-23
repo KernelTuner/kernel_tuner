@@ -64,7 +64,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     while T > T_min:
         if tuning_options.verbose:
-            print("iteration: ", iteration, "T", T, "cost: ", old_cost, f"{len(tuning_options.unique_results)=}")
+            print("iteration: ", iteration, "T", T, "cost: ", old_cost)
             iter += 1
 
         for _ in range(niter):
@@ -102,7 +102,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
         # safeguard
         if iteration > 10*max_iter:
             break
-
 
     return results, runner.dev.get_environment()
 
