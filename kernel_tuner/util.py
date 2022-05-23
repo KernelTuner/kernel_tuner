@@ -274,7 +274,8 @@ def get_config_string(params, keys=None, units=None):
     for k, v in params.items():
         if k in keys:
             unit = ""
-            if isinstance(units, dict):    # check if not None not enough, units could be mocked which causes errors
+            # check if units not None not enough, units could be mocked which causes errors
+            if isinstance(units, dict) and not isinstance(v, ErrorConfig):
                 unit = units.get(k, "")
             compact_str_items.append(k + "=" + compact_number(v) + unit)
     # and finally join them
