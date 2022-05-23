@@ -65,7 +65,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     while T > T_min:
         if tuning_options.verbose:
             print("iteration: ", iteration, "T", T, "cost: ", old_cost)
-            iter += 1
+            iteration += 1
 
         for _ in range(niter):
 
