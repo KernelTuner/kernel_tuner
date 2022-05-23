@@ -91,18 +91,8 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
         params = x
     logging.debug('params ' + str(params))
 
-    # check if this is a legal (non-restricted) parameter instance
-    x_int = ",".join([str(i) for i in params])
-    if check_restrictions and tuning_options.restrictions:
-        params_dict = OrderedDict(zip(tuning_options.tune_params.keys(), params))
-        legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
-        if not legal:
-            error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
-            error_result[tuning_options.objective] = util.InvalidConfig()
-            tuning_options.cache[x_int] = error_result
-            return return_value(error_result)
-
     # we cache snapped values, since those correspond to results for an actual instance of the kernel
+    x_int = ",".join([str(i) for i in params])
     if x_int in tuning_options.cache:
         cached_result = tuning_options.cache[x_int]
         cached_result['strategy_time'] = last_strategy_time
@@ -113,6 +103,16 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
         # upon returning from this function control will be given back to the strategy, so reset the start time
         runner.last_strategy_start_time = perf_counter()
         return return_value(cached_result)
+
+    # check if this is a legal (non-restricted) parameter instance
+    if check_restrictions and tuning_options.restrictions:
+        params_dict = OrderedDict(zip(tuning_options.tune_params.keys(), params))
+        legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
+        if not legal:
+            error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
+            error_result[tuning_options.objective] = util.InvalidConfig()
+            tuning_options.cache[x_int] = error_result
+            return return_value(error_result)
 
     # compile and benchmark this instance
     res, _ = runner.run([params], kernel_options, tuning_options)
