@@ -281,3 +281,17 @@ def test_order_param_configs():
     for expected_param_config in expected_order:
         assert expected_param_config in ordered_neighbors
     assert len(ordered_neighbors) == len(expected_order)
+
+
+def test_max_threads():
+    max_threads = 1024
+    tune_params = dict()
+    tune_params["block_size_x"] = [512, 1024]
+    tune_params["block_size_y"] = [1]
+    tuning_options = Options(dict(tune_params=tune_params, restrictions=None))
+
+    searchspace = Searchspace(tuning_options, max_threads)
+
+    print(searchspace.list)
+
+    assert len(searchspace.list) > 1
