@@ -35,7 +35,7 @@ class Searchspace():
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
 
         self.list, self.__numpy, self.__dict, self.size = self.__build_searchspace(sort, sort_last_param_first)
-        self.num_params = len(self.list[0])
+        self.num_params = len(self.tune_params)
         self.indices = np.arange(self.size)
         if neighbor_method is not None and neighbor_method != 'Hamming':
             self.__prepare_neighbors_index()
