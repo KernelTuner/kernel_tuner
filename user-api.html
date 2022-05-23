@@ -397,10 +397,11 @@ find the optimal kernel configuration. There is no default time limit.</p>
 </li>
 <li><p><strong>”simulated_annealing”</strong></p>
 <ul>
-<li><p>”alpha”, float, alpha parameter, default 0.9.</p></li>
-<li><p>”maxiter”, integer, number of iterations of possibly accepting neighboring points, default 20.</p></li>
+<li><p>”alpha”, float, alpha parameter, default 0.995.</p></li>
+<li><p>”maxiter”, integer, number of iterations within each point of the annealing schedule, default 1.</p></li>
 <li><p>”T”, float, starting temperature parameter, default 1.0.</p></li>
 <li><p>”T_min”, float, end temperature parameter, default 0.001.</p></li>
+<li><p>”max_fevals”, integer, maximum number of unique valid function evaluations, default is set to fit annealing schedule.</p></li>
 </ul>
 </li>
 </ul>
