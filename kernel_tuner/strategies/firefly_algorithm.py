@@ -66,7 +66,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # compute initial intensities
     for j in range(num_particles):
         try:
-            swarm[i].compute_intensity(_cost_func)
+            swarm[j].compute_intensity(_cost_func)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
