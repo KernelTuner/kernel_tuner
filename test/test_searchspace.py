@@ -16,6 +16,7 @@ from constraint import ExactSumConstraint, FunctionConstraint
 import numpy as np
 
 max_threads = 1024
+value_error_expectation_message = "Expected a ValueError to be raised"
 
 # 9 combinations without restrictions
 simple_tune_params = OrderedDict()
@@ -39,6 +40,13 @@ min_func = lambda gpu1, gpu2, gpu3, gpu4: min([gpu1, gpu2, gpu3, gpu4]) >= 1
 # test three different types of restrictions: python-constraint, a function and a string
 restrict = [ExactSumConstraint(num_layers), FunctionConstraint(min_func)]
 
+# 74088 combinations intended to test whether sorting works
+sort_tune_params = OrderedDict()
+sort_tune_params["gpu1"] = list(range(num_layers))
+sort_tune_params["gpu2"] = list(range(num_layers))
+sort_tune_params["gpu3"] = list(range(num_layers))
+sort_tuning_options = Options(dict(restrictions=[], tune_params=sort_tune_params))
+
 # create the searchspace object
 tuning_options = Options(dict(restrictions=restrict, tune_params=tune_params))
 searchspace = Searchspace(tuning_options, max_threads)
@@ -59,6 +67,31 @@ def test_internal_representation():
     for index, dict_config in enumerate(searchspace.get_list_dict().keys()):
         assert dict_config == searchspace.list[index]
 
+def test_sort():
+    """ test that the sort searchspace option works as expected """
+    simple_searchspace_sort = Searchspace(simple_tuning_options, max_threads, sort=True, sort_last_param_first=False)
+    assert simple_searchspace_sort.list == [(1, 4, 'string_1'), (1, 4, 'string_2'), (1, 5.5, 'string_1'), (1, 5.5, 'string_2'), (2, 4, 'string_1'), (2, 4, 'string_2'), (2, 5.5, 'string_1'), (2, 5.5, 'string_2'), (3, 4, 'string_1'), (3, 4, 'string_2'), (3, 5.5, 'string_1'), (3, 5.5, 'string_2')]
+
+    searchspace_sort = Searchspace(sort_tuning_options, max_threads, sort=True, sort_last_param_first=False)
+    num_params = len(searchspace_sort.list[0])
+    for param_config_index, (param_config_first, param_config_second) in enumerate(zip(searchspace_sort.list, searchspace_sort.list[1:])):
+        if (param_config_index + 1) % num_layers == 0:
+            continue
+        for param_index in range(num_params):
+            assert param_config_first[param_index] <= param_config_second[param_index]
+
+def test_sort_reversed():
+    """ test that the sort searchspace option with the sort_last_param_first option enabled works as expected """
+    simple_searchspace_sort_reversed = Searchspace(simple_tuning_options, max_threads, sort=True, sort_last_param_first=True)
+    assert simple_searchspace_sort_reversed.list == [(1, 4, 'string_1'), (2, 4, 'string_1'), (3, 4, 'string_1'), (1, 5.5, 'string_1'), (2, 5.5, 'string_1'), (3, 5.5, 'string_1'), (1, 4, 'string_2'), (2, 4, 'string_2'), (3, 4, 'string_2'), (1, 5.5, 'string_2'), (2, 5.5, 'string_2'), (3, 5.5, 'string_2')]
+
+    searchspace_sort = Searchspace(sort_tuning_options, max_threads, sort=True, sort_last_param_first=True)
+    num_params = len(searchspace_sort.list[0])
+    for param_config_index, (param_config_first, param_config_second) in enumerate(zip(searchspace_sort.list, searchspace_sort.list[1:])):
+        if (param_config_index + 1) % num_layers == 0:
+            continue
+        for param_index in range(num_params):
+            assert param_config_first[param_index] <= param_config_second[param_index]
 
 def test_index_lookup():
     """ test that index lookups are consistent for ~1% of the searchspace """
@@ -98,12 +131,12 @@ def test_random_sample():
     # too many samples should result in a ValueError
     try:
         simple_searchspace.get_random_sample_indices(simple_searchspace.size + 1)
-        print("Expected a ValueError to be raised")
+        print(value_error_expectation_message)
         assert False
     except ValueError as e:
         assert "number of samples requested is greater than the searchspace size" in str(e)
     except Exception:
-        print("Expected a ValueError to be raised")
+        print(value_error_expectation_message)
         assert False
 
 
@@ -208,34 +241,34 @@ def test_order_param_configs():
     # test failsafe too few indices
     try:
         simple_searchspace.order_param_configs(neighbors, [1, 2])
-        print("Expected a ValueError to be raised")
+        print(value_error_expectation_message)
         assert False
     except ValueError as e:
         assert "must be equal to the number of parameters" in str(e)
     except Exception:
-        print("Expected a ValueError to be raised")
+        print(value_error_expectation_message)
         assert False
 
     # test failsafe too many indices
     try:
         simple_searchspace.order_param_configs(neighbors, [1, 2, 0, 2])
-        print("Expected a ValueError to be raised")
+        print(value_error_expectation_message)
         assert False
     except ValueError as e:
         assert "must be equal to the number of parameters" in str(e)
     except Exception:
-        print("Expected a ValueError to be raised")
+        print(value_error_expectation_message)
         assert False
 
     # test failsafe invalid indices
     try:
         simple_searchspace.order_param_configs(neighbors, [1, 3, 0])
-        print("Expected a ValueError to be raised")
+        print(value_error_expectation_message)
         assert False
     except ValueError as e:
         assert "order needs to be a list of the parameter indices, but index" in str(e)
     except Exception:
-        print("Expected a ValueError to be raised")
+        print(value_error_expectation_message)
         assert False
 
     # test usecase
@@ -248,3 +281,17 @@ def test_order_param_configs():
     for expected_param_config in expected_order:
         assert expected_param_config in ordered_neighbors
     assert len(ordered_neighbors) == len(expected_order)
+
+
+def test_max_threads():
+    max_threads = 1024
+    tune_params = dict()
+    tune_params["block_size_x"] = [512, 1024]
+    tune_params["block_size_y"] = [1]
+    tuning_options = Options(dict(tune_params=tune_params, restrictions=None))
+
+    searchspace = Searchspace(tuning_options, max_threads)
+
+    print(searchspace.list)
+
+    assert len(searchspace.list) > 1
