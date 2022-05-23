@@ -407,7 +407,7 @@ def get_total_timings(results, env, overhead_time):
     if results:
         for result in results:
             if 'framework_time' not in result or 'strategy_time' not in result or 'compile_time' not in result or 'verification_time' not in result:
-                warnings.warn("No detailed timings in results")
+                #warnings.warn("No detailed timings in results")
                 return env
             total_framework_time += result['framework_time']
             total_strategy_time += result['strategy_time']
