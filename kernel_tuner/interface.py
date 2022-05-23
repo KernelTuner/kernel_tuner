@@ -30,6 +30,8 @@ import logging
 import numpy
 from time import perf_counter
 
+from kernel_tuner.integration import get_objective_defaults
+
 import kernel_tuner.util as util
 import kernel_tuner.core as core
 
@@ -449,7 +451,7 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, simulation_mode=False, observers=None, objective=None, objective_higher_is_better=False):
+                cache=None, metrics=None, simulation_mode=False, observers=None, objective=None, objective_higher_is_better=None):
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -459,8 +461,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # default objective if none is specified
-    if objective is None:
-        objective = "time"
+    objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params)
