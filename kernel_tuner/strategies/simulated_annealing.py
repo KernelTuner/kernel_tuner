@@ -40,21 +40,32 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # optimization parameters
     T = tuning_options.strategy_options.get("T", 1.0)
+    T_start = T
     T_min = tuning_options.strategy_options.get("T_min", 0.001)
-    alpha = tuning_options.strategy_options.get("alpha", 0.9)
-    niter = tuning_options.strategy_options.get("maxiter", 20)
+    alpha = tuning_options.strategy_options.get("alpha", 0.995)
+    niter = tuning_options.strategy_options.get("maxiter", 1)
+
+    # compute how many iterations would be needed to complete the annealing schedule
+    max_iter = int(np.ceil(np.log(T_min)/np.log(alpha)))
+
+    # if user supplied max_fevals that is lower then max_iter we will
+    # scale the annealing schedule to fit max_fevals
+    max_feval = tuning_options.strategy_options.get("max_fevals", max_iter)
 
     # get random starting point and evaluate cost
     pos = list(searchspace.get_random_sample(1)[0])
     old_cost = _cost_func(pos, *args, check_restrictions=False)
 
-    if tuning_options.verbose:
-        c = 0
     # main optimization loop
+    stuck = 0
+    iter = 0
+    c = 0
+    c_old = 0
+
     while T > T_min:
         if tuning_options.verbose:
-            print("iteration: ", c, "T", T, "cost: ", old_cost)
-            c += 1
+            print("iteration: ", iter, "T", T, "cost: ", old_cost, f"{len(tuning_options.unique_results)=}")
+            iter += 1
 
         for _ in range(niter):
 
@@ -66,7 +77,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
                     print(e)
                 return results, runner.dev.get_environment()
 
-
             ap = acceptance_prob(old_cost, new_cost, T, tuning_options)
             r = random.random()
 
@@ -76,7 +86,23 @@ def tune(runner, kernel_options, device_options, tuning_options):
                 pos = new_pos
                 old_cost = new_cost
 
-        T = T * alpha
+        c = len(tuning_options.unique_results)
+        T = T_start * alpha**(max_iter/max_feval*c)
+
+        # check if solver gets stuck and if so restart from random position
+        if c == c_old:
+            stuck += 1
+        else:
+            stuck = 0
+        c_old = c
+        if stuck > 100:
+            pos = list(searchspace.get_random_sample(1)[0])
+            stuck = 0
+
+        # safeguard
+        if iter > 10*max_iter:
+            break
+
 
     return results, runner.dev.get_environment()
 

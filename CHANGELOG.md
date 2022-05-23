@@ -20,6 +20,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - genetic algorithm, MLS, ILS, random, and simulated annealing use new search space object
 - diff evo, firefly, PSO are initialized using population of all valid configurations
 - all strategies except brute_force strictly adhere to max_fevals and time_limit
+- simulated annealing adapts annealing schedule to max_fevals if supplied
 
 ## [0.4.1] - 2021-09-10
 ### Added
