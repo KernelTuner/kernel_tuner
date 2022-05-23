@@ -4,8 +4,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [0.4.2] - 2022-05-23
 ### Added
-- sew optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
+- new optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
 - support for constant memory in cupy backend
 - constraint solver to cut down time spent in creating search spaces
 - support for custom tuning objectives
@@ -21,6 +22,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - diff evo, firefly, PSO are initialized using population of all valid configurations
 - all strategies except brute_force strictly adhere to max_fevals and time_limit
 - simulated annealing adapts annealing schedule to max_fevals if supplied
+- minimize, basinhopping, and dual annealing start from a random valid config
 
 ## [0.4.1] - 2021-09-10
 ### Added
