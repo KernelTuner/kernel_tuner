@@ -38,7 +38,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     #scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
 
-    bounds, _, _ = get_bounds_x0_eps(tuning_options)
+    bounds, x0, _ = get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
 
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
@@ -51,7 +51,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     opt_result = None
     try:
-        opt_result = scipy.optimize.dual_annealing(_cost_func, bounds, args=args, local_search_options=minimizer_kwargs)
+        opt_result = scipy.optimize.dual_annealing(_cost_func, bounds, args=args, local_search_options=minimizer_kwargs, x0=x0)
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)

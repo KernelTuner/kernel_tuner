@@ -37,7 +37,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     tuning_options["scaling"] = True
 
     # using this instead of get_bounds because scaling is used
-    bounds, _, eps = get_bounds_x0_eps(tuning_options)
+    bounds, _, eps = get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
 
     args = (kernel_options, tuning_options, runner, results)
 

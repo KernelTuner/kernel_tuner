@@ -9,6 +9,7 @@ from time import perf_counter
 import numpy as np
 import scipy.optimize
 from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
 
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
@@ -44,7 +45,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
 
-    bounds, x0, _ = get_bounds_x0_eps(tuning_options)
+    bounds, x0, _ = get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
 
@@ -138,7 +139,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
     return return_value(result)
 
 
-def get_bounds_x0_eps(tuning_options):
+def get_bounds_x0_eps(tuning_options, max_threads):
     """compute bounds, x0 (the initial guess), and eps"""
     values = list(tuning_options.tune_params.values())
 
@@ -154,10 +155,12 @@ def get_bounds_x0_eps(tuning_options):
         bounds = [(0, eps * len(v)) for v in values]
         if x0:
             # x0 has been supplied by the user, map x0 into [0, eps*len(v)]
-            for i, e in enumerate(values):
-                x0[i] = eps * values[i].index(x0[i])
+            x0 = scale_from_params(x0, tuning_options, eps)
         else:
-            x0 = [0.5 * eps * len(v) for v in values]
+            # get a valid x0
+            searchspace = Searchspace(tuning_options, max_threads)
+            pos = list(searchspace.get_random_sample(1)[0])
+            x0 = scale_from_params(pos, tuning_options.tune_params, eps)
     else:
         bounds = get_bounds(tuning_options.tune_params)
         if not x0:
