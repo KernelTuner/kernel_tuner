@@ -833,7 +833,7 @@ class MaxProdConstraint(Constraint):
                 if variable not in assignments:
                     domain = domains[variable]
                     for value in domain[:]:
-                        if prod + value > maxprod:
+                        if prod * value > maxprod:
                             domain.hideValue(value)
                     if not domain:
                         return False
