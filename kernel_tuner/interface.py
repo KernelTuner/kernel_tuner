@@ -376,14 +376,15 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
             * **"simulated_annealing"**
 
-              * "alpha", float, alpha parameter, default 0.9.
+              * "alpha", float, alpha parameter, default 0.995.
 
-              * "maxiter", integer, number of iterations of possibly accepting neighboring points, default 20.
+              * "maxiter", integer, number of iterations within each point of the annealing schedule, default 1.
 
               * "T", float, starting temperature parameter, default 1.0.
 
               * "T_min", float, end temperature parameter, default 0.001.
 
+              * "max_fevals", integer, maximum number of unique valid function evaluations, default is set to fit annealing schedule.
 
 
     """, "dict")),
