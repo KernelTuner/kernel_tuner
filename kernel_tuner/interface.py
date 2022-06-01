@@ -29,7 +29,6 @@ from datetime import datetime
 import logging
 import numpy
 from time import perf_counter
-from constraint import Constraint
 
 from kernel_tuner.integration import get_objective_defaults
 
