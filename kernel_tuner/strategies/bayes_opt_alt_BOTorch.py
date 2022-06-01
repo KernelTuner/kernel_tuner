@@ -12,6 +12,7 @@ except ImportError:
     bayes_opt_present = False
 
 from kernel_tuner.strategies import minimize
+from kernel_tuner.util import StopCriterionReached
 
 supported_methods = ["poi", "ei", "ucb"]
 
@@ -44,6 +45,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         raise ImportError("Error: optional dependency Bayesian Optimization not installed")
     init_points = tuning_options.strategy_options.get("popsize", 20)
     n_iter = tuning_options.strategy_options.get("max_fevals", 100)
+    print(f"popsize: {init_points}, maxfevals: {n_iter}")
 
     # defaults as used by Bayesian Optimization Python package
     acq = tuning_options.strategy_options.get("method", "ucb")
@@ -59,7 +61,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         args = [kwargs[key] for key in tuning_options.tune_params.keys()]
         return -1.0 * minimize._cost_func(args, kernel_options, tuning_options, runner, results)
 
-    bounds, _, _ = minimize.get_bounds_x0_eps(tuning_options)
+    bounds, _, _ = minimize.get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
     pbounds = OrderedDict(zip(tuning_options.tune_params.keys(), bounds))
 
     verbose = 0
@@ -70,7 +72,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     optimizer = BayesianOptimization(f=func, pbounds=pbounds, verbose=verbose)
 
-    optimizer.maximize(init_points=init_points, n_iter=n_iter, acq=acq, kappa=kappa, xi=xi)
+    try:
+        optimizer.maximize(init_points=init_points, n_iter=n_iter, acq=acq, kappa=kappa, xi=xi)
+    except StopCriterionReached:
+        pass
 
     if tuning_options.verbose:
         print(optimizer.max)
