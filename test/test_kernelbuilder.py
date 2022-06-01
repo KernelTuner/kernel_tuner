@@ -26,7 +26,7 @@ def test_kernel():
 @skip_if_no_cuda
 def test_PythonKernel(test_kernel):
     kernel_name, kernel_string, n, args, params = test_kernel
-    kernel_function = kernelbuilder.PythonKernel(*test_kernel)
+    kernel_function = kernelbuilder.PythonKernel(*test_kernel, lang="cupy")
     reference = kernel_function(*args)
     assert np.allclose(reference[0], args[1]+args[2])
 
@@ -44,7 +44,7 @@ def test_PythonKernel_tuned(test_kernel):
         integration.store_results(test_results_file, kernel_name, kernel_string, params, n, [results], env)
 
         #create a kernel using the results
-        kernel_function = kernelbuilder.PythonKernel(kernel_name, kernel_string, n, args, results_file=test_results_file)
+        kernel_function = kernelbuilder.PythonKernel(kernel_name, kernel_string, n, args, results_file=test_results_file, lang="cupy")
 
         #test if params were retrieved correctly
         assert kernel_function.params["block_size_x"] == 384

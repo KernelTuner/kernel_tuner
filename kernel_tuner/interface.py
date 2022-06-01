@@ -23,14 +23,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import print_function
-
+import sys
 from collections import OrderedDict
 from datetime import datetime
 import logging
 import numpy
 from time import perf_counter
 from constraint import Constraint
+
+from kernel_tuner.integration import get_objective_defaults
 
 import kernel_tuner.util as util
 import kernel_tuner.core as core
@@ -265,6 +266,16 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
         """, "")),
                            ("strategy_options", ("""A dict with options specific to the selected tuning strategy.
 
+            All strategies support the following two options:
+
+            1. "max_fevals": the maximum number of unique valid function evaluations (i.e. compiling and
+            benchmarking a kernel configuration the strategy is allowed to perform as part of the optimization.
+            Note that some strategies implement a default max_fevals of 100.
+
+            2. "time_limit": the maximum amount of time in seconds the strategy is allowed to spent on trying to
+            find the optimal kernel configuration. There is no default time limit.
+
+            Strategy specific options are explained below:
 
             * **"basinhopping"**
 
@@ -286,6 +297,14 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
               * "method", string, any of "best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin", default "best1bin".
 
+              * "popsize", integer, population size, default 20.
+
+              * "maxiter", integer, number of generations, default 50.
+
+            * **"dual_annealing"**
+
+              * "method", string, any of 'COBYLA','L-BFGS-B','SLSQP','CG','Powell','Nelder-Mead', 'BFGS', 'trust-constr', default "Powell".
+
             * **"firefly_algorithm"**
 
               * "alpha", float, alpha parameter, default 0.2.
@@ -305,8 +324,6 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
               * "method", string, crossover method any of "single_point", "two_point", "uniform", "disruptive_uniform", default "uniform".
 
               * "mutation_chance", integer, specifies the 1 in mutation_chance of a mutation, default 10.
-
-              * "max_fevals", integer, specifies the maximum allowed number of unique function evaluations, default 100.
 
               * "popsize", integer, population size, default 20.
 
@@ -366,19 +383,24 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
 
             * **"simulated_annealing"**
 
-              * "alpha", float, alpha parameter, default 0.9.
+              * "alpha", float, alpha parameter, default 0.995.
 
-              * "maxiter", integer, number of iterations of possibly accepting neighboring points, default 20.
+              * "maxiter", integer, number of iterations within each point of the annealing schedule, default 1.
 
               * "T", float, starting temperature parameter, default 1.0.
 
               * "T_min", float, end temperature parameter, default 0.001.
 
+              * "max_fevals", integer, maximum number of unique valid function evaluations, default is set to fit annealing schedule.
 
 
     """, "dict")),
                            ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""", "int")),
+                           ("objective", ("""Optimization objective to sort results on, consisting of a string
+            that also occurs in results as a metric or observed quantity, default 'time'""", "string")),
+                           ("objective_higher_is_better", ("""boolean that specifies whether the objective should
+            be maximized (True) or minimized (False), default False.""", "bool")),
                            ("verbose", ("""Sets whether or not to report about configurations that
         were skipped during the search. This could be due to several reasons:
 
@@ -429,13 +451,12 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 
 """ % _get_docstring(_kernel_options) + _get_docstring(_tuning_options) + _get_docstring(_device_options)
 
-#"""
 
 
 def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
                 compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, simulation_mode=False, parallel_mode=False, hyperparam_mode=False, observers=None):
+                cache=None, metrics=None, simulation_mode=False, observers=None, objective=None, objective_higher_is_better=None, parallel_mode=False, hyperparam_mode=False):
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
@@ -446,6 +467,9 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
+
+    # default objective if none is specified
+    objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params)
@@ -469,6 +493,11 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
     tuning_options["snap"] = True
+    tuning_options["unique_results"] = {}
+    if strategy_options and "max_fevals" in strategy_options:
+        tuning_options["max_fevals"] = strategy_options["max_fevals"]
+    if strategy_options and "time_limit" in strategy_options:
+        tuning_options["time_limit"] = strategy_options["time_limit"]
 
     logging.debug('tune_kernel called')
     logging.debug('kernel_options: %s', util.get_config_string(kernel_options))
@@ -481,27 +510,27 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         else:
             raise ValueError("Strategy %s not recognized" % strategy)
 
-        #make strategy_options into an Options object
+        # make strategy_options into an Options object
         if tuning_options.strategy_options:
             if not isinstance(strategy_options, Options):
                 tuning_options.strategy_options = Options(strategy_options)
 
-            #select strategy based on user options
+            # select strategy based on user options
             if "fraction" in tuning_options.strategy_options and not tuning_options.strategy == 'random_sample':
                 raise ValueError('It is not possible to use fraction in combination with strategies other than "random_sample". ' \
                                  'Please set strategy="random_sample", when using "fraction" in strategy_options')
 
-            #check if method is supported by the selected strategy
+            # check if method is supported by the selected strategy
             if "method" in tuning_options.strategy_options:
                 method = tuning_options.strategy_options.method
                 if not method in strategy.supported_methods:
                     raise ValueError('Method %s is not supported for strategy %s' % (method, tuning_options.strategy))
 
-        #if no strategy_options dict has been passed, create empty dictionary
+        # if no strategy_options dict has been passed, create empty dictionary
         else:
             tuning_options.strategy_options = Options({})
 
-    #if no strategy selected
+    # if no strategy selected
     else:
         strategy = brute_force
 
@@ -513,7 +542,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         # we normalize it so that it always accepts atol.
         tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
-        #process cache
+        # process cache
         if cache:
             if cache[-5:] != ".json":
                 cache += ".json"
@@ -524,13 +553,13 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
             tuning_options.cachefile = None
 
         # call the strategy to execute the tuning process
-        selected_runner.last_strategy_start_time = perf_counter()
+        tuning_options["start_time"] = perf_counter()
         results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
-        #finished iterating over search space
+        # finished iterating over search space
         if not device_options.quiet:
             if results:    # checks if results is not empty
-                best_config = min(results, key=lambda x: x['time'])
+                best_config = util.get_best_config(results, objective, objective_higher_is_better)
                 units = getattr(runner, "units", None)
                 print("best performing configuration:")
                 util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)

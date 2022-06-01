@@ -1,9 +1,9 @@
 """ Iterate over a random sample of the parameter space """
-from __future__ import print_function
-import numpy
+import numpy as np
 
 from kernel_tuner.searchspace import Searchspace
-
+from kernel_tuner.strategies.minimize import _cost_func
+from kernel_tuner import util
 
 def tune(runner, kernel_options, device_options, tuning_options):
     """ Tune a random sample of sample_fraction fraction in the parameter space
@@ -29,15 +29,29 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     """
 
+    tuning_options["scaling"] = False
+
     # create the search space
     searchspace = Searchspace(tuning_options, runner.dev.max_threads)
 
     # get the samples
     fraction = tuning_options.strategy_options.get("fraction", 0.1)
-    num_samples = int(numpy.ceil(searchspace.size * fraction))
+    num_samples = int(np.ceil(searchspace.size * fraction))
+
+    # override if max_fevals is specified
+    if "max_fevals" in tuning_options:
+        num_samples = tuning_options.max_fevals
+
     samples = searchspace.get_random_sample(num_samples)
 
-    # call the runner
-    results, env = runner.run(samples, kernel_options, tuning_options)
+    results = []
 
-    return results, env
+    for sample in samples:
+        try:
+            _cost_func(sample, kernel_options, tuning_options, runner, results, check_restrictions=False)
+        except util.StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return results, runner.dev.get_environment()
+
+    return results, runner.dev.get_environment()

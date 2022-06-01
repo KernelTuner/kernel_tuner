@@ -22,7 +22,7 @@ max_threads = 1024
 
 # initialize required data
 parameter_space = list(itertools.product(*tune_params.values()))
-_, _, eps = minimize.get_bounds_x0_eps(tuning_options)
+_, _, eps = minimize.get_bounds_x0_eps(tuning_options, 1024)
 original_to_normalized, normalized_to_original = bayes_opt.generate_normalized_param_dicts(tune_params, eps)
 normalized_parameter_space = bayes_opt.normalize_parameter_space(parameter_space, tune_params, original_to_normalized)
 pruned_parameter_space, removed_tune_params = bayes_opt.prune_parameter_space(normalized_parameter_space, tuning_options, tune_params, original_to_normalized)

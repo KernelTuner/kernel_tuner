@@ -4,27 +4,8 @@ from kernel_tuner import util
 from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner.searchspace import Searchspace
 
-def get_neighbors(neighbor_method, values, element, randomize):
-    """ get the list of neighboring elements of element in values """
-    # If Hamming neighbors, all values are possible neighbors
-    if neighbor_method == "Hamming":
-        neighbors = values
-        if randomize:
-            random.shuffle(neighbors)
-    # If adjacent neighbors, figure out what the adjacent values
-    # are in the list. Those are the only neighbors
-    elif neighbor_method == "adjacent":
-        var_idx = values.index(element)
-        if var_idx == 0:
-            neighbors = [values[1]]
-        elif var_idx == len(values) - 1:
-            neighbors = [values[len(values) - 2]]
-        else:
-            neighbors = [values[var_idx - 1], values[var_idx + 1]]
-    return neighbors
 
-
-def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, all_results, unique_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None):
+def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, all_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None):
     """ Hillclimbing search until max_fevals is reached or no improvement is found
 
     Base hillclimber that evaluates neighbouring solutions in a random or fixed order
@@ -46,10 +27,6 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
 
     :params all_results: List of dictionaries with all benchmarked configurations
     :type all_results: list(dict)
-
-    :params unique_results: Dictionaries that records all unique function evaluations
-        that count towards max_fevals.
-    :type unique_results: dict
 
     :param kernel_options: A dictionary with all options for the kernel.
     :type kernel_options: dict
@@ -82,8 +59,8 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
 
     tune_params = tuning_options.tune_params
 
-    # measure start point time
-    best_time = _cost_func(base_sol, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
+    # measure start point score
+    best_score = _cost_func(base_sol, kernel_options, tuning_options, runner, all_results, check_restrictions=False)
 
     found_improved = True
     while found_improved:
@@ -109,13 +86,12 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
                 orig_val = child[index]
                 child[index] = val
 
-                # get time for this position
-                time = _cost_func(child, kernel_options, tuning_options, runner, current_results, check_restrictions=False)
-                unique_results.update({",".join([str(v) for k, v in record.items() if k in tune_params]): record["time"] for record in current_results})
+                # get score for this position
+                score = _cost_func(child, kernel_options, tuning_options, runner, current_results, check_restrictions=False)
 
                 # generalize this to other tuning objectives
-                if time < best_time:
-                    best_time = time
+                if score < best_score:
+                    best_score = score
                     base_sol = child[:]
                     found_improved = True
                     if restart:
@@ -123,7 +99,7 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
                 else:
                     child[index] = orig_val
 
-                fevals = len(unique_results)
+                fevals = len(tuning_options.unique_results)
                 if fevals >= max_fevals:
                     all_results += current_results
                     return base_sol

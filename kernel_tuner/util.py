@@ -1,7 +1,10 @@
 """ Module for kernel tuner utility functions """
+import time
+from inspect import signature
 import json
 from collections import OrderedDict
 import os
+import sys
 import errno
 from tabnanny import verbose
 import tempfile
@@ -18,6 +21,22 @@ except ImportError:
     cp = np
 
 
+# number of special values to insert when a configuration cannot be measured
+
+class ErrorConfig(str):
+    def __str__(self): return self.__class__.__name__
+    def __repr__(self): return self.__class__.__name__
+
+class InvalidConfig(ErrorConfig):
+    pass
+
+class CompilationFailedConfig(ErrorConfig):
+    pass
+
+class RuntimeFailedConfig(ErrorConfig):
+    pass
+
+
 class TorchPlaceHolder():
 
     def __init__(self):
@@ -26,6 +45,9 @@ class TorchPlaceHolder():
 
 class SkippableFailure(Exception):
     """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected"""
+
+class StopCriterionReached(Exception):
+    """Exception thrown when a stop criterion has been reached"""
 
 
 try:
@@ -93,6 +115,14 @@ def check_argument_list(kernel_name, kernel_string, args):
             return
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
+
+
+def check_stop_criterion(to):
+    """ checks if max_fevals is reached or time limit is exceeded """
+    if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
+        raise StopCriterionReached("max_fevals reached")
+    if "time_limit" in to and (time.perf_counter() - to.start_time > to.time_limit):
+        raise StopCriterionReached("time limit exceeded")
 
 
 def check_tune_params_list(tune_params):
@@ -221,6 +251,14 @@ def detect_language(kernel_string):
     return lang
 
 
+def get_best_config(results, objective, objective_higher_is_better=False):
+    """ Returns the best configuration from a list of results according to some objective """
+    func = max if objective_higher_is_better else min
+    ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
+    best_config = func(results, key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
+    return best_config
+
+
 def get_config_string(params, keys=None, units=None):
     """ return a compact string representation of a measurement """
 
@@ -237,7 +275,8 @@ def get_config_string(params, keys=None, units=None):
     for k, v in params.items():
         if k in keys:
             unit = ""
-            if isinstance(units, dict):    # check if not None not enough, units could be mocked which causes errors
+            # check if units not None not enough, units could be mocked which causes errors
+            if isinstance(units, dict) and not isinstance(v, ErrorConfig):
                 unit = units.get(k, "")
             compact_str_items.append(k + "=" + compact_number(v) + unit)
     # and finally join them
@@ -370,7 +409,7 @@ def get_total_timings(results, env, overhead_time):
     if results:
         for result in results:
             if 'framework_time' not in result or 'strategy_time' not in result or 'compile_time' not in result or 'verification_time' not in result:
-                warnings.warn("No detailed timings in results")
+                #warnings.warn("No detailed timings in results")
                 return env
             total_framework_time += result['framework_time']
             total_strategy_time += result['strategy_time']
@@ -386,6 +425,11 @@ def get_total_timings(results, env, overhead_time):
     env['total_kernel_time'] = total_kernel_time
     env['overhead_time'] = overhead_time - (total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_kernel_time)
     return env
+
+
+def print_config(config, tuning_options, runner):
+    """print the configuration string with tunable parameters and benchmark results"""
+    print_config_output(tuning_options.tune_params, config, runner.quiet, tuning_options.metrics, runner.units)
 
 
 def print_config_output(tune_params, params, quiet, metrics, units):
@@ -554,7 +598,6 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
 
 def write_file(filename, string):
     """dump the contents of string to a file called filename"""
-    import sys
     # ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:
         with open(filename, 'w', encoding="utf-8") as f:
@@ -573,38 +616,13 @@ def normalize_verify_function(v):
 
     Undefined behaviour if the passed function does not match the required signatures.
     """
-
     # python 3.3+
-    def _has_kw_argument_sig(func, name):
-        from inspect import signature
+    def has_kw_argument(func, name):
         sig = signature(func)
         return name in sig.parameters
 
-    # python 3.0+
-    def _has_kw_argument_fullarg(func, name):
-        from inspect import getfullargspec
-        spec = getfullargspec(func)
-        return (name in spec.args) or (name in spec.kwonlyargs)
-
-    # python 2.6+
-    def _has_kw_argument_arg(func, name):
-        from inspect import getargspec
-        spec = getargspec(func)
-        return name in spec.args
-
     if v is None:
         return None
-
-    import inspect
-
-    if hasattr(inspect, 'signature'):
-        has_kw_argument = _has_kw_argument_sig
-    elif hasattr(inspect, 'getfullargspec'):
-        has_kw_argument = _has_kw_argument_fullarg
-    elif hasattr(inspect, 'getargspec'):
-        has_kw_argument = _has_kw_argument_arg
-    else:
-        raise RuntimeError('No suitable inspect function found')
 
     if has_kw_argument(v, 'atol'):
         return v
@@ -717,7 +735,18 @@ def read_cache(cache, open_cache=True):
         with open(cache, "w") as cachefile:
             cachefile.write(filestr[:-3] + ",")
 
-    return json.loads(filestr)
+    error_configs = {"InvalidConfig": InvalidConfig(),
+                     "CompilationFailedConfig": CompilationFailedConfig(),
+                     "RuntimeFailedConfig": RuntimeFailedConfig()}
+
+    # replace strings with ErrorConfig instances
+    cache_data = json.loads(filestr)
+    for element in cache_data["cache"].values():
+        for k, v in element.items():
+            if isinstance(v, str) and v in error_configs:
+                element[k] = error_configs[v]
+
+    return cache_data
 
 
 def close_cache(cache):
@@ -737,22 +766,28 @@ def store_cache(key, params, tuning_options):
     """ stores a new entry (key, params) to the cachefile """
 
     # create converter for dumping numpy objects to JSON
-    def npconverter(obj):
+    def JSONconverter(obj):
         if isinstance(obj, np.integer):
             return int(obj)
-        elif isinstance(obj, np.floating):
+        if isinstance(obj, np.floating):
             return float(obj)
-        elif isinstance(obj, np.ndarray):
+        if isinstance(obj, np.ndarray):
             return obj.tolist()
-        else:
-            return obj.__str__()
+        return obj.__str__()
 
     logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict) and not key in tuning_options.cache:
         tuning_options.cache[key] = params
+
+        # Convert ErrorConfig objects to string, wanted to do this inside the JSONconverter but couldn't get it to work
+        output_params = params.copy()
+        for k,v in output_params.items():
+            if isinstance(v, ErrorConfig):
+                output_params[k] = str(v)
+
         if tuning_options.cachefile:
             with open(tuning_options.cachefile, "a") as cachefile:
-                cachefile.write("\n" + json.dumps({ key: params }, default=npconverter)[1:-1] + ",")
+                cachefile.write("\n" + json.dumps({ key: output_params }, default=JSONconverter)[1:-1] + ",")
 
 
 def dump_cache(obj: str, tuning_options):
@@ -789,7 +824,7 @@ class MaxProdConstraint(Constraint):
         for variable in variables:
             if variable in assignments:
                 prod *= assignments[variable]
-        if type(prod) is float:
+        if isinstance(prod, float):
             prod = round(prod, 10)
         if prod > maxprod:
             return False
@@ -798,7 +833,7 @@ class MaxProdConstraint(Constraint):
                 if variable not in assignments:
                     domain = domains[variable]
                     for value in domain[:]:
-                        if prod + value > maxprod:
+                        if prod * value > maxprod:
                             domain.hideValue(value)
                     if not domain:
                         return False

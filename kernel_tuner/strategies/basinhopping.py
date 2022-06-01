@@ -1,9 +1,9 @@
 """ The strategy that uses the basinhopping global optimization method """
-from __future__ import print_function
 
 import scipy.optimize
 
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, setup_method_arguments, setup_method_options
+from kernel_tuner import util
 
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
@@ -40,7 +40,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
 
-    bounds, x0, eps = get_bounds_x0_eps(tuning_options)
+    bounds, x0, eps = get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
 
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
@@ -52,10 +52,15 @@ def tune(runner, kernel_options, device_options, tuning_options):
     minimizer_kwargs["method"] = method
     minimizer_kwargs["args"] = args
 
-    opt_result = scipy.optimize.basinhopping(_cost_func, x0, T=T, stepsize=eps,
+    opt_result = None
+    try:
+        opt_result = scipy.optimize.basinhopping(_cost_func, x0, T=T, stepsize=eps,
                                              minimizer_kwargs=minimizer_kwargs, disp=tuning_options.verbose)
+    except util.StopCriterionReached as e:
+        if tuning_options.verbose:
+            print(e)
 
-    if tuning_options.verbose:
+    if opt_result and tuning_options.verbose:
         print(opt_result.message)
 
     return results, runner.dev.get_environment()

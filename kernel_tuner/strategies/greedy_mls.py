@@ -43,14 +43,19 @@ def tune(runner, kernel_options, device_options, tuning_options):
     max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0
-    all_results = []
-    unique_results = {}
+    results = []
 
     #while searching
     while fevals < max_fevals:
         candidate = searchspace.get_random_sample(1)[0]
 
-        base_hillclimb(candidate, neighbor, max_fevals, searchspace, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=randomize, order=order)
-        fevals = len(unique_results)
+        try:
+            base_hillclimb(candidate, neighbor, max_fevals, searchspace, results, kernel_options, tuning_options, runner, restart=restart, randomize=randomize, order=order)
+        except util.StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return results, runner.dev.get_environment()
 
-    return all_results, runner.dev.get_environment()
+        fevals = len(tuning_options.unique_results)
+
+    return results, runner.dev.get_environment()

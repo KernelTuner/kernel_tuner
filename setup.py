@@ -8,15 +8,21 @@ def readme():
 
 setup(
     name="kernel_tuner",
-    version="0.4.1",
+    version="0.4.2",
     author="Ben van Werkhoven",
     author_email="b.vanwerkhoven@esciencecenter.nl",
     description=("An easy to use CUDA/OpenCL kernel tuner in Python"),
     license="Apache 2.0",
     keywords="auto-tuning gpu computing pycuda cuda pyopencl opencl",
     url="http://benvanwerkhoven.github.io/kernel_tuner/",
+    project_urls={
+        'Documentation': 'http://benvanwerkhoven.github.io/kernel_tuner/',
+        'Source': 'https://github.com/benvanwerkhoven/kernel_tuner',
+        'Tracker': 'https://github.com/benvanwerkhoven/kernel_tuner/issues',
+    },
     packages=['kernel_tuner', 'kernel_tuner.runners', 'kernel_tuner.strategies'],
     long_description=readme(),
+    long_description_content_type='text/x-rst',
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: Developers',
@@ -25,9 +31,9 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development',
         'Topic :: System :: Distributed Computing',

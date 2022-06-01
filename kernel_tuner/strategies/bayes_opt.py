@@ -99,7 +99,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
     tuning_options["scaling"] = True
-    _, _, eps = minimize.get_bounds_x0_eps(tuning_options)
+    _, _, eps = minimize.get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
 
     # compute cartesian product of all tunable parameters
     parameter_space = itertools.product(*tune_params.values())
@@ -126,10 +126,14 @@ def tune(runner, kernel_options, device_options, tuning_options):
         removed_tune_params = [None] * len(tune_params.keys())
 
     # initialize and optimize
-    bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner)
-    results = bo.optimize(max_fevals)
+    try:
+        bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner)
+        bo.optimize(max_fevals)
+    except util.StopCriterionReached as e:
+        if tuning_options.verbose:
+            print(e)
 
-    return results, runner.dev.get_environment()
+    return bo.results, runner.dev.get_environment()
 
 
 class BayesianOptimization():
