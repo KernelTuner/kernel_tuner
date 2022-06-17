@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -105,7 +106,7 @@
 }
 </style>
 <section id="the-kernel-tuner-documentation">
-<h1>The Kernel Tuner documentation<a class="headerlink" href="#the-kernel-tuner-documentation" title="Permalink to this headline">¶</a></h1>
+<h1>The Kernel Tuner documentation<a class="headerlink" href="#the-kernel-tuner-documentation" title="Permalink to this heading">¶</a></h1>
 <p>Contents:</p>
 <div class="toctree-wrapper compound">
 <ul class="current">
@@ -126,20 +127,20 @@
 </div>
 </section>
 <section id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h1>
 </section>
 <section id="kernel-tuner">
-<h1>Kernel Tuner<a class="headerlink" href="#kernel-tuner" title="Permalink to this headline">¶</a></h1>
+<h1>Kernel Tuner<a class="headerlink" href="#kernel-tuner" title="Permalink to this heading">¶</a></h1>
 <p><a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/actions/workflows/python-app.yml"><img alt="Build Status" src="https://github.com/benvanwerkhoven/kernel_tuner/actions/workflows/python-app.yml/badge.svg" /></a> <a class="reference external" href="https://codecov.io/gh/benvanwerkhoven/kernel_tuner"><img alt="CodeCov Badge" src="https://codecov.io/gh/benvanwerkhoven/kernel_tuner/branch/master/graph/badge.svg" /></a> <a class="reference external" href="https://pypi.python.org/pypi/kernel_tuner/"><img alt="PyPi Badge" src="https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue" /></a> <a class="reference external" href="https://doi.org/10.5281/zenodo.1220113"><img alt="Zenodo Badge" src="https://zenodo.org/badge/DOI/10.5281/zenodo.1220113.svg" /></a> <a class="reference external" href="https://sonarcloud.io/dashboard?id=benvanwerkhoven_kernel_tuner"><img alt="SonarCloud Badge" src="https://sonarcloud.io/api/project_badges/measure?project=benvanwerkhoven_kernel_tuner&amp;metric=alert_status" /></a> <a class="reference external" href="https://fair-software.eu"><img alt="FairSoftware Badge" src="https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green" /></a></p>
 <p>Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.</p>
 <p>Kernel Tuner provides a comprehensive solution for auto-tuning GPU programs, supporting auto-tuning of user-defined parameters in both host and device code, supporting output verification of all benchmarked kernels during tuning, as well as many optimization strategies to speed up the tuning process.</p>
 <section id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading">¶</a></h2>
 <p>The full documentation is available
 <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/index.html">here</a>.</p>
 </section>
 <section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
 <p>The easiest way to install the Kernel Tuner is using pip:</p>
 <p>To tune CUDA kernels:</p>
 <ul class="simple">
@@ -159,7 +160,7 @@
 dependencies can be found in the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/install.html">installation guide</a></p>
 </section>
 <section id="example-usage">
-<h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
+<h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this heading">¶</a></h2>
 <p>The following shows a simple example for tuning a CUDA kernel:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">__global__ void vector_add(float *c, float *a, float *b, int n) {</span>
@@ -207,7 +208,7 @@ and in the <a class="reference external" href="http://benvanwerkhoven.github.io/
 documentation pages</a>.</p>
 </section>
 <section id="search-strategies-for-tuning">
-<h2>Search strategies for tuning<a class="headerlink" href="#search-strategies-for-tuning" title="Permalink to this headline">¶</a></h2>
+<h2>Search strategies for tuning<a class="headerlink" href="#search-strategies-for-tuning" title="Permalink to this heading">¶</a></h2>
 <p>Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process. Currently
 implemented search algorithms are: Brute Force (default), Nelder-Mead, Powell, CG, BFGS, L-BFGS-B, TNC,
 COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Algorithm, Particle Swarm
@@ -219,7 +220,7 @@ For a full overview of the supported search strategies and methods please see th
 api documentation</a>.</p>
 </section>
 <section id="tuning-host-and-kernel-code">
-<h2>Tuning host and kernel code<a class="headerlink" href="#tuning-host-and-kernel-code" title="Permalink to this headline">¶</a></h2>
+<h2>Tuning host and kernel code<a class="headerlink" href="#tuning-host-and-kernel-code" title="Permalink to this heading">¶</a></h2>
 <p>It is possible to tune for combinations of tunable parameters in
 both host and kernel code. This allows for a number of powerfull things,
 such as tuning the number of streams for a kernel that uses CUDA Streams
@@ -232,7 +233,7 @@ and the
 for a detailed explanation of the kernel tuner Python script.</p>
 </section>
 <section id="correctness-verification">
-<h2>Correctness verification<a class="headerlink" href="#correctness-verification" title="Permalink to this headline">¶</a></h2>
+<h2>Correctness verification<a class="headerlink" href="#correctness-verification" title="Permalink to this heading">¶</a></h2>
 <p>Optionally, you can let the kernel tuner verify the output of every
 kernel it compiles and benchmarks, by passing an <code class="docutils literal notranslate"><span class="pre">answer</span></code> list. This
 list matches the list of arguments to the kernel, but contains the
@@ -243,11 +244,11 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 </div>
 </section>
 <section id="contributing">
-<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
+<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this heading">¶</a></h2>
 <p>Please see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/contributing.html">Contributions Guide</a>.</p>
 </section>
 <section id="citation">
-<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
+<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading">¶</a></h2>
 <p>If you use Kernel Tuner in research or research software, please cite the most relevant among the following publications:</p>
 <div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@article<span class="nb">{</span>kerneltuner,
   author  = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,
@@ -272,12 +273,12 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 </div>
 </section>
 <section id="related-work">
-<h2>Related work<a class="headerlink" href="#related-work" title="Permalink to this headline">¶</a></h2>
+<h2>Related work<a class="headerlink" href="#related-work" title="Permalink to this heading">¶</a></h2>
 <p>You may also like <a class="reference external" href="https://github.com/CNugteren/CLTune">CLTune</a> by
 Cedric Nugteren. CLTune is a C++ library for kernel tuning.</p>
 </section>
 <section id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>

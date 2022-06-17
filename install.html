@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -116,12 +117,12 @@
 <div class="toctree-wrapper compound">
 </div>
 <section id="installation-guide">
-<span id="install"></span><h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h1>
+<span id="install"></span><h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this heading">¶</a></h1>
 <p>The Kernel Tuner requires several packages to be installed. First of all, you need a
 working Python version, several Python packages, and optionally CUDA and/or OpenCL
 installations. All of this is explained in detail in this guide.</p>
 <section id="python">
-<h2>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h2>
+<h2>Python<a class="headerlink" href="#python" title="Permalink to this heading">¶</a></h2>
 <p>You need a Python installation. I recommend using Python 3 and
 installing it with <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a>.</p>
 <p>Linux users could type the following to download and install Python 3 using Miniconda:</p>
@@ -133,7 +134,7 @@ bash Miniconda3-latest-Linux-x86_64.sh
 is developed to be fully compatible with Python 3.6 and newer.</p>
 </section>
 <section id="installing-python-packages">
-<h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Permalink to this headline">¶</a></h2>
+<h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Permalink to this heading">¶</a></h2>
 <p>Note that when you are using a native Python installation, the <cite>pip</cite> command used
 Kernel Tuner and its dependencies require <cite>sudo</cite> rights for system wide installation.</p>
 <p>Sudo rights are typically not required when using Miniconda or virtual environments.
@@ -148,7 +149,7 @@ this requires that your home directory is on your <cite>$PYTHONPATH</cite> envir
 <p>There are also optional dependencies, explained below.</p>
 </section>
 <section id="cuda-and-pycuda">
-<h2>CUDA and PyCUDA<a class="headerlink" href="#cuda-and-pycuda" title="Permalink to this headline">¶</a></h2>
+<h2>CUDA and PyCUDA<a class="headerlink" href="#cuda-and-pycuda" title="Permalink to this heading">¶</a></h2>
 <p>Installing CUDA and PyCUDA is optional, because you may want to only use Kernel
 Tuner for tuning OpenCL or C kernels.</p>
 <p>If you want to use the Kernel Tuner to tune
@@ -174,7 +175,7 @@ from an installation that is failing.</p>
 <p>If this fails, I recommend to see the PyCuda installation guide (<a class="reference external" href="https://wiki.tiker.net/PyCuda/Installation">https://wiki.tiker.net/PyCuda/Installation</a>)</p>
 </section>
 <section id="opencl-and-pyopencl">
-<h2>OpenCL and PyOpenCL<a class="headerlink" href="#opencl-and-pyopencl" title="Permalink to this headline">¶</a></h2>
+<h2>OpenCL and PyOpenCL<a class="headerlink" href="#opencl-and-pyopencl" title="Permalink to this heading">¶</a></h2>
 <p>Before we can install PyOpenCL you’ll need an OpenCL compiler. There are several
 OpenCL compilers available depending on the OpenCL platform you want to your
 code to run on.</p>
@@ -199,7 +200,7 @@ PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
 <p>If this fails, please see the PyOpenCL installation guide (<a class="reference external" href="https://wiki.tiker.net/PyOpenCL/Installation">https://wiki.tiker.net/PyOpenCL/Installation</a>)</p>
 </section>
 <section id="installing-kernel-tuner">
-<h2>Installing Kernel Tuner<a class="headerlink" href="#installing-kernel-tuner" title="Permalink to this headline">¶</a></h2>
+<h2>Installing Kernel Tuner<a class="headerlink" href="#installing-kernel-tuner" title="Permalink to this heading">¶</a></h2>
 <p>You can also install from the git repository. This way you also get the
 examples and the tutorials.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
@@ -222,7 +223,7 @@ pip install .
 To install Kernel Tuner along with all the packages required for development.</p>
 </section>
 <section id="dependencies-for-the-tutorial">
-<h2>Dependencies for the Tutorial<a class="headerlink" href="#dependencies-for-the-tutorial" title="Permalink to this headline">¶</a></h2>
+<h2>Dependencies for the Tutorial<a class="headerlink" href="#dependencies-for-the-tutorial" title="Permalink to this heading">¶</a></h2>
 <p>Some addition Python packages are required to run the tutorial. These packages are
 actually very commonly used and chances are that you already have these installed.</p>
 <p>However, to install Kernel Tuner along with the dependencies to run the tutorials,
