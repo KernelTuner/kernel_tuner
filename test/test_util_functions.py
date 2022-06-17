@@ -609,3 +609,24 @@ def test_process_metrics():
     metrics["b"] = "x"
     with pytest.raises(ValueError):
         params = process_metrics(params, metrics)
+
+
+def test_parse_restrictions():
+
+    tune_params = {"block_size_x": [50, 100], "use_padding": [0, 1]}
+
+    restrict = ["block_size_x != 320"]
+    parsed = parse_restrictions(restrict, tune_params)
+    expected = '(params["block_size_x"] != 320)'
+
+    print(f"{parsed=}")
+    print(f"{expected=}")
+    assert expected in parsed
+
+    # test again but with an 'or' in the expression
+    restrict.append("use_padding == 0 or block_size_x % 32 != 0")
+    parsed = parse_restrictions(restrict, tune_params)
+    expected = '(params["block_size_x"] != 320) and (params["use_padding"] == 0 or params["block_size_x"] % 32 != 0)'
+
+    assert expected in parsed
+

@@ -628,23 +628,33 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
-def parse_restrictions(restrictions: list):
-    """" parses restrictions from a list of strings into a callable function """
+def parse_restrictions(restrictions: list, tune_params: dict):
+    """ parses restrictions from a list of strings into a compilable function """
 
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
-    suffix = ' and '
-    parsed_restrictions = ""
-    for restriction in restrictions:
-        parsed_restrictions += re.sub(regex_match_variable, r'params["\1"]', restriction) + suffix
+    def replace_params(match_object):
+        key = match_object.group(1)
+        if key in tune_params:
+            return 'params["' + key + '"]'
+        else:
+            return key
+    parsed = ") and (".join([re.sub(regex_match_variable, replace_params, res) for res in restrictions])
 
-    # tidy up the code by removing the last suffix and unecessary spaces
-    parsed_restrictions = parsed_restrictions[:-len(suffix)]
-    parsed_restrictions = parsed_restrictions.strip()
+    # tidy up the code by removing the last suffix and unnecessary spaces
+    parsed_restrictions = "(" + parsed.strip() + ")"
     parsed_restrictions = " ".join(parsed_restrictions.split())
 
-    # compile into a function
     parsed_restrictions = f"def restrictions(params): return {parsed_restrictions} \n"
+
+    return parsed_restrictions
+
+
+def compile_restrictions(restrictions: list, tune_params: dict):
+    """ parses restrictions from a list of strings into a callable function """
+    parsed_restrictions = parse_restrictions(restrictions, tune_params)
+
+    # actually compile
     code_object = compile(parsed_restrictions, '<string>', 'exec')
     func = FunctionType(code_object.co_consts[0], globals())
     return func
