@@ -619,8 +619,6 @@ def test_parse_restrictions():
     parsed = parse_restrictions(restrict, tune_params)
     expected = '(params["block_size_x"] != 320)'
 
-    print(f"{parsed=}")
-    print(f"{expected=}")
     assert expected in parsed
 
     # test again but with an 'or' in the expression
