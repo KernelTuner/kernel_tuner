@@ -22,11 +22,10 @@ class nvml():
         self.nvidia_smi = nvidia_smi_fallback
 
         try:
-            self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
+            self.pwr_limit_default = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
             self.pwr_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.dev)
-            self.pwr_limit_default = pynvml.nvmlDeviceGetPowerManagementDefaultLimit(self.dev)
         except pynvml.NVMLError_NotSupported:
-            self._pwr_limit = None
+            self.pwr_limit_default = None
             self.pwr_constraints = [1, 0] # inverted range to make all range checks fail
 
         try:
@@ -39,49 +38,47 @@ class nvml():
         except pynvml.NVMLError_NotSupported:
             self._auto_boost = None
 
+        #try to initialize application clocks
         try:
             if not use_locked_clocks:
                 self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
                 self.mem_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
 
-            self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
-
-            #gather the supported gr clocks for each supported mem clock into a dict
-            self.supported_gr_clocks = dict()
-            for mem_clock in self.supported_mem_clocks:
-                supported_gr_clocks = pynvml.nvmlDeviceGetSupportedGraphicsClocks(self.dev, mem_clock)
-                self.supported_gr_clocks[mem_clock] = supported_gr_clocks
         except pynvml.NVMLError_NotSupported:
             self.gr_clock_default = None
             self.sm_clock_default = None
             self.mem_clock_default = None
             self.supported_mem_clocks = []
             self.supported_gr_clocks = dict()
+            #switch to using locked clocks
+            use_locked_clocks = True
+
+        self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
+
+        #gather the supported gr clocks for each supported mem clock into a dict
+        self.supported_gr_clocks = dict()
+        for mem_clock in self.supported_mem_clocks:
+            supported_gr_clocks = pynvml.nvmlDeviceGetSupportedGraphicsClocks(self.dev, mem_clock)
+            self.supported_gr_clocks[mem_clock] = supported_gr_clocks
+
 
         #test whether locked gr clocks and mem clocks are supported
+        self.use_locked_clocks = use_locked_clocks
         if use_locked_clocks:
             try:
+                #try to set highest supported clocks
                 mem_clock = self.supported_mem_clocks[0]
-                pynvml.nvmlDeviceSetMemoryLockedClocks(self.dev, mem_clock, mem_clock)
-                gr_clock_min = self.supported_gr_clocks[mem_clock][-1]
-                gr_clock_max = self.supported_gr_clocks[mem_clock][0]
-                pynvml.nvmlDeviceSetGpuLockedClocks(self.dev, gr_clock_min, gr_clock_max)
+                gr_clock = self.supported_gr_clocks[mem_clock][0]
+                self.set_clocks(mem_clock, gr_clock)
             except pynvml.NVMLError_NotSupported:
-                use_locked_clocks = False
-        self.use_locked_clocks = use_locked_clocks
+                #switch to using application clocks
+                self.use_locked_clocks = False
 
     def __del__(self):
         #try to restore to defaults
-        if self._pwr_limit != None and self.pwr_limit != self.pwr_limit_default:
+        if self.pwr_limit_default != None:
             self.pwr_limit = self.pwr_limit_default
-        if self.use_locked_clocks:
-            pynvml.nvmlDeviceResetGpuLockedClocks(self.dev)
-            pynvml.nvmlDeviceResetMemoryLockedClocks(self.dev)
-        elif self.gr_clock_default != None:
-            gr_app_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
-            mem_app_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
-            if gr_app_clock != self.gr_clock_default or mem_app_clock != self.mem_clock_default:
-                self.set_clocks(self.mem_clock_default, self.gr_clock_default)
+        self.reset_clocks()
 
     @property
     def pwr_state(self):
@@ -91,13 +88,13 @@ class nvml():
     @property
     def pwr_limit(self):
         """Control the power limit (may require permission), check pwr_constraints for the allowed range"""
-        return self._pwr_limit
+        return pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
 
     @pwr_limit.setter
     def pwr_limit(self, new_limit):
         if not self.pwr_constraints[0] <= new_limit <= self.pwr_constraints[1]:
             raise ValueError(f"Power limit {new_limit} out of range [{self.pwr_constraints[0]}, {self.pwr_constraints[1]}]")
-        if new_limit == pynvml.nvmlDeviceGetPowerManagementLimit(self.dev):
+        if new_limit == self.pwr_limit:
             return
         try:
             pynvml.nvmlDeviceSetPowerManagementLimit(self.dev, new_limit)
@@ -106,7 +103,6 @@ class nvml():
                 new_limit_watt = int(new_limit / 1000.0) # nvidia-smi expects Watts rather than milliwatts
                 args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--power-limit="+str(new_limit_watt)]
                 out = subprocess.run(args, check=True)
-        self._pwr_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
 
     @property
     def persistence_mode(self):
@@ -143,6 +139,24 @@ class nvml():
                 if self.nvidia_smi:
                     args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--applications-clocks="+str(mem_clock)+","+str(gr_clock)]
                     out = subprocess.run(args, check=True)
+
+    def reset_clocks(self):
+        if self.use_locked_clocks:
+            try:
+                pynvml.nvmlDeviceResetGpuLockedClocks(self.dev)
+                pynvml.nvmlDeviceResetMemoryLockedClocks(self.dev)
+            except pynvml.NVMLError_NoPermission:
+                if self.nvidia_smi:
+                    args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--reset-gpu-clocks"]
+                    out = subprocess.run(args, check=True)
+                    args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--reset-memory-clocks"]
+                    out = subprocess.run(args, check=True)
+
+        elif self.gr_clock_default != None:
+            gr_app_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
+            mem_app_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
+            if gr_app_clock != self.gr_clock_default or mem_app_clock != self.mem_clock_default:
+                self.set_clocks(self.mem_clock_default, self.gr_clock_default)
 
     @property
     def gr_clock(self):
