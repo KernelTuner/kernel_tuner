@@ -44,9 +44,6 @@ class nvml():
                 self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
                 self.mem_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
 
-                self._gr_clock = self.gr_clock_default
-                self._mem_clock = self.mem_clock_default
-
             self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
 
             #gather the supported gr clocks for each supported mem clock into a dict
@@ -69,8 +66,6 @@ class nvml():
                 gr_clock_min = self.supported_gr_clocks[mem_clock][-1]
                 gr_clock_max = self.supported_gr_clocks[mem_clock][0]
                 pynvml.nvmlDeviceSetGpuLockedClocks(self.dev, gr_clock_min, gr_clock_max)
-                self._gr_clock = gr_clock_max
-                self._mem_clock = mem_clock
             except pynvml.NVMLError_NotSupported:
                 use_locked_clocks = False
         self.use_locked_clocks = use_locked_clocks
@@ -142,17 +137,6 @@ class nvml():
                 args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--applications-clocks="+str(mem_clock)+","+str(gr_clock)]
                 out = subprocess.run(args, check=True)
 
-        if self.use_locked_clocks:
-            self._gr_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
-            mem_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_MEM)
-            #nvmlDeviceGetClock returns slightly different values than nvmlDeviceGetSupportedMemoryClocks,
-            #therefore set mem_clock to the closest supported value
-            mem_clock = min(self.supported_mem_clocks, key=lambda x:abs(x-mem_clock))
-            self._mem_clock = mem_clock
-        else:
-            self._gr_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
-            self._mem_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
-
     @property
     def gr_clock(self):
         """Control the graphics clock (may require permission), only values compatible with the memory clock can be set directly"""
@@ -163,19 +147,25 @@ class nvml():
         cur_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_GRAPHICS) if self.use_locked_clocks else \
                     pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
         if new_clock != cur_clock:
-            self.set_clocks(self._mem_clock, new_clock)
+            self.set_clocks(self.mem_clock, new_clock)
 
     @property
     def mem_clock(self):
         """Control the memory clock (may require permission), only values compatible with the graphics clock can be set directly"""
-        return pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_MEM)
+        if self.use_locked_clocks:
+            #nvmlDeviceGetClock returns slightly different values than nvmlDeviceGetSupportedMemoryClocks,
+            #therefore set mem_clock to the closest supported value
+            mem_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_MEM)
+            return min(self.supported_mem_clocks, key=lambda x:abs(x-mem_clock))
+        else:
+            pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
 
     @mem_clock.setter
     def mem_clock(self, new_clock):
         cur_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_MEM) if self.use_locked_clocks else \
                     pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
         if new_clock != cur_clock:
-            self.set_clocks(new_clock, self._gr_clock)
+            self.set_clocks(new_clock, self.gr_clock)
 
     @property
     def temperature(self):
