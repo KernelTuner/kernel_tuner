@@ -42,11 +42,9 @@ class nvml():
         try:
             if not use_locked_clocks:
                 self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
-                self.sm_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_SM)
                 self.mem_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
 
                 self._gr_clock = self.gr_clock_default
-                self._sm_clock = self.sm_clock_default
                 self._mem_clock = self.mem_clock_default
 
             self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
@@ -146,7 +144,6 @@ class nvml():
 
         if self.use_locked_clocks:
             self._gr_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
-            self._sm_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_SM)
             mem_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_MEM)
             #nvmlDeviceGetClock returns slightly different values than nvmlDeviceGetSupportedMemoryClocks,
             #therefore set mem_clock to the closest supported value
@@ -154,7 +151,6 @@ class nvml():
             self._mem_clock = mem_clock
         else:
             self._gr_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
-            self._sm_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_SM)
             self._mem_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
 
     @property
