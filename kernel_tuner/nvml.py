@@ -126,16 +126,23 @@ class nvml():
             raise ValueError("Illegal value for memory clock")
         if not gr_clock in self.supported_gr_clocks[mem_clock]:
             raise ValueError("Graphics clock incompatible with memory clock")
-        try:
-            if self.use_locked_clocks:
+        if self.use_locked_clocks:
+            try:
                 pynvml.nvmlDeviceSetGpuLockedClocks(self.dev, gr_clock, gr_clock)
                 pynvml.nvmlDeviceSetMemoryLockedClocks(self.dev, mem_clock, mem_clock)
-            else:
+            except pynvml.NVMLError_NoPermission:
+                if self.nvidia_smi:
+                    args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--lock-gpu-clocks="+str(gr_clock)+","+str(gr_clock)]
+                    out = subprocess.run(args, check=True)
+                    args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--lock-memory-clocks="+str(mem_clock)+","+str(mem_clock)]
+                    out = subprocess.run(args, check=True)
+        else:
+            try:
                 pynvml.nvmlDeviceSetApplicationsClocks(self.dev, mem_clock, gr_clock)
-        except pynvml.NVMLError_NoPermission:
-            if self.nvidia_smi:
-                args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--applications-clocks="+str(mem_clock)+","+str(gr_clock)]
-                out = subprocess.run(args, check=True)
+            except pynvml.NVMLError_NoPermission:
+                if self.nvidia_smi:
+                    args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--applications-clocks="+str(mem_clock)+","+str(gr_clock)]
+                    out = subprocess.run(args, check=True)
 
     @property
     def gr_clock(self):
