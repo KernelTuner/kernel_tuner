@@ -1,7 +1,7 @@
 import subprocess
 import time
-import numpy as np
 import re
+import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
 
@@ -76,7 +76,7 @@ class nvml():
 
     def __del__(self):
         #try to restore to defaults
-        if self.pwr_limit_default != None:
+        if self.pwr_limit_default is not None:
             self.pwr_limit = self.pwr_limit_default
         self.reset_clocks()
 
@@ -102,7 +102,7 @@ class nvml():
             if self.nvidia_smi:
                 new_limit_watt = int(new_limit / 1000.0) # nvidia-smi expects Watts rather than milliwatts
                 args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--power-limit="+str(new_limit_watt)]
-                out = subprocess.run(args, check=True)
+                subprocess.run(args, check=True)
 
     @property
     def persistence_mode(self):
@@ -129,16 +129,16 @@ class nvml():
             except pynvml.NVMLError_NoPermission:
                 if self.nvidia_smi:
                     args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--lock-gpu-clocks="+str(gr_clock)+","+str(gr_clock)]
-                    out = subprocess.run(args, check=True)
+                    subprocess.run(args, check=True)
                     args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--lock-memory-clocks="+str(mem_clock)+","+str(mem_clock)]
-                    out = subprocess.run(args, check=True)
+                    subprocess.run(args, check=True)
         else:
             try:
                 pynvml.nvmlDeviceSetApplicationsClocks(self.dev, mem_clock, gr_clock)
             except pynvml.NVMLError_NoPermission:
                 if self.nvidia_smi:
                     args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--applications-clocks="+str(mem_clock)+","+str(gr_clock)]
-                    out = subprocess.run(args, check=True)
+                    subprocess.run(args, check=True)
 
     def reset_clocks(self):
         if self.use_locked_clocks:
@@ -148,11 +148,11 @@ class nvml():
             except pynvml.NVMLError_NoPermission:
                 if self.nvidia_smi:
                     args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--reset-gpu-clocks"]
-                    out = subprocess.run(args, check=True)
+                    subprocess.run(args, check=True)
                     args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--reset-memory-clocks"]
-                    out = subprocess.run(args, check=True)
+                    subprocess.run(args, check=True)
 
-        elif self.gr_clock_default != None:
+        elif self.gr_clock_default is not None:
             gr_app_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
             mem_app_clock = pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
             if gr_app_clock != self.gr_clock_default or mem_app_clock != self.mem_clock_default:
@@ -179,7 +179,7 @@ class nvml():
             mem_clock = pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_MEM)
             return min(self.supported_mem_clocks, key=lambda x:abs(x-mem_clock))
         else:
-            pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
+            return pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
 
     @mem_clock.setter
     def mem_clock(self, new_clock):
@@ -221,7 +221,7 @@ class nvml():
 class NVMLObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
     def __init__(self, observables, device=0, save_all=False, nvidia_smi_fallback=None, use_locked_clocks=False):
-        if (nvidia_smi_fallback):
+        if nvidia_smi_fallback:
             self.nvml = nvml(device, nvidia_smi_fallback=nvidia_smi_fallback, use_locked_clocks=use_locked_clocks)
         else:
             self.nvml = nvml(device, use_locked_clocks=use_locked_clocks)
