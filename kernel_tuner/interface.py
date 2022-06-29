@@ -481,7 +481,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
 
     # if there are string in the restrictions, parse them to functions (increases restrictions check performance significantly)
     if isinstance(restrictions, list) and len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions):
-        restrictions = util.parse_restrictions(restrictions)
+        restrictions = util.compile_restrictions(restrictions, tune_params)
 
     if iterations < 1:
         raise ValueError("Iterations should be at least one!")

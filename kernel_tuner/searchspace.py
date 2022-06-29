@@ -246,6 +246,10 @@ class Searchspace():
             self.__neighbor_cache[param_config] = neighbors
         return neighbors
 
+    def are_neighbors_indices_cached(self, param_config: tuple) -> bool:
+        """ Returns true if the neighbor indices are in the cache, false otherwise """
+        return param_config in self.__neighbor_cache
+
     def get_neighbors_no_cache(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
         """ Get the neighbors for a parameter configuration (does not check running cache, useful when mixing neighbor methods) """
         return self.get_param_configs_at_indices(self.get_neighbors_indices_no_cache(param_config, neighbor_method))

@@ -1,8 +1,7 @@
 from __future__ import print_function
 from collections import OrderedDict
-from random import randrange, choice
+from random import randrange
 from math import ceil
-from time import perf_counter
 
 try:
     from mock import patch
@@ -205,15 +204,11 @@ def test_neighbors_cached():
     simple_searchspace_duplicate = Searchspace(simple_tuning_options, max_threads, neighbor_method='Hamming')
     test_configs = simple_searchspace_duplicate.get_random_sample(10)
     for test_config in test_configs:
-        start_time = perf_counter()
+        assert not simple_searchspace_duplicate.are_neighbors_indices_cached(test_config)
         neighbors = simple_searchspace_duplicate.get_neighbors(test_config)
-        time_first = perf_counter() - start_time
-        start_time = perf_counter()
+        assert simple_searchspace_duplicate.are_neighbors_indices_cached(test_config)
         neighbors_2 = simple_searchspace_duplicate.get_neighbors(test_config)
-        time_second = perf_counter() - start_time
         assert neighbors == neighbors_2
-        if abs(time_first - time_second) > 1e-7:
-            assert time_second < time_first
 
 
 def test_param_neighbors():

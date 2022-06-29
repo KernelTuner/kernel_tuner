@@ -42,7 +42,7 @@ setup(
     install_requires=['numpy>=1.13.3', 'scipy>=0.18.1', 'jsonschema', 'python-constraint>=1.4.0'],
     extras_require={
         'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx', 'pytest', 'ipython', 'markupsafe==2.0.1'],
-        'cuda': ['pycuda', 'nvidia-ml-py'],
+        'cuda': ['pycuda', 'nvidia-ml-py', 'pynvml>=11.4.1'],
         'opencl': ['pyopencl'],
         'cuda_opencl': ['pycuda', 'pyopencl'],
         'tutorial': ['jupyter', 'matplotlib', 'pandas'],

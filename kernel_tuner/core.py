@@ -282,8 +282,6 @@ class DeviceInterface(object):
                     self.nvml.pwr_limit = new_limit
             if "nvml_gr_clock" in instance.params:
                 self.nvml.gr_clock = instance.params["nvml_gr_clock"]
-            if "nvml_sm_clock" in instance.params:
-                self.nvml.sm_clock = instance.params["nvml_sm_clock"]
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
 
