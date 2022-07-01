@@ -94,38 +94,38 @@ def test_default_verify_function(env):
 def test_check_kernel_output(dev_func_interface):
     dev_func_interface.configure_mock(**mock_config)
 
-    dev = core.DeviceInterface(core.KernelSource("name", "", lang="CUDA"))
-    dfi = dev.dev
+    with core.DeviceInterface(core.KernelSource("name", "", lang="CUDA")) as dev:
+        dfi = dev.dev
 
-    answer = [np.zeros(4).astype(np.float32)]
-    instance = core.KernelInstance("name", None, "kernel_string", "temp_files", (256, 1, 1), (1, 1, 1), {}, answer)
-    wrong = [np.array([1, 2, 3, 4]).astype(np.float32)]
-    atol = 1e-6
+        answer = [np.zeros(4).astype(np.float32)]
+        instance = core.KernelInstance("name", None, "kernel_string", "temp_files", (256, 1, 1), (1, 1, 1), {}, answer)
+        wrong = [np.array([1, 2, 3, 4]).astype(np.float32)]
+        atol = 1e-6
 
-    dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
+        dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
 
-    dfi.memcpy_htod.assert_called_once_with(answer[0], answer[0])
-    dfi.run_kernel.assert_called_once_with('func', answer, (256, 1, 1), (1, 1, 1))
+        dfi.memcpy_htod.assert_called_once_with(answer[0], answer[0])
+        dfi.run_kernel.assert_called_once_with('func', answer, (256, 1, 1), (1, 1, 1))
 
-    print(dfi.mock_calls)
+        print(dfi.mock_calls)
 
-    assert dfi.memcpy_dtoh.called == 1
+        assert dfi.memcpy_dtoh.called == 1
 
-    for name, args, _ in dfi.mock_calls:
-        if name == 'memcpy_dtoh':
-            assert all(args[0] == answer[0])
-            assert all(args[1] == answer[0])
+        for name, args, _ in dfi.mock_calls:
+            if name == 'memcpy_dtoh':
+                assert all(args[0] == answer[0])
+                assert all(args[1] == answer[0])
 
-    # the following call to check_kernel_output is expected to fail because
-    # the answer is non-zero, while the memcpy_dtoh function on the Mocked object
-    # obviously does not result in the result_host array containing anything
-    # non-zero
-    try:
-        dev.check_kernel_output('func', wrong, instance, wrong, atol, None, True)
-        print("check_kernel_output failed to throw an exception")
-        assert False
-    except Exception:
-        assert True
+        # the following call to check_kernel_output is expected to fail because
+        # the answer is non-zero, while the memcpy_dtoh function on the Mocked object
+        # obviously does not result in the result_host array containing anything
+        # non-zero
+        try:
+            dev.check_kernel_output('func', wrong, instance, wrong, atol, None, True)
+            print("check_kernel_output failed to throw an exception")
+            assert False
+        except Exception:
+            assert True
 
 
 def test_default_verify_function_arrays():

@@ -96,7 +96,8 @@ class CudaFunctions(object):
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
         drv.init()
-        self.context = drv.Device(device).make_context()
+        self.context = drv.Device(device).retain_primary_context()
+        self.context.push()
 
         #inspect device properties
         devprops = {str(k): v
@@ -144,16 +145,24 @@ class CudaFunctions(object):
         env["device_properties"] = devprops
         self.env = env
         self.name = env["device_name"]
+        self.context.pop()
 
     def __enter__(self):
+        self.context.push()
         return self
 
     def __exit__(self, *exc):
-        for gpu_mem in self.allocations:
-            if hasattr(gpu_mem, 'free'):    #if needed for when using mocks during testing
-                gpu_mem.free()
         if hasattr(self, 'context'):
             self.context.pop()
+
+    def __del__(self):
+        self.context.push()
+        for gpu_mem in self.allocations:
+
+            if hasattr(gpu_mem, 'free'):    #if needed for when using mocks during testing
+                gpu_mem.free()
+        self.context.pop()
+        self.context.detach()
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem

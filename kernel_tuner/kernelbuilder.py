@@ -32,35 +32,37 @@ class PythonKernel(object):
         #construct device interface
         kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
         self.dev = core.DeviceInterface(kernel_source, device=device, quiet=True)
-        if not params:
-            params = {}
+        with self.dev:
 
-        #if results_file is passed use the results file to lookup tunable parameters
-        if results_file:
-            results = TuneResults(results_file)
-            params.update(results.get_best_config(self.dev.name, problem_size))
-        self.params = params
+            if not params:
+                params = {}
 
-        #construct kernel_options to hold information about the kernel
-        opts = locals()
-        kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys() if k in opts.keys()])
+            #if results_file is passed use the results file to lookup tunable parameters
+            if results_file:
+                results = TuneResults(results_file)
+                params.update(results.get_best_config(self.dev.name, problem_size))
+            self.params = params
 
-        #instantiate the kernel given the parameters in params
-        self.kernel_instance = self.dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
+            #construct kernel_options to hold information about the kernel
+            opts = locals()
+            kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys() if k in opts.keys()])
 
-        #compile the kernel
-        self.func = self.dev.compile_kernel(self.kernel_instance, verbose)
+            #instantiate the kernel given the parameters in params
+            self.kernel_instance = self.dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
 
-        #setup GPU memory
-        self.gpu_args = self.dev.ready_argument_list(arguments)
-        if inputs:
-            self.inputs = inputs
-        else:
-            self.inputs = [True for _ in arguments]
-        if outputs:
-            self.outputs = outputs
-        else:
-            self.outputs = [True for _ in arguments]
+            #compile the kernel
+            self.func = self.dev.compile_kernel(self.kernel_instance, verbose)
+
+            #setup GPU memory
+            self.gpu_args = self.dev.ready_argument_list(arguments)
+            if inputs:
+                self.inputs = inputs
+            else:
+                self.inputs = [True for _ in arguments]
+            if outputs:
+                self.outputs = outputs
+            else:
+                self.outputs = [True for _ in arguments]
 
     def update_gpu_args(self, args):
         for i, arg in enumerate(args):
@@ -91,9 +93,11 @@ class PythonKernel(object):
         :param args: A list with the kernel arguments as numpy arrays or numpy scalars
         :type args: list(np.ndarray or np.generic)
         """
-        self.update_gpu_args(args)
-        self.dev.run_kernel(self.func, self.gpu_args, self.kernel_instance)
-        return self.get_gpu_result(args)
+        with self.dev:
+            self.update_gpu_args(args)
+            self.dev.run_kernel(self.func, self.gpu_args, self.kernel_instance)
+            r = self.get_gpu_result(args)
+            return r
 
     def __call__(self, *args):
         """Run the GPU kernel
@@ -107,7 +111,3 @@ class PythonKernel(object):
         :type *args: np.ndarray or np.generic
         """
         return self.run_kernel(args)
-
-    def __del__(self):
-        if hasattr(self, 'dev'):
-            self.dev.__exit__([None, None, None])

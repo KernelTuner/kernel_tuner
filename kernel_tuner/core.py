@@ -255,9 +255,8 @@ class DeviceInterface(object):
         if not quiet:
             print("Using: " + self.dev.name)
 
-        dev.__enter__()
-
     def __enter__(self):
+        self.dev.__enter__()
         return self
 
     def benchmark(self, func, gpu_args, instance, verbose):

@@ -97,8 +97,10 @@ class CupyFunctions:
         env["device_properties"] = self.devprops
         self.env = env
         self.name = env["device_name"]
+        self.dev.__exit__()
 
     def __enter__(self):
+        self.dev.__enter__()
         return self
 
     def __exit__(self, *exc):
