@@ -30,6 +30,16 @@ def test_PythonKernel(test_kernel):
     reference = kernel_function(*args)
     assert np.allclose(reference[0], args[1]+args[2])
 
+@skip_if_no_cuda
+def test_PythonKernel_mixed(test_kernel):
+    kernel_name, kernel_string, n, args, params = test_kernel
+    kernel_function = kernelbuilder.PythonKernel(*test_kernel, lang="CUDA")
+    kernel_function2 = kernelbuilder.PythonKernel(*test_kernel, lang="cupy")
+    reference = kernel_function(*args)
+    reference2 = kernel_function2(*args)
+    assert np.allclose(reference[0], args[1]+args[2])
+    assert np.allclose(reference2[0], args[1]+args[2])
+
 
 @skip_if_no_cuda
 def test_PythonKernel_tuned(test_kernel):
