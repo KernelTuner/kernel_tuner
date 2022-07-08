@@ -281,9 +281,6 @@ class NVMLObserver(BenchmarkObserver):
 
             #pre and postfix to start at 0 and end at kernel end
             power_readings = self.power_readings
-            #if power_readings:
-            #    power_readings = [[0.0, power_readings[0][1]]] + power_readings
-            #    power_readings = power_readings + [[execution_time, power_readings[-1][1]]]
 
             if "power_readings" in self.observables:
                 self.results["power_readings"].append(power_readings) #time in s, power usage in milliwatts
@@ -292,18 +289,22 @@ class NVMLObserver(BenchmarkObserver):
                 #compute energy consumption as area under curve
                 x = [d[0] for d in power_readings]
                 y = [d[1]/1000.0 for d in power_readings] #convert to Watt
-                #energy = (np.trapz(y,x)) #in Joule
-                end = power_readings[-1][1]
-                select = np.linspace(end-execution_time, end, num=100)
+
+                end_time = power_readings[-1][0] # time of last measurement
+                select = np.linspace(end_time-execution_time, end_time, num=10)
                 power_curve = np.interp(select, x, y)
-                energy = np.trapz(power_curve, select)
+                energy = np.trapz(power_curve, select) # Joule
 
                 #power = energy / execution_time #in Watt
-
                 #print(f"{power_readings=}")
+                #print(f"{end_time=} {execution_time=}")
+                #print(f"{select=}")
+                #print(f"{power_curve=}")
 
                 #from matplotlib import pyplot as plt
-                #plt.plot(x,y, 'k')
+                #plt.plot(x, y, 'blue')
+                #plt.plot(select, power_curve, 'orange')
+                #plt.savefig("test-nvml" + str(time.perf_counter_ns()) +".png")
                 #plt.show()
 
                 if "nvml_energy" in self.observables:
@@ -334,10 +335,11 @@ class NVMLObserver(BenchmarkObserver):
         if not self.measure_power:
             #return averaged results, except for power_readings
             for obs in self.observables:
-                #save all information, if the user requested
-                if self.save_all:
-                    averaged_results[obs + "s"] = self.results[obs]
-                #save averaged results, default
-                averaged_results[obs] = np.average(self.results[obs])
+                if not obs in self.needs_power:
+                    #save all information, if the user requested
+                    if self.save_all:
+                        averaged_results[obs + "s"] = self.results[obs]
+                    #save averaged results, default
+                    averaged_results[obs] = np.average(self.results[obs])
 
         return averaged_results
