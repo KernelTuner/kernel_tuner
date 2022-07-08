@@ -276,6 +276,21 @@ class CFunctions(object):
         result["time"] = numpy.mean(result["times"])
         return result
 
+
+    def start_event(self):
+        pass
+
+    def stop_event(self):
+        pass
+
+    def kernel_finished(self):
+        return True
+
+    def synchronize(self):
+        pass
+
+
+
     def run_kernel(self, func, c_args, threads, grid):
         """runs the kernel once, returns whatever the kernel returns
 

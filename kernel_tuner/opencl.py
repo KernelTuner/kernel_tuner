@@ -154,7 +154,7 @@ class OpenCLFunctions():
             for obs in self.observers:
                 obs.before_start()
             self.queue.finish()
-            self.event = func(self.queue, global_size, local_size, *gpu_args)
+            self.run_kernel(func, gpu_args, local_size, global_size)
             for obs in self.observers:
                 obs.after_start()
             while self.event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) != 0:
@@ -167,6 +167,20 @@ class OpenCLFunctions():
         for obs in self.observers:
             result.update(obs.get_results())
         return result
+
+
+    def start_event(self):
+        pass
+
+    def stop_event(self):
+        pass
+
+    def kernel_finished(self):
+        return self.event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) == 0
+
+    def synchronize(self):
+        self.queue.finish()
+
 
     def run_kernel(self, func, gpu_args, threads, grid):
         """runs the OpenCL kernel passed as 'func'
@@ -189,8 +203,7 @@ class OpenCLFunctions():
         """
         global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
         local_size = threads
-        event = func(self.queue, global_size, local_size, *gpu_args)
-        event.wait()
+        self.event = func(self.queue, global_size, local_size, *gpu_args)
 
     def memset(self, buffer, value, size):
         """set the memory in allocation to the value in value

@@ -271,6 +271,21 @@ class CudaFunctions(object):
 
         return result
 
+
+
+    def start_event(self):
+        self.start.record(stream=self.stream)
+
+    def stop_event(self):
+        self.end.record(stream=self.stream)
+
+    def kernel_finished(self):
+        return self.end.query()
+
+    def synchronize(self):
+        self.context.synchronize()
+
+
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
 
@@ -374,6 +389,8 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
         """
+        if stream is None:
+            stream = self.stream
         func(*gpu_args, block=threads, grid=grid, stream=stream, shared=self.smem_size, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):

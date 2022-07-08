@@ -1,7 +1,7 @@
 """ Module for grouping the core functionality needed by most runners """
-from __future__ import print_function
 
 import re
+import time
 from collections import namedtuple
 import resource
 import logging
@@ -239,11 +239,19 @@ class DeviceInterface(object):
 
         #look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
+        self.nvml_obs_measure_power = False
+        self.continuous_observers = []
         if observers:
             for obs in observers:
                 if isinstance(obs, NVMLObserver):
+                    self.nvml_obs = obs
+                    self.nvml_obs_measure_power = obs.measure_power
+                    self.continuous_observers.append(obs)
                     self.nvml = obs.nvml
                     self.use_nvml = True
+        self.iterations = iterations
+
+
 
         self.lang = lang
         self.dev = dev
@@ -259,6 +267,56 @@ class DeviceInterface(object):
 
     def __enter__(self):
         return self
+
+
+    def benchmark_default(self, func, gpu_args, threads, grid, result):
+        """ Benchmark one kernel execution at a time """
+        self.dev.synchronize()
+        for _ in range(self.iterations):
+            for obs in self.dev.observers:
+                obs.before_start()
+            self.dev.synchronize()
+            self.dev.start_event()
+            self.dev.run_kernel(func, gpu_args, threads, grid)
+            self.dev.stop_event()
+            for obs in self.dev.observers:
+                obs.after_start()
+            while not self.dev.kernel_finished():
+                for obs in self.dev.observers:
+                    obs.during()
+                time.sleep(1e-6)    #one microsecond
+            self.dev.synchronize()
+            for obs in self.dev.observers:
+                obs.after_finish()
+
+        for obs in self.dev.observers:
+            result.update(obs.get_results())
+
+        print(result)
+
+
+    def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
+        """ Benchmark continuously for at least 'duration' seconds """
+        iterations = int(np.ceil(duration / (result["time"]/1000)))
+        print(f"{iterations=} {(result['time']/1000)=}")
+        self.dev.synchronize()
+        for obs in self.continuous_observers:
+            obs.before_start()
+        self.dev.start_event()
+        for _ in range(iterations):
+            self.dev.run_kernel(func, gpu_args, threads, grid)
+        self.dev.stop_event()
+        for obs in self.continuous_observers:
+            obs.after_start()
+        while not self.dev.kernel_finished():
+            for obs in self.continuous_observers:
+                obs.during()
+            time.sleep(1e-6)    #one microsecond
+        self.dev.synchronize()
+        for obs in self.continuous_observers:
+            obs.after_finish()
+
+
 
     def benchmark(self, func, gpu_args, instance, verbose):
         """benchmark the kernel instance"""
@@ -278,7 +336,26 @@ class DeviceInterface(object):
 
         result = None
         try:
-            result = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid)
+            #result = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid)
+            if self.use_nvml:
+                self.nvml_obs.measure_power = False
+
+            result = dict()
+            self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
+
+            print(result)
+
+            if self.nvml_obs_measure_power:
+                self.nvml_obs.measure_power = True
+                self.nvml_obs.results = result
+
+
+                self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, self.nvml_obs.continuous_duration)
+
+                print(result)
+
+
+
         except Exception as e:
             #some launches may fail because too many registers are required
             #to run the kernel given the current thread block size

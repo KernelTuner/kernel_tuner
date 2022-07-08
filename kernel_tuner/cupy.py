@@ -209,6 +209,22 @@ class CupyFunctions:
 
         return result
 
+
+    def start_event(self):
+        self.start.record(stream=self.stream)
+
+    def stop_event(self):
+        self.end.record(stream=self.stream)
+
+    def kernel_finished(self):
+        return self.end.done
+
+    def synchronize(self):
+        self.dev.synchronize()
+
+
+
+
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
 
