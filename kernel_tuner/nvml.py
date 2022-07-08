@@ -300,11 +300,11 @@ class NVMLObserver(BenchmarkObserver):
 
                 #power = energy / execution_time #in Watt
 
-                print(f"{power_readings=}")
+                #print(f"{power_readings=}")
 
-                from matplotlib import pyplot as plt
-                plt.plot(x,y, 'k')
-                plt.show()
+                #from matplotlib import pyplot as plt
+                #plt.plot(x,y, 'k')
+                #plt.show()
 
                 if "nvml_energy" in self.observables:
                     self.results["nvml_energy"] = energy

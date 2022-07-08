@@ -292,13 +292,11 @@ class DeviceInterface(object):
         for obs in self.dev.observers:
             result.update(obs.get_results())
 
-        print(result)
-
 
     def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
         """ Benchmark continuously for at least 'duration' seconds """
         iterations = int(np.ceil(duration / (result["time"]/1000)))
-        print(f"{iterations=} {(result['time']/1000)=}")
+        #print(f"{iterations=} {(result['time']/1000)=}")
         self.dev.synchronize()
         for obs in self.continuous_observers:
             obs.before_start()
@@ -343,7 +341,6 @@ class DeviceInterface(object):
             result = dict()
             self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
 
-            print(result)
 
             if self.nvml_obs_measure_power:
                 self.nvml_obs.measure_power = True
@@ -352,7 +349,6 @@ class DeviceInterface(object):
 
                 self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, self.nvml_obs.continuous_duration)
 
-                print(result)
 
 
 
