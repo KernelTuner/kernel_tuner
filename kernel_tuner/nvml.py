@@ -278,8 +278,6 @@ class NVMLObserver(BenchmarkObserver):
     def after_finish(self):
         if self.measure_power:
             execution_time = self.results["time"]/1000 # converted to seconds from milliseconds
-
-            #pre and postfix to start at 0 and end at kernel end
             power_readings = self.power_readings
 
             if "power_readings" in self.observables:
@@ -294,6 +292,7 @@ class NVMLObserver(BenchmarkObserver):
                 select = np.linspace(end_time-execution_time, end_time, num=10)
                 power_curve = np.interp(select, x, y)
                 energy = np.trapz(power_curve, select) # Joule
+                power = energy / execution_time #in Watt
 
                 #power = energy / execution_time #in Watt
                 #print(f"{power_readings=}")
@@ -312,7 +311,7 @@ class NVMLObserver(BenchmarkObserver):
                 if "nvml_power" in self.observables:
                     self.results["nvml_power"] = power
 
-            print("results after", self.results)
+            #print("results after", self.results)
 
         else:
             if "temperature" in self.observables:
@@ -323,6 +322,7 @@ class NVMLObserver(BenchmarkObserver):
                 self.results["mem_freq"].append(self.nvml.mem_clock)
 
             if "gr_voltage" in self.observables:
+                execution_time = time.time() - self.t0
                 gr_voltage_readings = self.gr_voltage_readings
                 gr_voltage_readings = [[0.0, gr_voltage_readings[0][1]]] + gr_voltage_readings
                 gr_voltage_readings = gr_voltage_readings + [[execution_time, gr_voltage_readings[-1][1]]]
