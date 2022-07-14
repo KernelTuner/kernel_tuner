@@ -250,14 +250,13 @@ class NVMLObserver(BenchmarkObserver):
             self.gr_voltage_readings = []
 
         self.results = dict()
+        for obs in self.observables:
+            self.results[obs] = []
 
     def before_start(self):
         #clear results of the observables for next measurement
         if self.measure_power:
             self.power_readings = []
-        else:
-            for obs in self.observables:
-                self.results[obs] = []
 
         if self.record_gr_voltage:
             self.gr_voltage_readings = []
@@ -341,5 +340,8 @@ class NVMLObserver(BenchmarkObserver):
                         averaged_results[obs + "s"] = self.results[obs]
                     #save averaged results, default
                     averaged_results[obs] = np.average(self.results[obs])
+
+            for obs in self.observables:
+                self.results[obs] = []
 
         return averaged_results
