@@ -239,19 +239,16 @@ class DeviceInterface(object):
 
         #look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
-        self.nvml_obs_measure_power = False
         self.continuous_observers = []
         if observers:
             for obs in observers:
                 if isinstance(obs, NVMLObserver):
-                    self.nvml_obs = obs
-                    self.nvml_obs_measure_power = obs.measure_power
-                    self.continuous_observers.append(obs)
                     self.nvml = obs.nvml
                     self.use_nvml = True
+                if hasattr(obs, "continuous_observer"):
+                    self.continuous_observers.append(obs.continuous_observer)
+
         self.iterations = iterations
-
-
 
         self.lang = lang
         self.dev = dev
@@ -314,6 +311,9 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             obs.after_finish()
 
+        for obs in self.continuous_observers:
+            result.update(obs.get_results())
+
 
 
     def benchmark(self, func, gpu_args, instance, verbose):
@@ -335,21 +335,17 @@ class DeviceInterface(object):
         result = None
         try:
             #result = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid)
-            if self.use_nvml:
-                self.nvml_obs.measure_power = False
 
             result = dict()
             self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
 
+            if self.continuous_observers:
+                duration = 1
+                for obs in self.continuous_observers:
+                    obs.results = result
+                    duration = max(duration, obs.continuous_duration)
 
-            if self.nvml_obs_measure_power:
-                self.nvml_obs.measure_power = True
-                self.nvml_obs.results = result
-
-
-                self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, self.nvml_obs.continuous_duration)
-
-
+                self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, duration)
 
 
         except Exception as e:

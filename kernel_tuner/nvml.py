@@ -3,7 +3,7 @@ import time
 import re
 import numpy as np
 
-from kernel_tuner.observers import BenchmarkObserver
+from kernel_tuner.observers import BenchmarkObserver, ContinuousObserver
 
 try:
     import pynvml
@@ -234,15 +234,15 @@ class NVMLObserver(BenchmarkObserver):
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
         self.observables = observables
 
-        self.continuous_duration = continous_duration # seconds
-
         self.measure_power = False
         self.needs_power = ["power_readings", "nvml_power", "nvml_energy"]
         if any([obs in self.needs_power for obs in observables]):
             self.measure_power = True
-            self.power_readings = []
+            power_observables = [obs for obs in observables if obs in self.needs_power]
+            self.continuous_observer = NVMLPowerObserver(power_observables, self.nvml, continous_duration)
 
-        self.continuous_observables = [obs for obs in observables if obs in self.needs_power]
+        #remove power observables
+        self.observables = [obs for obs in observables if obs not in self.needs_power]
 
         self.record_gr_voltage = False
         if "gr_voltage" in observables:
@@ -251,13 +251,10 @@ class NVMLObserver(BenchmarkObserver):
 
         self.results = dict()
         for obs in self.observables:
-            self.results[obs] = []
+            self.results[obs + "s"] = []
 
     def before_start(self):
         #clear results of the observables for next measurement
-        if self.measure_power:
-            self.power_readings = []
-
         if self.record_gr_voltage:
             self.gr_voltage_readings = []
 
@@ -265,87 +262,107 @@ class NVMLObserver(BenchmarkObserver):
         self.t0 = time.perf_counter()
 
     def during(self):
-        if self.measure_power:
-            power_usage = self.nvml.pwr_usage()
-            timestamp = time.perf_counter() - self.t0
-            # only store the result if we get a new measurement from NVML
-            if len(self.power_readings) == 0 or (self.power_readings[-1][1] != power_usage or timestamp-self.power_readings[-1][0] > 0.01):
-                self.power_readings.append([timestamp, power_usage])
         if self.record_gr_voltage:
             self.gr_voltage_readings.append([time.perf_counter()-self.t0, self.nvml.gr_voltage()])
 
     def after_finish(self):
-        if self.measure_power:
-            power_readings = self.power_readings
-            #start_time = power_readings[0][0] #time of first measurement
-            #end_time = power_readings[-1][0] #time of last measurement
-            #execution_time = end_time - start_time # converted to seconds from milliseconds
+        if "temperature" in self.observables:
+            self.results["temperatures"].append(self.nvml.temperature)
+        if "core_freq" in self.observables:
+            self.results["core_freqs"].append(self.nvml.gr_clock)
+        if "mem_freq" in self.observables:
+            self.results["mem_freqs"].append(self.nvml.mem_clock)
 
-            if "power_readings" in self.observables:
-                self.results["power_readings"].append(power_readings) #time in s, power usage in milliwatts
-
-            if "nvml_energy" in self.observables or "nvml_power" in self.observables:
-                #compute energy consumption as area under curve
-                x = [d[0] for d in power_readings]
-                y = [d[1]/1000.0 for d in power_readings] #convert to Watt
-
-                start_time = power_readings[0][0] #time of first measurement
-                end_time = power_readings[-1][0] # time of last measurement
-                execution_time = end_time - start_time # converted to seconds from milliseconds
-                select = np.linspace(end_time-execution_time, end_time, num=10)
-                power_curve = np.interp(select, x, y)
-                energy = np.trapz(power_curve, select) # Joule
-                power = energy / execution_time #in Watt
-
-                #power = energy / execution_time #in Watt
-                #print(f"{power_readings=}")
-                #print(f"{end_time=} {execution_time=}")
-                #print(f"{select=}")
-                #print(f"{power_curve=}")
-
-                #from matplotlib import pyplot as plt
-                #plt.plot(x, y, 'blue')
-                #plt.plot(select, power_curve, 'orange')
-                #plt.savefig("test-nvml" + str(time.perf_counter_ns()) +".png")
-                #plt.show()
-
-                if "nvml_energy" in self.observables:
-                    self.results["nvml_energy"] = energy
-                if "nvml_power" in self.observables:
-                    self.results["nvml_power"] = power
-
-            #print("results after", self.results)
-
-        else:
-            if "temperature" in self.observables:
-                self.results["temperature"].append(self.nvml.temperature)
-            if "core_freq" in self.observables:
-                self.results["core_freq"].append(self.nvml.gr_clock)
-            if "mem_freq" in self.observables:
-                self.results["mem_freq"].append(self.nvml.mem_clock)
-
-            if "gr_voltage" in self.observables:
-                execution_time = time.time() - self.t0
-                gr_voltage_readings = self.gr_voltage_readings
-                gr_voltage_readings = [[0.0, gr_voltage_readings[0][1]]] + gr_voltage_readings
-                gr_voltage_readings = gr_voltage_readings + [[execution_time, gr_voltage_readings[-1][1]]]
-                self.results["gr_voltage"].append(np.average(gr_voltage_readings[:][:][1])) #time in s, graphics voltage in millivolts
-
+        if "gr_voltage" in self.observables:
+            execution_time = time.time() - self.t0
+            gr_voltage_readings = self.gr_voltage_readings
+            gr_voltage_readings = [[0.0, gr_voltage_readings[0][1]]] + gr_voltage_readings
+            gr_voltage_readings = gr_voltage_readings + [[execution_time, gr_voltage_readings[-1][1]]]
+            self.results["gr_voltages"].append(np.average(gr_voltage_readings[:][:][1])) #time in s, graphics voltage in millivolts
 
     def get_results(self):
         averaged_results = dict()
 
-        if not self.measure_power:
-            #return averaged results, except for power_readings
-            for obs in self.observables:
-                if not obs in self.needs_power:
-                    #save all information, if the user requested
-                    if self.save_all:
-                        averaged_results[obs + "s"] = self.results[obs]
-                    #save averaged results, default
-                    averaged_results[obs] = np.average(self.results[obs])
+        #return averaged results, except when save_all is True
+        for obs in self.observables:
+            #save all information, if the user requested
+            if self.save_all:
+                averaged_results[obs + "s"] = self.results[obs + "s"]
+            #save averaged results, default
+            averaged_results[obs] = np.average(self.results[obs + "s"])
 
-            for obs in self.observables:
-                self.results[obs] = []
+        #clear results for next round
+        for obs in self.observables:
+            self.results[obs + "s"] = []
 
         return averaged_results
+
+
+
+class NVMLPowerObserver(ContinuousObserver):
+    """ Observer that measures power using NVML and continuous benchmarking """
+    def __init__(self, observables, nvml_instance, continous_duration=1):
+        self.nvml = nvml_instance
+
+        supported = ["power_readings", "nvml_power", "nvml_energy"]
+        for obs in observables:
+            if not obs in supported:
+                raise ValueError(f"Observable {obs} not in supported: {supported}")
+        self.observables = observables
+
+        self.continuous_duration = continous_duration # seconds
+
+        self.power = 0
+        self.energy = 0
+        self.power_readings = []
+
+        self.results = None # results from the last iteration-based benchmark
+
+    def before_start(self):
+        self.power = 0
+        self.energy = 0
+        self.power_readings = []
+
+    def after_start(self):
+        self.t0 = time.perf_counter()
+
+    def during(self):
+        power_usage = self.nvml.pwr_usage()
+        timestamp = time.perf_counter() - self.t0
+        # only store the result if we get a new measurement from NVML
+        if len(self.power_readings) == 0 or (self.power_readings[-1][1] != power_usage or timestamp-self.power_readings[-1][0] > 0.01):
+            self.power_readings.append([timestamp, power_usage])
+
+    def after_finish(self):
+        #compute energy consumption as area under curve
+        x = [d[0] for d in self.power_readings]
+        y = [d[1]/1000.0 for d in self.power_readings] #convert to Watt
+
+        end_time = self.power_readings[-1][0] # time of last measurement
+        execution_time = (self.results["time"]/1e3) # converted to seconds from milliseconds
+        select = np.linspace(end_time-execution_time, end_time, num=10)
+        power_curve = np.interp(select, x, y)
+        self.energy = np.trapz(power_curve, select) # Joule
+        self.power = self.energy / execution_time #in Watt
+
+        #print(f"{self.power_readings=}")
+        #print(f"{end_time=} {execution_time=}")
+        #print(f"{select=}")
+        #print(f"{power_curve=}")
+
+        #from matplotlib import pyplot as plt
+        #plt.plot(x, y, 'blue')
+        #plt.plot(select, power_curve, 'orange')
+        #plt.savefig("test-nvml" + str(time.perf_counter_ns()) +".png")
+        #plt.show()
+
+
+    def get_results(self):
+        results = dict()
+        if "nvml_energy" in self.observables:
+            results["nvml_energy"] = self.energy
+        if "nvml_power" in self.observables:
+            results["nvml_power"] = self.power
+        if "power_readings" in self.observables:
+            results["power_readings"] = self.power_readings
+        return results
