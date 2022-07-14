@@ -334,6 +334,10 @@ class NVMLPowerObserver(ContinuousObserver):
             self.power_readings.append([timestamp, power_usage])
 
     def after_finish(self):
+        # safeguard in case we have no measurements, perhaps the kernel was too short to measure anything
+        if not self.power_readings:
+            return
+
         #compute energy consumption as area under curve
         x = [d[0] for d in self.power_readings]
         y = [d[1]/1000.0 for d in self.power_readings] #convert to Watt
