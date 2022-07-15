@@ -952,6 +952,18 @@ Currently supported: “CUDA”, “OpenCL”, or “C”</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark_continuous">
+<span class="sig-name descname"><span class="pre">benchmark_continuous</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark_continuous" title="Permalink to this definition">¶</a></dt>
+<dd><p>Benchmark continuously for at least ‘duration’ seconds</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark_default">
+<span class="sig-name descname"><span class="pre">benchmark_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark_default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Benchmark one kernel execution at a time</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.check_kernel_output">
 <span class="sig-name descname"><span class="pre">check_kernel_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verify</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.check_kernel_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel once and checks the result against answer</p>
@@ -1045,38 +1057,6 @@ source module for copying data to constant memory before kernel launch.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.cuda.CudaFunctions.benchmark">
-<span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
-<dd><p>runs the kernel and measures time repeatedly, returns average time</p>
-<p>Runs the kernel and measures kernel execution time repeatedly, number of
-iterations is set during the creation of CudaFunctions. Benchmark returns
-a robust average, from all measurements the fastest and slowest runs are
-discarded and the rest is included in the returned average. The reason for
-this is to be robust against initialization artifacts and other exceptional
-cases.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>func</strong> (<em>pycuda.driver.Function</em>) – A PyCuda kernel compiled for this specific kernel configuration</p></li>
-<li><p><strong>gpu_args</strong> (<em>list</em><em>( </em><em>pycuda.driver.DeviceAllocation</em><em>, </em><em>numpy.int32</em><em>, </em><em>...</em><em>)</em>) – A list of arguments to the kernel, order should match the
-order in the code. Allowed values are either variables in global memory
-or single values passed by value.</p></li>
-<li><p><strong>threads</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of threads in each dimension of
-the thread block</p></li>
-<li><p><strong>grid</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of thread blocks in each dimension
-of the grid</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A dictionary with benchmark results.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dict()</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.cuda.CudaFunctions.compile">
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the CUDA compiler to compile the kernel, return the device function</p>
@@ -1128,6 +1108,12 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 device texture memory. See tune_kernel().</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.cuda.CudaFunctions.kernel_finished">
+<span class="sig-name descname"><span class="pre">kernel_finished</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.kernel_finished" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the kernel has finished, False otherwise</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1212,6 +1198,24 @@ of the grid</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.cuda.CudaFunctions.start_event">
+<span class="sig-name descname"><span class="pre">start_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.start_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the start of a measurement</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.cuda.CudaFunctions.stop_event">
+<span class="sig-name descname"><span class="pre">stop_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.stop_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the end of a measurement</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.cuda.CudaFunctions.synchronize">
+<span class="sig-name descname"><span class="pre">synchronize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cuda.CudaFunctions.synchronize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Halts execution until device has finished its tasks</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -1235,38 +1239,6 @@ source module for copying data to constant memory before kernel launch.</p>
 <li><p><strong>device</strong> (<em>int</em>) – Number of CUDA device to use for this context</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – Number of iterations used while benchmarking a kernel, 7 by default.</p></li>
 </ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.cupy.CupyFunctions.benchmark">
-<span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
-<dd><p>runs the kernel and measures time repeatedly, returns average time</p>
-<p>Runs the kernel and measures kernel execution time repeatedly, number of
-iterations is set during the creation of CudaFunctions. Benchmark returns
-a robust average, from all measurements the fastest and slowest runs are
-discarded and the rest is included in the returned average. The reason for
-this is to be robust against initialization artifacts and other exceptional
-cases.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>func</strong> (<em>cupy.RawKernel</em>) – A cupy kernel compiled for this specific kernel configuration</p></li>
-<li><p><strong>gpu_args</strong> (<em>list</em><em>( </em><em>cupy.ndarray</em><em>, </em><em>numpy.int32</em><em>, </em><em>...</em><em>)</em>) – A list of arguments to the kernel, order should match the
-order in the code. Allowed values are either variables in global memory
-or single values passed by value.</p></li>
-<li><p><strong>threads</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of threads in each dimension of
-the thread block</p></li>
-<li><p><strong>grid</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of thread blocks in each dimension
-of the grid</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A dictionary with benchmark results.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dict()</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1323,6 +1295,12 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 device texture memory. See tune_kernel().</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.cupy.CupyFunctions.kernel_finished">
+<span class="sig-name descname"><span class="pre">kernel_finished</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.kernel_finished" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the kernel has finished, False otherwise</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1407,6 +1385,24 @@ of the grid</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.cupy.CupyFunctions.start_event">
+<span class="sig-name descname"><span class="pre">start_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.start_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the start of a measurement</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.cupy.CupyFunctions.stop_event">
+<span class="sig-name descname"><span class="pre">stop_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.stop_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the end of a measurement</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.cupy.CupyFunctions.synchronize">
+<span class="sig-name descname"><span class="pre">synchronize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.synchronize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Halts execution until device has finished its tasks</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -1431,38 +1427,6 @@ of the grid</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.opencl.OpenCLFunctions.benchmark">
-<span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
-<dd><p>runs the kernel and measures time repeatedly, returns average time</p>
-<p>Runs the kernel and measures kernel execution time repeatedly, number of
-iterations is set during the creation of OpenCLFunctions. Benchmark returns
-a robust average, from all measurements the fastest and slowest runs are
-discarded and the rest is included in the returned average. The reason for
-this is to be robust against initialization artifacts and other exceptional
-cases.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>func</strong> (<em>pyopencl.Kernel</em>) – A PyOpenCL kernel compiled for this specific kernel configuration</p></li>
-<li><p><strong>gpu_args</strong> (<em>list</em><em>( </em><em>pyopencl.Buffer</em><em>, </em><em>numpy.int32</em><em>, </em><em>...</em><em>)</em>) – A list of arguments to the kernel, order should match the
-order in the code. Allowed values are either variables in global memory
-or single values passed by value.</p></li>
-<li><p><strong>threads</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of work items in each dimension of
-the work group.</p></li>
-<li><p><strong>grid</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of work groups in each dimension
-of the NDRange.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>All benchmark results.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dict()</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.opencl.OpenCLFunctions.compile">
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the OpenCL compiler to compile the kernel, return the device function</p>
@@ -1481,6 +1445,12 @@ function after compilation.</p></li>
 <dd class="field-odd"><p>pyopencl.Kernel</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.opencl.OpenCLFunctions.kernel_finished">
+<span class="sig-name descname"><span class="pre">kernel_finished</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.kernel_finished" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the kernel has finished, False otherwise</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1565,6 +1535,26 @@ of the NDRange.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.opencl.OpenCLFunctions.start_event">
+<span class="sig-name descname"><span class="pre">start_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.start_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the start of a measurement</p>
+<p>In OpenCL the event is created when the kernel is launched</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.opencl.OpenCLFunctions.stop_event">
+<span class="sig-name descname"><span class="pre">stop_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.stop_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the end of a measurement</p>
+<p>In OpenCL the event is created when the kernel is launched</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.opencl.OpenCLFunctions.synchronize">
+<span class="sig-name descname"><span class="pre">synchronize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.synchronize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Halts execution until device has finished its tasks</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -1581,42 +1571,6 @@ of the NDRange.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>iterations</strong> (<em>int</em>) – Number of iterations used while benchmarking a kernel, 7 by default.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.c.CFunctions.benchmark">
-<span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.benchmark" title="Permalink to this definition">¶</a></dt>
-<dd><p>runs the kernel repeatedly, returns averaged returned value</p>
-<p>The C function tuning is a little bit more flexible than direct CUDA
-or OpenCL kernel tuning. The C function needs to measure time, or some
-other quality metric you wish to tune on, on its own and should
-therefore return a single floating-point value.</p>
-<p>Benchmark runs the C function repeatedly and returns the average of the
-values returned by the C function. The number of iterations is set
-during the creation of the CFunctions object. For all measurements the
-lowest and highest values are discarded and the rest is included in the
-average. The reason for this is to be robust against initialization
-artifacts and other exceptional cases.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>func</strong> (<em>ctypes._FuncPtr</em>) – A C function compiled for this specific configuration</p></li>
-<li><p><strong>c_args</strong> (<em>list</em><em>(</em><em>Argument</em><em>)</em>) – A list of arguments to the function, order should match the
-order in the code. The list should be prepared using
-ready_argument_list().</p></li>
-<li><p><strong>threads</strong> (<em>any</em>) – Ignored, but left as argument for now to have the same
-interface as CudaFunctions and OpenCLFunctions.</p></li>
-<li><p><strong>grid</strong> (<em>any</em>) – Ignored, but left as argument for now to have the same
-interface as CudaFunctions and OpenCLFunctions.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>All execution times.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dict()</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1643,6 +1597,13 @@ in the parameter space.</p>
 <dd class="field-odd"><p>ctypes._FuncPtr</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.c.CFunctions.kernel_finished">
+<span class="sig-name descname"><span class="pre">kernel_finished</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.kernel_finished" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the kernel has finished, False otherwise</p>
+<p>C backend does not support asynchronous launches</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1731,6 +1692,27 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 <dd class="field-odd"><p>float</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.c.CFunctions.start_event">
+<span class="sig-name descname"><span class="pre">start_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.start_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the start of a measurement</p>
+<p>C backend does not use events</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.c.CFunctions.stop_event">
+<span class="sig-name descname"><span class="pre">stop_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.stop_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the end of a measurement</p>
+<p>C backend does not use events</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.c.CFunctions.synchronize">
+<span class="sig-name descname"><span class="pre">synchronize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.synchronize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Halts execution until device has finished its tasks</p>
+<p>C backend does not support asynchronous launches</p>
 </dd></dl>
 
 </dd></dl>
