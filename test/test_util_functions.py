@@ -13,7 +13,7 @@ from .context import skip_if_no_cuda, skip_if_no_opencl
 
 from kernel_tuner.interface import Options
 import kernel_tuner.core as core
-import kernel_tuner.cuda as cuda
+import kernel_tuner.pycuda as pycuda
 import kernel_tuner.opencl as opencl
 from kernel_tuner.util import *
 
@@ -235,7 +235,7 @@ def test_get_device_interface1():
     lang = "CUDA"
     with core.DeviceInterface(core.KernelSource("", "", lang=lang)) as dev:
         assert isinstance(dev, core.DeviceInterface)
-        assert isinstance(dev.dev, cuda.CudaFunctions)
+        assert isinstance(dev.dev, pycuda.CudaFunctions)
 
 
 @skip_if_no_opencl
