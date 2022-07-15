@@ -1,12 +1,11 @@
 """ Module for grouping the core functionality needed by most runners """
 
-import re
 import time
 from collections import namedtuple
-import resource
 import logging
+import re
+import resource
 import numpy as np
-from time import perf_counter
 
 try:
     import cupy as cp
@@ -15,10 +14,10 @@ except ImportError:
 
 from kernel_tuner.cupy import CupyFunctions
 from kernel_tuner.cuda import CudaFunctions
-from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
-from kernel_tuner.observers import ContinuousObserver
 from kernel_tuner.nvml import NVMLObserver
+from kernel_tuner.observers import ContinuousObserver
+from kernel_tuner.opencl import OpenCLFunctions
 import kernel_tuner.util as util
 
 try:
@@ -337,8 +336,6 @@ class DeviceInterface(object):
 
         result = None
         try:
-            #result = self.dev.benchmark(func, gpu_args, instance.threads, instance.grid)
-
             result = dict()
             self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
 
@@ -414,7 +411,7 @@ class DeviceInterface(object):
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
-        start_compilation = perf_counter()
+        start_compilation = time.perf_counter()
         instance_string = util.get_instance_string(params)
 
         # reset previous timers
@@ -448,14 +445,14 @@ class DeviceInterface(object):
                 self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
             # stop compilation stopwatch and convert to miliseconds
-            self.last_compilation_time = 1000 * (perf_counter() - start_compilation)
+            self.last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
             #test kernel for correctness and benchmark
-            start_verification = perf_counter()
+            start_verification = time.perf_counter()
             if tuning_options.answer is not None or tuning_options.verify is not None:
                 self.check_kernel_output(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
             # stop verification stopwatch and convert to miliseconds
-            self.last_verification_time = 1000 * (perf_counter() - start_verification)
+            self.last_verification_time = 1000 * (time.perf_counter() - start_verification)
 
             # benchmark
             result = self.benchmark(func, gpu_args, instance, verbose)

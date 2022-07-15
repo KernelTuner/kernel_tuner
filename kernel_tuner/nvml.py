@@ -141,6 +141,7 @@ class nvml():
                     subprocess.run(args, check=True)
 
     def reset_clocks(self):
+        """ Reset the clocks to the default clock if the device uses a non default clock """
         if self.use_locked_clocks:
             try:
                 pynvml.nvmlDeviceResetGpuLockedClocks(self.dev)
@@ -245,6 +246,7 @@ class NVMLObserver(BenchmarkObserver):
         self.observables = [obs for obs in observables if obs not in self.needs_power]
 
         self.record_gr_voltage = False
+        self.t0 = 0
         if "gr_voltage" in observables:
             self.record_gr_voltage = True
             self.gr_voltage_readings = []
@@ -306,7 +308,7 @@ class NVMLPowerObserver(ContinuousObserver):
 
         supported = ["power_readings", "nvml_power", "nvml_energy"]
         for obs in observables:
-            if not obs in supported:
+            if obs not in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
         self.observables = observables
 
@@ -315,6 +317,7 @@ class NVMLPowerObserver(ContinuousObserver):
         self.power = 0
         self.energy = 0
         self.power_readings = []
+        self.t0 = 0
 
         self.results = None # results from the last iteration-based benchmark
 
