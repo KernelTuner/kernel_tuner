@@ -12,8 +12,11 @@ from kernel_tuner import core
 from kernel_tuner.interface import Options
 
 from .context import skip_if_no_cuda
-from .test_interface import mock_config
 
+
+mock_config = {"return_value.compile.return_value": "compile",
+               "return_value.ready_argument_list.return_value": "ready_argument_list",
+               "return_value.max_threads": 1024}
 
 def get_vector_add_args():
     size = int(1e6)

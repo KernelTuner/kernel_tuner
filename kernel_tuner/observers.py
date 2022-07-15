@@ -41,6 +41,14 @@ class BenchmarkObserver(ABC):
         pass
 
 
+class IterationObserver(BenchmarkObserver):
+    pass
+
+class ContinuousObserver(BenchmarkObserver):
+    pass
+
+
+
 class PowerSensorObserver(BenchmarkObserver):
     """Observer that an external PowerSensor2 device to accurately measure power"""
 

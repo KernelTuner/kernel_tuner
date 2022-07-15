@@ -55,10 +55,3 @@ def dummy_func(a, b, block=0, grid=0, stream=None, shared=0, texrefs=None):
     pass
 
 
-@skip_if_no_cuda
-def test_benchmark():
-    with cuda.CudaFunctions(0) as dev:
-        args = [1, 2]
-        res = dev.benchmark(dummy_func, args, (1, 2), (1, 2))
-        assert res["time"] > 0
-        assert len(res["times"]) == dev.iterations

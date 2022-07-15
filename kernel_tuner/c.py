@@ -222,59 +222,31 @@ class CFunctions(object):
         return func
 
 
-    def benchmark(self, func, c_args, threads, grid):
-        """runs the kernel repeatedly, returns averaged returned value
+    def start_event(self):
+        """ Records the event that marks the start of a measurement
 
-        The C function tuning is a little bit more flexible than direct CUDA
-        or OpenCL kernel tuning. The C function needs to measure time, or some
-        other quality metric you wish to tune on, on its own and should
-        therefore return a single floating-point value.
+        C backend does not use events """
+        pass
 
-        Benchmark runs the C function repeatedly and returns the average of the
-        values returned by the C function. The number of iterations is set
-        during the creation of the CFunctions object. For all measurements the
-        lowest and highest values are discarded and the rest is included in the
-        average. The reason for this is to be robust against initialization
-        artifacts and other exceptional cases.
+    def stop_event(self):
+        """ Records the event that marks the end of a measurement
 
-        :param func: A C function compiled for this specific configuration
-        :type func: ctypes._FuncPtr
+        C backend does not use events """
+        pass
 
-        :param c_args: A list of arguments to the function, order should match the
-            order in the code. The list should be prepared using
-            ready_argument_list().
-        :type c_args: list(Argument)
+    def kernel_finished(self):
+        """ Returns True if the kernel has finished, False otherwise
 
-        :param threads: Ignored, but left as argument for now to have the same
-            interface as CudaFunctions and OpenCLFunctions.
-        :type threads: any
+        C backend does not support asynchronous launches """
+        return True
 
-        :param grid: Ignored, but left as argument for now to have the same
-            interface as CudaFunctions and OpenCLFunctions.
-        :type grid: any
+    def synchronize(self):
+        """ Halts execution until device has finished its tasks
 
-        :returns: All execution times.
-        :rtype: dict()
-        """
-        result = dict()
-        result["times"] = []
-        for _ in range(self.iterations):
-            value = self.run_kernel(func, c_args, threads, grid)
+        C backend does not support asynchronous launches """
+        pass
 
-            #I would like to replace the following with actually capturing
-            #stderr and detecting the error directly in Python, it proved
-            #however that capturing stderr for non-Python functions from Python
-            #is a rather difficult thing to do
-            #
-            #The current, less than ideal, scheme uses the convention that a
-            #negative time indicates a 'too many resources requested for launch'
-            #which Kernel Tuner can silently ignore
-            if value < 0.0:
-                raise Exception("too many resources requested for launch")
 
-            result["times"].append(value)
-        result["time"] = numpy.mean(result["times"])
-        return result
 
     def run_kernel(self, func, c_args, threads, grid):
         """runs the kernel once, returns whatever the kernel returns

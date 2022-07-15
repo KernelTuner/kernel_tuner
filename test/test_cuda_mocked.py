@@ -80,24 +80,6 @@ def dummy_func(a, b, block=0, grid=0, shared=0, stream=None, texrefs=None):
 @patch('kernel_tuner.cuda.nvml')
 @patch('kernel_tuner.cuda.DynamicSourceModule')
 @patch('kernel_tuner.cuda.drv')
-def test_benchmark(drv, *args):
-    drv = setup_mock(drv)
-
-    drv.Event.return_value.time_since.return_value = 0.1
-
-    with cuda.CudaFunctions(0) as dev:
-        res = dev.benchmark(dummy_func, [1, 2], (1, 2), (1, 2))
-        assert res["time"] > 0
-
-        assert dev.context.synchronize.call_count > 1
-        assert drv.Event.return_value.synchronize.call_count == dev.iterations
-        assert drv.Event.return_value.record.call_count == 2*dev.iterations
-        assert drv.Event.return_value.time_since.call_count == dev.iterations
-
-
-@patch('kernel_tuner.cuda.nvml')
-@patch('kernel_tuner.cuda.DynamicSourceModule')
-@patch('kernel_tuner.cuda.drv')
 def test_copy_constant_memory_args(drv, *args):
     drv = setup_mock(drv)
 

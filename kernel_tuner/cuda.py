@@ -218,58 +218,23 @@ class CudaFunctions(object):
             else:
                 raise e
 
-    def benchmark(self, func, gpu_args, threads, grid):
-        """runs the kernel and measures time repeatedly, returns average time
 
-        Runs the kernel and measures kernel execution time repeatedly, number of
-        iterations is set during the creation of CudaFunctions. Benchmark returns
-        a robust average, from all measurements the fastest and slowest runs are
-        discarded and the rest is included in the returned average. The reason for
-        this is to be robust against initialization artifacts and other exceptional
-        cases.
+    def start_event(self):
+        """ Records the event that marks the start of a measurement """
+        self.start.record(stream=self.stream)
 
-        :param func: A PyCuda kernel compiled for this specific kernel configuration
-        :type func: pycuda.driver.Function
+    def stop_event(self):
+        """ Records the event that marks the end of a measurement """
+        self.end.record(stream=self.stream)
 
-        :param gpu_args: A list of arguments to the kernel, order should match the
-            order in the code. Allowed values are either variables in global memory
-            or single values passed by value.
-        :type gpu_args: list( pycuda.driver.DeviceAllocation, numpy.int32, ...)
+    def kernel_finished(self):
+        """ Returns True if the kernel has finished, False otherwise """
+        return self.end.query()
 
-        :param threads: A tuple listing the number of threads in each dimension of
-            the thread block
-        :type threads: tuple(int, int, int)
-
-        :param grid: A tuple listing the number of thread blocks in each dimension
-            of the grid
-        :type grid: tuple(int, int)
-
-        :returns: A dictionary with benchmark results.
-        :rtype: dict()
-        """
-        result = dict()
+    def synchronize(self):
+        """ Halts execution until device has finished its tasks """
         self.context.synchronize()
-        for _ in range(self.iterations):
-            for obs in self.observers:
-                obs.before_start()
-            self.context.synchronize()
-            self.start.record(stream=self.stream)
-            self.run_kernel(func, gpu_args, threads, grid, stream=self.stream)
-            self.end.record(stream=self.stream)
-            for obs in self.observers:
-                obs.after_start()
-            while not self.end.query():
-                for obs in self.observers:
-                    obs.during()
-                time.sleep(1e-6)    #one microsecond
-            self.end.synchronize()
-            for obs in self.observers:
-                obs.after_finish()
 
-        for obs in self.observers:
-            result.update(obs.get_results())
-
-        return result
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
@@ -374,6 +339,8 @@ class CudaFunctions(object):
             of the grid
         :type grid: tuple(int, int)
         """
+        if stream is None:
+            stream = self.stream
         func(*gpu_args, block=threads, grid=grid, stream=stream, shared=self.smem_size, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):
