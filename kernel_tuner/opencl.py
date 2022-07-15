@@ -118,67 +118,25 @@ class OpenCLFunctions():
         func = getattr(prg, kernel_instance.name)
         return func
 
-    def benchmark(self, func, gpu_args, threads, grid):
-        """runs the kernel and measures time repeatedly, returns average time
-
-        Runs the kernel and measures kernel execution time repeatedly, number of
-        iterations is set during the creation of OpenCLFunctions. Benchmark returns
-        a robust average, from all measurements the fastest and slowest runs are
-        discarded and the rest is included in the returned average. The reason for
-        this is to be robust against initialization artifacts and other exceptional
-        cases.
-
-        :param func: A PyOpenCL kernel compiled for this specific kernel configuration
-        :type func: pyopencl.Kernel
-
-        :param gpu_args: A list of arguments to the kernel, order should match the
-            order in the code. Allowed values are either variables in global memory
-            or single values passed by value.
-        :type gpu_args: list( pyopencl.Buffer, numpy.int32, ...)
-
-        :param threads: A tuple listing the number of work items in each dimension of
-            the work group.
-        :type threads: tuple(int, int, int)
-
-        :param grid: A tuple listing the number of work groups in each dimension
-            of the NDRange.
-        :type grid: tuple(int, int)
-
-        :returns: All benchmark results.
-        :rtype: dict()
-        """
-        result = dict()
-        global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
-        local_size = threads
-        for _ in range(self.iterations):
-            for obs in self.observers:
-                obs.before_start()
-            self.queue.finish()
-            self.run_kernel(func, gpu_args, local_size, global_size)
-            for obs in self.observers:
-                obs.after_start()
-            while self.event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) != 0:
-                for obs in self.observers:
-                    obs.during()
-                time.sleep(1e-6)
-            self.event.wait()
-            for obs in self.observers:
-                obs.after_finish()
-        for obs in self.observers:
-            result.update(obs.get_results())
-        return result
-
 
     def start_event(self):
+        """ Records the event that marks the start of a measurement
+
+        In OpenCL the event is created when the kernel is launched """
         pass
 
     def stop_event(self):
+        """ Records the event that marks the end of a measurement
+
+        In OpenCL the event is created when the kernel is launched """
         pass
 
     def kernel_finished(self):
+        """ Returns True if the kernel has finished, False otherwise """
         return self.event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) == 0
 
     def synchronize(self):
+        """ Halts execution until device has finished its tasks """
         self.queue.finish()
 
 

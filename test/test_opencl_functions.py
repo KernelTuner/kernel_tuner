@@ -70,13 +70,6 @@ def create_benchmark_args():
         yield dev, args, times
 
 
-@skip_if_no_opencl
-def test_benchmark(create_benchmark_args):
-    dev, args, times = create_benchmark_args
-    res = dev.benchmark(fun_test, args, times, times)
-    assert res["time"] > 0
-    assert len(res["times"]) == dev.iterations
-
 
 @skip_if_no_opencl
 def test_run_kernel():

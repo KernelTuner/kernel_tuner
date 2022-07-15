@@ -349,17 +349,6 @@ class NVMLPowerObserver(ContinuousObserver):
         self.energy = np.trapz(power_curve, select) # Joule
         self.power = self.energy / execution_time #in Watt
 
-        #print(f"{self.power_readings=}")
-        #print(f"{end_time=} {execution_time=}")
-        #print(f"{select=}")
-        #print(f"{power_curve=}")
-
-        #from matplotlib import pyplot as plt
-        #plt.plot(x, y, 'blue')
-        #plt.plot(select, power_curve, 'orange')
-        #plt.savefig("test-nvml" + str(time.perf_counter_ns()) +".png")
-        #plt.show()
-
 
     def get_results(self):
         results = dict()

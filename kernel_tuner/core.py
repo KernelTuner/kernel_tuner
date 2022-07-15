@@ -17,6 +17,7 @@ from kernel_tuner.cupy import CupyFunctions
 from kernel_tuner.cuda import CudaFunctions
 from kernel_tuner.opencl import OpenCLFunctions
 from kernel_tuner.c import CFunctions
+from kernel_tuner.observers import ContinuousObserver
 from kernel_tuner.nvml import NVMLObserver
 import kernel_tuner.util as util
 
@@ -268,25 +269,27 @@ class DeviceInterface(object):
 
     def benchmark_default(self, func, gpu_args, threads, grid, result):
         """ Benchmark one kernel execution at a time """
+        observers = [obs for obs in self.dev.observers if not isinstance(obs, ContinuousObserver)]
+
         self.dev.synchronize()
         for _ in range(self.iterations):
-            for obs in self.dev.observers:
+            for obs in observers:
                 obs.before_start()
             self.dev.synchronize()
             self.dev.start_event()
             self.dev.run_kernel(func, gpu_args, threads, grid)
             self.dev.stop_event()
-            for obs in self.dev.observers:
+            for obs in observers:
                 obs.after_start()
             while not self.dev.kernel_finished():
-                for obs in self.dev.observers:
+                for obs in observers:
                     obs.during()
                 time.sleep(1e-6)    #one microsecond
             self.dev.synchronize()
-            for obs in self.dev.observers:
+            for obs in observers:
                 obs.after_finish()
 
-        for obs in self.dev.observers:
+        for obs in observers:
             result.update(obs.get_results())
 
 
