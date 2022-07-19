@@ -4,7 +4,6 @@ import time
 from collections import namedtuple
 import logging
 import re
-import resource
 import numpy as np
 
 try:
@@ -419,8 +418,6 @@ class DeviceInterface(object):
         self.last_verification_time = None
 
         logging.debug('compile_and_benchmark ' + instance_string)
-        mem_usage = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0, 1)
-        logging.debug('Memory usage : %2.2f MB', mem_usage)
 
         verbose = tuning_options.verbose
 
