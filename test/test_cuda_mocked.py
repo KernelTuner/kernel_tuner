@@ -21,9 +21,9 @@ def setup_mock(drv):
     return drv
 
 
-@patch('kernel_tuner.cuda.nvml')
-@patch('kernel_tuner.cuda.DynamicSourceModule')
-@patch('kernel_tuner.cuda.drv')
+@patch('kernel_tuner.pycuda.nvml')
+@patch('kernel_tuner.pycuda.DynamicSourceModule')
+@patch('kernel_tuner.pycuda.drv')
 def test_ready_argument_list(drv, *args):
     drv = setup_mock(drv)
 
@@ -44,9 +44,9 @@ def test_ready_argument_list(drv, *args):
     assert isinstance(gpu_args[0], np.int32)
 
 
-@patch('kernel_tuner.cuda.nvml')
-@patch('kernel_tuner.cuda.DynamicSourceModule')
-@patch('kernel_tuner.cuda.drv')
+@patch('kernel_tuner.pycuda.nvml')
+@patch('kernel_tuner.pycuda.DynamicSourceModule')
+@patch('kernel_tuner.pycuda.drv')
 def test_compile(drv, *args):
 
     # setup mocked stuff
@@ -77,9 +77,9 @@ def dummy_func(a, b, block=0, grid=0, shared=0, stream=None, texrefs=None):
     pass
 
 
-@patch('kernel_tuner.cuda.nvml')
-@patch('kernel_tuner.cuda.DynamicSourceModule')
-@patch('kernel_tuner.cuda.drv')
+@patch('kernel_tuner.pycuda.nvml')
+@patch('kernel_tuner.pycuda.DynamicSourceModule')
+@patch('kernel_tuner.pycuda.drv')
 def test_copy_constant_memory_args(drv, *args):
     drv = setup_mock(drv)
 
@@ -96,9 +96,9 @@ def test_copy_constant_memory_args(drv, *args):
         dev.current_module.get_global.assert_called_once_with('fake_array')
 
 
-@patch('kernel_tuner.cuda.nvml')
-@patch('kernel_tuner.cuda.DynamicSourceModule')
-@patch('kernel_tuner.cuda.drv')
+@patch('kernel_tuner.pycuda.nvml')
+@patch('kernel_tuner.pycuda.DynamicSourceModule')
+@patch('kernel_tuner.pycuda.drv')
 def test_copy_texture_memory_args(drv, *args):
     drv = setup_mock(drv)
 
