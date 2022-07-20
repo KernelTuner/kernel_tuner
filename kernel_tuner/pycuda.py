@@ -51,7 +51,7 @@ class Holder(drv.PointerHolderBase):
         return self.t.data_ptr()
 
 
-class CudaRuntimeObserver(BenchmarkObserver):
+class PyCudaRuntimeObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
 
     def __init__(self, dev):
@@ -73,11 +73,11 @@ class CudaRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class CudaFunctions(object):
+class PyCudaFunctions(object):
     """Class that groups the CUDA functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
-        """instantiate CudaFunctions object used for interacting with the CUDA device
+        """instantiate PyCudaFunctions object used for interacting with the CUDA device
 
         Instantiating this object will inspect and store certain device properties at
         runtime, which are used during compilation and/or execution of kernels by the
@@ -130,7 +130,7 @@ class CudaFunctions(object):
 
         #setup observers
         self.observers = observers or []
-        self.observers.append(CudaRuntimeObserver(self))
+        self.observers.append(PyCudaRuntimeObserver(self))
         for obs in self.observers:
             obs.register_device(self)
 

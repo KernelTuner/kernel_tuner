@@ -38,7 +38,7 @@ class CupyFunctions:
     """Class that groups the Cupy functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
-        """instantiate CudaFunctions object used for interacting with the CUDA device
+        """instantiate CupyFunctions object used for interacting with the CUDA device
 
         Instantiating this object will inspect and store certain device properties at
         runtime, which are used during compilation and/or execution of kernels by the

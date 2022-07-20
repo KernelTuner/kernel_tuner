@@ -235,7 +235,7 @@ def test_get_device_interface1():
     lang = "CUDA"
     with core.DeviceInterface(core.KernelSource("", "", lang=lang)) as dev:
         assert isinstance(dev, core.DeviceInterface)
-        assert isinstance(dev.dev, pycuda.CudaFunctions)
+        assert isinstance(dev.dev, pycuda.PyCudaFunctions)
 
 
 @skip_if_no_opencl
