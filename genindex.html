@@ -113,11 +113,11 @@
       <ul>
         <li><a href="design.html#kernel_tuner.core.DeviceInterface.__init__">(kernel_tuner.core.DeviceInterface method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.__init__">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.__init__">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.__init__">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.__init__">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner.__init__">(kernel_tuner.runners.sequential.SequentialRunner method)</a>
 </li>
@@ -175,11 +175,11 @@
       <li><a href="design.html#kernel_tuner.c.CFunctions.compile">compile() (kernel_tuner.c.CFunctions method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.compile">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.compile">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.compile">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.compile">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.compile_and_benchmark">compile_and_benchmark() (kernel_tuner.core.DeviceInterface method)</a>
@@ -199,32 +199,30 @@
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.copy_constant_memory_args">copy_constant_memory_args() (kernel_tuner.core.DeviceInterface method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.copy_constant_memory_args">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.copy_constant_memory_args">(kernel_tuner.cupy.CupyFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.copy_constant_memory_args">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.copy_shared_memory_args">copy_shared_memory_args() (kernel_tuner.core.DeviceInterface method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.copy_shared_memory_args">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.copy_shared_memory_args">(kernel_tuner.cupy.CupyFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.copy_shared_memory_args">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.copy_texture_memory_args">copy_texture_memory_args() (kernel_tuner.core.DeviceInterface method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.copy_texture_memory_args">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.copy_texture_memory_args">(kernel_tuner.cupy.CupyFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.copy_texture_memory_args">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="user-api.html#kernel_tuner.create_device_targets">create_device_targets() (in module kernel_tuner)</a>
 </li>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.create_kernel_instance">create_kernel_instance() (kernel_tuner.core.DeviceInterface method)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.cuda.CudaFunctions">CudaFunctions (class in kernel_tuner.cuda)</a>
 </li>
       <li><a href="design.html#kernel_tuner.cupy.CupyFunctions">CupyFunctions (class in kernel_tuner.cupy)</a>
 </li>
@@ -317,11 +315,11 @@
       <li><a href="design.html#kernel_tuner.c.CFunctions.kernel_finished">kernel_finished() (kernel_tuner.c.CFunctions method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.kernel_finished">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.kernel_finished">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.kernel_finished">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.kernel_finished">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li>
@@ -459,31 +457,31 @@
       <ul>
         <li><a href="design.html#kernel_tuner.core.DeviceInterface.memcpy_dtoh">(kernel_tuner.core.DeviceInterface method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.memcpy_dtoh">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.memcpy_dtoh">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.memcpy_dtoh">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.memcpy_dtoh">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.c.CFunctions.memcpy_htod">memcpy_htod() (kernel_tuner.c.CFunctions method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.memcpy_htod">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.memcpy_htod">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.memcpy_htod">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.memcpy_htod">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.c.CFunctions.memset">memset() (kernel_tuner.c.CFunctions method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.memset">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.memset">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.memset">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.memset">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li>
@@ -575,6 +573,8 @@
 </li>
       <li><a href="design.html#kernel_tuner.strategies.bayes_opt.prune_parameter_space">prune_parameter_space() (in module kernel_tuner.strategies.bayes_opt)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions">PyCudaFunctions (class in kernel_tuner.pycuda)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -590,11 +590,11 @@
       <ul>
         <li><a href="design.html#kernel_tuner.core.DeviceInterface.ready_argument_list">(kernel_tuner.core.DeviceInterface method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.ready_argument_list">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.ready_argument_list">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.ready_argument_list">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.ready_argument_list">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.util.replace_param_occurrences">replace_param_occurrences() (in module kernel_tuner.util)</a>
@@ -614,11 +614,11 @@
 </li>
         <li><a href="design.html#kernel_tuner.core.DeviceInterface.run_kernel">(kernel_tuner.core.DeviceInterface method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.run_kernel">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.run_kernel">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.run_kernel">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.run_kernel">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.util.RuntimeFailedConfig">RuntimeFailedConfig (class in kernel_tuner.util)</a>
@@ -650,11 +650,11 @@
       <li><a href="design.html#kernel_tuner.c.CFunctions.start_event">start_event() (kernel_tuner.c.CFunctions method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.start_event">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.start_event">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.start_event">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.start_event">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -662,11 +662,11 @@
       <li><a href="design.html#kernel_tuner.c.CFunctions.stop_event">stop_event() (kernel_tuner.c.CFunctions method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.stop_event">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.stop_event">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.stop_event">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.stop_event">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.util.StopCriterionReached">StopCriterionReached</a>
@@ -678,11 +678,11 @@
       <li><a href="design.html#kernel_tuner.c.CFunctions.synchronize">synchronize() (kernel_tuner.c.CFunctions method)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.cuda.CudaFunctions.synchronize">(kernel_tuner.cuda.CudaFunctions method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.cupy.CupyFunctions.synchronize">(kernel_tuner.cupy.CupyFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.opencl.OpenCLFunctions.synchronize">(kernel_tuner.opencl.OpenCLFunctions method)</a>
+</li>
+        <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.synchronize">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
   </ul></td>
