@@ -162,22 +162,29 @@ class CudaFunctions:
 
         err, program = nvrtc.nvrtcCreateProgram(kernel_string, "CUDAProgram", 0, [], [])
         err = nvrtc.nvrtcCompileProgram(program, len(compiler_options, compiler_options))
+        err, size = nvrtc.nvrtcGetPTXSize(program)
+        buffer = b' ' * size
+        err = nvrtc.nvrtcGetPTX(program, buffer)
+        err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
+        err, func = cuda.cuModuleGetFunction(self.current_module, kernel_name)
+        return func
         
     def start_event(self):
         """ Records the event that marks the start of a measurement """
-        self.start.record(stream=self.stream)
+        err = cudart.cudaEventRecord(self.start, self.stream)
 
     def stop_event(self):
         """ Records the event that marks the end of a measurement """
-        self.end.record(stream=self.stream)
+        err = cudart.cudaEventRecord(self.end, self.stream)
 
     def kernel_finished(self):
         """ Returns True if the kernel has finished, False otherwise """
-        return self.end.done
+        if cudart.cudaEventQuery(self.end) == cuda.CUresult.CUDA_SUCCESS:
+            return True
 
     def synchronize(self):
         """ Halts execution until device has finished its tasks """
-        self.dev.synchronize()
+        err = cudart.cudaDeviceSynchronize()
 
 
     def copy_constant_memory_args(self, cmem_args):
@@ -191,9 +198,8 @@ class CudaFunctions:
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
         for k, v in cmem_args.items():
-            symbol = self.current_module.get_global(k)
-            constant_mem = cp.ndarray(v.shape,v.dtype,symbol)
-            constant_mem[:] = cp.asarray(v)
+            symbol = cuda.cuModuleGetGlobal(self.current_module, k)
+            err = cuda.cuMemcpyHtoD(symbol, v, v.nbytes)
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
@@ -227,7 +233,7 @@ class CudaFunctions:
             of the grid
         :type grid: tuple(int, int)
         """
-        func(grid, threads, gpu_args, stream=stream, shared_mem=self.smem_size)
+        cuda.cuLaunchKernel(func, grid[0], grid[1], grid[2], threads[0], threads[1], threads[2], self.smem_size, stream, gpu_args, 0)
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
