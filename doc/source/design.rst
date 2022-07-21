@@ -163,9 +163,9 @@ kernel_tuner.core.DeviceInterface
     :special-members: __init__
     :members:
 
-kernel_tuner.cuda.CudaFunctions
+kernel_tuner.pycuda.PyCudaFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.cuda.CudaFunctions
+.. autoclass:: kernel_tuner.pycuda.PyCudaFunctions
     :special-members: __init__
     :members:
 

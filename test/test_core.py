@@ -93,7 +93,7 @@ def test_default_verify_function(env):
     assert True
 
 
-@patch('kernel_tuner.core.CudaFunctions')
+@patch('kernel_tuner.core.PyCudaFunctions')
 def test_check_kernel_output(dev_func_interface):
     dev_func_interface.configure_mock(**mock_config)
 

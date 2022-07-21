@@ -7,7 +7,7 @@ from kernel_tuner.util import get_config_string, store_cache, process_metrics, p
 
 
 class SimulationLangFunction(object):
-    """Compatibility class for supplying simulated device information based on CudaFunctions"""
+    """Compatibility class for supplying simulated device information based on PyCudaFunctions"""
 
     def __init__(self, lang, device=0, iterations=7, compiler_options=None):
         self.allocations = []
