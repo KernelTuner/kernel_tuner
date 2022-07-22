@@ -2,11 +2,11 @@ import numpy as np
 from .context import skip_if_no_cuda
 
 import pytest
-from kernel_tuner import nvcuda as nvcuda
+from kernel_tuner import nvcuda
 from kernel_tuner.core import KernelSource, KernelInstance
 
 try:
-    import cuda
+    from cuda import cuda
 except Exception:
     pass
 
