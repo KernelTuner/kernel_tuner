@@ -13,6 +13,7 @@ except ImportError:
 
 from kernel_tuner.cupy import CupyFunctions
 from kernel_tuner.pycuda import PyCudaFunctions
+from kernel_tuner.nvcuda import CudaFunctions
 from kernel_tuner.c import CFunctions
 from kernel_tuner.nvml import NVMLObserver
 from kernel_tuner.observers import ContinuousObserver
@@ -229,6 +230,8 @@ class DeviceInterface(object):
             dev = PyCudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() == "CUPY":
             dev = CupyFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
+        elif lang.upper() == "NVCUDA":
+            dev = CudaFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() in ["C", "FORTRAN"]:
