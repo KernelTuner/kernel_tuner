@@ -11,7 +11,7 @@ except ImportError:
 from kernel_tuner import core
 from kernel_tuner.interface import Options
 
-from .context import skip_if_no_cuda
+from .context import skip_if_no_pycuda
 
 
 mock_config = {"return_value.compile.return_value": "compile",
@@ -52,7 +52,7 @@ def env():
         yield dev, instance
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_default_verify_function(env):
 
     # gpu_args = dev.ready_argument_list(args)
