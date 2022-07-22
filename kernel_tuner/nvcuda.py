@@ -64,7 +64,7 @@ class CudaFunctions:
 
         # initialize and select device
         err = cuda.cuInit(0)
-        self.device = cuda.cuDeviceGet(device)
+        err, self.device = cuda.cuDeviceGet(device)
         err, self.context = cuda.cuCtxCreate(0, self.device)
 
         # compute capabilities and device properties
