@@ -212,7 +212,26 @@ class CudaFunctions:
             device texture memory. See tune_kernel().
         :type texmem_args: dict
         """
-        raise NotImplementedError('CUDA backend does not yet support texture memory')
+        filter_mode_map = {
+            'point': cuda.CUfilter_mode(0),
+            'linear': cuda.CUfilter_mode(1)
+        }
+        address_mode_map = {
+            'border': cuda.CUaddress_mode(3),
+            'clamp': cuda.CUaddress_mode(1),
+            'mirror': cuda.CUaddress_mode(2),
+            'wrap': cuda.CUaddress_mode(0)
+        }
+
+        self.texrefs = []
+        for k, v in texmem_args.items():
+            err, tex = cuda.cuModuleGetTexRef(self.current_module, k)
+            self.texrefs.append(tex)
+
+            if not isinstance(v, dict):
+                data = v
+            else:
+                data = v['array']
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'
