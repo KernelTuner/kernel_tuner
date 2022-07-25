@@ -96,7 +96,21 @@ class PyCudaFunctions(object):
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
         drv.init()
-        self.context = drv.Device(device).make_context()
+        self.context = drv.Device(device).retain_primary_context()
+        if PyCudaFunctions.last_selected_device != device:
+            # pycuda does not wrap cuCtxSetCurrent.
+            # As an approximation we push the new device's primary context
+            # when switching to a different device.
+            if PyCudaFunctions.last_selected_context is not None:
+                PyCudaFunctions.last_selected_context.pop()
+            else:
+                import atexit
+                def _finish_up():
+                    PyCudaFunctions.last_selected_context.pop()
+                atexit.register(_finish_up)
+            self.context.push()
+            PyCudaFunctions.last_selected_device = device
+            PyCudaFunctions.last_selected_context = self.context
 
         #inspect device properties
         devprops = {str(k): v
@@ -145,15 +159,10 @@ class PyCudaFunctions(object):
         self.env = env
         self.name = env["device_name"]
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
+    def __del__(self):
         for gpu_mem in self.allocations:
             if hasattr(gpu_mem, 'free'):    #if needed for when using mocks during testing
                 gpu_mem.free()
-        if hasattr(self, 'context'):
-            self.context.pop()
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
@@ -389,3 +398,6 @@ class PyCudaFunctions(object):
         'power': 's,mW',
         'energy': 'J'
     }
+
+    last_selected_device = None
+    last_selected_context = None

@@ -75,12 +75,6 @@ class OpenCLFunctions():
         self.env = env
         self.name = dev.name
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        """OpenCLFunctions does not claim any resources that need to be released"""
-
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
 
