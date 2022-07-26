@@ -160,8 +160,8 @@ class CudaFunctions:
         if not any(["--gpu-architecture="]):
             compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
 
-        err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), "CUDAProgram", 0, [], [])
-        err = nvrtc.nvrtcCompileProgram(program, len(compiler_options, compiler_options))
+        err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
+        err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
         err, size = nvrtc.nvrtcGetPTXSize(program)
         buffer = b' ' * size
         err = nvrtc.nvrtcGetPTX(program, buffer)
