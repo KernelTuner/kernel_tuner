@@ -166,8 +166,8 @@ class CudaFunctions:
         buffer = b' ' * size
         err = nvrtc.nvrtcGetPTX(program, buffer)
         err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
-        err, func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
-        return func
+        err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
+        return self.func
         
     def start_event(self):
         """ Records the event that marks the start of a measurement """
