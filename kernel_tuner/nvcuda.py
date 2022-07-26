@@ -166,7 +166,7 @@ class CudaFunctions:
         buffer = b' ' * size
         err = nvrtc.nvrtcGetPTX(program, buffer)
         err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
-        err, func = cuda.cuModuleGetFunction(self.current_module, str.enconde(kernel_name))
+        err, func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
         return func
         
     def start_event(self):
