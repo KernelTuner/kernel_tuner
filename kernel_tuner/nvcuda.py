@@ -156,7 +156,7 @@ class CudaFunctions:
 
         compiler_options = self.compiler_options
         if not any(["--std=" in opt for opt in compiler_options]):
-            compiler_options.append("--std=c++11")
+            compiler_options.append(b"--std=c++11")
         if not any(["--gpu-architecture="]):
             compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
 
@@ -166,7 +166,7 @@ class CudaFunctions:
         buffer = b' ' * size
         err = nvrtc.nvrtcGetPTX(program, buffer)
         err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
-        err, func = cuda.cuModuleGetFunction(self.current_module, kernel_name)
+        err, func = cuda.cuModuleGetFunction(self.current_module, str.enconde(kernel_name))
         return func
         
     def start_event(self):
