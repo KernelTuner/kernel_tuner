@@ -252,7 +252,11 @@ class CudaFunctions:
             of the grid
         :type grid: tuple(int, int)
         """
-        err = cuda.cuLaunchKernel(func, grid[0], grid[1], grid[2], threads[0], threads[1], threads[2], self.smem_size, stream, gpu_args, 0)
+        arg_types = list()
+        for arg in kernel_args:
+            arg_types.append(type(arg))
+        kernel_args = (kernel_args, arg_types)
+        err = cuda.cuLaunchKernel(func, grid[0], grid[1], grid[2], threads[0], threads[1], threads[2], self.smem_size, stream, kernel_args, 0)
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
