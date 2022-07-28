@@ -231,7 +231,7 @@ class DeviceInterface(object):
         elif lang.upper() == "CUPY":
             dev = CupyFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() == "NVCUDA":
-            dev = CudaFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
+            dev = CudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang == "OpenCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() in ["C", "FORTRAN"]:
