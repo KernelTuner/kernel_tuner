@@ -49,10 +49,10 @@ def test_compile():
     kernel_string = original_kernel.replace("shared_size", str(1024))
     kernel_instance = KernelInstance("sum", kernel_sources, kernel_string, [], None, None, dict(), [])
 
-    with opencl.OpenCLFunctions(0) as dev:
-        func = dev.compile(kernel_instance)
+    dev = opencl.OpenCLFunctions(0)
+    func = dev.compile(kernel_instance)
 
-        assert isinstance(func, pyopencl.Kernel)
+    assert isinstance(func, pyopencl.Kernel)
 
 
 def fun_test(queue, a, b, block=0, grid=0):
@@ -63,11 +63,11 @@ def fun_test(queue, a, b, block=0, grid=0):
 
 @pytest.fixture
 def create_benchmark_args():
-    with opencl.OpenCLFunctions(0) as dev:
-        args = [1, 2]
-        times = tuple(range(1, 4))
+    dev = opencl.OpenCLFunctions(0)
+    args = [1, 2]
+    times = tuple(range(1, 4))
 
-        yield dev, args, times
+    yield dev, args, times
 
 
 
@@ -80,5 +80,5 @@ def test_run_kernel():
     def test_func(queue, global_size, local_size, arg):
         assert all(global_size == np.array([4, 10, 3]))
         return type('Event', (object,), {'wait': lambda self: 0})()
-    with opencl.OpenCLFunctions(0) as dev:
-        dev.run_kernel(test_func, [0], threads, grid)
+    dev = opencl.OpenCLFunctions(0)
+    dev.run_kernel(test_func, [0], threads, grid)

@@ -262,11 +262,6 @@ class DeviceInterface(object):
         if not quiet:
             print("Using: " + self.dev.name)
 
-        dev.__enter__()
-
-    def __enter__(self):
-        return self
-
 
     def benchmark_default(self, func, gpu_args, threads, grid, result):
         """ Benchmark one kernel execution at a time """
@@ -566,10 +561,6 @@ class DeviceInterface(object):
                 logging.debug('encountered unexpected runtime failure: ' + str(e))
                 raise e
         return True
-
-    def __exit__(self, *exc):
-        if hasattr(self, 'dev'):
-            self.dev.__exit__(*exc)
 
 
 def _default_verify_function(instance, answer, result_host, atol, verbose):

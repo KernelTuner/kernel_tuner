@@ -44,12 +44,6 @@ class SimulationLangFunction(object):
         self.env = env
         self.name = env["device_name"]
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        return
-
 
 class SimulationDeviceInterface(object):
     """Compatibily class for DeviceInterface that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
@@ -108,9 +102,6 @@ class SimulationDeviceInterface(object):
         if not self.quiet:
             print("Simulating: " + value)
 
-    def __enter__(self):
-        return self
-
     def benchmark(self, func, gpu_args, instance, verbose):
         """benchmark the kernel instance"""
         logging.debug('benchmark ' + instance.name)
@@ -165,10 +156,6 @@ class SimulationDeviceInterface(object):
         logging.debug('grid dims (%d, %d, %d)', *instance.grid)
         raise self.device_access_error
 
-    def __exit__(self, *exc):
-        if hasattr(self, 'dev'):
-            self.dev.__exit__(*exc)
-
 
 class SimulationRunner(object):
     """ SimulationRunner is used for tuning with a single process/thread """
@@ -192,7 +179,7 @@ class SimulationRunner(object):
         """
 
         # #detect language and create high-level device interface
-        self.dev = SimulationDeviceInterface(kernel_source, iterations=iterations, **device_options).__enter__()
+        self.dev = SimulationDeviceInterface(kernel_source, iterations=iterations, **device_options)
 
         self.quiet = device_options.quiet
         self.kernel_source = kernel_source
@@ -200,9 +187,6 @@ class SimulationRunner(object):
         self.simulation_mode = True
         self.last_strategy_start_time = perf_counter()
         self.units = {}
-
-    def __enter__(self):
-        return self
 
     def run(self, parameter_space, kernel_options, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
@@ -242,7 +226,3 @@ class SimulationRunner(object):
             raise ValueError("Parameter element not in cache - in simulation mode, all parameter elements must be present in the cache")
 
         return results, self.dev.get_environment()
-
-    def __exit__(self, *exc):
-        if hasattr(self, 'dev'):
-            self.dev.__exit__(*exc)

@@ -29,7 +29,7 @@ class SequentialRunner(object):
         """
 
         #detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options).__enter__()
+        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
 
         self.units = self.dev.units
         self.quiet = device_options.quiet
@@ -40,9 +40,6 @@ class SequentialRunner(object):
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
-
-    def __enter__(self):
-        return self
 
     def run(self, parameter_space, kernel_options, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
@@ -111,7 +108,3 @@ class SequentialRunner(object):
             results.append(params)
 
         return results, self.dev.get_environment()
-
-    def __exit__(self, *exc):
-        if hasattr(self, 'dev'):
-            self.dev.__exit__(*exc)

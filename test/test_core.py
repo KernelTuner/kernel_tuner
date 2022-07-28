@@ -46,10 +46,10 @@ def env():
                              arguments=args, lang=lang, grid_div_x=None, grid_div_y=None, grid_div_z=None,
                              cmem_args=None, texmem_args=None, block_size_names=None)
     device_options = Options(device=0, platform=0, quiet=False, compiler=None, compiler_options=None)
-    with core.DeviceInterface(kernel_source, iterations=7, **device_options) as dev:
-        instance = dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
+    dev = core.DeviceInterface(kernel_source, iterations=7, **device_options)
+    instance = dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
 
-        yield dev, instance
+    yield dev, instance
 
 
 @skip_if_no_pycuda

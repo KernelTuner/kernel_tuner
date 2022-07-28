@@ -58,7 +58,8 @@ class CupyFunctions:
                             "using 'pip install cupy-cuda111', please check https://github.com/cupy/cupy.")
 
         #select device
-        self.dev = dev = cp.cuda.Device(device).__enter__()
+        self.dev = dev = cp.cuda.Device(device)
+        dev.use()
 
         #inspect device properties
         self.devprops = dev.attributes
@@ -97,13 +98,6 @@ class CupyFunctions:
         env["device_properties"] = self.devprops
         self.env = env
         self.name = env["device_name"]
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        """destroy the device context"""
-        self.dev.__exit__()
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem

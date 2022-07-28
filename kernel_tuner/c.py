@@ -9,9 +9,10 @@ import logging
 import ctypes as C
 import _ctypes
 
-import numpy
+import numpy as np
 import numpy.ctypeslib
 
+from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file, SkippableFailure
 
 dtype_map = {"int8": C.c_int8,
@@ -30,6 +31,25 @@ dtype_map = {"int8": C.c_int8,
 # of the argument data. For an ndarray, the ctypes object is a wrapper for the ndarray's data.
 Argument = namedtuple("Argument", ["numpy", "ctypes"])
 
+class CRuntimeObserver(BenchmarkObserver):
+    """ Observer that collects results returned by benchmarking function """
+
+    def __init__(self, dev):
+        self.dev = dev
+        self.objective = "time"
+        self.times = []
+
+    def after_finish(self):
+        self.times.append(self.dev.last_result)
+
+    def get_results(self):
+        results = {
+            self.objective: np.average(self.times),
+            self.objective + "s": self.times.copy()
+        }
+        self.times = []
+        return results
+
 
 class CFunctions(object):
     """Class that groups the code for running and compiling C functions"""
@@ -46,6 +66,8 @@ class CFunctions(object):
         self.compiler = compiler or "g++"  # use gcc by default
         self.lib = None
         self.using_openmp = False
+        self.observers = [CRuntimeObserver(self)]
+        self.last_result = None
 
         try:
             cc_version = str(subprocess.check_output([self.compiler, "--version"]))
@@ -73,18 +95,12 @@ class CFunctions(object):
         self.env = env
         self.name = platform.processor()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        """CFunctions does not claim any resources that need to be released."""
-
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the C function
 
         :param arguments: List of arguments to be passed to the C function.
             The order should match the argument list on the C function.
-            Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.
+            Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
         :type arguments: list(numpy objects)
 
         :returns: A list of arguments that can be passed to the C function.
@@ -93,10 +109,10 @@ class CFunctions(object):
         ctype_args = [ None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not isinstance(arg, (numpy.ndarray, numpy.number)):
+            if not isinstance(arg, (np.ndarray, np.number)):
                 raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
             dtype_str = str(arg.dtype)
-            if isinstance(arg, numpy.ndarray):
+            if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
                     # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
                     # to its underlying array, so we need to store a reference to arg.copy()
@@ -106,7 +122,7 @@ class CFunctions(object):
                     data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
-            elif isinstance(arg, numpy.generic):
+            elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
         return ctype_args
@@ -209,7 +225,7 @@ class CFunctions(object):
             subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
             subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
 
-            self.lib = numpy.ctypeslib.load_library(filename, '.')
+            self.lib = np.ctypeslib.load_library(filename, '.')
             func = getattr(self.lib, kernel_name)
             func.restype = C.c_float
 
@@ -246,8 +262,6 @@ class CFunctions(object):
         C backend does not support asynchronous launches """
         pass
 
-
-
     def run_kernel(self, func, c_args, threads, grid):
         """runs the kernel once, returns whatever the kernel returns
 
@@ -274,6 +288,7 @@ class CFunctions(object):
         logging.debug("arguments=" + str([str(arg.ctypes) for arg in c_args]))
 
         time = func(*[arg.ctypes for arg in c_args])
+        self.last_result = time
 
         return time
 
@@ -295,7 +310,7 @@ class CFunctions(object):
         """a simple memcpy copying from an Argument to a numpy array
 
         :param dest: A numpy array to store the data
-        :type dest: numpy.ndarray
+        :type dest: np.ndarray
 
         :param src: An Argument for some memory allocation
         :type src: Argument
@@ -309,7 +324,7 @@ class CFunctions(object):
         :type dst: Argument
 
         :param src: A numpy array containing the source data
-        :type src: numpy.ndarray
+        :type src: np.ndarray
         """
         dest.numpy[:] = src
 
