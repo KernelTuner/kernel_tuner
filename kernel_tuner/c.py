@@ -95,12 +95,6 @@ class CFunctions(object):
         self.env = env
         self.name = platform.processor()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        """CFunctions does not claim any resources that need to be released."""
-
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the C function
 

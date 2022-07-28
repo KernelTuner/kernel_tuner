@@ -528,38 +528,38 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
 
     # select the runner for this job based on input
     selected_runner = SimulationRunner if simulation_mode is True else SequentialRunner
-    with selected_runner(kernelsource, kernel_options, device_options, iterations, observers) as runner:
+    runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
 
-        # the user-specified function may or may not have an optional atol argument;
-        # we normalize it so that it always accepts atol.
-        tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
+    # the user-specified function may or may not have an optional atol argument;
+    # we normalize it so that it always accepts atol.
+    tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
-        # process cache
-        if cache:
-            if cache[-5:] != ".json":
-                cache += ".json"
+    # process cache
+    if cache:
+        if cache[-5:] != ".json":
+            cache += ".json"
 
-            util.process_cache(cache, kernel_options, tuning_options, runner)
+        util.process_cache(cache, kernel_options, tuning_options, runner)
+    else:
+        tuning_options.cache = {}
+        tuning_options.cachefile = None
+
+    # call the strategy to execute the tuning process
+    tuning_options["start_time"] = perf_counter()
+    results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
+
+    # finished iterating over search space
+    if not device_options.quiet:
+        if results:    # checks if results is not empty
+            best_config = util.get_best_config(results, objective, objective_higher_is_better)
+            units = getattr(runner, "units", None)
+            print("best performing configuration:")
+            util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
         else:
-            tuning_options.cache = {}
-            tuning_options.cachefile = None
+            print("no results to report")
 
-        # call the strategy to execute the tuning process
-        tuning_options["start_time"] = perf_counter()
-        results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
-
-        # finished iterating over search space
-        if not device_options.quiet:
-            if results:    # checks if results is not empty
-                best_config = util.get_best_config(results, objective, objective_higher_is_better)
-                units = getattr(runner, "units", None)
-                print("best performing configuration:")
-                util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
-            else:
-                print("no results to report")
-
-        if cache:
-            util.close_cache(cache)
+    if cache:
+        util.close_cache(cache)
 
     # get the seperate timings for the benchmarking process
     overhead_time = 1000 * (perf_counter() - start_overhead_time)
@@ -614,54 +614,54 @@ def run_kernel(kernel_name, kernel_source, problem_size, arguments, params, grid
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
 
     #detect language and create the right device function interface
-    with core.DeviceInterface(kernelsource, iterations=1, **device_options) as dev:
+    dev = core.DeviceInterface(kernelsource, iterations=1, **device_options)
 
-        #move data to the GPU
-        gpu_args = dev.ready_argument_list(arguments)
+    #move data to the GPU
+    gpu_args = dev.ready_argument_list(arguments)
 
-        instance = None
-        try:
-            #create kernel instance
-            instance = dev.create_kernel_instance(kernelsource, kernel_options, params, False)
-            if instance is None:
-                raise RuntimeError("cannot create kernel instance, too many threads per block")
+    instance = None
+    try:
+        #create kernel instance
+        instance = dev.create_kernel_instance(kernelsource, kernel_options, params, False)
+        if instance is None:
+            raise RuntimeError("cannot create kernel instance, too many threads per block")
 
-            # see if the kernel arguments have correct type
-            util.check_argument_list(instance.name, instance.kernel_string, arguments)
+        # see if the kernel arguments have correct type
+        util.check_argument_list(instance.name, instance.kernel_string, arguments)
 
-            #compile the kernel
-            func = dev.compile_kernel(instance, False)
-            if func is None:
-                raise RuntimeError("cannot compile kernel, too much shared memory used")
+        #compile the kernel
+        func = dev.compile_kernel(instance, False)
+        if func is None:
+            raise RuntimeError("cannot compile kernel, too much shared memory used")
 
-            #add shared memory arguments to compiled module
-            if smem_args is not None:
-                dev.copy_shared_memory_args(util.get_smem_args(smem_args, params))
-            #add constant memory arguments to compiled module
-            if cmem_args is not None:
-                dev.copy_constant_memory_args(cmem_args)
-            #add texture memory arguments to compiled module
-            if texmem_args is not None:
-                dev.copy_texture_memory_args(texmem_args)
-        finally:
-            #delete temp files
-            if instance is not None:
-                instance.delete_temp_files()
+        #add shared memory arguments to compiled module
+        if smem_args is not None:
+            dev.copy_shared_memory_args(util.get_smem_args(smem_args, params))
+        #add constant memory arguments to compiled module
+        if cmem_args is not None:
+            dev.copy_constant_memory_args(cmem_args)
+        #add texture memory arguments to compiled module
+        if texmem_args is not None:
+            dev.copy_texture_memory_args(texmem_args)
+    finally:
+        #delete temp files
+        if instance is not None:
+            instance.delete_temp_files()
 
-        #run the kernel
-        if not dev.run_kernel(func, gpu_args, instance):
-            raise RuntimeError("runtime error occured, too many resources requested")
+    #run the kernel
+    if not dev.run_kernel(func, gpu_args, instance):
+        raise RuntimeError("runtime error occured, too many resources requested")
 
-        #copy data in GPU memory back to the host
-        results = []
-        for i, arg in enumerate(arguments):
-            if numpy.isscalar(arg):
-                results.append(arg)
-            elif isinstance(arg, torch.Tensor):
-                results.append(arg.cpu())
-            else:
-                results.append(numpy.zeros_like(arg))
-                dev.memcpy_dtoh(results[-1], gpu_args[i])
+    #copy data in GPU memory back to the host
+    results = []
+    for i, arg in enumerate(arguments):
+        if numpy.isscalar(arg):
+            results.append(arg)
+        elif isinstance(arg, torch.Tensor):
+            results.append(arg.cpu())
+        else:
+            results.append(numpy.zeros_like(arg))
+            dev.memcpy_dtoh(results[-1], gpu_args[i])
 
     return results
 
