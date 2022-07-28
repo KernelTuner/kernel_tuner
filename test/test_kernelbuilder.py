@@ -1,5 +1,5 @@
 import numpy as np
-from .context import skip_if_no_cuda
+from .context import skip_if_no_pycuda
 
 import pytest
 from kernel_tuner import kernelbuilder
@@ -23,7 +23,7 @@ def test_kernel():
     return "vector_add", kernel_string, n, [c, a, b, n], params
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_PythonKernel(test_kernel):
     kernel_name, kernel_string, n, args, params = test_kernel
     kernel_function = kernelbuilder.PythonKernel(*test_kernel, lang="cupy")
@@ -31,7 +31,7 @@ def test_PythonKernel(test_kernel):
     assert np.allclose(reference[0], args[1]+args[2])
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_PythonKernel_tuned(test_kernel):
     kernel_name, kernel_string, n, args, params = test_kernel
     c, a, b, n = args

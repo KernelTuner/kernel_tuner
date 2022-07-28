@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from pytest import raises
 
-from .context import skip_if_no_cuda, skip_if_no_opencl
+from .context import skip_if_no_pycuda, skip_if_no_opencl
 
 from kernel_tuner.interface import Options
 import kernel_tuner.core as core
@@ -230,7 +230,7 @@ def test_detect_language3():
     assert lang == "C"
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_get_device_interface1():
     lang = "CUDA"
     with core.DeviceInterface(core.KernelSource("", "", lang=lang)) as dev:
