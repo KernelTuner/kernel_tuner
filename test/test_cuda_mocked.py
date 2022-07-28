@@ -107,7 +107,7 @@ def test_copy_texture_memory_args(drv, *args):
 
     texref = Mock()
 
-    dev = pycuda.PyCudaFunctions(0)
+    dev = nvcuda.CudaFunctions(0)
     dev.current_module = Mock()
     dev.current_module.get_texref.return_value = texref
 
