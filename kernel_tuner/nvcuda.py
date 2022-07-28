@@ -101,7 +101,7 @@ class CudaFunctions:
         env["compiler_options"] = self.compiler_options
         env["device_properties"] = device_properties
         self.env = env
-        self.name = env["device_name"]
+        self.name = str(env["device_name"])
 
     def __enter__(self):
         return self
