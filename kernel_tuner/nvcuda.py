@@ -253,9 +253,9 @@ class CudaFunctions:
         :type grid: tuple(int, int)
         """
         arg_types = list()
-        for arg in kernel_args:
+        for arg in gpu_args:
             arg_types.append(type(arg))
-        kernel_args = (kernel_args, arg_types)
+        kernel_args  = (tuple(gpu_args), tuple(arg_types))
         err = cuda.cuLaunchKernel(func, grid[0], grid[1], grid[2], threads[0], threads[1], threads[2], self.smem_size, stream, kernel_args, 0)
 
     def memset(self, allocation, value, size):
