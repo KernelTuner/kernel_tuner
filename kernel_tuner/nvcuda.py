@@ -254,7 +254,10 @@ class CudaFunctions:
         """
         arg_types = list()
         for arg in gpu_args:
-            arg_types.append(type(arg))
+            if isinstance(arg, cuda.CUdeviceptr):
+                arg_types.append(None)
+            else:
+                arg_types.append(np.ctypeslib.as_ctypes_type(arg.dtype))
         kernel_args  = (tuple(gpu_args), tuple(arg_types))
         err = cuda.cuLaunchKernel(func, grid[0], grid[1], grid[2], threads[0], threads[1], threads[2], self.smem_size, stream, kernel_args, 0)
 
