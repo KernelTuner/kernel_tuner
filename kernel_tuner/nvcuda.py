@@ -70,7 +70,7 @@ class CudaFunctions:
         # compute capabilities and device properties
         err, major = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMajor, device)
         err, minor = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMinor, device)
-        self.max_threads = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device)
+        err, self.max_threads = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device)
         self.cc = f"{major}{minor}"
         self.iterations = iterations
         self.current_module = None
