@@ -198,7 +198,7 @@ class CudaFunctions:
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
         for k, v in cmem_args.items():
-            symbol = cuda.cuModuleGetGlobal(self.current_module, str.encode(k))
+            err, symbol, _ = cuda.cuModuleGetGlobal(self.current_module, str.encode(k))
             err = cuda.cuMemcpyHtoD(symbol, v, v.nbytes)
 
     def copy_shared_memory_args(self, smem_args):
