@@ -5,7 +5,7 @@ try:
 except ImportError:
     from unittest.mock import patch, Mock
 
-from kernel_tuner import pycuda as kt_pycuda
+from kernel_tuner import pycuda
 from kernel_tuner.core import KernelSource, KernelInstance
 
 
@@ -16,7 +16,7 @@ def setup_mock(drv):
                 'COMPUTE_CAPABILITY_MINOR': 5}
     context.return_value.get_device.return_value.get_attributes.return_value = devprops
     context.return_value.get_device.return_value.compute_capability.return_value = "55"
-    drv.Device.return_value.make_context.return_value = context()
+    drv.Device.return_value.retain_primary_context.return_value = context()
     drv.mem_alloc.return_value = 'mem_alloc'
     return drv
 
@@ -32,7 +32,7 @@ def test_ready_argument_list(drv, *args):
     b = np.random.randn(size).astype(np.float32)
     arguments = [a, b]
 
-    dev = kt_pycuda.PyCudaFunctions(0)
+    dev = pycuda.PyCudaFunctions(0)
     gpu_args = dev.ready_argument_list(arguments)
 
     print(drv.mock_calls)
@@ -51,7 +51,7 @@ def test_compile(drv, *args):
 
     # setup mocked stuff
     drv = setup_mock(drv)
-    dev = kt_pycuda.PyCudaFunctions(0)
+    dev = pycuda.PyCudaFunctions(0)
     dev.source_mod = Mock()
     dev.source_mod.return_value.get_function.return_value = 'func'
 
@@ -86,7 +86,7 @@ def test_copy_constant_memory_args(drv, *args):
     fake_array = np.zeros(10).astype(np.float32)
     cmem_args = {'fake_array': fake_array}
 
-    dev = kt_pycuda.PyCudaFunctions(0)
+    dev = pycuda.PyCudaFunctions(0)
     dev.current_module = Mock()
     dev.current_module.get_global.return_value = ['get_global']
 
@@ -107,7 +107,7 @@ def test_copy_texture_memory_args(drv, *args):
 
     texref = Mock()
 
-    dev = kt_pycuda.PyCudaFunctions(0)
+    dev = pycuda.PyCudaFunctions(0)
     dev.current_module = Mock()
     dev.current_module.get_texref.return_value = texref
 
