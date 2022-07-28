@@ -32,8 +32,8 @@ def test_ready_argument_list(drv, *args):
     b = np.random.randn(size).astype(np.float32)
     arguments = [a, b]
 
-    with nvcuda.CudaFunctions(0) as dev:
-        gpu_args = dev.ready_argument_list(arguments)
+    dev = nvcuda.CudaFunctions(0)
+    gpu_args = dev.ready_argument_list(arguments)
 
     print(drv.mock_calls)
     print(gpu_args)
@@ -51,9 +51,9 @@ def test_compile(drv, *args):
 
     # setup mocked stuff
     drv = setup_mock(drv)
-    with nvcuda.CudaFunctions(0) as dev:
-        dev.source_mod = Mock()
-        dev.source_mod.return_value.get_function.return_value = 'func'
+    dev = nvcuda.CudaFunctions(0)
+    dev.source_mod = Mock()
+    dev.source_mod.return_value.get_function.return_value = 'func'
 
     # call compile
     kernel_string = "__global__ void vector_add()"
@@ -86,9 +86,9 @@ def test_copy_constant_memory_args(drv, *args):
     fake_array = np.zeros(10).astype(np.float32)
     cmem_args = {'fake_array': fake_array}
 
-    with nvcuda.CudaFunctions(0) as dev:
-        dev.current_module = Mock()
-        dev.current_module.get_global.return_value = ['get_global']
+    dev = nvcuda.CudaFunctions(0)
+    dev.current_module = Mock()
+    dev.current_module.get_global.return_value = ['get_global']
 
     dev.copy_constant_memory_args(cmem_args)
 
