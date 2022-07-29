@@ -255,25 +255,36 @@ class NVMLObserver(BenchmarkObserver):
         for obs in self.observables:
             self.results[obs + "s"] = []
 
+        self.during_obs = [obs for obs in observables if obs in ["core_freq", "mem_freq", "temperature"]]
+        self.iteration = {obs:[] for obs in self.during_obs}
+
     def before_start(self):
         #clear results of the observables for next measurement
+        self.iteration = {obs:[] for obs in self.during_obs}
         if self.record_gr_voltage:
             self.gr_voltage_readings = []
 
     def after_start(self):
         self.t0 = time.perf_counter()
+        self.during() # ensure during is called at least once
 
     def during(self):
+        if "temperature" in self.observables:
+            self.iteration["temperature"].append(self.nvml.temperature)
+        if "core_freq" in self.observables:
+            self.iteration["core_freq"].append(self.nvml.gr_clock)
+        if "mem_freq" in self.observables:
+            self.iteration["mem_freq"].append(self.nvml.mem_clock)
         if self.record_gr_voltage:
             self.gr_voltage_readings.append([time.perf_counter()-self.t0, self.nvml.gr_voltage()])
 
     def after_finish(self):
         if "temperature" in self.observables:
-            self.results["temperatures"].append(self.nvml.temperature)
+            self.results["temperatures"].append(np.average(self.iteration["temperature"]))
         if "core_freq" in self.observables:
-            self.results["core_freqs"].append(self.nvml.gr_clock)
+            self.results["core_freqs"].append(np.average(self.iteration["core_freq"]))
         if "mem_freq" in self.observables:
-            self.results["mem_freqs"].append(self.nvml.mem_clock)
+            self.results["mem_freqs"].append(np.average(self.iteration["mem_freq"]))
 
         if "gr_voltage" in self.observables:
             execution_time = time.time() - self.t0
