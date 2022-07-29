@@ -124,12 +124,15 @@ def weighted_choice(population, n):
     return [population[ind][0] for ind in chosen]
 
 
-def mutate(dna, mutation_chance, searchspace: Searchspace):
+def mutate(dna, mutation_chance, searchspace: Searchspace, cache=True):
     """Mutate DNA with 1/mutation_chance chance"""
 
     # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
     if int(random.random() * mutation_chance) == 0:
-        neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method='Hamming')
+        if cache:
+            neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method='Hamming')
+        else:
+            neighbors = searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method='Hamming')
         if len(neighbors) > 0:
             return list(random.choice(neighbors))
     return dna

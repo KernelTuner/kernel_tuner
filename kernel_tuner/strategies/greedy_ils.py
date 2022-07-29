@@ -82,5 +82,5 @@ def random_walk(indiv, permutation_size, no_improve, last_improve, searchspace: 
     if last_improve >= no_improve:
         return searchspace.get_random_sample(1)[0]
     for _ in range(permutation_size):
-        indiv = mutate(indiv, 0, searchspace)
+        indiv = mutate(indiv, 0, searchspace, cache=False)
     return indiv
