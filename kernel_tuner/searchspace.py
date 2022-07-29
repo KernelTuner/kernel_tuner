@@ -10,10 +10,12 @@ from kernel_tuner.util import MaxProdConstraint
 
 supported_neighbor_methods = ['strictly-adjacent', 'adjacent', 'Hamming']
 
+
 class Searchspace():
     """ Class that offers the search space to strategies """
 
-    def __init__(self, tuning_options: dict, max_threads: int, build_neighbors_index=False, neighbor_method=None, sort=False, sort_last_param_first=False) -> None:
+    def __init__(self, tuning_options: dict, max_threads: int, build_neighbors_index=False, neighbor_method=None, sort=False,
+                 sort_last_param_first=False) -> None:
         """ Build a searchspace using the variables and constraints.
             Optionally build the neighbors index - only faster if you repeatedly look up neighbors. Methods:
                 strictly-adjacent: differs +1 or -1 parameter index value for each parameter
@@ -218,10 +220,10 @@ class Searchspace():
                 raise ValueError(f"The neighbor method {neighbor_method} differs from the neighbor method {self.neighbor_method} initially used for indexing")
             return self.neighbors_index[param_config_index]
 
-        # check if the neighbor methods do not differ
-        if self.neighbor_method != neighbor_method and self.neighbor_method is not None and neighbor_method is not None:
-            raise ValueError(f"The neighbor method {neighbor_method} differs from the intially set {self.neighbor_method}")
+        # check if there is a neighbor method to use
         if neighbor_method is None:
+            if self.neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
             neighbor_method = self.neighbor_method
 
         if neighbor_method == 'Hamming':
@@ -241,9 +243,15 @@ class Searchspace():
     def get_neighbors_indices(self, param_config: tuple, neighbor_method=None) -> List[int]:
         """ Get the neighbors indices for a parameter configuration, possibly cached """
         neighbors = self.__neighbor_cache.get(param_config, None)
+        # if there are no cached neighbors, compute them
         if neighbors is None:
             neighbors = self.get_neighbors_indices_no_cache(param_config, neighbor_method)
             self.__neighbor_cache[param_config] = neighbors
+        # if the neighbors were cached but the specified neighbor method was different than the one initially used to build the cache, throw an error
+        elif self.neighbor_method is not None and neighbor_method is not None and self.neighbor_method != neighbor_method:
+            raise ValueError(
+                f"The neighbor method {neighbor_method} differs from the intially set {self.neighbor_method}, can not use cached neighbors. Use 'get_neighbors_no_cache()' when mixing neighbor methods to avoid this."
+            )
         return neighbors
 
     def are_neighbors_indices_cached(self, param_config: tuple) -> bool:
