@@ -154,7 +154,7 @@ class CudaFunctions:
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
 
-        compiler_options = self.compiler_options
+        compiler_options = self.compiler_options.copy()
         if not any([b"--std=" in opt for opt in compiler_options]):
             compiler_options.append(b"--std=c++11")
         if not any([b"--gpu-architecture=" in opt for opt in compiler_options]):
