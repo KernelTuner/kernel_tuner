@@ -1,14 +1,25 @@
-import sys
+import re
 from setuptools import setup
+
+
+def version():
+    with open("kernel_tuner/__init__.py") as fp:
+        match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)", fp.read())
+
+    if not match:
+        raise RuntimeError("unable to find __version__ string in __init__.py")
+
+    return match[1]
 
 
 def readme():
     with open('README.rst') as f:
         return f.read()
 
+
 setup(
     name="kernel_tuner",
-    version="0.4.2",
+    version=version(),
     author="Ben van Werkhoven",
     author_email="b.vanwerkhoven@esciencecenter.nl",
     description=("An easy to use CUDA/OpenCL kernel tuner in Python"),
