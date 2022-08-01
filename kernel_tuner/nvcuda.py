@@ -179,7 +179,8 @@ class CudaFunctions:
 
     def kernel_finished(self):
         """ Returns True if the kernel has finished, False otherwise """
-        if cudart.cudaEventQuery(self.end) == cuda.CUresult.CUDA_SUCCESS:
+        err = cudart.cudaEventQuery(self.end)
+        if err[0] == cudart.cudaError_t.cudaSuccess:
             return True
         else:
             return False
