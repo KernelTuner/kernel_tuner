@@ -102,7 +102,7 @@ class CudaFunctions:
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations
         env["compiler_options"] = self.compiler_options
-        env["device_properties"] = {str(device_properties).replace("\n", ", ")}
+        env["device_properties"] = str(device_properties).replace("\n", ", ")
         self.env = env
         self.name = env["device_name"]
 
