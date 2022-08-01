@@ -508,7 +508,7 @@ def looks_like_a_filename(kernel_source):
     return result
 
 
-def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names, lang):
+def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names, lang, defines):
     """ prepare kernel string for compilation
 
     Prepends the kernel with a series of C preprocessor defines specific
@@ -538,6 +538,12 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
         may supply different names if they prefer.
     :type block_size_names: tuple(string)
 
+    :param defines: A dict that describes the variables that should be defined as
+        preprocessor macros. Each keys should be the variable names and each value
+        is either a string or a function that returns a string. If `None`, each
+        tunable parameter is defined as preprocessor macro instead.
+    :type defines: dict or None
+
     :returns: A string containing the source code made specific to this kernel instance.
     :rtype: string
 
@@ -548,27 +554,50 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     # the following preprocessor directive informs the compiler that lines should be counted from 1
     kernel_string = "#line 1\n" + kernel_string
 
-    grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
-    for i, g in enumerate(grid):
-        kernel_string = f"#define {grid_dim_names[i]} {g}\n" + kernel_string
-    for i, g in enumerate(threads):
-        kernel_string = f"#define {block_size_names[i]} {g}\n" + kernel_string
-    for k, v in params.items():
+    # If `defines` is `None`, the default behavior is to define the following variables:
+    #  * grid_size_x, grid_size_y, grid_size_z
+    #  * block_size_x, block_size_y, block_size_z
+    #  * each tunable parameter
+    #  * kernel_tuner=1
+    if defines is None:
+        defines = OrderedDict()
+
+        grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
+        for i, g in enumerate(grid):
+            defines[grid_dim_names[i]] = g
+
+        for i, g in enumerate(threads):
+            defines[block_size_names[i]] = g
+
+        for k, v in params.items():
+            defines[k] = v
+
+        defines["kernel_tuner"] = 1
+
+    for k, v in defines.items():
+        if callable(v):
+            v = v(params)
+        if not isinstance(v, str):
+            v = str(v)
+
+        if not k.isidentifier():
+            raise ValueError("name is not a valid identifier: {k}")
+
+        # Escape newline characters
+        v = v.replace("\n", "\\\n")
+
         if "loop_unroll_factor" in k and lang == "CUDA":
             # this handles the special case that in CUDA
             # pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
             # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
             # using 0 to disable specifying a loop unrolling factor for this loop
-            kernel_string = "constexpr int " + k + " = " + str(v) + ";\n" + kernel_string
-            if v == 0:
+            kernel_string = f"constexpr int {k} = {v};\n" + kernel_string
+            if v == "0":
                 kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)    # + r"[^\S]*"
-        elif k not in block_size_names:
+        else:
             kernel_string = f"#define {k} {v}\n" + kernel_string
 
     name = kernel_name
-
-    # also insert kernel_tuner token
-    kernel_string = "#define kernel_tuner 1\n" + kernel_string
 
     return name, kernel_string
 
