@@ -94,14 +94,14 @@ class CudaFunctions:
         # collect environment information
         err, device_properties = cudart.cudaGetDeviceProperties(device)
         env = dict()
-        env["device_name"] = device_properties.name
+        env["device_name"] = device_properties.name.decode()
         env["cuda_version"] = cuda.CUDA_VERSION
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations
         env["compiler_options"] = self.compiler_options
         env["device_properties"] = device_properties
         self.env = env
-        self.name = str(env["device_name"])
+        self.name = env["device_name"]
 
     def __enter__(self):
         return self
@@ -157,7 +157,7 @@ class CudaFunctions:
         compiler_options = self.compiler_options
         if not any([b"--std=" in opt for opt in compiler_options]):
             compiler_options.append(b"--std=c++11")
-        if not any([b"--gpu-architecture="]):
+        if not any([b"--gpu-architecture=" in opt for opt in compiler_options]):
             compiler_options.append(f"--gpu-architecture=compute_{self.cc}".encode("UTF-8"))
 
         err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
