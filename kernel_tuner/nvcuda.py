@@ -157,8 +157,10 @@ class CudaFunctions:
         compiler_options = self.compiler_options.copy()
         if not any([b"--std=" in opt for opt in compiler_options]):
             compiler_options.append(b"--std=c++11")
+            self.compiler_options.append("--std=c++11")
         if not any([b"--gpu-architecture=" in opt for opt in compiler_options]):
             compiler_options.append(f"--gpu-architecture=compute_{self.cc}".encode("UTF-8"))
+            self.compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
 
         err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
         err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
