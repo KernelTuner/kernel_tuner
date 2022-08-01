@@ -181,6 +181,8 @@ class CudaFunctions:
         """ Returns True if the kernel has finished, False otherwise """
         if cudart.cudaEventQuery(self.end) == cuda.CUresult.CUDA_SUCCESS:
             return True
+        else:
+            return False
 
     def synchronize(self):
         """ Halts execution until device has finished its tasks """
