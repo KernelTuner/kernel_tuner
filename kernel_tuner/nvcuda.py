@@ -20,7 +20,7 @@ def error_check(error):
     if isinstance(error, cuda.CUresult):
         if error != cuda.CUresult.CUDA_SUCCESS:
             _, name = cuda.cuGetErrorName(error)
-            raise RuntimeError(f"CUDA error: {name}")
+            raise RuntimeError(f"CUDA error: {name.decode()}")
     elif isinstance(error, cudart.cudaError_t):
         if error != cudart.cudaError_t.cudaSuccess:
             _, name = cudart.getErrorName(error)
