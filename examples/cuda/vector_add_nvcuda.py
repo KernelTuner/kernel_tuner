@@ -24,11 +24,12 @@ def tune():
     n = numpy.int32(size)
 
     args = [c, a, b, n]
+    answer = [a+b, None, None, None]
 
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    result = tune_kernel("vector_add", kernel_string, size, args, tune_params, lang="nvcuda")
+    result = tune_kernel("vector_add", kernel_string, size, args, tune_params, lang="nvcuda", answer=answer, verbose=True)
 
     with open("vector_add.json", 'w') as fp:
         json.dump(result, fp)
