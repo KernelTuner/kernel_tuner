@@ -240,7 +240,7 @@ class NVMLObserver(BenchmarkObserver):
         if any([obs in self.needs_power for obs in observables]):
             self.measure_power = True
             power_observables = [obs for obs in observables if obs in self.needs_power]
-            self.continuous_observer = NVMLPowerObserver(power_observables, self.nvml, continous_duration)
+            self.continuous_observer = NVMLPowerObserver(power_observables, self, self.nvml, continous_duration)
 
         #remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]
@@ -255,25 +255,36 @@ class NVMLObserver(BenchmarkObserver):
         for obs in self.observables:
             self.results[obs + "s"] = []
 
+        self.during_obs = [obs for obs in observables if obs in ["core_freq", "mem_freq", "temperature"]]
+        self.iteration = {obs:[] for obs in self.during_obs}
+
     def before_start(self):
         #clear results of the observables for next measurement
+        self.iteration = {obs:[] for obs in self.during_obs}
         if self.record_gr_voltage:
             self.gr_voltage_readings = []
 
     def after_start(self):
         self.t0 = time.perf_counter()
+        self.during() # ensure during is called at least once
 
     def during(self):
+        if "temperature" in self.observables:
+            self.iteration["temperature"].append(self.nvml.temperature)
+        if "core_freq" in self.observables:
+            self.iteration["core_freq"].append(self.nvml.gr_clock)
+        if "mem_freq" in self.observables:
+            self.iteration["mem_freq"].append(self.nvml.mem_clock)
         if self.record_gr_voltage:
             self.gr_voltage_readings.append([time.perf_counter()-self.t0, self.nvml.gr_voltage()])
 
     def after_finish(self):
         if "temperature" in self.observables:
-            self.results["temperatures"].append(self.nvml.temperature)
+            self.results["temperatures"].append(np.average(self.iteration["temperature"]))
         if "core_freq" in self.observables:
-            self.results["core_freqs"].append(self.nvml.gr_clock)
+            self.results["core_freqs"].append(np.average(self.iteration["core_freq"]))
         if "mem_freq" in self.observables:
-            self.results["mem_freqs"].append(self.nvml.mem_clock)
+            self.results["mem_freqs"].append(np.average(self.iteration["mem_freq"]))
 
         if "gr_voltage" in self.observables:
             execution_time = time.time() - self.t0
@@ -303,7 +314,8 @@ class NVMLObserver(BenchmarkObserver):
 
 class NVMLPowerObserver(ContinuousObserver):
     """ Observer that measures power using NVML and continuous benchmarking """
-    def __init__(self, observables, nvml_instance, continous_duration=1):
+    def __init__(self, observables, parent, nvml_instance, continous_duration=1):
+        self.parent = parent
         self.nvml = nvml_instance
 
         supported = ["power_readings", "nvml_power", "nvml_energy"]
@@ -322,14 +334,17 @@ class NVMLPowerObserver(ContinuousObserver):
         self.results = None # results from the last iteration-based benchmark
 
     def before_start(self):
+        self.parent.before_start()
         self.power = 0
         self.energy = 0
         self.power_readings = []
 
     def after_start(self):
+        self.parent.after_start()
         self.t0 = time.perf_counter()
 
     def during(self):
+        self.parent.during()
         power_usage = self.nvml.pwr_usage()
         timestamp = time.perf_counter() - self.t0
         # only store the result if we get a new measurement from NVML
@@ -337,6 +352,7 @@ class NVMLPowerObserver(ContinuousObserver):
             self.power_readings.append([timestamp, power_usage])
 
     def after_finish(self):
+        self.parent.after_finish()
         # safeguard in case we have no measurements, perhaps the kernel was too short to measure anything
         if not self.power_readings:
             return
@@ -354,7 +370,10 @@ class NVMLPowerObserver(ContinuousObserver):
 
 
     def get_results(self):
-        results = dict()
+        results = self.parent.get_results()
+        keys = list(results.keys())
+        for key in keys:
+            results["pwr_" + key] = results.pop(key)
         if "nvml_energy" in self.observables:
             results["nvml_energy"] = self.energy
         if "nvml_power" in self.observables:

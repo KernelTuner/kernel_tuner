@@ -1,7 +1,8 @@
 import sys
-import pytest
-
+import subprocess
 import shutil
+
+import pytest
 
 try:
     import pycuda.driver as drv
@@ -20,7 +21,9 @@ try:
 except Exception:
     opencl_present = False
 
+gcc_present = shutil.which("gcc") is not None
 gfortran_present = shutil.which("gfortran") is not None
+openmp_present = "libgomp" in subprocess.getoutput(["ldconfig -p | grep libgomp"])
 
 try:
     import cupy
@@ -38,4 +41,6 @@ skip_if_no_pycuda = pytest.mark.skipif(not pycuda_present, reason="PyCuda not in
 skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed")
 skip_if_no_cuda = pytest.mark.skipif(not cuda_present, reason="NVIDIA CUDA not installed")
 skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected")
+skip_if_no_gcc = pytest.mark.skipif(not gfortran_present, reason="No gcc on PATH")
 skip_if_no_gfortran = pytest.mark.skipif(not gfortran_present, reason="No gfortran on PATH")
+skip_if_no_openmp = pytest.mark.skipif(not gfortran_present, reason="No OpenMP found")

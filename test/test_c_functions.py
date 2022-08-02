@@ -1,11 +1,8 @@
-from __future__ import print_function
-
 from datetime import datetime
-import logging
-logging.basicConfig(filename="pytest" + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=logging.DEBUG)
 
 import numpy as np
 import ctypes as C
+import pytest
 from pytest import raises
 
 try:
@@ -13,11 +10,12 @@ try:
 except ImportError:
     from unittest.mock import patch, Mock
 
+import kernel_tuner
 from kernel_tuner.c import CFunctions, Argument
 from kernel_tuner.core import KernelSource, KernelInstance
 from kernel_tuner import util
 
-from .context import skip_if_no_gfortran
+from .context import skip_if_no_gfortran, skip_if_no_gcc, skip_if_no_openmp
 
 def test_ready_argument_list1():
     arg1 = np.array([1, 2, 3]).astype(np.float32)
@@ -281,3 +279,46 @@ def test_complies_fortran_function_with_module():
 
     finally:
         util.delete_temp_file("my_fancy_module.mod")
+
+
+@pytest.fixture
+def env():
+
+    kernel_string = """
+        #include <omp.h>
+
+        extern "C" float vector_add(float *c, float *a, float *b, int n) {
+            double start = omp_get_wtime();
+            int chunk = n/nthreads;
+            #pragma omp parallel num_threads(nthreads)
+            {
+            int offset = omp_get_thread_num()*chunk;
+                for (int i = offset; i<offset+chunk && i<n; i++) {
+                    c[i] = a[i] + b[i];
+                }
+            }
+            return (float)((omp_get_wtime() - start)*1e3);
+        }"""
+
+    size = 100
+    a = np.random.randn(size).astype(np.float32)
+    b = np.random.randn(size).astype(np.float32)
+    c = np.zeros_like(b)
+    n = np.int32(size)
+
+    args = [c, a, b, n]
+    tune_params = {"nthreads": [1, 2, 4]}
+
+    return ["vector_add", kernel_string, size, args, tune_params]
+
+@skip_if_no_openmp
+@skip_if_no_gcc
+def test_benchmark(env):
+    results, _ = kernel_tuner.tune_kernel(*env, block_size_names=["nthreads"])
+    assert len(results) == 3
+    assert all(["nthreads" in result for result in results])
+    assert all(["time" in result for result in results])
+    assert all([result["time"] > 0.0 for result in results])
+
+
+

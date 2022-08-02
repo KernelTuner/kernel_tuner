@@ -37,7 +37,7 @@ def vector_add():
 @pytest.mark.parametrize('strategy', strategy_map)
 def test_strategies(vector_add, strategy):
 
-    options = dict(popsize=5, max_fevals=10)
+    options = dict(popsize=5, max_fevals=10, neighbor='adjacent')
 
     print(f"testing {strategy}")
     result, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=options,
