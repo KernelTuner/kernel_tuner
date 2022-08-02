@@ -34,7 +34,7 @@ def test_ready_argument_list():
 def test_compile():
 
     kernel_string = """
-    __global__ void vector_add(float *c, float *a, float *b, int n) {
+    extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i<n) {
             c[i] = a[i] + b[i];
