@@ -27,7 +27,7 @@ class CudaRuntimeObserver(BenchmarkObserver):
 
     def after_finish(self):
         # time in ms
-        err, time = cudart.cudaEventElapsedTime(self.start, self.end)
+        _, time = cudart.cudaEventElapsedTime(self.start, self.end)
         self.times.append(time)
 
     def get_results(self):
@@ -64,13 +64,19 @@ class CudaFunctions:
 
         # initialize and select device
         err = cuda.cuInit(0)
+        self.error_check(err)
         err, self.device = cuda.cuDeviceGet(device)
+        self.error_check(err)
         err, self.context = cuda.cuCtxCreate(0, self.device)
+        self.error_check(err)
 
         # compute capabilities and device properties
         err, major = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMajor, device)
+        self.error_check(err)
         err, minor = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMinor, device)
+        self.error_check(err)
         err, self.max_threads = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device)
+        self.error_check(err)
         self.cc = f"{major}{minor}"
         self.iterations = iterations
         self.current_module = None
@@ -82,8 +88,11 @@ class CudaFunctions:
 
         # create a stream and events
         err, self.stream = cuda.cuStreamCreate(0)
+        self.error_check(err)
         err, self.start = cuda.cuEventCreate(0)
+        self.error_check(err)
         err, self.end = cuda.cuEventCreate(0)
+        self.error_check(err)
 
         # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
@@ -96,6 +105,7 @@ class CudaFunctions:
 
         # collect environment information
         err, device_properties = cudart.cudaGetDeviceProperties(device)
+        self.error_check(err)
         env = dict()
         env["device_name"] = device_properties.name.decode()
         env["cuda_version"] = cuda.CUDA_VERSION
@@ -114,8 +124,10 @@ class CudaFunctions:
         for device_memory in self.allocations:
             if isinstance(device_memory, cuda.CUdeviceptr):
                 err = cuda.cuMemFree(device_memory)
+                self.error_check(err)
         if hasattr(self, "context"):
             err = cuda.cuCtxDestroy(self.context)
+            self.error_check(err)
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
@@ -133,6 +145,7 @@ class CudaFunctions:
             # if arg is a numpy array copy it to device
             if isinstance(arg, np.ndarray):
                 err, device_memory = cuda.cuMemAlloc(arg.nbytes)
+                self.error_check(err)
                 self.allocations.append(device_memory)
                 gpu_args.append(device_memory)
                 self.memcpy_htod(device_memory, arg)
@@ -168,21 +181,29 @@ class CudaFunctions:
             self.compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
 
         err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
+        self.error_check(err)
         err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
+        self.error_check(err)
         err, size = nvrtc.nvrtcGetPTXSize(program)
+        self.error_check(err)
         buffer = b' ' * size
         err = nvrtc.nvrtcGetPTX(program, buffer)
+        self.error_check(err)
         err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
+        self.error_check(err)
         err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
+        self.error_check(err)
         return self.func
         
     def start_event(self):
         """ Records the event that marks the start of a measurement """
         err = cudart.cudaEventRecord(self.start, self.stream)
+        self.error_check(err)
 
     def stop_event(self):
         """ Records the event that marks the end of a measurement """
         err = cudart.cudaEventRecord(self.end, self.stream)
+        self.error_check(err)
 
     def kernel_finished(self):
         """ Returns True if the kernel has finished, False otherwise """
@@ -195,6 +216,7 @@ class CudaFunctions:
     def synchronize(self):
         """ Halts execution until device has finished its tasks """
         err = cudart.cudaDeviceSynchronize()
+        self.error_check(err)
 
 
     def copy_constant_memory_args(self, cmem_args):
@@ -209,7 +231,9 @@ class CudaFunctions:
         """
         for k, v in cmem_args.items():
             err, symbol, _ = cuda.cuModuleGetGlobal(self.current_module, str.encode(k))
+            self.error_check(err)
             err = cuda.cuMemcpyHtoD(symbol, v, v.nbytes)
+            self.error_check(err)
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
@@ -236,6 +260,7 @@ class CudaFunctions:
         self.texrefs = []
         for k, v in texmem_args.items():
             err, tex = cuda.cuModuleGetTexRef(self.current_module, k)
+            self.error_check(err)
             self.texrefs.append(tex)
 
             if not isinstance(v, dict):
@@ -270,6 +295,7 @@ class CudaFunctions:
                 arg_types.append(np.ctypeslib.as_ctypes_type(arg.dtype))
         kernel_args  = (tuple(gpu_args), tuple(arg_types))
         err = cuda.cuLaunchKernel(func, grid[0], grid[1], grid[2], threads[0], threads[1], threads[2], self.smem_size, stream, kernel_args, 0)
+        self.error_check(err)
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
@@ -285,6 +311,7 @@ class CudaFunctions:
 
         """
         err = cudart.cudaMemset(allocation, value, size)
+        self.error_check(err)
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
@@ -296,6 +323,7 @@ class CudaFunctions:
         :type src: cupy.ndarray
         """
         err = cuda.cuMemcpyDtoH(dest, src, dest.nbytes)
+        self.error_check(err)
 
     def memcpy_htod(self, dest, src):
         """perform a host to device memory copy
@@ -307,5 +335,20 @@ class CudaFunctions:
         :type src: numpy.ndarray
         """
         err = cuda.cuMemcpyHtoD(dest, src, src.nbytes)
+        self.error_check(err)
 
+    def error_check(error):
+        if isinstance(error, cuda.CUresult):
+            if error != cuda.CUresult.CUDA_SUCCESS:
+                _, name = cuda.getErrorName(error)
+                raise RuntimeError(f"CUDA error: {name}")
+        elif isinstance(error, cudart.cudaError_t):
+            if error != cudart.cudaError_t.cudaSuccess:
+                _, name = cudart.getErrorName(error)
+                raise RuntimeError(f"CUDART error: {name.decode()}")
+        elif isinstance(error, nvrtc.nvrtcResult):
+            if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                _, desc = nvrtc.nvrtcGetErrorString(error)
+                raise RuntimeError(f"NVRTC error: {desc.decode()}")
+    
     units = {'time': 'ms'}
