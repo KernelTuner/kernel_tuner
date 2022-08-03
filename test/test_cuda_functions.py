@@ -53,25 +53,6 @@ def test_compile():
 
 
 @skip_if_no_cuda
-def test_run_kernel():
-
-    threads = (1, 2, 3)
-    grid = (4, 5, 1)
-
-    def test_func(queue, global_size, local_size, arg):
-        assert all(global_size == np.array([4, 10, 3]))
-        return type('Event', (object,), {'wait': lambda self: 0})()
-    dev = nvcuda.CudaFunctions(0)
-    dev.run_kernel(dummy_func, [0], threads, grid)
-
-
-@skip_if_no_cuda
 def test_tune_kernel(env):
     result, _ = tune_kernel(*env, lang="nvcuda", verbose=True)
     assert len(result) > 0
-
-
-def dummy_func(a, b, block=0, grid=0, stream=None, shared=0, texrefs=None):
-    pass
-
-
