@@ -30,7 +30,7 @@ def test_kernel():
 def test_PythonKernel(test_kernel, backend):
     if not cuda_present:
         pytest.skip("PyCuda not installed or no CUDA device detected")
-    if not cupy_present:
+    elif not cupy_present:
         pytest.skip("CuPy not installed")
     kernel_name, kernel_string, n, args, params = test_kernel
     kernel_function = kernelbuilder.PythonKernel(*test_kernel, lang=backend)
@@ -42,7 +42,7 @@ def test_PythonKernel(test_kernel, backend):
 def test_PythonKernel_tuned(test_kernel, backend):
     if not cuda_present:
         pytest.skip("PyCuda not installed or no CUDA device detected")
-    if not cupy_present:
+    elif not cupy_present:
         pytest.skip("CuPy not installed")
     kernel_name, kernel_string, n, args, params = test_kernel
     c, a, b, n = args
