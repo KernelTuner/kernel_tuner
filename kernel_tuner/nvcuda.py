@@ -262,6 +262,8 @@ class CudaFunctions:
             device texture memory. See tune_kernel().
         :type texmem_args: dict
         """
+        raise NotImplementedError('NVIDIA CUDA backend does not yet support texture memory')
+
         filter_mode_map = {
             'point': cuda.CUfilter_mode(0),
             'linear': cuda.CUfilter_mode(1)
