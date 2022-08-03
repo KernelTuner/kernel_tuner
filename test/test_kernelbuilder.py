@@ -1,5 +1,5 @@
 import numpy as np
-from .context import cuda_present, cupy_present
+from .context import skip_backend
 
 import pytest
 from kernel_tuner import kernelbuilder
@@ -28,10 +28,7 @@ def test_kernel():
 
 @pytest.mark.parametrize("backend", backends)
 def test_PythonKernel(test_kernel, backend):
-    if not cuda_present:
-        pytest.skip("PyCuda not installed or no CUDA device detected")
-    elif not cupy_present:
-        pytest.skip("CuPy not installed")
+    skip_backend(backend)
     kernel_name, kernel_string, n, args, params = test_kernel
     kernel_function = kernelbuilder.PythonKernel(*test_kernel, lang=backend)
     reference = kernel_function(*args)
@@ -40,10 +37,7 @@ def test_PythonKernel(test_kernel, backend):
 
 @pytest.mark.parametrize("backend", backends)
 def test_PythonKernel_tuned(test_kernel, backend):
-    if not cuda_present:
-        pytest.skip("PyCuda not installed or no CUDA device detected")
-    elif not cupy_present:
-        pytest.skip("CuPy not installed")
+    skip_backend(backend)
     kernel_name, kernel_string, n, args, params = test_kernel
     c, a, b, n = args
     test_results_file = "test_results_file.json"
