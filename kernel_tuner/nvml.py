@@ -357,16 +357,9 @@ class NVMLPowerObserver(ContinuousObserver):
         if not self.power_readings:
             return
 
-        #compute energy consumption as area under curve
-        x = [d[0] for d in self.power_readings]
-        y = [d[1]/1000.0 for d in self.power_readings] #convert to Watt
-
-        end_time = self.power_readings[-1][0] # time of last measurement
         execution_time = (self.results["time"]/1e3) # converted to seconds from milliseconds
-        select = np.linspace(end_time-execution_time, end_time, num=10)
-        power_curve = np.interp(select, x, y)
-        self.energy = np.trapz(power_curve, select) # Joule
-        self.power = self.energy / execution_time #in Watt
+        self.power = np.median([d[1] / 1e3 for d in self.power_readings])
+        self.energy = self.power * execution_time
 
 
     def get_results(self):
