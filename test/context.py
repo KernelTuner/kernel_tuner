@@ -27,13 +27,27 @@ openmp_present = "libgomp" in subprocess.getoutput(["ldconfig -p | grep libgomp"
 
 try:
     import cupy
+    cupy.cuda.Device(0).attributes #triggers exception if there are no CUDA-capable devices
     cupy_present = True
 except Exception:
     cupy_present = False
 
 skip_if_no_cuda = pytest.mark.skipif(not cuda_present, reason="PyCuda not installed or no CUDA device detected")
-skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed")
+skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed or no CUDA device detected")
 skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected")
-skip_if_no_gcc = pytest.mark.skipif(not gfortran_present, reason="No gcc on PATH")
+skip_if_no_gcc = pytest.mark.skipif(not gcc_present, reason="No gcc on PATH")
 skip_if_no_gfortran = pytest.mark.skipif(not gfortran_present, reason="No gfortran on PATH")
-skip_if_no_openmp = pytest.mark.skipif(not gfortran_present, reason="No OpenMP found")
+skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
+
+
+def skip_backend(backend: str):
+    if backend.upper() == "CUDA" and not cuda_present:
+        pytest.skip("PyCuda not installed or no CUDA device detected")
+    elif backend.upper() == "CUPY" and not cupy_present:
+        pytest.skip("CuPy not installed or no CUDA device detected")
+    elif backend.upper() == "OpenCL" and not opencl_present:
+        pytest.skip("PyOpenCL not installed or no OpenCL device detected")
+    elif backend.upper() == "C" and not gcc_present:
+        pytest.skip("No gcc on PATH")
+    elif backend.upper() == "FORTRAN" and not gfortran_present:
+        pytest.skip("No gfortran on PATH")
