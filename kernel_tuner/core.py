@@ -225,7 +225,7 @@ class DeviceInterface(object):
 
         logging.debug('DeviceInterface instantiated, lang=%s', lang)
 
-        if lang == "CUDA":
+        if lang.upper() == "CUDA":
             dev = PyCudaFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() == "CUPY":
             dev = CupyFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
