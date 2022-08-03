@@ -49,9 +49,3 @@ def test_compile():
         dev.compile(kernel_instance)
     except Exception as e:
         pytest.fail("Did not expect any exception:" + str(e))
-
-
-def dummy_func(a, b, block=0, grid=0, stream=None, shared=0, texrefs=None):
-    pass
-
-
