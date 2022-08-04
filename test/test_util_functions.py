@@ -206,7 +206,7 @@ def test_replace_param_occurrences():
     params["weird"] = 14
 
     new_kernel = replace_param_occurrences(kernel, params)
-    assert new_kernel == "th8 8 a 14 kernel"
+    assert new_kernel == "this 8 a 14 kernel"  # Note: The "is" in "this" should not be replaced
 
     new_kernel = replace_param_occurrences(kernel, dict())
     assert kernel == new_kernel

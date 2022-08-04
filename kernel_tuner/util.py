@@ -577,7 +577,9 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     for k, v in defines.items():
         if callable(v):
             v = v(params)
-        if not isinstance(v, str):
+        elif isinstance(v, str):
+            v = replace_param_occurrences(v, params)
+        else:
             v = str(v)
 
         if not k.isidentifier():
@@ -611,9 +613,16 @@ def read_file(filename):
 
 def replace_param_occurrences(string, params):
     """replace occurrences of the tuning params with their current value"""
-    for k, v in params.items():
-        string = string.replace(k, str(v))
-    return string
+    result = ''
+
+    # Split on tokens and replace a token if it is a key in `params`.
+    for part in re.split('([a-zA-Z0-9_]+)', string):
+        if part in params:
+            result += str(params[part])
+        else:
+            result += part
+
+    return result
 
 
 def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
