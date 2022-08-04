@@ -45,7 +45,7 @@ def skip_backend(backend: str):
         pytest.skip("PyCuda not installed or no CUDA device detected")
     elif backend.upper() == "CUPY" and not cupy_present:
         pytest.skip("CuPy not installed or no CUDA device detected")
-    elif backend.upper() == "OpenCL" and not opencl_present:
+    elif backend.upper() == "OPENCL" and not opencl_present:
         pytest.skip("PyOpenCL not installed or no OpenCL device detected")
     elif backend.upper() == "C" and not gcc_present:
         pytest.skip("No gcc on PATH")
