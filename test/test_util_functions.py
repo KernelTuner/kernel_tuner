@@ -167,13 +167,13 @@ def test_prepare_kernel_string():
     params["is"] = 8
 
     _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", None)
-    expected = "#define kernel_tuner 1\n" \
-               "#define is 8\n" \
-               "#define block_size_z 3\n" \
-               "#define block_size_y 2\n" \
-               "#define block_size_x 1\n" \
+    expected = "#define grid_size_x 3\n" \
                "#define grid_size_y 7\n" \
-               "#define grid_size_x 3\n" \
+               "#define block_size_x 1\n" \
+               "#define block_size_y 2\n" \
+               "#define block_size_z 3\n" \
+               "#define is 8\n" \
+               "#define kernel_tuner 1\n" \
                "#line 1\n" \
                "this is a weird kernel"
     assert output == expected
@@ -185,9 +185,9 @@ def test_prepare_kernel_string():
         baz=lambda config: config["is"] * 5)
 
     _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", defines)
-    expected = "#define baz 40\n" \
+    expected = "#define foo 1\n" \
                "#define bar custom\n" \
-               "#define foo 1\n" \
+               "#define baz 40\n" \
                "#line 1\n" \
                "this is a weird kernel"
     assert output == expected
