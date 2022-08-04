@@ -110,3 +110,33 @@ def test_random_sample(env):
     # check all returned results make sense
     for v in result:
         assert v['time'] > 0.0 and v['time'] < 1.0
+
+
+@skip_if_no_cuda
+def test_interface_handles_compile_failures(env):
+    kernel_name, kernel_string, size, args, tune_params = env
+
+    kernel_string = """
+    __global__
+    void vector_add(float *c, float *a, float *b, int n) {
+        int i = blockIdx.x * block_size_x + threadIdx.x;
+        #if block_size_x == 256
+        // request ridiculously large amount of shared memory to trigger compilation failure
+        __shared__ double shared_a[1024*1024];
+        #endif
+
+        if (i<n) {
+            #if block_size_x == 256
+                shared_a[i*1024*1024] = a[i];
+                c[i] = shared_a[i*1024] + b[i];
+            #else
+                c[i] = a[i] + b[i];
+            #endif
+        }
+    }
+    """
+
+    results, env = kernel_tuner.tune_kernel(kernel_name, kernel_string, size, args, tune_params, verbose=True)
+
+    failed_config = [record for record in results if record["block_size_x"] == 256][0]
+    assert isinstance(failed_config["time"], util.CompilationFailedConfig)

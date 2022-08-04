@@ -50,9 +50,12 @@ def test_compile():
         dev.compile(kernel_instance)
     except Exception as e:
         pytest.fail("Did not expect any exception:" + str(e))
+<<<<<<< HEAD
 
 
 @skip_if_no_cuda
 def test_tune_kernel(env):
     result, _ = tune_kernel(*env, lang="nvcuda", verbose=True)
     assert len(result) > 0
+=======
+>>>>>>> master
