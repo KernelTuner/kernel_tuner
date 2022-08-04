@@ -39,7 +39,7 @@ except Exception:
     cuda_present = False
 
 skip_if_no_pycuda = pytest.mark.skipif(not pycuda_present, reason="PyCuda not installed or no CUDA device detected")
-skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed")
+skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed or no CUDA device detected")
 skip_if_no_cuda = pytest.mark.skipif(not cuda_present, reason="NVIDIA CUDA not installed")
 skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected")
 skip_if_no_gcc = pytest.mark.skipif(not gcc_present, reason="No gcc on PATH")
@@ -52,7 +52,9 @@ def skip_backend(backend: str):
         pytest.skip("PyCuda not installed or no CUDA device detected")
     elif backend.upper() == "CUPY" and not cupy_present:
         pytest.skip("CuPy not installed or no CUDA device detected")
-    elif backend.upper() == "OpenCL" and not opencl_present:
+    elif backend.upper() == "NVCUDA" and not cuda_present:
+        pytest.skip("NVIDIA CUDA not installed")
+    elif backend.upper() == "OPENCL" and not opencl_present:
         pytest.skip("PyOpenCL not installed or no OpenCL device detected")
     elif backend.upper() == "C" and not gcc_present:
         pytest.skip("No gcc on PATH")
