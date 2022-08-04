@@ -579,13 +579,12 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             v = v(params)
         elif isinstance(v, str):
             v = replace_param_occurrences(v, params)
-        else:
-            v = str(v)
 
         if not k.isidentifier():
             raise ValueError("name is not a valid identifier: {k}")
 
         # Escape newline characters
+        v = str(v)
         v = v.replace("\n", "\\\n")
 
         if "loop_unroll_factor" in k and lang == "CUDA":
@@ -599,7 +598,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
         else:
             kernel_string = f"#define {k} {v}\n" + kernel_string
 
-    name = kernel_name
+    name = replace_param_occurrences(kernel_name, params)
 
     return name, kernel_string
 
