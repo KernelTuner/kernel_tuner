@@ -550,9 +550,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     """
     logging.debug('prepare_kernel_string called for %s', kernel_name)
 
-    # since we insert defines above the original kernel code, the line numbers will be incorrect
-    # the following preprocessor directive informs the compiler that lines should be counted from 1
-    kernel_string = "#line 1\n" + kernel_string
+    kernel_prefix = ""
 
     # If `defines` is `None`, the default behavior is to define the following variables:
     #  * grid_size_x, grid_size_y, grid_size_z
@@ -592,15 +590,21 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             # pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
             # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
             # using 0 to disable specifying a loop unrolling factor for this loop
-            kernel_string = f"constexpr int {k} = {v};\n" + kernel_string
+            kernel_prefix += f"constexpr int {k} = {v};\n"
             if v == "0":
                 kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)    # + r"[^\S]*"
         else:
-            kernel_string = f"#define {k} {v}\n" + kernel_string
+            kernel_prefix += f"#define {k} {v}\n"
 
+    # since we insert defines above the original kernel code, the line numbers will be incorrect
+    # the following preprocessor directive informs the compiler that lines should be counted from 1
+    if kernel_prefix:
+        kernel_prefix += "#line 1\n"
+
+    # Also replace parameter occurrences inside the kernel name
     name = replace_param_occurrences(kernel_name, params)
 
-    return name, kernel_string
+    return name, kernel_prefix + kernel_string
 
 
 def read_file(filename):
