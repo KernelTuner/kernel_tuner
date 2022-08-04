@@ -1969,7 +1969,7 @@ an atol keyword argument.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.prepare_kernel_string">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">prepare_kernel_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">prepare_kernel_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defines</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.prepare_kernel_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>prepare kernel string for compilation</p>
 <p>Prepends the kernel with a series of C preprocessor defines specific
 to this kernel instance:</p>
@@ -1991,6 +1991,10 @@ to this kernel instance:</p>
 <li><p><strong>block_size_names</strong> (<em>tuple</em><em>(</em><em>string</em><em>)</em>) – A tuple with the names of the thread block dimensions used
 in the code. By default this is [“block_size_x”, …], but the user
 may supply different names if they prefer.</p></li>
+<li><p><strong>defines</strong> (<em>dict</em><em> or </em><em>None</em>) – A dict that describes the variables that should be defined as
+preprocessor macros. Each keys should be the variable names and each value
+is either a string or a function that returns a string. If <cite>None</cite>, each
+tunable parameter is defined as preprocessor macro instead.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
