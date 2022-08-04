@@ -112,7 +112,7 @@ def test_random_sample(env):
         assert v['time'] > 0.0 and v['time'] < 1.0
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_interface_handles_compile_failures(env):
     kernel_name, kernel_string, size, args, tune_params = env
 
