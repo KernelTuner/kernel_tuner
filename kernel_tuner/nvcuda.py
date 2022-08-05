@@ -2,8 +2,6 @@
 from __future__ import print_function
 
 
-import logging
-import time
 import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
