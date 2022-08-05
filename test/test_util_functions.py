@@ -162,20 +162,42 @@ def test_get_thread_block_dimensions():
 
 def test_prepare_kernel_string():
     kernel = "this is a weird kernel"
+    grid = (3, 7)
+    threads = (1, 2, 3)
     params = dict()
     params["is"] = 8
 
-    _, output = prepare_kernel_string("this", kernel, params, (3, 7), (1, 2, 3), block_size_names, "")
-    expected = "#define kernel_tuner 1\n" \
-               "#define is 8\n" \
-               "#define block_size_z 3\n" \
-               "#define block_size_y 2\n" \
-               "#define block_size_x 1\n" \
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", None)
+    expected = "#define grid_size_x 3\n" \
                "#define grid_size_y 7\n" \
-               "#define grid_size_x 3\n" \
+               "#define block_size_x 1\n" \
+               "#define block_size_y 2\n" \
+               "#define block_size_z 3\n" \
+               "#define is 8\n" \
+               "#define kernel_tuner 1\n" \
                "#line 1\n" \
                "this is a weird kernel"
     assert output == expected
+
+    # Check custom defines
+    defines = OrderedDict(
+        foo=1,
+        bar="custom",
+        baz=lambda config: config["is"] * 5)
+
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", defines)
+    expected = "#define foo 1\n" \
+               "#define bar custom\n" \
+               "#define baz 40\n" \
+               "#line 1\n" \
+               "this is a weird kernel"
+    assert output == expected
+
+    # Throw exception on invalid name (for instance, a space in the name)
+    invalid_defines = {"invalid name": "1"}
+    with pytest.raises(ValueError):
+        prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", invalid_defines)
+
 
 
 def test_replace_param_occurrences():
@@ -185,7 +207,7 @@ def test_replace_param_occurrences():
     params["weird"] = 14
 
     new_kernel = replace_param_occurrences(kernel, params)
-    assert new_kernel == "th8 8 a 14 kernel"
+    assert new_kernel == "this 8 a 14 kernel"  # Note: The "is" in "this" should not be replaced
 
     new_kernel = replace_param_occurrences(kernel, dict())
     assert kernel == new_kernel

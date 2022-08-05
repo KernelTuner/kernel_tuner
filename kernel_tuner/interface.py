@@ -180,7 +180,11 @@ _kernel_options = Options([("kernel_name", ("""The name of the kernel in the cod
             'normalized_coordinates' (True/False).""", "dict(string: numpy object or dict)")),
                            ("block_size_names", ("""A list of strings that replace the defaults for the names
             that denote the thread block dimensions. If not passed, the behavior
-            defaults to ``["block_size_x", "block_size_y", "block_size_z"]``""", "list(string)"))])
+            defaults to ``["block_size_x", "block_size_y", "block_size_z"]``""", "list(string)")),
+                          ("defines", ("""A dictionary containing the preprocessor definitions inserted into
+            the source code. The keys should the definition names and each value should be either a string or 
+            a function that returns a string. If an emtpy dictionary is passed, no definitions are inserted. 
+            If None is passed, each tunable parameter is inserted as a preprocessor definition.""", "dict"))])
 
 _tuning_options = Options([("tune_params", ("""A dictionary containing the parameter names as keys,
             and lists of possible parameter settings as values.
@@ -450,13 +454,13 @@ _tune_kernel_docstring = """ Tune a CUDA kernel given a set of tunable parameter
 
 def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, grid_div_x=None, grid_div_y=None, grid_div_z=None, restrictions=None,
                 answer=None, atol=1e-6, verify=None, verbose=False, lang=None, device=0, platform=0, smem_args=None, cmem_args=None, texmem_args=None,
-                compiler=None, compiler_options=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None, strategy_options=None,
-                cache=None, metrics=None, simulation_mode=False, observers=None, objective=None, objective_higher_is_better=None):
+                compiler=None, compiler_options=None, defines=None, log=None, iterations=7, block_size_names=None, quiet=False, strategy=None,
+                strategy_options=None, cache=None, metrics=None, simulation_mode=False, observers=None, objective=None, objective_higher_is_better=None):
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)
 
-    kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
+    kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
@@ -599,7 +603,7 @@ _run_kernel_docstring = """Compile and run a single kernel
 
 
 def run_kernel(kernel_name, kernel_source, problem_size, arguments, params, grid_div_x=None, grid_div_y=None, grid_div_z=None, lang=None, device=0, platform=0,
-               smem_args=None, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None, block_size_names=None, quiet=False, log=None):
+               smem_args=None, cmem_args=None, texmem_args=None, compiler=None, compiler_options=None, defines=None,  block_size_names=None, quiet=False, log=None):
 
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime('%Y%m%d-%H:%M:%S') + '.log', level=log)

@@ -55,11 +55,12 @@ class KernelSource(object):
     must be filenames.
     """
 
-    def __init__(self, kernel_name, kernel_sources, lang):
+    def __init__(self, kernel_name, kernel_sources, lang, defines=None):
         if not isinstance(kernel_sources, list):
             kernel_sources = [kernel_sources]
         self.kernel_sources = kernel_sources
         self.kernel_name = kernel_name
+        self.defines = defines
         if lang is None:
             if callable(self.kernel_sources[0]):
                 raise TypeError("Please specify language when using a code generator function")
@@ -129,7 +130,8 @@ class KernelSource(object):
 
             ks = self.get_kernel_string(i, params)
             # add preprocessor statements
-            n, ks = util.prepare_kernel_string(kernel_name, ks, params, grid, threads, block_size_names, self.lang)
+            n, ks = util.prepare_kernel_string(kernel_name, ks, params, grid, threads, block_size_names,
+                                               self.lang, self.defines)
 
             if i == 0:
                 # primary kernel source

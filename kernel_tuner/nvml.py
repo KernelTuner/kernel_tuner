@@ -214,10 +214,13 @@ class nvml():
     def gr_voltage(self):
         """Return current graphics voltage in millivolts"""
         args = ["nvidia-smi", "-i", str(self.id), "-q",  "-d", "VOLTAGE"]
-        result = subprocess.run(args, check=True, capture_output=True)
-        m = re.search(r"(\d+\.\d+) mV", result.stdout.decode())
-        voltage = float(m.group(1))
-        return voltage
+        try:
+            result = subprocess.run(args, check=True, capture_output=True)
+            m = re.search(r"(\d+\.\d+) mV", result.stdout.decode())
+            return float(m.group(1))
+        except:
+            self.record_gr_voltage = False
+            return np.nan
 
 
 class NVMLObserver(BenchmarkObserver):
