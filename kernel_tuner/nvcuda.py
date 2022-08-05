@@ -69,6 +69,10 @@ class CudaFunctions:
 
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
+
+        :param compiler_options: Compiler options for the CUDA runtime compiler
+
+        :param observers: List of Observer type objects
         """
         self.allocations = []
         self.texrefs = []
@@ -81,8 +85,12 @@ class CudaFunctions:
         error_check(err)
         err, self.device = cuda.cuDeviceGet(device)
         error_check(err)
-        err, self.context = cuda.cuCtxCreate(0, self.device)
+        err, self.context = cuda.cuDevicePrimaryCtxRetain(device)
         error_check(err)
+        if CudaFunctions.last_selected_device != device:
+            err, cuda.cuCtxSetCurrent(self.context)
+            error_check(err)
+            CudaFunctions.last_selected_device = device
 
         # compute capabilities and device properties
         err, major = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMajor, device)
@@ -130,18 +138,11 @@ class CudaFunctions:
         self.env = env
         self.name = env["device_name"]
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        """free memory and destroy device context"""
+    def __del__(self):
         for device_memory in self.allocations:
             if isinstance(device_memory, cuda.CUdeviceptr):
                 err = cuda.cuMemFree(device_memory)
                 error_check(err)
-        if hasattr(self, "context"):
-            err = cuda.cuCtxDestroy(self.context)
-            error_check(err)
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
@@ -354,3 +355,5 @@ class CudaFunctions:
         error_check(err)
 
     units = {'time': 'ms'}
+    
+    last_selected_device = None
