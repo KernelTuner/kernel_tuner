@@ -180,7 +180,7 @@ class CudaFunctions:
         :param kernel_string: The CUDA kernel code that contains the function `kernel_name`
         :type kernel_string: string
 
-        :returns: An CUDA kernel that can be called directly.
+        :returns: A kernel that can be launched by the CUDA runtime
         :rtype: 
         """
         kernel_string = kernel_instance.kernel_string
@@ -292,8 +292,8 @@ class CudaFunctions:
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'
 
-        :param func: A cupy kernel compiled for this specific kernel configuration
-        :type func: cupy.RawKernel
+        :param func: A CUDA kernel compiled for this specific kernel configuration
+        :type func: cuda.CUfunction
 
         :param gpu_args: A list of arguments to the kernel, order should match the
             order in the code. Allowed values are either variables in global memory
@@ -341,7 +341,7 @@ class CudaFunctions:
         :type dest: numpy.ndarray
 
         :param src: A GPU memory allocation unit
-        :type src: cupy.ndarray
+        :type src: cuda.CUdeviceptr
         """
         err = cuda.cuMemcpyDtoH(dest, src, dest.nbytes)
         error_check(err)
@@ -350,7 +350,7 @@ class CudaFunctions:
         """perform a host to device memory copy
 
         :param dest: A GPU memory allocation unit
-        :type dest: cupy.ndarray
+        :type dest: cuda.CUdeviceptr
 
         :param src: A numpy array in host memory to store the data
         :type src: numpy.ndarray
