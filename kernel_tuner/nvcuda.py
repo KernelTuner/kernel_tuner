@@ -5,6 +5,7 @@ from __future__ import print_function
 import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
+from kernel_tuner.util import SkippableFailure
 
 #embedded in try block to be able to generate documentation
 #and run tests without cupy installed
@@ -195,19 +196,22 @@ class CudaFunctions:
         if not any(["--gpu-architecture=" in opt for opt in self.compiler_options]):
             self.compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
 
-        err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
-        error_check(err)
-        err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
-        error_check(err)
-        err, size = nvrtc.nvrtcGetPTXSize(program)
-        error_check(err)
-        buffer = b' ' * size
-        err = nvrtc.nvrtcGetPTX(program, buffer)
-        error_check(err)
-        err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
-        error_check(err)
-        err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
-        error_check(err)
+        try:
+            err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
+            error_check(err)
+            err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
+            error_check(err)
+            err, size = nvrtc.nvrtcGetPTXSize(program)
+            error_check(err)
+            buffer = b' ' * size
+            err = nvrtc.nvrtcGetPTX(program, buffer)
+            error_check(err)
+            err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
+            error_check(err)
+            err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
+            error_check(err)
+        except:
+            raise SkippableFailure("cannot compile")
         return self.func
         
     def start_event(self):
