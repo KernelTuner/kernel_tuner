@@ -128,6 +128,12 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # initialize and optimize
     try:
         bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner)
+    except util.StopCriterionReached as e:
+        print(f"Stop criterion reached during initialization, was popsize (default 20) greater than max_fevals or the alotted time?")
+        raise e
+    try:
+        if max_fevals - bo.fevals <= 0:
+            raise ValueError(f"No function evaluations left for optimization after sampling")
         bo.optimize(max_fevals)
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
@@ -164,6 +170,8 @@ class BayesianOptimization():
         self.multi_afs_discount_factor = get_hyperparam("multi_af_discount_factor", 0.65 if acq == 'multi' else 0.95)
         self.multi_afs_required_improvement_factor = get_hyperparam("multi_afs_required_improvement_factor", 0.15 if acq == 'multi-advanced-precise' else 0.1)
         self.num_initial_samples = get_hyperparam("popsize", 20)
+        if self.num_initial_samples < 0:
+            raise ValueError(f"Number of initial samples (popsize) must be >= 0 (given: {self.num_initial_samples})")
         self.sampling_method = get_hyperparam("samplingmethod", "lhs", self.supported_sampling_methods)
         self.sampling_crit = get_hyperparam("samplingcriterion", 'maximin', self.supported_sampling_criterion)
         self.sampling_iter = get_hyperparam("samplingiterations", 1000)
