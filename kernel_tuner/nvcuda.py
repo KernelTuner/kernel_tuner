@@ -205,13 +205,13 @@ class CudaFunctions:
         buffer = b' ' * size
         err = nvrtc.nvrtcGetPTX(program, buffer)
         error_check(err)
-        try:
-            err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
+        err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
+        if err == cuda.CUresult.CUDA_ERROR_INVALID_PTX:
+            raise SkippableFailure("uses too much shared data")
+        else:
             error_check(err)
-            err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
-            error_check(err)
-        except RuntimeError as e:
-            raise SkippableFailure("cannot compile")
+        err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
+        error_check(err)
         return self.func
         
     def start_event(self):
