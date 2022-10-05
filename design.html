@@ -16,6 +16,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -56,38 +57,168 @@
 <li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Design documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#strategies">Strategies</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.brute_force">kernel_tuner.strategies.brute_force</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.random_sample">kernel_tuner.strategies.random_sample</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.bayes_opt">kernel_tuner.strategies.bayes_opt</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.minimize">kernel_tuner.strategies.minimize</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.basinhopping">kernel_tuner.strategies.basinhopping</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.diff_evo">kernel_tuner.strategies.diff_evo</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-strategies-dual-annealing">kernel_tuner.strategies.dual_annealing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.genetic_algorithm">kernel_tuner.strategies.genetic_algorithm</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.pso">kernel_tuner.strategies.pso</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.firefly_algorithm">kernel_tuner.strategies.firefly_algorithm</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.simulated_annealing">kernel_tuner.strategies.simulated_annealing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.mls">kernel_tuner.strategies.mls</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.greedy_mls">kernel_tuner.strategies.greedy_mls</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.ordered_greedy_mls">kernel_tuner.strategies.ordered_greedy_mls</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.greedy_ils">kernel_tuner.strategies.greedy_ils</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.brute_force">kernel_tuner.strategies.brute_force</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.brute_force.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.random_sample">kernel_tuner.strategies.random_sample</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.random_sample.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.bayes_opt">kernel_tuner.strategies.bayes_opt</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.bayes_opt.generate_normalized_param_dicts"><code class="docutils literal notranslate"><span class="pre">generate_normalized_param_dicts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.bayes_opt.normalize_parameter_space"><code class="docutils literal notranslate"><span class="pre">normalize_parameter_space()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.bayes_opt.prune_parameter_space"><code class="docutils literal notranslate"><span class="pre">prune_parameter_space()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.bayes_opt.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.minimize">kernel_tuner.strategies.minimize</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.minimize.get_bounds"><code class="docutils literal notranslate"><span class="pre">get_bounds()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.minimize.get_bounds_x0_eps"><code class="docutils literal notranslate"><span class="pre">get_bounds_x0_eps()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.minimize.scale_from_params"><code class="docutils literal notranslate"><span class="pre">scale_from_params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.minimize.setup_method_arguments"><code class="docutils literal notranslate"><span class="pre">setup_method_arguments()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.minimize.setup_method_options"><code class="docutils literal notranslate"><span class="pre">setup_method_options()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.minimize.snap_to_nearest_config"><code class="docutils literal notranslate"><span class="pre">snap_to_nearest_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.minimize.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.minimize.unscale_and_snap_to_nearest"><code class="docutils literal notranslate"><span class="pre">unscale_and_snap_to_nearest()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.basinhopping">kernel_tuner.strategies.basinhopping</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.basinhopping.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.diff_evo">kernel_tuner.strategies.diff_evo</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-strategies-dual-annealing">kernel_tuner.strategies.dual_annealing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.dual_annealing.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.genetic_algorithm">kernel_tuner.strategies.genetic_algorithm</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.disruptive_uniform_crossover"><code class="docutils literal notranslate"><span class="pre">disruptive_uniform_crossover()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.mutate"><code class="docutils literal notranslate"><span class="pre">mutate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.single_point_crossover"><code class="docutils literal notranslate"><span class="pre">single_point_crossover()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.two_point_crossover"><code class="docutils literal notranslate"><span class="pre">two_point_crossover()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.uniform_crossover"><code class="docutils literal notranslate"><span class="pre">uniform_crossover()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.weighted_choice"><code class="docutils literal notranslate"><span class="pre">weighted_choice()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.pso">kernel_tuner.strategies.pso</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.pso.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.firefly_algorithm">kernel_tuner.strategies.firefly_algorithm</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.firefly_algorithm.Firefly"><code class="docutils literal notranslate"><span class="pre">Firefly</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.firefly_algorithm.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.simulated_annealing">kernel_tuner.strategies.simulated_annealing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.simulated_annealing.acceptance_prob"><code class="docutils literal notranslate"><span class="pre">acceptance_prob()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.simulated_annealing.neighbor"><code class="docutils literal notranslate"><span class="pre">neighbor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.simulated_annealing.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.mls">kernel_tuner.strategies.mls</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.mls.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.greedy_mls">kernel_tuner.strategies.greedy_mls</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.greedy_mls.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.ordered_greedy_mls">kernel_tuner.strategies.ordered_greedy_mls</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.ordered_greedy_mls.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.greedy_ils">kernel_tuner.strategies.greedy_ils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.greedy_ils.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#runners">Runners</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-runners-sequential-sequentialrunner">kernel_tuner.runners.sequential.SequentialRunner</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-runners-sequential-simulationrunner">kernel_tuner.runners.sequential.SimulationRunner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-runners-sequential-sequentialrunner">kernel_tuner.runners.sequential.SequentialRunner</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.runners.sequential.SequentialRunner"><code class="docutils literal notranslate"><span class="pre">SequentialRunner</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-runners-sequential-simulationrunner">kernel_tuner.runners.sequential.SimulationRunner</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.runners.simulation.SimulationRunner"><code class="docutils literal notranslate"><span class="pre">SimulationRunner</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#device-interfaces">Device Interfaces</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-core-deviceinterface">kernel_tuner.core.DeviceInterface</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-pycuda-pycudafunctions">kernel_tuner.pycuda.PyCudaFunctions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-cupy-cupyfunctions">kernel_tuner.cupy.CupyFunctions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-c-cfunctions">kernel_tuner.c.CFunctions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-core-deviceinterface">kernel_tuner.core.DeviceInterface</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.core.DeviceInterface"><code class="docutils literal notranslate"><span class="pre">DeviceInterface</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-pycuda-pycudafunctions">kernel_tuner.pycuda.PyCudaFunctions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.pycuda.PyCudaFunctions"><code class="docutils literal notranslate"><span class="pre">PyCudaFunctions</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-cupy-cupyfunctions">kernel_tuner.cupy.CupyFunctions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.cupy.CupyFunctions"><code class="docutils literal notranslate"><span class="pre">CupyFunctions</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.opencl.OpenCLFunctions"><code class="docutils literal notranslate"><span class="pre">OpenCLFunctions</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-c-cfunctions">kernel_tuner.c.CFunctions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.c.CFunctions"><code class="docutils literal notranslate"><span class="pre">CFunctions</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#util-functions">Util Functions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.util">kernel_tuner.util</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.util">kernel_tuner.util</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.CompilationFailedConfig"><code class="docutils literal notranslate"><span class="pre">CompilationFailedConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.ErrorConfig"><code class="docutils literal notranslate"><span class="pre">ErrorConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.InvalidConfig"><code class="docutils literal notranslate"><span class="pre">InvalidConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.MaxProdConstraint"><code class="docutils literal notranslate"><span class="pre">MaxProdConstraint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.RuntimeFailedConfig"><code class="docutils literal notranslate"><span class="pre">RuntimeFailedConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.SkippableFailure"><code class="docutils literal notranslate"><span class="pre">SkippableFailure</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.StopCriterionReached"><code class="docutils literal notranslate"><span class="pre">StopCriterionReached</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_list"><code class="docutils literal notranslate"><span class="pre">check_argument_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_type"><code class="docutils literal notranslate"><span class="pre">check_argument_type()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restrictions"><code class="docutils literal notranslate"><span class="pre">check_restrictions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_stop_criterion"><code class="docutils literal notranslate"><span class="pre">check_stop_criterion()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_thread_block_dimensions"><code class="docutils literal notranslate"><span class="pre">check_thread_block_dimensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_tune_params_list"><code class="docutils literal notranslate"><span class="pre">check_tune_params_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.compile_restrictions"><code class="docutils literal notranslate"><span class="pre">compile_restrictions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.config_valid"><code class="docutils literal notranslate"><span class="pre">config_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.convert_constraint_restriction"><code class="docutils literal notranslate"><span class="pre">convert_constraint_restriction()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.delete_temp_file"><code class="docutils literal notranslate"><span class="pre">delete_temp_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.detect_language"><code class="docutils literal notranslate"><span class="pre">detect_language()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.dump_cache"><code class="docutils literal notranslate"><span class="pre">dump_cache()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_best_config"><code class="docutils literal notranslate"><span class="pre">get_best_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_config_string"><code class="docutils literal notranslate"><span class="pre">get_config_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_grid_dimensions"><code class="docutils literal notranslate"><span class="pre">get_grid_dimensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_instance_string"><code class="docutils literal notranslate"><span class="pre">get_instance_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_kernel_string"><code class="docutils literal notranslate"><span class="pre">get_kernel_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_problem_size"><code class="docutils literal notranslate"><span class="pre">get_problem_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_smem_args"><code class="docutils literal notranslate"><span class="pre">get_smem_args()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_temp_filename"><code class="docutils literal notranslate"><span class="pre">get_temp_filename()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_thread_block_dimensions"><code class="docutils literal notranslate"><span class="pre">get_thread_block_dimensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_total_timings"><code class="docutils literal notranslate"><span class="pre">get_total_timings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.looks_like_a_filename"><code class="docutils literal notranslate"><span class="pre">looks_like_a_filename()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.normalize_verify_function"><code class="docutils literal notranslate"><span class="pre">normalize_verify_function()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.parse_restrictions"><code class="docutils literal notranslate"><span class="pre">parse_restrictions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.prepare_kernel_string"><code class="docutils literal notranslate"><span class="pre">prepare_kernel_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.print_config"><code class="docutils literal notranslate"><span class="pre">print_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.print_config_output"><code class="docutils literal notranslate"><span class="pre">print_config_output()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.process_cache"><code class="docutils literal notranslate"><span class="pre">process_cache()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.process_metrics"><code class="docutils literal notranslate"><span class="pre">process_metrics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.read_cache"><code class="docutils literal notranslate"><span class="pre">read_cache()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.read_file"><code class="docutils literal notranslate"><span class="pre">read_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.replace_param_occurrences"><code class="docutils literal notranslate"><span class="pre">replace_param_occurrences()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.setup_block_and_grid"><code class="docutils literal notranslate"><span class="pre">setup_block_and_grid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.store_cache"><code class="docutils literal notranslate"><span class="pre">store_cache()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.write_file"><code class="docutils literal notranslate"><span class="pre">write_file()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -937,7 +1068,7 @@ OpenCL platforms you may use this to select one,
 0 by default. Ignored if not using OpenCL.</p></li>
 <li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels.
 Currently supported: “CUDA”, “OpenCL”, or “C”</p></li>
-<li><p><strong>compiler_options</strong> (<em>list of strings</em>) – The compiler options to use when compiling kernels for this device.</p></li>
+<li><p><strong>compiler_options</strong> (<em>list</em><em> of </em><em>strings</em>) – The compiler options to use when compiling kernels for this device.</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – Number of iterations to be used when benchmarking using this device.</p></li>
 <li><p><strong>times</strong> (<em>bool</em>) – Return the execution time of all iterations.</p></li>
 </ul>
