@@ -183,8 +183,8 @@ If you use Kernel Tuner in research or research software, please cite the most r
    :target: https://codecov.io/gh/KernelTuner/kernel_tuner
 .. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue 
    :target: https://pypi.python.org/pypi/kernel_tuner/
-.. |Zenodo Badge| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1220113.svg
-   :target: https://doi.org/10.5281/zenodo.1220113
+.. |Zenodo Badge| image:: https://zenodo.org/badge/54894320.svg
+   :target: https://zenodo.org/badge/latestdoi/54894320
 .. |SonarCloud Badge| image:: https://sonarcloud.io/api/project_badges/measure?project=benvanwerkhoven_kernel_tuner&metric=alert_status
    :target: https://sonarcloud.io/dashboard?id=benvanwerkhoven_kernel_tuner
 .. |FairSoftware Badge| image:: https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green
