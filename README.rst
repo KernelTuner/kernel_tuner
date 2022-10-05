@@ -11,7 +11,7 @@ Documentation
 -------------
 
 The full documentation is available
-`here <http://benvanwerkhoven.github.io/kernel_tuner/index.html>`__.
+`here <https://kerneltuner.github.io/kernel_tuner/index.html>`__.
 
 Installation
 ------------
@@ -34,7 +34,7 @@ Or both:
 
 More information about how to install Kernel Tuner and its
 dependencies can be found in the `installation guide 
-<http://benvanwerkhoven.github.io/kernel_tuner/install.html>`__
+<http://kerneltuner.github.io/kernel_tuner/install.html>`__
 
 Example usage
 -------------
@@ -84,12 +84,12 @@ preprocessor defines for the tunable parameters, compile, and benchmark the kern
 timing results will be printed to the console, but are also returned by tune_kernel to 
 allow further analysis. Note that this is just the default behavior, what and how 
 tune_kernel does exactly is controlled through its many `optional arguments 
-<http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel>`__.
+<http://kerneltuner.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel>`__.
 
 You can find many - more extensive - example codes, in the
-`examples directory <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`__
+`examples directory <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/>`__
 and in the `Kernel Tuner
-documentation pages <http://benvanwerkhoven.github.io/kernel_tuner/index.html>`__.
+documentation pages <http://kerneltuner.github.io/kernel_tuner/index.html>`__.
 
 Search strategies for tuning
 ----------------------------
@@ -106,7 +106,7 @@ Optimization, the Firefly Algorithm, and Simulated Annealing.
 Using a search strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method 
 you would like to use, for example ``strategy="genetic_algorithm"`` or ``strategy="basinhopping"``. 
 For a full overview of the supported search strategies and methods please see the `user 
-api documentation <http://benvanwerkhoven.github.io/kernel_tuner/user-api.html>`__.
+api documentation <http://kerneltuner.github.io/kernel_tuner/user-api.html>`__.
 
 Tuning host and kernel code
 ---------------------------
@@ -117,9 +117,9 @@ such as tuning the number of streams for a kernel that uses CUDA Streams
 or OpenCL Command Queues to overlap transfers between host and device
 with kernel execution. This can be done in combination with tuning the
 parameters inside the kernel code. See the `convolution\_streams example
-code <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/>`__
+code <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/>`__
 and the
-`documentation <http://benvanwerkhoven.github.io/kernel_tuner/hostcode.html>`__
+`documentation <http://kerneltuner.github.io/kernel_tuner/hostcode.html>`__
 for a detailed explanation of the kernel tuner Python script.
 
 
@@ -139,7 +139,7 @@ expected output of the kernel. Input arguments are replaced with None.
 Contributing
 ------------
 
-Please see the `Contributions Guide <http://benvanwerkhoven.github.io/kernel_tuner/contributing.html>`__.
+Please see the `Contributions Guide <http://kerneltuner.github.io/kernel_tuner/contributing.html>`__.
 
 Citation
 --------
