@@ -32,6 +32,7 @@ jobs:
       uses: sphinx-notes/pages@master
       with:
         documentation_path: doc/source
+        target_path: latest
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
