@@ -166,19 +166,21 @@ If you use Kernel Tuner in research or research software, please cite the most r
       year = {2021},
       url = {https://arxiv.org/abs/2111.14991}
     }
+    
+    @article{schoonhoven2022benchmarking,
+      title={Benchmarking optimization algorithms for auto-tuning GPU kernels},
+      author={Schoonhoven, Richard and van Werkhoven, Ben and Batenburg, K Joost},
+      journal={IEEE Transactions on Evolutionary Computation},
+      year={2022},
+      publisher={IEEE}
+    }
 
 
-Related work
-------------
 
-You may also like `CLTune <https://github.com/CNugteren/CLTune>`__ by
-Cedric Nugteren. CLTune is a C++ library for kernel tuning.
-
-
-.. |Build Status| image:: https://github.com/benvanwerkhoven/kernel_tuner/actions/workflows/python-app.yml/badge.svg
-   :target: https://github.com/benvanwerkhoven/kernel_tuner/actions/workflows/python-app.yml
-.. |CodeCov Badge| image:: https://codecov.io/gh/benvanwerkhoven/kernel_tuner/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/benvanwerkhoven/kernel_tuner
+.. |Build Status| image:: https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml/badge.svg
+   :target: https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml
+.. |CodeCov Badge| image:: https://codecov.io/gh/KernelTuner/kernel_tuner/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/KernelTuner/kernel_tuner
 .. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue 
    :target: https://pypi.python.org/pypi/kernel_tuner/
 .. |Zenodo Badge| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1220113.svg
