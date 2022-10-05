@@ -138,7 +138,7 @@
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading">¶</a></h2>
 <p>The full documentation is available
-<a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/index.html">here</a>.</p>
+<a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/index.html">here</a>.</p>
 </section>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
@@ -158,7 +158,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda,opencl]</span></code></p></li>
 </ul>
 <p>More information about how to install Kernel Tuner and its
-dependencies can be found in the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/install.html">installation guide</a></p>
+dependencies can be found in the <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/install.html">installation guide</a></p>
 </section>
 <section id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this heading">¶</a></h2>
@@ -202,10 +202,10 @@ runtime. For every kernel in the parameter space, the Kernel Tuner will insert C
 preprocessor defines for the tunable parameters, compile, and benchmark the kernel. The
 timing results will be printed to the console, but are also returned by tune_kernel to
 allow further analysis. Note that this is just the default behavior, what and how
-tune_kernel does exactly is controlled through its many <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">optional arguments</a>.</p>
+tune_kernel does exactly is controlled through its many <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">optional arguments</a>.</p>
 <p>You can find many - more extensive - example codes, in the
-<a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/">examples directory</a>
-and in the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/index.html">Kernel Tuner
+<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/">examples directory</a>
+and in the <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/index.html">Kernel Tuner
 documentation pages</a>.</p>
 </section>
 <section id="search-strategies-for-tuning">
@@ -217,7 +217,7 @@ Optimization, the Firefly Algorithm, and Simulated Annealing.</p>
 <a class="reference internal image-reference" href="_images/gemm-amd-summary.png"><img alt="_images/gemm-amd-summary.png" class="align-center" src="_images/gemm-amd-summary.png" style="width: 100%;" /></a>
 <p>Using a search strategy is easy, you only need to specify to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> which strategy and method
 you would like to use, for example <code class="docutils literal notranslate"><span class="pre">strategy=&quot;genetic_algorithm&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">strategy=&quot;basinhopping&quot;</span></code>.
-For a full overview of the supported search strategies and methods please see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html">user
+For a full overview of the supported search strategies and methods please see the <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/user-api.html">user
 api documentation</a>.</p>
 </section>
 <section id="tuning-host-and-kernel-code">
@@ -227,10 +227,10 @@ both host and kernel code. This allows for a number of powerfull things,
 such as tuning the number of streams for a kernel that uses CUDA Streams
 or OpenCL Command Queues to overlap transfers between host and device
 with kernel execution. This can be done in combination with tuning the
-parameters inside the kernel code. See the <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/">convolution_streams example
+parameters inside the kernel code. See the <a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/">convolution_streams example
 code</a>
 and the
-<a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/hostcode.html">documentation</a>
+<a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/hostcode.html">documentation</a>
 for a detailed explanation of the kernel tuner Python script.</p>
 </section>
 <section id="correctness-verification">
@@ -246,7 +246,7 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 </section>
 <section id="contributing">
 <h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this heading">¶</a></h2>
-<p>Please see the <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/contributing.html">Contributions Guide</a>.</p>
+<p>Please see the <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/contributing.html">Contributions Guide</a>.</p>
 </section>
 <section id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading">¶</a></h2>
