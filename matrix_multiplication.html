@@ -83,7 +83,7 @@
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
       <li>Matrix multiplication tutorial</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/matrix_multiplication.ipynb" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/matrix_multiplication.ipynb" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -374,7 +374,7 @@ div.rendered_html tbody tr:hover {
 <p>This tutorial demonstrates how to use Kernel Tuner to test and tune kernels, using matrix multiplication as an example.</p>
 <p>Matrix multiplication is one of the most well-known and widely-used linear algebra operations, and is frequently used to demonstrate the high-performance computing capabilities of GPUs. As such, matrix multiplication presents a familiar starting point for many GPU programmers.</p>
 <div class="admonition note">
-<p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
+<p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/kerneltuner/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
 </div>
 <p>Make sure to execute all the code cells you come across in this tutorial by selecting them and pressing <em>shift+enter</em>.</p>
 <section id="Naive-CUDA-kernel">
@@ -466,7 +466,7 @@ Parameters in the code that have this property are called <em>tunable parameters
 <p>Before looking at the result, we’ll explain briefly how we called <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. The first argument is the name of the kernel that we want to tune. The second argument is a string that contains the filename of the kernel. It is also possible to directly pass a string that contains the code, or to pass a Python function that generates the kernel code. The tuner will figure out which language (CUDA or OpenCL) is being used in the kernel code. The third argument to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> is the problem
 size, which is used by the tuner to compute the grid dimensions for our kernel. To compute the grid dimensions the tuner needs to know the thread block dimensions, which we have specified using the tunable parameters (fifth argument). The fourth argument is the argument list that the tuner will need to actually call the kernel.</p>
 <p>As we can see the execution times printed by <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> already vary quite dramatically between the different values for <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>. However, even with the best thread block dimensions our kernel is still not very efficient.</p>
-<p>Therefore, we’ll have a look at the Nvidia Visual Profiler to find that the utilization of our kernel is actually pretty low: <img alt="image0" src="https://raw.githubusercontent.com/benvanwerkhoven/kernel_tuner/master/tutorial/matmul/matmul.png" /> There is however, a lot of opportunity for data reuse, which is realized by making the threads in a thread block collaborate.</p>
+<p>Therefore, we’ll have a look at the Nvidia Visual Profiler to find that the utilization of our kernel is actually pretty low: <img alt="image0" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/tutorial/matmul/matmul.png" /> There is however, a lot of opportunity for data reuse, which is realized by making the threads in a thread block collaborate.</p>
 </section>
 <section id="Using-shared-memory">
 <h2>Using shared memory<a class="headerlink" href="#Using-shared-memory" title="Permalink to this heading">¶</a></h2>
@@ -542,7 +542,7 @@ only uses data in shared memory. The <code class="docutils literal notranslate">
 </div>
 </div>
 <p>This kernel drastically reduces memory bandwidth consumption. Compared to our naive kernel, it is about three times faster now, which comes from the highly increased memory utilization:</p>
-<p><img alt="image0" src="https://raw.githubusercontent.com/benvanwerkhoven/kernel_tuner/master/tutorial/matmul/matmul.png" /></p>
+<p><img alt="image0" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/tutorial/matmul/matmul.png" /></p>
 <p>The compute utilization has actually decreased slightly, which is due to the synchronization overhead, because <code class="docutils literal notranslate"><span class="pre">__syncthread()</span></code> is called frequently.</p>
 <p>The restriction we have introduced has limited the number of kernel configurations benchmarked by the tuner significantly. Because the thread block size needs to be a square, there only a handful of configurations we can try. Fortunately, we can add several more optimizations to the code that also open the parameter space for tuning.</p>
 </section>
@@ -655,7 +655,7 @@ again.</p>
 </div>
 </div>
 <p>As we can see the number of kernel configurations evaluated by the tuner has increased again. Also the performance has increased quite dramatically with roughly another factor 3. If we look at the Nvidia Visual Profiler output of our kernel we see the following:</p>
-<p><img alt="image0" src="https://raw.githubusercontent.com/benvanwerkhoven/kernel_tuner/master/tutorial/matmul/matmul.png" /></p>
+<p><img alt="image0" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/tutorial/matmul/matmul.png" /></p>
 <p>As expected, the compute utilization of our kernel has improved. There may even be some more room for improvement, but our tutorial on how to use Kernel Tuner ends here. In this tutorial, we have seen how you can use Kernel Tuner to tune kernels with a small number of tunable parameters, how to impose restrictions on the parameter space, and how to use grid divisor lists to specify how grid dimensions are computed.</p>
 </section>
 </section>

@@ -86,7 +86,7 @@
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
       <li>Tutorial: From physics to tuned GPU kernels</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/diffusion.ipynb" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/diffusion.ipynb" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -378,7 +378,7 @@ div.rendered_html tbody tr:hover {
 <p>In this tutorial, we will use <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion">diffusion</a> as an example application.</p>
 <p>We start with modeling the physical process of diffusion, for which we create a simple numerical implementation in Python. Then we create a CUDA kernel that performs the same computation, but on the GPU. Once we have a CUDA kernel, we start using the Kernel Tuner for auto-tuning our GPU application. And finally, we’ll introduce a few code optimizations to our CUDA kernel that will improve performance, but also add more parameters to tune on using the Kernel Tuner.</p>
 <div class="admonition note">
-<p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
+<p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/kerneltuner/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
 </div>
 <section id="Diffusion">
 <h2>Diffusion<a class="headerlink" href="#Diffusion" title="Permalink to this heading">¶</a></h2>

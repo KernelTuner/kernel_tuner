@@ -78,7 +78,7 @@
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
       <li>Tuning Host Code</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/hostcode.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/hostcode.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -133,7 +133,7 @@ a different quality, as long as you can express that quality in a single floatin
 of the parameter space the returned floats will be averaged for the multiple runs in the same way as with direct CUDA or OpenCL kernel tuning.</p>
 <p>By itself the C language does not provide any very precise timing functions. If you are tuning the host code of a CUDA program you can use
 CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function.
-In the <a class="reference external" href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py">C vector add example</a> we are using the <code class="docutils literal notranslate"><span class="pre">omp_get_wtime()</span></code> function from OpenMP to measure time on the CPU.</p>
+In the <a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py">C vector add example</a> we are using the <code class="docutils literal notranslate"><span class="pre">omp_get_wtime()</span></code> function from OpenMP to measure time on the CPU.</p>
 <section id="tuning-the-number-of-streams">
 <h2>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Permalink to this heading">¶</a></h2>
 <p>The following describes the example in <code class="docutils literal notranslate"><span class="pre">examples/cuda/convolution_streams.py</span></code>.
