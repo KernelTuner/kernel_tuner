@@ -20,12 +20,12 @@ jobs:
         sudo apt-get update;
         sudo apt-get install pandoc
         python -m pip install --upgrade pip
-        pip install .[doc]
+        echo "pip install .[doc]"
     - name: Build and Commit
       uses: sphinx-notes/pages@v2
       with:
         documentation_path: doc/source
-        target_path: $RELEASE_VERSION
+        target_path: ${{ env.RELEASE_VERSION }}
     - name: Redirect stable to new release
       run: |
           echo "Redirecting stable to newly released version " $RELEASE_VERSION
