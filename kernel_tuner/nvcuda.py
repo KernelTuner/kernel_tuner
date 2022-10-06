@@ -1,7 +1,4 @@
 """This module contains all NVIDIA cuda-python specific kernel_tuner functions"""
-from __future__ import print_function
-
-
 import numpy as np
 
 from kernel_tuner.observers import BenchmarkObserver
@@ -28,7 +25,7 @@ def error_check(error):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
-    
+
 
 class CudaRuntimeObserver(BenchmarkObserver):
     """ Observer that measures time using CUDA events during benchmarking """
@@ -181,10 +178,14 @@ class CudaFunctions:
         :type kernel_string: string
 
         :returns: A kernel that can be launched by the CUDA runtime
-        :rtype: 
+        :rtype:
         """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
+
+        #mimic pycuda behavior to wrap kernel_string in extern "C" if not in kernel_string already
+        if 'extern "C"' not in kernel_string:
+            kernel_string = 'extern "C" {\n' + kernel_string + '\n}'
 
         compiler_options = self.compiler_options_bytes
         if not any([b"--std=" in opt for opt in compiler_options]):
@@ -213,7 +214,7 @@ class CudaFunctions:
         err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
         error_check(err)
         return self.func
-        
+
     def start_event(self):
         """ Records the event that marks the start of a measurement """
         err = cudart.cudaEventRecord(self.start, self.stream)
@@ -337,5 +338,5 @@ class CudaFunctions:
         error_check(err)
 
     units = {'time': 'ms'}
-    
+
     last_selected_device = None
