@@ -1,0 +1,380 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Installation Guide &mdash; Kernel Tuner 0.3.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started" href="convolution.html" />
+    <link rel="prev" title="The Kernel Tuner documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Kernel Tuner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#python">Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-python-packages">Installing Python Packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cuda-and-pycuda">CUDA and PyCUDA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#opencl-and-pyopencl">OpenCL and PyOpenCL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-the-kernel-tuner">Installing the Kernel Tuner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies-for-the-tutorial">Dependencies for the Tutorial</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Installation Guide</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/install.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="installation-guide">
+<span id="install"></span><h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h1>
+<p>The Kernel Tuner requires several packages to be installed. First of all, you need a
+working Python version, several Python packages, and optionally CUDA and/or OpenCL
+installations. All of this is explained in detail in this guide.</p>
+<div class="section" id="python">
+<h2>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h2>
+<p>You need a Python installation. I recommend using Python 3 and
+installing it with <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a>.</p>
+<p>Linux users could type the following to download and install Python 3 using Miniconda:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+</pre></div>
+</div>
+<p>You are of course also free to use your own Python installation, and the Kernel Tuner
+is developed to be fully compatible with Python 3.5 and newer, and also Python 2.7.</p>
+</div>
+<div class="section" id="installing-python-packages">
+<h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Permalink to this headline">¶</a></h2>
+<p>Note that when you are using a native Python installation, the <cite>pip</cite> command used
+Kernel Tuner and its dependencies require <cite>sudo</cite> rights for system wide installation.</p>
+<p>Sudo rights are typically not required when using Miniconda or virtual environments.
+You could also use e.g. the <cite>–user</cite> or <cite>–prefix</cite> option of <cite>pip</cite> to install into
+your home directory,
+this requires that your home directory is on your <cite>$PYTHONPATH</cite> environment variable
+(see for further details the pip documentation).</p>
+<p>The following command will install Kernel Tuner together with the required dependencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner
+</pre></div>
+</div>
+<p>There are also optional dependencies, explained below.</p>
+</div>
+<div class="section" id="cuda-and-pycuda">
+<h2>CUDA and PyCUDA<a class="headerlink" href="#cuda-and-pycuda" title="Permalink to this headline">¶</a></h2>
+<p>Installing CUDA and PyCUDA is optional, because you may want to only use Kernel
+Tuner for tuning OpenCL or C kernels.</p>
+<p>If you want to use the Kernel Tuner to tune
+CUDA kernels you will first need to install the CUDA toolkit
+(<a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">https://developer.nvidia.com/cuda-toolkit</a>). A recent version of the
+CUDA toolkit (and the PyCUDA Python bindings for CUDA) are
+recommended (older version may work, but may not support all features of
+the Kernel Tuner).</p>
+<p>It’s very important that you install the CUDA toolkit before trying to install PyCuda.</p>
+<p>You can install PyCuda manually using:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install pycuda
+</pre></div>
+</div>
+<p>Or you could install Kernel Tuner and PyCUDA together if you haven’t done so already:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>cuda<span class="o">]</span>
+</pre></div>
+</div>
+<p>If you run into trouble with installing PyCuda, make sure you have CUDA installed first.
+Also make sure that the Python package Numpy is already installed, e.g. using <cite>pip install numpy</cite>.</p>
+<p>If you retry the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycuda</span></code> command, you may need to use the
+<code class="docutils literal notranslate"><span class="pre">--no-cache-dir</span></code> option to ensure the pycuda installation really starts over and not continues
+from an installation that is failing.</p>
+<p>If this fails, I recommend to see the PyCuda installation guide (<a class="reference external" href="https://wiki.tiker.net/PyCuda/Installation">https://wiki.tiker.net/PyCuda/Installation</a>)</p>
+</div>
+<div class="section" id="opencl-and-pyopencl">
+<h2>OpenCL and PyOpenCL<a class="headerlink" href="#opencl-and-pyopencl" title="Permalink to this headline">¶</a></h2>
+<p>Before we can install PyOpenCL you’ll need an OpenCL compiler. There are several
+OpenCL compilers available depending on the OpenCL platform you want to your
+code to run on.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/">AMD APP SDK</a></p></li>
+<li><p><a class="reference external" href="https://software.intel.com/en-us/iocl_rt_ref">Intel OpenCL</a></p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA Toolkit</a></p></li>
+<li><p><a class="reference external" href="https://developer.apple.com/opencl/">Apple OpenCL</a></p></li>
+<li><p><a class="reference external" href="https://www.freedesktop.org/wiki/Software/Beignet/">Beignet</a></p></li>
+</ul>
+<p>You can also look at this <a class="reference external" href="https://wiki.tiker.net/OpenCLHowTo">OpenCL Installation Guide</a> for PyOpenCL.</p>
+<p>As with the CUDA toolkit, recent versions of one or more of the above OpenCL SDK’s and
+PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
+<p>After you’ve installed your OpenCL compiler of choice you can install PyOpenCL using:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install pyopencl
+</pre></div>
+</div>
+<p>Or you could install Kernel Tuner and PyOpenCL together if you haven’t done so already:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>opencl<span class="o">]</span>
+</pre></div>
+</div>
+<p>If this fails, please see the PyOpenCL installation guide (<a class="reference external" href="https://wiki.tiker.net/PyOpenCL/Installation">https://wiki.tiker.net/PyOpenCL/Installation</a>)</p>
+</div>
+<div class="section" id="installing-the-kernel-tuner">
+<h2>Installing the Kernel Tuner<a class="headerlink" href="#installing-the-kernel-tuner" title="Permalink to this headline">¶</a></h2>
+<p>You can also install from the git repository. This way you also get the
+examples and the tutorials.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
+<span class="nb">cd</span> kernel_tuner
+pip install .
+</pre></div>
+</div>
+<p>You can install Kernel Tuner with several optional dependencies, the full list is:</p>
+<ul class="simple">
+<li><p><cite>cuda</cite>: install pycuda along with kernel_tuner</p></li>
+<li><p><cite>opencl</cite>: install pycuda along with kernel_tuner</p></li>
+<li><p><cite>doc</cite>: installs packages required to build the documentation</p></li>
+<li><p><cite>tutorial</cite>: install packages required to run the tutorials</p></li>
+<li><p><cite>dev</cite>: install everything you need to start development on Kernel Tuner</p></li>
+</ul>
+<p>For example, use:
+<code class="docutils literal notranslate"><span class="pre">`</span>
+<span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.[dev,cuda,opencl]</span>
+<span class="pre">`</span></code>
+To install Kernel Tuner along with all the packages required for development.</p>
+</div>
+<div class="section" id="dependencies-for-the-tutorial">
+<h2>Dependencies for the Tutorial<a class="headerlink" href="#dependencies-for-the-tutorial" title="Permalink to this headline">¶</a></h2>
+<p>Some addition Python packages are required to run the tutorial. These packages are
+actually very commonly used and chances are that you already have these installed.</p>
+<p>However, to install Kernel Tuner along with the dependencies to run the tutorials,
+you could use:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>tutorial,cuda<span class="o">]</span>
+</pre></div>
+</div>
+<p>Or if you have already installed Kernel Tuner and PyCUDA, just use:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install jupyter matplotlib pandas
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="convolution.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="The Kernel Tuner documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2016, Ben van Werkhoven.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

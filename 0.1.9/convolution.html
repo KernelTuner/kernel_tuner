@@ -1,0 +1,761 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Getting Started &mdash; Kernel Tuner 0.1.9 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorial: From physics to tuned GPU kernels" href="diffusion.html" />
+    <link rel="prev" title="Installation Guide" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Kernel Tuner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.9
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#2D-Convolution-example">2D Convolution example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Implement-a-test">Implement a test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Tuning-2D-Convolution">Tuning 2D Convolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#More-tunable-parameters">More tunable parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Getting Started</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/convolution.ipynb" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt .copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+.jp-RenderedHTMLCommon table,
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+.jp-RenderedHTMLCommon thead,
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+.jp-RenderedHTMLCommon tr,
+.jp-RenderedHTMLCommon th,
+.jp-RenderedHTMLCommon td,
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+.jp-RenderedHTMLCommon th,
+div.rendered_html th {
+  font-weight: bold;
+}
+.jp-RenderedHTMLCommon tbody tr:nth-child(odd),
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+.jp-RenderedHTMLCommon tbody tr:hover,
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Getting-Started">
+<h1>Getting Started<a class="headerlink" href="#Getting-Started" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial is meant to get you started with writing your tests and tuning scripts using Kernel Tuner. We’ll use a simple 2D Convolution kernel as an example kernel, but as you will find out shortly, much of the scripts that you write with Kernel Tuner can be reused for testing and tuning other kernels.</p>
+<div class="admonition note">
+<p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
+</div>
+<div class="section" id="2D-Convolution-example">
+<h2>2D Convolution example<a class="headerlink" href="#2D-Convolution-example" title="Permalink to this headline">¶</a></h2>
+<p>Convolution operations are essential to signal and image processing applications and are the main operation in convolutional neural networks used for deep learning. A convolution operation computes the linear combination of the weights in a <em>convolution filter</em> and a range of pixels from the input image for each output pixel. A 2D convolution of an input image <span class="math notranslate nohighlight">\(I\)</span> of size <span class="math notranslate nohighlight">\((w\times h)\)</span> and a convolution filter <span class="math notranslate nohighlight">\(F\)</span> of size <span class="math notranslate nohighlight">\((F_w\times F_h)\)</span> computes an output image
+<span class="math notranslate nohighlight">\(O\)</span> of size <span class="math notranslate nohighlight">\(((w-F_w)\times (h-F_h))\)</span>: <span class="math">\begin{equation}\nonumber
+O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
+\end{equation}</span></p>
+<p>A naive CUDA kernel for 2D Convolution parallelizes the operation by creating one thread for each output pixel. Note that to avoid confusion around the term <em>kernel</em>, we refer to the convolution filter as a <em>filter</em>.</p>
+<p>The code is shown in the following code block, make sure you execute all code blocks in this tutorial by selecting them and pressing <strong>shift+enter</strong>:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">naive_kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    __global__ void convolution_kernel(float *output, float *input, float *filter) {</span>
+
+<span class="s2">        int x = blockIdx.x * blockDim.x + threadIdx.x;</span>
+<span class="s2">        int y = blockIdx.y * blockDim.y + threadIdx.y;</span>
+<span class="s2">        int i, j;</span>
+<span class="s2">        float sum = 0.0;</span>
+
+<span class="s2">        if (y &lt; image_height &amp;&amp; x &lt; image_width) {</span>
+
+<span class="s2">            for (j = 0; j &lt; filter_height; j++) {</span>
+<span class="s2">                for (i = 0; i &lt; filter_width; i++) {</span>
+<span class="s2">                    sum += input[(y + j) * input_width + (x + i)] * filter[j * filter_width + i];</span>
+<span class="s2">                }</span>
+<span class="s2">            }</span>
+
+<span class="s2">            output[y * image_width + x] = sum;</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Implement-a-test">
+<h2>Implement a test<a class="headerlink" href="#Implement-a-test" title="Permalink to this headline">¶</a></h2>
+<p>We will start with using Kernel Tuner’s <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> function to call our naive 2D convolution kernel. But first we will have to create some input data, which we will do as follows:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">run_kernel</span>
+
+<span class="n">filter_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">17</span><span class="p">)</span>
+<span class="n">output_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
+
+<span class="n">size</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">output_size</span><span class="p">)</span>
+<span class="n">border_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">filter_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">//</span><span class="mi">2</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">filter_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">//</span><span class="mi">2</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">input_size</span> <span class="o">=</span> <span class="p">((</span><span class="n">output_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">border_size</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">output_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">border_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+<span class="n">output_image</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">input_image</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">input_size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">conv_filter</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">filter_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">filter_size</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Now that we have our input and output data structures created, we can look at how to run our naive kernel on this data, by calling <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code>. The run_kernel function has the following signature:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>run_kernel(kernel_name, kernel_string, problem_size, arguments, params, ...)
+</pre></div>
+</div>
+<p>The ellipsis here indicate that there are many more optional arguments, which we won’t need right now. If you’re interested, the complete API documentation of run_kernel can be found <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.run_kernel">here</a>.</p>
+<p>The five required arguments of run_kernel are: * <strong>kernel_name</strong> name of the kernel as a string * <strong>kernel_source</strong> one or more strings and/or functions * <strong>problem_size</strong> the size of the domain in up to three dimensions * <strong>arguments</strong> a list of arguments used to call the kernel * <strong>params</strong> a dictionary with the tunable parameters</p>
+<p>The <strong>kernel_name</strong> is simply a string with the name of the kernel in the code. The <strong>kernel_source</strong> can be a string containing the code, which we have already defined above as <code class="docutils literal notranslate"><span class="pre">naive_kernel_string</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_name</span> <span class="o">=</span> <span class="s2">&quot;convolution_kernel&quot;</span>
+<span class="n">kernel_source</span> <span class="o">=</span> <span class="n">naive_kernel_string</span>
+</pre></div>
+</div>
+</div>
+<p>The <strong>problem_size</strong> is what is used by Kernel Tuner to determine the grid dimensions of the kernel. Our naive kernel needs one thread for each pixel in the output image. As defined above, our <code class="docutils literal notranslate"><span class="pre">output_size</span></code> is <span class="math notranslate nohighlight">\(4096 \times 4096\)</span>.</p>
+<p>Kernel Tuner computes the grid dimensions of a kernel by dividing the <strong>problem_size</strong> in each dimension with the <strong>grid divisors</strong> in that dimension. The grid divisors are, by default, simply the thread block dimensions. So for our naive kernel we do not need to specify any grid divisor lists.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="n">output_size</span>
+</pre></div>
+</div>
+</div>
+<p>The <strong>arguments</strong> is a list of arguments that are used to run the kernel on the GPU. <strong>arguments</strong> should be specified as a list of Numpy objects (arrays and/or scalars) that correspond with the function arguments of our CUDA kernel. Our naive convolution kernel has the following signature:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>__global__ void convolution_kernel(float *output, float *input, float *filter) { }
+</pre></div>
+</div>
+<p>Therefore, our list of Numpy objects should contain the output image, the input image, and the convolution filter, and exactly in that order, matching the type (32-bit floating-point arrays) and dimensions that are expected by the kernel.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span><span class="n">output_image</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span> <span class="n">conv_filter</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>The final required argument is <strong>params</strong>, which is a dictionary with the user-defined parameters of the kernel. Remember that the user, is you! You can specify anything here and Kernel Tuner will insert a C-preprocessor <code class="docutils literal notranslate"><span class="pre">#define</span></code> statement into the kernel with the value that you specify. For example, if you were to create a dictionary like so:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>params = {&quot;I_like_convolutions&quot;: 42}
+</pre></div>
+</div>
+<p>Kernel Tuner will insert the following line into our naive convolution kernel:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#define I_like_convolutions 42
+</pre></div>
+</div>
+<p>While we do like convolutions, this definition won’t have much effect on the performance of our kernel. Unless of course somewhere in our kernel we are doing something differently depending on the value of this preprocessor token.</p>
+<p>In addition to freely defined parameters there are a few special values. You may have noticed that we are about to call a CUDA kernel but we haven’t specified any thread block dimensions yet. When using Kernel Tuner, thread block dimensions are basically just parameters to the kernel. Therefore, the parameters with the names <code class="docutils literal notranslate"><span class="pre">&quot;block_size_x&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;block_size_y&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;block_size_z&quot;</span></code> will be interpreted by Kernel Tuner as the thread block dimensions in x,y, and z.</p>
+<p>Note that these are just the defaults, if you prefer to name your thread block dimensions differently, please use the <code class="docutils literal notranslate"><span class="pre">block_size_names=</span></code> option.</p>
+<p>Let’s continue with the creation of our <strong>params</strong> dictionary such that we can run our naive convolution kernel. As thread block dimensions we will just select the trusty old <span class="math notranslate nohighlight">\(16 \times 16\)</span>:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
+</pre></div>
+</div>
+</div>
+<p>Finally, we specify a some input dimensions that are required by our kernel. As you may have noticed the kernel uses, currently undefined, constants, like image_height, image_width, filter_heigth, and filter_width. We also insert those values using the parameters using Kernel Tuner. Note that this is not required, we could also have specified these at runtime as arguments to the kernel.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">&quot;filter_height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">&quot;filter_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">&quot;input_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">border_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Now we have setup everything that should allow us to call run_kernel:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="n">run_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_source</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>If you execute the above cell it will allocate GPU memory, move the contents of the <strong>arguments</strong> list to GPU memory, compile the kernel specified in <strong>kernel_source</strong>, and run the kernel name <strong>kernel_name</strong> with the thread block dimensions specified in <strong>params</strong> and the grid dimensions derived from the <strong>problem_size</strong>. After executing the kernel, <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> will also retrieve the results from GPU memory, and free GPU memory. The <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> function returns the data retrieved from the
+GPU in a list that we have named <strong>answer</strong> in the above example.</p>
+<p>The <strong>answer</strong> list contains Numpy objects (arrays and/or scalars) in the same order and of the same type as the <strong>arguments</strong> list that we used to call the kernel with, but contrast to <strong>arguments</strong> it contains the data that was stored in GPU memory after our naive convolution kernel had finished executing. This feature is particularly useful for implementing tests for your GPU kernels. You can perform the same operation in Python and compare the results.</p>
+</div>
+<div class="section" id="Tuning-2D-Convolution">
+<h2>Tuning 2D Convolution<a class="headerlink" href="#Tuning-2D-Convolution" title="Permalink to this headline">¶</a></h2>
+<p>In many cases there are more tunable parameters than just the thread block dimensions. We have included a highly optimized 2D Convolution kernel that contains many parametrized code optimizations. It’s a bit long to include here, so instead we just read it in from a file, you may need to adjust the path a little bit depending on where you’ve stored the Kernel Tuner’s source code and where this notebook is executing.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;../examples/cuda/convolution.cu&quot;</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">convolution_kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>Tuning a kernel with Kernel Tuner is done using the <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> function. The interface should look familiar, because it’s exactly like <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code>:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>tune_kernel(kernel_name, kernel_string, problem_size, arguments, tune_params, ...)
+</pre></div>
+</div>
+<p>The only difference is that the <strong>params</strong> dictionary is replaced by a <strong>tune_params</strong> dictionary that works similarly, but instead of a single value per parameter <strong>tune_params</strong> should contain a list of possible values for that parameter.</p>
+<p>Again, the ellipsis indicate that there are many more optional arguments, but we won’t need those right now. If you’re interested, the complete API documentation of tune_kernel can be found <a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">here</a>.</p>
+<p>We could create a <strong>tune_params</strong> dictionary in the following way:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Let’s just try that out and see what happens:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">tune_kernel</span>
+<span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">convolution_kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>As you can see, Kernel Tuner takes the Cartesian product of all lists in tune_params and benchmarks a kernel for each possible combination of values for all the tunable parameters. For such a small set of combinations benchmarking all of them is not really a problem. However, if there are a lot of tunable parameters with many different options this can get problematic. Therefore, Kernel Tuner supports many different optimization strategies, how to use these is explain the API documentation of
+<a class="reference external" href="http://benvanwerkhoven.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">tune_kernel</a>.</p>
+<p>Some combinations of values are illegal and will be skipped automatically. For example, using thread block dimensions of <span class="math notranslate nohighlight">\(128 \times 16 = 2048\)</span>, which is more than the limit of 1024 that is currently the limit in all CUDA devices. Configurations that fail for other (to be expected) reasons like using too much shared memory, or requiring more registers than available on the device will also be skipped silently by Kernel Tuner, unless you specify “verbose=True” as an optional argument to
+<code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. Note that other errors, like an out-of-bounds memory access will not be ignored.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> functions returns two things. The first is the results, which is a list of records that show the execution time of each benchmarked kernel and the parameters used to compile and run that specific kernel. Secondly, tune_kernel returns a dictionary that describes the environment in which the tuning took place. That means all the inputs to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> are recorded, but also the software versions of your CUDA installation, OS and so on, along with GPU device information. This
+second dictionary can be stored along with the results so that you can always find out under what circumstances those results were obtained.</p>
+</div>
+<div class="section" id="More-tunable-parameters">
+<h2>More tunable parameters<a class="headerlink" href="#More-tunable-parameters" title="Permalink to this headline">¶</a></h2>
+<p>I promised that we would use more tunable parameters than just thread block dimensions. Our 2D Convolution kernel also also supports tiling factors in the x and y dimensions. Tiling factors indicate that the amount of work performed by the thread block in a particular dimension is increased with a certain factor.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>It’s important to understand that if we increase the amount of work that is performed by every thread block, we also need fewer thread blocks, because the total amount of work stays the same. Remember that the Kernel Tuner computes the grid dimensions (the number of thread blocks the kernel is executed with) from the <strong>problem_size</strong> and the thread block dimensions.</p>
+<p>So now we need to tell Kernel Tuner that we have a tunable parameter that influences the way that the grid dimensions are computed, for this we have the <strong>grid divisor lists</strong>. You may have noticed that we already have a tunable parameter that influences the grid dimensions, namely the thread block dimensions that we call “block_size_x” and “block_size_y”. We did not yet need to specify any grid divisor lists because Kernel Tuner is dividing the problem size by the thread block dimensions by
+default. However, if we are going to use grid divisor lists we need to specify all tunable parameters that divide the problem size in a certain dimension to obtain the grid size in that dimension.</p>
+<p>So to mimick the default behavior that we have been assuming so far we would need to specify:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Now we should add the tiling factors to the grid divisor lists because, as the tiling factor is increased, the number of thread blocks in that dimension should be decreased correspondingly.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Now we are ready to call tune_kernel again with our expanded search space. Note that this may take a bit longer since we have just increased our parameter space with a factor of 9.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_source</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
+                           <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>And that’s it for this tutorial! We have seen how to call run_kernel and tune_kernel for a 2D Convolution kernel using different thread block dimensions and other tunable parameters. You now know enough to be able to start tuning your own CUDA and/or OpenCL kernels!</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="diffusion.html" class="btn btn-neutral float-right" title="Tutorial: From physics to tuned GPU kernels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="install.html" class="btn btn-neutral float-left" title="Installation Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2016, Ben van Werkhoven.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

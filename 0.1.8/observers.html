@@ -1,0 +1,334 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>&lt;no title&gt; &mdash; Kernel Tuner 0.1.8 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Kernel Tuner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kernel Tuner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>&lt;no title&gt;</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/benvanwerkhoven/kernel_tuner/blob/master/doc/source/observers.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<p>In order to facilitate measurements of other quantities other than kernel execution time, and to make it easy for the user to control exactly what is being measured by Kernel Tuner, we have introduced the Observers feature.
+In the layered software architecture of Kernel Tuner, observers act as programmable hooks to allow the user to change or expand Kernel Tuner’s benchmarking behavior at any of the lower levels.
+Following the observer design pattern, observers can be used to subscribe to certain types of events and the methods implemented by the observer will be called when the event takes place.</p>
+<p>Kernel Tuner implements an abstract BenchmarkObserver with methods that may be overwritten by classes extending the BenchmarkObserver class, as shown in Figure~ref{benchmark-observer}. The only mandatory method to implement is texttt{get_results()}, which is used to return the resulting observations at the end of benchmarking a particular kernel configuration and usually returns aggregated results over multiple iterations of kernel execution. Before tuning starts, each observer is given a reference to the lower-level backend that is used for compiling and benchmarking the kernel configurations. In this way, the observer can inspect the compiled module, function, the state of GPU memory, or any other information in the GPU runtime.</p>
+<p>begin{figure}[]
+begin{python}
+class BenchmarkObserver(ABC):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>def before_start(self):</dt><dd><p>“””called every iteration before the kernel starts”””
+pass</p>
+</dd>
+<dt>def after_start(self):</dt><dd><p>“””called every iteration directly after the kernel was launched”””
+pass</p>
+</dd>
+<dt>def during(self):</dt><dd><p>“””called as often as possible while the kernel is running”””
+pass</p>
+</dd>
+<dt>def after_finish(self):</dt><dd><p>“””called once every iteration after the kernel has finished”””
+pass</p>
+</dd>
+</dl>
+<p>&#64;abstractmethod
+def get_results(self):</p>
+<blockquote>
+<div><p>“””returns a dict to add to the benchmarking results”””
+pass</p>
+</div></blockquote>
+</div></blockquote>
+<p>end{python}
+vspace{-0.5cm}
+caption{The interface of BenchmarkObserver.}label{benchmark-observer}
+end{figure}</p>
+<p>The PyOpenCL, PyCUDA, and Cupy backends support observers and each backend implements their own observer to measure the runtime of kernel configurations. The user specifies a list of observers to use when calling Kernel Tuner. This feature makes it easy to extend Kernel Tuner with
+observers for quantities other than time and the user can easily define their own observers. See for example a RegisterObserver that observes the number of registers per thread used by the compiled kernel configuration, as shown in Figure~ref{register-observer}. There are many more possible observers that could be implemented, for example an observer could be created to track performance counters during auto-tuning~cite{filipovivc2021using}.</p>
+<p>begin{figure}[]
+begin{python}
+class RegisterObserver(BenchmarkObserver):</p>
+<blockquote>
+<div><dl class="simple">
+<dt>def get_results(self):</dt><dd><p>return {“num_regs”: self.dev.current_module.func.num_regs}</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>end{python}
+vspace{-0.5cm}
+caption{Example of a user-defined observer for the number of registers per thread.}label{register-observer}
+end{figure}</p>
+<p>subsubsection{PowerSensorObserver}</p>
+<p>PowerSensor2~cite{romein_powersensor_2018} is a custom-built power measurement device for PCIe devices that
+intercepts the device power with current sensors and transmits the data to the host over a USB connection. The main advantage of using PowerSensor2 over the GPU’s built-in power sensor is that PowerSensor2 reports instantaneous power consumption with a very high frequency (about 2.8 KHz). PowerSensor2 comes with an easy-to-use software library that supports various forms of power measurement. We have created a simple interface using PyBind11footnote{<a class="reference external" href="https://pybind11.readthedocs.io/en/stable/">https://pybind11.readthedocs.io/en/stable/</a>} to the PowerSensor library to make it possible to use it from Python.</p>
+<p>Kernel Tuner implements a PowerSensorObserver specifically for use with PowerSensor2, that can be selected by the user to record power and/or energy consumption of kernel configurations during auto-tuning. This allows Kernel Tuner to accurately determine the power and energy consumption of all kernel configurations it benchmarks during auto-tuning.</p>
+<p>subsubsection{NVMLObserver}</p>
+<p>Kernel Tuner also implements an NVMLObserver, which allows the user to observe the power usage, energy consumption, core and memory frequencies, core voltage and temperature for all kernel configurations during benchmarking as reported by the NVIDIA Management Library (NVML)~cite{nvml}. To facilitate the interaction with NVML, Kernel Tuner implements a thin wrapper that abstracts some of the intricacies of NVML into a more user friendly and Pythonic interface. The NVMLObserver is implemented on top of this interface.</p>
+<p>% Expand this section with the new measurement method</p>
+<p>As opposed to PowerSensor2, the power usage reported by NVML suffers from low accuracy in terms of time resolution, and although the official documentation does not mention this, NVML only reports a time-averaged power consumption rather than instantaneous power consumption~cite{burtscher_measuring_2014}.</p>
+<dl class="simple">
+<dt>begin{figure}</dt><dd><p>centering
+includegraphics[width=columnwidth]{images/GEMM-A6000-A100-Titan RTX-NVML.png}
+caption{NVML power readings over time on three different GPUs.}
+label{fig:nvml_test}</p>
+</dd>
+</dl>
+<p>end{figure}</p>
+<p>Figure~ref{fig:nvml_test} shows the GPU power consumption over time as reported by NVML while continuously executing a GEMM kernel for one second.
+%
+The jumps in the graph are caused by the fact that the time-averaged value reported by NVML only refreshes at a frequency of about 10~Hz (9.75~Hz on A6000, 14.5~Hz on A100, and 12.4~Hz on Titan RTX).
+%
+We can see that on the Titan RTX and A100 the power consumption as report by NVML stabilizes after about 0.3 seconds into the run. For the A6000, power consumption gradually ramps up until hitting the TDP right before end of our 1 second interval.</p>
+<p>To ensure that the power measurements in Kernel Tuner obtained using NVML accurately reflect the power consumption of the kernel, we have introduced a continuous benchmarking mode that takes place after the regular iterative benchmarking process. During continuous benchmarking, the kernel is executed repeatedly for a user-specified duration, 1 second by default. The NVMLObserver uses the continuous benchmarking mode when power measurements are requested by the user. The downside of this approach is that it significantly increases that time it takes to benchmark different kernel configurations. However, NVML can be used for power measurements on almost all Nvidia GPUs, so this method is much more accessible to end-users compared to solutions that require custom hardware, such as PowerSensor2.</p>
+<p>subsection{Tuning execution parameters}</p>
+<p>Using application-specific clock frequencies is one of the most common approaches to tuning energy efficiency on GPU systems. Recently, Krzywaniak and Czarnul~cite{krzywaniak_performanceenergy_2019} have shown promising results with setting application-specific power limits, also called {em power capping}, to optimize energy consumption. To enable energy tuning of GPU applications it is crucial that Kernel Tuner implements a way for users to tune their applications under different clock frequencies and power limits.</p>
+<p>We have implemented support in Kernel Tuner for NVML-specific tunable parameters, such as nvml_gr_clock, nvml_mem_clock, and nvml_pwr_limit. These parameters can be used to describe all the different graphics clocks, memory clocks, and power limits to be tested, respectively.
+%
+Note that changing these settings requires root privileges on most systems. It may be possible to allow any user to change the clock frequencies without privileges, but enabling this setting does require root privileges. As such, these features may not be available to all users on all systems.</p>
+<p>subsection{User-defined metrics}</p>
+<p>Where observers are used to introduce new measurements into the data collected by Kernel Tuner, user-defined metrics serve as an easy way for the user to define their own derived results based on the measurements reported by the observers. This allows for example to implement performance metrics, such as performance in floating point operations per second (e.g. GFLOP/s), or other metrics that might be more specific to the application, for example the number of input elements processed per second. Figure~ref{user-metrics} shows an example of user-defined metrics for a matrix multiplication kernel that performs texttt{total_flops} GFLOP/s in total. User-defined metrics are composable, meaning that they can be defined using other user-defined metrics.</p>
+<p>begin{figure}[]
+scriptsize
+begin{python}
+metrics = OrderedDict()
+metrics[“GFLOP/s”] = lambda p: total_flops / (p[“time”] / 1e3)
+metrics[“GFLOPS/W”] = lambda p: total_flops / p[“ps_energy”]
+end{python}
+%vspace{-0.5cm}
+caption{Example of user-defined metrics for performance and energy efficiency.}label{user-metrics}
+end{figure}</p>
+<p>User-defined metrics are particularly useful when the total amount of work varies between kernel configurations and the total execution time on its own is no longer a sufficient metric for the performance of a kernel configuration. This occurs in many kernels, for example in kernels that perform a reduction step, where some part of the data reduction is left for another kernel because of synchronization. In this case, the amount of work performed by the first kernel depends on tunable parameters such as the thread block dimensions or the number of thread blocks.</p>
+<p>subsection{Custom tuning objectives}</p>
+<p>Users can specify tuning objectives other than the default optimization objective, which is kernel execution time. When using an optimization strategy other than exhaustive search (brute force), this objective is used to guide the optimization through the parameter space.</p>
+<p>In addition to specifying the name of the tuning objective, it is important for many of the optimization strategies implemented in Kernel Tuner to know whether the objective should be minimized or maximized. Kernel Tuner uses a list of defaults, but for some user-defined metrics the user may also need to specify the direction of optimization.</p>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2016, Ben van Werkhoven.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
