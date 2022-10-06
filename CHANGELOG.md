@@ -4,6 +4,21 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Added
+- Support for locked clocks in NVMLObserver
+- Support for measuring core voltages using NVML
+- Support for custom preprocessor definitions
+
+### Changed
+- Migrated from github.com/benvanwerkhoven to github.com/KernelTuner
+- Unified benchmarking loops across backends
+- Backends are no longer context managers
+- Replaced the method for measuring power consumption using NVML
+- Improved NVML measurements of temperature and clock frequencies
+- bugfix in parse_restrictions when using and/or in expressions
+- bugfix in GreedyILS when using neighbor method "adjacent"
+- bugfix in Bayesian Optimization for small problems
+
 ## [0.4.2] - 2022-05-23
 ### Added
 - new optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
