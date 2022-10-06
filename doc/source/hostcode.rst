@@ -27,7 +27,7 @@ of the parameter space the returned floats will be averaged for the multiple run
 
 By itself the C language does not provide any very precise timing functions. If you are tuning the host code of a CUDA program you can use
 CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function.
-In the `C vector add example <https://github.com/benvanwerkhoven/kernel_tuner/blob/master/examples/c/vector_add.py>`__ we are using the ``omp_get_wtime()`` function from OpenMP to measure time on the CPU.
+In the `C vector add example <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py>`__ we are using the ``omp_get_wtime()`` function from OpenMP to measure time on the CPU.
 
 Tuning the number of streams
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

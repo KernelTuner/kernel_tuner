@@ -1,38 +1,38 @@
-# This is a basic workflow to help you get started with Actions
-name: Build documentation
+name: Create versioned documentation on release
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  push:
-    branches: [ master ]
+  release:
+    types: [published]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-  
-    # The type of runner that the job will run on
+    environment: dev_environment
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@master
       with:
         fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
+    - name: Set env
+      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
     - name: Install dependencies
       run: |
         sudo apt-get update;
         sudo apt-get install pandoc
         python -m pip install --upgrade pip
-        pip install .[doc]
+        echo "pip install .[doc]"
     - name: Build and Commit
       uses: sphinx-notes/pages@v2
       with:
         documentation_path: doc/source
-        target_path: latest
+        target_path: ${{ env.RELEASE_VERSION }}
+    - name: Redirect stable to new release
+      run: |
+          echo "Redirecting stable to newly released version " $RELEASE_VERSION
+          rm -rf stable
+          ln -s $RELEASE_VERSION stable
+          git add stable
+          git commit -m "redirect stable to new version $RELEASE_VERSION"
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
