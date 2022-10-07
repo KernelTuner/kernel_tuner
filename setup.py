@@ -25,9 +25,9 @@ setup(
     description=("An easy to use CUDA/OpenCL kernel tuner in Python"),
     license="Apache 2.0",
     keywords="auto-tuning gpu computing pycuda cuda pyopencl opencl",
-    url="http://KernelTuner.github.io/kernel_tuner/",
+    url="https://KernelTuner.github.io/kernel_tuner/",
     project_urls={
-        'Documentation': 'http://KernelTuner.github.io/kernel_tuner/',
+        'Documentation': 'https://KernelTuner.github.io/kernel_tuner/',
         'Source': 'https://github.com/KernelTuner/kernel_tuner',
         'Tracker': 'https://github.com/KernelTuner/kernel_tuner/issues',
     },
