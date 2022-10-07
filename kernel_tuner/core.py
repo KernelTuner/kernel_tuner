@@ -641,7 +641,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
 #these functions facilitate compiling templated kernels with PyCuda
 def split_argument_list(argument_list):
     """split all arguments in a list into types and names"""
-    regex = r"(.*[\s*]+)(.*)?"
+    regex = r"(.*[\s*]+)(.+)?"
     type_list = []
     name_list = []
     for arg in argument_list:
