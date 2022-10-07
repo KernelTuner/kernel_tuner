@@ -36,7 +36,7 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
         raise ValueError("Please specify a cachefile to store benchmarking data when tuning hyperparameters")
 
     def put_if_not_present(target_dict, key, value):
-        target_dict[key] = value if not key in target_dict else target_dict[key]
+        target_dict[key] = value if key not in target_dict else target_dict[key]
 
     put_if_not_present(kwargs, "verbose", False)
     put_if_not_present(kwargs, "quiet", True)

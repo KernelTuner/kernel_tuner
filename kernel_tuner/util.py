@@ -227,7 +227,7 @@ def config_valid(config, tuning_options, max_threads):
             return False
     block_size_names = tuning_options.get("block_size_names", None)
     valid_thread_block_dimensions = check_thread_block_dimensions(params, max_threads, block_size_names)
-    return legal and valid_thread_block_dimensions
+    return valid_thread_block_dimensions
 
 
 def delete_temp_file(filename):
@@ -382,9 +382,9 @@ def get_smem_args(smem_args, params):
 
 def get_temp_filename(suffix=None):
     """ return a string in the form of temp_X, where X is a large integer """
-    file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd())    # or "" for Python 2 compatibility
-    os.close(file[0])
-    return file[1]
+    tmp_file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd())    # or "" for Python 2 compatibility
+    os.close(tmp_file[0])
+    return tmp_file[1]
 
 
 def get_thread_block_dimensions(params, block_size_names=None):
