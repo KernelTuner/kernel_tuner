@@ -13,6 +13,7 @@ except ImportError:
 
 
 def error_check(error):
+    """ Checking the status of CUDA calls """
     if isinstance(error, cuda.CUresult):
         if error != cuda.CUresult.CUDA_SUCCESS:
             _, name = cuda.cuGetErrorName(error)
