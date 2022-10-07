@@ -233,6 +233,7 @@ class CudaFunctions:
         else:
             return False
 
+    @classmethod
     def synchronize(self):
         """ Halts execution until device has finished its tasks """
         err = cudart.cudaDeviceSynchronize()
@@ -297,6 +298,7 @@ class CudaFunctions:
         err = cuda.cuLaunchKernel(func, grid[0], grid[1], grid[2], threads[0], threads[1], threads[2], self.smem_size, stream, kernel_args, 0)
         error_check(err)
 
+    @classmethod
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
 
@@ -313,6 +315,7 @@ class CudaFunctions:
         err = cudart.cudaMemset(allocation, value, size)
         error_check(err)
 
+    @classmethod
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
 
@@ -325,6 +328,7 @@ class CudaFunctions:
         err = cuda.cuMemcpyDtoH(dest, src, dest.nbytes)
         error_check(err)
 
+    @classmethod
     def memcpy_htod(self, dest, src):
         """perform a host to device memory copy
 
