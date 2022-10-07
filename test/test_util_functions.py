@@ -7,7 +7,6 @@ import warnings
 
 import numpy as np
 import pytest
-from pytest import raises
 
 from .context import skip_if_no_cuda, skip_if_no_opencl
 
@@ -122,7 +121,7 @@ def test_get_problem_size2():
 
 
 def test_get_problem_size3():
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         problem_size = (3.8, "num_blocks_y*3")
         params = {
             "num_blocks_y": 57
@@ -269,7 +268,7 @@ def test_get_device_interface2():
 
 
 def test_get_device_interface3():
-    with raises(Exception):
+    with pytest.raises(Exception):
         lang = "blabla"
         dev = core.DeviceInterface(lang)
 
@@ -568,17 +567,23 @@ def test_process_cache():
         with pytest.raises(ValueError) as excep:
             kernel_options.kernel_name = "wrong_kernel"
             process_cache(cache, kernel_options, tuning_options, runner)
-            assert "kernel" in str(excep.value)
+        assert "kernel" in str(excep.value)
+
+        # correct the kernel name from last test
+        kernel_options.kernel_name = "test_kernel"
 
         with pytest.raises(ValueError) as excep:
             runner.dev.name = "wrong_device"
             process_cache(cache, kernel_options, tuning_options, runner)
-            assert "device" in str(excep.value)
+        assert "device" in str(excep.value)
+
+        # correct the device from last test
+        runner.dev.name = "test_device"
 
         with pytest.raises(ValueError) as excep:
             tuning_options.tune_params["y"] = ["a", "b"]
             process_cache(cache, kernel_options, tuning_options, runner)
-            assert "parameter" in str(excep.value)
+        assert "parameter" in str(excep.value)
 
     finally:
         delete_temp_file(cache)
