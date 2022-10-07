@@ -203,10 +203,10 @@ class CudaFunctions:
         error_check(err)
         err, size = nvrtc.nvrtcGetPTXSize(program)
         error_check(err)
-        buffer = b' ' * size
-        err = nvrtc.nvrtcGetPTX(program, buffer)
+        buff = b' ' * size
+        err = nvrtc.nvrtcGetPTX(program, buff)
         error_check(err)
-        err, self.current_module = cuda.cuModuleLoadData(np.char.array(buffer))
+        err, self.current_module = cuda.cuModuleLoadData(np.char.array(buff))
         if err == cuda.CUresult.CUDA_ERROR_INVALID_PTX:
             raise SkippableFailure("uses too much shared data")
         else:
