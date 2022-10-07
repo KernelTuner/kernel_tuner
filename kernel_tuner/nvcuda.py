@@ -86,7 +86,7 @@ class CudaFunctions:
         err, self.context = cuda.cuDevicePrimaryCtxRetain(device)
         error_check(err)
         if CudaFunctions.last_selected_device != device:
-            err, cuda.cuCtxSetCurrent(self.context)
+            err = cuda.cuCtxSetCurrent(self.context)
             error_check(err)
             CudaFunctions.last_selected_device = device
 
