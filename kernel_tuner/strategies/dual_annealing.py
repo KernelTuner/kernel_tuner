@@ -51,7 +51,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     opt_result = None
     try:
-        opt_result = scipy.optimize.dual_annealing(_cost_func, bounds, args=args, local_search_options=minimizer_kwargs, x0=x0)
+        opt_result = scipy.optimize.dual_annealing(_cost_func, bounds, args=args, minimizer_kwargs=minimizer_kwargs, x0=x0)
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
