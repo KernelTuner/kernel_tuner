@@ -49,18 +49,17 @@ class nvml():
             self.sm_clock_default = None
             self.mem_clock_default = None
             self.supported_mem_clocks = []
-            self.supported_gr_clocks = dict()
+            self.supported_gr_clocks = {}
             #switch to using locked clocks
             use_locked_clocks = True
 
         self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
 
         #gather the supported gr clocks for each supported mem clock into a dict
-        self.supported_gr_clocks = dict()
+        self.supported_gr_clocks = {}
         for mem_clock in self.supported_mem_clocks:
             supported_gr_clocks = pynvml.nvmlDeviceGetSupportedGraphicsClocks(self.dev, mem_clock)
             self.supported_gr_clocks[mem_clock] = supported_gr_clocks
-
 
         #test whether locked gr clocks and mem clocks are supported
         self.use_locked_clocks = use_locked_clocks
@@ -73,6 +72,7 @@ class nvml():
             except pynvml.NVMLError_NotSupported:
                 #switch to using application clocks
                 self.use_locked_clocks = False
+
 
     def __del__(self):
         #try to restore to defaults
@@ -219,7 +219,6 @@ class nvml():
             m = re.search(r"(\d+\.\d+) mV", result.stdout.decode())
             return float(m.group(1))
         except:
-            self.record_gr_voltage = False
             return np.nan
 
 
@@ -254,7 +253,7 @@ class NVMLObserver(BenchmarkObserver):
             self.record_gr_voltage = True
             self.gr_voltage_readings = []
 
-        self.results = dict()
+        self.results = {}
         for obs in self.observables:
             self.results[obs + "s"] = []
 
@@ -297,7 +296,7 @@ class NVMLObserver(BenchmarkObserver):
             self.results["gr_voltages"].append(np.average(gr_voltage_readings[:][:][1])) #time in s, graphics voltage in millivolts
 
     def get_results(self):
-        averaged_results = dict()
+        averaged_results = {}
 
         #return averaged results, except when save_all is True
         for obs in self.observables:
