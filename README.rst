@@ -1,7 +1,7 @@
 Kernel Tuner
 ============
 
-|Build Status| |CodeCov Badge| |PyPi Badge| |Zenodo Badge| |SonarCloud Badge| |FairSoftware Badge|
+|Build Status| |CodeCov Badge| |PyPi Badge| |Zenodo Badge| |SonarCloud Badge| |OpenSSF Badge| |FairSoftware Badge|
 
 Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.
 
@@ -176,7 +176,6 @@ If you use Kernel Tuner in research or research software, please cite the most r
     }
 
 
-
 .. |Build Status| image:: https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml/badge.svg
    :target: https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml
 .. |CodeCov Badge| image:: https://codecov.io/gh/KernelTuner/kernel_tuner/branch/master/graph/badge.svg
@@ -187,5 +186,7 @@ If you use Kernel Tuner in research or research software, please cite the most r
    :target: https://zenodo.org/badge/latestdoi/54894320
 .. |SonarCloud Badge| image:: https://sonarcloud.io/api/project_badges/measure?project=KernelTuner_kernel_tuner&metric=alert_status
    :target: https://sonarcloud.io/dashboard?id=KernelTuner_kernel_tuner
+.. |OpenSSF Badge| image:: https://bestpractices.coreinfrastructure.org/projects/6573/badge
+   :target: https://bestpractices.coreinfrastructure.org/projects/6573
 .. |FairSoftware Badge| image:: https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green
    :target: https://fair-software.eu
