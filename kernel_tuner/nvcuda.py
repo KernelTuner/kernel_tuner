@@ -52,7 +52,7 @@ class CudaRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class CudaFunctions:
+class CudaFunctions(object):
     """Class that groups the Cuda functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
