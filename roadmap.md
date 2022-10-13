@@ -4,21 +4,22 @@ This roadmap presents an overview of the features we are currently planning to
 implement. Please note that this is a living document that will evolve as
 priorities grow and shift.
 
+## version 0.4.4
+
+ * Module with helper functions for energy tuning
+
+## version 0.4.X
+
+ * JSON specification for cache files
+ * Properly support logging again
+ * Remote/parallel tuning on different nodes
+ * Readers and writers for common auto-tuning interface
+ * More OpenACC/OpenMP examples and tests
+
 ## version 0.5.0
 
- * Allow strategies to tune for a metric other than time
+ * Object-oriented user-interface for multi-problem tuning
 
-## version 0.9.0
-
- * Multi-objective optimization
-
-## version 1.0.0
-
-These functions are to be implemented by version 1.0.0, but may already be
-implemented in earlier versions.
-
- * Tuning kernels in parallel on a set of nodes in a GPU cluster
- * Functionality for including auto-tuned kernels in applications
 
 ## Wish list
 
