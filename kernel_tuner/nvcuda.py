@@ -5,7 +5,7 @@ from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.util import SkippableFailure
 
 #embedded in try block to be able to generate documentation
-#and run tests without cupy installed
+#and run tests without cuda-python installed
 try:
     from cuda import cuda, cudart, nvrtc
 except ImportError:
@@ -77,7 +77,7 @@ class CudaFunctions(object):
         self.texrefs = []
         if not cuda:
             raise ImportError("Error: cuda-python not installed, please install e.g. " +
-                            "using 'pip install cuda-python', please check https://github.com/NVIDIA/cuda-python.")
+                              "using 'pip install cuda-python', please check https://github.com/NVIDIA/cuda-python.")
 
         # initialize and select device
         err = cuda.cuInit(0)
