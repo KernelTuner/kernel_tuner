@@ -48,7 +48,7 @@ skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP fou
 
 
 def skip_backend(backend: str):
-    if backend.upper() == "CUDA" and not cuda_present:
+    if backend.upper() == "CUDA" and not pycuda_present:
         pytest.skip("PyCuda not installed or no CUDA device detected")
     elif backend.upper() == "CUPY" and not cupy_present:
         pytest.skip("CuPy not installed or no CUDA device detected")
