@@ -37,7 +37,7 @@ def get_nvml_pwr_limits(device, n=None):
     return tune_params
 
 
-def get_nvml_gr_clocks(device, n=None):
+def get_nvml_gr_clocks(device, n=None, quiet=False):
     """ Get tunable parameter for NVML graphics clock, n is desired number of values """
 
     d = nvml(device)
@@ -49,11 +49,13 @@ def get_nvml_gr_clocks(device, n=None):
 
     tune_params = OrderedDict()
     tune_params["nvml_gr_clock"] = gr_clocks[::-1]
-    print("Using clock frequencies:", tune_params["nvml_gr_clock"])
+
+    if not quiet:
+        print("Using clock frequencies:", tune_params["nvml_gr_clock"])
     return tune_params
 
 
-def get_nvml_mem_clocks(device, n=None):
+def get_nvml_mem_clocks(device, n=None, quiet=False):
     """ Get tunable parameter for NVML memory clock, n is desired number of values """
 
     d = nvml(device)
@@ -64,7 +66,9 @@ def get_nvml_mem_clocks(device, n=None):
 
     tune_params = OrderedDict()
     tune_params["nvml_mem_clock"] = mem_clocks
-    print("Using mem frequencies:", tune_params["nvml_mem_clock"])
+
+    if not quiet:
+        print("Using mem frequencies:", tune_params["nvml_mem_clock"])
     return tune_params
 
 
@@ -96,7 +100,7 @@ __global__ void fp32_kernel(float *ptr)
 """
 
 
-def get_ridge_point_gr_frequency(device, nvidia_smi_fallback=None):
+def get_ridge_point_gr_frequency(device, nvidia_smi_fallback=None, quiet=False):
     """ Calculate the most energy-efficient clock frequency of device
 
     This function uses a performance model to fit the frequency-voltage curve
@@ -122,6 +126,7 @@ def get_ridge_point_gr_frequency(device, nvidia_smi_fallback=None):
     # get some numbers about the device
     drv.init()
     dev = drv.Device(device)
+    device_name = dev.name().replace(' ', '_')
     multiprocessor_count = dev.get_attribute(drv.device_attribute.MULTIPROCESSOR_COUNT)
     max_block_dim_x = dev.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X)
 
@@ -135,7 +140,7 @@ def get_ridge_point_gr_frequency(device, nvidia_smi_fallback=None):
     tune_params["block_size_x"] = [max_block_dim_x]
     tune_params["nr_outer"] = [64]
     tune_params["nr_inner"] = [1024]
-    tune_params.update(get_nvml_gr_clocks(device))
+    tune_params.update(get_nvml_gr_clocks(device, quiet=True))
 
     # metrics
     metrics = OrderedDict()
@@ -147,7 +152,7 @@ def get_ridge_point_gr_frequency(device, nvidia_smi_fallback=None):
     results, _ = tune_kernel("fp32_kernel", fp32_kernel_string, problem_size=(multiprocessor_count),
                     arguments=arguments, tune_params=tune_params, observers=[nvmlobserver],
                     verbose=False, quiet=True, metrics=metrics, iterations=1,
-                    grid_div_x=[], grid_div_y=[], cache="detect-ridge-point-synthetic-fp32-cache.json")
+                    grid_div_x=[], grid_div_y=[], cache=f"detect-ridge-point-synthetic-fp32-{device_name}-cache.json")
 
     voltages = np.array([res["gr_voltage"] for res in results])
     freqs = np.array([res["core_freq"] for res in results])
@@ -157,7 +162,8 @@ def get_ridge_point_gr_frequency(device, nvidia_smi_fallback=None):
     slope_line = range(len(voltages)) * slope + voltages[0]
     ridge_point_index = (slope_line - voltages).argmax()
 
-    print(f"Ridge point detected at frequency: {freqs[ridge_point_index]}")
+    if not quiet:
+        print(f"Ridge point detected at frequency: {freqs[ridge_point_index]}")
 
     return freqs[ridge_point_index]
 
@@ -179,7 +185,9 @@ def get_gr_clocks_ridge_point_method(gr_clocks, ridge_point, percentage=10):
 
     tune_params = OrderedDict()
     tune_params["nvml_gr_clock"] = filtered_clocks
-    print("Using clock frequencies:", tune_params["nvml_gr_clock"])
+
+    if not quiet:
+        print("Using clock frequencies:", tune_params["nvml_gr_clock"])
     return tune_params
 
 
