@@ -64,6 +64,13 @@ Strategies
 
 Strategies are explained in :ref:`optimizations`.
 
+Many of the strategies use helper functions that are collected in ``kernel_tuner.strategies.common``.
+
+kernel_tuner.strategies.common
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.common
+    :members:
+
 
 Runners
 -------

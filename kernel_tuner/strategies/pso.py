@@ -7,8 +7,8 @@ import numpy as np
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.minimize import (_cost_func, get_bounds_x0_eps,
-                                              scale_from_params)
+from kernel_tuner.strategies.common import (_cost_func, get_bounds_x0_eps,
+                                            scale_from_params)
 
 _options = OrderedDict(popsize=("Population size", 20),
                        maxiter=("Maximum number of iterations", 100),

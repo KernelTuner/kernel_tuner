@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 from kernel_tuner.interface import Options
-import kernel_tuner.strategies.minimize as minimize
+import kernel_tuner.strategies.common as common
 
 
 def test_get_bounds_x0_eps():
@@ -18,7 +18,7 @@ def test_get_bounds_x0_eps():
     tuning_options["restrictions"] = None
     tuning_options["strategy_options"] = {}
 
-    bounds, x0, eps = minimize.get_bounds_x0_eps(tuning_options, 1024)
+    bounds, x0, eps = common.get_bounds_x0_eps(tuning_options, 1024)
 
     assert bounds == [(0.0, 1.0)]
     assert x0 >= 0.0 and x0 <= 1.0
@@ -26,7 +26,7 @@ def test_get_bounds_x0_eps():
 
     tuning_options["scaling"] = False
 
-    bounds, x0, eps = minimize.get_bounds_x0_eps(tuning_options, 1024)
+    bounds, x0, eps = common.get_bounds_x0_eps(tuning_options, 1024)
 
     assert bounds == [(0, 4)]
     assert eps == 1.0
@@ -43,7 +43,7 @@ def test_get_bounds():
         random.shuffle(tune_params[k])
 
     expected = [(0, 4), (0, 9900), (-11.2, 123.27)]
-    answer = minimize.get_bounds(tune_params)
+    answer = common.get_bounds(tune_params)
     assert answer == expected
 
 
@@ -57,7 +57,7 @@ def test_snap_to_nearest_config():
     x = [-5.7, 3.14, 1e6]
     expected = [0, 3, 5]
 
-    answer = minimize.snap_to_nearest_config(x, tune_params)
+    answer = common.snap_to_nearest_config(x, tune_params)
     assert answer == expected
 
 
@@ -67,14 +67,14 @@ def test_unscale():
     params['x'] = [2**i for i in range(4, 9)]
     eps = 1.0 / len(params['x'])
 
-    assert minimize.unscale_and_snap_to_nearest([0], params, eps)[0] == params['x'][0]
-    assert minimize.unscale_and_snap_to_nearest([1], params, eps)[0] == params['x'][-1]
+    assert common.unscale_and_snap_to_nearest([0], params, eps)[0] == params['x'][0]
+    assert common.unscale_and_snap_to_nearest([1], params, eps)[0] == params['x'][-1]
 
     intervals = np.linspace(0, 1, len(params['x']) * 10)
 
     freq = dict()
     for i in intervals:
-        v = minimize.unscale_and_snap_to_nearest([i], params, eps)[0]
+        v = common.unscale_and_snap_to_nearest([i], params, eps)[0]
         if v in freq:
             freq[v] += 1
         else:

@@ -4,9 +4,9 @@ from collections import OrderedDict
 import scipy.optimize
 from kernel_tuner import util
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.minimize import (_cost_func, get_bounds_x0_eps,
-                                              setup_method_arguments,
-                                              setup_method_options)
+from kernel_tuner.strategies.common import (_cost_func, get_bounds_x0_eps,
+                                            setup_method_arguments,
+                                            setup_method_options)
 
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 

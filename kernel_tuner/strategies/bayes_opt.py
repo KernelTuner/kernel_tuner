@@ -20,7 +20,7 @@ except ImportError:
     bayes_opt_present = False
 
 from kernel_tuner import util
-from kernel_tuner.strategies import minimize
+from kernel_tuner.strategies import common
 
 supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast"]
 
@@ -98,7 +98,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
     tuning_options["scaling"] = True
-    _, _, eps = minimize.get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
+    _, _, eps = common.get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
 
     # compute cartesian product of all tunable parameters
     parameter_space = itertools.product(*tune_params.values())
@@ -408,7 +408,7 @@ class BayesianOptimization():
         denormalized_param_config = self.denormalize_param_config(param_config)
         if not util.config_valid(denormalized_param_config, self.tuning_options, self.max_threads):
             return self.invalid_value
-        val = minimize._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)
+        val = common._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)
         self.fevals += 1
         return val
 
@@ -842,7 +842,7 @@ class BayesianOptimization():
         _, mu, std = self.predict_list(self.searchspace)
         brute_force_observations = list()
         for param_config in self.searchspace:
-            obs = minimize._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)
+            obs = common._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)
             if obs == self.invalid_value:
                 obs = None
             brute_force_observations.append(obs)

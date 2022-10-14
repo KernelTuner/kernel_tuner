@@ -6,7 +6,7 @@ import numpy as np
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.minimize import _cost_func
+from kernel_tuner.strategies.common import _cost_func
 
 _options = OrderedDict(popsize=("population size", 20),
                        maxiter=("maximum number of generations", 50),

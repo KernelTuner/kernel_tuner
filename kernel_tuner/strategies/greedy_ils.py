@@ -4,9 +4,9 @@ from collections import OrderedDict
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import _cost_func
 from kernel_tuner.strategies.genetic_algorithm import mutate
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
-from kernel_tuner.strategies.minimize import _cost_func
 
 _options = OrderedDict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
                        restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
