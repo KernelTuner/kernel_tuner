@@ -1,11 +1,11 @@
 """ Iterate over a random sample of the parameter space """
 from collections import OrderedDict
-import numpy as np
 
+import numpy as np
+from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner import util
 
 _options = OrderedDict(fraction=("Fraction of the search space to cover value in [0, 1]", 0.1))
 

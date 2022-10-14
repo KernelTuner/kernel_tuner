@@ -1,12 +1,11 @@
 """ The strategy that uses a minimizer method for searching through the parameter space """
-from collections import OrderedDict
 import logging
 import sys
+from collections import OrderedDict
 from time import perf_counter
 
 import numpy as np
 import scipy.optimize
-
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common

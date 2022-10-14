@@ -1,9 +1,9 @@
 """ Bayesian Optimization implementation from the thesis by Willemsen """
+import itertools
+import time
+import warnings
 from copy import deepcopy
 from random import randint, shuffle
-import itertools
-import warnings
-import time
 from typing import Tuple
 
 import numpy as np
@@ -11,16 +11,16 @@ from scipy.stats import norm
 
 # BO imports
 try:
-    from sklearn.gaussian_process import GaussianProcessRegressor
-    from sklearn.gaussian_process.kernels import ConstantKernel, RBF, Matern
     from sklearn.exceptions import ConvergenceWarning
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    from sklearn.gaussian_process.kernels import RBF, ConstantKernel, Matern
     from skopt.sampler import Lhs
     bayes_opt_present = True
 except ImportError:
     bayes_opt_present = False
 
-from kernel_tuner.strategies import minimize
 from kernel_tuner import util
+from kernel_tuner.strategies import minimize
 
 supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast"]
 

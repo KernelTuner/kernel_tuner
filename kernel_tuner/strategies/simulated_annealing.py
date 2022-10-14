@@ -1,13 +1,13 @@
 """ The strategy that uses particle swarm optimization"""
-from collections import OrderedDict
-import sys
 import random
-import numpy as np
+import sys
+from collections import OrderedDict
 
-from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner.strategies import common
-from kernel_tuner.searchspace import Searchspace
+import numpy as np
 from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.minimize import _cost_func
 
 _options = OrderedDict(T=("Starting temperature", 1.0),
                        T_min=("End temperature", 0.001),

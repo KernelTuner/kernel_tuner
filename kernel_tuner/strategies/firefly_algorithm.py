@@ -1,13 +1,14 @@
 """ The strategy that uses the firefly algorithm for optimization"""
-from collections import OrderedDict
 import sys
-import numpy as np
+from collections import OrderedDict
 
+import numpy as np
+from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, scale_from_params
+from kernel_tuner.strategies.minimize import (_cost_func, get_bounds_x0_eps,
+                                              scale_from_params)
 from kernel_tuner.strategies.pso import Particle
-from kernel_tuner import util
 
 _options = OrderedDict(popsize=("Population size", 20),
                        maxiter=("Maximum number of iterations", 100),

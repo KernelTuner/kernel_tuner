@@ -1,11 +1,12 @@
 """ The differential evolution strategy that optimizes the search through the parameter space """
 from collections import OrderedDict
-from scipy.optimize import differential_evolution
 
-from kernel_tuner.strategies import common
-from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies.minimize import get_bounds, _cost_func, scale_from_params
 from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.minimize import (_cost_func, get_bounds,
+                                              scale_from_params)
+from scipy.optimize import differential_evolution
 
 supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp",
                      "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]

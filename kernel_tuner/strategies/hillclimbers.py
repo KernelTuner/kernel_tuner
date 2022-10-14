@@ -1,8 +1,8 @@
 import random
 
 from kernel_tuner import util
-from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies.minimize import _cost_func
 
 
 def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, all_results, kernel_options, tuning_options, runner, restart=True, randomize=True, order=None):
