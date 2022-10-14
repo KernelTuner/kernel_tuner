@@ -1,41 +1,23 @@
 """ The strategy that uses the basinhopping global optimization method """
+from collections import OrderedDict
 
 import scipy.optimize
-
-from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, setup_method_arguments, setup_method_options
 from kernel_tuner import util
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.minimize import (_cost_func, get_bounds_x0_eps,
+                                              setup_method_arguments,
+                                              setup_method_options)
 
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
+_options = OrderedDict(method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "L-BFGS-B"),
+                       T=("Temperature parameter for the accept or reject criterion", 1.0))
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: dict
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     results = []
 
-    method = tuning_options.strategy_options.get("method", "L-BFGS-B")
-    T = tuning_options.strategy_options.get("T", 1.0)
+    method, T = common.get_options(tuning_options.strategy_options, _options)
 
     # scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
@@ -64,3 +46,5 @@ def tune(runner, kernel_options, device_options, tuning_options):
         print(opt_result.message)
 
     return results, runner.dev.get_environment()
+
+tune.__doc__ = common.get_strategy_docstring("basin hopping", _options)

@@ -1,6 +1,7 @@
 .. highlight:: python
     :linenothreshold: 50
 
+.. _parameter-vocabulary:
 
 Parameter Vocabulary
 --------------------

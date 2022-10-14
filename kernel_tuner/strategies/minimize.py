@@ -1,46 +1,25 @@
 """ The strategy that uses a minimizer method for searching through the parameter space """
-from __future__ import print_function
-
 from collections import OrderedDict
-import sys
 import logging
+import sys
 from time import perf_counter
 
 import numpy as np
 import scipy.optimize
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
 
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
+_options = OrderedDict(method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "L-BFGS-B"))
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     results = []
 
-    method = tuning_options.strategy_options.get("method", "L-BFGS-B")
+    method = common.get_options(tuning_options.strategy_options, _options)[0]
 
     # scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
@@ -63,6 +42,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     return results, runner.dev.get_environment()
 
+
+tune.__doc__ = common.get_strategy_docstring("Minimize", _options)
 
 def _cost_func(x, kernel_options, tuning_options, runner, results, check_restrictions=True):
     """ Cost function used by minimize """

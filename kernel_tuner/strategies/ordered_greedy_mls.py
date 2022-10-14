@@ -1,32 +1,22 @@
 """ A greedy multi-start local search algorithm for parameter search that traverses variables in order."""
+from collections import OrderedDict
 
+from kernel_tuner.strategies import common
 from kernel_tuner.strategies.greedy_mls import tune as mls_tune
 
+_options = OrderedDict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
+                       restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
+                       order=("set a user-specified order to search among dimensions while hillclimbing", None),
+                       randomize=("use a random order to search among dimensions while hillclimbing", False))
+
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
 
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
+    _, restart, _, randomize = common.get_options(tuning_options.strategy_options, _options)
 
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
-
-    # disable randomization and enable greedy hillclimbing
-    tuning_options.strategy_options["restart"] = True
-    tuning_options.strategy_options["randomize"] = False
+    # Delegate to Greedy MLS, but make sure our defaults are used if not overwritten by the user
+    tuning_options.strategy_options["restart"] = restart
+    tuning_options.strategy_options["randomize"] = randomize
     return mls_tune(runner, kernel_options, device_options, tuning_options)
+
+
+tune.__doc__ = common.get_strategy_docstring("Ordered Greedy Multi-start Local Search (MLS)", _options)

@@ -37,14 +37,21 @@ def vector_add():
 @pytest.mark.parametrize('strategy', strategy_map)
 def test_strategies(vector_add, strategy):
 
-    options = dict(popsize=5, max_fevals=10, neighbor='adjacent')
+    options = dict(popsize=5, neighbor='adjacent')
 
     print(f"testing {strategy}")
-    result, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=options,
-                                             verbose=False, cache=cache_filename, simulation_mode=True)
+
+    if hasattr(kernel_tuner.interface.strategy_map[strategy], "_options"):
+        filter_options = {opt:val for opt, val in options.items() if opt in kernel_tuner.interface.strategy_map[strategy]._options}
+    else:
+        filter_options = options
+    filter_options["max_fevals"] = 10
+
+    result, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+                                         verbose=False, cache=cache_filename, simulation_mode=True)
 
     assert len(result) > 0
 
     if not strategy == "brute_force":
         # check if the number of valid unique configurations is less then max_fevals
-        assert len(set(["_".join(str(r)) for r in result if not isinstance(r["time"], util.InvalidConfig)])) <= options["max_fevals"]
+        assert len(set(["_".join(str(r)) for r in result if not isinstance(r["time"], util.InvalidConfig)])) <= filter_options["max_fevals"]

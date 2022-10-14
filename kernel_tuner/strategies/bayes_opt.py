@@ -24,7 +24,6 @@ from kernel_tuner import util
 
 supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast"]
 
-
 def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
     """ Generates normalization and denormalization dictionaries """
     original_to_normalized = dict()
@@ -141,6 +140,12 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     return bo.results, runner.dev.get_environment()
 
+# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
+_options = dict(covariancekernel=('The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"', "matern32"),
+                covariancelengthscale=("The covariance length scale", 1.5),
+                method=("The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods), "multi-advanced"),
+                samplingmethod=("Method used for initial sampling the parameter space, either random or lhs", "lhs"),
+                popsize=("Number of initial samples", 20))
 
 class BayesianOptimization():
 

@@ -1,39 +1,22 @@
 """ A greedy multi-start local search algorithm for parameter search """
+from collections import OrderedDict
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
 
+_options = OrderedDict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
+                       restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
+                       order=("set a user-specified order to search among dimensions while hillclimbing", None),
+                       randomize=("use a random order to search among dimensions while hillclimbing", True))
+
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     # retrieve options with defaults
     options = tuning_options.strategy_options
-    neighbor = options.get("neighbor", "Hamming")
-    restart = options.get("restart", True)
-    order = options.get("order", None)
-    randomize = options.get("randomize", True)
+    neighbor, restart, order, randomize = common.get_options(options, _options)
+
     max_fevals = options.get("max_fevals", 100)
 
     tuning_options["scaling"] = False
@@ -59,3 +42,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
         fevals = len(tuning_options.unique_results)
 
     return results, runner.dev.get_environment()
+
+
+tune.__doc__ = common.get_strategy_docstring("Greedy Multi-start Local Search (MLS)", _options)

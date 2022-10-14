@@ -1,35 +1,21 @@
 """ The strategy that uses the firefly algorithm for optimization"""
+from collections import OrderedDict
 import sys
 import numpy as np
 
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, scale_from_params
 from kernel_tuner.strategies.pso import Particle
 from kernel_tuner import util
 
+_options = OrderedDict(popsize=("Population size", 20),
+                       maxiter=("Maximum number of iterations", 100),
+                       B0=("Maximum attractiveness", 1.0),
+                       gamma=("Light absorption coefficient", 1.0),
+                       alpha=("Randomization parameter", 0.2))
+
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: dict
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     results = []
 
@@ -41,13 +27,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     args = (kernel_options, tuning_options, runner, results)
 
-    num_particles = tuning_options.strategy_options.get("popsize", 20)
-    maxiter = tuning_options.strategy_options.get("maxiter", 100)
-
-    # parameters needed by the Firefly Algorithm
-    B0 = tuning_options.strategy_options.get("B0", 1.0)
-    gamma = tuning_options.strategy_options.get("gamma", 1.0)
-    alpha = tuning_options.strategy_options.get("alpha", 0.2)
+    num_particles, maxiter, B0, gamma, alpha = common.get_options(tuning_options.strategy_options, _options)
 
     best_score_global = sys.float_info.max
     best_position_global = []
@@ -109,6 +89,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     return results, runner.dev.get_environment()
 
+
+tune.__doc__ = common.get_strategy_docstring("firefly algorithm", _options)
 
 class Firefly(Particle):
     """Firefly object for use in the Firefly Algorithm"""

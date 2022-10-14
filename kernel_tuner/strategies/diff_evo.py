@@ -1,6 +1,8 @@
 """ The differential evolution strategy that optimizes the search through the parameter space """
+from collections import OrderedDict
 from scipy.optimize import differential_evolution
 
+from kernel_tuner.strategies import common
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.minimize import get_bounds, _cost_func, scale_from_params
 from kernel_tuner import util
@@ -8,36 +10,15 @@ from kernel_tuner import util
 supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp",
                      "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
 
+_options = OrderedDict(method=(f"Creation method for new population, any of {supported_methods}", "best1bin"),
+                       popsize=("Population size", 20),
+                       maxiter=("Number of generations", 50))
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     results = []
 
-    method = tuning_options.strategy_options.get("method", "best1bin")
-    popsize = tuning_options.strategy_options.get("popsize", 20)
-    maxiter = tuning_options.strategy_options.get("maxiter", 50)
+    method, popsize, maxiter = common.get_options(tuning_options.strategy_options, _options)
 
     tuning_options["scaling"] = False
     # build a bounds array as needed for the optimizer
@@ -64,3 +45,4 @@ def tune(runner, kernel_options, device_options, tuning_options):
     return results, runner.dev.get_environment()
 
 
+tune.__doc__ = common.get_strategy_docstring("Differential Evolution", _options)

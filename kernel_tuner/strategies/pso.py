@@ -1,35 +1,21 @@
 """ The strategy that uses particle swarm optimization"""
+from collections import OrderedDict
 import sys
 import random
 import numpy as np
 
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
 from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, scale_from_params
 from kernel_tuner import util
 
+_options = OrderedDict(popsize=("Population size", 20),
+                       maxiter=("Maximum number of iterations", 100),
+                       w=("Inertia weight constant", 0.5),
+                       c1=("Cognitive constant", 2.0),
+                       c2=("Social constant", 1.0))
+
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: dict
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     results = []
 
@@ -41,12 +27,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     args = (kernel_options, tuning_options, runner, results)
 
-    num_particles = tuning_options.strategy_options.get("popsize", 20)
-    maxiter = tuning_options.strategy_options.get("maxiter", 100)
-
-    w = tuning_options.strategy_options.get("w", 0.5)       # inertia constant
-    c1 = tuning_options.strategy_options.get("c1", 2.0)     # cognitive constant
-    c2 = tuning_options.strategy_options.get("c2", 1.0)     # social constant
+    num_particles, maxiter, w, c1, c2 = common.get_options(tuning_options.strategy_options, _options)
 
     best_score_global = sys.float_info.max
     best_position_global = []
@@ -93,6 +74,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     return results, runner.dev.get_environment()
 
+
+tune.__doc__ = common.get_strategy_docstring("Particle Swarm Optimization (PSO)", _options)
 
 class Particle:
     def __init__(self, bounds, args):
