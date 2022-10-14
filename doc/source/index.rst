@@ -34,17 +34,18 @@ Contents:
    :maxdepth: 1
    :caption: Features
 
+   cache_files
    correctness
    hostcode
+   structs
    templates
    optimization
-   observers
    metrics
-   structs
+   observers
 
 .. toctree::
    :maxdepth: 1
-   :caption: Developers
+   :caption: Reference
 
    user-api
    vocabulary
