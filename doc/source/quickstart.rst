@@ -1,7 +1,7 @@
 Getting Started
 ===============
 
-So you have installed Kernel Tuner, and how you'd like to get started tuning some GPU code!
+So you have installed Kernel Tuner! That's great! But now you'd like to get started tuning some GPU code!
 
 Let's say we have a simple CUDA kernel stored in a file called vector_add_kernel.cu:
 
