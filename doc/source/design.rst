@@ -62,29 +62,19 @@ discussed above. For the documentation of the user API see the
 Strategies
 ----------
 
-kernel_tuner.strategies.brute_force
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.brute_force
-    :members:
-
-kernel_tuner.strategies.random_sample
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.random_sample
-    :members:
-
-kernel_tuner.strategies.bayes_opt
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.bayes_opt
-    :members:
-
-kernel_tuner.strategies.minimize
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.minimize
-    :members:
-
 kernel_tuner.strategies.basinhopping
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. automodule:: kernel_tuner.strategies.basinhopping
+    :members:
+
+kernel_tuner.strategies.bayes_opt
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.bayes_opt
+    :members:
+
+kernel_tuner.strategies.brute_force
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.brute_force
     :members:
 
 kernel_tuner.strategies.diff_evo
@@ -93,18 +83,8 @@ kernel_tuner.strategies.diff_evo
     :members:
 
 kernel_tuner.strategies.dual_annealing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. automodule:: kernel_tuner.strategies.dual_annealing
-    :members:
-
-kernel_tuner.strategies.genetic_algorithm
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.genetic_algorithm
-    :members:
-
-kernel_tuner.strategies.pso
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.pso
     :members:
 
 kernel_tuner.strategies.firefly_algorithm
@@ -112,19 +92,29 @@ kernel_tuner.strategies.firefly_algorithm
 .. automodule:: kernel_tuner.strategies.firefly_algorithm
     :members:
 
-kernel_tuner.strategies.simulated_annealing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.simulated_annealing
+kernel_tuner.strategies.genetic_algorithm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.genetic_algorithm
     :members:
 
-kernel_tuner.strategies.mls
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.mls
+kernel_tuner.strategies.greedy_ils
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.greedy_ils
     :members:
 
 kernel_tuner.strategies.greedy_mls
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. automodule:: kernel_tuner.strategies.greedy_mls
+    :members:
+
+kernel_tuner.strategies.minimize
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.minimize
+    :members:
+
+kernel_tuner.strategies.mls
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.mls
     :members:
 
 kernel_tuner.strategies.ordered_greedy_mls
@@ -132,10 +122,21 @@ kernel_tuner.strategies.ordered_greedy_mls
 .. automodule:: kernel_tuner.strategies.ordered_greedy_mls
     :members:
 
-kernel_tuner.strategies.greedy_ils
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: kernel_tuner.strategies.greedy_ils
+kernel_tuner.strategies.pso
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.pso
     :members:
+
+kernel_tuner.strategies.random_sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.random_sample
+    :members:
+
+kernel_tuner.strategies.simulated_annealing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.simulated_annealing
+    :members:
+
 
 
 Runners
@@ -164,7 +165,7 @@ kernel_tuner.core.DeviceInterface
     :members:
 
 kernel_tuner.pycuda.PyCudaFunctions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.pycuda.PyCudaFunctions
     :special-members: __init__
     :members:

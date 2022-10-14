@@ -68,7 +68,7 @@ the documentation pages generated locally in ``doc/build/html``.
 To make sure you have all the dependencies required to build the documentation,
 you can install the extras using ``pip install -e .[doc]``. Pandoc is also required,
 you can install pandoc on ubuntu using ``sudo apt install pandoc``, for different
-setups please see `pandoc's install documentation<https://pandoc.org/installing.html>`__.
+setups please see `pandoc's install documentation <https://pandoc.org/installing.html>`__.
 
 The documentation pages hosted online are built automatically using GitHub actions.
 The documentation pages corresponding to the master branch are hosted in /latest/.

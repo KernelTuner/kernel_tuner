@@ -853,15 +853,16 @@ class MaxProdConstraint(Constraint):
     """ Constraint enforcing that values of given variables create a product up to a given amount """
 
     def __init__(self, maxprod):
-        """
-        @param maxprod: Value to be considered as the maximum product
-        @type  maxprod: number
-        @param multipliers: If given, variable values will be multiplied by
-                            the given factors before being prod to be checked
+        """ Instantiate a MaxProdConstraint
+
+        :params maxprod: Value to be considered as the maximum product
+        :type maxprod: number
+
         """
         self._maxprod = maxprod
 
     def preProcess(self, variables, domains, constraints, vconstraints):
+        """  """
         Constraint.preProcess(self, variables, domains, constraints, vconstraints)
         maxprod = self._maxprod
         for variable in variables:
