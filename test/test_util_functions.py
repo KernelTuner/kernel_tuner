@@ -8,11 +8,12 @@ import warnings
 import numpy as np
 import pytest
 
-from .context import skip_if_no_cuda, skip_if_no_opencl
+from .context import skip_if_no_pycuda, skip_if_no_cuda, skip_if_no_opencl
 
 from kernel_tuner.interface import Options
 import kernel_tuner.core as core
 import kernel_tuner.pycuda as pycuda
+import kernel_tuner.nvcuda as nvcuda
 import kernel_tuner.opencl as opencl
 from kernel_tuner.util import *
 
@@ -251,7 +252,7 @@ def test_detect_language3():
     assert lang == "C"
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_get_device_interface1():
     lang = "CUDA"
     dev = core.DeviceInterface(core.KernelSource("", "", lang=lang))
@@ -259,15 +260,23 @@ def test_get_device_interface1():
     assert isinstance(dev.dev, pycuda.PyCudaFunctions)
 
 
-@skip_if_no_opencl
+@skip_if_no_cuda
 def test_get_device_interface2():
+    lang = "NVCUDA"
+    dev = core.DeviceInterface(core.KernelSource("", "", lang=lang))
+    assert isinstance(dev, core.DeviceInterface)
+    assert isinstance(dev.dev, nvcuda.CudaFunctions)
+
+
+@skip_if_no_opencl
+def test_get_device_interface3():
     lang = "OpenCL"
     dev = core.DeviceInterface(core.KernelSource("", "", lang=lang))
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, opencl.OpenCLFunctions)
 
 
-def test_get_device_interface3():
+def test_get_device_interface4():
     with pytest.raises(Exception):
         lang = "blabla"
         dev = core.DeviceInterface(lang)

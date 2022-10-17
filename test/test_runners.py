@@ -9,7 +9,7 @@ import pytest
 import kernel_tuner
 from kernel_tuner import util
 
-from .context import skip_if_no_cuda
+from .context import skip_if_no_pycuda
 
 cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
 
@@ -17,7 +17,7 @@ cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file
 @pytest.fixture
 def env():
     kernel_string = """
-    __global__ void vector_add(float *c, float *a, float *b, int n) {
+    extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_size_x + threadIdx.x;
         if (i<n) {
             c[i] = a[i] + b[i];
@@ -38,7 +38,7 @@ def env():
     return ["vector_add", kernel_string, size, args, tune_params]
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_sequential_runner_alt_block_size_names(env):
 
     kernel_string = """__global__ void vector_add(float *c, float *a, float *b, int n) {
@@ -68,7 +68,7 @@ def test_sequential_runner_alt_block_size_names(env):
     assert len(result) == len(tune_params["block_dim_x"])
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_smem_args(env):
     result, _ = kernel_tuner.tune_kernel(*env, smem_args=dict(size="block_size_x*4"), verbose=True)
     tune_params = env[-1]
@@ -112,7 +112,7 @@ def test_random_sample(env):
         assert v['time'] > 0.0 and v['time'] < 1.0
 
 
-@skip_if_no_cuda
+@skip_if_no_pycuda
 def test_interface_handles_compile_failures(env):
     kernel_name, kernel_string, size, args, tune_params = env
 
