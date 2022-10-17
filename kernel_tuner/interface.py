@@ -280,7 +280,7 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
                            ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""", "int")),
                            ("objective", ("""Optimization objective to sort results on, consisting of a string
-            that also occurs in results as a metric or observed quantity, default 'time'. 
+            that also occurs in results as a metric or observed quantity, default 'time'.
             Please see :ref:`objectives`.""", "string")),
                            ("objective_higher_is_better", ("""boolean that specifies whether the objective should
             be maximized (True) or minimized (False), default False.""", "bool")),
