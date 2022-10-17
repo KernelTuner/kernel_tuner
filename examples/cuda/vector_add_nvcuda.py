@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""This is the minimal example from the README"""
+"""This is the minimal example from the README, but using the Nvidia CUDA Python bindings
+
+You can install the Nvidia CUDA bindings using 'pip install cuda-python'. The backend
+can be selected using the lang='nvcuda' option of tune_kernel.
+
+"""
 
 import json
 import numpy
@@ -8,7 +13,7 @@ from kernel_tuner import tune_kernel
 def tune():
 
     kernel_string = """
-    extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
+    __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_size_x + threadIdx.x;
         if (i<n) {
             c[i] = a[i] + b[i];
