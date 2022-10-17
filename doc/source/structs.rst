@@ -1,2 +1,40 @@
 Using structs
 -------------
+
+One of the issues with calling GPU kernels from Python is the use of custom data types in kernel arguments. In general, it is recommended for portability of your GPU code to be used from 
+many different host languages to keep the interface of your kernels as simple as possible. This means sticking to simple pointers of primitive types such as integer, float, and double. 
+For performance reasons, it is also recommended to not use arrays of structs for kernel arguments, as this is very likely to lead to inefficient memory accesses on the GPU.
+
+However, there are situations, in particular in scientific applications, where the GPU code needs a lot of input parameters where it makes sense to collect these in a struct that 
+describes the simulation or experimental setup. For these use cases it is possible to use Python's built-in ``struct`` library, in particular the function ``struct.pack()``. For how use 
+``struct.pack``, please consult the `Python documentation <https://docs.python.org/3/library/struct.html>`__. In the code below we show part of Python script that uses ``struct.pack``, 
+Numpy, and Kernel Tuner to call a CUDA kernel that uses a struct as kernel argument.
+
+
+.. code:: python
+
+    import struct
+    import numpy as np
+    import kernel_tuner as kt
+
+    def create_receive_spec_struct():
+        ...
+        packstr = struct.pack('iiiiiiiiiiiPPi?fffi?0l',  #the 0l at the end ensures padding to the next long (8bytes)
+                              nSamples, nSamplesIQ, nSlowTimeSamples, nChannels,
+                              nTX, nRepeats, nFastTimeSamples, rfSize, mNRows, mNRowsIQ,
+                              nActiveChannels, 0, 0, 0, isIQ, Fs, FsIQ, Fc, nBuffers, initialized)
+        return np.frombuffer(np.array(packstr), np.dtype((np.void, len(packstr))))[0]
+
+    receive_spec = create_receive_spec_struct()
+
+    ...
+
+    args = [bf, rf, receive_spec, recon]
+
+    kt.tune_kernel(kernel_name, kernel_source, problem_size, args, tune_params,
+                   compiler_options=compiler_options, lang="CUDA", restrictions=restrict)
+
+
+The most difficult part of this code is ensuring the struct.pack format string is correct and keeping it in sync with the GPU code. Note the ``0l`` at the end of string. This enables 
+padding to the next long, which is sometimes needed when the struct argument is not the last argument in the kernel argument list.
+
