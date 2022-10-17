@@ -5,12 +5,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 
 ### Added
+- A new backend that uses Nvidia cuda-python
 - Support for locked clocks in NVMLObserver
 - Support for measuring core voltages using NVML
 - Support for custom preprocessor definitions
 
 ### Changed
 - Migrated from github.com/benvanwerkhoven to github.com/KernelTuner
+- Significant update to the documentation pages
 - Unified benchmarking loops across backends
 - Backends are no longer context managers
 - Replaced the method for measuring power consumption using NVML
