@@ -37,10 +37,10 @@ $STRAT_OPT$
 
 def get_strategy_docstring(name, strategy_options):
     """ Generate docstring for a 'tune' method of a strategy """
-    return _docstring_template.replace("$NAME$", name).replace("$STRAT_OPT$", make_strategy_options_doc(name, strategy_options))
+    return _docstring_template.replace("$NAME$", name).replace("$STRAT_OPT$", make_strategy_options_doc(strategy_options))
 
 
-def make_strategy_options_doc(strategy_name, strategy_options):
+def make_strategy_options_doc(strategy_options):
     """ Generate documentation for the supported strategy options and their defaults """
     doc = ""
     for opt, val in strategy_options.items():
