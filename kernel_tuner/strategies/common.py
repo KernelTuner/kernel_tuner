@@ -214,13 +214,13 @@ def setup_method_options(method, tuning_options):
         kwargs['rhobeg'] = tuning_options.eps
 
     # not all methods support 'disp' option
-    if not method in ['TNC']:
+    if method not in ['TNC']:
         kwargs['disp'] = tuning_options.verbose
 
     return kwargs
 
 
-def snap_to_nearest_config(x, tune_params, resolution=1):
+def snap_to_nearest_config(x, tune_params):
     """helper func that for each param selects the closest actual value"""
     params = []
     for i, k in enumerate(tune_params.keys()):
