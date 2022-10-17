@@ -35,7 +35,7 @@ Because these are reported along with the tunable parameters, it is generally a 
 
     time* #reserved for time measurements
 
-    Information that can be observed using kernel_tuner.nvml.NVMLObserver:
+    # Information that can be observed using kernel_tuner.nvml.NVMLObserver:
     nvml_energy
     nvml_power
     power_readings
@@ -43,7 +43,8 @@ Because these are reported along with the tunable parameters, it is generally a 
     mem_freq
     temperature
 
-    ps_energy  # Energy as measured by PowerSensor
-    ps_power   # Power as measured by PowerSensor
+    # Information observed using kernel_tuner.observers.PowerSensor
+    ps_energy  # Energy in Joules
+    ps_power   # Power in Watts
 
 
