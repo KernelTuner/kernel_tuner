@@ -280,7 +280,8 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
                            ("iterations", ("""The number of times a kernel should be executed and
         its execution time measured when benchmarking a kernel, 7 by default.""", "int")),
                            ("objective", ("""Optimization objective to sort results on, consisting of a string
-            that also occurs in results as a metric or observed quantity, default 'time'""", "string")),
+            that also occurs in results as a metric or observed quantity, default 'time'. 
+            Please see :ref:`objectives`.""", "string")),
                            ("objective_higher_is_better", ("""boolean that specifies whether the objective should
             be maximized (True) or minimized (False), default False.""", "bool")),
                            ("verbose", ("""Sets whether or not to report about configurations that
@@ -292,12 +293,12 @@ _tuning_options = Options([("tune_params", ("""A dictionary containing the param
             * too many resources requested for launch
 
         verbose is False by default.""", "bool")),
-                           ("cache", ("""filename for caching/logging benchmarked instances
-        filename uses suffix ".json"
-        if the file exists it is read and tuning continues from this file
-        """, "string")), ("metrics", ("specifies user-defined metrics", "OrderedDict")),
+                           ("cache", ("""Filename for the cache to persistently store benchmarked configurations.
+        Filename uses suffix ".json", which is appended if missing.
+        If the file exists, it is read and tuning continues from this file. Please see :ref:`cache`.
+        """, "string")), ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "OrderedDict")),
                            ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
-                           ("observers", ("""A list of BenchmarkObservers""", "list"))])
+                           ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list"))])
 
 _device_options = Options([("device", ("""CUDA/OpenCL device to use, in case you have multiple
         CUDA-capable GPUs or OpenCL devices you may use this to select one,

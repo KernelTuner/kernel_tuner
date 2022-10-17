@@ -223,8 +223,46 @@ class nvml():
 
 
 class NVMLObserver(BenchmarkObserver):
-    """ Observer that measures time using CUDA events during benchmarking """
+    """ Observer that uses NVML to monitor power, energy, clock frequencies, voltages and temperature
+
+    The NVMLObserver can also be used to tune application-specific clock frequencies or power limits
+    in combination with other parameters.
+
+    :param observables: List of quantities that should be observed during tuning, supported are: "power_readings",
+        "nvml_power", "nvml_energy", "core_freq", "mem_freq", "temperature", "gr_voltage". If you want to measure the average power
+        consumption of a GPU kernel executing on the GPU use "nvml_power". The "power_readings" are the individual power readings
+        as reported by NVML and will return a lot of data if you are benchmarking many different kernel configurations.
+    :type observables: list of strings
+
+    :param device: Device ordinal used by Nvidia to identify your device, same as reported by nvidia-smi.
+    :type device: integer
+
+    :param save_all: If set to True, all data collected by the NVMLObserver for every iteration during benchmarking will be returned.
+        If set to False, data will be aggregated over multiple iterations during benchmarking. False by default.
+    :type save_all: boolean
+
+    :param nvidia_smi_fallback: String with the location of your nvidia-smi executable to use when Python cannot execute with root privileges, default None.
+    :type nvidia_smi_fallback: string
+
+    :param use_locked_clocks: Boolean to opt in to using the locked clocks feature on Ampere or newer GPUs.
+        Note, this setting is only relevant when you are tuning with application-specific clocks.
+        If set to True, using locked clocks will be preferred over application clocks. If set to False, the Observer
+        will set the GPU clocks using the application clocks feature.
+        Default is False.
+    :type use_locked_clocks: boolean
+
+    :param continuous_duration: Duration to use for energy/power measurements in seconds, default 1 second.
+    :type continuous_duration: float
+
+    """
+
     def __init__(self, observables, device=0, save_all=False, nvidia_smi_fallback=None, use_locked_clocks=False, continous_duration=1):
+        """
+
+        Create an NVMLObserver.
+
+
+        """
         if nvidia_smi_fallback:
             self.nvml = nvml(device, nvidia_smi_fallback=nvidia_smi_fallback, use_locked_clocks=use_locked_clocks)
         else:

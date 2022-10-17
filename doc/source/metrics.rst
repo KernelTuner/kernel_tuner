@@ -3,6 +3,8 @@ Metrics and Objectives
 
 Metrics and custom tuning objectives are two related features that are explained on this page.
 
+.. _metrics:
+
 Metrics
 ~~~~~~~
 
@@ -27,6 +29,7 @@ part of the data reduction is left for another kernel because of synchronization
 work performed by the first kernel depends on tunable parameters such as the thread block dimensions or the
 number of thread blocks.
 
+.. _objectives:
 
 Tuning Objectives
 ~~~~~~~~~~~~~~~~~

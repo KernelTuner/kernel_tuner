@@ -1,3 +1,5 @@
+.. _observers:
+
 Observers
 ---------
 
@@ -17,7 +19,7 @@ compiling and benchmarking the kernel configurations. In this way, the observer 
 function, the state of GPU memory, or any other information in the GPU runtime.
 
 .. autoclass:: kernel_tuner.observers.BenchmarkObserver
-
+    :members:
 
 The PyOpenCL, PyCUDA, Cupy, and cuda-python backends support observers. Each backend also implements their own observer to
 measure the runtime of kernel configurations during benchmarking. The user specifies a list of observers to use when calling Kernel
@@ -38,12 +40,12 @@ track performance counters during auto-tuning..
 PowerSensorObserver
 ~~~~~~~~~~~~~~~~~~~
 
-PowerSensor2 is a custom-built power measurement device for PCIe devices that
+`PowerSensor2 <https://www.astron.nl/~romein/papers/ISPASS-18/paper.pdf>`__ is a custom-built power measurement device for PCIe devices that
 intercepts the device power with current sensors and transmits the data to the host over a USB connection. The
 main advantage of using PowerSensor2 over the GPU's built-in power sensor is that PowerSensor2 reports
 instantaneous power consumption with a very high frequency (about 2.8 KHz). PowerSensor2 comes with an
 easy-to-use software library that supports various forms of power measurement. We have created a simple
-interface using PyBind11\footnote{https://pybind11.readthedocs.io/en/stable/} to the PowerSensor library to make
+interface using `PyBind11 <https://pybind11.readthedocs.io/en/stable/>`__ to the PowerSensor library to make
 it possible to use it from Python.
 
 Kernel Tuner implements a PowerSensorObserver specifically for use with PowerSensor2, that can be selected by
@@ -73,3 +75,33 @@ almost all Nvidia GPUs, so this method is much more accessible to end-users comp
 custom hardware, such as PowerSensor2.
 
 .. autoclass:: kernel_tuner.nvml.NVMLObserver
+
+
+Tuning execution parameters with NVML
+"""""""""""""""""""""""""""""""""""""
+
+When you are using the NVMLObserver, Kernel Tuner can use its interface to NVML to enable tuning of
+execution parameters, such as power limits or memory and core clock frequencies. 
+Using application-specific clock frequencies is one of the most common approaches to tuning energy efficiency on
+GPU systems. Recently, power-capping, setting application-specific power limits, is also becoming more popular
+approach to optimize energy consumption of applications. To enable energy tuning of GPU applications,
+Kernel Tuner supports tuning applications for different clock frequencies and power limits in combination with
+other with all tunable parameters.
+
+We have implemented support in Kernel Tuner for NVML-specific tunable parameters, such as nvml\_gr\_clock,
+nvml\_mem\_clock, and nvml\_pwr\_limit. These parameters can be used to describe all the different graphics
+clocks, memory clocks, and power limits to be tested, respectively.
+For a full list of special parameter names, please see the :ref:`parameter-vocabulary`.
+We are currently implementing a number
+of helper functions to easily setup tunable parameter values for these parameters, these are expected Kernel Tuner version 0.4.4.
+
+Note that changing these settings requires root privileges on most systems. It may be possible to allow any user to change the clock frequencies without privileges, but enabling this 
+setting does require root privileges. As such, these features may not be available to all users on all systems. The optional argument ``nvidia_smi_fallback`` to NVMLObserver may be set to 
+the path where you are allowed to run nvidia-smi with privileges. This allows your Kernel Tuner application to run without privileges, and configurating the clock frequencies or power 
+limits will be done through nvidia-smi.
+
+
+
+
+
+
