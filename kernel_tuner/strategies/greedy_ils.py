@@ -1,43 +1,26 @@
 """ A simple greedy iterative local search algorithm for parameter search """
+from collections import OrderedDict
 
-from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
-from kernel_tuner.strategies.hillclimbers import base_hillclimb
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import _cost_func
 from kernel_tuner.strategies.genetic_algorithm import mutate
+from kernel_tuner.strategies.hillclimbers import base_hillclimb
+
+_options = OrderedDict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
+                       restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
+                       no_improvement=("number of evaluations to exceed without improvement before restarting", 50),
+                       random_walk=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", 0.3))
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     dna_size = len(tuning_options.tune_params.keys())
 
     options = tuning_options.strategy_options
 
-    neighbor = options.get("neighbor", "Hamming")
-    restart = options.get("restart", True)
-    no_improvement = options.get("no_improvement", 50)
-    randomwalk = options.get("random_walk", 0.3)
+    neighbor, restart, no_improvement, randomwalk = common.get_options(options, _options)
+
     perm_size = int(randomwalk * dna_size)
     if perm_size == 0:
         perm_size = 1
@@ -77,6 +60,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
         candidate = random_walk(candidate, perm_size, no_improvement, last_improvement, searchspace)
     return results, runner.dev.get_environment()
 
+
+tune.__doc__ = common.get_strategy_docstring("Greedy Iterative Local Search (ILS)", _options)
 
 def random_walk(indiv, permutation_size, no_improve, last_improve, searchspace: Searchspace):
     if last_improve >= no_improve:

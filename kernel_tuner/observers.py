@@ -50,7 +50,19 @@ class ContinuousObserver(BenchmarkObserver):
 
 
 class PowerSensorObserver(BenchmarkObserver):
-    """Observer that an external PowerSensor2 device to accurately measure power"""
+    """ Observer that an external PowerSensor2 device to accurately measure power
+
+    Requires PowerSensor2 hardware and power_sensor Python bindings.
+
+    :param observables: A list of string, containing any of "ps_energy" or "ps_power".
+        To measure energy in Joules or power consumption in Watt.
+        If not passed "ps_energy" is used to report energy consumption of kernels in Joules.
+    :type observables: list
+
+    :param device: A string with the path to the PowerSensor2 device, default "/dev/ttyACM0".
+    :type device: string
+
+    """
 
     def __init__(self, observables=None, device=None):
         if not power_sensor:

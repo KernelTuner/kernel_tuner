@@ -48,7 +48,7 @@ Running tests
 To run the tests you can use ``pytest -v test/`` in the top-level directory.
 
 Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
-are not installed/present. The same holds for tests that require PyOpenCL.
+are not installed/present. The same holds for tests that require PyOpenCL, Cupy, Nvidia CUDA.
 
 Contributions you make to the Kernel Tuner should not break any of the tests
 even if you cannot run them locally.
@@ -60,12 +60,19 @@ Building documentation
 ----------------------
 Documentation is located in the ``doc/`` directory. This is where you can type
 ``make html`` to generate the html pages in the ``doc/build/html`` directory.
-
 The source files used for building the documentation are located in
-``doc/source``. The tutorials should be included in the ``tutorials/`` directory
-and a symlink can be used to add them to the source file directory before building
-documentation.
+``doc/source``. 
+To locally inspect the documentation before committing you can browse through
+the documentation pages generated locally in ``doc/build/html``.
 
-To update the documentation pages hosted on the GitHub the generated contents of
-``doc/build/html`` should be copied to the top-level directory of the
-``gh-pages`` branch.
+To make sure you have all the dependencies required to build the documentation,
+you can install the extras using ``pip install -e .[doc]``. Pandoc is also required,
+you can install pandoc on ubuntu using ``sudo apt install pandoc``, for different
+setups please see `pandoc's install documentation <https://pandoc.org/installing.html>`__.
+
+The documentation pages hosted online are built automatically using GitHub actions.
+The documentation pages corresponding to the master branch are hosted in /latest/.
+The documentation of the last release is in /stable/. When a new release
+is published the documentation for that release will be stored in a directory
+created for that release and /stable/ will be updated to point to the last
+release. This process is again fully automated using GitHub actions.

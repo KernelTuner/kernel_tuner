@@ -17,6 +17,7 @@ from kernel_tuner import util
 
 from .context import skip_if_no_gfortran, skip_if_no_gcc, skip_if_no_openmp
 
+@skip_if_no_gcc
 def test_ready_argument_list1():
     arg1 = np.array([1, 2, 3]).astype(np.float32)
     arg2 = np.array([4, 5, 6]).astype(np.float64)
@@ -48,7 +49,7 @@ def test_ready_argument_list1():
     assert all(output[1].numpy == arg2)
     assert all(output[2].numpy == arg3)
 
-
+@skip_if_no_gcc
 def test_ready_argument_list2():
     arg1 = np.array([1, 2, 3]).astype(np.float32)
     arg2 = np.int32(7)
@@ -70,6 +71,7 @@ def test_ready_argument_list2():
     assert output[2][1].value == arg3
 
 
+@skip_if_no_gcc
 def test_ready_argument_list3():
     arg1 = Mock()
     arguments = [arg1]
@@ -81,6 +83,7 @@ def test_ready_argument_list3():
         assert True
 
 
+@skip_if_no_gcc
 def test_ready_argument_list4():
     with raises(TypeError):
         arg1 = int(9)
@@ -88,6 +91,7 @@ def test_ready_argument_list4():
         cfunc.ready_argument_list([arg1])
 
 
+@skip_if_no_gcc
 def test_ready_argument_list5():
     arg1 = np.array([1, 2, 3]).astype(np.float32)
     arguments = [arg1]
@@ -102,6 +106,7 @@ def test_ready_argument_list5():
     assert all(output[0].numpy == arg1)
 
 
+@skip_if_no_gcc
 def test_byte_array_arguments():
     arg1 = np.array([1, 2, 3]).astype(np.int8)
 
@@ -179,6 +184,7 @@ def test_compile_detects_device_code(npct, subprocess):
     assert dot_cu_used
 
 
+@skip_if_no_gcc
 def test_memset():
     a = [1, 2, 3, 4]
     x = np.array(a).astype(np.float32)
@@ -195,6 +201,7 @@ def test_memset():
     assert all(x == np.zeros(4))
 
 
+@skip_if_no_gcc
 def test_memcpy_dtoh():
     a = [1, 2, 3, 4]
     x = np.array(a).astype(np.float32)
@@ -212,6 +219,7 @@ def test_memcpy_dtoh():
     assert all(x == a)
 
 
+@skip_if_no_gcc
 def test_memcpy_htod():
     a = [1, 2, 3, 4]
     src = np.array(a).astype(np.float32)

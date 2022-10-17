@@ -1,39 +1,22 @@
 """ The strategy that uses the dual annealing optimization method """
+from collections import OrderedDict
+
 import scipy.optimize
-
-from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps, setup_method_arguments, setup_method_options
 from kernel_tuner import util
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import (_cost_func, get_bounds_x0_eps,
+                                            setup_method_arguments,
+                                            setup_method_options)
 
-supported_methods = ['COBYLA','L-BFGS-B','SLSQP','CG','Powell','Nelder-Mead', 'BFGS', 'trust-constr']
+supported_methods = ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr']
 
+_options = OrderedDict(method=(f"Local optimization method to use, choose any from {supported_methods}", "Powell"))
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: dict
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     results = []
 
-    method = tuning_options.strategy_options.get("method", "Powell")
+    method = common.get_options(tuning_options.strategy_options, _options)[0]
 
     #scale variables in x to make 'eps' relevant for multiple variables
     tuning_options["scaling"] = True
@@ -46,7 +29,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     args = (kernel_options, tuning_options, runner, results)
 
-    minimizer_kwargs = dict()
+    minimizer_kwargs = {}
     minimizer_kwargs["method"] = method
 
     opt_result = None
@@ -60,3 +43,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
         print(opt_result.message)
 
     return results, runner.dev.get_environment()
+
+
+tune.__doc__ = common.get_strategy_docstring("Dual Annealing", _options)

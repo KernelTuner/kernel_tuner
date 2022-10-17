@@ -1,5 +1,5 @@
-Installation Guide
-==================
+Installation
+============
 
 The Kernel Tuner requires several packages to be installed. First of all, you need a 
 working Python version, several Python packages, and optionally CUDA and/or OpenCL 
@@ -112,11 +112,11 @@ Or you could install Kernel Tuner and PyOpenCL together if you haven't done so a
 If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.net/PyOpenCL/Installation)
 
 
-Installing Kernel Tuner
------------------------
+Installing the git version
+--------------------------
 
 You can also install from the git repository. This way you also get the 
-examples and the tutorials.
+examples.
 
 .. code-block:: bash
 
@@ -129,7 +129,7 @@ You can install Kernel Tuner with several optional dependencies, the full list i
 - `cuda`: install pycuda along with kernel_tuner
 - `opencl`: install pycuda along with kernel_tuner
 - `doc`: installs packages required to build the documentation
-- `tutorial`: install packages required to run the tutorials
+- `tutorial`: install packages required to run the guides
 - `dev`: install everything you need to start development on Kernel Tuner
 
 For example, use:
@@ -139,13 +139,13 @@ pip install .[dev,cuda,opencl]
 To install Kernel Tuner along with all the packages required for development.
 
 
-Dependencies for the Tutorial
------------------------------
+Dependencies for the guides
+---------------------------
 
-Some addition Python packages are required to run the tutorial. These packages are
-actually very commonly used and chances are that you already have these installed.
+Some addition Python packages are required to run the Jupyter notebook guides.
+These packages are commonly used and chances are that you already have these installed.
 
-However, to install Kernel Tuner along with the dependencies to run the tutorials,
+However, to install Kernel Tuner along with the dependencies to run the guides,
 you could use:
 
 .. code-block:: bash

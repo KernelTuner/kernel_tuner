@@ -10,7 +10,7 @@ def test_hyper(env):
     hyper_params = OrderedDict()
     hyper_params["popsize"] = [5]
     hyper_params["maxiter"] = [5, 10]
-    hyper_params["crossover"] = ["uniform"]
+    hyper_params["method"] = ["uniform"]
     hyper_params["mutation_chance"] = [10]
 
     target_strategy = "genetic_algorithm"

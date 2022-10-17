@@ -90,7 +90,7 @@ def test_diff_evo(env):
 
 
 def test_genetic_algorithm(env):
-    options = dict(method="uniform", popsize=10, maxiter=2, mutation_change=1)
+    options = dict(method="uniform", popsize=10, maxiter=2, mutation_chance=1)
     result, _ = kernel_tuner.tune_kernel(*env, strategy="genetic_algorithm", strategy_options=options, verbose=True, cache=cache_filename, simulation_mode=True)
     assert len(result) > 0
 

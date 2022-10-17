@@ -1,35 +1,20 @@
 """ The strategy that uses particle swarm optimization"""
-import sys
 import random
-import numpy as np
+import sys
+from collections import OrderedDict
 
-from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner.searchspace import Searchspace
+import numpy as np
 from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import _cost_func
+
+_options = OrderedDict(T=("Starting temperature", 1.0),
+                       T_min=("End temperature", 0.001),
+                       alpha=("Alpha parameter", 0.995),
+                       maxiter=("Number of iterations within each annealing step", 1))
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: dict
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     results = []
 
@@ -39,11 +24,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
     searchspace = Searchspace(tuning_options, runner.dev.max_threads)
 
     # optimization parameters
-    T = tuning_options.strategy_options.get("T", 1.0)
+    T, T_min, alpha, niter = common.get_options(tuning_options.strategy_options, _options)
     T_start = T
-    T_min = tuning_options.strategy_options.get("T_min", 0.001)
-    alpha = tuning_options.strategy_options.get("alpha", 0.995)
-    niter = tuning_options.strategy_options.get("maxiter", 1)
 
     # compute how many iterations would be needed to complete the annealing schedule
     max_iter = int(np.ceil(np.log(T_min)/np.log(alpha)))
@@ -104,6 +86,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
             break
 
     return results, runner.dev.get_environment()
+
+
+tune.__doc__ = common.get_strategy_docstring("Simulated Annealing", _options)
 
 def acceptance_prob(old_cost, new_cost, T, tuning_options):
     """annealing equation, with modifications to work towards a lower value"""

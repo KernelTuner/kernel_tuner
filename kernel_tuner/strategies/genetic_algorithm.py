@@ -1,42 +1,23 @@
 """ A simple genetic algorithm for parameter search """
-
 import random
+from collections import OrderedDict
+
 import numpy as np
-
-from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner.searchspace import Searchspace
 from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import _cost_func
 
+_options = OrderedDict(popsize=("population size", 20),
+                       maxiter=("maximum number of generations", 50),
+                       method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
+                       mutation_chance=("chance to mutate is 1 in mutation_chance", 10))
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
 
     options = tuning_options.strategy_options
-    pop_size = options.get("popsize", 20)
-    generations = options.get("maxiter", 50)
-    crossover = supported_methods[options.get("method", "uniform")]
-    mutation_chance = options.get("mutation_chance", 10)
+    pop_size, generations, method, mutation_chance = common.get_options(options, _options)
+    crossover = supported_methods[method]
 
     tuning_options["scaling"] = False
 
@@ -90,6 +71,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
         # could combine old + new generation here and do a selection
 
     return results, runner.dev.get_environment()
+
+
+tune.__doc__ = common.get_strategy_docstring("Genetic Algorithm", _options)
 
 
 def weighted_choice(population, n):
