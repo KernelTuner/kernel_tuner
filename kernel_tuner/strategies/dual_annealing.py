@@ -29,7 +29,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     args = (kernel_options, tuning_options, runner, results)
 
-    minimizer_kwargs = dict()
+    minimizer_kwargs = {}
     minimizer_kwargs["method"] = method
 
     opt_result = None
