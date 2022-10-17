@@ -19,11 +19,19 @@ Numpy, and Kernel Tuner to call a CUDA kernel that uses a struct as kernel argum
 
     def create_receive_spec_struct():
         ...
-        packstr = struct.pack('iiiiiiiiiiiPPi?fffi?0l',  #the 0l at the end ensures padding to the next long (8bytes)
-                              nSamples, nSamplesIQ, nSlowTimeSamples, nChannels,
-                              nTX, nRepeats, nFastTimeSamples, rfSize, mNRows, mNRowsIQ,
-                              nActiveChannels, 0, 0, 0, isIQ, Fs, FsIQ, Fc, nBuffers, initialized)
-        return np.frombuffer(np.array(packstr), np.dtype((np.void, len(packstr))))[0]
+
+        # Use struct.pack to create a byte representation of our struct
+        # The format string uses:
+        #   i for integer, P for Pointer, f for float, ? for bool
+        # The 0l at the end ensures padding to the next long (8bytes)
+        packstr = struct.pack('iiiiiiiiiiiPPi?fffi?0l', 
+                              nSamples, nSamplesIQ, nSlowTimeSamples,
+                              nChannels, nTX, nRepeats, nFastTimeSamples,
+                              rfSize, mNRows, mNRowsIQ, nActiveChannels,
+                              0, 0, 0, isIQ, Fs, FsIQ, Fc, nBuffers,
+                              initialized)
+        return np.frombuffer(np.array(packstr),
+                             np.dtype((np.void, len(packstr))))[0]
 
     receive_spec = create_receive_spec_struct()
 
@@ -31,8 +39,7 @@ Numpy, and Kernel Tuner to call a CUDA kernel that uses a struct as kernel argum
 
     args = [bf, rf, receive_spec, recon]
 
-    kt.tune_kernel(kernel_name, kernel_source, problem_size, args, tune_params,
-                   compiler_options=compiler_options, lang="CUDA", restrictions=restrict)
+    kt.tune_kernel(kernel_name, kernel_source, problem_size, args, tune_params)
 
 
 The most difficult part of this code is ensuring the struct.pack format string is correct and keeping it in sync with the GPU code. Note the ``0l`` at the end of string. This enables 
