@@ -27,7 +27,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Kernel Tuner
+            <a href="contents.html" class="icon icon-home"> Kernel Tuner
           </a>
               <div class="version">
                 0.4.2
@@ -40,16 +40,32 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
@@ -62,14 +78,14 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">Kernel Tuner</a>
+          <a href="contents.html">Kernel Tuner</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
       <li>Index</li>
       <li class="wy-breadcrumbs-aside">
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/genindex" class="fa fa-github"> Edit on GitHub</a>
@@ -131,7 +147,13 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.simulated_annealing.acceptance_prob">acceptance_prob() (in module kernel_tuner.strategies.simulated_annealing)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.simulated_annealing.acceptance_prob">acceptance_prob() (in module kernel_tuner.strategies.simulated_annealing)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.after_finish">after_finish() (kernel_tuner.observers.BenchmarkObserver method)</a>
+</li>
+      <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.after_start">after_start() (kernel_tuner.observers.BenchmarkObserver method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -139,6 +161,8 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.before_start">before_start() (kernel_tuner.observers.BenchmarkObserver method)</a>
+</li>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.benchmark">benchmark() (kernel_tuner.core.DeviceInterface method)</a>
 </li>
   </ul></td>
@@ -146,6 +170,8 @@
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.benchmark_continuous">benchmark_continuous() (kernel_tuner.core.DeviceInterface method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.core.DeviceInterface.benchmark_default">benchmark_default() (kernel_tuner.core.DeviceInterface method)</a>
+</li>
+      <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver">BenchmarkObserver (class in kernel_tuner.observers)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -191,7 +217,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.compile_restrictions">compile_restrictions() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.Firefly.compute_intensity">compute_intensity() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.firefly_algorithm.Firefly.compute_intensity">compute_intensity() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.config_valid">config_valid() (in module kernel_tuner.util)</a>
 </li>
@@ -241,11 +267,13 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.disruptive_uniform_crossover">disruptive_uniform_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.disruptive_uniform_crossover">disruptive_uniform_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.Firefly.distance_to">distance_to() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.firefly_algorithm.Firefly.distance_to">distance_to() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.dump_cache">dump_cache() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.during">during() (kernel_tuner.observers.BenchmarkObserver method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -261,7 +289,7 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.Firefly">Firefly (class in kernel_tuner.strategies.firefly_algorithm)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.firefly_algorithm.Firefly">Firefly (class in kernel_tuner.strategies.firefly_algorithm)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -269,13 +297,13 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.bayes_opt.generate_normalized_param_dicts">generate_normalized_param_dicts() (in module kernel_tuner.strategies.bayes_opt)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.bayes_opt.generate_normalized_param_dicts">generate_normalized_param_dicts() (in module kernel_tuner.strategies.bayes_opt)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_best_config">get_best_config() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.minimize.get_bounds">get_bounds() (in module kernel_tuner.strategies.minimize)</a>
+      <li><a href="design.html#kernel_tuner.strategies.common.get_bounds">get_bounds() (in module kernel_tuner.strategies.common)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.minimize.get_bounds_x0_eps">get_bounds_x0_eps() (in module kernel_tuner.strategies.minimize)</a>
+      <li><a href="design.html#kernel_tuner.strategies.common.get_bounds_x0_eps">get_bounds_x0_eps() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_config_string">get_config_string() (in module kernel_tuner.util)</a>
 </li>
@@ -283,15 +311,21 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.get_grid_dimensions">get_grid_dimensions() (in module kernel_tuner.util)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.get_instance_string">get_instance_string() (in module kernel_tuner.util)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.strategies.common.get_options">get_options() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_problem_size">get_problem_size() (in module kernel_tuner.util)</a>
 </li>
+      <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.get_results">get_results() (kernel_tuner.observers.BenchmarkObserver method)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.get_smem_args">get_smem_args() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.strategies.common.get_strategy_docstring">get_strategy_docstring() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_temp_filename">get_temp_filename() (in module kernel_tuner.util)</a>
 </li>
@@ -327,49 +361,56 @@
     kernel_tuner.strategies.basinhopping
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.basinhopping">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.basinhopping">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.bayes_opt
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.bayes_opt">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.bayes_opt">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.brute_force
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.brute_force">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.brute_force">module</a>
+</li>
+      </ul></li>
+      <li>
+    kernel_tuner.strategies.common
+
+      <ul>
+        <li><a href="design.html#module-kernel_tuner.strategies.common">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.diff_evo
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.diff_evo">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.diff_evo">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.dual_annealing
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.dual_annealing">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.dual_annealing">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.firefly_algorithm
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.firefly_algorithm">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.firefly_algorithm">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.genetic_algorithm
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.genetic_algorithm">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.genetic_algorithm">module</a>
 </li>
       </ul></li>
   </ul></td>
@@ -378,56 +419,56 @@
     kernel_tuner.strategies.greedy_ils
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.greedy_ils">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.greedy_ils">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.greedy_mls
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.greedy_mls">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.greedy_mls">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.minimize
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.minimize">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.minimize">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.mls
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.mls">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.mls">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.ordered_greedy_mls
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.ordered_greedy_mls">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.ordered_greedy_mls">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.pso
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.pso">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.pso">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.random_sample
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.random_sample">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.random_sample">module</a>
 </li>
       </ul></li>
       <li>
     kernel_tuner.strategies.simulated_annealing
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.simulated_annealing">module</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.simulated_annealing">module</a>
 </li>
       </ul></li>
       <li>
@@ -451,6 +492,8 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.strategies.common.make_strategy_options_doc">make_strategy_options_doc() (in module kernel_tuner.strategies.common)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.MaxProdConstraint">MaxProdConstraint (class in kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.c.CFunctions.memcpy_dtoh">memcpy_dtoh() (kernel_tuner.c.CFunctions method)</a>
@@ -489,44 +532,46 @@
     module
 
       <ul>
-        <li><a href="design.html#module-kernel_tuner.strategies.basinhopping">kernel_tuner.strategies.basinhopping</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.basinhopping">kernel_tuner.strategies.basinhopping</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.bayes_opt">kernel_tuner.strategies.bayes_opt</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.bayes_opt">kernel_tuner.strategies.bayes_opt</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.brute_force">kernel_tuner.strategies.brute_force</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.brute_force">kernel_tuner.strategies.brute_force</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.diff_evo">kernel_tuner.strategies.diff_evo</a>
+        <li><a href="design.html#module-kernel_tuner.strategies.common">kernel_tuner.strategies.common</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.dual_annealing">kernel_tuner.strategies.dual_annealing</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.diff_evo">kernel_tuner.strategies.diff_evo</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.firefly_algorithm">kernel_tuner.strategies.firefly_algorithm</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.dual_annealing">kernel_tuner.strategies.dual_annealing</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.genetic_algorithm">kernel_tuner.strategies.genetic_algorithm</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.firefly_algorithm">kernel_tuner.strategies.firefly_algorithm</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.greedy_ils">kernel_tuner.strategies.greedy_ils</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.genetic_algorithm">kernel_tuner.strategies.genetic_algorithm</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.greedy_mls">kernel_tuner.strategies.greedy_mls</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.greedy_ils">kernel_tuner.strategies.greedy_ils</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.minimize">kernel_tuner.strategies.minimize</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.greedy_mls">kernel_tuner.strategies.greedy_mls</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.mls">kernel_tuner.strategies.mls</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.minimize">kernel_tuner.strategies.minimize</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.ordered_greedy_mls">kernel_tuner.strategies.ordered_greedy_mls</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.mls">kernel_tuner.strategies.mls</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.pso">kernel_tuner.strategies.pso</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.ordered_greedy_mls">kernel_tuner.strategies.ordered_greedy_mls</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.random_sample">kernel_tuner.strategies.random_sample</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.pso">kernel_tuner.strategies.pso</a>
 </li>
-        <li><a href="design.html#module-kernel_tuner.strategies.simulated_annealing">kernel_tuner.strategies.simulated_annealing</a>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.random_sample">kernel_tuner.strategies.random_sample</a>
+</li>
+        <li><a href="optimization.html#module-kernel_tuner.strategies.simulated_annealing">kernel_tuner.strategies.simulated_annealing</a>
 </li>
         <li><a href="design.html#module-kernel_tuner.util">kernel_tuner.util</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.Firefly.move_towards">move_towards() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.firefly_algorithm.Firefly.move_towards">move_towards() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.mutate">mutate() (in module kernel_tuner.strategies.genetic_algorithm)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.mutate">mutate() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -534,13 +579,15 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.simulated_annealing.neighbor">neighbor() (in module kernel_tuner.strategies.simulated_annealing)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.simulated_annealing.neighbor">neighbor() (in module kernel_tuner.strategies.simulated_annealing)</a>
+</li>
+      <li><a href="optimization.html#kernel_tuner.strategies.bayes_opt.normalize_parameter_space">normalize_parameter_space() (in module kernel_tuner.strategies.bayes_opt)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.bayes_opt.normalize_parameter_space">normalize_parameter_space() (in module kernel_tuner.strategies.bayes_opt)</a>
-</li>
       <li><a href="design.html#kernel_tuner.util.normalize_verify_function">normalize_verify_function() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="observers.html#kernel_tuner.nvml.NVMLObserver">NVMLObserver (class in kernel_tuner.nvml)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -558,9 +605,9 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.parse_restrictions">parse_restrictions() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.prepare_kernel_string">prepare_kernel_string() (in module kernel_tuner.util)</a>
+      <li><a href="observers.html#kernel_tuner.observers.PowerSensorObserver">PowerSensorObserver (class in kernel_tuner.observers)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.MaxProdConstraint.preProcess">preProcess() (kernel_tuner.util.MaxProdConstraint method)</a>
+      <li><a href="design.html#kernel_tuner.util.prepare_kernel_string">prepare_kernel_string() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.print_config">print_config() (in module kernel_tuner.util)</a>
 </li>
@@ -572,7 +619,7 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.process_metrics">process_metrics() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.bayes_opt.prune_parameter_space">prune_parameter_space() (in module kernel_tuner.strategies.bayes_opt)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.bayes_opt.prune_parameter_space">prune_parameter_space() (in module kernel_tuner.strategies.bayes_opt)</a>
 </li>
       <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions">PyCudaFunctions (class in kernel_tuner.pycuda)</a>
 </li>
@@ -598,6 +645,8 @@
         <li><a href="design.html#kernel_tuner.pycuda.PyCudaFunctions.ready_argument_list">(kernel_tuner.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
+      <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.register_device">register_device() (kernel_tuner.observers.BenchmarkObserver method)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.replace_param_occurrences">replace_param_occurrences() (in module kernel_tuner.util)</a>
 </li>
   </ul></td>
@@ -630,23 +679,23 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.minimize.scale_from_params">scale_from_params() (in module kernel_tuner.strategies.minimize)</a>
+      <li><a href="design.html#kernel_tuner.strategies.common.scale_from_params">scale_from_params() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner">SequentialRunner (class in kernel_tuner.runners.sequential)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.setup_block_and_grid">setup_block_and_grid() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.minimize.setup_method_arguments">setup_method_arguments() (in module kernel_tuner.strategies.minimize)</a>
+      <li><a href="design.html#kernel_tuner.strategies.common.setup_method_arguments">setup_method_arguments() (in module kernel_tuner.strategies.common)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.minimize.setup_method_options">setup_method_options() (in module kernel_tuner.strategies.minimize)</a>
+      <li><a href="design.html#kernel_tuner.strategies.common.setup_method_options">setup_method_options() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.runners.simulation.SimulationRunner">SimulationRunner (class in kernel_tuner.runners.simulation)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.single_point_crossover">single_point_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.single_point_crossover">single_point_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.SkippableFailure">SkippableFailure</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.minimize.snap_to_nearest_config">snap_to_nearest_config() (in module kernel_tuner.strategies.minimize)</a>
+      <li><a href="design.html#kernel_tuner.strategies.common.snap_to_nearest_config">snap_to_nearest_config() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.c.CFunctions.start_event">start_event() (kernel_tuner.c.CFunctions method)</a>
 
@@ -692,43 +741,43 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.basinhopping.tune">tune() (in module kernel_tuner.strategies.basinhopping)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.basinhopping.tune">tune() (in module kernel_tuner.strategies.basinhopping)</a>
 
       <ul>
-        <li><a href="design.html#kernel_tuner.strategies.bayes_opt.tune">(in module kernel_tuner.strategies.bayes_opt)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.bayes_opt.tune">(in module kernel_tuner.strategies.bayes_opt)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.brute_force.tune">(in module kernel_tuner.strategies.brute_force)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.brute_force.tune">(in module kernel_tuner.strategies.brute_force)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.diff_evo.tune">(in module kernel_tuner.strategies.diff_evo)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.tune">(in module kernel_tuner.strategies.diff_evo)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.dual_annealing.tune">(in module kernel_tuner.strategies.dual_annealing)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.dual_annealing.tune">(in module kernel_tuner.strategies.dual_annealing)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.firefly_algorithm.tune">(in module kernel_tuner.strategies.firefly_algorithm)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.firefly_algorithm.tune">(in module kernel_tuner.strategies.firefly_algorithm)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.tune">(in module kernel_tuner.strategies.genetic_algorithm)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.tune">(in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.greedy_ils.tune">(in module kernel_tuner.strategies.greedy_ils)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.greedy_ils.tune">(in module kernel_tuner.strategies.greedy_ils)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.greedy_mls.tune">(in module kernel_tuner.strategies.greedy_mls)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.greedy_mls.tune">(in module kernel_tuner.strategies.greedy_mls)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.minimize.tune">(in module kernel_tuner.strategies.minimize)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.minimize.tune">(in module kernel_tuner.strategies.minimize)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.mls.tune">(in module kernel_tuner.strategies.mls)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.mls.tune">(in module kernel_tuner.strategies.mls)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.ordered_greedy_mls.tune">(in module kernel_tuner.strategies.ordered_greedy_mls)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.ordered_greedy_mls.tune">(in module kernel_tuner.strategies.ordered_greedy_mls)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.pso.tune">(in module kernel_tuner.strategies.pso)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.pso.tune">(in module kernel_tuner.strategies.pso)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.random_sample.tune">(in module kernel_tuner.strategies.random_sample)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.random_sample.tune">(in module kernel_tuner.strategies.random_sample)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.strategies.simulated_annealing.tune">(in module kernel_tuner.strategies.simulated_annealing)</a>
+        <li><a href="optimization.html#kernel_tuner.strategies.simulated_annealing.tune">(in module kernel_tuner.strategies.simulated_annealing)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="user-api.html#kernel_tuner.tune_kernel">tune_kernel() (in module kernel_tuner)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.two_point_crossover">two_point_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.two_point_crossover">two_point_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -736,11 +785,11 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.uniform_crossover">uniform_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.uniform_crossover">uniform_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.minimize.unscale_and_snap_to_nearest">unscale_and_snap_to_nearest() (in module kernel_tuner.strategies.minimize)</a>
+      <li><a href="design.html#kernel_tuner.strategies.common.unscale_and_snap_to_nearest">unscale_and_snap_to_nearest() (in module kernel_tuner.strategies.common)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -748,7 +797,7 @@
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.strategies.genetic_algorithm.weighted_choice">weighted_choice() (in module kernel_tuner.strategies.genetic_algorithm)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.weighted_choice">weighted_choice() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parameter Vocabulary &mdash; Kernel Tuner 0.4.2 documentation</title>
+  <title>Metrics and Objectives &mdash; Kernel Tuner 0.4.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -21,8 +21,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Design documentation" href="design.html" />
-    <link rel="prev" title="API Documentation" href="user-api.html" /> 
+    <link rel="next" title="Observers" href="observers.html" />
+    <link rel="prev" title="Optimization strategies" href="optimization.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -57,20 +57,24 @@
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
 <li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
-<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Metrics and Objectives</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#metrics">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tuning-objectives">Tuning Objectives</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
@@ -89,9 +93,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Parameter Vocabulary</li>
+      <li>Metrics and Objectives</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/vocabulary.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/metrics.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -123,51 +127,49 @@
     text-align: unset;
 }
 </style>
-<section id="parameter-vocabulary">
-<span id="id1"></span><h1>Parameter Vocabulary<a class="headerlink" href="#parameter-vocabulary" title="Permalink to this heading">¶</a></h1>
-<p>There are certain tunable parameters that have special meaning in Kernel Tuner.
-This document specifies which parameters are special and what there uses are when auto-tuning GPU kernels.</p>
-<p>In general, it is best to avoid using these parameter names for purposes other than the ones indicated in this document.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_tuner</span> <span class="c1">#is inserted by Kernel Tuner to signal the code is compiled using the tuner</span>
-
-<span class="n">block_size_</span><span class="o">*</span> <span class="c1">#reserved for thread block dimensions</span>
-<span class="n">grid_size_</span><span class="o">*</span> <span class="c1">#reserved for grid dimensions, if you want to tune these use problem_size</span>
-
-<span class="n">compiler_opt_</span><span class="o">*</span> <span class="c1">#reserved for future support for tuning compiler options</span>
-
-<span class="n">loop_unroll_factor_</span><span class="o">*</span> <span class="c1">#reserved for tunable parameters that specify loop unrolling factors</span>
-
-<span class="n">nvml_</span><span class="o">*</span> <span class="c1">#reserved for tunable parameters and outputs related to NVML</span>
-<span class="n">nvml_pwr_limit</span> <span class="c1">#use NVML to set power limit</span>
-<span class="n">nvml_gr_clock</span> <span class="c1">#use NVML to set graphics clock</span>
-<span class="n">nvml_mem_clock</span> <span class="c1">#use NVML to set memory clock</span>
+<section id="metrics-and-objectives">
+<h1>Metrics and Objectives<a class="headerlink" href="#metrics-and-objectives" title="Permalink to this heading">¶</a></h1>
+<p>Metrics and custom tuning objectives are two related features that are explained on this page.</p>
+<section id="metrics">
+<span id="id1"></span><h2>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">¶</a></h2>
+<p>User-defined metrics serve as an easy way for the user to define their own derived results based on the measurements reported
+by Kernel Tuner, and possibly any additional observers. This allows for example to implement performance metrics, such as
+performance in floating point operations per second (e.g. GFLOP/s), or other metrics that might be more specific to the
+application, for example the number of input elements processed per second. The code below shows an example of
+user-defined metrics for a kernel that performs <code class="docutils literal notranslate"><span class="pre">total\_flops</span></code> GFLOP in total. User-defined
+metrics are composable, meaning that they can be defined using other user-defined metrics. That is why metrics must be
+specified using an OrderedDict as they are defined in order.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">metrics</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;GFLOP/s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">total_flops</span> <span class="o">/</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1e3</span><span class="p">)</span>
+<span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;GFLOPS/W&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">total_flops</span> <span class="o">/</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;ps_energy&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>There are also a number of names that Kernel Tuner uses for reporting benchmarking results.
-Because these are reported along with the tunable parameters, it is generally a good idea to not use these names for any tunable parameters.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">time</span><span class="o">*</span> <span class="c1">#reserved for time measurements</span>
-
-<span class="c1"># Information that can be observed using kernel_tuner.nvml.NVMLObserver:</span>
-<span class="n">nvml_energy</span>
-<span class="n">nvml_power</span>
-<span class="n">power_readings</span>
-<span class="n">core_freq</span>
-<span class="n">mem_freq</span>
-<span class="n">temperature</span>
-
-<span class="c1"># Information observed using kernel_tuner.observers.PowerSensor</span>
-<span class="n">ps_energy</span>  <span class="c1"># Energy in Joules</span>
-<span class="n">ps_power</span>   <span class="c1"># Power in Watts</span>
-</pre></div>
-</div>
+<p>User-defined metrics are particularly useful when the total amount of work varies between kernel configurations
+and the total execution time on its own is no longer a sufficient metric to compare the performance of different kernel
+configurations. This occurs in many kernels, for example in kernels that perform a reduction step, where some
+part of the data reduction is left for another kernel because of synchronization. In this case, the amount of
+work performed by the first kernel depends on tunable parameters such as the thread block dimensions or the
+number of thread blocks.</p>
+</section>
+<section id="tuning-objectives">
+<span id="objectives"></span><h2>Tuning Objectives<a class="headerlink" href="#tuning-objectives" title="Permalink to this heading">¶</a></h2>
+<p>Users can specify tuning objectives other than the default optimization objective, which is kernel execution time. When using
+an optimization strategy other than exhaustive search (brute force), this objective is used to guide the optimization through
+the parameter space. The tuning objective is specified using the <code class="docutils literal notranslate"><span class="pre">objective=</span></code> optional parameter of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> and
+is specified as a string. This string can be a user-defined metric or a quantity reported by an observer.</p>
+<p>In addition to specifying the name of the tuning objective, it is important for many of the optimization
+strategies implemented in Kernel Tuner to know whether the objective should be minimized or maximized. Kernel
+Tuner uses a list of defaults, but for some user-defined metrics the user may also need to specify the direction
+of optimization. This is done by passing a boolean in the <code class="docutils literal notranslate"><span class="pre">objective_higher_is_better=</span></code> optional parameter of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="user-api.html" class="btn btn-neutral float-left" title="API Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="design.html" class="btn btn-neutral float-right" title="Design documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="optimization.html" class="btn btn-neutral float-left" title="Optimization strategies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="observers.html" class="btn btn-neutral float-right" title="Observers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -21,7 +21,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation Guide" href="install.html" /> 
+    <link rel="next" title="Installation" href="install.html" />
+    <link rel="prev" title="The Kernel Tuner documentation" href="contents.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -29,7 +30,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> Kernel Tuner
+            <a href="contents.html" class="icon icon-home"> Kernel Tuner
           </a>
               <div class="version">
                 0.4.2
@@ -42,16 +43,37 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#quick-install">Quick install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-usage">Example usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#citation">Citation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
@@ -64,14 +86,14 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">Kernel Tuner</a>
+          <a href="contents.html">Kernel Tuner</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
       <li>The Kernel Tuner documentation</li>
       <li class="wy-breadcrumbs-aside">
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/index.rst" class="fa fa-github"> Edit on GitHub</a>
@@ -108,40 +130,18 @@
 </style>
 <section id="the-kernel-tuner-documentation">
 <h1>The Kernel Tuner documentation<a class="headerlink" href="#the-kernel-tuner-documentation" title="Permalink to this heading">¶</a></h1>
-<p>Contents:</p>
-<div class="toctree-wrapper compound">
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
-<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+<p>Kernel Tuner is a software development tool for the creation of highly-optimized and tuned GPU applications.</p>
+<p>The Kernel Tuner documentation pages are mostly about Kernel Tuner itself, but there are a number of related repositories that
+are considered part of the Kernel Tuner family:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://github.com/KernelTuner/kernel_tuner_tutorial">Kernel Tuner Tutorial</a></p></li>
+<li><p><a class="reference external" href="https://github.com/KernelTuner/kernel_launcher">Kernel Launcher</a></p></li>
+<li><p><a class="reference external" href="https://github.com/KernelTuner/dashboard">KT Dashboard</a></p></li>
 </ul>
-</div>
-</section>
-<section id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h1>
-</section>
-<section id="kernel-tuner">
-<h1>Kernel Tuner<a class="headerlink" href="#kernel-tuner" title="Permalink to this heading">¶</a></h1>
-<p><a class="reference external" href="https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml"><img alt="Build Status" src="https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml/badge.svg" /></a> <a class="reference external" href="https://codecov.io/gh/KernelTuner/kernel_tuner"><img alt="CodeCov Badge" src="https://codecov.io/gh/KernelTuner/kernel_tuner/branch/master/graph/badge.svg" /></a> <a class="reference external" href="https://pypi.python.org/pypi/kernel_tuner/"><img alt="PyPi Badge" src="https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue" /></a> <a class="reference external" href="https://zenodo.org/badge/latestdoi/54894320"><img alt="Zenodo Badge" src="https://zenodo.org/badge/54894320.svg" /></a> <a class="reference external" href="https://sonarcloud.io/dashboard?id=KernelTuner_kernel_tuner"><img alt="SonarCloud Badge" src="https://sonarcloud.io/api/project_badges/measure?project=KernelTuner_kernel_tuner&amp;metric=alert_status" /></a> <a class="reference external" href="https://bestpractices.coreinfrastructure.org/projects/6573"><img alt="OpenSSF Badge" src="https://bestpractices.coreinfrastructure.org/projects/6573/badge" /></a> <a class="reference external" href="https://fair-software.eu"><img alt="FairSoftware Badge" src="https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green" /></a></p>
-<p>Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.</p>
-<p>Kernel Tuner provides a comprehensive solution for auto-tuning GPU programs, supporting auto-tuning of user-defined parameters in both host and device code, supporting output verification of all benchmarked kernels during tuning, as well as many optimization strategies to speed up the tuning process.</p>
-<section id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading">¶</a></h2>
-<p>The full documentation is available
-<a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/index.html">here</a>.</p>
-</section>
-<section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
+</div></blockquote>
+<section id="quick-install">
+<h2>Quick install<a class="headerlink" href="#quick-install" title="Permalink to this heading">¶</a></h2>
 <p>The easiest way to install the Kernel Tuner is using pip:</p>
 <p>To tune CUDA kernels:</p>
 <ul class="simple">
@@ -158,7 +158,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda,opencl]</span></code></p></li>
 </ul>
 <p>More information about how to install Kernel Tuner and its
-dependencies can be found in the <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/install.html">installation guide</a></p>
+dependencies can be found under <a class="reference internal" href="install.html#install"><span class="std std-ref">Installation</span></a>.</p>
 </section>
 <section id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this heading">¶</a></h2>
@@ -186,67 +186,6 @@ dependencies can be found in the <a class="reference external" href="http://kern
 <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The exact same Python code can be used to tune an OpenCL kernel:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">__kernel void vector_add(__global float *c, __global float *a, __global float *b, int n) {</span>
-<span class="s2">    int i = get_global_id(0);</span>
-<span class="s2">    if (i&lt;n) {</span>
-<span class="s2">        c[i] = a[i] + b[i];</span>
-<span class="s2">    }</span>
-<span class="s2">}</span>
-<span class="s2">&quot;&quot;&quot;</span>
-</pre></div>
-</div>
-<p>The Kernel Tuner will detect the kernel language and select the right compiler and
-runtime. For every kernel in the parameter space, the Kernel Tuner will insert C
-preprocessor defines for the tunable parameters, compile, and benchmark the kernel. The
-timing results will be printed to the console, but are also returned by tune_kernel to
-allow further analysis. Note that this is just the default behavior, what and how
-tune_kernel does exactly is controlled through its many <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/user-api.html#kernel_tuner.tune_kernel">optional arguments</a>.</p>
-<p>You can find many - more extensive - example codes, in the
-<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/">examples directory</a>
-and in the <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/index.html">Kernel Tuner
-documentation pages</a>.</p>
-</section>
-<section id="search-strategies-for-tuning">
-<h2>Search strategies for tuning<a class="headerlink" href="#search-strategies-for-tuning" title="Permalink to this heading">¶</a></h2>
-<p>Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process. Currently
-implemented search algorithms are: Brute Force (default), Nelder-Mead, Powell, CG, BFGS, L-BFGS-B, TNC,
-COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Algorithm, Particle Swarm
-Optimization, the Firefly Algorithm, and Simulated Annealing.</p>
-<a class="reference internal image-reference" href="_images/gemm-amd-summary.png"><img alt="_images/gemm-amd-summary.png" class="align-center" src="_images/gemm-amd-summary.png" style="width: 100%;" /></a>
-<p>Using a search strategy is easy, you only need to specify to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> which strategy and method
-you would like to use, for example <code class="docutils literal notranslate"><span class="pre">strategy=&quot;genetic_algorithm&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">strategy=&quot;basinhopping&quot;</span></code>.
-For a full overview of the supported search strategies and methods please see the <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/user-api.html">user
-api documentation</a>.</p>
-</section>
-<section id="tuning-host-and-kernel-code">
-<h2>Tuning host and kernel code<a class="headerlink" href="#tuning-host-and-kernel-code" title="Permalink to this heading">¶</a></h2>
-<p>It is possible to tune for combinations of tunable parameters in
-both host and kernel code. This allows for a number of powerfull things,
-such as tuning the number of streams for a kernel that uses CUDA Streams
-or OpenCL Command Queues to overlap transfers between host and device
-with kernel execution. This can be done in combination with tuning the
-parameters inside the kernel code. See the <a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/">convolution_streams example
-code</a>
-and the
-<a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/hostcode.html">documentation</a>
-for a detailed explanation of the kernel tuner Python script.</p>
-</section>
-<section id="correctness-verification">
-<h2>Correctness verification<a class="headerlink" href="#correctness-verification" title="Permalink to this heading">¶</a></h2>
-<p>Optionally, you can let the kernel tuner verify the output of every
-kernel it compiles and benchmarks, by passing an <code class="docutils literal notranslate"><span class="pre">answer</span></code> list. This
-list matches the list of arguments to the kernel, but contains the
-expected output of the kernel. Input arguments are replaced with None.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>  <span class="c1"># the order matches the arguments (in args) to the kernel</span>
-<span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="contributing">
-<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this heading">¶</a></h2>
-<p>Please see the <a class="reference external" href="http://kerneltuner.github.io/kernel_tuner/contributing.html">Contributions Guide</a>.</p>
 </section>
 <section id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading">¶</a></h2>
@@ -281,21 +220,14 @@ expected output of the kernel. Input arguments are replaced with None.</p>
 </pre></div>
 </div>
 </section>
-<section id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">¶</a></h2>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
-</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="install.html" class="btn btn-neutral float-right" title="Installation Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="contents.html" class="btn btn-neutral float-left" title="The Kernel Tuner documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="install.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

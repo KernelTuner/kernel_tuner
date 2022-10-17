@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kernel Correctness Verification &mdash; Kernel Tuner 0.4.2 documentation</title>
+  <title>Correctness Verification &mdash; Kernel Tuner 0.4.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -22,7 +22,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Tuning Host Code" href="hostcode.html" />
-    <link rel="prev" title="Matrix multiplication tutorial" href="matrix_multiplication.html" /> 
+    <link rel="prev" title="Cache files" href="cache_files.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -30,7 +30,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Kernel Tuner
+            <a href="contents.html" class="icon icon-home"> Kernel Tuner
           </a>
               <div class="version">
                 0.4.2
@@ -43,16 +43,32 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication tutorial</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Kernel Correctness Verification</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
@@ -65,15 +81,15 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">Kernel Tuner</a>
+          <a href="contents.html">Kernel Tuner</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Kernel Correctness Verification</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Correctness Verification</li>
       <li class="wy-breadcrumbs-aside">
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/correctness.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
@@ -107,8 +123,8 @@
     text-align: unset;
 }
 </style>
-<section id="kernel-correctness-verification">
-<h1>Kernel Correctness Verification<a class="headerlink" href="#kernel-correctness-verification" title="Permalink to this heading">¶</a></h1>
+<section id="correctness-verification">
+<h1>Correctness Verification<a class="headerlink" href="#correctness-verification" title="Permalink to this heading">¶</a></h1>
 <p>Whenever you optimize a program for performance it is very important to
 ensure that the program is still producing the correct output. What good
 is a program that is fast but not correct?</p>
@@ -214,7 +230,7 @@ not necessarily match the number of elements in <code class="docutils literal no
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="matrix_multiplication.html" class="btn btn-neutral float-left" title="Matrix multiplication tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cache_files.html" class="btn btn-neutral float-left" title="Cache files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="hostcode.html" class="btn btn-neutral float-right" title="Tuning Host Code" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

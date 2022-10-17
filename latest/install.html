@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation Guide &mdash; Kernel Tuner 0.4.2 documentation</title>
+  <title>Installation &mdash; Kernel Tuner 0.4.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -21,7 +21,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Getting Started" href="convolution.html" />
+    <link rel="next" title="Getting Started" href="quickstart.html" />
     <link rel="prev" title="The Kernel Tuner documentation" href="index.html" /> 
 </head>
 
@@ -30,7 +30,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Kernel Tuner
+            <a href="contents.html" class="icon icon-home"> Kernel Tuner
           </a>
               <div class="version">
                 0.4.2
@@ -43,24 +43,40 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#python">Python</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installing-python-packages">Installing Python Packages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cuda-and-pycuda">CUDA and PyCUDA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#opencl-and-pyopencl">OpenCL and PyOpenCL</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-kernel-tuner">Installing Kernel Tuner</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#dependencies-for-the-tutorial">Dependencies for the Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-the-git-version">Installing the git version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies-for-the-guides">Dependencies for the guides</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
@@ -73,15 +89,15 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">Kernel Tuner</a>
+          <a href="contents.html">Kernel Tuner</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Installation Guide</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Installation</li>
       <li class="wy-breadcrumbs-aside">
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/install.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
@@ -117,8 +133,8 @@
 </style>
 <div class="toctree-wrapper compound">
 </div>
-<section id="installation-guide">
-<span id="install"></span><h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this heading">¶</a></h1>
+<section id="installation">
+<span id="install"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h1>
 <p>The Kernel Tuner requires several packages to be installed. First of all, you need a
 working Python version, several Python packages, and optionally CUDA and/or OpenCL
 installations. All of this is explained in detail in this guide.</p>
@@ -200,10 +216,10 @@ PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
 </div>
 <p>If this fails, please see the PyOpenCL installation guide (<a class="reference external" href="https://wiki.tiker.net/PyOpenCL/Installation">https://wiki.tiker.net/PyOpenCL/Installation</a>)</p>
 </section>
-<section id="installing-kernel-tuner">
-<h2>Installing Kernel Tuner<a class="headerlink" href="#installing-kernel-tuner" title="Permalink to this heading">¶</a></h2>
+<section id="installing-the-git-version">
+<h2>Installing the git version<a class="headerlink" href="#installing-the-git-version" title="Permalink to this heading">¶</a></h2>
 <p>You can also install from the git repository. This way you also get the
-examples and the tutorials.</p>
+examples.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/benvanwerkhoven/kernel_tuner.git
 <span class="nb">cd</span> kernel_tuner
 pip install .
@@ -214,7 +230,7 @@ pip install .
 <li><p><cite>cuda</cite>: install pycuda along with kernel_tuner</p></li>
 <li><p><cite>opencl</cite>: install pycuda along with kernel_tuner</p></li>
 <li><p><cite>doc</cite>: installs packages required to build the documentation</p></li>
-<li><p><cite>tutorial</cite>: install packages required to run the tutorials</p></li>
+<li><p><cite>tutorial</cite>: install packages required to run the guides</p></li>
 <li><p><cite>dev</cite>: install everything you need to start development on Kernel Tuner</p></li>
 </ul>
 <p>For example, use:
@@ -223,11 +239,11 @@ pip install .
 <span class="pre">`</span></code>
 To install Kernel Tuner along with all the packages required for development.</p>
 </section>
-<section id="dependencies-for-the-tutorial">
-<h2>Dependencies for the Tutorial<a class="headerlink" href="#dependencies-for-the-tutorial" title="Permalink to this heading">¶</a></h2>
-<p>Some addition Python packages are required to run the tutorial. These packages are
-actually very commonly used and chances are that you already have these installed.</p>
-<p>However, to install Kernel Tuner along with the dependencies to run the tutorials,
+<section id="dependencies-for-the-guides">
+<h2>Dependencies for the guides<a class="headerlink" href="#dependencies-for-the-guides" title="Permalink to this heading">¶</a></h2>
+<p>Some addition Python packages are required to run the Jupyter notebook guides.
+These packages are commonly used and chances are that you already have these installed.</p>
+<p>However, to install Kernel Tuner along with the dependencies to run the guides,
 you could use:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install kernel_tuner<span class="o">[</span>tutorial,cuda<span class="o">]</span>
 </pre></div>
@@ -244,7 +260,7 @@ you could use:</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="The Kernel Tuner documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="convolution.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="quickstart.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

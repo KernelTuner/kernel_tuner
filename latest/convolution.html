@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Getting Started &mdash; Kernel Tuner 0.4.2 documentation</title>
+  <title>Convolution &mdash; Kernel Tuner 0.4.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -23,8 +23,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Tutorial: From physics to tuned GPU kernels" href="diffusion.html" />
-    <link rel="prev" title="Installation Guide" href="install.html" /> 
+    <link rel="next" title="Diffusion" href="diffusion.html" />
+    <link rel="prev" title="Getting Started" href="quickstart.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -32,7 +32,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Kernel Tuner
+            <a href="contents.html" class="icon icon-home"> Kernel Tuner
           </a>
               <div class="version">
                 0.4.2
@@ -45,22 +45,38 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Convolution</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#2D-Convolution-example">2D Convolution example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Implement-a-test">Implement a test</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Tuning-2D-Convolution">Tuning 2D Convolution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#More-tunable-parameters">More tunable parameters</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
@@ -73,15 +89,15 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">Kernel Tuner</a>
+          <a href="contents.html">Kernel Tuner</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Getting Started</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Convolution</li>
       <li class="wy-breadcrumbs-aside">
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/convolution.ipynb" class="fa fa-github"> Edit on GitHub</a>
       </li>
@@ -369,11 +385,11 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<section id="Getting-Started">
-<h1>Getting Started<a class="headerlink" href="#Getting-Started" title="Permalink to this heading">¶</a></h1>
-<p>This tutorial is meant to get you started with writing your tests and tuning scripts using Kernel Tuner. We’ll use a simple 2D Convolution kernel as an example kernel, but as you will find out shortly, much of the scripts that you write with Kernel Tuner can be reused for testing and tuning other kernels.</p>
+<section id="Convolution">
+<h1>Convolution<a class="headerlink" href="#Convolution" title="Permalink to this heading">¶</a></h1>
+<p>This guide is meant to get you started with writing your tests and tuning scripts using Kernel Tuner. We’ll use a simple 2D Convolution kernel as an example kernel, but as you will find out shortly, much of the scripts that you write with Kernel Tuner can be reused for testing and tuning other kernels.</p>
 <div class="admonition note">
-<p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/kerneltuner/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/tutorial” directory.</p>
+<p><strong>Note:</strong> If you are reading this guide on the Kernel Tuner’s documentation pages, note that you can actually run this guide as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/kerneltuner/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the guide by typing “jupyter notebook” in the “kernel_tuner/doc/source” directory.</p>
 </div>
 <section id="2D-Convolution-example">
 <h2>2D Convolution example<a class="headerlink" href="#2D-Convolution-example" title="Permalink to this heading">¶</a></h2>
@@ -382,7 +398,7 @@ div.rendered_html tbody tr:hover {
 O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 \end{equation}</span></p>
 <p>A naive CUDA kernel for 2D Convolution parallelizes the operation by creating one thread for each output pixel. Note that to avoid confusion around the term <em>kernel</em>, we refer to the convolution filter as a <em>filter</em>.</p>
-<p>The kernel code is shown in the following code block, make sure you execute all code blocks in this tutorial by selecting them and pressing <strong>shift+enter</strong>:</p>
+<p>The kernel code is shown in the following code block, make sure you execute all code blocks in this guide by selecting them and pressing <strong>shift+enter</strong>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
@@ -625,7 +641,7 @@ tunable parameters and benchmark results of the kernel configuration.</p>
 </pre></div>
 </div>
 </div>
-<p>And that’s it for this tutorial! We have seen how to call run_kernel and tune_kernel for a 2D Convolution kernel using different thread block dimensions and other tunable parameters. You now know enough to be able to start tuning your own CUDA and/or OpenCL kernels!</p>
+<p>And that’s it for this guide! We have seen how to call run_kernel and tune_kernel for a 2D Convolution kernel using different thread block dimensions and other tunable parameters. You now know enough to be able to start tuning your own CUDA and/or OpenCL kernels!</p>
 </section>
 </section>
 
@@ -633,8 +649,8 @@ tunable parameters and benchmark results of the kernel configuration.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="install.html" class="btn btn-neutral float-left" title="Installation Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="diffusion.html" class="btn btn-neutral float-right" title="Tutorial: From physics to tuned GPU kernels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="diffusion.html" class="btn btn-neutral float-right" title="Diffusion" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

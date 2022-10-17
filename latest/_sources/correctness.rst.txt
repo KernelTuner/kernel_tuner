@@ -3,8 +3,8 @@
 
 
 
-Kernel Correctness Verification
--------------------------------
+Correctness Verification
+------------------------
 
 Whenever you optimize a program for performance it is very important to
 ensure that the program is still producing the correct output. What good

@@ -22,7 +22,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Parameter Vocabulary" href="vocabulary.html" />
-    <link rel="prev" title="Templated kernels" href="templates.html" /> 
+    <link rel="prev" title="Observers" href="observers.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -30,7 +30,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Kernel Tuner
+            <a href="contents.html" class="icon icon-home"> Kernel Tuner
           </a>
               <div class="version">
                 0.4.2
@@ -43,16 +43,32 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="convolution.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Tutorial: From physics to tuned GPU kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="correctness.html">Kernel Correctness Verification</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#kernel_tuner.tune_kernel"><code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kernel_tuner.run_kernel"><code class="docutils literal notranslate"><span class="pre">run_kernel()</span></code></a></li>
@@ -71,14 +87,14 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">Kernel Tuner</a>
+          <a href="contents.html">Kernel Tuner</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
       <li>API Documentation</li>
       <li class="wy-breadcrumbs-aside">
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/user-api.rst" class="fa fa-github"> Edit on GitHub</a>
@@ -314,114 +330,13 @@ benchmarking a kernel configuration the strategy is allowed to perform as part o
 Note that some strategies implement a default max_fevals of 100.</p>
 <p>2. “time_limit”: the maximum amount of time in seconds the strategy is allowed to spent on trying to
 find the optimal kernel configuration. There is no default time limit.</p>
-<p>Strategy specific options are explained below:</p>
-<ul>
-<li><p><strong>”basinhopping”</strong></p>
-<ul>
-<li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
-<li><p>”T”, float, Temperature parameter for the accept or reject criterion, default 1.0.</p></li>
-</ul>
-</li>
-<li><p><strong>”bayes_opt”</strong></p>
-<ul>
-<li><p>”covariancekernel”, any of “constantrbf”, “rbf”, “matern32”, “matern52”, default “matern32”.</p></li>
-<li><p>”covariancelengthscale”, float, default 1.5.</p></li>
-<li><p>”method”: any of “poi”, “ei”, “lcb”, “lcb-srinivas”, “multi”, “multi-advanced”, “multi-fast”, default “multi-advanced”.</p></li>
-<li><p>”samplingmethod” any of “random”, “lhs”, default “lhs”.</p></li>
-</ul>
-</li>
-<li><p><strong>”diff_evo”</strong></p>
-<ul>
-<li><p>”method”, string, any of “best1bin”, “best1exp”, “rand1exp”, “randtobest1exp”, “best2exp”, “rand2exp”, “randtobest1bin”, “best2bin”, “rand2bin”, “rand1bin”, default “best1bin”.</p></li>
-<li><p>”popsize”, integer, population size, default 20.</p></li>
-<li><p>”maxiter”, integer, number of generations, default 50.</p></li>
-</ul>
-</li>
-<li><p><strong>”dual_annealing”</strong></p>
-<ul>
-<li><p>”method”, string, any of ‘COBYLA’,’L-BFGS-B’,’SLSQP’,’CG’,’Powell’,’Nelder-Mead’, ‘BFGS’, ‘trust-constr’, default “Powell”.</p></li>
-</ul>
-</li>
-<li><p><strong>”firefly_algorithm”</strong></p>
-<ul>
-<li><p>”alpha”, float, alpha parameter, default 0.2.</p></li>
-<li><p>”B0”, float, B0 parameter, default 1.0.</p></li>
-<li><p>”gamma”, float, gamma parameter, default 1.0.</p></li>
-<li><p>”maxiter”, integer, number of generations, default 100.</p></li>
-<li><p>”popsize”, integer, population size, default 20.</p></li>
-</ul>
-</li>
-<li><p><strong>”genetic_algorithm”</strong></p>
-<ul>
-<li><p>”maxiter”, integer, number of generations, default 50.</p></li>
-<li><p>”method”, string, crossover method any of “single_point”, “two_point”, “uniform”, “disruptive_uniform”, default “uniform”.</p></li>
-<li><p>”mutation_chance”, integer, specifies the 1 in mutation_chance of a mutation, default 10.</p></li>
-<li><p>”popsize”, integer, population size, default 20.</p></li>
-</ul>
-</li>
-<li><p><strong>”greedy_ils”</strong></p>
-<ul>
-<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
-<li><p>”neighbor”, string, either “Hamming” or “adjacent” specifies how to consider two configurations being neighbors, default Hamming.</p></li>
-<li><p>”no_improvement”, integer, number of evaluations to exceed without improvement before restarting, default 50.</p></li>
-<li><p>”randomwalk”, float, controls how aggressively to permute the configuration in case no improvement is found, default 0.3.</p></li>
-<li><p>”restart”, bool, controls greedyness, i.e. whether to restart from a position as soon as an improvement is found, default True.</p></li>
-</ul>
-</li>
-<li><p><strong>”greedy_mls”</strong></p>
-<ul>
-<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
-<li><p>”neighbor”, string, either “Hamming” or “adjacent” specifies how to consider two configurations being neighbors, default Hamming.</p></li>
-<li><p>”restart”, bool, controls greedyness, i.e. whether to restart from a position as soon as an improvement is found, default True.</p></li>
-</ul>
-</li>
-<li><p><strong>”minimize”</strong></p>
-<ul>
-<li><p>”method”, string, any of “Nelder-Mead”, “Powell”, “CG”, “BFGS”, “L-BFGS-B”, “TNC”, “COBYLA”, or “SLSQP”, default “L-BFGS-B”.</p></li>
-</ul>
-</li>
-<li><p><strong>”mls”</strong></p>
-<ul>
-<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
-<li><p>”neighbor”, string, either “Hamming” or “adjacent” specifies how to consider two configurations being neighbors, default Hamming.</p></li>
-</ul>
-</li>
-<li><p><strong>”ordered_greedy_mls”</strong></p>
-<ul>
-<li><p>”max_fevals”, integer, specifies the maximum allowed number of unique function evaluations, default 100.</p></li>
-<li><p>”neighbor”, string, either “Hamming” or “adjacent” specifies how to consider two configurations being neighbors, default Hamming.</p></li>
-<li><p>”order”, list, list of integers that describes the order of dimensions in which to look for neighbors, default uses the tune_params specified order.</p></li>
-</ul>
-</li>
-<li><p><strong>”pso”</strong></p>
-<ul>
-<li><p>”c1”, float, cognitive constant, default 2.0.</p></li>
-<li><p>”c2”, float, social constant, default 1.0.</p></li>
-<li><p>”popsize”, integer, population size, default 20.</p></li>
-<li><p>”maxiter”, integer, number of generations, default 100.</p></li>
-<li><p>”w”, float, inertia constant, default 0.5.</p></li>
-</ul>
-</li>
-<li><p><strong>”random_sample”</strong></p>
-<ul>
-<li><p>”fraction”, float, fraction of the search space to cover in [0,1], default 0.1.</p></li>
-</ul>
-</li>
-<li><p><strong>”simulated_annealing”</strong></p>
-<ul>
-<li><p>”alpha”, float, alpha parameter, default 0.995.</p></li>
-<li><p>”maxiter”, integer, number of iterations within each point of the annealing schedule, default 1.</p></li>
-<li><p>”T”, float, starting temperature parameter, default 1.0.</p></li>
-<li><p>”T_min”, float, end temperature parameter, default 0.001.</p></li>
-<li><p>”max_fevals”, integer, maximum number of unique valid function evaluations, default is set to fit annealing schedule.</p></li>
-</ul>
-</li>
-</ul>
+<p>Strategy specific options are explained in <a class="reference internal" href="optimization.html#optimizations"><span class="std std-ref">Optimization strategies</span></a>.</p>
 </p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – The number of times a kernel should be executed and
 its execution time measured when benchmarking a kernel, 7 by default.</p></li>
 <li><p><strong>objective</strong> (<em>string</em>) – Optimization objective to sort results on, consisting of a string
-that also occurs in results as a metric or observed quantity, default ‘time’</p></li>
+that also occurs in results as a metric or observed quantity, default ‘time’.
+Please see <a class="reference internal" href="metrics.html#objectives"><span class="std std-ref">Tuning Objectives</span></a>.</p></li>
 <li><p><strong>objective_higher_is_better</strong> (<em>bool</em>) – boolean that specifies whether the objective should
 be maximized (True) or minimized (False), default False.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em>) – <p>Sets whether or not to report about configurations that
@@ -436,12 +351,12 @@ were skipped during the search. This could be due to several reasons:</p>
 </div></blockquote>
 <p>verbose is False by default.</p>
 </p></li>
-<li><p><strong>cache</strong> (<em>string</em>) – filename for caching/logging benchmarked instances
-filename uses suffix “.json”
-if the file exists it is read and tuning continues from this file</p></li>
-<li><p><strong>metrics</strong> (<em>OrderedDict</em>) – specifies user-defined metrics</p></li>
+<li><p><strong>cache</strong> (<em>string</em>) – Filename for the cache to persistently store benchmarked configurations.
+Filename uses suffix “.json”, which is appended if missing.
+If the file exists, it is read and tuning continues from this file. Please see <a class="reference internal" href="cache_files.html#cache"><span class="std std-ref">Cache files</span></a>.</p></li>
+<li><p><strong>metrics</strong> (<em>OrderedDict</em>) – specifies user-defined metrics, please see <a class="reference internal" href="metrics.html#metrics"><span class="std std-ref">Metrics</span></a>.</p></li>
 <li><p><strong>simulation_mode</strong> (<em>bool</em>) – Simulate an auto-tuning search from an existing cachefile</p></li>
-<li><p><strong>observers</strong> (<em>list</em>) – A list of BenchmarkObservers</p></li>
+<li><p><strong>observers</strong> (<em>list</em>) – A list of Observers to use during tuning, please see <a class="reference internal" href="observers.html#observers"><span class="std std-ref">Observers</span></a>.</p></li>
 <li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default. Ignored if you are tuning host code by passing
@@ -692,7 +607,7 @@ be maximized or minimized.</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="templates.html" class="btn btn-neutral float-left" title="Templated kernels" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="observers.html" class="btn btn-neutral float-left" title="Observers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="vocabulary.html" class="btn btn-neutral float-right" title="Parameter Vocabulary" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
