@@ -10,7 +10,7 @@ The Kernel Tuner documentation
    :maxdepth: 1
    :caption: Kernel Tuner
 
-   index
+   Introduction <index>
    install
 
 .. toctree::

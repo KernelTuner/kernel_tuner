@@ -8,9 +8,9 @@ Kernel Tuner is a software development tool for the creation of highly-optimized
 The Kernel Tuner documentation pages are mostly about Kernel Tuner itself, but there are a number of related repositories that 
 are considered part of the Kernel Tuner family:
 
- * Kernel Tuner Tutorial <https://github.com/KernelTuner/kernel_tuner_tutorial>
- * Kernel Launcher <https://github.com/KernelTuner/kernel_launcher>
- * KT Dashboard <https://github.com/KernelTuner/dashboard>
+ * `Kernel Tuner Tutorial <https://github.com/KernelTuner/kernel_tuner_tutorial>`__
+ * `Kernel Launcher <https://github.com/KernelTuner/kernel_launcher>`__
+ * `KT Dashboard <https://github.com/KernelTuner/dashboard>`__
 
 Quick install
 -------------
