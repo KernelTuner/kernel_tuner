@@ -38,3 +38,6 @@ Numpy, and Kernel Tuner to call a CUDA kernel that uses a struct as kernel argum
 The most difficult part of this code is ensuring the struct.pack format string is correct and keeping it in sync with the GPU code. Note the ``0l`` at the end of string. This enables 
 padding to the next long, which is sometimes needed when the struct argument is not the last argument in the kernel argument list.
 
+Using the packstr returned by struct.pack, we can create a numpy buffer, in this case we are only interested in the first element in the array, hence the ``[0]`` at the end. To tell Numpy 
+what data type our packstr hold we specify the dtype as an np.void of length ``len(packstr)``, which is the number of bytes in our data type. If you need an array of structs, you only 
+need some slight modifications to the example code above.
