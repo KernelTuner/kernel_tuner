@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Support for locked clocks in NVMLObserver
 - Support for measuring core voltages using NVML
 - Support for custom preprocessor definitions
+- Support for boolean scalar arguments in PyCUDA backend
 
 ### Changed
 - Migrated from github.com/benvanwerkhoven to github.com/KernelTuner
