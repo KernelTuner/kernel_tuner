@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+
+## [0.4.3] - 2022-10-19
 ### Added
 - A new backend that uses Nvidia cuda-python
 - Support for locked clocks in NVMLObserver
