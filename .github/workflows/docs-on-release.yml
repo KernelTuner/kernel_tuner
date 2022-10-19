@@ -20,7 +20,7 @@ jobs:
         sudo apt-get update;
         sudo apt-get install pandoc
         python -m pip install --upgrade pip
-        echo "pip install .[doc]"
+        pip install .[doc]
     - name: Build and Commit
       uses: sphinx-notes/pages@v2
       with:
