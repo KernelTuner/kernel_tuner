@@ -12,7 +12,7 @@ The Kernel Tuner is designed to be extensible and support
 different search and execution strategies. The current architecture of 
 the Kernel Tuner can be seen as:
 
-.. image:: design.png
+.. image:: architecture_0.4.3.png
    :width: 500pt
 
 At the top we have the kernel code and the Python script that tunes it, 
@@ -33,30 +33,31 @@ the only supported runner, which does exactly what its name says. It compiles
 and benchmarks configurations using a single sequential Python process.
 Other runners are foreseen in future releases.
 
-The runners are implemented on top of a high-level *Device Interface*,
+The runners are implemented on top of the core, which implements a
+high-level *Device Interface*,
 which wraps all the functionality for compiling and benchmarking
 kernel configurations based on the low-level *Device Function Interface*.
 Currently, we have 
-four different implementations of the device function interface, which 
+five different implementations of the device function interface, which 
 basically abstracts the different backends into a set of simple 
 functions such as ``ready_argument_list`` which allocates GPU memory and 
 moves data to the GPU, and functions like ``compile``, ``benchmark``, or 
 ``run_kernel``. The functions in the core are basically the main 
 building blocks for implementing runners.
 
-At the bottom, three of the backends are shown. 
-PyCUDA and PyOpenCL are for tuning either CUDA or OpenCL kernels.
-A relatively new addition is the Cupy backend based on Cupy for tuning
-CUDA kernels using the NVRTC compiler.
+The observers are explained in :ref:`observers`.
+
+At the bottom, the backends are shown. 
+PyCUDA, CuPy, cuda-python and PyOpenCL are for tuning either CUDA or OpenCL kernels.
 The C 
 Functions implementation can actually call any compiler, typically NVCC 
-or GCC is used. This backend was created not just to be able to tune C 
-functions, but mostly to tune C functions that in turn launch GPU kernels.
+or GCC is used. There is limited support for tuning Fortran kernels. 
+This backend was created not just to be able to tune C 
+functions, but in particular to tune C functions that in turn launch GPU kernels.
 
 The rest of this section contains the API documentation of the modules 
 discussed above. For the documentation of the user API see the 
 :doc:`user-api`.
-
 
 
 Strategies
@@ -106,6 +107,12 @@ kernel_tuner.pycuda.PyCudaFunctions
 kernel_tuner.cupy.CupyFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.cupy.CupyFunctions
+    :special-members: __init__
+    :members:
+
+kernel_tuner.nvcuda.CudaFunctions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.nvcuda.CudaFunctions
     :special-members: __init__
     :members:
 

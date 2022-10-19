@@ -112,6 +112,10 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.cupy.CupyFunctions"><code class="docutils literal notranslate"><span class="pre">CupyFunctions</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-nvcuda-cudafunctions">kernel_tuner.nvcuda.CudaFunctions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.nvcuda.CudaFunctions"><code class="docutils literal notranslate"><span class="pre">CudaFunctions</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-opencl-openclfunctions">kernel_tuner.opencl.OpenCLFunctions</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.opencl.OpenCLFunctions"><code class="docutils literal notranslate"><span class="pre">OpenCLFunctions</span></code></a></li>
 </ul>
@@ -233,7 +237,7 @@ of the Kernel Tuner. <strong>This information is mostly relevant for developers.
 <p>The Kernel Tuner is designed to be extensible and support
 different search and execution strategies. The current architecture of
 the Kernel Tuner can be seen as:</p>
-<a class="reference internal image-reference" href="_images/design.png"><img alt="_images/design.png" src="_images/design.png" style="width: 500pt;" /></a>
+<a class="reference internal image-reference" href="_images/architecture_0.4.3.png"><img alt="_images/architecture_0.4.3.png" src="_images/architecture_0.4.3.png" style="width: 500pt;" /></a>
 <p>At the top we have the kernel code and the Python script that tunes it,
 which uses any of the main functions exposed in the user interface.</p>
 <p>The strategies are responsible for iterating over and searching through
@@ -249,24 +253,25 @@ configurations selected by the strategy. The sequential runner is currently
 the only supported runner, which does exactly what its name says. It compiles
 and benchmarks configurations using a single sequential Python process.
 Other runners are foreseen in future releases.</p>
-<p>The runners are implemented on top of a high-level <em>Device Interface</em>,
+<p>The runners are implemented on top of the core, which implements a
+high-level <em>Device Interface</em>,
 which wraps all the functionality for compiling and benchmarking
 kernel configurations based on the low-level <em>Device Function Interface</em>.
 Currently, we have
-four different implementations of the device function interface, which
+five different implementations of the device function interface, which
 basically abstracts the different backends into a set of simple
 functions such as <code class="docutils literal notranslate"><span class="pre">ready_argument_list</span></code> which allocates GPU memory and
 moves data to the GPU, and functions like <code class="docutils literal notranslate"><span class="pre">compile</span></code>, <code class="docutils literal notranslate"><span class="pre">benchmark</span></code>, or
 <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code>. The functions in the core are basically the main
 building blocks for implementing runners.</p>
-<p>At the bottom, three of the backends are shown.
-PyCUDA and PyOpenCL are for tuning either CUDA or OpenCL kernels.
-A relatively new addition is the Cupy backend based on Cupy for tuning
-CUDA kernels using the NVRTC compiler.
+<p>The observers are explained in <a class="reference internal" href="observers.html#observers"><span class="std std-ref">Observers</span></a>.</p>
+<p>At the bottom, the backends are shown.
+PyCUDA, CuPy, cuda-python and PyOpenCL are for tuning either CUDA or OpenCL kernels.
 The C
 Functions implementation can actually call any compiler, typically NVCC
-or GCC is used. This backend was created not just to be able to tune C
-functions, but mostly to tune C functions that in turn launch GPU kernels.</p>
+or GCC is used. There is limited support for tuning Fortran kernels.
+This backend was created not just to be able to tune C
+functions, but in particular to tune C functions that in turn launch GPU kernels.</p>
 <p>The rest of this section contains the API documentation of the modules
 discussed above. For the documentation of the user API see the
 <a class="reference internal" href="user-api.html"><span class="doc">API Documentation</span></a>.</p>
@@ -455,11 +460,10 @@ about the hardware/software environment on which the tuning took place.</p>
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiate the DeviceInterface, based on language in kernel source</p>
-<p>:param kernel_source The kernel sources
-:type kernel_source: kernel_tuner.core.KernelSource</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel sources</p></li>
 <li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
 CUDA-capable GPUs or OpenCL devices you may use this to select one,
 0 by default. Ignored if you are tuning host code by passing lang=”C”.</p></li>
@@ -931,6 +935,195 @@ of the grid</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.cupy.CupyFunctions.synchronize">
 <span class="sig-name descname"><span class="pre">synchronize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.synchronize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Halts execution until device has finished its tasks</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="kernel-tuner-nvcuda-cudafunctions">
+<h3>kernel_tuner.nvcuda.CudaFunctions<a class="headerlink" href="#kernel-tuner-nvcuda-cudafunctions" title="Permalink to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.nvcuda.</span></span><span class="sig-name descname"><span class="pre">CudaFunctions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that groups the Cuda functions on maintains state about the device</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>instantiate CudaFunctions object used for interacting with the CUDA device</p>
+<p>Instantiating this object will inspect and store certain device properties at
+runtime, which are used during compilation and/or execution of kernels by the
+kernel tuner. It also maintains a reference to the most recently compiled
+source module for copying data to constant memory before kernel launch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<em>int</em>) – Number of CUDA device to use for this context</p></li>
+<li><p><strong>iterations</strong> (<em>int</em>) – Number of iterations used while benchmarking a kernel, 7 by default.</p></li>
+<li><p><strong>compiler_options</strong> – Compiler options for the CUDA runtime compiler</p></li>
+<li><p><strong>observers</strong> – List of Observer type objects</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.compile">
+<span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>call the CUDA compiler to compile the kernel, return the device function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel to be compiled, used to lookup the
+function after compilation.</p></li>
+<li><p><strong>kernel_string</strong> (<em>string</em>) – The CUDA kernel code that contains the function <cite>kernel_name</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A kernel that can be launched by the CUDA runtime</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.copy_constant_memory_args">
+<span class="sig-name descname"><span class="pre">copy_constant_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.copy_constant_memory_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds constant memory arguments to the most recently compiled module</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cmem_args</strong> (<em>dict</em><em>( </em><em>string: numpy.ndarray</em><em>, </em><em>...</em><em> )</em>) – A dictionary containing the data to be passed to the
+device constant memory. The format to be used is as follows: A
+string key is used to name the constant memory symbol to which the
+value needs to be copied. Similar to regular arguments, these need
+to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.copy_shared_memory_args">
+<span class="sig-name descname"><span class="pre">copy_shared_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">smem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.copy_shared_memory_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>add shared memory arguments to the kernel</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.copy_texture_memory_args">
+<span class="sig-name descname"><span class="pre">copy_texture_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.copy_texture_memory_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds texture memory arguments to the most recently compiled module</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>texmem_args</strong> (<em>dict</em>) – A dictionary containing the data to be passed to the
+device texture memory. See tune_kernel().</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.kernel_finished">
+<span class="sig-name descname"><span class="pre">kernel_finished</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.kernel_finished" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the kernel has finished, False otherwise</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.memcpy_dtoh">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform a device to host memory copy</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
+<li><p><strong>src</strong> (<em>cuda.CUdeviceptr</em>) – A GPU memory allocation unit</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.memcpy_htod">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">memcpy_htod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform a host to device memory copy</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dest</strong> (<em>cuda.CUdeviceptr</em>) – A GPU memory allocation unit</p></li>
+<li><p><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.memset">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">memset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allocation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.memset" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the memory in allocation to the value in value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>allocation</strong> (<em>cupy.ndarray</em>) – A GPU memory allocation unit</p></li>
+<li><p><strong>value</strong> (<em>a single 8-bit unsigned int</em>) – The value to set the memory to</p></li>
+<li><p><strong>size</strong> (<em>int</em>) – The size of to the allocation unit in bytes</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.ready_argument_list">
+<span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy objects</em><em>)</em>) – List of arguments to be passed to the kernel.
+The order should match the argument list on the CUDA kernel.
+Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of arguments that can be passed to an CUDA kernel.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list( pycuda.driver.DeviceAllocation, numpy.int32, … )</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.run_kernel">
+<span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs the CUDA kernel passed as ‘func’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>func</strong> (<em>cuda.CUfunction</em>) – A CUDA kernel compiled for this specific kernel configuration</p></li>
+<li><p><strong>gpu_args</strong> (<em>list</em><em>( </em><em>cupy.ndarray</em><em>, </em><em>numpy.int32</em><em>, </em><em>...</em><em>)</em>) – A list of arguments to the kernel, order should match the
+order in the code. Allowed values are either variables in global memory
+or single values passed by value.</p></li>
+<li><p><strong>threads</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of threads in each dimension of
+the thread block</p></li>
+<li><p><strong>grid</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of thread blocks in each dimension
+of the grid</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.start_event">
+<span class="sig-name descname"><span class="pre">start_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.start_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the start of a measurement</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.stop_event">
+<span class="sig-name descname"><span class="pre">stop_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.stop_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the event that marks the end of a measurement</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.nvcuda.CudaFunctions.synchronize">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">synchronize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.synchronize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Halts execution until device has finished its tasks</p>
 </dd></dl>
 
