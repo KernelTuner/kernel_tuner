@@ -197,7 +197,7 @@ class DeviceInterface(object):
     def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7, observers=None):
         """ Instantiate the DeviceInterface, based on language in kernel source
 
-        :param kernel_source The kernel sources
+        :param kernel_source: The kernel sources
         :type kernel_source: kernel_tuner.core.KernelSource
 
         :param device: CUDA/OpenCL device to use, in case you have multiple
