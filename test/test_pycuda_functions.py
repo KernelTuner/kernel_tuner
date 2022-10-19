@@ -17,9 +17,10 @@ def test_ready_argument_list():
     size = 1000
     a = np.int32(75)
     b = np.random.randn(size).astype(np.float32)
-    c = np.zeros_like(b)
+    c = np.bool_(True)
+    d = np.zeros_like(b)
 
-    arguments = [c, a, b]
+    arguments = [d, a, b, c]
 
     dev = kt_pycuda.PyCudaFunctions(0)
     gpu_args = dev.ready_argument_list(arguments)
@@ -27,6 +28,7 @@ def test_ready_argument_list():
     assert isinstance(gpu_args[0], pycuda.driver.DeviceAllocation)
     assert isinstance(gpu_args[1], np.int32)
     assert isinstance(gpu_args[2], pycuda.driver.DeviceAllocation)
+    assert isinstance(gpu_args[3], np.uint8)
 
 
 @skip_if_no_pycuda

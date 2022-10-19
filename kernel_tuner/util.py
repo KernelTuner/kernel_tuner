@@ -60,6 +60,7 @@ default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 def check_argument_type(dtype, kernel_argument):
     """check if the numpy.dtype matches the type used in the code"""
     types_map = {
+        "bool": ["bool"],
         "uint8": ["uchar", "unsigned char", "uint8_t"],
         "int8": ["char", "int8_t"],
         "uint16": ["ushort", "unsigned short", "uint16_t"],

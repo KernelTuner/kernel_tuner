@@ -188,6 +188,9 @@ class PyCudaFunctions(object):
                     gpu_args.append(Holder(arg))
                 else:
                     gpu_args.append(Holder(arg.cuda()))
+            # pycuda does not support bool, convert to uint8 instead
+            elif isinstance(arg, np.bool_):
+                gpu_args.append(arg.astype(np.uint8))
             else:    # if not an array, just pass argument along
                 gpu_args.append(arg)
         return gpu_args
