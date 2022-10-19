@@ -86,7 +86,7 @@ Before we can install PyOpenCL you'll need an OpenCL compiler. There are several
 OpenCL compilers available depending on the OpenCL platform you want to your 
 code to run on.
 
-* `AMD APP SDK <http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/>`__
+* `AMD APP SDK <https://rocmdocs.amd.com/en/latest/Programming_Guides/Opencl-programming-guide.html>`__
 * `Intel OpenCL <https://software.intel.com/en-us/iocl_rt_ref>`__
 * `CUDA Toolkit <https://developer.nvidia.com/cuda-toolkit>`__
 * `Apple OpenCL <https://developer.apple.com/opencl/>`__
@@ -157,7 +157,3 @@ Or if you have already installed Kernel Tuner and PyCUDA, just use:
 .. code-block:: bash
 
     pip install jupyter matplotlib pandas
-
-
-
-
