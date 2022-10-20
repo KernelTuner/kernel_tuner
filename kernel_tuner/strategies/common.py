@@ -61,18 +61,12 @@ def get_options(strategy_options, options):
 
 def _cost_func(x, kernel_options, tuning_options, runner, results, check_restrictions=True):
     """ Cost function used by almost all strategies """
-    start_time = perf_counter()
-    last_strategy_time = 1000 * (start_time - runner.last_strategy_start_time)
+    runner.start_time = perf_counter()
+    runner.last_strategy_time = 1000 * (runner.start_time - runner.last_strategy_start_time)
 
     # error value to return for numeric optimizers that need a numerical value
-    error_value = sys.float_info.max if not tuning_options.objective_higher_is_better else -sys.float_info.max
     logging.debug('_cost_func called')
     logging.debug('x: ' + str(x))
-
-    def return_value(record):
-        score = record[tuning_options.objective]
-        return_val = score if not isinstance(score, util.ErrorConfig) else error_value
-        return return_val if not tuning_options.objective_higher_is_better else -return_val
 
     # check if max_fevals is reached or time limit is exceeded
     util.check_stop_criterion(tuning_options)
@@ -87,47 +81,39 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
         params = x
     logging.debug('params ' + str(params))
 
-    # we cache snapped values, since those correspond to results for an actual instance of the kernel
+    legal = True
+    result = {}
+
+    # check if configuration exists in the cache
+    # if it exists, and has not been visited during this run yet, do count it as a function evaluation
     x_int = ",".join([str(i) for i in params])
     if x_int in tuning_options.cache:
-        cached_result = tuning_options.cache[x_int]
-        cached_result['strategy_time'] = last_strategy_time
-        results.append(cached_result)
-        if x_int not in tuning_options.unique_results:
-            util.print_config(cached_result, tuning_options, runner)
-            tuning_options.unique_results[x_int] = cached_result
-        # upon returning from this function control will be given back to the strategy, so reset the start time
-        runner.last_strategy_start_time = perf_counter()
-        return return_value(cached_result)
+        result = tuning_options.cache[x_int]
 
-    # check if this is a legal (non-restricted) parameter instance
-    if check_restrictions and tuning_options.restrictions:
+    # else check if this is a legal (non-restricted) configuration
+    elif check_restrictions and tuning_options.restrictions:
         params_dict = OrderedDict(zip(tuning_options.tune_params.keys(), params))
         legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
         if not legal:
-            error_result = OrderedDict(zip(tuning_options.tune_params.keys(), params))
-            error_result[tuning_options.objective] = util.InvalidConfig()
-            tuning_options.cache[x_int] = error_result
-            return return_value(error_result)
+            result = params_dict
+            result[tuning_options.objective] = util.InvalidConfig()
+            tuning_options.cache[x_int] = result
 
-    # compile and benchmark this instance
-    res, _ = runner.run([params], kernel_options, tuning_options)
+    if not result:
+        # compile and benchmark this instance
+        res, _ = runner.run([params], kernel_options, tuning_options)
 
-    # get the actual framework time by estimating based on other times
-    total_time = 1000 * (perf_counter() - start_time)
     result = res[0]
-    if isinstance(result, dict) and 'compile_time' in result and 'verification_time' in result and 'times' in result:
-        compile_time = result['compile_time']
-        verification_time = result['verification_time']
-        total_kernel_time = sum(result['times']) if 'times' in result.keys() else 0
-        # substract the other times from the total time to determine the framework time
-        result['framework_time'] = max(total_time - (compile_time + verification_time + total_kernel_time), 0)
-    result['strategy_time'] = last_strategy_time
 
     # append to tuning results
-    if res:
+    if x_int not in tuning_options.unique_results:
+        util.print_config(result, tuning_options, runner)
         tuning_options.unique_results[x_int] = result
         results.append(result)
+
+    # get numerical return value, taking optimization direction into account
+    return_value = result[tuning_options.objective] or sys.float_info.max
+    return_value = return_value if not tuning_options.objective_higher_is_better else -return_val
 
     # upon returning from this function control will be given back to the strategy, so reset the start time
     runner.last_strategy_start_time = perf_counter()

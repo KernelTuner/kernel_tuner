@@ -410,12 +410,12 @@ class DeviceInterface(object):
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
-        start_compilation = time.perf_counter()
         instance_string = util.get_instance_string(params)
 
         # reset previous timers
         self.last_compilation_time = None
         self.last_verification_time = None
+        self.last_benchmark_time = None
 
         logging.debug('compile_and_benchmark ' + instance_string)
 
@@ -427,6 +427,7 @@ class DeviceInterface(object):
 
         try:
             #compile the kernel
+            start_compilation = time.perf_counter()
             func = self.compile_kernel(instance, verbose)
             if func is None:
                 return util.CompilationFailedConfig()
@@ -452,7 +453,9 @@ class DeviceInterface(object):
             self.last_verification_time = 1000 * (time.perf_counter() - start_verification)
 
             # benchmark
+            start_benchmark = time.perf_counter()
             result = self.benchmark(func, gpu_args, instance, verbose)
+            self.last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
 
         except Exception as e:
             #dump kernel_string to temp file

@@ -37,6 +37,8 @@ class SequentialRunner(object):
         self.warmed_up = False
         self.simulation_mode = False
         self.last_strategy_start_time = perf_counter()
+        self.last_strategy_time = 0
+        self.start_time = 0
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -81,28 +83,28 @@ class SequentialRunner(object):
 
             result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
 
-            if self.dev.last_compilation_time is not None:
-                params['compile_time'] = self.dev.last_compilation_time
-            if self.dev.last_verification_time is not None:
-                params['verification_time'] = self.dev.last_verification_time
-
-            if isinstance(result, ErrorConfig):
-                logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
-                params.update({ tuning_options.objective: result })
-                store_cache(x_int, params, tuning_options)
-                results.append(params)
-                continue
-
-            # print and append to results
+            # convert result to dict
             if not isinstance(result, dict):
                 params[tuning_options.objective] = result
             else:
                 params.update(result)
 
-            if tuning_options.metrics:
+            # only compute metrics on configs that have not errored
+            if isinstance(result, ErrorConfig):
+                logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
+            elif tuning_options.metrics:
                 params = process_metrics(params, tuning_options.metrics)
 
+            # print configuration to the console
             print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+
+            # get the framework time by estimating based on other times
+            params['compile_time'] = self.dev.last_compilation_time or 0
+            params['verification_time'] = self.dev.last_verification_time or 0
+            params['benchmark_time'] = self.dev.last_benchmark_time or 0
+            total_time = 1000 * (perf_counter() - self.start_time)
+            params['framework_time'] = max(total_time - (params['compile_time']+params['verification_time']+params['benchmark_time']), 0)
+            params['strategy_time'] = self.last_strategy_time
 
             store_cache(x_int, params, tuning_options)
             results.append(params)
