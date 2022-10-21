@@ -76,6 +76,8 @@ class SequentialRunner:
                 self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
                 self.warmed_up = True
 
+            result = None
+
             # check if configuration is in the cache
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
@@ -97,14 +99,16 @@ class SequentialRunner:
                 # print configuration to the console
                 print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
 
-                store_cache(x_int, params, tuning_options)
-
-            # all visited configurations are added to results to provide a trace for optimization strategies
-            results.append(params)
-
             # get the framework time by estimating based on other times
             total_time = 1000 * (perf_counter() - self.start_time)
             params['strategy_time'] = self.last_strategy_time
             params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time']), 0)
+            self.start_time = perf_counter()
+
+            if result:
+                store_cache(x_int, params, tuning_options)
+
+            # all visited configurations are added to results to provide a trace for optimization strategies
+            results.append(params)
 
         return results, self.dev.get_environment()
