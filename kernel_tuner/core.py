@@ -259,8 +259,6 @@ class DeviceInterface(object):
         self.units = dev.units
         self.name = dev.name
         self.max_threads = dev.max_threads
-        self.last_compilation_time = None
-        self.last_verification_time = None
         if not quiet:
             print("Using: " + self.dev.name)
 
@@ -317,7 +315,7 @@ class DeviceInterface(object):
 
 
 
-    def benchmark(self, func, gpu_args, instance, verbose):
+    def benchmark(self, func, gpu_args, instance, verbose, objective):
         """benchmark the kernel instance"""
         logging.debug('benchmark ' + instance.name)
         logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
@@ -333,9 +331,8 @@ class DeviceInterface(object):
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
 
-        result = None
+        result = {}
         try:
-            result = dict()
             self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
 
             if self.continuous_observers:
@@ -348,16 +345,16 @@ class DeviceInterface(object):
 
 
         except Exception as e:
-            #some launches may fail because too many registers are required
-            #to run the kernel given the current thread block size
-            #the desired behavior is to simply skip over this configuration
-            #and proceed to try the next one
+            # some launches may fail because too many registers are required
+            # to run the kernel given the current thread block size
+            # the desired behavior is to simply skip over this configuration
+            # and proceed to try the next one
             skippable_exceptions = ["too many resources requested for launch", "OUT_OF_RESOURCES", "INVALID_WORK_GROUP_SIZE"]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
                 logging.debug('benchmark fails due to runtime failure too many resources required')
                 if verbose:
                     print(f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch")
-                return util.RuntimeFailedConfig()
+                result[objective] = util.RuntimeFailedConfig()
             else:
                 logging.debug('benchmark encountered runtime failure: ' + str(e))
                 print("Error while benchmarking:", instance.name)
@@ -408,63 +405,68 @@ class DeviceInterface(object):
         if not correct:
             raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
 
-    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
+    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """
         instance_string = util.get_instance_string(params)
 
         # reset previous timers
-        self.last_compilation_time = None
-        self.last_verification_time = None
-        self.last_benchmark_time = None
+        last_compilation_time = None
+        last_verification_time = None
+        last_benchmark_time = None
 
         logging.debug('compile_and_benchmark ' + instance_string)
 
-        verbose = tuning_options.verbose
+        verbose = to.verbose
+        result = {}
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
             return instance
 
         try:
-            #compile the kernel
+            # compile the kernel
             start_compilation = time.perf_counter()
             func = self.compile_kernel(instance, verbose)
-            if func is None:
-                return util.CompilationFailedConfig()
-
-            #add shared memory arguments to compiled module
-            if kernel_options.smem_args is not None:
-                self.dev.copy_shared_memory_args(util.get_smem_args(kernel_options.smem_args, params))
-            #add constant memory arguments to compiled module
-            if kernel_options.cmem_args is not None:
-                self.dev.copy_constant_memory_args(kernel_options.cmem_args)
-            #add texture memory arguments to compiled module
-            if kernel_options.texmem_args is not None:
-                self.dev.copy_texture_memory_args(kernel_options.texmem_args)
+            if not func:
+                result[to.objective] = util.CompilationFailedConfig()
+            else:
+                # add shared memory arguments to compiled module
+                if kernel_options.smem_args is not None:
+                    self.dev.copy_shared_memory_args(util.get_smem_args(kernel_options.smem_args, params))
+                # add constant memory arguments to compiled module
+                if kernel_options.cmem_args is not None:
+                    self.dev.copy_constant_memory_args(kernel_options.cmem_args)
+                # add texture memory arguments to compiled module
+                if kernel_options.texmem_args is not None:
+                    self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
             # stop compilation stopwatch and convert to miliseconds
-            self.last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
+            last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
-            #test kernel for correctness and benchmark
-            start_verification = time.perf_counter()
-            if tuning_options.answer is not None or tuning_options.verify is not None:
-                self.check_kernel_output(func, gpu_args, instance, tuning_options.answer, tuning_options.atol, tuning_options.verify, verbose)
-            # stop verification stopwatch and convert to miliseconds
-            self.last_verification_time = 1000 * (time.perf_counter() - start_verification)
+            # test kernel for correctness
+            if func and (to.answer or to.verify):
+                start_verification = time.perf_counter()
+                self.check_kernel_output(func, gpu_args, instance, to.answer, to.atol, to.verify, verbose)
+                last_verification_time = 1000 * (time.perf_counter() - start_verification)
 
             # benchmark
-            start_benchmark = time.perf_counter()
-            result = self.benchmark(func, gpu_args, instance, verbose)
-            self.last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
+            if func:
+                start_benchmark = time.perf_counter()
+                result.update(self.benchmark(func, gpu_args, instance, verbose, to.objective))
+                last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
 
         except Exception as e:
-            #dump kernel_string to temp file
+            # dump kernel sources to temp file
             temp_filenames = instance.prepare_temp_files_for_error_msg()
             print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
             raise e
 
         #clean up any temporary files, if no error occured
         instance.delete_temp_files()
+
+        result['compile_time'] = last_compilation_time or 0
+        result['verification_time'] = last_verification_time or 0
+        result['benchmark_time'] = last_benchmark_time or 0
 
         return result
 

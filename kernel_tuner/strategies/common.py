@@ -83,41 +83,34 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
 
     legal = True
     result = {}
-
-    # check if configuration exists in the cache
-    # if it exists, and has not been visited during this run yet, do count it as a function evaluation
     x_int = ",".join([str(i) for i in params])
-    if x_int in tuning_options.cache:
-        result = tuning_options.cache[x_int]
 
     # else check if this is a legal (non-restricted) configuration
-    elif check_restrictions and tuning_options.restrictions:
+    if check_restrictions and tuning_options.restrictions:
         params_dict = OrderedDict(zip(tuning_options.tune_params.keys(), params))
         legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
         if not legal:
             result = params_dict
             result[tuning_options.objective] = util.InvalidConfig()
-            tuning_options.cache[x_int] = result
 
+    # compile and benchmark this instance
     if not result:
-        # compile and benchmark this instance
         res, _ = runner.run([params], kernel_options, tuning_options)
-
-    result = res[0]
+        result = res[0]
 
     # append to tuning results
     if x_int not in tuning_options.unique_results:
-        util.print_config(result, tuning_options, runner)
         tuning_options.unique_results[x_int] = result
-        results.append(result)
+
+    results.append(result)
 
     # get numerical return value, taking optimization direction into account
     return_value = result[tuning_options.objective] or sys.float_info.max
-    return_value = return_value if not tuning_options.objective_higher_is_better else -return_val
+    return_value = return_value if not tuning_options.objective_higher_is_better else -return_value
 
     # upon returning from this function control will be given back to the strategy, so reset the start time
     runner.last_strategy_start_time = perf_counter()
-    return return_value(result)
+    return return_value
 
 
 def get_bounds_x0_eps(tuning_options, max_threads):

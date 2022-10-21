@@ -77,6 +77,13 @@ def test_smem_args(env):
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])
 
+@skip_if_no_pycuda
+def test_build_cache(env):
+    if not os.path.isfile(cache_filename):
+        result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, verbose=False, quiet=True)
+        tune_params = env[-1]
+        assert len(result) == len(tune_params["block_size_x"])
+
 
 def test_simulation_runner(env):
     result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, simulation_mode=True, verbose=True)

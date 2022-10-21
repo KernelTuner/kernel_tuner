@@ -1,13 +1,14 @@
 """ The default runner for sequentially tuning the parameter space """
-from collections import OrderedDict
 import logging
+from collections import OrderedDict
 from time import perf_counter
 
-from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output, ErrorConfig
 from kernel_tuner.core import DeviceInterface
+from kernel_tuner.util import (ErrorConfig, print_config_output,
+                               process_metrics, store_cache)
 
 
-class SequentialRunner(object):
+class SequentialRunner:
     """ SequentialRunner is used for tuning with a single process/thread """
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
@@ -38,7 +39,7 @@ class SequentialRunner(object):
         self.simulation_mode = False
         self.last_strategy_start_time = perf_counter()
         self.last_strategy_time = 0
-        self.start_time = 0
+        self.start_time = perf_counter()
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -66,47 +67,44 @@ class SequentialRunner(object):
 
         results = []
 
-        #iterate over parameter space
+        # iterate over parameter space
         for element in parameter_space:
             params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
-            #attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
+            # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
             if not self.warmed_up:
                 self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
                 self.warmed_up = True
 
-            #check if element is in the cache
+            # check if configuration is in the cache
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
-                results.append(tuning_options.cache[x_int])
-                continue
-
-            result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
-
-            # convert result to dict
-            if not isinstance(result, dict):
-                params[tuning_options.objective] = result
+                params.update(tuning_options.cache[x_int])
+                params['compile_time'] = 0
+                params['verification_time'] = 0
+                params['benchmark_time'] = 0
             else:
+                result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+
                 params.update(result)
 
-            # only compute metrics on configs that have not errored
-            if isinstance(result, ErrorConfig):
-                logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
-            elif tuning_options.metrics:
-                params = process_metrics(params, tuning_options.metrics)
+                # only compute metrics on configs that have not errored
+                if isinstance(result[tuning_options.objective], ErrorConfig):
+                    logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
+                elif tuning_options.metrics:
+                    params = process_metrics(params, tuning_options.metrics)
 
-            # print configuration to the console
-            print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+                # print configuration to the console
+                print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+
+                store_cache(x_int, params, tuning_options)
+
+            # all visited configurations are added to results to provide a trace for optimization strategies
+            results.append(params)
 
             # get the framework time by estimating based on other times
-            params['compile_time'] = self.dev.last_compilation_time or 0
-            params['verification_time'] = self.dev.last_verification_time or 0
-            params['benchmark_time'] = self.dev.last_benchmark_time or 0
             total_time = 1000 * (perf_counter() - self.start_time)
-            params['framework_time'] = max(total_time - (params['compile_time']+params['verification_time']+params['benchmark_time']), 0)
             params['strategy_time'] = self.last_strategy_time
-
-            store_cache(x_int, params, tuning_options)
-            results.append(params)
+            params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time']), 0)
 
         return results, self.dev.get_environment()

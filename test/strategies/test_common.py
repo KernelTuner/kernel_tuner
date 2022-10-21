@@ -29,27 +29,19 @@ def test__cost_func():
     kernel_options = None
     tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
                              restrictions=None, strategy_options={}, cache={}, unique_results={},
-                             objective="time", objective_higher_is_better=False)
+                             objective="time", objective_higher_is_better=False, metrics=None)
     runner = fake_runner()
     results = []
 
     time = common._cost_func(x, kernel_options, tuning_options, runner, results)
     assert time == 5
 
-    tuning_options.cache["1,4"] = OrderedDict([("x", 1), ("y", 4), ("time", 5)])
-
-    time = common._cost_func(x, kernel_options, tuning_options, runner, results)
-
-    assert time == 5
-    # check if 1st run is properly cached and runner is only called once
-    assert runner.run.call_count == 1
-
     # check if restrictions are properly handled
     restrictions = ["False"]
     tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
                              restrictions=restrictions, strategy_options={},
                              verbose=True, cache={}, unique_results={},
-                             objective="time", objective_higher_is_better=False)
+                             objective="time", objective_higher_is_better=False, metrics=None)
     time = common._cost_func(x, kernel_options, tuning_options, runner, results)
     assert time == sys.float_info.max
 
