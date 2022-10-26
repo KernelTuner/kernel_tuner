@@ -102,7 +102,7 @@ class SequentialRunner:
             # get the framework time by estimating based on other times
             total_time = 1000 * (perf_counter() - self.start_time)
             params['strategy_time'] = self.last_strategy_time
-            params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time']), 0)
+            params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
             self.start_time = perf_counter()
 
             if result:

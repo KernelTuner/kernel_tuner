@@ -61,7 +61,7 @@ def get_options(strategy_options, options):
 
 def _cost_func(x, kernel_options, tuning_options, runner, results, check_restrictions=True):
     """ Cost function used by almost all strategies """
-    runner.last_strategy_time = 1000 * (runner.start_time - runner.last_strategy_start_time)
+    runner.last_strategy_time = 1000 * (perf_counter() - runner.last_strategy_start_time)
 
     # error value to return for numeric optimizers that need a numerical value
     logging.debug('_cost_func called')

@@ -92,13 +92,10 @@ class SimulationRunner:
                 # configuration is already counted towards the unique_results.
                 # It is the responsibility of cost_func to add configs to unique_results.
                 if x_int in tuning_options.unique_results:
-                    print("results appears in unique_results, meaning it is being repeated")
 
                     result['compile_time'] = 0
                     result['verification_time'] = 0
                     result['benchmark_time'] = 0
-                    total_time = 1000 * (perf_counter() - self.start_time)
-                    result['framework_time'] = total_time
 
                 else:
                     # configuration is evaluated for the first time, print to the console
@@ -107,8 +104,12 @@ class SimulationRunner:
                 # Everything but the strategy time is simulated,
                 # self.last_strategy_time is set by cost_func
                 result['strategy_time'] = self.last_strategy_time
-                simulated_time = result['compile_time'] + result['verification_time'] + result['benchmark_time'] + result['framework_time']
+                simulated_time = result['compile_time'] + result['verification_time'] + result['benchmark_time']
                 tuning_options.simulated_time += simulated_time
+
+                total_time = 1000 * (perf_counter() - self.start_time)
+                self.start_time = perf_counter()
+                result['framework_time'] = total_time - self.last_strategy_time
 
                 results.append(result)
                 continue
