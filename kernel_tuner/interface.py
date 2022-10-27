@@ -352,7 +352,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
 
     # check for forbidden names in tune parameters
-    util.check_tune_params_list(tune_params)
+    util.check_tune_params_list(tune_params, observers)
 
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
@@ -435,6 +435,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
 
     # call the strategy to execute the tuning process
     tuning_options["start_time"] = perf_counter()
+    runner.start_time = perf_counter()
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
     # finished iterating over search space

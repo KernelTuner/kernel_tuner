@@ -72,9 +72,12 @@ class SequentialRunner:
             params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
             # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
+            warmup_time = 0
             if not self.warmed_up:
+                warmup_time = perf_counter()
                 self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
                 self.warmed_up = True
+                warmup_time = 1e3 * (perf_counter() - warmup_time)
 
             result = None
 
@@ -100,7 +103,7 @@ class SequentialRunner:
                 print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
 
             # get the framework time by estimating based on other times
-            total_time = 1000 * (perf_counter() - self.start_time)
+            total_time = 1000 * (perf_counter() - self.start_time) - warmup_time
             params['strategy_time'] = self.last_strategy_time
             params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
             self.start_time = perf_counter()

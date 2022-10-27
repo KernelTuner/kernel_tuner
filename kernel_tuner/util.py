@@ -19,6 +19,7 @@ try:
 except ImportError:
     cp = np
 
+from kernel_tuner.nvml import NVMLObserver
 
 # number of special values to insert when a configuration cannot be measured
 
@@ -125,12 +126,15 @@ def check_stop_criterion(to):
         raise StopCriterionReached("time limit exceeded")
 
 
-def check_tune_params_list(tune_params):
+def check_tune_params_list(tune_params, observers):
     """ raise an exception if a tune parameter has a forbidden name """
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
+    if any("nvml_" in param for param in tune_params):
+        if not observers or not any(isinstance(obs, NVMLObserver) for obs in observers):
+            raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
 
 
 def check_block_size_names(block_size_names):
