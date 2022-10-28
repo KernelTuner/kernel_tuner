@@ -1,6 +1,7 @@
 """This module contains all NVIDIA cuda-python specific kernel_tuner functions"""
 import numpy as np
 
+from kernel_tuner.backends.backend import Backend
 from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.util import SkippableFailure
 
@@ -52,7 +53,7 @@ class CudaRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class CudaFunctions(object):
+class CudaFunctions(Backend):
     """Class that groups the Cuda functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):

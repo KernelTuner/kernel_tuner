@@ -5,6 +5,7 @@ import logging
 import time
 import numpy as np
 
+from kernel_tuner.backends.backend import Backend
 from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.nvml import nvml
 from kernel_tuner.util import TorchPlaceHolder, SkippableFailure
@@ -73,7 +74,7 @@ class PyCudaRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class PyCudaFunctions(object):
+class PyCudaFunctions(Backend):
     """Class that groups the CUDA functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):

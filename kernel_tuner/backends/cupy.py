@@ -6,6 +6,7 @@ import logging
 import time
 import numpy as np
 
+from kernel_tuner.backends.backend import Backend
 from kernel_tuner.observers import BenchmarkObserver
 
 #embedded in try block to be able to generate documentation
@@ -34,7 +35,7 @@ class CupyRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class CupyFunctions:
+class CupyFunctions(Backend):
     """Class that groups the Cupy functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):

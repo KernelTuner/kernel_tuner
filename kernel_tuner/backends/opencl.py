@@ -3,6 +3,7 @@ from __future__ import print_function
 import time
 import numpy as np
 
+from kernel_tuner.backends.backend import Backend
 from kernel_tuner.observers import BenchmarkObserver
 
 #embedded in try block to be able to generate documentation
@@ -28,7 +29,7 @@ class OpenCLObserver(BenchmarkObserver):
         return results
 
 
-class OpenCLFunctions():
+class OpenCLFunctions(Backend):
     """Class that groups the OpenCL functions on maintains some state about the device"""
 
     def __init__(self, device=0, platform=0, iterations=7, compiler_options=None, observers=None):
