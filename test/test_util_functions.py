@@ -12,9 +12,9 @@ from .context import skip_if_no_pycuda, skip_if_no_cuda, skip_if_no_opencl
 
 from kernel_tuner.interface import Options
 import kernel_tuner.core as core
-import kernel_tuner.pycuda as pycuda
-import kernel_tuner.nvcuda as nvcuda
-import kernel_tuner.opencl as opencl
+import kernel_tuner.backends.pycuda as pycuda
+import kernel_tuner.backends.nvcuda as nvcuda
+import kernel_tuner.backends.opencl as opencl
 from kernel_tuner.util import *
 
 block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
