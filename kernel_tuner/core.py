@@ -713,8 +713,6 @@ def wrap_templated_kernel(kernel_string, kernel_name):
     # there is a __launch_bounds__() group that is matched
     launch_bounds = ""
     if match.group(2):
-        print(f"found launch bounds: {match.group(2)=}")
-
         definition = definition.replace(match.group(2), " ")
         launch_bounds = match.group(2)
 
