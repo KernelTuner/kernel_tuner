@@ -199,21 +199,30 @@ class CudaFunctions(object):
             self.compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
 
         err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
-        error_check(err)
-        err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
-        error_check(err)
-        err, size = nvrtc.nvrtcGetPTXSize(program)
-        error_check(err)
-        buff = b' ' * size
-        err = nvrtc.nvrtcGetPTX(program, buff)
-        error_check(err)
-        err, self.current_module = cuda.cuModuleLoadData(np.char.array(buff))
-        if err == cuda.CUresult.CUDA_ERROR_INVALID_PTX:
-            raise SkippableFailure("uses too much shared data")
-        else:
+        try:
             error_check(err)
-        err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
-        error_check(err)
+            err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
+            error_check(err)
+            err, size = nvrtc.nvrtcGetPTXSize(program)
+            error_check(err)
+            buff = b' ' * size
+            err = nvrtc.nvrtcGetPTX(program, buff)
+            error_check(err)
+            err, self.current_module = cuda.cuModuleLoadData(np.char.array(buff))
+            if err == cuda.CUresult.CUDA_ERROR_INVALID_PTX:
+                raise SkippableFailure("uses too much shared data")
+            else:
+                error_check(err)
+            err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
+            error_check(err)
+
+        except RuntimeError as re:
+            _, n = nvrtc.nvrtcGetProgramLogSize(program)
+            log = b' ' * n
+            nvrtc.nvrtcGetProgramLog(program, log)
+            print(log.decode('utf-8'))
+            raise re
+
         return self.func
 
     def start_event(self):
