@@ -219,3 +219,62 @@ template<typename TF> __global__ void vector_add(TF *c, const TF *__restrict__ a
     #check if original kernel is called
     assert "vector_add<float>(c, a, b, n);" in ans
 
+def test_wrap_templated_kernel2():
+    kernel_string = """
+template<typename TF> __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add(TF *c, const TF *__restrict__ a, TF * b , int n) {
+    auto i = blockIdx.x * block_size_x + threadIdx.x;
+    if (i<n) {
+        c[i] = a[i] + b[i];
+    }
+}
+"""
+    kernel_name = "vector_add<float>"
+    # test no exception is thrown
+    ans, _ = core.wrap_templated_kernel(kernel_string, kernel_name)
+    assert True
+
+def test_wrap_templated_kernel3():
+    kernel_string = """
+template<typename TF> __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add1(TF *c, const TF *__restrict__ a, TF * b , int n) {
+    auto i = blockIdx.x * block_size_x + threadIdx.x;
+    if (i<n) {
+        c[i] = a[i] + b[i];
+    }
+}
+
+template<typename TF> __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_WRONG) test_vector_add1(TF *a, const TF *__restrict__ a, TF * b , int n) {
+    auto i = blockIdx.x * block_size_x + threadIdx.x;
+    if (i<n) {
+        c[i] = a[i] + b[i];
+    }
+}
+"""
+    kernel_name = "vector_add1<float>"
+    ans, _ = core.wrap_templated_kernel(kernel_string, kernel_name)
+
+    # test that the template wrapper matches the right kernel (the first and not the second)
+    assert 'extern "C" __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add1_wrapper(float * c, const float *__restrict__ a, float * b, int n)' in ans
+
+
+def test_wrap_templated_kernel4():
+    kernel_string = """
+template<typename TF> __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_WRONG) test_vector_add1(TF *a, const TF *__restrict__ a, TF * b , int n) {
+    auto i = blockIdx.x * block_size_x + threadIdx.x;
+    if (i<n) {
+        c[i] = a[i] + b[i];
+    }
+}
+
+template<typename TF> __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add1(TF *c, const TF *__restrict__ a, TF * b , int n) {
+    auto i = blockIdx.x * block_size_x + threadIdx.x;
+    if (i<n) {
+        c[i] = a[i] + b[i];
+    }
+}
+
+"""
+    kernel_name = "vector_add1<float>"
+    ans, _ = core.wrap_templated_kernel(kernel_string, kernel_name)
+
+    # test that the template wrapper matches the right kernel (the second not the first)
+    assert 'extern "C" __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add1_wrapper(float * c, const float *__restrict__ a, float * b, int n)' in ans

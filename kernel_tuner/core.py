@@ -69,7 +69,7 @@ class KernelSource(object):
             lang = util.detect_language(kernel_string)
 
         # The validity of lang is checked later, when creating the DeviceInterface
-        self.lang = lang
+        self.lang = lang.upper()
 
     def get_kernel_string(self, index=0, params=None):
         """ retrieve the kernel source with the given index and return as a string
@@ -530,7 +530,7 @@ class DeviceInterface(object):
                                                                               kernel_options.block_size_names)
 
         #check for templated kernel
-        if kernel_source.lang == "CUDA" and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA", "NVCUDA"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         #collect everything we know about this instance and return it
@@ -686,20 +686,20 @@ def get_templated_typenames(template_parameters, template_arguments):
 
 def wrap_templated_kernel(kernel_string, kernel_name):
     """rewrite kernel_string to insert wrapper function for templated kernel"""
-    #parse kernel_name to find template_arguments and real kernel name
+    # parse kernel_name to find template_arguments and real kernel name
     name = kernel_name.split("<")[0]
     template_arguments = re.search(r".*?<(.*)>", kernel_name, re.S).group(1).split(',')
 
-    #parse templated kernel definition
-    #relatively strict regex that does not allow nested template parameters like vector<TF>
-    #within the template parameter list
-    regex = r"template\s*<([^>]*?)>\s*__global__\s+void\s+" + name + r"\s*\((.*?)\)\s*\{"
+    # parse templated kernel definition
+    # relatively strict regex that does not allow nested template parameters like vector<TF>
+    # within the template parameter list
+    regex = r"template\s*<([^>]*?)>\s*__global__\s+void\s+(__launch_bounds__\([^\)]+?\)\s+)?" + name + r"\s*\((.*?)\)\s*\{"
     match = re.search(regex, kernel_string, re.S)
     if not match:
         raise ValueError("could not find templated kernel definition")
 
     template_parameters = match.group(1).split(',')
-    argument_list = match.group(2).split(',')
+    argument_list = match.group(3).split(',')
     argument_list = [s.strip() for s in argument_list]    #remove extra whitespace around 'type name' strings
 
     type_list, name_list = split_argument_list(argument_list)
@@ -707,19 +707,25 @@ def wrap_templated_kernel(kernel_string, kernel_name):
     templated_typenames = get_templated_typenames(template_parameters, template_arguments)
     apply_template_typenames(type_list, templated_typenames)
 
-    #replace __global__ with __device__ in the templated kernel definition
-    #could do a more precise replace, but __global__ cannot be used elsewhere in the definition
+    # replace __global__ with __device__ in the templated kernel definition
+    # could do a more precise replace, but __global__ cannot be used elsewhere in the definition
     definition = match.group(0).replace("__global__", "__device__")
 
-    #generate code for the compile-time template instantiation
+    # there is a __launch_bounds__() group that is matched
+    launch_bounds = ""
+    if match.group(2):
+        definition = definition.replace(match.group(2), " ")
+        launch_bounds = match.group(2)
+
+    # generate code for the compile-time template instantiation
     template_instantiation = f"template __device__ void {kernel_name}(" + ", ".join(type_list) + ");\n"
 
-    #generate code for the wrapper kernel
+    # generate code for the wrapper kernel
     new_arg_list = ", ".join([" ".join((a, b)) for a, b in zip(type_list, name_list)])
-    wrapper_function = "\nextern \"C\" __global__ void " + name + "_wrapper(" + new_arg_list + ") {\n  " + \
+    wrapper_function = "\nextern \"C\" __global__ void " + launch_bounds + name + "_wrapper(" + new_arg_list + ") {\n  " + \
        kernel_name + "(" + ", ".join(name_list) + ");\n}\n"
 
-    #copy kernel_string, replace definition and append template instantiation and wrapper function
+    # copy kernel_string, replace definition and append template instantiation and wrapper function
     new_kernel_string = kernel_string[:]
     new_kernel_string = new_kernel_string.replace(match.group(0), definition)
     new_kernel_string += "\n" + template_instantiation
