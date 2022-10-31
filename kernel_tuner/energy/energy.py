@@ -253,6 +253,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     freqs, nvml_power = get_measurements_fp32(
         args.device, n_samples=args.samples)
+    if False:
+        print("Clock frequencies:", freqs.tolist())
+        print("Power consumption:", nvml_power.tolist())
     ridge_frequency = fit_model(freqs, nvml_power)
     print(f"Modelled most energy efficient frequency: {ridge_frequency} MHz")
     all_frequencies = np.array(
