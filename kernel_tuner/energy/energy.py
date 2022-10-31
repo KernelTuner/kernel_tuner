@@ -234,29 +234,6 @@ def fit_model(freqs, nvml_power):
     return clock_threshold + clock_min
 
 
-def get_gr_clocks_ridge_point_method(gr_clocks, ridge_point, percentage=10, quiet=False):
-    """ Get tunable parameter for graphics clock around ridge_point, using all values within percentage """
-
-    clocks = np.array(gr_clocks)
-
-    # get frequency closest to ridge point
-    nearest_index = (np.abs(clocks - ridge_point)).argmin()
-    nearest_freq = clocks[nearest_index]
-
-    # get clocks within percentage (above and below) of ridge point
-    lower_bound = nearest_freq / 100 * (100-percentage)
-    upper_bound = nearest_freq / 100 * (100+percentage)
-    filtered_clocks = clocks[clocks > lower_bound]
-    filtered_clocks = filtered_clocks[filtered_clocks < upper_bound]
-
-    tune_params = OrderedDict()
-    tune_params["nvml_gr_clock"] = filtered_clocks
-
-    if not quiet:
-        print("Using clock frequencies:", tune_params["nvml_gr_clock"])
-    return tune_params
-
-
 def get_default_parser():
     parser = argparse.ArgumentParser(
         description='Find energy efficient frequencies')
