@@ -68,7 +68,7 @@ class KernelSource(object):
             lang = util.detect_language(kernel_string)
 
         # The validity of lang is checked later, when creating the DeviceInterface
-        self.lang = lang
+        self.lang = lang.upper()
 
     def get_kernel_string(self, index=0, params=None):
         """ retrieve the kernel source with the given index and return as a string
@@ -534,7 +534,7 @@ class DeviceInterface(object):
                                                                               kernel_options.block_size_names)
 
         #check for templated kernel
-        if kernel_source.lang == "CUDA" and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA", "NVCUDA"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         #collect everything we know about this instance and return it
