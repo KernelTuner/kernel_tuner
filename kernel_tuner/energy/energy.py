@@ -6,6 +6,7 @@ import argparse
 from collections import OrderedDict
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 from scipy import optimize
 import time
 
@@ -185,6 +186,28 @@ def get_measurements_fp32(device, n_samples=10, nvidia_smi_fallback=None, quiet=
     return freqs, nvml_power
 
 
+def estimated_voltage(X, clock_threshold, voltage_scale):
+    clocks = X
+    return [1 + ((clock > clock_threshold) * (1e-3 * voltage_scale * (clock-clock_threshold))) for clock in clocks]
+
+
+def estimated_power(X, clock_threshold, voltage_scale, clock_scale, power_max):
+    clocks = X
+
+    n = len(clocks)
+    powers = np.zeros(n)
+
+    voltages = estimated_voltage(clocks, clock_threshold, voltage_scale)
+
+    for i in range(n):
+        clock = clocks[i]
+        voltage = voltages[i]
+        power = 1 + clock_scale * clock * voltage**2 * 1e-3
+        powers[i] = min(power_max, power)
+
+    return powers
+
+
 def fit_model(freqs, nvml_power):
     nvml_gr_clocks = np.array(freqs)
     nvml_power = np.array(nvml_power)
@@ -200,26 +223,6 @@ def fit_model(freqs, nvml_power):
     clock_scale = 1
     power_max = max(nvml_power_normalized)
 
-    def estimated_voltage(X, clock_threshold, voltage_scale):
-        clocks = X
-        return [1 + ((clock > clock_threshold) * (1e-3 * voltage_scale * (clock-clock_threshold))) for clock in clocks]
-
-    def estimated_power(X, clock_threshold, voltage_scale, clock_scale, power_max):
-        clocks = X
-
-        n = len(clocks)
-        powers = np.zeros(n)
-
-        voltages = estimated_voltage(clocks, clock_threshold, voltage_scale)
-
-        for i in range(n):
-            clock = clocks[i]
-            voltage = voltages[i]
-            power = 1 + clock_scale * clock * voltage**2 * 1e-3
-            powers[i] = min(power_max, power)
-
-        return powers
-
     x = nvml_gr_clock_normalized
     y = nvml_power_normalized
 
@@ -231,7 +234,9 @@ def fit_model(freqs, nvml_power):
     clock_threshold, voltage_scale, clock_scale, power_max = np.round(
         res[0], 2)
 
-    return clock_threshold + clock_min
+    fit_parameters = (clock_threshold, voltage_scale, clock_scale, power_max)
+    scale_parameters = (clock_min, min(nvml_power))
+    return clock_threshold + clock_min, fit_parameters, scale_parameters
 
 
 def get_default_parser():
@@ -256,20 +261,48 @@ if __name__ == "__main__":
     if False:
         print("Clock frequencies:", freqs.tolist())
         print("Power consumption:", nvml_power.tolist())
-    ridge_frequency = fit_model(freqs, nvml_power)
+    ridge_frequency, fitted_params, scaling = fit_model(freqs, nvml_power)
     print(f"Modelled most energy efficient frequency: {ridge_frequency} MHz")
+
     all_frequencies = np.array(
         get_nvml_gr_clocks(args.device)['nvml_gr_clock'])
+    all_frequencies = np.linspace(405, 2100, 50)#TODO:REMOVE
     ridge_frequency2 = all_frequencies[np.argmin(
         abs(all_frequencies - ridge_frequency))]
     print(
         f"Closest configurable most energy efficient frequency: {ridge_frequency2} MHz")
+
     min_freq = 1e-2 * (100 - int(args.range)) * ridge_frequency
     max_freq = 1e-2 * (100 + int(args.range)) * ridge_frequency
-    np.linspace(min_freq, max_freq)
     frequency_selection = np.unique([all_frequencies[np.argmin(abs(
         all_frequencies - f))] for f in np.linspace(min_freq, max_freq, int(args.number))])
     print(
         f"Suggested range of frequencies to auto-tune: {frequency_selection} MHz")
     print(
         f"Search space reduction: {np.round(100 - len(frequency_selection) / len(all_frequencies) * 100, 1)} %%")
+
+    xs = np.linspace(all_frequencies[0], all_frequencies[-1], 100)
+    # scale to start at 0
+    xs -= scaling[0]
+    modelled_power = estimated_power(xs, *fitted_params) 
+    # undo scaling
+    xs += scaling[0]
+    modelled_power *= scaling[1]
+    # Add point for ridge frequency
+    P_ridge = estimated_power([ridge_frequency - scaling[0]],
+                              *fitted_params) * scaling[1]
+
+    # plot measurements with model
+    fig, ax = plt.subplots()
+    plt.scatter(x=freqs, y=nvml_power, label='NVML measurements')
+    plt.scatter(x=ridge_frequency, y=P_ridge, color='r',
+                label='Ridge frequency (MHz)')
+    plt.plot(xs, modelled_power, label='Modelled power consumption')
+    ax.axvspan(min_freq, max_freq, alpha=0.15, color='red',
+               label='Recommended frequency range')
+    plt.title('GPU modelled power consumption', size=18)
+    plt.xlabel('Core frequency (MHz)')
+    plt.ylabel('Power consumption (W)')
+    plt.legend()
+    plt.grid()
+    plt.show()
