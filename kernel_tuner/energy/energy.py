@@ -267,7 +267,6 @@ if __name__ == "__main__":
 
     all_frequencies = np.array(
         get_nvml_gr_clocks(args.device)['nvml_gr_clock'])
-    all_frequencies = np.linspace(405, 2100, 50)#TODO:REMOVE
     ridge_frequency2 = all_frequencies[np.argmin(
         abs(all_frequencies - ridge_frequency))]
     print(
@@ -276,7 +275,7 @@ if __name__ == "__main__":
     min_freq = 1e-2 * (100 - int(args.range)) * ridge_frequency
     max_freq = 1e-2 * (100 + int(args.range)) * ridge_frequency
     frequency_selection = np.unique([all_frequencies[np.argmin(abs(
-        all_frequencies - f))] for f in np.linspace(min_freq, max_freq, int(args.number))])
+        all_frequencies - f))] for f in np.linspace(min_freq, max_freq, int(args.number))]).tolist()
     print(
         f"Suggested range of frequencies to auto-tune: {frequency_selection} MHz")
     print(
@@ -317,4 +316,3 @@ if __name__ == "__main__":
     plt.legend()
     
     plt.savefig("GPU_power_consumption_model.pdf")
-    plt.show()
