@@ -261,6 +261,7 @@ if __name__ == "__main__":
     if False:
         print("Clock frequencies:", freqs.tolist())
         print("Power consumption:", nvml_power.tolist())
+
     ridge_frequency, fitted_params, scaling = fit_model(freqs, nvml_power)
     print(f"Modelled most energy efficient frequency: {ridge_frequency} MHz")
 
@@ -288,21 +289,32 @@ if __name__ == "__main__":
     # undo scaling
     xs += scaling[0]
     modelled_power *= scaling[1]
+
     # Add point for ridge frequency
     P_ridge = estimated_power([ridge_frequency - scaling[0]],
                               *fitted_params) * scaling[1]
 
     # plot measurements with model
-    fig, ax = plt.subplots()
+    try:
+        import seaborn as sns
+        sns.set_theme(style="darkgrid")
+        sns.set_context("paper", rc={"font.size":10,
+                        "axes.titlesize":9, "axes.labelsize":12})
+        fig, ax = plt.subplots()
+    except ImportError:
+        fig, ax = plt.subplots()
+        plt.grid()
+
     plt.scatter(x=freqs, y=nvml_power, label='NVML measurements')
-    plt.scatter(x=ridge_frequency, y=P_ridge, color='r',
+    plt.scatter(x=ridge_frequency, y=P_ridge, color='g',
                 label='Ridge frequency (MHz)')
     plt.plot(xs, modelled_power, label='Modelled power consumption')
-    ax.axvspan(min_freq, max_freq, alpha=0.15, color='red',
+    ax.axvspan(min_freq, max_freq, alpha=0.15, color='green',
                label='Recommended frequency range')
     plt.title('GPU modelled power consumption', size=18)
     plt.xlabel('Core frequency (MHz)')
     plt.ylabel('Power consumption (W)')
     plt.legend()
-    plt.grid()
+    
+    plt.savefig("GPU_power_consumption_model.pdf")
     plt.show()
