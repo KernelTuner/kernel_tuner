@@ -193,8 +193,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Design documentation</li>
+      <li><a href="contents.html" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">Design documentation</li>
       <li class="wy-breadcrumbs-aside">
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/design.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
@@ -482,7 +482,7 @@ Currently supported: “CUDA”, “OpenCL”, or “C”</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark">
-<span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>benchmark the kernel instance</p>
 </dd></dl>
 
@@ -506,7 +506,7 @@ Currently supported: “CUDA”, “OpenCL”, or “C”</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.compile_and_benchmark">
-<span class="sig-name descname"><span class="pre">compile_and_benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.compile_and_benchmark" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compile_and_benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.compile_and_benchmark" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compile and benchmark a kernel instance based on kernel strings and parameters</p>
 </dd></dl>
 
@@ -1518,7 +1518,7 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.check_tune_params_list">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_tune_params_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_tune_params_list" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_tune_params_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_tune_params_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>raise an exception if a tune parameter has a forbidden name</p>
 </dd></dl>
 
