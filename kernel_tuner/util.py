@@ -409,7 +409,7 @@ def get_total_timings(results, env, overhead_time):
     total_strategy_time = 0
     total_compile_time = 0
     total_verification_time = 0
-    total_kernel_time = 0
+    total_benchmark_time = 0
     if results:
         for result in results:
             if 'framework_time' not in result or 'strategy_time' not in result or 'compile_time' not in result or 'verification_time' not in result:
@@ -419,15 +419,17 @@ def get_total_timings(results, env, overhead_time):
             total_strategy_time += result['strategy_time']
             total_compile_time += result['compile_time']
             total_verification_time += result['verification_time']
-            total_kernel_time += sum(result['times']) if 'times' in result.keys() else 0
+            total_benchmark_time += result['benchmark_time']
 
     # add the seperate times to the environment dict
     env['total_framework_time'] = total_framework_time
     env['total_strategy_time'] = total_strategy_time
     env['total_compile_time'] = total_compile_time
     env['total_verification_time'] = total_verification_time
-    env['total_kernel_time'] = total_kernel_time
-    env['overhead_time'] = overhead_time - (total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_kernel_time)
+    env['total_benchmark_time'] = total_benchmark_time
+    if 'simulated_time' in env:
+        overhead_time += env['simulated_time']
+    env['overhead_time'] = overhead_time - (total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_benchmark_time)
     return env
 
 

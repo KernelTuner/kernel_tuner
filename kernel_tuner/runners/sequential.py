@@ -37,9 +37,9 @@ class SequentialRunner:
         self.kernel_source = kernel_source
         self.warmed_up = False
         self.simulation_mode = False
-        self.last_strategy_start_time = perf_counter()
-        self.last_strategy_time = 0
         self.start_time = perf_counter()
+        self.last_strategy_start_time = self.start_time
+        self.last_strategy_time = 0
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)

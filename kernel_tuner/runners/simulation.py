@@ -7,6 +7,8 @@ from kernel_tuner import util
 
 _SimulationDevice = namedtuple("_SimulationDevice", ["max_threads", "env", "quiet"])
 class SimulationDevice(_SimulationDevice):
+    """ Simulated device used by simulation runner """
+
     @property
     def name(self):
         return self.env['device_name']
@@ -48,10 +50,16 @@ class SimulationRunner:
         self.kernel_source = kernel_source
         self.simulation_mode = True
 
-        self.last_strategy_start_time = perf_counter()
-        self.last_strategy_time = 0
         self.start_time = perf_counter()
+        self.last_strategy_start_time = self.start_time
+        self.last_strategy_time = 0
         self.units = {}
+
+    def get_environment(self, tuning_options):
+        env = self.dev.get_environment()
+        env["simulation"] = True
+        env["simulated_time"] = tuning_options.simulated_time
+        return env
 
     def run(self, parameter_space, kernel_options, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
@@ -101,11 +109,16 @@ class SimulationRunner:
                     # configuration is evaluated for the first time, print to the console
                     util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
 
-                # Everything but the strategy time is simulated,
+                # Everything but the strategy time and framework time are simulated,
                 # self.last_strategy_time is set by cost_func
                 result['strategy_time'] = self.last_strategy_time
-                simulated_time = result['compile_time'] + result['verification_time'] + result['benchmark_time']
-                tuning_options.simulated_time += simulated_time
+
+                try:
+                    simulated_time = result['compile_time'] + result['verification_time'] + result['benchmark_time']
+                    tuning_options.simulated_time += simulated_time
+                except KeyError:
+                    if "time_limit" in tuning_options:
+                        raise RuntimeError("Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations")
 
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
@@ -119,4 +132,4 @@ class SimulationRunner:
             print(element)
             raise ValueError("Kernel configuration not in cache - in simulation mode, all configurations must be present in the cache")
 
-        return results, self.dev.get_environment()
+        return results, self.get_environment(tuning_options)

@@ -435,7 +435,6 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
 
     # call the strategy to execute the tuning process
     tuning_options["start_time"] = perf_counter()
-    runner.start_time = perf_counter()
     results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
 
     # finished iterating over search space
