@@ -47,11 +47,20 @@ def test_strategies(vector_add, strategy):
         filter_options = options
     filter_options["max_fevals"] = 10
 
-    result, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+    results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
                                          verbose=False, cache=cache_filename, simulation_mode=True)
 
-    assert len(result) > 0
+    assert len(results) > 0
 
     if not strategy == "brute_force":
         # check if the number of valid unique configurations is less then max_fevals
-        assert len(set(["_".join(str(r)) for r in result if not isinstance(r["time"], util.InvalidConfig)])) <= filter_options["max_fevals"]
+
+        tune_params = vector_add[-1]
+        unique_results = {}
+
+        for result in results:
+            x_int = ",".join([str(v) for k, v in result.items() if k in tune_params])
+            if not isinstance(result["time"], util.InvalidConfig):
+                unique_results[x_int] = result["time"]
+
+        assert len(unique_results) <= filter_options["max_fevals"]
