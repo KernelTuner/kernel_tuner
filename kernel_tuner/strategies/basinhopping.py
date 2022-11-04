@@ -28,7 +28,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     options = setup_method_options(method, tuning_options)
     kwargs['options'] = options
 
-    args = (kernel_options, tuning_options, runner, results)
+    args = (tuning_options, runner, results)
 
     minimizer_kwargs = dict(**kwargs)
     minimizer_kwargs["method"] = method

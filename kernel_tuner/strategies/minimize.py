@@ -30,7 +30,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
 
-    args = (kernel_options, tuning_options, runner, results)
+    args = (tuning_options, runner, results)
 
     opt_result = None
     try:

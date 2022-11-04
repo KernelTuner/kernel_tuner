@@ -31,7 +31,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     for sample in samples:
         try:
-            _cost_func(sample, kernel_options, tuning_options, runner, results, check_restrictions=False)
+            _cost_func(sample, tuning_options, runner, results, check_restrictions=False)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)

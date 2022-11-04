@@ -33,7 +33,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         weighted_population = []
         for dna in population:
             try:
-                time = _cost_func(dna, kernel_options, tuning_options, runner, results, check_restrictions=False)
+                time = _cost_func(dna, tuning_options, runner, results, check_restrictions=False)
             except util.StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)

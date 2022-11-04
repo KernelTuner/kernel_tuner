@@ -37,14 +37,14 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     #while searching
     candidate = searchspace.get_random_sample(1)[0]
-    best_score = _cost_func(candidate, kernel_options, tuning_options, runner, results, check_restrictions=False)
+    best_score = _cost_func(candidate, tuning_options, runner, results, check_restrictions=False)
 
     last_improvement = 0
     while fevals < max_fevals:
 
         try:
             candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, results, kernel_options, tuning_options, runner, restart=restart, randomize=True)
-            new_score = _cost_func(candidate, kernel_options, tuning_options, runner, results, check_restrictions=False)
+            new_score = _cost_func(candidate, tuning_options, runner, results, check_restrictions=False)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)

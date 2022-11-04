@@ -40,18 +40,16 @@ class SequentialRunner:
         self.start_time = perf_counter()
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
+        self.kernel_options = kernel_options
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
-    def run(self, parameter_space, kernel_options, tuning_options):
+    def run(self, parameter_space, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
 
         :param parameter_space: The parameter space as an iterable.
         :type parameter_space: iterable
-
-        :param kernel_options: A dictionary with all options for the kernel.
-        :type kernel_options: kernel_tuner.interface.Options
 
         :param tuning_options: A dictionary with all options regarding the tuning
             process.
@@ -63,7 +61,7 @@ class SequentialRunner:
         :rtype: list(dict()), dict()
 
         """
-        logging.debug('sequential runner started for ' + kernel_options.kernel_name)
+        logging.debug('sequential runner started for ' + self.kernel_options.kernel_name)
 
         results = []
 
@@ -75,7 +73,7 @@ class SequentialRunner:
             warmup_time = 0
             if not self.warmed_up:
                 warmup_time = perf_counter()
-                self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+                self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
                 self.warmed_up = True
                 warmup_time = 1e3 * (perf_counter() - warmup_time)
 
@@ -89,7 +87,7 @@ class SequentialRunner:
                 params['verification_time'] = 0
                 params['benchmark_time'] = 0
             else:
-                result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+                result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
 
                 params.update(result)
 

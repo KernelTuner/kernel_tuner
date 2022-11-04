@@ -59,7 +59,7 @@ def get_options(strategy_options, options):
     return [strategy_options.get(opt, default) for opt, (_, default) in options.items()]
 
 
-def _cost_func(x, kernel_options, tuning_options, runner, results, check_restrictions=True):
+def _cost_func(x, tuning_options, runner, results, check_restrictions=True):
     """ Cost function used by almost all strategies """
     runner.last_strategy_time = 1000 * (perf_counter() - runner.last_strategy_start_time)
 
@@ -94,7 +94,7 @@ def _cost_func(x, kernel_options, tuning_options, runner, results, check_restric
 
     # compile and benchmark this instance
     if not result:
-        res, _ = runner.run([params], kernel_options, tuning_options)
+        res, _ = runner.run([params], tuning_options)
         result = res[0]
 
     # append to tuning results

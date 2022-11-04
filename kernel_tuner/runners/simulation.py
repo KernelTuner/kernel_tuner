@@ -49,6 +49,7 @@ class SimulationRunner:
 
         self.kernel_source = kernel_source
         self.simulation_mode = True
+        self.kernel_options = kernel_options
 
         self.start_time = perf_counter()
         self.last_strategy_start_time = self.start_time
@@ -61,14 +62,11 @@ class SimulationRunner:
         env["simulated_time"] = tuning_options.simulated_time
         return env
 
-    def run(self, parameter_space, kernel_options, tuning_options):
+    def run(self, parameter_space, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
 
         :param parameter_space: The parameter space as an iterable.
         :type parameter_space: iterable
-
-        :param kernel_options: A dictionary with all options for the kernel.
-        :type kernel_options: kernel_tuner.interface.Options
 
         :param tuning_options: A dictionary with all options regarding the tuning
             process.
@@ -80,7 +78,7 @@ class SimulationRunner:
         :rtype: list(dict()), dict()
 
         """
-        logging.debug('simulation runner started for ' + kernel_options.kernel_name)
+        logging.debug('simulation runner started for ' + self.kernel_options.kernel_name)
 
         results = []
 

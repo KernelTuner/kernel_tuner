@@ -26,7 +26,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # using this instead of get_bounds because scaling is used
     bounds, _, eps = get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
 
-    args = (kernel_options, tuning_options, runner, results)
+    args = (tuning_options, runner, results)
 
     num_particles, maxiter, B0, gamma, alpha = common.get_options(tuning_options.strategy_options, _options)
 

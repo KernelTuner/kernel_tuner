@@ -408,7 +408,7 @@ class BayesianOptimization():
         denormalized_param_config = self.denormalize_param_config(param_config)
         if not util.config_valid(denormalized_param_config, self.tuning_options, self.max_threads):
             return self.invalid_value
-        val = common._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)
+        val = common._cost_func(param_config, self.tuning_options, self.runner, self.results)
         self.fevals += 1
         return val
 
@@ -842,7 +842,7 @@ class BayesianOptimization():
         _, mu, std = self.predict_list(self.searchspace)
         brute_force_observations = list()
         for param_config in self.searchspace:
-            obs = common._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.results)
+            obs = common._cost_func(param_config, self.tuning_options, self.runner, self.results)
             if obs == self.invalid_value:
                 obs = None
             brute_force_observations.append(obs)

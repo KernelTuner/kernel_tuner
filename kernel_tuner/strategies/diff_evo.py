@@ -24,7 +24,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # build a bounds array as needed for the optimizer
     bounds = get_bounds(tuning_options.tune_params)
 
-    args = (kernel_options, tuning_options, runner, results)
+    args = (tuning_options, runner, results)
 
     # ensure particles start from legal points
     searchspace = Searchspace(tuning_options, runner.dev.max_threads)
