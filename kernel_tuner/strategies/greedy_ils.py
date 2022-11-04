@@ -15,7 +15,7 @@ _options = OrderedDict(neighbor=("Method for selecting neighboring nodes, choose
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
-    dna_size = len(tuning_options.tune_params.keys())
+    dna_size = len(searchspace.tune_params.keys())
 
     options = tuning_options.strategy_options
 

@@ -107,7 +107,7 @@ def _cost_func(x, tuning_options, runner, results, check_restrictions=True):
 
 def get_bounds_x0_eps(searchspace: Searchspace, tuning_options):
     """compute bounds, x0 (the initial guess), and eps"""
-    values = list(tuning_options.tune_params.values())
+    values = list(searchspace.tune_params.values())
 
     if "x0" in tuning_options.strategy_options:
         x0 = tuning_options.strategy_options.x0
@@ -125,9 +125,9 @@ def get_bounds_x0_eps(searchspace: Searchspace, tuning_options):
         else:
             # get a valid x0
             pos = list(searchspace.get_random_sample(1)[0])
-            x0 = scale_from_params(pos, tuning_options.tune_params, eps)
+            x0 = scale_from_params(pos, searchspace.tune_params, eps)
     else:
-        bounds = get_bounds(tuning_options.tune_params)
+        bounds = get_bounds(searchspace.tune_params)
         if not x0:
             x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
         eps = 1e9

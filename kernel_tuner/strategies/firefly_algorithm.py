@@ -41,7 +41,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # ensure particles start from legal points
     population = list(list(p) for p in searchspace.get_random_sample(num_particles))
     for i, particle in enumerate(swarm):
-        particle.position = scale_from_params(population[i], tuning_options.tune_params, eps)
+        particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
 
     # compute initial intensities
     for j in range(num_particles):

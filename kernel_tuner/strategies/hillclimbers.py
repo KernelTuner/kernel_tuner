@@ -54,7 +54,7 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
     if randomize and order:
         raise ValueError("Using a preset order and randomize at the same time is not supported.")
 
-    tune_params = tuning_options.tune_params
+    tune_params = searchspace.tune_params
 
     # measure start point score
     best_score = _cost_func(base_sol, tuning_options, runner, all_results, check_restrictions=False)

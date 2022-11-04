@@ -90,7 +90,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         raise ImportError("Error: optional dependencies for Bayesian Optimization not installed, please install scikit-learn and scikit-optimize")
 
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
-    tune_params = tuning_options.tune_params
+    tune_params = searchspace.tune_params
     tuning_options["scaling"] = True
     _, _, eps = common.get_bounds_x0_eps(searchspace, tuning_options)
 

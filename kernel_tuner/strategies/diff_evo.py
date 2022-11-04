@@ -22,7 +22,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     tuning_options["scaling"] = False
     # build a bounds array as needed for the optimizer
-    bounds = get_bounds(tuning_options.tune_params)
+    bounds = get_bounds(searchspace.tune_params)
 
     args = (tuning_options, runner, results)
 
