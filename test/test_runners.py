@@ -1,6 +1,5 @@
-from __future__ import print_function
-
 import os
+import time
 from collections import OrderedDict
 
 import numpy as np
@@ -77,11 +76,38 @@ def test_smem_args(env):
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])
 
+@skip_if_no_pycuda
+def test_build_cache(env):
+    if not os.path.isfile(cache_filename):
+        result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, verbose=False, quiet=True)
+        tune_params = env[-1]
+        assert len(result) == len(tune_params["block_size_x"])
+
 
 def test_simulation_runner(env):
-    result, _ = kernel_tuner.tune_kernel(*env, cache=cache_filename, simulation_mode=True, verbose=True)
-    tune_params = env[-1]
+    kernel_name, kernel_string, size, args, tune_params = env
+    start = time.perf_counter()
+    result, res_env = kernel_tuner.tune_kernel(*env, cache=cache_filename, strategy="random_sample", simulation_mode=True, strategy_options=dict(fraction=1))
+    actual_time = (time.perf_counter() - start) * 1e3 # ms
     assert len(result) == len(tune_params["block_size_x"])
+
+    timings = ['total_framework_time', 'total_strategy_time', 'total_compile_time', 'total_benchmark_time', 'overhead_time']
+
+    # ensure all keys are there and non zero
+    assert all(key in res_env for key in timings)
+    assert all(res_env[key] > 0.0 for key in timings)
+
+    # ensure simulation mode and simulated time are properly recorded
+    assert "simulated_time" in res_env
+    assert "simulation" in res_env and res_env["simulation"]
+
+    # ensure recorded time is sensible number
+    recorded_time_including_simulation = sum(res_env[key] for key in timings)
+    assert recorded_time_including_simulation - res_env['simulated_time'] > 0
+
+    # ensure difference between recorded time and actual time + simulated less then 10ms
+    max_time = actual_time + res_env['simulated_time']
+    assert max_time - recorded_time_including_simulation < 10
 
 
 def test_diff_evo(env):
@@ -89,10 +115,30 @@ def test_diff_evo(env):
     assert len(result) > 0
 
 
-def test_genetic_algorithm(env):
-    options = dict(method="uniform", popsize=10, maxiter=2, mutation_chance=1)
-    result, _ = kernel_tuner.tune_kernel(*env, strategy="genetic_algorithm", strategy_options=options, verbose=True, cache=cache_filename, simulation_mode=True)
-    assert len(result) > 0
+@skip_if_no_pycuda
+def test_time_keeping(env):
+    kernel_name, kernel_string, size, args, tune_params = env
+    answer = [args[1]+args[2], None, None, None]
+
+    options = dict(method="uniform", popsize=10, maxiter=1, mutation_chance=1, max_fevals=10)
+    start = time.perf_counter()
+    result, env = kernel_tuner.tune_kernel(*env, strategy="genetic_algorithm", strategy_options=options, verbose=True, answer=answer)
+    max_time = (time.perf_counter() - start) * 1e3 # ms
+
+    assert len(result) >= 10
+
+    timings = ['total_framework_time', 'total_strategy_time', 'total_compile_time', 'total_verification_time', 'total_benchmark_time', 'overhead_time']
+
+    # ensure all keys are there and non zero
+    assert all(key in env for key in timings)
+    assert all(env[key] > 0.0 for key in timings)
+
+    # check if it all adds up
+    recorded_time_spent_tuning = sum(env[key] for key in timings)
+    assert 0 < recorded_time_spent_tuning < max_time
+
+    # maximum of 10ms difference between recorded time and actual wallclock time waiting on tune_kernel
+    assert max_time - recorded_time_spent_tuning < 10
 
 
 def test_bayesian_optimization(env):

@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Added
+- Support for using time_limit in simulation mode
+
+### Changed
+- Changed what timings are stored in cache files
 
 ## [0.4.3] - 2022-10-19
 ### Added
