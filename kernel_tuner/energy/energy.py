@@ -116,7 +116,7 @@ def estimated_power(X, clock_threshold, voltage_scale, clock_scale, power_max):
     return powers
 
 
-def fit_performance_frequency_model(freqs, nvml_power):
+def fit_power_frequency_model(freqs, nvml_power):
     """ Fit the performance frequency model based on frequency and power measurements """
 
     nvml_gr_clocks = np.array(freqs)
@@ -149,10 +149,10 @@ def fit_performance_frequency_model(freqs, nvml_power):
     return clock_threshold + clock_min, fit_parameters, scale_parameters
 
 
-def create_performance_frequency_model(device=0, n_samples=10, verbose=False, nvidia_smi_fallback=None, use_locked_clocks=False):
+def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_smi_fallback=None, use_locked_clocks=False):
     """ Calculate the most energy-efficient clock frequency of device
 
-    This function uses a performance model to fit the performance-frequency curve
+    This function uses a performance model to fit the power-frequency curve
     using a synthethic benchmarking kernel. The method has been described in:
 
      * Going green: optimizing GPUs for energy efficiency through model-steered auto-tuning
@@ -186,7 +186,7 @@ def create_performance_frequency_model(device=0, n_samples=10, verbose=False, nv
         print("Clock frequencies:", freqs.tolist())
         print("Power consumption:", nvml_power.tolist())
 
-    ridge_frequency, fitted_params, scaling = fit_performance_frequency_model(freqs, nvml_power)
+    ridge_frequency, fitted_params, scaling = fit_power_frequency_model(freqs, nvml_power)
 
     if verbose:
         print(f"Modelled most energy efficient frequency: {ridge_frequency} MHz")

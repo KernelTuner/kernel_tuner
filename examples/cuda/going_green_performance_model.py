@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This example demonstrates how to use the performance model presented in
+This example demonstrates how to use the power-frequency model presented in
 
   * Going green: optimizing GPUs for energy efficiency through model-steered auto-tuning
     R. Schoonhoven, B. Veenboer, B. van Werkhoven, K. J. Batenburg
@@ -8,7 +8,7 @@ This example demonstrates how to use the performance model presented in
 
 to reduce the number of frequencies for GPU energy tuning.
 
-In particular, this example creates a plot with the modeled-performance vs
+In particular, this example creates a plot with the modeled power consumption vs
 frequency curve, highlighting the ridge frequency and the frequency range
 selected by the user.
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     parser = get_default_parser()
     args = parser.parse_args()
 
-    ridge_frequency, freqs, nvml_power, fitted_params, scaling = energy.create_performance_frequency_model(device=args.device,
+    ridge_frequency, freqs, nvml_power, fitted_params, scaling = energy.create_power_frequency_model(device=args.device,
                                                                                                n_samples=args.samples,
                                                                                                verbose=True,
                                                                                                nvidia_smi_fallback=args.nvidia_smi_fallback,
