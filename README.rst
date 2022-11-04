@@ -172,7 +172,16 @@ If you use Kernel Tuner in research or research software, please cite the most r
       author={Schoonhoven, Richard and van Werkhoven, Ben and Batenburg, K Joost},
       journal={IEEE Transactions on Evolutionary Computation},
       year={2022},
-      publisher={IEEE}
+      publisher={IEEE},
+      url = {https://arxiv.org/abs/2210.01465}
+    }
+
+    @article{schoonhoven2022going,
+      author = {Schoonhoven, Richard and Veenboer, Bram, and van Werkhoven, Ben and Batenburg, K Joost},
+      title = {Going green: optimizing GPUs for energy efficiency through model-steered auto-tuning},
+      journal = {International Workshop on Performance Modeling, Benchmarking and Simulation
+         of High Performance Computer Systems (PMBS) at Supercomputing (SC22)},
+      year = {2022}
     }
 
 
