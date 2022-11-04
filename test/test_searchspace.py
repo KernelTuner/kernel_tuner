@@ -68,12 +68,18 @@ def test_internal_representation():
 
 def test_sort():
     """ test that the sort searchspace option works as expected """
-    simple_searchspace_sort = Searchspace(simple_tuning_options, max_threads, sort=True, sort_last_param_first=False)
-    assert simple_searchspace_sort.list == [(1, 4, 'string_1'), (1, 4, 'string_2'), (1, 5.5, 'string_1'), (1, 5.5, 'string_2'), (2, 4, 'string_1'), (2, 4, 'string_2'), (2, 5.5, 'string_1'), (2, 5.5, 'string_2'), (3, 4, 'string_1'), (3, 4, 'string_2'), (3, 5.5, 'string_1'), (3, 5.5, 'string_2')]
+    simple_searchspace_sort = Searchspace(simple_tuning_options, max_threads)
+    expected = [
+        (1, 4, 'string_1'), (1, 4, 'string_2'), (1, 5.5, 'string_1'), (1, 5.5, 'string_2'),
+        (2, 4, 'string_1'), (2, 4, 'string_2'), (2, 5.5, 'string_1'), (2, 5.5, 'string_2'),
+        (3, 4, 'string_1'), (3, 4, 'string_2'), (3, 5.5, 'string_1'), (3, 5.5, 'string_2')]
 
-    searchspace_sort = Searchspace(sort_tuning_options, max_threads, sort=True, sort_last_param_first=False)
-    num_params = len(searchspace_sort.list[0])
-    for param_config_index, (param_config_first, param_config_second) in enumerate(zip(searchspace_sort.list, searchspace_sort.list[1:])):
+    assert simple_searchspace_sort.sorted_list(sort_last_param_first=False) == expected
+
+    searchspace_sort = Searchspace(sort_tuning_options, max_threads)
+    sorted_list = searchspace_sort.sorted_list(sort_last_param_first=False)
+    num_params = len(sorted_list[0])
+    for param_config_index, (param_config_first, param_config_second) in enumerate(zip(sorted_list, sorted_list[1:])):
         if (param_config_index + 1) % num_layers == 0:
             continue
         for param_index in range(num_params):
@@ -81,12 +87,18 @@ def test_sort():
 
 def test_sort_reversed():
     """ test that the sort searchspace option with the sort_last_param_first option enabled works as expected """
-    simple_searchspace_sort_reversed = Searchspace(simple_tuning_options, max_threads, sort=True, sort_last_param_first=True)
-    assert simple_searchspace_sort_reversed.list == [(1, 4, 'string_1'), (2, 4, 'string_1'), (3, 4, 'string_1'), (1, 5.5, 'string_1'), (2, 5.5, 'string_1'), (3, 5.5, 'string_1'), (1, 4, 'string_2'), (2, 4, 'string_2'), (3, 4, 'string_2'), (1, 5.5, 'string_2'), (2, 5.5, 'string_2'), (3, 5.5, 'string_2')]
+    simple_searchspace_sort_reversed = Searchspace(simple_tuning_options, max_threads)
+    expected = [
+        (1, 4, 'string_1'), (2, 4, 'string_1'), (3, 4, 'string_1'), (1, 5.5, 'string_1'),
+        (2, 5.5, 'string_1'), (3, 5.5, 'string_1'), (1, 4, 'string_2'), (2, 4, 'string_2'),
+        (3, 4, 'string_2'), (1, 5.5, 'string_2'), (2, 5.5, 'string_2'), (3, 5.5, 'string_2')]
 
-    searchspace_sort = Searchspace(sort_tuning_options, max_threads, sort=True, sort_last_param_first=True)
-    num_params = len(searchspace_sort.list[0])
-    for param_config_index, (param_config_first, param_config_second) in enumerate(zip(searchspace_sort.list, searchspace_sort.list[1:])):
+    assert simple_searchspace_sort_reversed.sorted_list(sort_last_param_first=True) == expected
+
+    searchspace_sort = Searchspace(sort_tuning_options, max_threads)
+    sorted_list = searchspace_sort.sorted_list(sort_last_param_first=True)
+    num_params = len(sorted_list[0])
+    for param_config_index, (param_config_first, param_config_second) in enumerate(zip(sorted_list, sorted_list[1:])):
         if (param_config_index + 1) % num_layers == 0:
             continue
         for param_index in range(num_params):

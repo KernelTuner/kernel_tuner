@@ -14,16 +14,14 @@ supported_neighbor_methods = ['strictly-adjacent', 'adjacent', 'Hamming']
 class Searchspace():
     """ Class that offers the search space to strategies """
 
-    def __init__(self, tuning_options: dict, max_threads: int, build_neighbors_index=False, neighbor_method=None, sort=False,
-                 sort_last_param_first=False) -> None:
+    def __init__(self, tuning_options: dict, max_threads: int, build_neighbors_index=False, neighbor_method=None) -> None:
         """ Build a searchspace using the variables and constraints.
             Optionally build the neighbors index - only faster if you repeatedly look up neighbors. Methods:
                 strictly-adjacent: differs +1 or -1 parameter index value for each parameter
                 adjacent: picks closest parameter value in both directions for each parameter
                 Hamming: any parameter config with 1 different parameter value is a neighbor
-            Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         """
-        self.tuning_options = tuning_options
+        self.block_size_names = self.tuning_options.get("block_size_names", default_block_size_names)
         self.restrictions = tuning_options.restrictions
         self.tune_params = tuning_options.tune_params
         self.max_threads = max_threads
@@ -36,7 +34,7 @@ class Searchspace():
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
 
-        self.list, self.__numpy, self.__dict, self.size = self.__build_searchspace(sort, sort_last_param_first)
+        self.list, self.__numpy, self.__dict, self.size = self.__build_searchspace()
         self.num_params = len(self.tune_params)
         self.indices = np.arange(self.size)
         if neighbor_method is not None and neighbor_method != 'Hamming':
@@ -44,7 +42,7 @@ class Searchspace():
         if build_neighbors_index:
             self.neighbors_index = self.__build_neighbors_index(neighbor_method)
 
-    def __build_searchspace(self, sort: bool, sort_last_param_first: bool) -> Tuple[List[tuple], np.ndarray, dict, int]:
+    def __build_searchspace(self) -> Tuple[List[tuple], np.ndarray, dict, int]:
         """ compute valid configurations in a search space based on restrictions and max_threads, returns the searchspace, a dict of the searchspace for fast lookups and the size """
 
         # instantiate the parameter space with all the variables
@@ -56,7 +54,7 @@ class Searchspace():
         parameter_space = self.__add_restrictions(parameter_space)
 
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
-        block_size_names = self.tuning_options.get("block_size_names", default_block_size_names)
+        block_size_names = self.block_size_names
         block_size_names = list(block_size_name for block_size_name in block_size_names if block_size_name in self.param_names)
         if len(block_size_names) > 0:
             parameter_space.addConstraint(MaxProdConstraint(self.max_threads), block_size_names)
@@ -66,19 +64,6 @@ class Searchspace():
 
         # form the parameter tuples in the order specified by tune_params.keys()
         parameter_space_list = list((tuple(params[param_name] for param_name in self.param_names)) for params in parameter_space)
-
-        # sort the parameter space on the order of parameters and their values as specified
-        if sort is True:
-            params_values_indices = list(self.get_param_indices(param_config) for param_config in parameter_space_list)
-            params_values_indices_dict = dict(zip(params_values_indices, list(range(len(params_values_indices)))))
-
-            # Python's built-in sort will sort starting in front, so if we want to vary the first parameter the tuple needs to be reversed
-            params_values_indices.sort(key=lambda t: tuple(reversed(t))) if sort_last_param_first else params_values_indices.sort()
-
-            # find the index of the parameter configuration for each parameter value index, using a dict to do it in constant time
-            new_order = [params_values_indices_dict.get(param_values_indices) for param_values_indices in params_values_indices]
-            # apply the new order
-            parameter_space_list = [parameter_space_list[i] for i in new_order]
 
         # create a numpy array of the search space
         # in order to have the tuples as tuples in numpy, the types are set with a string, but this will make the type np.void
@@ -116,6 +101,26 @@ class Searchspace():
         elif self.restrictions is not None:
             raise ValueError(f"The restrictions are of unsupported type {type(self.restrictions)}")
         return parameter_space
+
+    def sorted_list(self, sort_last_param_first=False):
+        """returns list of parameter configs sorted based on the order in which the parameter values were specified
+
+        :param sort_last_param_first: By default, sort goes from first to last parameter, to reverse this use sort_last_param_first
+        """
+        params_values_indices = list(self.get_param_indices(param_config) for param_config in self.list)
+        params_values_indices_dict = dict(zip(params_values_indices, list(range(len(params_values_indices)))))
+
+        # Python's built-in sort will sort starting in front, so if we want to vary the first parameter the tuple needs to be reversed
+        if sort_last_param_first:
+            params_values_indices.sort(key=lambda t: tuple(reversed(t)))
+        else:
+            params_values_indices.sort()
+
+        # find the index of the parameter configuration for each parameter value index, using a dict to do it in constant time
+        new_order = [params_values_indices_dict.get(param_values_indices) for param_values_indices in params_values_indices]
+
+        # apply the new order
+        return [self.list[i] for i in new_order]
 
     def is_param_config_valid(self, param_config: tuple) -> bool:
         """ returns whether the parameter config is valid (i.e. is in the searchspace after restrictions) """
