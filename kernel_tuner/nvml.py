@@ -484,6 +484,7 @@ def get_nvml_mem_clocks(device, n=None, quiet=False):
 
 
 def get_idle_power(device, n=5, sleep_s=0.1):
+    """ Use NVML to measure device idle power consumption """
     d = nvml(device)
     readings = []
     for _ in range(n):

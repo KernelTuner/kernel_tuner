@@ -64,17 +64,12 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
     # setup clocks
     nvml_gr_clocks = get_nvml_gr_clocks(device, n=n_samples, quiet=True)
 
-    # idle power
-    power_idle = get_idle_power(device)
-
     # setup tunable parameters
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [max_block_dim_x]
     tune_params["nr_outer"] = [64]
     tune_params["nr_inner"] = [1024]
     tune_params.update(nvml_gr_clocks)
-
-    #tune_params["nvml_gr_clock"] = [int(c) for c in tune_params["nvml_gr_clock"]]
 
     # metrics
     metrics = OrderedDict()
@@ -94,14 +89,13 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
     return freqs, nvml_power
 
 
-def estimated_voltage(X, clock_threshold, voltage_scale):
-    clocks = X
+def estimated_voltage(clocks, clock_threshold, voltage_scale):
+    """ estimate voltage based on clock_threshold and voltage_scale """
     return [1 + ((clock > clock_threshold) * (1e-3 * voltage_scale * (clock-clock_threshold))) for clock in clocks]
 
 
-def estimated_power(X, clock_threshold, voltage_scale, clock_scale, power_max):
-    clocks = X
-
+def estimated_power(clocks, clock_threshold, voltage_scale, clock_scale, power_max):
+    """ estimate power consumption based on clock threshold, clock_scale and max power """
     n = len(clocks)
     powers = np.zeros(n)
 
@@ -117,8 +111,7 @@ def estimated_power(X, clock_threshold, voltage_scale, clock_scale, power_max):
 
 
 def fit_power_frequency_model(freqs, nvml_power):
-    """ Fit the performance frequency model based on frequency and power measurements """
-
+    """ Fit the power-frequency model based on frequency and power measurements """
     nvml_gr_clocks = np.array(freqs)
     nvml_power = np.array(nvml_power)
 
