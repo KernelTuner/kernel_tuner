@@ -2,82 +2,12 @@
 This module contains a set of helper functions specifically for auto-tuning codes
 for energy efficiency.
 """
-import argparse
-from collections import OrderedDict
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 from scipy import optimize
-import time
-
-try:
-    from pycuda import driver as drv
-except ImportError as e:
-    drv = None
-    raise e
 
 from kernel_tuner import tune_kernel
 from kernel_tuner.nvml import nvml, NVMLObserver
-
-
-def get_nvml_pwr_limits(device, n=None):
-    """ Get tunable parameter for NVML power limits, n is desired number of values """
-
-    d = nvml(device)
-    power_limits = d.pwr_constraints
-    power_limit_min = power_limits[0]
-    power_limit_max = power_limits[-1]
-    power_limit_min *= 1e-3  # Convert to Watt
-    power_limit_max *= 1e-3  # Convert to Watt
-    power_limit_round = 5
-    tune_params = OrderedDict()
-    if n == None:
-        n = int((power_limit_max - power_limit_min) / power_limit_round)+1
-
-    # Rounded power limit values
-    power_limits = power_limit_round * np.round(
-        (np.linspace(power_limit_min, power_limit_max, n) / power_limit_round))
-    power_limits = sorted(
-        list(set([int(power_limit) for power_limit in power_limits])))
-    tune_params["nvml_pwr_limit"] = power_limits
-    print("Using power limits:", tune_params["nvml_pwr_limit"])
-    return tune_params
-
-
-def get_nvml_gr_clocks(device, n=None):
-    """ Get tunable parameter for NVML graphics clock, n is desired number of values """
-
-    d = nvml(device)
-    mem_clock = max(d.supported_mem_clocks)
-    gr_clocks = d.supported_gr_clocks[mem_clock]
-
-    if n and (len(gr_clocks) > n):
-        indices = np.array(
-            np.ceil(np.linspace(0, len(gr_clocks)-1, n)), dtype=int)
-        gr_clocks = np.array(gr_clocks)[indices]
-
-    tune_params = OrderedDict()
-    tune_params["nvml_gr_clock"] = list(gr_clocks)
-
-    return tune_params
-
-
-def get_nvml_mem_clocks(device, n=None, quiet=False):
-    """ Get tunable parameter for NVML memory clock, n is desired number of values """
-
-    d = nvml(device)
-    mem_clocks = d.supported_mem_clocks
-
-    if n and len(mem_clocks) > n:
-        mem_clocks = mem_clocks[::int(len(mem_clocks)/n)]
-
-    tune_params = OrderedDict()
-    tune_params["nvml_mem_clock"] = mem_clocks
-
-    if not quiet:
-        print("Using mem frequencies:", tune_params["nvml_mem_clock"])
-    return tune_params
-
 
 fp32_kernel_string = """
 __device__ void fp32_n_8(
@@ -106,35 +36,8 @@ __global__ void fp32_kernel(float *ptr)
 }
 """
 
-
-def get_idle_power(device, n=5, sleep_s=0.1):
-    d = nvml(device)
-    readings = []
-    for _ in range(n):
-        time.sleep(sleep_s)
-        readings.append(d.pwr_usage())
-    return np.mean(readings) * 1e-3  # Watt
-
-
-def get_measurements_fp32(device, n_samples=10, nvidia_smi_fallback=None, quiet=False):
-    """ Calculate the most energy-efficient clock frequency of device
-
-    This function uses a performance model to fit the frequency-voltage curve
-    using a synthethic benchmarking kernel. The method has been described in:
-
-     * Going green: optimizing GPUs for energy efficiency through model-steered auto-tuning
-       R. Schoonhoven, B. Veenboer, B. van Werkhoven, K. J. Batenburg
-       International Workshop on Performance Modeling, Benchmarking and Simulation of High Performance Computer Systems (PMBS) at Supercomputing (SC22) 2022
-
-    Requires NVML and PyCUDA.
-
-    :params device: The device ordinal for NVML
-    :type device: int
-
-    :returns: The clock frequency closest to the ridge point
-    :rtype: float
-
-    """
+def get_frequency_power_relation_fp32(device, n_samples=10, use_locked_clocks=False, nvidia_smi_fallback=None):
+    """ Use NVML and PyCUDA with a synthetic kernel to obtain samples of frequency-power pairs """
 
     if drv is None:
         raise ImportError("get_ridge_point_gr_frequency requires PyCUDA")
@@ -167,19 +70,16 @@ def get_measurements_fp32(device, n_samples=10, nvidia_smi_fallback=None, quiet=
 
     # metrics
     metrics = OrderedDict()
-    #metrics["v"] = lambda p:p["gr_voltage"]
     metrics["f"] = lambda p: p["core_freq"]
 
     nvmlobserver = NVMLObserver(
         ["core_freq", "nvml_power"], device=device, nvidia_smi_fallback=nvidia_smi_fallback)
 
     results, _ = tune_kernel("fp32_kernel", fp32_kernel_string, problem_size=(multiprocessor_count, 64),
-                             arguments=arguments, tune_params=tune_params, observers=[
-                                 nvmlobserver],
+                             arguments=arguments, tune_params=tune_params, observers=[nvmlobserver],
                              verbose=False, quiet=True, metrics=metrics, iterations=10,
                              grid_div_x=[], grid_div_y=[])
 
-    #voltages = np.array([res["gr_voltage"] for res in results])
     freqs = np.array([res["core_freq"] for res in results])
     nvml_power = np.array([res["nvml_power"] for res in results])
 
@@ -208,7 +108,9 @@ def estimated_power(X, clock_threshold, voltage_scale, clock_scale, power_max):
     return powers
 
 
-def fit_model(freqs, nvml_power):
+def fit_performance_frequency_model(freqs, nvml_power):
+    """ Fit the performance frequency model based on frequency and power measurements """
+
     nvml_gr_clocks = np.array(freqs)
     nvml_power = np.array(nvml_power)
 
@@ -239,80 +141,67 @@ def fit_model(freqs, nvml_power):
     return clock_threshold + clock_min, fit_parameters, scale_parameters
 
 
-def get_default_parser():
-    parser = argparse.ArgumentParser(
-        description='Find energy efficient frequencies')
-    parser.add_argument("-d", dest="device", nargs="?",
-                        default=0, help="GPU ID to use")
-    parser.add_argument("-s", dest="samples", nargs="?",
-                        default=10, help="Number of frequency samples")
-    parser.add_argument("-r", dest="range", nargs="?",
-                        default=10, help="Frequency spread (10%% of 'optimum')")
-    parser.add_argument("-n", dest="number", nargs="?", default=10,
-                        help="Maximum number of suggested frequencies")
-    return parser
+def create_performance_frequency_model(device=0, n_samples=10, verbose=False, nvidia_smi_fallback=None, use_locked_clocks=False):
+    """ Calculate the most energy-efficient clock frequency of device
 
+    This function uses a performance model to fit the performance-frequency curve
+    using a synthethic benchmarking kernel. The method has been described in:
 
-if __name__ == "__main__":
-    parser = get_default_parser()
-    args = parser.parse_args()
-    freqs, nvml_power = get_measurements_fp32(
-        args.device, n_samples=args.samples)
-    if False:
+     * Going green: optimizing GPUs for energy efficiency through model-steered auto-tuning
+       R. Schoonhoven, B. Veenboer, B. van Werkhoven, K. J. Batenburg
+       International Workshop on Performance Modeling, Benchmarking and Simulation of High Performance Computer Systems (PMBS) at Supercomputing (SC22) 2022
+
+    Requires NVML and PyCUDA.
+
+    :param device: The device ordinal for NVML
+    :type device: int
+
+    :param n_samples: Number of frequencies to sample
+    :type n_samples: int
+
+    :param verbose: Enable verbose printing of sampled frequencies and power consumption
+    :type verbose: bool
+
+    :param nvidia_smi_fallback: Path to nvidia-smi when insufficient permissions to use NVML directly
+    :type nvidia_smi_fallback: string
+
+    :param use_locked_clocks: Whether to prefer locked clocks over application clocks
+    :type use_locked_clocks: bool
+
+    :returns: The clock frequency closest to the ridge point, fitted parameters, scaling
+    :rtype: float
+
+    """
+    freqs, nvml_power = get_frequency_power_relation(device, n_samples, nvidia_smi_fallback, use_locked_clocks)
+
+    if verbose:
         print("Clock frequencies:", freqs.tolist())
         print("Power consumption:", nvml_power.tolist())
 
     ridge_frequency, fitted_params, scaling = fit_model(freqs, nvml_power)
-    print(f"Modelled most energy efficient frequency: {ridge_frequency} MHz")
 
-    all_frequencies = np.array(
-        get_nvml_gr_clocks(args.device)['nvml_gr_clock'])
-    ridge_frequency2 = all_frequencies[np.argmin(
-        abs(all_frequencies - ridge_frequency))]
-    print(
-        f"Closest configurable most energy efficient frequency: {ridge_frequency2} MHz")
+    if verbose:
+        print(f"Modelled most energy efficient frequency: {ridge_frequency} MHz")
 
-    min_freq = 1e-2 * (100 - int(args.range)) * ridge_frequency
-    max_freq = 1e-2 * (100 + int(args.range)) * ridge_frequency
+    all_frequencies = np.array(get_nvml_gr_clocks(device)['nvml_gr_clock'])
+    ridge_frequency_final = all_frequencies[np.argmin(abs(all_frequencies - ridge_frequency))]
+
+    if verbose:
+        print(f"Closest configurable most energy efficient frequency: {ridge_frequency2} MHz")
+
+    return ridge_frequency_final, fitted_params, scaling
+
+
+def get_frequency_range_around_ridge(ridge_frequency, all_frequencies, freq_range, number_of_freqs, verbose=False)
+    """ Return number_of_freqs frequencies in a freq_range percentage around the ridge_frequency from among all_frequencies """
+
+    min_freq = 1e-2 * (100 - int(freq_range)) * ridge_frequency
+    max_freq = 1e-2 * (100 + int(freq_range)) * ridge_frequency
     frequency_selection = np.unique([all_frequencies[np.argmin(abs(
-        all_frequencies - f))] for f in np.linspace(min_freq, max_freq, int(args.number))]).tolist()
-    print(
-        f"Suggested range of frequencies to auto-tune: {frequency_selection} MHz")
-    print(
-        f"Search space reduction: {np.round(100 - len(frequency_selection) / len(all_frequencies) * 100, 1)} %%")
+        all_frequencies - f))] for f in np.linspace(min_freq, max_freq, int(number_of_freqs))]).tolist()
 
-    xs = np.linspace(all_frequencies[0], all_frequencies[-1], 100)
-    # scale to start at 0
-    xs -= scaling[0]
-    modelled_power = estimated_power(xs, *fitted_params) 
-    # undo scaling
-    xs += scaling[0]
-    modelled_power *= scaling[1]
+    if verbose:
+        print(f"Suggested range of frequencies to auto-tune: {frequency_selection} MHz")
+        print(f"Search space reduction: {np.round(100 - len(frequency_selection) / len(all_frequencies) * 100, 1)} %%")
 
-    # Add point for ridge frequency
-    P_ridge = estimated_power([ridge_frequency - scaling[0]],
-                              *fitted_params) * scaling[1]
-
-    # plot measurements with model
-    try:
-        import seaborn as sns
-        sns.set_theme(style="darkgrid")
-        sns.set_context("paper", rc={"font.size":10,
-                        "axes.titlesize":9, "axes.labelsize":12})
-        fig, ax = plt.subplots()
-    except ImportError:
-        fig, ax = plt.subplots()
-        plt.grid()
-
-    plt.scatter(x=freqs, y=nvml_power, label='NVML measurements')
-    plt.scatter(x=ridge_frequency, y=P_ridge, color='g',
-                label='Ridge frequency (MHz)')
-    plt.plot(xs, modelled_power, label='Modelled power consumption')
-    ax.axvspan(min_freq, max_freq, alpha=0.15, color='green',
-               label='Recommended frequency range')
-    plt.title('GPU modelled power consumption', size=18)
-    plt.xlabel('Core frequency (MHz)')
-    plt.ylabel('Power consumption (W)')
-    plt.legend()
-    
-    plt.savefig("GPU_power_consumption_model.pdf")
+    return frequency_selection
