@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 This example demonstrates how to use the performance model presented in
 
@@ -58,27 +59,31 @@ if __name__ == "__main__":
     parser = get_default_parser()
     args = parser.parse_args()
 
-    ridge_frequency, fitted_params, scaling = energy.create_performance_frequency_model(device=args.device,
-                                                                                        n_samples=args.samples,
-                                                                                        verbose=True,
-                                                                                        nvidia_smi_fallback=args.nvidia_smi_fallback,
-                                                                                        use_locked_clocks=args.locked_clocks)
+    ridge_frequency, freqs, nvml_power, fitted_params, scaling = energy.create_performance_frequency_model(device=args.device,
+                                                                                               n_samples=args.samples,
+                                                                                               verbose=True,
+                                                                                               nvidia_smi_fallback=args.nvidia_smi_fallback,
+                                                                                               use_locked_clocks=args.locked_clocks)
 
     all_frequencies = np.array(get_nvml_gr_clocks(args.device)['nvml_gr_clock'])
 
-    frequency_selection = energy.get_frequency_range_around_ridge(all_frequencies, args.range, args.number)
+    frequency_selection = energy.get_frequency_range_around_ridge(ridge_frequency, all_frequencies, args.range, args.number)
     print(f"Search space reduction: {np.round(100 - len(frequency_selection) / len(all_frequencies) * 100, 1)} %%")
 
     xs = np.linspace(all_frequencies[0], all_frequencies[-1], 100)
     # scale to start at 0
     xs -= scaling[0]
-    modelled_power = estimated_power(xs, *fitted_params)
+    modelled_power = energy.estimated_power(xs, *fitted_params)
     # undo scaling
     xs += scaling[0]
     modelled_power *= scaling[1]
 
     # Add point for ridge frequency
-    P_ridge = estimated_power([ridge_frequency - scaling[0]], *fitted_params) * scaling[1]
+    P_ridge = energy.estimated_power([ridge_frequency - scaling[0]], *fitted_params) * scaling[1]
+
+    # Add the frequency range
+    min_freq = 1e-2 * (100 - int(args.range)) * ridge_frequency
+    max_freq = 1e-2 * (100 + int(args.range)) * ridge_frequency
 
     # plot measurements with model
     try:
@@ -101,5 +106,6 @@ if __name__ == "__main__":
     plt.xlabel('Core frequency (MHz)')
     plt.ylabel('Power consumption (W)')
     plt.legend()
+    plt.show()
 
     plt.savefig("GPU_power_consumption_model.pdf")

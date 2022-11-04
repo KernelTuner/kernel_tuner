@@ -2,6 +2,7 @@ import subprocess
 import time
 import re
 import numpy as np
+from collections import OrderedDict
 
 from kernel_tuner.observers import BenchmarkObserver, ContinuousObserver
 
@@ -39,6 +40,7 @@ class nvml():
             self._auto_boost = None
 
         #try to initialize application clocks
+        self.modified_clocks = False
         try:
             if not use_locked_clocks:
                 self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
@@ -75,7 +77,8 @@ class nvml():
         #try to restore to defaults
         if self.pwr_limit_default is not None:
             self.pwr_limit = self.pwr_limit_default
-        self.reset_clocks()
+        if self.modified_clocks:
+            self.reset_clocks()
 
     @property
     def pwr_state(self):
@@ -115,6 +118,7 @@ class nvml():
 
     def set_clocks(self, mem_clock, gr_clock):
         """Set the memory and graphics clock for this device (may require permission)"""
+        self.modified_clocks = True
         if not mem_clock in self.supported_mem_clocks:
             raise ValueError("Illegal value for memory clock")
         if not gr_clock in self.supported_gr_clocks[mem_clock]:

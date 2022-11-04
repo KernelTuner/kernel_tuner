@@ -2,12 +2,18 @@
 This module contains a set of helper functions specifically for auto-tuning codes
 for energy efficiency.
 """
+from collections import OrderedDict
 import numpy as np
 import math
 from scipy import optimize
 
 from kernel_tuner import tune_kernel
-from kernel_tuner.nvml import nvml, NVMLObserver
+from kernel_tuner.nvml import NVMLObserver, get_nvml_gr_clocks, get_idle_power
+
+try:
+    import pycuda.driver as drv
+except ImportError:
+    pass
 
 fp32_kernel_string = """
 __device__ void fp32_n_8(
@@ -36,7 +42,7 @@ __global__ void fp32_kernel(float *ptr)
 }
 """
 
-def get_frequency_power_relation_fp32(device, n_samples=10, use_locked_clocks=False, nvidia_smi_fallback=None):
+def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=None, use_locked_clocks=False):
     """ Use NVML and PyCUDA with a synthetic kernel to obtain samples of frequency-power pairs """
 
     if drv is None:
@@ -46,9 +52,9 @@ def get_frequency_power_relation_fp32(device, n_samples=10, use_locked_clocks=Fa
     drv.init()
     dev = drv.Device(device)
     device_name = dev.name().replace(' ', '_')
-    multiprocessor_count = dev.get_attribute(
-        drv.device_attribute.MULTIPROCESSOR_COUNT)
-    max_block_dim_x = dev.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X)
+    multiprocessor_count = int(dev.get_attribute(
+        drv.device_attribute.MULTIPROCESSOR_COUNT))
+    max_block_dim_x = int(dev.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X))
 
     # kernel arguments
     data_size = (multiprocessor_count, max_block_dim_x)
@@ -56,7 +62,7 @@ def get_frequency_power_relation_fp32(device, n_samples=10, use_locked_clocks=Fa
     arguments = [data]
 
     # setup clocks
-    nvml_gr_clocks = get_nvml_gr_clocks(device, n=n_samples)
+    nvml_gr_clocks = get_nvml_gr_clocks(device, n=n_samples, quiet=True)
 
     # idle power
     power_idle = get_idle_power(device)
@@ -68,17 +74,19 @@ def get_frequency_power_relation_fp32(device, n_samples=10, use_locked_clocks=Fa
     tune_params["nr_inner"] = [1024]
     tune_params.update(nvml_gr_clocks)
 
+    tune_params["nvml_gr_clock"] = [int(c) for c in tune_params["nvml_gr_clock"]]
+
     # metrics
     metrics = OrderedDict()
     metrics["f"] = lambda p: p["core_freq"]
 
     nvmlobserver = NVMLObserver(
-        ["core_freq", "nvml_power"], device=device, nvidia_smi_fallback=nvidia_smi_fallback)
+        ["core_freq", "nvml_power"], device=device, nvidia_smi_fallback=nvidia_smi_fallback, use_locked_clocks=use_locked_clocks)
 
     results, _ = tune_kernel("fp32_kernel", fp32_kernel_string, problem_size=(multiprocessor_count, 64),
                              arguments=arguments, tune_params=tune_params, observers=[nvmlobserver],
                              verbose=False, quiet=True, metrics=metrics, iterations=10,
-                             grid_div_x=[], grid_div_y=[])
+                             grid_div_x=[], grid_div_y=[], cache=f"synthetic_fp32_cache_{device_name}.json")
 
     freqs = np.array([res["core_freq"] for res in results])
     nvml_power = np.array([res["nvml_power"] for res in results])
@@ -172,27 +180,27 @@ def create_performance_frequency_model(device=0, n_samples=10, verbose=False, nv
     :rtype: float
 
     """
-    freqs, nvml_power = get_frequency_power_relation(device, n_samples, nvidia_smi_fallback, use_locked_clocks)
+    freqs, nvml_power = get_frequency_power_relation_fp32(device, n_samples, nvidia_smi_fallback, use_locked_clocks)
 
     if verbose:
         print("Clock frequencies:", freqs.tolist())
         print("Power consumption:", nvml_power.tolist())
 
-    ridge_frequency, fitted_params, scaling = fit_model(freqs, nvml_power)
+    ridge_frequency, fitted_params, scaling = fit_performance_frequency_model(freqs, nvml_power)
 
     if verbose:
         print(f"Modelled most energy efficient frequency: {ridge_frequency} MHz")
 
-    all_frequencies = np.array(get_nvml_gr_clocks(device)['nvml_gr_clock'])
+    all_frequencies = np.array(get_nvml_gr_clocks(device, quiet=True)['nvml_gr_clock'])
     ridge_frequency_final = all_frequencies[np.argmin(abs(all_frequencies - ridge_frequency))]
 
     if verbose:
-        print(f"Closest configurable most energy efficient frequency: {ridge_frequency2} MHz")
+        print(f"Closest configurable most energy efficient frequency: {ridge_frequency_final} MHz")
 
-    return ridge_frequency_final, fitted_params, scaling
+    return ridge_frequency_final, freqs, nvml_power, fitted_params, scaling
 
 
-def get_frequency_range_around_ridge(ridge_frequency, all_frequencies, freq_range, number_of_freqs, verbose=False)
+def get_frequency_range_around_ridge(ridge_frequency, all_frequencies, freq_range, number_of_freqs, verbose=False):
     """ Return number_of_freqs frequencies in a freq_range percentage around the ridge_frequency from among all_frequencies """
 
     min_freq = 1e-2 * (100 - int(freq_range)) * ridge_frequency
