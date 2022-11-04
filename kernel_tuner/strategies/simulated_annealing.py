@@ -7,7 +7,7 @@ import numpy as np
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import _cost_func
+from kernel_tuner.strategies.common import CostFunc
 
 _options = OrderedDict(T=("Starting temperature", 1.0),
                        T_min=("End temperature", 0.001),
@@ -15,12 +15,8 @@ _options = OrderedDict(T=("Starting temperature", 1.0),
                        maxiter=("Number of iterations within each annealing step", 1))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
-
-    results = []
-
     # SA works with real parameter values and does not need scaling
-    tuning_options["scaling"] = False
-    args = (tuning_options, runner, results)
+    cost_func = CostFunc(searchspace, tuning_options, runner)
 
     # optimization parameters
     T, T_min, alpha, niter = common.get_options(tuning_options.strategy_options, _options)
@@ -35,7 +31,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # get random starting point and evaluate cost
     pos = list(searchspace.get_random_sample(1)[0])
-    old_cost = _cost_func(pos, *args, check_restrictions=False)
+    old_cost = cost_func(pos, check_restrictions=False)
 
     # main optimization loop
     stuck = 0
@@ -52,11 +48,11 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
             new_pos = neighbor(pos, searchspace)
             try:
-                new_cost = _cost_func(new_pos, *args, check_restrictions=False)
+                new_cost = cost_func(new_pos, check_restrictions=False)
             except util.StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
-                return results
+                return cost_func.results
 
             ap = acceptance_prob(old_cost, new_cost, T, tuning_options)
             r = random.random()
@@ -84,7 +80,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         if iteration > 10*max_iter:
             break
 
-    return results
+    return cost_func.results
 
 
 tune.__doc__ = common.get_strategy_docstring("Simulated Annealing", _options)

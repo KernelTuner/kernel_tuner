@@ -373,7 +373,6 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
-    tuning_options["snap"] = True
     tuning_options["unique_results"] = {}
     if strategy_options and "max_fevals" in strategy_options:
         tuning_options["max_fevals"] = strategy_options["max_fevals"]

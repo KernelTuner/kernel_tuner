@@ -2,10 +2,11 @@ import random
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies.common import _cost_func
+from kernel_tuner.strategies.common import CostFunc
 
 
-def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, all_results, tuning_options, runner, restart=True, randomize=True, order=None):
+def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, tuning_options,
+                   cost_func: CostFunc, restart=True, randomize=True, order=None):
     """ Hillclimbing search until max_fevals is reached or no improvement is found
 
     Base hillclimber that evaluates neighbouring solutions in a random or fixed order
@@ -25,15 +26,12 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
     :params searchspace: The searchspace object.
     :type searchspace: Seachspace
 
-    :params all_results: List of dictionaries with all benchmarked configurations
-    :type all_results: list(dict)
-
     :param tuning_options: A dictionary with all options regarding the tuning
         process.
     :type tuning_options: dict
 
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
+    :param cost_func: An instance of `kernel_tuner.strategies.common.CostFunc`
+    :type runner: kernel_tuner.strategies.common.CostFunc
 
     :params restart: Boolean that controls whether to greedely restart hillclimbing
         from a new position as soon as an improved position is found. True by default.
@@ -57,14 +55,12 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
     tune_params = searchspace.tune_params
 
     # measure start point score
-    best_score = _cost_func(base_sol, tuning_options, runner, all_results, check_restrictions=False)
+    best_score = cost_func(base_sol, check_restrictions=False)
 
     found_improved = True
     while found_improved:
         child = list(base_sol[:])
         found_improved = False
-
-        current_results = []
 
         vals = list(tune_params.values())
         if order is None:
@@ -84,7 +80,7 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
                 child[index] = val
 
                 # get score for this position
-                score = _cost_func(child, tuning_options, runner, current_results, check_restrictions=False)
+                score = cost_func(child, check_restrictions=False)
 
                 # generalize this to other tuning objectives
                 if score < best_score:
@@ -98,11 +94,9 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
 
                 fevals = len(tuning_options.unique_results)
                 if fevals >= max_fevals:
-                    all_results += current_results
                     return base_sol
+
             if found_improved and restart:
                 break
 
-        # append current_results to all_results
-        all_results += current_results
     return base_sol

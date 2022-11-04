@@ -45,6 +45,9 @@ class SequentialRunner:
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
+    def get_environment(self, tuning_options):
+        return self.dev.get_environment()
+
     def run(self, parameter_space, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
 

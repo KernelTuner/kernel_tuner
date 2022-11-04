@@ -4,7 +4,7 @@ from collections import OrderedDict
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import _cost_func
+from kernel_tuner.strategies.common import CostFunc
 from kernel_tuner.strategies.genetic_algorithm import mutate
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
 
@@ -26,28 +26,26 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         perm_size = 1
     max_fevals = options.get("max_fevals", 100)
 
-    tuning_options["scaling"] = False
-
     # limit max_fevals to max size of the parameter space
     max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0
-    results = []
+    cost_func = CostFunc(searchspace, tuning_options, runner)
 
     #while searching
     candidate = searchspace.get_random_sample(1)[0]
-    best_score = _cost_func(candidate, tuning_options, runner, results, check_restrictions=False)
+    best_score = cost_func(candidate, check_restrictions=False)
 
     last_improvement = 0
     while fevals < max_fevals:
 
         try:
-            candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, results, tuning_options, runner, restart=restart, randomize=True)
-            new_score = _cost_func(candidate, tuning_options, runner, results, check_restrictions=False)
+            candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=True)
+            new_score = cost_func(candidate, check_restrictions=False)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
-            return results
+            return cost_func.results
 
         fevals = len(tuning_options.unique_results)
         if new_score < best_score:
@@ -57,7 +55,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         # Instead of full restart, permute the starting candidate
         candidate = random_walk(candidate, perm_size, no_improvement, last_improvement, searchspace)
-    return results
+    return cost_func.results
 
 
 tune.__doc__ = common.get_strategy_docstring("Greedy Iterative Local Search (ILS)", _options)

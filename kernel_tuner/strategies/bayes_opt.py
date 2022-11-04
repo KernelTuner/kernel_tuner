@@ -11,6 +11,7 @@ from scipy.stats import norm
 
 # BO imports
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies.common import CostFunc
 
 try:
     from sklearn.exceptions import ConvergenceWarning
@@ -91,14 +92,14 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = searchspace.tune_params
-    tuning_options["scaling"] = True
-    _, _, eps = common.get_bounds_x0_eps(searchspace, tuning_options)
+    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
+    _, _, eps = cost_func.get_bounds_x0_eps()
 
     # compute cartesian product of all tunable parameters
     parameter_space = itertools.product(*tune_params.values())
 
     # check for search space restrictions
-    if tuning_options.restrictions is not None:
+    if searchspace.restrictions is not None:
         tuning_options.verbose = False
     parameter_space = filter(lambda p: util.config_valid(p, tuning_options, runner.dev.max_threads), parameter_space)
     parameter_space = list(parameter_space)
@@ -120,7 +121,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # initialize and optimize
     try:
-        bo = BayesianOptimization(parameter_space, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, runner)
+        bo = BayesianOptimization(parameter_space, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func)
     except util.StopCriterionReached as e:
         print(f"Stop criterion reached during initialization, was popsize (default 20) greater than max_fevals or the alotted time?")
         raise e
@@ -132,7 +133,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         if tuning_options.verbose:
             print(e)
 
-    return bo.results
+    return cost_func.results
 
 # _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
 _options = dict(covariancekernel=('The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"', "matern32"),
@@ -141,10 +142,10 @@ _options = dict(covariancekernel=('The Covariance kernel to use, choose any from
                 samplingmethod=("Method used for initial sampling the parameter space, either random or lhs", "lhs"),
                 popsize=("Number of initial samples", 20))
 
-class BayesianOptimization():
 
+class BayesianOptimization():
     def __init__(self, searchspace: list, removed_tune_params: list, tuning_options: dict, normalize_dict: dict, denormalize_dict: dict,
-                 runner, opt_direction='min'):
+                 cost_func: CostFunc, opt_direction='min'):
         time_start = time.perf_counter_ns()
 
         # supported hyperparameter values
@@ -189,8 +190,8 @@ class BayesianOptimization():
         self.param_names = list(self.tune_params.keys())
         self.normalized_dict = normalize_dict
         self.denormalized_dict = denormalize_dict
-        self.runner = runner
-        self.max_threads = runner.dev.max_threads
+        self.cost_func = cost_func
+        self.max_threads = cost_func.runner.dev.max_threads
         self.log_timings = False
 
         # set optimization constants
@@ -214,7 +215,6 @@ class BayesianOptimization():
         self.set_surrogate_model(cov_kernel_name, cov_kernel_lengthscale)
 
         # set remaining values
-        self.results = []
         self.__searchspace = searchspace
         self.removed_tune_params = removed_tune_params
         self.searchspace_size = len(self.searchspace)
@@ -401,7 +401,7 @@ class BayesianOptimization():
         denormalized_param_config = self.denormalize_param_config(param_config)
         if not util.config_valid(denormalized_param_config, self.tuning_options, self.max_threads):
             return self.invalid_value
-        val = common._cost_func(param_config, self.tuning_options, self.runner, self.results)
+        val = self.cost_func(param_config)
         self.fevals += 1
         return val
 
@@ -508,7 +508,6 @@ class BayesianOptimization():
             observation = self.evaluate_objective_function(candidate_params)
             self.update_after_evaluation(observation, candidate_index, candidate_params)
             self.fit_observations_to_model()
-        return self.results
 
     def __optimize_multi(self, max_fevals):
         """ Optimize with a portfolio of multiple acquisition functions. Predictions are always only taken once. Skips AFs if they suggest X/max_evals duplicates in a row, prefers AF with best discounted average. """
@@ -619,7 +618,6 @@ class BayesianOptimization():
                 print(
                     f"({self.fevals}/{max_fevals}) Total time: {time_taken_total} | Predictions: {time_taken_predictions} | AFs: {time_taken_afs} | Eval: {time_taken_eval} | AF selection: {time_taken_af_selection}",
                     flush=True)
-        return self.results
 
     def __optimize_multi_advanced(self, max_fevals, increase_precision=False):
         """ Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once, unless increase_precision is true. Skips AFs if they are consistently worse than the mean of discounted observations, promotes AFs if they are consistently better than this mean. """
@@ -720,8 +718,6 @@ class BayesianOptimization():
                     single_af = True
                     self.__af = aqfs[af_index_best]
 
-        return self.results
-
     def __optimize_multi_fast(self, max_fevals):
         """ Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once. """
         while self.fevals < max_fevals:
@@ -742,7 +738,6 @@ class BayesianOptimization():
                 observation = self.evaluate_objective_function(candidate_params)
                 self.update_after_evaluation(observation, candidate_index, candidate_params)
             self.fit_observations_to_model()
-        return self.results
 
     def af_random(self, predictions=None, hyperparam=None) -> list:
         """ Acquisition function returning a randomly shuffled list for comparison """
@@ -835,7 +830,7 @@ class BayesianOptimization():
         _, mu, std = self.predict_list(self.searchspace)
         brute_force_observations = list()
         for param_config in self.searchspace:
-            obs = common._cost_func(param_config, self.tuning_options, self.runner, self.results)
+            obs = self.cost_func(param_config)
             if obs == self.invalid_value:
                 obs = None
             brute_force_observations.append(obs)

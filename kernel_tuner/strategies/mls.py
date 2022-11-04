@@ -17,7 +17,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # Delegate to greedy_mls.tune() but make sure restart uses our default, if not overwritten by the user
     tuning_options.strategy_options["restart"] = restart
-    return mls_tune(runner, tuning_options)
+    return mls_tune(searchspace, runner, tuning_options)
 
 
 tune.__doc__ = common.get_strategy_docstring("Multi-start Local Search (MLS)", _options)

@@ -6,8 +6,7 @@ import numpy as np
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import (_cost_func, get_bounds_x0_eps,
-                                            scale_from_params)
+from kernel_tuner.strategies.common import (CostFunc, scale_from_params)
 from kernel_tuner.strategies.pso import Particle
 
 _options = OrderedDict(popsize=("Population size", 20),
@@ -18,15 +17,11 @@ _options = OrderedDict(popsize=("Population size", 20),
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
-    results = []
-
     # scale variables in x because PSO works with velocities to visit different configurations
-    tuning_options["scaling"] = True
+    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
     # using this instead of get_bounds because scaling is used
-    bounds, _, eps = get_bounds_x0_eps(searchspace, tuning_options)
-
-    args = (tuning_options, runner, results)
+    bounds, _, eps = cost_func.get_bounds_x0_eps()
 
     num_particles, maxiter, B0, gamma, alpha = common.get_options(tuning_options.strategy_options, _options)
 
@@ -36,7 +31,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # init particle swarm
     swarm = []
     for i in range(0, num_particles):
-        swarm.append(Firefly(bounds, args))
+        swarm.append(Firefly(bounds))
 
     # ensure particles start from legal points
     population = list(list(p) for p in searchspace.get_random_sample(num_particles))
@@ -46,11 +41,11 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # compute initial intensities
     for j in range(num_particles):
         try:
-            swarm[j].compute_intensity(_cost_func)
+            swarm[j].compute_intensity(cost_func)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
-            return results
+            return cost_func.results
         if swarm[j].score <= best_score_global:
             best_position_global = swarm[j].position
             best_score_global = swarm[j].score
@@ -69,11 +64,11 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
                     swarm[i].move_towards(swarm[j], beta, alpha)
                     try:
-                        swarm[i].compute_intensity(_cost_func)
+                        swarm[i].compute_intensity(cost_func)
                     except util.StopCriterionReached as e:
                         if tuning_options.verbose:
                             print(e)
-                        return results
+                        return cost_func.results
 
                     # update global best if needed, actually only used for printing
                     if swarm[i].score <= best_score_global:
@@ -87,7 +82,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         print(best_position_global)
         print(best_score_global)
 
-    return results
+    return cost_func.results
 
 
 tune.__doc__ = common.get_strategy_docstring("firefly algorithm", _options)
@@ -95,9 +90,9 @@ tune.__doc__ = common.get_strategy_docstring("firefly algorithm", _options)
 class Firefly(Particle):
     """Firefly object for use in the Firefly Algorithm"""
 
-    def __init__(self, bounds, args):
+    def __init__(self, bounds):
         """Create Firefly at random position within bounds"""
-        super().__init__(bounds, args)
+        super().__init__(bounds)
         self.bounds = bounds
         self.intensity = 1 / self.score
 
@@ -105,9 +100,9 @@ class Firefly(Particle):
         """Return Euclidian distance between self and other Firefly"""
         return np.linalg.norm(self.position-other.position)
 
-    def compute_intensity(self, _cost_func):
+    def compute_intensity(self, fun):
         """Evaluate cost function and compute intensity at this position"""
-        self.evaluate(_cost_func)
+        self.evaluate(fun)
         if self.score == sys.float_info.max:
             self.intensity = -sys.float_info.max
         else:
