@@ -19,6 +19,7 @@ try:
 except ImportError:
     cp = np
 
+from kernel_tuner.nvml import NVMLObserver
 
 # number of special values to insert when a configuration cannot be measured
 
@@ -121,16 +122,19 @@ def check_stop_criterion(to):
     """ checks if max_fevals is reached or time limit is exceeded """
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
         raise StopCriterionReached("max_fevals reached")
-    if "time_limit" in to and (time.perf_counter() - to.start_time > to.time_limit):
+    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time*1e-3)) > to.time_limit):
         raise StopCriterionReached("time limit exceeded")
 
 
-def check_tune_params_list(tune_params):
+def check_tune_params_list(tune_params, observers):
     """ raise an exception if a tune parameter has a forbidden name """
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
+    if any("nvml_" in param for param in tune_params):
+        if not observers or not any(isinstance(obs, NVMLObserver) for obs in observers):
+            raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
 
 
 def check_block_size_names(block_size_names):
@@ -405,7 +409,7 @@ def get_total_timings(results, env, overhead_time):
     total_strategy_time = 0
     total_compile_time = 0
     total_verification_time = 0
-    total_kernel_time = 0
+    total_benchmark_time = 0
     if results:
         for result in results:
             if 'framework_time' not in result or 'strategy_time' not in result or 'compile_time' not in result or 'verification_time' not in result:
@@ -415,15 +419,17 @@ def get_total_timings(results, env, overhead_time):
             total_strategy_time += result['strategy_time']
             total_compile_time += result['compile_time']
             total_verification_time += result['verification_time']
-            total_kernel_time += sum(result['times']) if 'times' in result.keys() else 0
+            total_benchmark_time += result['benchmark_time']
 
     # add the seperate times to the environment dict
     env['total_framework_time'] = total_framework_time
     env['total_strategy_time'] = total_strategy_time
     env['total_compile_time'] = total_compile_time
     env['total_verification_time'] = total_verification_time
-    env['total_kernel_time'] = total_kernel_time
-    env['overhead_time'] = overhead_time - (total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_kernel_time)
+    env['total_benchmark_time'] = total_benchmark_time
+    if 'simulated_time' in env:
+        overhead_time += env['simulated_time']
+    env['overhead_time'] = overhead_time - (total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_benchmark_time)
     return env
 
 

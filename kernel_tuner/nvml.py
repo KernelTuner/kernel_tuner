@@ -43,15 +43,12 @@ class nvml():
             if not use_locked_clocks:
                 self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
                 self.mem_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
-
         except pynvml.NVMLError_NotSupported:
             self.gr_clock_default = None
             self.sm_clock_default = None
             self.mem_clock_default = None
             self.supported_mem_clocks = []
             self.supported_gr_clocks = {}
-            #switch to using locked clocks
-            use_locked_clocks = True
 
         self.supported_mem_clocks = pynvml.nvmlDeviceGetSupportedMemoryClocks(self.dev)
 

@@ -1,163 +1,29 @@
 """ The simulation runner for sequentially tuning the parameter space based on cached data """
-
-from time import perf_counter
 import logging
+from collections import namedtuple
+from time import perf_counter
 
-from kernel_tuner.util import get_config_string, store_cache, process_metrics, print_config_output, get_instance_string
+from kernel_tuner import util
 
-
-class SimulationLangFunction(object):
-    """Compatibility class for supplying simulated device information based on PyCudaFunctions"""
-
-    def __init__(self, lang, device=0, iterations=7, compiler_options=None):
-        self.allocations = []
-        self.texrefs = []
-        self.use_nvml = False
-        self.smem_size = 0
-        cc = "00"
-        self.cc = str(cc[0]) + str(cc[1])
-        self.iterations = iterations
-        self.current_module = None
-        self.compiler_options = compiler_options or []
-        self.last_strategy_start_time = None
-
-        env = dict()
-        env["device_name"] = "Simulation"
-        env["iterations"] = self.iterations
-        env["compiler_options"] = compiler_options
-        env["device_properties"] = None
-        if lang == "CUDA":
-            env["cuda_version"] = None
-            env["compute_capability"] = self.cc
-        elif lang == "OpenCL":
-            env["platform_name"] = None
-            env["platform_version"] = None
-            env["device_version"] = None
-            env["opencl_c_version"] = None
-            env["driver_version"] = None
-        elif lang == "C":
-            self.nvcc_available = False
-            self.max_threads = None
-            self.lib = None
-            self.using_openmp = False
-            env["CC Version"] = None
-        self.env = env
-        self.name = env["device_name"]
-
-
-class SimulationDeviceInterface(object):
-    """Compatibily class for DeviceInterface that offers a High-Level Device Interface to the rest of the Kernel Tuner"""
-
-    def __init__(self, kernel_source, device=0, platform=0, quiet=False, compiler=None, compiler_options=None, iterations=7):
-        """ Instantiate the DeviceInterface, based on language in kernel source
-
-        :param kernel_source The kernel sources
-        :type kernel_source: kernel_tuner.core.KernelSource
-
-        :param device: CUDA/OpenCL device to use, in case you have multiple
-            CUDA-capable GPUs or OpenCL devices you may use this to select one,
-            0 by default. Ignored if you are tuning host code by passing lang="C".
-        :type device: int
-
-        :param platform: OpenCL platform to use, in case you have multiple
-            OpenCL platforms you may use this to select one,
-            0 by default. Ignored if not using OpenCL.
-        :type device: int
-
-        :param lang: Specifies the language used for GPU kernels.
-            Currently supported: "CUDA", "OpenCL", or "C"
-        :type lang: string
-
-        :param compiler_options: The compiler options to use when compiling kernels for this device.
-        :type compiler_options: list of strings
-
-        :param iterations: Number of iterations to be used when benchmarking using this device.
-        :type iterations: int
-
-        :param times: Return the execution time of all iterations.
-        :type times: bool
-
-        """
-        lang = kernel_source.lang
-
-        logging.debug('DeviceInterface instantiated, lang=%s', lang)
-
-        if lang not in ('CUDA', 'OpenCL', 'C'):
-            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
-        self.lang = lang
-        self.dev = SimulationLangFunction(self.lang, device, iterations, compiler_options)
-        self.max_threads = 1024
-        self.units = None
-        self._name = self.dev.name
-        self.quiet = quiet
-        self.device_access_error = SystemError("Device not accessible in simulation mode")
+_SimulationDevice = namedtuple("_SimulationDevice", ["max_threads", "env", "quiet"])
+class SimulationDevice(_SimulationDevice):
+    """ Simulated device used by simulation runner """
 
     @property
     def name(self):
-        return self._name
+        return self.env['device_name']
 
     @name.setter
     def name(self, value):
-        self._name = value
+        self.env['device_name'] = value
         if not self.quiet:
             print("Simulating: " + value)
 
-    def benchmark(self, func, gpu_args, instance, verbose):
-        """benchmark the kernel instance"""
-        logging.debug('benchmark ' + instance.name)
-        logging.debug('thread block dimensions x,y,z=%d,%d,%d', *instance.threads)
-        logging.debug('grid dimensions x,y,z=%d,%d,%d', *instance.grid)
-        raise self.device_access_error
-
-    def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
-        """runs the kernel once and checks the result against answer"""
-        logging.debug('check_kernel_output')
-        raise self.device_access_error
-
-    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, tuning_options):
-        """ Compile and benchmark a kernel instance based on kernel strings and parameters """
-        instance_string = get_instance_string(params)
-        logging.debug('compile_and_benchmark ' + instance_string)
-        raise self.device_access_error
-
-    def compile_kernel(self, instance, verbose):
-        """compile the kernel for this specific instance"""
-        logging.debug('compile_kernel ' + instance.name)
-        raise self.device_access_error
-
-    def copy_constant_memory_args(self, cmem_args):
-        """adds constant memory arguments to the most recently compiled module, if using CUDA"""
-        raise self.device_access_error
-
-    def copy_texture_memory_args(self, texmem_args):
-        """adds texture memory arguments to the most recently compiled module, if using CUDA"""
-        raise self.device_access_error
-
-    def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
-        """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
-        raise self.device_access_error
-
     def get_environment(self):
-        """Return dictionary with information about the environment"""
-        return self.dev.env
-
-    def memcpy_dtoh(self, dest, src):
-        """perform a device to host memory copy"""
-        raise self.device_access_error
-
-    def ready_argument_list(self, arguments):
-        """ready argument list to be passed to the kernel, allocates gpu mem if necessary"""
-        raise self.device_access_error
-
-    def run_kernel(self, func, gpu_args, instance):
-        """ Run a compiled kernel instance on a device """
-        logging.debug('run_kernel %s', instance.name)
-        logging.debug('thread block dims (%d, %d, %d)', *instance.threads)
-        logging.debug('grid dims (%d, %d, %d)', *instance.grid)
-        raise self.device_access_error
+        return self.env
 
 
-class SimulationRunner(object):
+class SimulationRunner:
     """ SimulationRunner is used for tuning with a single process/thread """
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
@@ -178,15 +44,22 @@ class SimulationRunner(object):
         :type iterations: int
         """
 
-        # #detect language and create high-level device interface
-        self.dev = SimulationDeviceInterface(kernel_source, iterations=iterations, **device_options)
-
         self.quiet = device_options.quiet
-        self.kernel_source = kernel_source
+        self.dev = SimulationDevice(1024, dict(device_name="Simulation"), self.quiet)
 
+        self.kernel_source = kernel_source
         self.simulation_mode = True
-        self.last_strategy_start_time = perf_counter()
+
+        self.start_time = perf_counter()
+        self.last_strategy_start_time = self.start_time
+        self.last_strategy_time = 0
         self.units = {}
+
+    def get_environment(self, tuning_options):
+        env = self.dev.get_environment()
+        env["simulation"] = True
+        env["simulated_time"] = tuning_options.simulated_time
+        return env
 
     def run(self, parameter_space, kernel_options, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
@@ -217,12 +90,46 @@ class SimulationRunner(object):
             # check if element is in the cache
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
-                results.append(tuning_options.cache[x_int])
+                result = tuning_options.cache[x_int].copy()
+
+                # Simulate behavior of sequential runner that when a configuration is
+                # served from the cache by the sequential runner, the compile_time,
+                # verification_time, and benchmark_time are set to 0.
+                # This step is only performed in the simulation runner when a configuration
+                # is served from the cache beyond the first timel. That is, when the
+                # configuration is already counted towards the unique_results.
+                # It is the responsibility of cost_func to add configs to unique_results.
+                if x_int in tuning_options.unique_results:
+
+                    result['compile_time'] = 0
+                    result['verification_time'] = 0
+                    result['benchmark_time'] = 0
+
+                else:
+                    # configuration is evaluated for the first time, print to the console
+                    util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
+
+                # Everything but the strategy time and framework time are simulated,
+                # self.last_strategy_time is set by cost_func
+                result['strategy_time'] = self.last_strategy_time
+
+                try:
+                    simulated_time = result['compile_time'] + result['verification_time'] + result['benchmark_time']
+                    tuning_options.simulated_time += simulated_time
+                except KeyError:
+                    if "time_limit" in tuning_options:
+                        raise RuntimeError("Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations")
+
+                total_time = 1000 * (perf_counter() - self.start_time)
+                self.start_time = perf_counter()
+                result['framework_time'] = total_time - self.last_strategy_time
+
+                results.append(result)
                 continue
 
             # if the element is not in the cache, raise an error
-            logging.debug('parameter element not in cache')
+            logging.debug('kernel configuration not in cache')
             print(element)
-            raise ValueError("Parameter element not in cache - in simulation mode, all parameter elements must be present in the cache")
+            raise ValueError("Kernel configuration not in cache - in simulation mode, all configurations must be present in the cache")
 
-        return results, self.dev.get_environment()
+        return results, self.get_environment(tuning_options)
