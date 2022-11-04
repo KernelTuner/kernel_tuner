@@ -708,6 +708,17 @@ def compile_restrictions(restrictions: list, tune_params: dict):
     return func
 
 
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
+
+
 def process_cache(cache, kernel_options, tuning_options, runner):
     """cache file for storing tuned configurations
 
@@ -747,7 +758,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         c["tune_params"] = tuning_options.tune_params
         c["cache"] = {}
 
-        contents = json.dumps(c, indent="")[:-3]    # except the last "}\n}"
+        contents = json.dumps(c, cls=NpEncoder, indent="")[:-3]    # except the last "}\n}"
 
         # write the header to the cachefile
         with open(cache, "w") as cachefile:
