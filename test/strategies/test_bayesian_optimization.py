@@ -5,6 +5,7 @@ from random import uniform as randfloat
 import numpy as np
 from collections import OrderedDict, namedtuple
 from kernel_tuner.interface import Options
+from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import minimize
 from kernel_tuner.strategies import bayes_opt
 from kernel_tuner.strategies.bayes_opt import BayesianOptimization
@@ -19,10 +20,11 @@ tuning_options = Options(dict(restrictions=[], tune_params=tune_params, strategy
 tuning_options["scaling"] = True
 tuning_options["snap"] = True
 max_threads = 1024
+searchspace = Searchspace(tuning_options, 1024)
 
 # initialize required data
 parameter_space = list(itertools.product(*tune_params.values()))
-_, _, eps = minimize.get_bounds_x0_eps(tuning_options, 1024)
+_, _, eps = minimize.get_bounds_x0_eps(searchspace, tuning_options)
 original_to_normalized, normalized_to_original = bayes_opt.generate_normalized_param_dicts(tune_params, eps)
 normalized_parameter_space = bayes_opt.normalize_parameter_space(parameter_space, tune_params, original_to_normalized)
 pruned_parameter_space, removed_tune_params = bayes_opt.prune_parameter_space(normalized_parameter_space, tuning_options, tune_params, original_to_normalized)

@@ -10,6 +10,8 @@ import numpy as np
 from scipy.stats import norm
 
 # BO imports
+from kernel_tuner.searchspace import Searchspace
+
 try:
     from sklearn.exceptions import ConvergenceWarning
     from sklearn.gaussian_process import GaussianProcessRegressor
@@ -66,7 +68,7 @@ def prune_parameter_space(parameter_space, tuning_options, tune_params, normaliz
     return parameter_space, removed_tune_params
 
 
-def tune(runner, tuning_options):
+def tune(searchspace: Searchspace, runner, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
     :params runner: A runner from kernel_tuner.runners
@@ -90,7 +92,7 @@ def tune(runner, tuning_options):
     # epsilon for scaling should be the evenly spaced distance between the largest set of parameter options in an interval [0,1]
     tune_params = tuning_options.tune_params
     tuning_options["scaling"] = True
-    _, _, eps = common.get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
+    _, _, eps = common.get_bounds_x0_eps(searchspace, tuning_options)
 
     # compute cartesian product of all tunable parameters
     parameter_space = itertools.product(*tune_params.values())

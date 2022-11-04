@@ -9,12 +9,9 @@ from kernel_tuner.strategies.common import _cost_func
 
 _options = OrderedDict(fraction=("Fraction of the search space to cover value in [0, 1]", 0.1))
 
-def tune(runner, tuning_options):
 
+def tune(searchspace: Searchspace, runner, tuning_options):
     tuning_options["scaling"] = False
-
-    # create the search space
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
 
     # get the samples
     fraction = common.get_options(tuning_options.strategy_options, _options)[0]

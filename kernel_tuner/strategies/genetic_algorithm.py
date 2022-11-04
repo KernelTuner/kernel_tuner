@@ -13,7 +13,7 @@ _options = OrderedDict(popsize=("population size", 20),
                        method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
                        mutation_chance=("chance to mutate is 1 in mutation_chance", 10))
 
-def tune(runner, tuning_options):
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
     pop_size, generations, method, mutation_chance = common.get_options(options, _options)
@@ -24,7 +24,6 @@ def tune(runner, tuning_options):
     best_score = 1e20
     results = []
 
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     population = list(list(p) for p in searchspace.get_random_sample(pop_size))
 
     for generation in range(generations):

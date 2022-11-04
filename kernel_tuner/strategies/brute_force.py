@@ -4,10 +4,7 @@ from kernel_tuner.strategies import common
 
 _options = {}
 
-def tune(runner, tuning_options):
-
-    # create the searchspace
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     # call the runner
     return runner.run(searchspace.sorted_list(), tuning_options)

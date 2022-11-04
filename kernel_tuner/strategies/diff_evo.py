@@ -14,7 +14,7 @@ _options = OrderedDict(method=(f"Creation method for new population, any of {sup
                        popsize=("Population size", 20),
                        maxiter=("Number of generations", 50))
 
-def tune(runner, tuning_options):
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     results = []
 
@@ -27,7 +27,6 @@ def tune(runner, tuning_options):
     args = (tuning_options, runner, results)
 
     # ensure particles start from legal points
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     population = list(list(p) for p in searchspace.get_random_sample(popsize))
 
     # call the differential evolution optimizer

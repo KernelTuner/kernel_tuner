@@ -16,7 +16,7 @@ _options = OrderedDict(popsize=("Population size", 20),
                        gamma=("Light absorption coefficient", 1.0),
                        alpha=("Randomization parameter", 0.2))
 
-def tune(runner, tuning_options):
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     results = []
 
@@ -24,7 +24,7 @@ def tune(runner, tuning_options):
     tuning_options["scaling"] = True
 
     # using this instead of get_bounds because scaling is used
-    bounds, _, eps = get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
+    bounds, _, eps = get_bounds_x0_eps(searchspace, tuning_options)
 
     args = (tuning_options, runner, results)
 
@@ -39,7 +39,6 @@ def tune(runner, tuning_options):
         swarm.append(Firefly(bounds, args))
 
     # ensure particles start from legal points
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     population = list(list(p) for p in searchspace.get_random_sample(num_particles))
     for i, particle in enumerate(swarm):
         particle.position = scale_from_params(population[i], tuning_options.tune_params, eps)

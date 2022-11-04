@@ -14,14 +14,13 @@ _options = OrderedDict(T=("Starting temperature", 1.0),
                        alpha=("Alpha parameter", 0.995),
                        maxiter=("Number of iterations within each annealing step", 1))
 
-def tune(runner, tuning_options):
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     results = []
 
     # SA works with real parameter values and does not need scaling
     tuning_options["scaling"] = False
     args = (tuning_options, runner, results)
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
 
     # optimization parameters
     T, T_min, alpha, niter = common.get_options(tuning_options.strategy_options, _options)

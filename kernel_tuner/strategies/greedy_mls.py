@@ -11,7 +11,7 @@ _options = OrderedDict(neighbor=("Method for selecting neighboring nodes, choose
                        order=("set a user-specified order to search among dimensions while hillclimbing", None),
                        randomize=("use a random order to search among dimensions while hillclimbing", True))
 
-def tune(runner, tuning_options):
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     # retrieve options with defaults
     options = tuning_options.strategy_options
@@ -22,7 +22,6 @@ def tune(runner, tuning_options):
     tuning_options["scaling"] = False
 
     # limit max_fevals to max size of the parameter space
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0

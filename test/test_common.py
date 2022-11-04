@@ -5,6 +5,7 @@ import numpy as np
 
 from kernel_tuner.interface import Options
 import kernel_tuner.strategies.common as common
+from kernel_tuner.searchspace import Searchspace
 
 
 def test_get_bounds_x0_eps():
@@ -18,7 +19,9 @@ def test_get_bounds_x0_eps():
     tuning_options["restrictions"] = None
     tuning_options["strategy_options"] = {}
 
-    bounds, x0, eps = common.get_bounds_x0_eps(tuning_options, 1024)
+    searchspace = Searchspace(tuning_options, 1024)
+
+    bounds, x0, eps = common.get_bounds_x0_eps(searchspace, tuning_options)
 
     assert bounds == [(0.0, 1.0)]
     assert x0 >= 0.0 and x0 <= 1.0
@@ -26,7 +29,7 @@ def test_get_bounds_x0_eps():
 
     tuning_options["scaling"] = False
 
-    bounds, x0, eps = common.get_bounds_x0_eps(tuning_options, 1024)
+    bounds, x0, eps = common.get_bounds_x0_eps(searchspace, tuning_options)
 
     assert bounds == [(0, 4)]
     assert eps == 1.0

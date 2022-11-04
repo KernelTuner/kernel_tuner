@@ -13,7 +13,7 @@ _options = OrderedDict(neighbor=("Method for selecting neighboring nodes, choose
                        no_improvement=("number of evaluations to exceed without improvement before restarting", 50),
                        random_walk=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", 0.3))
 
-def tune(runner, tuning_options):
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     dna_size = len(tuning_options.tune_params.keys())
 
@@ -29,7 +29,6 @@ def tune(runner, tuning_options):
     tuning_options["scaling"] = False
 
     # limit max_fevals to max size of the parameter space
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0

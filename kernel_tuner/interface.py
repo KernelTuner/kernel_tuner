@@ -37,6 +37,7 @@ import kernel_tuner.core as core
 
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
+from kernel_tuner.searchspace import Searchspace
 
 try:
     import torch
@@ -433,9 +434,12 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         tuning_options.cache = {}
         tuning_options.cachefile = None
 
+    # create search space
+    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+
     # call the strategy to execute the tuning process
     tuning_options["start_time"] = perf_counter()
-    results = strategy.tune(runner, tuning_options)
+    results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
 
     # finished iterating over search space
