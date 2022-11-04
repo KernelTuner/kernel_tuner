@@ -10,10 +10,6 @@ class Backend(ABC):
         pass
 
     @abstractmethod
-    def __del__(self):
-        pass
-
-    @abstractmethod
     def ready_argument_list(self, arguments):
         pass
 
@@ -37,15 +33,15 @@ class Backend(ABC):
     def synchronize(self):
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def copy_constant_memory_args(self, cmem_args):
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def copy_shared_memory_args(self, smem_args):
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def copy_texture_memory_args(self, texmem_args):
         pass
 
