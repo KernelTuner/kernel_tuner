@@ -11,7 +11,7 @@ _options = OrderedDict(neighbor=("Method for selecting neighboring nodes, choose
                        order=("set a user-specified order to search among dimensions while hillclimbing", None),
                        randomize=("use a random order to search among dimensions while hillclimbing", True))
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     # retrieve options with defaults
     options = tuning_options.strategy_options
@@ -33,7 +33,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
         candidate = searchspace.get_random_sample(1)[0]
 
         try:
-            base_hillclimb(candidate, neighbor, max_fevals, searchspace, results, kernel_options, tuning_options, runner, restart=restart, randomize=randomize, order=order)
+            base_hillclimb(candidate, neighbor, max_fevals, searchspace, results, tuning_options, runner, restart=restart, randomize=randomize, order=order)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)

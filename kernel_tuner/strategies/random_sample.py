@@ -9,7 +9,7 @@ from kernel_tuner.strategies.common import _cost_func
 
 _options = OrderedDict(fraction=("Fraction of the search space to cover value in [0, 1]", 0.1))
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     tuning_options["scaling"] = False
 

@@ -66,18 +66,11 @@ def prune_parameter_space(parameter_space, tuning_options, tune_params, normaliz
     return parameter_space, removed_tune_params
 
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
     """ Find the best performing kernel configuration in the parameter space
 
     :params runner: A runner from kernel_tuner.runners
     :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
 
     :param tuning_options: A dictionary with all options regarding the tuning
         process. Allows setting hyperparameters via the strategy_options key.
@@ -126,7 +119,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
     # initialize and optimize
     try:
-        bo = BayesianOptimization(parameter_space, removed_tune_params, kernel_options, tuning_options, normalize_dict, denormalize_dict, runner)
+        bo = BayesianOptimization(parameter_space, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, runner)
     except util.StopCriterionReached as e:
         print(f"Stop criterion reached during initialization, was popsize (default 20) greater than max_fevals or the alotted time?")
         raise e
@@ -149,7 +142,7 @@ _options = dict(covariancekernel=('The Covariance kernel to use, choose any from
 
 class BayesianOptimization():
 
-    def __init__(self, searchspace: list, removed_tune_params: list, kernel_options: dict, tuning_options: dict, normalize_dict: dict, denormalize_dict: dict,
+    def __init__(self, searchspace: list, removed_tune_params: list, tuning_options: dict, normalize_dict: dict, denormalize_dict: dict,
                  runner, opt_direction='min'):
         time_start = time.perf_counter_ns()
 
@@ -190,7 +183,6 @@ class BayesianOptimization():
             acq_params['skip_duplicate_after'] = 5
 
         # set arguments
-        self.kernel_options = kernel_options
         self.tuning_options = tuning_options
         self.tune_params = tuning_options.tune_params
         self.param_names = list(self.tune_params.keys())

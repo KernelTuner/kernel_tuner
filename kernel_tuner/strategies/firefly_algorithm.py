@@ -16,7 +16,7 @@ _options = OrderedDict(popsize=("Population size", 20),
                        gamma=("Light absorption coefficient", 1.0),
                        alpha=("Randomization parameter", 0.2))
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     results = []
 

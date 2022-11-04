@@ -4,13 +4,13 @@ from kernel_tuner.strategies import common
 
 _options = {}
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     # create the searchspace
     searchspace = Searchspace(tuning_options, runner.dev.max_threads, sort=True)
 
     # call the runner
-    results, env = runner.run(searchspace.list, kernel_options, tuning_options)
+    results, env = runner.run(searchspace.list, tuning_options)
 
     return results, env
 

@@ -16,7 +16,7 @@ _options = OrderedDict(popsize=("Population size", 20),
                        c1=("Cognitive constant", 2.0),
                        c2=("Social constant", 1.0))
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     results = []
 

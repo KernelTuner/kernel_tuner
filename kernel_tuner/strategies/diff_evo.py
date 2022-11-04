@@ -14,7 +14,7 @@ _options = OrderedDict(method=(f"Creation method for new population, any of {sup
                        popsize=("Population size", 20),
                        maxiter=("Number of generations", 50))
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     results = []
 

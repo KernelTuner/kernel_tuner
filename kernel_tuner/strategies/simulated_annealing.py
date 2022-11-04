@@ -14,7 +14,7 @@ _options = OrderedDict(T=("Starting temperature", 1.0),
                        alpha=("Alpha parameter", 0.995),
                        maxiter=("Number of iterations within each annealing step", 1))
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     results = []
 

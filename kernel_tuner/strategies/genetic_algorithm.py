@@ -13,7 +13,7 @@ _options = OrderedDict(popsize=("population size", 20),
                        method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
                        mutation_chance=("chance to mutate is 1 in mutation_chance", 10))
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     options = tuning_options.strategy_options
     pop_size, generations, method, mutation_chance = common.get_options(options, _options)

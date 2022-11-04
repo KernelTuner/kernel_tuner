@@ -12,7 +12,7 @@ supported_methods = ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead
 
 _options = OrderedDict(method=(f"Local optimization method to use, choose any from {supported_methods}", "Powell"))
 
-def tune(runner, kernel_options, device_options, tuning_options):
+def tune(runner, tuning_options):
 
     results = []
 

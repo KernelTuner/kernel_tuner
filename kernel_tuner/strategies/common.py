@@ -16,13 +16,6 @@ $STRAT_OPT$
     :params runner: A runner from kernel_tuner.runners
     :type runner: kernel_tuner.runner
 
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
     :param tuning_options: A dictionary with all options regarding the tuning
         process.
     :type tuning_options: kernel_tuner.interface.Options
