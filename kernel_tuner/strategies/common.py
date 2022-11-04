@@ -87,7 +87,7 @@ def _cost_func(x, tuning_options, runner, results, check_restrictions=True):
 
     # compile and benchmark this instance
     if not result:
-        res, _ = runner.run([params], tuning_options)
+        res = runner.run([params], tuning_options)
         result = res[0]
 
     # append to tuning results

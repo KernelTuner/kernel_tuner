@@ -56,9 +56,8 @@ class SequentialRunner:
         :type tuning_options: kernel_tuner.iterface.Options
 
         :returns: A list of dictionaries for executed kernel configurations and their
-            execution times. And a dictionary that contains information
-            about the hardware/software environment on which the tuning took place.
-        :rtype: list(dict()), dict()
+            execution times.
+        :rtype: dict())
 
         """
         logging.debug('sequential runner started for ' + self.kernel_options.kernel_name)
@@ -112,4 +111,4 @@ class SequentialRunner:
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
 
-        return results, self.dev.get_environment()
+        return results

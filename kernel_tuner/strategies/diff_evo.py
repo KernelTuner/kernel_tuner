@@ -42,7 +42,7 @@ def tune(runner, tuning_options):
     if opt_result and tuning_options.verbose:
         print(opt_result.message)
 
-    return results, runner.dev.get_environment()
+    return results
 
 
 tune.__doc__ = common.get_strategy_docstring("Differential Evolution", _options)

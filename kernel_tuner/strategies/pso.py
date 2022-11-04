@@ -56,7 +56,7 @@ def tune(runner, tuning_options):
             except util.StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
-                return results, runner.dev.get_environment()
+                return results
 
             # update global best if needed
             if swarm[j].score <= best_score_global:
@@ -73,7 +73,7 @@ def tune(runner, tuning_options):
         print(best_position_global)
         print(best_score_global)
 
-    return results, runner.dev.get_environment()
+    return results
 
 
 tune.__doc__ = common.get_strategy_docstring("Particle Swarm Optimization (PSO)", _options)

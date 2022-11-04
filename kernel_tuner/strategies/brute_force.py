@@ -10,9 +10,7 @@ def tune(runner, tuning_options):
     searchspace = Searchspace(tuning_options, runner.dev.max_threads, sort=True)
 
     # call the runner
-    results, env = runner.run(searchspace.list, tuning_options)
-
-    return results, env
+    return runner.run(searchspace.list, tuning_options)
 
 
 tune.__doc__ = common.get_strategy_docstring("Brute Force", _options)

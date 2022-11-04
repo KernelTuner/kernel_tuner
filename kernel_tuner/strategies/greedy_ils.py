@@ -48,7 +48,7 @@ def tune(runner, tuning_options):
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
-            return results, runner.dev.get_environment()
+            return results
 
         fevals = len(tuning_options.unique_results)
         if new_score < best_score:
@@ -58,7 +58,7 @@ def tune(runner, tuning_options):
 
         # Instead of full restart, permute the starting candidate
         candidate = random_walk(candidate, perm_size, no_improvement, last_improvement, searchspace)
-    return results, runner.dev.get_environment()
+    return results
 
 
 tune.__doc__ = common.get_strategy_docstring("Greedy Iterative Local Search (ILS)", _options)

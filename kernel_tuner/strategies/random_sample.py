@@ -35,9 +35,9 @@ def tune(runner, tuning_options):
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
-            return results, runner.dev.get_environment()
+            return results
 
-    return results, runner.dev.get_environment()
+    return results
 
 
 tune.__doc__ = common.get_strategy_docstring("Random Sampling", _options)

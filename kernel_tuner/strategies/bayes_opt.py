@@ -77,8 +77,7 @@ def tune(runner, tuning_options):
     :type tuning_options: kernel_tuner.interface.Options
 
     :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
+        execution times.
     :rtype: list(dict()), dict()
 
     """
@@ -131,7 +130,7 @@ def tune(runner, tuning_options):
         if tuning_options.verbose:
             print(e)
 
-    return bo.results, runner.dev.get_environment()
+    return bo.results
 
 # _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
 _options = dict(covariancekernel=('The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"', "matern32"),

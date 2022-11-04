@@ -73,9 +73,8 @@ class SimulationRunner:
         :type tuning_options: kernel_tuner.iterface.Options
 
         :returns: A list of dictionaries for executed kernel configurations and their
-            execution times. And a dictionary that contains information
-            about the hardware/software environment on which the tuning took place.
-        :rtype: list(dict()), dict()
+            execution times.
+        :rtype: dict()
 
         """
         logging.debug('simulation runner started for ' + self.kernel_options.kernel_name)
@@ -130,4 +129,4 @@ class SimulationRunner:
             print(element)
             raise ValueError("Kernel configuration not in cache - in simulation mode, all configurations must be present in the cache")
 
-        return results, self.get_environment(tuning_options)
+        return results
