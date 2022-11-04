@@ -435,7 +435,7 @@ def tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params
         tuning_options.cachefile = None
 
     # create search space
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
+    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
 
     # call the strategy to execute the tuning process
     tuning_options["start_time"] = perf_counter()

@@ -24,7 +24,7 @@ simple_tune_params['y'] = [4, 5.5]
 simple_tune_params['z'] = ['string_1', 'string_2']
 restrict = [lambda x, y, z: x != 1.5]
 simple_tuning_options = Options(dict(restrictions=restrict, tune_params=simple_tune_params))
-simple_searchspace = Searchspace(simple_tuning_options, max_threads)
+simple_searchspace = Searchspace(simple_tune_params, restrict, max_threads)
 
 # 3.1 million combinations, of which 10600 pass the restrictions
 num_layers = 42
@@ -47,8 +47,7 @@ sort_tune_params["gpu3"] = list(range(num_layers))
 sort_tuning_options = Options(dict(restrictions=[], tune_params=sort_tune_params))
 
 # create the searchspace object
-tuning_options = Options(dict(restrictions=restrict, tune_params=tune_params))
-searchspace = Searchspace(tuning_options, max_threads)
+searchspace = Searchspace(sort_tune_params, restrict, max_threads)
 
 
 def test_size():
@@ -68,16 +67,14 @@ def test_internal_representation():
 
 def test_sort():
     """ test that the sort searchspace option works as expected """
-    simple_searchspace_sort = Searchspace(simple_tuning_options, max_threads)
     expected = [
         (1, 4, 'string_1'), (1, 4, 'string_2'), (1, 5.5, 'string_1'), (1, 5.5, 'string_2'),
         (2, 4, 'string_1'), (2, 4, 'string_2'), (2, 5.5, 'string_1'), (2, 5.5, 'string_2'),
         (3, 4, 'string_1'), (3, 4, 'string_2'), (3, 5.5, 'string_1'), (3, 5.5, 'string_2')]
 
-    assert simple_searchspace_sort.sorted_list(sort_last_param_first=False) == expected
+    assert simple_searchspace.sorted_list(sort_last_param_first=False) == expected
 
-    searchspace_sort = Searchspace(sort_tuning_options, max_threads)
-    sorted_list = searchspace_sort.sorted_list(sort_last_param_first=False)
+    sorted_list = searchspace.sorted_list(sort_last_param_first=False)
     num_params = len(sorted_list[0])
     for param_config_index, (param_config_first, param_config_second) in enumerate(zip(sorted_list, sorted_list[1:])):
         if (param_config_index + 1) % num_layers == 0:
@@ -87,7 +84,8 @@ def test_sort():
 
 def test_sort_reversed():
     """ test that the sort searchspace option with the sort_last_param_first option enabled works as expected """
-    simple_searchspace_sort_reversed = Searchspace(simple_tuning_options, max_threads)
+    simple_searchspace_sort_reversed = Searchspace(simple_tuning_options.tune_params,
+                                                   simple_tuning_options.restrictions, max_threads)
     expected = [
         (1, 4, 'string_1'), (2, 4, 'string_1'), (3, 4, 'string_1'), (1, 5.5, 'string_1'),
         (2, 5.5, 'string_1'), (3, 5.5, 'string_1'), (1, 4, 'string_2'), (2, 4, 'string_2'),
@@ -95,7 +93,7 @@ def test_sort_reversed():
 
     assert simple_searchspace_sort_reversed.sorted_list(sort_last_param_first=True) == expected
 
-    searchspace_sort = Searchspace(sort_tuning_options, max_threads)
+    searchspace_sort = Searchspace(sort_tuning_options.tune_params, sort_tuning_options.restrictions, max_threads)
     sorted_list = searchspace_sort.sorted_list(sort_last_param_first=True)
     num_params = len(sorted_list[0])
     for param_config_index, (param_config_first, param_config_second) in enumerate(zip(sorted_list, sorted_list[1:])):
@@ -152,7 +150,8 @@ def test_random_sample():
 
 
 def __test_neighbors_prebuilt(param_config: tuple, expected_neighbors: list, neighbor_method: str):
-    simple_searchspace_prebuilt = Searchspace(simple_tuning_options, max_threads, build_neighbors_index=True, neighbor_method=neighbor_method)
+    simple_searchspace_prebuilt = Searchspace(simple_tuning_options.tune_params, simple_tuning_options.restrictions,
+                                              max_threads, build_neighbors_index=True, neighbor_method=neighbor_method)
     neighbors = simple_searchspace_prebuilt.get_neighbors_no_cache(param_config)
     assert param_config not in neighbors
     for neighbor in neighbors:
@@ -213,7 +212,8 @@ def test_neighbors_fictious():
 
 def test_neighbors_cached():
     """ test whether retrieving a set of neighbors twice returns the cached version """
-    simple_searchspace_duplicate = Searchspace(simple_tuning_options, max_threads, neighbor_method='Hamming')
+    simple_searchspace_duplicate = Searchspace(simple_tuning_options.tune_params, simple_tuning_options.restrictions,
+                                               max_threads, neighbor_method='Hamming')
     test_configs = simple_searchspace_duplicate.get_random_sample(10)
     for test_config in test_configs:
         assert not simple_searchspace_duplicate.are_neighbors_indices_cached(test_config)
@@ -295,9 +295,7 @@ def test_max_threads():
     tune_params = dict()
     tune_params["block_size_x"] = [512, 1024]
     tune_params["block_size_y"] = [1]
-    tuning_options = Options(dict(tune_params=tune_params, restrictions=None))
-
-    searchspace = Searchspace(tuning_options, max_threads)
+    searchspace = Searchspace(tune_params, None, max_threads)
 
     print(searchspace.list)
 

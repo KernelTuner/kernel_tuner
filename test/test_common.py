@@ -19,7 +19,7 @@ def test_get_bounds_x0_eps():
     tuning_options["restrictions"] = None
     tuning_options["strategy_options"] = {}
 
-    searchspace = Searchspace(tuning_options, 1024)
+    searchspace = Searchspace(tune_params, [], None, 1024)
 
     bounds, x0, eps = common.get_bounds_x0_eps(searchspace, tuning_options)
 

@@ -7,9 +7,8 @@ tune_params = OrderedDict()
 tune_params["x"] = [1, 2, 3]
 tune_params["y"] = [4, 5, 6]
 
-tuning_options = Options(dict(restrictions=[], tune_params=tune_params))
 max_threads = 1024
-searchspace = Searchspace(tuning_options, max_threads)
+searchspace = Searchspace(tune_params, [], max_threads)
 
 
 def test_weighted_choice():

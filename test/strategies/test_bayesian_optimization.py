@@ -20,7 +20,7 @@ tuning_options = Options(dict(restrictions=[], tune_params=tune_params, strategy
 tuning_options["scaling"] = True
 tuning_options["snap"] = True
 max_threads = 1024
-searchspace = Searchspace(tuning_options, 1024)
+searchspace = Searchspace(tune_params, [], 1024)
 
 # initialize required data
 parameter_space = list(itertools.product(*tune_params.values()))

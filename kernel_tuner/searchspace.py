@@ -14,17 +14,15 @@ supported_neighbor_methods = ['strictly-adjacent', 'adjacent', 'Hamming']
 class Searchspace():
     """ Class that offers the search space to strategies """
 
-    def __init__(self, tuning_options: dict, max_threads: int, build_neighbors_index=False, neighbor_method=None) -> None:
+    def __init__(self, tune_params: dict, restrictions, max_threads: int, block_size_names=default_block_size_names, build_neighbors_index=False, neighbor_method=None) -> None:
         """ Build a searchspace using the variables and constraints.
             Optionally build the neighbors index - only faster if you repeatedly look up neighbors. Methods:
                 strictly-adjacent: differs +1 or -1 parameter index value for each parameter
                 adjacent: picks closest parameter value in both directions for each parameter
                 Hamming: any parameter config with 1 different parameter value is a neighbor
         """
-        self.block_size_names = self.tuning_options.get("block_size_names", default_block_size_names)
-        self.restrictions = tuning_options.restrictions
-        self.tune_params = tuning_options.tune_params
-        self.max_threads = max_threads
+        self.tune_params = tune_params
+        self.restrictions = restrictions
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
@@ -34,15 +32,15 @@ class Searchspace():
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
 
-        self.list, self.__numpy, self.__dict, self.size = self.__build_searchspace()
+        self.list, self.__numpy, self.__dict, self.size = self.__build_searchspace(block_size_names, max_threads)
         self.num_params = len(self.tune_params)
         self.indices = np.arange(self.size)
         if neighbor_method is not None and neighbor_method != 'Hamming':
             self.__prepare_neighbors_index()
         if build_neighbors_index:
-            self.neighbors_index = self.__build_neighbors_index(neighbor_method)
+            self.neighbors_index = self.__build_neighbors_index(neighbor_method, max_threads)
 
-    def __build_searchspace(self) -> Tuple[List[tuple], np.ndarray, dict, int]:
+    def __build_searchspace(self, block_size_names: list, max_threads: int) -> Tuple[List[tuple], np.ndarray, dict, int]:
         """ compute valid configurations in a search space based on restrictions and max_threads, returns the searchspace, a dict of the searchspace for fast lookups and the size """
 
         # instantiate the parameter space with all the variables
@@ -54,10 +52,9 @@ class Searchspace():
         parameter_space = self.__add_restrictions(parameter_space)
 
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
-        block_size_names = self.block_size_names
-        block_size_names = list(block_size_name for block_size_name in block_size_names if block_size_name in self.param_names)
-        if len(block_size_names) > 0:
-            parameter_space.addConstraint(MaxProdConstraint(self.max_threads), block_size_names)
+        valid_block_size_names = list(block_size_name for block_size_name in block_size_names if block_size_name in self.param_names)
+        if len(valid_block_size_names) > 0:
+            parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
 
         # construct the parameter space with the constraints applied
         parameter_space = parameter_space.getSolutions()
