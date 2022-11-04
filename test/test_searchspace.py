@@ -39,16 +39,16 @@ min_func = lambda gpu1, gpu2, gpu3, gpu4: min([gpu1, gpu2, gpu3, gpu4]) >= 1
 # test three different types of restrictions: python-constraint, a function and a string
 restrict = [ExactSumConstraint(num_layers), FunctionConstraint(min_func)]
 
+# create the searchspace object
+searchspace = Searchspace(tune_params, restrict, max_threads)
+
 # 74088 combinations intended to test whether sorting works
 sort_tune_params = OrderedDict()
 sort_tune_params["gpu1"] = list(range(num_layers))
 sort_tune_params["gpu2"] = list(range(num_layers))
 sort_tune_params["gpu3"] = list(range(num_layers))
 sort_tuning_options = Options(dict(restrictions=[], tune_params=sort_tune_params))
-
-# create the searchspace object
-searchspace = Searchspace(sort_tune_params, restrict, max_threads)
-
+searchspace_sort = Searchspace(sort_tuning_options.tune_params, sort_tuning_options.restrictions, max_threads)
 
 def test_size():
     """ test that the searchspace after applying restrictions is the expected size """
@@ -74,7 +74,7 @@ def test_sort():
 
     assert simple_searchspace.sorted_list(sort_last_param_first=False) == expected
 
-    sorted_list = searchspace.sorted_list(sort_last_param_first=False)
+    sorted_list = searchspace_sort.sorted_list(sort_last_param_first=False)
     num_params = len(sorted_list[0])
     for param_config_index, (param_config_first, param_config_second) in enumerate(zip(sorted_list, sorted_list[1:])):
         if (param_config_index + 1) % num_layers == 0:
@@ -93,7 +93,6 @@ def test_sort_reversed():
 
     assert simple_searchspace_sort_reversed.sorted_list(sort_last_param_first=True) == expected
 
-    searchspace_sort = Searchspace(sort_tuning_options.tune_params, sort_tuning_options.restrictions, max_threads)
     sorted_list = searchspace_sort.sorted_list(sort_last_param_first=True)
     num_params = len(sorted_list[0])
     for param_config_index, (param_config_first, param_config_second) in enumerate(zip(sorted_list, sorted_list[1:])):

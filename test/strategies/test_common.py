@@ -1,8 +1,11 @@
 import sys
 from collections import OrderedDict
 from time import perf_counter
+
+from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.interface import Options
+from kernel_tuner.strategies.common import CostFunc
 
 try:
     from mock import Mock
@@ -16,7 +19,7 @@ def fake_runner():
     }
     runner = Mock()
     runner.last_strategy_start_time = perf_counter()
-    runner.run.return_value = [[fake_result], None]
+    runner.run.return_value = [fake_result]
     return runner
 
 
@@ -24,7 +27,6 @@ tune_params = OrderedDict([("x", [1, 2, 3]), ("y", [4, 5, 6])])
 
 
 def test__cost_func():
-
     x = [1, 4]
     kernel_options = None
     tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
@@ -33,7 +35,7 @@ def test__cost_func():
     runner = fake_runner()
     results = []
 
-    time = common._cost_func(x, kernel_options, tuning_options, runner, results)
+    time = CostFunc(Searchspace(tune_params, None, 1024), tuning_options, runner)(x)
     assert time == 5
 
     # check if restrictions are properly handled
@@ -42,7 +44,7 @@ def test__cost_func():
                              restrictions=restrictions, strategy_options={},
                              verbose=True, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
-    time = common._cost_func(x, kernel_options, tuning_options, runner, results)
+    time = CostFunc(Searchspace(tune_params, None, 1024), tuning_options, runner)(x)
     assert time == sys.float_info.max
 
 

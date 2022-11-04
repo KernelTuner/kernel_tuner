@@ -6,9 +6,9 @@ import numpy as np
 from collections import OrderedDict, namedtuple
 from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies import minimize
 from kernel_tuner.strategies import bayes_opt
 from kernel_tuner.strategies.bayes_opt import BayesianOptimization
+from kernel_tuner.strategies.common import CostFunc
 
 tune_params = OrderedDict()
 tune_params["x"] = [1, 2, 3]
@@ -20,26 +20,23 @@ tuning_options = Options(dict(restrictions=[], tune_params=tune_params, strategy
 tuning_options["scaling"] = True
 tuning_options["snap"] = True
 max_threads = 1024
-searchspace = Searchspace(tune_params, [], 1024)
+searchspace = Searchspace(tune_params, [], max_threads)
+
+dev_dict = {'max_threads': max_threads}
+dev = namedtuple('Struct', dev_dict.keys())(*dev_dict.values())
+runner_dict = {'dev': dev}
+runner = namedtuple('Struct', runner_dict.keys())(*runner_dict.values())
+cost_func = CostFunc(searchspace, tuning_options, runner)
 
 # initialize required data
 parameter_space = list(itertools.product(*tune_params.values()))
-_, _, eps = minimize.get_bounds_x0_eps(searchspace, tuning_options)
+_, _, eps = cost_func.get_bounds_x0_eps()
 original_to_normalized, normalized_to_original = bayes_opt.generate_normalized_param_dicts(tune_params, eps)
 normalized_parameter_space = bayes_opt.normalize_parameter_space(parameter_space, tune_params, original_to_normalized)
 pruned_parameter_space, removed_tune_params = bayes_opt.prune_parameter_space(normalized_parameter_space, tuning_options, tune_params, original_to_normalized)
 
 # initialize BO
-dev_dict = {
-    'max_threads': max_threads
-}
-dev = namedtuple('Struct', dev_dict.keys())(*dev_dict.values())
-runner_dict = {
-    'dev': dev
-}
-runner = namedtuple('Struct', runner_dict.keys())(*runner_dict.values())
-kernel_options = dict()
-BO = BayesianOptimization(pruned_parameter_space, removed_tune_params, kernel_options, tuning_options, original_to_normalized, normalized_to_original, runner)
+BO = BayesianOptimization(pruned_parameter_space, removed_tune_params, tuning_options, original_to_normalized, normalized_to_original, cost_func)
 predictions, _, std = BO.predict_list(BO.unvisited_cache)
 
 
@@ -72,7 +69,7 @@ def test_prune_parameter_space():
 def test_bo_initialization():
     assert BO.num_initial_samples == 0
     assert callable(BO.optimize)
-    assert len(BO.results) == 0
+    assert len(BO.cost_func.results) == 0
     assert BO.searchspace == pruned_parameter_space
     assert BO.unvisited_cache == pruned_parameter_space
     assert len(BO.observations) == len(pruned_parameter_space)
