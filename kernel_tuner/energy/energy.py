@@ -52,13 +52,13 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
     drv.init()
     dev = drv.Device(device)
     device_name = dev.name().replace(' ', '_')
-    multiprocessor_count = int(dev.get_attribute(
-        drv.device_attribute.MULTIPROCESSOR_COUNT))
-    max_block_dim_x = int(dev.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X))
+    multiprocessor_count = dev.get_attribute(
+        drv.device_attribute.MULTIPROCESSOR_COUNT)
+    max_block_dim_x = dev.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X)
 
     # kernel arguments
     data_size = (multiprocessor_count, max_block_dim_x)
-    data = np.random.random(np.prod(data_size)).astype(float)
+    data = np.random.random(np.prod(data_size)).astype(np.float32)
     arguments = [data]
 
     # setup clocks
@@ -74,7 +74,7 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
     tune_params["nr_inner"] = [1024]
     tune_params.update(nvml_gr_clocks)
 
-    tune_params["nvml_gr_clock"] = [int(c) for c in tune_params["nvml_gr_clock"]]
+    #tune_params["nvml_gr_clock"] = [int(c) for c in tune_params["nvml_gr_clock"]]
 
     # metrics
     metrics = OrderedDict()
@@ -210,6 +210,5 @@ def get_frequency_range_around_ridge(ridge_frequency, all_frequencies, freq_rang
 
     if verbose:
         print(f"Suggested range of frequencies to auto-tune: {frequency_selection} MHz")
-        print(f"Search space reduction: {np.round(100 - len(frequency_selection) / len(all_frequencies) * 100, 1)} %%")
 
     return frequency_selection

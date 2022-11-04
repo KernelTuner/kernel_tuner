@@ -65,10 +65,10 @@ if __name__ == "__main__":
                                                                                                nvidia_smi_fallback=args.nvidia_smi_fallback,
                                                                                                use_locked_clocks=args.locked_clocks)
 
-    all_frequencies = np.array(get_nvml_gr_clocks(args.device)['nvml_gr_clock'])
+    all_frequencies = np.array(get_nvml_gr_clocks(args.device, quiet=True)['nvml_gr_clock'])
 
-    frequency_selection = energy.get_frequency_range_around_ridge(ridge_frequency, all_frequencies, args.range, args.number)
-    print(f"Search space reduction: {np.round(100 - len(frequency_selection) / len(all_frequencies) * 100, 1)} %%")
+    frequency_selection = energy.get_frequency_range_around_ridge(ridge_frequency, all_frequencies, args.range, args.number, verbose=True)
+    print(f"Search space reduction: {np.round(100 - len(frequency_selection) / len(all_frequencies) * 100, 1)} %")
 
     xs = np.linspace(all_frequencies[0], all_frequencies[-1], 100)
     # scale to start at 0
