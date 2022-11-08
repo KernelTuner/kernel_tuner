@@ -17,18 +17,22 @@ def test_wrong_backend():
     except TypeError:
         assert True
 
-
+@skip_if_no_gcc
 def test_c_backend():
     dev = c.CFunctions()
 
+@skip_if_no_cupy
 def test_cupy_backend():
     dev = cupy.CupyFunctions()
 
+@skip_if_no_cuda
 def test_cuda_backend():
     dev = nvcuda.CudaFunctions()
 
+@skip_if_no_opencl
 def test_opencl_backend():
     dev = opencl.OpenCLFunctions()
 
+@skip_if_no_pycuda
 def test_pycuda_backend():
     dev = pycuda.PyCudaFunctions()
