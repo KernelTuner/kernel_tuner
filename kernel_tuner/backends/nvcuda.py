@@ -1,7 +1,7 @@
 """This module contains all NVIDIA cuda-python specific kernel_tuner functions"""
 import numpy as np
 
-from kernel_tuner.backends.backend import Backend
+from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.util import SkippableFailure
 
@@ -53,7 +53,7 @@ class CudaRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class CudaFunctions(Backend):
+class CudaFunctions(GPUBackend):
     """Class that groups the Cuda functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
@@ -278,7 +278,7 @@ class CudaFunctions(Backend):
             device texture memory. See tune_kernel().
         :type texmem_args: dict
         """
-        raise NotImplementedError('NVIDIA CUDA backend does not yet support texture memory')
+        raise NotImplementedError('NVIDIA CUDA backend does not support texture memory')
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'

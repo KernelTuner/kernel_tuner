@@ -3,7 +3,7 @@ from __future__ import print_function
 import time
 import numpy as np
 
-from kernel_tuner.backends.backend import Backend
+from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers import BenchmarkObserver
 
 #embedded in try block to be able to generate documentation
@@ -29,7 +29,7 @@ class OpenCLObserver(BenchmarkObserver):
         return results
 
 
-class OpenCLFunctions(Backend):
+class OpenCLFunctions(GPUBackend):
     """Class that groups the OpenCL functions on maintains some state about the device"""
 
     def __init__(self, device=0, platform=0, iterations=7, compiler_options=None, observers=None):
@@ -201,5 +201,14 @@ class OpenCLFunctions(Backend):
         """
         if isinstance(dest, cl.Buffer):
             cl.enqueue_copy(self.queue, dest, src)
+    
+    def copy_constant_memory_args(self, cmem_args):
+        raise NotImplementedError('PyOpenCL backend does not support constant memory')
+
+    def copy_shared_memory_args(self, smem_args):
+        raise NotImplementedError('PyOpenCL backend does not support shared memory')
+
+    def copy_texture_memory_args(self, texmem_args):
+        raise NotImplementedError('PyOpenCL backend does not support texture memory')
 
     units = {'time': 'ms'}

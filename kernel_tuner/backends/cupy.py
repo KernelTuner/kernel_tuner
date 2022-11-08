@@ -6,7 +6,7 @@ import logging
 import time
 import numpy as np
 
-from kernel_tuner.backends.backend import Backend
+from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers import BenchmarkObserver
 
 #embedded in try block to be able to generate documentation
@@ -35,7 +35,7 @@ class CupyRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class CupyFunctions(Backend):
+class CupyFunctions(GPUBackend):
     """Class that groups the Cupy functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
@@ -195,7 +195,7 @@ class CupyFunctions(Backend):
             device texture memory. See tune_kernel().
         :type texmem_args: dict
         """
-        raise NotImplementedError('CuPy backend does not yet support texture memory')
+        raise NotImplementedError('CuPy backend does not support texture memory')
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'

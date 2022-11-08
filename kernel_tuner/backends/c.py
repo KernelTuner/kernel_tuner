@@ -12,7 +12,7 @@ import _ctypes
 import numpy as np
 import numpy.ctypeslib
 
-from kernel_tuner.backends.backend import Backend
+from kernel_tuner.backends.backend import CompilerBackend
 from kernel_tuner.observers import BenchmarkObserver
 from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file, SkippableFailure
 
@@ -52,7 +52,7 @@ class CRuntimeObserver(BenchmarkObserver):
         return results
 
 
-class CFunctions(Backend):
+class CFunctions(CompilerBackend):
     """Class that groups the code for running and compiling C functions"""
 
     def __init__(self, iterations=7, compiler_options=None, compiler=None):
