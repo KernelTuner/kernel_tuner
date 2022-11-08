@@ -4,7 +4,7 @@ from collections import OrderedDict
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import (_cost_func, get_bounds)
+from kernel_tuner.strategies.common import CostFunc
 from scipy.optimize import differential_evolution
 
 supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp",
@@ -20,11 +20,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     method, popsize, maxiter = common.get_options(tuning_options.strategy_options, _options)
 
-    tuning_options["scaling"] = False
     # build a bounds array as needed for the optimizer
-    bounds = get_bounds(searchspace.tune_params)
-
-    args = (tuning_options, runner, results)
+    cost_func = CostFunc(searchspace, tuning_options, runner)
+    bounds = cost_func.get_bounds()
 
     # ensure particles start from legal points
     population = list(list(p) for p in searchspace.get_random_sample(popsize))
@@ -32,7 +30,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # call the differential evolution optimizer
     opt_result = None
     try:
-        opt_result = differential_evolution(_cost_func, bounds, args, maxiter=maxiter, popsize=popsize, init=population,
+        opt_result = differential_evolution(cost_func, bounds, maxiter=maxiter, popsize=popsize, init=population,
                                         polish=False, strategy=method, disp=tuning_options.verbose)
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
@@ -41,7 +39,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     if opt_result and tuning_options.verbose:
         print(opt_result.message)
 
-    return results
+    return cost_func.results
 
 
 tune.__doc__ = common.get_strategy_docstring("Differential Evolution", _options)

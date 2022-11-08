@@ -19,28 +19,27 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     max_fevals = options.get("max_fevals", 100)
 
-    tuning_options["scaling"] = False
+    cost_func = common.CostFunc(searchspace, tuning_options, runner)
 
     # limit max_fevals to max size of the parameter space
     max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0
-    results = []
 
     #while searching
     while fevals < max_fevals:
         candidate = searchspace.get_random_sample(1)[0]
 
         try:
-            base_hillclimb(candidate, neighbor, max_fevals, searchspace, results, tuning_options, runner, restart=restart, randomize=randomize, order=order)
+            base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=randomize, order=order)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
-            return results
+            return cost_func.results
 
         fevals = len(tuning_options.unique_results)
 
-    return results
+    return cost_func.results
 
 
 tune.__doc__ = common.get_strategy_docstring("Greedy Multi-start Local Search (MLS)", _options)

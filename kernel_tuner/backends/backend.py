@@ -45,6 +45,7 @@ class Backend(ABC):
     def memcpy_htod(self, dest, src):
         pass
 
+
 class GPUBackend(Backend):
     @abstractmethod
     def __init__(self, device, iterations, compiler_options, observers):
@@ -54,11 +55,11 @@ class GPUBackend(Backend):
     def copy_constant_memory_args(self, cmem_args):
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def copy_shared_memory_args(self, smem_args):
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def copy_texture_memory_args(self, texmem_args):
         pass
 

@@ -9,27 +9,20 @@ from kernel_tuner.searchspace import Searchspace
 
 
 def test_get_bounds_x0_eps():
-
-    tuning_options = Options()
-    tuning_options["scaling"] = True
     tune_params = OrderedDict()
     tune_params['x'] = [0, 1, 2, 3, 4]
+    searchspace = Searchspace(tune_params, [], 1024)
 
-    tuning_options["tune_params"] = tune_params
-    tuning_options["restrictions"] = None
+    tuning_options = Options()
     tuning_options["strategy_options"] = {}
 
-    searchspace = Searchspace(tune_params, [], None, 1024)
-
-    bounds, x0, eps = common.get_bounds_x0_eps(searchspace, tuning_options)
+    bounds, x0, eps = common.CostFunc(searchspace, tuning_options, None, scaling=True).get_bounds_x0_eps()
 
     assert bounds == [(0.0, 1.0)]
     assert x0 >= 0.0 and x0 <= 1.0
     assert eps == 0.2
 
-    tuning_options["scaling"] = False
-
-    bounds, x0, eps = common.get_bounds_x0_eps(searchspace, tuning_options)
+    bounds, x0, eps = common.CostFunc(searchspace, tuning_options, None, scaling=False).get_bounds_x0_eps()
 
     assert bounds == [(0, 4)]
     assert eps == 1.0
