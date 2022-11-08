@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 
 
 class Backend(ABC):
+    """Base class for kernel_tuner backends"""
     @abstractmethod
     def ready_argument_list(self, arguments):
         pass
@@ -47,6 +48,7 @@ class Backend(ABC):
 
 
 class GPUBackend(Backend):
+    """Base class for GPU backends"""
     @abstractmethod
     def __init__(self, device, iterations, compiler_options, observers):
         pass
@@ -65,6 +67,7 @@ class GPUBackend(Backend):
 
 
 class CompilerBackend(Backend):
+    """Base class for compiler backends"""
     @abstractmethod
     def __init__(self, iterations, compiler_options, compiler):
         pass
