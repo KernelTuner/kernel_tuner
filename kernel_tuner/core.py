@@ -11,13 +11,13 @@ try:
 except ImportError:
     cp = np
 
+from kernel_tuner.observers.nvml import NVMLObserver
+from kernel_tuner.observers.observer import ContinuousObserver
 from kernel_tuner.backends.cupy import CupyFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.c import CFunctions
-from kernel_tuner.nvml import NVMLObserver
-from kernel_tuner.observers import ContinuousObserver
 from kernel_tuner.backends.opencl import OpenCLFunctions
 import kernel_tuner.util as util
 

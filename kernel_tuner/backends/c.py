@@ -13,7 +13,7 @@ import numpy as np
 import numpy.ctypeslib
 
 from kernel_tuner.backends.backend import CompilerBackend
-from kernel_tuner.observers import BenchmarkObserver
+from kernel_tuner.observers.observer import BenchmarkObserver
 from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file, SkippableFailure
 
 dtype_map = {"int8": C.c_int8,
@@ -32,8 +32,9 @@ dtype_map = {"int8": C.c_int8,
 # of the argument data. For an ndarray, the ctypes object is a wrapper for the ndarray's data.
 Argument = namedtuple("Argument", ["numpy", "ctypes"])
 
+
 class CRuntimeObserver(BenchmarkObserver):
-    """ Observer that collects results returned by benchmarking function """
+    """ Observer that collects results returned by benchmarking function in the C backend """
 
     def __init__(self, dev):
         self.dev = dev

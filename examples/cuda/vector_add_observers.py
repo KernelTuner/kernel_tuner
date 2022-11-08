@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 import numpy
 from kernel_tuner import tune_kernel
-from kernel_tuner.nvml import NVMLObserver
+from kernel_tuner.observers.nvml import NVMLObserver
 
 def tune():
 

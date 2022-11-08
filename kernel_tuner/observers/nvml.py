@@ -3,7 +3,7 @@ import time
 import re
 import numpy as np
 
-from kernel_tuner.observers import BenchmarkObserver, ContinuousObserver
+from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver
 
 try:
     import pynvml

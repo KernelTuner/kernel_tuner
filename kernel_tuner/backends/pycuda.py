@@ -6,8 +6,8 @@ import time
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
-from kernel_tuner.observers import BenchmarkObserver
-from kernel_tuner.nvml import nvml
+from kernel_tuner.observers.observer import BenchmarkObserver
+from kernel_tuner.observers.nvml import nvml
 from kernel_tuner.util import TorchPlaceHolder, SkippableFailure
 
 #embedded in try block to be able to generate documentation

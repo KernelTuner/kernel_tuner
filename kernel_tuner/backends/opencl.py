@@ -4,7 +4,7 @@ import time
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
-from kernel_tuner.observers import BenchmarkObserver
+from kernel_tuner.observers.observer import BenchmarkObserver
 
 #embedded in try block to be able to generate documentation
 try:

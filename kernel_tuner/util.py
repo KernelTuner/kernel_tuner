@@ -19,7 +19,7 @@ try:
 except ImportError:
     cp = np
 
-from kernel_tuner.nvml import NVMLObserver
+from kernel_tuner.observers.nvml import NVMLObserver
 
 # number of special values to insert when a configuration cannot be measured
 
