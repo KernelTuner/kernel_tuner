@@ -56,7 +56,7 @@ class CupyFunctions(GPUBackend):
         self.texrefs = []
         if not cp:
             raise ImportError("Error: cupy not installed, please install e.g. " +
-                            "using 'pip install cupy-cuda111', please check https://github.com/cupy/cupy.")
+                            "using 'pip install cupy', please check https://github.com/cupy/cupy.")
 
         #select device
         self.dev = dev = cp.cuda.Device(device)
