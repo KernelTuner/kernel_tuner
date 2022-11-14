@@ -708,6 +708,17 @@ def compile_restrictions(restrictions: list, tune_params: dict):
     return func
 
 
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
+
+
 def process_cache(cache, kernel_options, tuning_options, runner):
     """cache file for storing tuned configurations
 
@@ -717,6 +728,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         { device_name: "name of device"
           kernel_name: "name of kernel"
+          problem_size: (int, int, int)
           tune_params_keys: list
           tune_params:
           cache: {
@@ -743,11 +755,12 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         c = OrderedDict()
         c["device_name"] = runner.dev.name
         c["kernel_name"] = kernel_options.kernel_name
+        c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"
         c["tune_params_keys"] = list(tuning_options.tune_params.keys())
         c["tune_params"] = tuning_options.tune_params
         c["cache"] = {}
 
-        contents = json.dumps(c, indent="")[:-3]    # except the last "}\n}"
+        contents = json.dumps(c, cls=NpEncoder, indent="")[:-3]    # except the last "}\n}"
 
         # write the header to the cachefile
         with open(cache, "w") as cachefile:
@@ -769,6 +782,11 @@ def process_cache(cache, kernel_options, tuning_options, runner):
             raise ValueError("Cannot load cache which contains results for different device")
         if cached_data["kernel_name"] != kernel_options.kernel_name:
             raise ValueError("Cannot load cache which contains results for different kernel")
+        if "problem_size" in cached_data and not callable(kernel_options.problem_size):
+            # cache returns list, problem_size is likely a tuple. Therefore, the next check
+            # checks the equality of all items in the list/tuples individually
+            if not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
+                raise ValueError("Cannot load cache which contains results for different problem_size")
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
             raise ValueError("Cannot load cache which contains results obtained with different tunable parameters")
 

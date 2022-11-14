@@ -2,6 +2,7 @@ import subprocess
 import time
 import re
 import numpy as np
+from collections import OrderedDict
 
 from kernel_tuner.observers import BenchmarkObserver, ContinuousObserver
 
@@ -39,6 +40,7 @@ class nvml():
             self._auto_boost = None
 
         #try to initialize application clocks
+        self.modified_clocks = False
         try:
             if not use_locked_clocks:
                 self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
@@ -75,7 +77,8 @@ class nvml():
         #try to restore to defaults
         if self.pwr_limit_default is not None:
             self.pwr_limit = self.pwr_limit_default
-        self.reset_clocks()
+        if self.modified_clocks:
+            self.reset_clocks()
 
     @property
     def pwr_state(self):
@@ -115,6 +118,7 @@ class nvml():
 
     def set_clocks(self, mem_clock, gr_clock):
         """Set the memory and graphics clock for this device (may require permission)"""
+        self.modified_clocks = True
         if not mem_clock in self.supported_mem_clocks:
             raise ValueError("Illegal value for memory clock")
         if not gr_clock in self.supported_gr_clocks[mem_clock]:
@@ -411,3 +415,79 @@ class NVMLPowerObserver(ContinuousObserver):
         if "power_readings" in self.observables:
             results["power_readings"] = self.power_readings
         return results
+
+
+
+# High-level Helper functions
+
+def get_nvml_pwr_limits(device, n=None, quiet=False):
+    """ Get tunable parameter for NVML power limits, n is desired number of values """
+
+    d = nvml(device)
+    power_limits = d.pwr_constraints
+    power_limit_min = power_limits[0]
+    power_limit_max = power_limits[-1]
+    power_limit_min *= 1e-3  # Convert to Watt
+    power_limit_max *= 1e-3  # Convert to Watt
+    power_limit_round = 5
+    tune_params = OrderedDict()
+    if n == None:
+        n = int((power_limit_max - power_limit_min) / power_limit_round)+1
+
+    # Rounded power limit values
+    power_limits = power_limit_round * np.round(
+        (np.linspace(power_limit_min, power_limit_max, n) / power_limit_round))
+    power_limits = sorted(
+        list(set([int(power_limit) for power_limit in power_limits])))
+    tune_params["nvml_pwr_limit"] = power_limits
+
+    if not quiet:
+        print("Using power limits:", tune_params["nvml_pwr_limit"])
+    return tune_params
+
+
+def get_nvml_gr_clocks(device, n=None, quiet=False):
+    """ Get tunable parameter for NVML graphics clock, n is desired number of values """
+
+    d = nvml(device)
+    mem_clock = max(d.supported_mem_clocks)
+    gr_clocks = d.supported_gr_clocks[mem_clock]
+
+    if n and (len(gr_clocks) > n):
+        indices = np.array(
+            np.ceil(np.linspace(0, len(gr_clocks)-1, n)), dtype=int)
+        gr_clocks = np.array(gr_clocks)[indices]
+
+    tune_params = OrderedDict()
+    tune_params["nvml_gr_clock"] = list(gr_clocks)
+
+    if not quiet:
+        print("Using gr frequencies:", tune_params["nvml_gr_clock"])
+    return tune_params
+
+
+def get_nvml_mem_clocks(device, n=None, quiet=False):
+    """ Get tunable parameter for NVML memory clock, n is desired number of values """
+
+    d = nvml(device)
+    mem_clocks = d.supported_mem_clocks
+
+    if n and len(mem_clocks) > n:
+        mem_clocks = mem_clocks[::int(len(mem_clocks)/n)]
+
+    tune_params = OrderedDict()
+    tune_params["nvml_mem_clock"] = mem_clocks
+
+    if not quiet:
+        print("Using mem frequencies:", tune_params["nvml_mem_clock"])
+    return tune_params
+
+
+def get_idle_power(device, n=5, sleep_s=0.1):
+    """ Use NVML to measure device idle power consumption """
+    d = nvml(device)
+    readings = []
+    for _ in range(n):
+        time.sleep(sleep_s)
+        readings.append(d.pwr_usage())
+    return np.mean(readings) * 1e-3  # Watt
