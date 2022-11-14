@@ -3,12 +3,11 @@ This module contains a set of helper functions specifically for auto-tuning code
 for energy efficiency.
 """
 from collections import OrderedDict
-import numpy as np
-import math
-from scipy import optimize
 
-from kernel_tuner import tune_kernel
-from kernel_tuner.nvml import NVMLObserver, get_nvml_gr_clocks, get_idle_power
+import numpy as np
+from kernel_tuner import tune_kernel, util
+from kernel_tuner.nvml import NVMLObserver, get_nvml_gr_clocks
+from scipy import optimize
 
 try:
     import pycuda.driver as drv
@@ -42,27 +41,33 @@ __global__ void fp32_kernel(float *ptr)
 }
 """
 
-def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=None, use_locked_clocks=False):
+def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=None, use_locked_clocks=False, cache=None):
     """ Use NVML and PyCUDA with a synthetic kernel to obtain samples of frequency-power pairs """
 
-    if drv is None:
-        raise ImportError("get_ridge_point_gr_frequency requires PyCUDA")
-
     # get some numbers about the device
-    drv.init()
-    dev = drv.Device(device)
-    device_name = dev.name().replace(' ', '_')
-    multiprocessor_count = dev.get_attribute(
-        drv.device_attribute.MULTIPROCESSOR_COUNT)
-    max_block_dim_x = dev.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X)
+    if not cache:
+        if drv is None:
+            raise ImportError("get_ridge_point_gr_frequency requires PyCUDA")
+
+        drv.init()
+        dev = drv.Device(device)
+        device_name = dev.name().replace(' ', '_')
+        multiprocessor_count = dev.get_attribute(drv.device_attribute.MULTIPROCESSOR_COUNT)
+        max_block_dim_x = dev.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X)
+
+        # setup clocks
+        nvml_gr_clocks = get_nvml_gr_clocks(device, n=n_samples, quiet=True)
+
+    else:
+        cached_data = util.read_cache(cache, open_cache=False)
+        multiprocessor_count = cached_data["problem_size"][0]
+        max_block_dim_x = cached_data["tune_params"]["block_size_x"][0]
+        nvml_gr_clocks = cached_data["tune_params"]
 
     # kernel arguments
     data_size = (multiprocessor_count, max_block_dim_x)
     data = np.random.random(np.prod(data_size)).astype(np.float32)
     arguments = [data]
-
-    # setup clocks
-    nvml_gr_clocks = get_nvml_gr_clocks(device, n=n_samples, quiet=True)
 
     # setup tunable parameters
     tune_params = OrderedDict()
@@ -81,7 +86,7 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
     results, _ = tune_kernel("fp32_kernel", fp32_kernel_string, problem_size=(multiprocessor_count, 64),
                              arguments=arguments, tune_params=tune_params, observers=[nvmlobserver],
                              verbose=False, quiet=True, metrics=metrics, iterations=10,
-                             grid_div_x=[], grid_div_y=[], cache=f"synthetic_fp32_cache_{device_name}.json")
+                             grid_div_x=[], grid_div_y=[], cache=cache or f"synthetic_fp32_cache_{device_name}.json")
 
     freqs = np.array([res["core_freq"] for res in results])
     nvml_power = np.array([res["nvml_power"] for res in results])
@@ -142,7 +147,7 @@ def fit_power_frequency_model(freqs, nvml_power):
     return clock_threshold + clock_min, fit_parameters, scale_parameters
 
 
-def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_smi_fallback=None, use_locked_clocks=False):
+def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_smi_fallback=None, use_locked_clocks=False, cache=None):
     """ Calculate the most energy-efficient clock frequency of device
 
     This function uses a performance model to fit the power-frequency curve
@@ -169,11 +174,14 @@ def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_s
     :param use_locked_clocks: Whether to prefer locked clocks over application clocks
     :type use_locked_clocks: bool
 
+    :param cache: Name for the cache file to use to store measurements
+    :type cache: string
+
     :returns: The clock frequency closest to the ridge point, fitted parameters, scaling
     :rtype: float
 
     """
-    freqs, nvml_power = get_frequency_power_relation_fp32(device, n_samples, nvidia_smi_fallback, use_locked_clocks)
+    freqs, nvml_power = get_frequency_power_relation_fp32(device, n_samples, nvidia_smi_fallback, use_locked_clocks, cache=cache)
 
     if verbose:
         print("Clock frequencies:", freqs.tolist())
