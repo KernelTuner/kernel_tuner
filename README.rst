@@ -181,7 +181,8 @@ If you use Kernel Tuner in research or research software, please cite the most r
       title = {Going green: optimizing GPUs for energy efficiency through model-steered auto-tuning},
       journal = {International Workshop on Performance Modeling, Benchmarking and Simulation
          of High Performance Computer Systems (PMBS) at Supercomputing (SC22)},
-      year = {2022}
+      year = {2022},
+      url = {https://arxiv.org/abs/2211.07260}
     }
 
 
