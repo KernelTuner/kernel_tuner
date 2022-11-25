@@ -1,12 +1,12 @@
 Using structs
 -------------
 
-One of the issues with calling GPU kernels from Python is the use of custom data types in kernel arguments. In general, it is recommended for portability of your GPU code to be used from 
-many different host languages to keep the interface of your kernels as simple as possible. This means sticking to simple pointers of primitive types such as integer, float, and double. 
+One of the issues with calling GPU kernels from Python is the use of custom data types in kernel arguments. In general, it is recommended for portability of your GPU code, which may be
+used in any host program in any host programming language, to keep the interface of your kernels as simple as possible. This means sticking to simple pointers of primitive types such as integer, float, and double. 
 For performance reasons, it is also recommended to not use arrays of structs for kernel arguments, as this is very likely to lead to inefficient memory accesses on the GPU.
 
 However, there are situations, in particular in scientific applications, where the GPU code needs a lot of input parameters where it makes sense to collect these in a struct that 
-describes the simulation or experimental setup. For these use cases it is possible to use Python's built-in ``struct`` library, in particular the function ``struct.pack()``. For how to use 
+describes the simulation or experimental setup. For these use cases, it is possible to use Python's built-in ``struct`` library, in particular the function ``struct.pack()``. For how to use 
 ``struct.pack``, please consult the `Python documentation <https://docs.python.org/3/library/struct.html>`__. In the code below we show part of Python script that uses ``struct.pack``, 
 Numpy, and Kernel Tuner to call a CUDA kernel that uses a struct as kernel argument.
 
