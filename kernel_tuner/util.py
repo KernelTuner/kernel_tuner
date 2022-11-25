@@ -783,9 +783,14 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         if cached_data["kernel_name"] != kernel_options.kernel_name:
             raise ValueError("Cannot load cache which contains results for different kernel")
         if "problem_size" in cached_data and not callable(kernel_options.problem_size):
+            # if problem_size is not iterable, compare directly
+            if not hasattr(kernel_options.problem_size, "__iter__"):
+                if cached_data["problem_size"] != kernel_options.problem_size:
+                    raise ValueError("Cannot load cache which contains results for different problem_size")
+            # else (problem_size is iterable)
             # cache returns list, problem_size is likely a tuple. Therefore, the next check
             # checks the equality of all items in the list/tuples individually
-            if not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
+            elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
                 raise ValueError("Cannot load cache which contains results for different problem_size")
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
             raise ValueError("Cannot load cache which contains results obtained with different tunable parameters")

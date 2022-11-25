@@ -1,6 +1,7 @@
 """ The default runner for sequentially tuning the parameter space """
 import logging
 from collections import OrderedDict
+from datetime import datetime, timezone
 from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
@@ -107,6 +108,7 @@ class SequentialRunner:
             total_time = 1000 * (perf_counter() - self.start_time) - warmup_time
             params['strategy_time'] = self.last_strategy_time
             params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
+            params['timestamp'] = str(datetime.now(timezone.utc))
             self.start_time = perf_counter()
 
             if result:
