@@ -126,7 +126,7 @@
 <section id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading">¶</a></h1>
 <p>So you have installed Kernel Tuner! That’s great! But now you’d like to get started tuning some GPU code.</p>
-<p>Let’s say we have a simple CUDA kernel stored in a file called vector_add_kernel.cu:</p>
+<p>Let’s say we have a simple CUDA kernel stored in a file called <code class="docutils literal notranslate"><span class="pre">vector_add_kernel.cu</span></code>:</p>
 <div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">vector_add</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nb">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">blockDim</span><span class="p">.</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span><span class="w"></span>
 
@@ -136,7 +136,7 @@
 <span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>This kernel simply performs a point-wise addition of vectors a and b and stores the result in c.</p>
+<p>This kernel simply performs a point-wise addition of vectors <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> and stores the result in <code class="docutils literal notranslate"><span class="pre">c</span></code>.</p>
 <p>To tune this kernel with Kernel Tuner, we are going to create the input and output data in Python using Numpy arrays.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">kernel_tuner</span>
@@ -150,14 +150,24 @@
 </div>
 <p>To tell Kernel Tuner how it should call the kernel, we can create a list in Python that should correspond to
 our CUDA kernel’s argument list with the same order and types.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
+</pre></div>
+</div>
 <p>So far, we have created the data structures needed by Kernel Tuner to call our kernel, but we have not yet specified what we
 want Kernel Tuner to tune in our kernel. For that, we create a dictionary that we call tune_params, in which keys correspond
 to tunable parameters in our kernel and the values are lists of values that these parameters may take.</p>
-<p>In the code above, we have inserted a key into our dictionary called “block_size_x”. This is a special name for a tunable
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1024</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>In the code above, we have inserted a key into our dictionary, namely <code class="docutils literal notranslate"><span class="pre">&quot;block_size_x&quot;</span></code>. This is a special name for a tunable
 parameter that is recognized by Kernel Tuner to denote the size of our thread block in the x-dimension.
 For a full list of special parameter names, please see the <a class="reference internal" href="vocabulary.html#parameter-vocabulary"><span class="std std-ref">Parameter Vocabulary</span></a>.</p>
-<p>Alright, we are all set to start calling Kernel Tuner’s main function, which is called tune_kernel.</p>
-<p>In the above, tune_kernel takes five arguments:</p>
+<p>Alright, we are all set to start calling Kernel Tuner’s main function, which is called <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="s2">&quot;vector_add_kernel.cu&quot;</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the above, <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> takes five arguments:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>The kernel name passed as a string</p></li>

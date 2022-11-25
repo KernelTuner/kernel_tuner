@@ -3,7 +3,7 @@ Getting Started
 
 So you have installed Kernel Tuner! That's great! But now you'd like to get started tuning some GPU code.
 
-Let's say we have a simple CUDA kernel stored in a file called vector_add_kernel.cu:
+Let's say we have a simple CUDA kernel stored in a file called ``vector_add_kernel.cu``:
 
 .. code-block:: cuda
 
@@ -16,7 +16,7 @@ Let's say we have a simple CUDA kernel stored in a file called vector_add_kernel
     }
 
 
-This kernel simply performs a point-wise addition of vectors a and b and stores the result in c.
+This kernel simply performs a point-wise addition of vectors ``a`` and ``b`` and stores the result in ``c``.
 
 To tune this kernel with Kernel Tuner, we are going to create the input and output data in Python using Numpy arrays.
 
@@ -34,7 +34,7 @@ To tune this kernel with Kernel Tuner, we are going to create the input and outp
 To tell Kernel Tuner how it should call the kernel, we can create a list in Python that should correspond to 
 our CUDA kernel's argument list with the same order and types.
 
-.. code-block::python
+.. code-block:: python
 
     args = [c, a, b, n]
 
@@ -42,22 +42,22 @@ So far, we have created the data structures needed by Kernel Tuner to call our k
 want Kernel Tuner to tune in our kernel. For that, we create a dictionary that we call tune_params, in which keys correspond 
 to tunable parameters in our kernel and the values are lists of values that these parameters may take.
 
-.. code-block::python
+.. code-block:: python
 
     tune_params = dict()
     tune_params["block_size_x"] = [32, 64, 128, 256, 512, 1024]
 
-In the code above, we have inserted a key into our dictionary called "block_size_x". This is a special name for a tunable
+In the code above, we have inserted a key into our dictionary, namely ``"block_size_x"``. This is a special name for a tunable
 parameter that is recognized by Kernel Tuner to denote the size of our thread block in the x-dimension. 
 For a full list of special parameter names, please see the :ref:`parameter-vocabulary`.
 
-Alright, we are all set to start calling Kernel Tuner's main function, which is called tune_kernel. 
+Alright, we are all set to start calling Kernel Tuner's main function, which is called ``tune_kernel``. 
 
-.. code-block::python
+.. code-block:: python
 
     results, env = kernel_tuner.tune_kernel("vector_add", "vector_add_kernel.cu", size, args, tune_params)
 
-In the above, tune_kernel takes five arguments:
+In the above, ``tune_kernel`` takes five arguments:
 
  * The kernel name passed as a string
  * The filename of the kernel, also as a string

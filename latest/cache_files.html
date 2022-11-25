@@ -126,12 +126,12 @@
 <section id="cache-files">
 <span id="cache"></span><h1>Cache files<a class="headerlink" href="#cache-files" title="Permalink to this heading">¶</a></h1>
 <p>A very useful feature of Kernel Tuner is the ability to store benchmarking results in a cache file during tuning. You can enable cache files by
-passing any filename to the <code class="docutils literal notranslate"><span class="pre">cache=</span></code> optional argument of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
+passing any filename to the <code class="docutils literal notranslate"><span class="pre">cache=</span></code> optional argument of <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>.</p>
 <p>The benchmark results of individual kernel configurations are appended to the cache file as Kernel Tuner is running. This also allows Kernel Tuner
 to restart a <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> session from an existing cache file, should something have terminated the previous session before the run had
 completed. This happens quite often in HPC environments when a job reservation runs out.</p>
 <p>Cache files enable a number of other features, such as simulations and visualizations. Simulations are useful for benchmarking optimization
-strategies. You can start a simulation by call tune_kernel with a cache file that contains the full search space and the <code class="docutils literal notranslate"><span class="pre">simulation=True</span></code> option.</p>
+strategies. You can start a simulation by calling <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> with a cache file that contains the full search space and the <code class="docutils literal notranslate"><span class="pre">simulation=True</span></code> option.</p>
 <p>Cache files can be used to create visualizations of the search space. This even works while Kernel Tuner is still running. As the new results are
 coming, they are streamed to the visualization. Please see <a class="reference external" href="https://github.com/KernelTuner/dashboard">Kernel Tuner Dashboard</a>.</p>
 </section>
