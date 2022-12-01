@@ -71,15 +71,8 @@ class SequentialRunner:
         for element in parameter_space:
             params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
 
-            # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
-            warmup_time = 0
-            if not self.warmed_up:
-                warmup_time = perf_counter()
-                self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
-                self.warmed_up = True
-                warmup_time = 1e3 * (perf_counter() - warmup_time)
-
             result = None
+            warmup_time = 0
 
             # check if configuration is in the cache
             x_int = ",".join([str(i) for i in element])
@@ -89,7 +82,14 @@ class SequentialRunner:
                 params['verification_time'] = 0
                 params['benchmark_time'] = 0
             else:
-                result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
+                # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
+                if not self.warmed_up:
+                    warmup_time = perf_counter()
+                    self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+                    self.warmed_up = True
+                    warmup_time = 1e3 * (perf_counter() - warmup_time)
+
+                result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
 
                 params.update(result)
 

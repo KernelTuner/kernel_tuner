@@ -549,7 +549,7 @@ def test_process_cache():
     cache = get_temp_filename(suffix=".json")
     delete_temp_file(cache)
 
-    kernel_options = Options(kernel_name="test_kernel")
+    kernel_options = Options(kernel_name="test_kernel", problem_size=(1, 2))
     tuning_options = Options(cache=cache, tune_params=Options(x=[1, 2, 3, 4]), simulation_mode=False)
     runner = Options(dev=Options(name="test_device"), simulation_mode=False)
 
