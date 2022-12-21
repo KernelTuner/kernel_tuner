@@ -395,16 +395,16 @@ f = \sum_{i=1}^{N}\exp\left(-\beta \sqrt{(x-x_i)^2+(y-y_i)^2+(z-z_i)^2}\right)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">numpy.linalg</span> <span class="k">as</span> <span class="nn">la</span>
-<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import numpy as np
+import numpy.linalg as la
+from time import time
 
-<span class="k">def</span> <span class="nf">compute_grid</span><span class="p">(</span><span class="n">center</span><span class="p">,</span><span class="n">xgrid</span><span class="p">,</span><span class="n">ygrid</span><span class="p">,</span><span class="n">zgrid</span><span class="p">):</span>
-    <span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span> <span class="o">=</span> <span class="n">center</span>
-    <span class="n">beta</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.1</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="p">(</span><span class="n">xgrid</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">ygrid</span><span class="o">-</span><span class="n">y0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">zgrid</span><span class="o">-</span><span class="n">z0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">beta</span><span class="o">*</span><span class="n">f</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">f</span>
+def compute_grid(center,xgrid,ygrid,zgrid):
+    x0,y0,z0 = center
+    beta = -0.1
+    f = np.sqrt( (xgrid-x0)**2 + (ygrid-y0)**2 + (zgrid-z0)**2 )
+    f = np.exp(beta*f)
+    return f
 </pre></div>
 </div>
 </div>
@@ -415,27 +415,27 @@ distributed within the 3D space.</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># dimension of the problem</span>
-<span class="n">n</span> <span class="o">=</span> <span class="mi">256</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># dimension of the problem
+n = 256
 
-<span class="c1"># define the vectors</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+# define the vectors
+x = np.linspace(-1,1,n).astype(np.float32)
+y = np.linspace(-1,1,n).astype(np.float32)
+z = np.linspace(-1,1,n).astype(np.float32)
 
-<span class="c1"># create meshgrids</span>
-<span class="n">xgrid</span><span class="p">,</span><span class="n">ygrid</span><span class="p">,</span><span class="n">zgrid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">)</span>
-<span class="n">cpu_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xgrid</span><span class="p">)</span>
+# create meshgrids
+xgrid,ygrid,zgrid = np.meshgrid(x,y,z)
+cpu_grid = np.zeros_like(xgrid)
 
-<span class="c1"># centers</span>
-<span class="n">npts</span> <span class="o">=</span> <span class="mi">100</span>
-<span class="n">center</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">npts</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+# centers
+npts = 100
+center = (-1 + 2*np.random.rand(npts,3)).astype(np.float32)
 
-<span class="c1"># compute the grid and time the operation</span>
-<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">center</span><span class="p">:</span>
-    <span class="n">cpu_grid</span> <span class="o">+=</span> <span class="n">compute_grid</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span><span class="n">xgrid</span><span class="p">,</span><span class="n">ygrid</span><span class="p">,</span><span class="n">zgrid</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;CPU Execution time </span><span class="si">%f</span><span class="s1"> ms&#39;</span> <span class="o">%</span><span class="p">(</span> <span class="p">(</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span> <span class="p">)</span>
+# compute the grid and time the operation
+t0 = time()
+for xyz in center:
+    cpu_grid += compute_grid(xyz,xgrid,ygrid,zgrid)
+print(&#39;CPU Execution time %f ms&#39; %( (time()-t0)*1000) )
 </pre></div>
 </div>
 </div>
@@ -458,40 +458,40 @@ the top of the kernel code. So for now we don’t have to specify their values.<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># define a kernel template</span>
-<span class="c1"># several parameters are available</span>
-<span class="c1"># block sizes : bx, by, bz</span>
-<span class="c1"># dimensions  : nx, ny, nz</span>
-<span class="n">kernel_code</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">#include &lt;math.h&gt;</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># define a kernel template
+# several parameters are available
+# block sizes : bx, by, bz
+# dimensions  : nx, ny, nz
+kernel_code = &quot;&quot;&quot;
+#include &lt;math.h&gt;
 
-<span class="s2">// a simple gaussian function</span>
-<span class="s2">__host__ __device__ float f(float d){</span>
-<span class="s2">    float b = 0.1;</span>
-<span class="s2">    float x = exp(-b*d);</span>
-<span class="s2">    return x;</span>
-<span class="s2">}</span>
+// a simple gaussian function
+__host__ __device__ float f(float d){
+    float b = 0.1;
+    float x = exp(-b*d);
+    return x;
+}
 
-<span class="s2">// the main function called below</span>
-<span class="s2">__global__ void AddGrid(float x0, float y0, float z0, float *xvect, float *yvect, float *zvect, float *out)</span>
-<span class="s2">{</span>
+// the main function called below
+__global__ void AddGrid(float x0, float y0, float z0, float *xvect, float *yvect, float *zvect, float *out)
+{
 
-<span class="s2">    // 3D thread</span>
-<span class="s2">    int x = threadIdx.x + block_size_x * blockIdx.x;</span>
-<span class="s2">    int y = threadIdx.y + block_size_y * blockIdx.y;</span>
-<span class="s2">    int z = threadIdx.z + block_size_z * blockIdx.z;</span>
+    // 3D thread
+    int x = threadIdx.x + block_size_x * blockIdx.x;
+    int y = threadIdx.y + block_size_y * blockIdx.y;
+    int z = threadIdx.z + block_size_z * blockIdx.z;
 
-<span class="s2">    if ( ( x &lt; nx ) &amp;&amp; (y &lt; ny) &amp;&amp; (z &lt; nz) )</span>
-<span class="s2">    {</span>
+    if ( ( x &lt; nx ) &amp;&amp; (y &lt; ny) &amp;&amp; (z &lt; nz) )
+    {
 
-<span class="s2">        float dx = xvect[x]-x0;</span>
-<span class="s2">        float dy = yvect[y]-y0;</span>
-<span class="s2">        float dz = zvect[z]-z0;</span>
-<span class="s2">        float d = sqrt(dx*dx + dy*dy + dz*dz);</span>
-<span class="s2">        out[y * nx * nz + x * nz + z] = f(d);</span>
-<span class="s2">    }</span>
-<span class="s2">}</span>
-<span class="s2">&quot;&quot;&quot;</span>
+        float dx = xvect[x]-x0;
+        float dy = yvect[y]-y0;
+        float dz = zvect[z]-z0;
+        float d = sqrt(dx*dx + dy*dy + dz*dz);
+        out[y * nx * nz + x * nz + z] = f(d);
+    }
+}
+&quot;&quot;&quot;
 </pre></div>
 </div>
 </div>
@@ -503,27 +503,27 @@ the top of the kernel code. So for now we don’t have to specify their values.<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">tune_kernel</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from collections import OrderedDict
+from kernel_tuner import tune_kernel
 
-<span class="c1"># create the dictionary containing the tune parameters</span>
-<span class="n">tune_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;nx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;ny&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;nz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
+# create the dictionary containing the tune parameters
+tune_params = OrderedDict()
+tune_params[&#39;block_size_x&#39;] = [2,4,8,16,32]
+tune_params[&#39;block_size_y&#39;] = [2,4,8,16,32]
+tune_params[&#39;block_size_z&#39;] = [2,4,8,16,32]
+tune_params[&#39;nx&#39;] = [n]
+tune_params[&#39;ny&#39;] = [n]
+tune_params[&#39;nz&#39;] = [n]
 
-<span class="c1"># define the final grid</span>
-<span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xgrid</span><span class="p">)</span>
+# define the final grid
+grid = np.zeros_like(xgrid)
 
-<span class="c1"># arguments of the CUDA function</span>
-<span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">grid</span><span class="p">]</span>
+# arguments of the CUDA function
+x0,y0,z0 = np.float32(0),np.float32(0),np.float32(0)
+args = [x0,y0,z0,x,y,z,grid]
 
-<span class="c1"># dimensionality</span>
-<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">)</span>
+# dimensionality
+problem_size = (n,n,n)
 </pre></div>
 </div>
 </div>
@@ -532,8 +532,8 @@ the top of the kernel code. So for now we don’t have to specify their values.<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># call the kernel tuner</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s1">&#39;AddGrid&#39;</span><span class="p">,</span> <span class="n">kernel_code</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># call the kernel tuner
+result = tune_kernel(&#39;AddGrid&#39;, kernel_code, problem_size, args, tune_params)
 </pre></div>
 </div>
 </div>
@@ -647,14 +647,14 @@ best performing configuration: block_size_x=2, block_size_y=4, block_size_z=32, 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pycuda</span> <span class="kn">import</span> <span class="n">driver</span><span class="p">,</span> <span class="n">compiler</span><span class="p">,</span> <span class="n">gpuarray</span><span class="p">,</span> <span class="n">tools</span>
-<span class="kn">import</span> <span class="nn">pycuda.autoinit</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from pycuda import driver, compiler, gpuarray, tools
+import pycuda.autoinit
 
-<span class="c1"># optimal values of the block size</span>
-<span class="n">block</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+# optimal values of the block size
+block = [4, 2, 16]
 
-<span class="c1"># corresponding grid size</span>
-<span class="n">grid_dim</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span><span class="o">/</span><span class="n">b</span><span class="p">))</span> <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">)]</span>
+# corresponding grid size
+grid_dim = [int(np.ceil(n/b)) for b, n in zip(block, problem_size)]
 </pre></div>
 </div>
 </div>
@@ -663,21 +663,21 @@ best performing configuration: block_size_x=2, block_size_y=4, block_size_z=32, 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># change the values of the block sizes in the kernel</span>
-<span class="n">fixed_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;nx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;ny&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;nz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># change the values of the block sizes in the kernel
+fixed_params = OrderedDict()
+fixed_params[&#39;block_size_x&#39;] = block[0]
+fixed_params[&#39;block_size_y&#39;] = block[1]
+fixed_params[&#39;block_size_z&#39;] = block[2]
+fixed_params[&#39;nx&#39;] = n
+fixed_params[&#39;ny&#39;] = n
+fixed_params[&#39;nz&#39;] = n
 
-<span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">fixed_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="n">kernel_code</span> <span class="o">=</span> <span class="n">kernel_code</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+for k,v in fixed_params.items():
+    kernel_code = kernel_code.replace(k,str(v))
 
-<span class="c1"># compile the kernel_code and extract the function</span>
-<span class="n">mod</span> <span class="o">=</span> <span class="n">compiler</span><span class="o">.</span><span class="n">SourceModule</span><span class="p">(</span><span class="n">kernel_code</span><span class="p">)</span>
-<span class="n">addgrid</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s1">&#39;AddGrid&#39;</span><span class="p">)</span>
+# compile the kernel_code and extract the function
+mod = compiler.SourceModule(kernel_code)
+addgrid = mod.get_function(&#39;AddGrid&#39;)
 </pre></div>
 </div>
 </div>
@@ -686,19 +686,19 @@ best performing configuration: block_size_x=2, block_size_y=4, block_size_z=32, 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create the gpu arrays</span>
-<span class="n">xgpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="n">ygpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-<span class="n">zgpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
-<span class="n">grid_gpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># create the gpu arrays
+xgpu = gpuarray.to_gpu(x)
+ygpu = gpuarray.to_gpu(y)
+zgpu = gpuarray.to_gpu(z)
+grid_gpu = gpuarray.zeros((n,n,n), np.float32)
 
-<span class="c1"># compute the grid and time the performance</span>
-<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">center</span><span class="p">:</span>
-    <span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span> <span class="o">=</span> <span class="n">xyz</span>
-    <span class="n">addgrid</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span><span class="p">,</span><span class="n">xgpu</span><span class="p">,</span><span class="n">ygpu</span><span class="p">,</span><span class="n">zgpu</span><span class="p">,</span><span class="n">grid_gpu</span><span class="p">,</span><span class="n">block</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">block</span><span class="p">),</span><span class="n">grid</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_dim</span><span class="p">))</span>
-<span class="n">driver</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Final GPU time : </span><span class="si">%f</span><span class="s1"> ms&#39;</span> <span class="o">%</span><span class="p">((</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">))</span>
+# compute the grid and time the performance
+t0 = time()
+for xyz in center:
+    x0,y0,z0 = xyz
+    addgrid(x0,y0,z0,xgpu,ygpu,zgpu,grid_gpu,block = tuple(block),grid=tuple(grid_dim))
+driver.Context.synchronize()
+print(&#39;Final GPU time : %f ms&#39; %((time()-t0)*1000))
 </pre></div>
 </div>
 </div>
