@@ -26,7 +26,7 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
         output_filename += ".json"
 
     timing_keys = ["compile_time", "benchmark_time", "framework_time", "strategy_time", "verification_time"]
-    not_measurement_keys = list(tune_params.keys()) + timing_keys + ["timestamp"]
+    not_measurement_keys = list(tune_params.keys()) + timing_keys + ["timestamp"] + ["times"]
 
     output_data = []
 
@@ -45,6 +45,7 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
         timings["framework"] = result["framework_time"]
         timings["search_algorithm"] = result["strategy_time"]
         timings["validation"] = result["verification_time"]
+        timings["runtimes"] = result["times"]
         out["times"] = timings
 
         # encode the validity of the configuration
