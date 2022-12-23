@@ -10,8 +10,8 @@ from jsonschema import validate
 
 from kernel_tuner import util
 
-
 schema_dir = os.path.dirname(os.path.realpath(__file__)) + "/schema"
+
 
 def output_file_schema(target):
     current_version = "1.0.0"
@@ -20,15 +20,17 @@ def output_file_schema(target):
         json_string = json.load(fh)
     return current_version, json_string
 
-def store_output_file(output_filename, results, tune_params, objective="time"):
 
-    if output_filename[-5] != ".json":
+def store_output_file(output_filename, results, tune_params, objective="time"):
+    if output_filename[-5:] != ".json":
         output_filename += ".json"
 
-    print(f"Producing {output_filename}")
-
-    timing_keys = ["compile_time", "benchmark_time", "framework_time", "strategy_time", "verification_time"]
-    not_measurement_keys = list(tune_params.keys()) + timing_keys + ["timestamp"]
+    timing_keys = [
+        "compile_time", "benchmark_time", "framework_time", "strategy_time",
+        "verification_time"
+    ]
+    not_measurement_keys = list(
+        tune_params.keys()) + timing_keys + ["timestamp"]
 
     output_data = []
 
@@ -37,7 +39,10 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
         out = {}
 
         out["timestamp"] = result["timestamp"]
-        out["configuration"] = {k:v for k, v in result.items() if k in tune_params}
+        out["configuration"] = {
+            k: v
+            for k, v in result.items() if k in tune_params
+        }
 
         # collect configuration specific timings
         timings = dict()
@@ -82,13 +87,10 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
         # append to output
         output_data.append(out)
 
-    # validate schema
-    version, schema = output_file_schema("results")
-    output_json = dict(results=output_data, schema_version=version)
-    validate(output_json, schema=schema)
-
     # write output_data to a JSON file
-    with open(output_filename, 'w') as fh:
+    version, _ = output_file_schema("results")
+    output_json = dict(results=output_data, schema_version=version)
+    with open(output_filename, 'w+') as fh:
         json.dump(output_json, fh)
 
 
@@ -108,32 +110,36 @@ def get_dependencies(package='kernel_tuner'):
 
 def get_device_query(target):
     if target == "nvidia":
-        nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"], capture_output=True)
+        nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"],
+                                        capture_output=True)
         nvidia_smi = xmltodict.parse(nvidia_smi_out.stdout)
         del nvidia_smi["nvidia_smi_log"]["gpu"]["processes"]
         return nvidia_smi
     elif target == "amd":
-        rocm_smi_out = subprocess.run(["rocm-smi", "--showallinfo", "--json"], capture_output=True)
+        rocm_smi_out = subprocess.run(["rocm-smi", "--showallinfo", "--json"],
+                                      capture_output=True)
         return json.loads(rocm_smi_out.stdout)
     else:
         raise ValueError("get_device_query target not supported")
 
 
 def store_metadata_file(metadata_filename, target="nvidia"):
+    if metadata_filename[-5:] != ".json":
+        metadata_filename += ".json"
     metadata = {}
 
+    # lshw only works on Linux, this intentionally raises a FileNotFoundError when ran on systems that do not have it
     lshw_out = subprocess.run(["lshw", "-json"], capture_output=True)
     metadata["hardware"] = dict(lshw=json.loads(lshw_out.stdout))
 
+    # only works if nvidia-smi (for NVIDIA) or rocm-smi (for AMD) is present, raises FileNotFoundError when not present
     device_query = get_device_query(target)
 
-    metadata["environment"] = dict(device_query=device_query, requirements=get_dependencies())
-
-    # validate schema
-    version, schema = output_file_schema("metadata")
-    metadata_json = dict(metadata=metadata, schema_version=version)
-    validate(metadata_json, schema=schema)
+    metadata["environment"] = dict(device_query=device_query,
+                                   requirements=get_dependencies())
 
     # write metadata to JSON file
-    with open(metadata_filename, 'w') as fh:
+    version, _ = output_file_schema("metadata")
+    metadata_json = dict(metadata=metadata, schema_version=version)
+    with open(metadata_filename, 'w+') as fh:
         json.dump(metadata_json, fh, indent="  ")
