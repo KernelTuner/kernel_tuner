@@ -25,12 +25,8 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
     if output_filename[-5:] != ".json":
         output_filename += ".json"
 
-    timing_keys = [
-        "compile_time", "benchmark_time", "framework_time", "strategy_time",
-        "verification_time"
-    ]
-    not_measurement_keys = list(
-        tune_params.keys()) + timing_keys + ["timestamp"]
+    timing_keys = ["compile_time", "benchmark_time", "framework_time", "strategy_time", "verification_time"]
+    not_measurement_keys = list(tune_params.keys()) + timing_keys + ["timestamp"]
 
     output_data = []
 
@@ -39,10 +35,8 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
         out = {}
 
         out["timestamp"] = result["timestamp"]
-        out["configuration"] = {
-            k: v
-            for k, v in result.items() if k in tune_params
-        }
+        out["configuration"] = { k: v
+                                 for k, v in result.items() if k in tune_params }
 
         # collect configuration specific timings
         timings = dict()
@@ -110,14 +104,12 @@ def get_dependencies(package='kernel_tuner'):
 
 def get_device_query(target):
     if target == "nvidia":
-        nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"],
-                                        capture_output=True)
+        nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"], capture_output=True)
         nvidia_smi = xmltodict.parse(nvidia_smi_out.stdout)
         del nvidia_smi["nvidia_smi_log"]["gpu"]["processes"]
         return nvidia_smi
     elif target == "amd":
-        rocm_smi_out = subprocess.run(["rocm-smi", "--showallinfo", "--json"],
-                                      capture_output=True)
+        rocm_smi_out = subprocess.run(["rocm-smi", "--showallinfo", "--json"], capture_output=True)
         return json.loads(rocm_smi_out.stdout)
     else:
         raise ValueError("get_device_query target not supported")
@@ -135,8 +127,7 @@ def store_metadata_file(metadata_filename, target="nvidia"):
     # only works if nvidia-smi (for NVIDIA) or rocm-smi (for AMD) is present, raises FileNotFoundError when not present
     device_query = get_device_query(target)
 
-    metadata["environment"] = dict(device_query=device_query,
-                                   requirements=get_dependencies())
+    metadata["environment"] = dict(device_query=device_query, requirements=get_dependencies())
 
     # write metadata to JSON file
     version, _ = output_file_schema("metadata")
