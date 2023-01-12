@@ -28,7 +28,7 @@ Before creating a pull request please ensure the following:
 
 If you are in doubt on where to put your additions to the Kernel Tuner, please
 have look at the `design documentation
-<http://benvanwerkhoven.github.io/kernel_tuner/design.html>`__, or discuss it in the issue regarding your additions.
+<https://kerneltuner.github.io/kernel_tuner/stable/design.html>`__, or discuss it in the issue regarding your additions.
 
 Development setup
 -----------------
