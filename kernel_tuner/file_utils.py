@@ -14,6 +14,15 @@ schema_dir = os.path.dirname(os.path.realpath(__file__)) + "/schema"
 
 
 def output_file_schema(target):
+    """ Get the requested JSON schema and the version number
+
+    :param target: Name of the T4 schema to return, should be any of ['output', 'metadata']
+    :type target: string
+
+    :returns: the current version of the T4 schemas and the JSON string of the target schema
+    :rtype: string, string
+
+    """
     current_version = "1.0.0"
     output_file = schema_dir + f"/T4/{current_version}/{target}-schema.json"
     with open(output_file, 'r') as fh:
@@ -37,6 +46,23 @@ def get_configuration_validity(objective) -> str:
 
 
 def store_output_file(output_filename, results, tune_params, objective="time"):
+    """ Store the obtained auto-tuning results in a JSON output file
+
+    This function produces a JSON file that adheres to the T4 auto-tuning output JSON schema.
+
+    :param output_filename: Name of the to be created output file
+    :type output_filename: string
+
+    :param results: Results list as return by tune_kernel
+    :type results: list of dicts
+
+    :param tune_params: Tunable parameters as passed to tune_kernel
+    :type tune_params: OrderedDict
+
+    :param objective: The objective used during auto-tuning, default is 'time'.
+    :type objective: string
+
+    """
     if output_filename[-5:] != ".json":
         output_filename += ".json"
 
@@ -103,6 +129,7 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
 
 
 def get_dependencies(package='kernel_tuner'):
+    """ Get the Python dependencies of Kernel Tuner currently installed and their version numbers """
     requirements = requires(package)
     deps = [Requirement(req).name for req in requirements]
     depends = []
@@ -117,6 +144,7 @@ def get_dependencies(package='kernel_tuner'):
 
 
 def get_device_query(target):
+    """ Get the information about GPUs in the current system, target is any of ['nvidia', 'amd'] """
     if target == "nvidia":
         nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"],
                                         capture_output=True)
@@ -132,6 +160,17 @@ def get_device_query(target):
 
 
 def store_metadata_file(metadata_filename, target="nvidia"):
+    """ Store the metadata about the current hardware and software environment in a JSON output file
+
+    This function produces a JSON file that adheres to the T4 auto-tuning metadata JSON schema.
+
+    :param metadata_filename: Name of the to be created metadata file
+    :type metadata_filename: string
+
+    :param target: Target specifies whether to include the metadata of the 'nvidia' or 'amd' GPUs in the system
+    :type target: string
+
+    """
     if metadata_filename[-5:] != ".json":
         metadata_filename += ".json"
     metadata = {}
