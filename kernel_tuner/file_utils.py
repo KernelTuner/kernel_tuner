@@ -1,3 +1,5 @@
+""" This module contains utility functions for operations on files, mostly JSON cache files """
+
 import os
 import json
 import subprocess
@@ -5,8 +7,6 @@ import xmltodict
 
 from importlib.metadata import requires, version, PackageNotFoundError
 from packaging.requirements import Requirement
-
-from jsonschema import validate
 
 from kernel_tuner import util
 
@@ -45,6 +45,13 @@ def get_configuration_validity(objective) -> str:
     return errorstring
 
 
+def filename_ensure_json_extension(filename: str) -> str:
+    """ Check if the filename has a .json extension, if not, add it """
+    if filename[-5:] != ".json":
+        filename += ".json"
+    return filename
+
+
 def store_output_file(output_filename, results, tune_params, objective="time"):
     """ Store the obtained auto-tuning results in a JSON output file
 
@@ -63,8 +70,7 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
     :type objective: string
 
     """
-    if output_filename[-5:] != ".json":
-        output_filename += ".json"
+    output_filename = filename_ensure_json_extension(output_filename)
 
     timing_keys = [
         "compile_time", "benchmark_time", "framework_time", "strategy_time",
@@ -171,8 +177,7 @@ def store_metadata_file(metadata_filename, target="nvidia"):
     :type target: string
 
     """
-    if metadata_filename[-5:] != ".json":
-        metadata_filename += ".json"
+    metadata_filename = filename_ensure_json_extension(metadata_filename)
     metadata = {}
 
     # lshw only works on Linux, this intentionally raises a FileNotFoundError when ran on systems that do not have it

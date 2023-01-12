@@ -1,9 +1,11 @@
-from kernel_tuner.file_utils import store_output_file, store_metadata_file, output_file_schema, validate
+from kernel_tuner.file_utils import store_output_file, store_metadata_file, output_file_schema
 from kernel_tuner.util import delete_temp_file
 from .test_integration import fake_results
 from .test_runners import env, cache_filename, tune_kernel
+
 import pytest
 import json
+from jsonschema import validate
 
 
 def test_store_output_file(env):
