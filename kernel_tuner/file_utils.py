@@ -23,15 +23,17 @@ def output_file_schema(target):
 
 def get_configuration_validity(objective) -> str:
     """ Convert internal Kernel Tuner error to string """
+    errorstring: str
     if not isinstance(objective, util.ErrorConfig):
-        return "correct"
+        errorstring = "correct"
     else:
         if isinstance(objective, util.CompilationFailedConfig):
-            return "compile"
+            errorstring = "compile"
         elif isinstance(objective, util.RuntimeFailedConfig):
-            return "runtime"
+            errorstring = "runtime"
         else:
-            return "constraints"
+            errorstring = "constraints"
+    return errorstring
 
 
 def store_output_file(output_filename, results, tune_params, objective="time"):
