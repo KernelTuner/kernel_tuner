@@ -7,6 +7,9 @@ import pytest
 
 import kernel_tuner
 from kernel_tuner import util
+from kernel_tuner import core
+from kernel_tuner.interface import Options, _kernel_options, _device_options, _tuning_options
+from kernel_tuner.runners.sequential import SequentialRunner
 
 from .context import skip_if_no_pycuda
 
@@ -186,3 +189,44 @@ def test_interface_handles_compile_failures(env):
 
     failed_config = [record for record in results if record["block_size_x"] == 256][0]
     assert isinstance(failed_config["time"], util.CompilationFailedConfig)
+
+
+@skip_if_no_pycuda
+def test_runner(env):
+
+    kernel_name, kernel_source, problem_size, arguments, tune_params = env
+
+    # create KernelSource
+    kernelsource = core.KernelSource(kernel_name, kernel_source, lang=None, defines=None)
+
+    # create option bags
+    device=0
+    atol=1e-6
+    platform=0
+    iterations=7
+    verbose=False
+    objective="time"
+    opts = locals()
+    kernel_options = Options([(k, opts.get(k, None)) for k in _kernel_options.keys()])
+    tuning_options = Options([(k, opts.get(k, None)) for k in _tuning_options.keys()])
+    device_options = Options([(k, opts.get(k, None)) for k in _device_options.keys()])
+    tuning_options.cachefile = None
+
+    # create runner
+    runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers=None)
+    runner.warmed_up = True # disable warm up for this test
+
+    # select a config to run
+    searchspace = []
+
+    # insert configurations to run with this runner in this list
+    # each configuration is described as a list of values, one for each tunable parameter
+    # the order should correspond to the order of parameters specified in tune_params
+    searchspace.append([32]) # vector_add only has one tunable parameter (block_size_x)
+
+    # call the runner
+    results, _ = runner.run(searchspace, kernel_options, tuning_options)
+
+    assert len(results) == 1
+    assert results[0]['block_size_x'] == 32
+    assert len(results[0]['times']) == iterations
