@@ -24,10 +24,23 @@ def output_file_schema(target):
 
     """
     current_version = "1.0.0"
-    file = schema_dir + f"/T4/{current_version}/{target}-schema.json"
-    with open(file, 'r') as fh:
+    output_file = schema_dir + f"/T4/{current_version}/{target}-schema.json"
+    with open(output_file, 'r') as fh:
         json_string = json.load(fh)
     return current_version, json_string
+
+
+def get_configuration_validity(objective) -> str:
+    """ Convert internal Kernel Tuner error to string """
+    if not isinstance(objective, util.ErrorConfig):
+        return "correct"
+    else:
+        if isinstance(objective, util.CompilationFailedConfig):
+            return "compile"
+        elif isinstance(objective, util.RuntimeFailedConfig):
+            return "runtime"
+        else:
+            return "constraints"
 
 
 def store_output_file(output_filename, results, tune_params, objective="time"):
@@ -51,8 +64,12 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
     if output_filename[-5:] != ".json":
         output_filename += ".json"
 
-    timing_keys = ["compile_time", "benchmark_time", "framework_time", "strategy_time", "verification_time"]
-    not_measurement_keys = list(tune_params.keys()) + timing_keys + ["timestamp"] + ["times"]
+    timing_keys = [
+        "compile_time", "benchmark_time", "framework_time", "strategy_time",
+        "verification_time"
+    ]
+    not_measurement_keys = list(
+        tune_params.keys()) + timing_keys + ["timestamp"] + ["times"]
 
     output_data = []
 
@@ -61,8 +78,10 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
         out = {}
 
         out["timestamp"] = result["timestamp"]
-        out["configuration"] = { k: v
-                                 for k, v in result.items() if k in tune_params }
+        out["configuration"] = {
+            k: v
+            for k, v in result.items() if k in tune_params
+        }
 
         # collect configuration specific timings
         timings = dict()
@@ -75,15 +94,7 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
         out["times"] = timings
 
         # encode the validity of the configuration
-        if not isinstance(result[objective], util.ErrorConfig):
-            out["invalidity"] = "correct"
-        else:
-            if isinstance(result[objective], util.CompilationFailedConfig):
-                out["invalidity"] = "compile"
-            elif isinstance(result[objective], util.RuntimeFailedConfig):
-                out["invalidity"] = "runtime"
-            else:
-                out["invalidity"] = "constraints"
+        out["invalidity"] = get_configuration_validity(result[objective])
 
         # Kernel Tuner does not support producing results of configs that fail the correctness check
         # therefore correctness is always 1
@@ -92,11 +103,11 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
         # measurements gathers everything that was measured
         measurements = []
         for key, value in result.items():
-            if not key in not_measurement_keys:
-                if key.startswith("time"):
-                    measurements.append(dict(name=key, value=value, unit="ms"))
-                else:
-                    measurements.append(dict(name=key, value=value, unit=""))
+            if key not in not_measurement_keys:
+                measurements.append(
+                    dict(name=key,
+                         value=value,
+                         unit="ms" if key.startswith("time") else ""))
         out["measurements"] = measurements
 
         # objectives
@@ -133,12 +144,14 @@ def get_dependencies(package='kernel_tuner'):
 def get_device_query(target):
     """ Get the information about GPUs in the current system, target is any of ['nvidia', 'amd'] """
     if target == "nvidia":
-        nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"], capture_output=True)
+        nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"],
+                                        capture_output=True)
         nvidia_smi = xmltodict.parse(nvidia_smi_out.stdout)
         del nvidia_smi["nvidia_smi_log"]["gpu"]["processes"]
         return nvidia_smi
     elif target == "amd":
-        rocm_smi_out = subprocess.run(["rocm-smi", "--showallinfo", "--json"], capture_output=True)
+        rocm_smi_out = subprocess.run(["rocm-smi", "--showallinfo", "--json"],
+                                      capture_output=True)
         return json.loads(rocm_smi_out.stdout)
     else:
         raise ValueError("get_device_query target not supported")
@@ -167,7 +180,8 @@ def store_metadata_file(metadata_filename, target="nvidia"):
     # only works if nvidia-smi (for NVIDIA) or rocm-smi (for AMD) is present, raises FileNotFoundError when not present
     device_query = get_device_query(target)
 
-    metadata["environment"] = dict(device_query=device_query, requirements=get_dependencies())
+    metadata["environment"] = dict(device_query=device_query,
+                                   requirements=get_dependencies())
 
     # write metadata to JSON file
     version, _ = output_file_schema("metadata")
