@@ -1,42 +1,80 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>Matrix multiplication &mdash; Kernel Tuner 0.4.3 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Kernel Tuner Examples" href="examples.html" />
     <link rel="prev" title="Diffusion" href="diffusion.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="contents.html" class="icon icon-home"> Kernel Tuner
+          
+
+          
           </a>
+
+          
+            
+            
               <div class="version">
                 0.4.3
               </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -44,7 +82,18 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
@@ -83,30 +132,73 @@
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="contents.html">Kernel Tuner</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home"></a></li>
-      <li class="breadcrumb-item active">Matrix multiplication</li>
+    
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Matrix multiplication</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
+            
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/matrix_multiplication.ipynb" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   
 <style>
 /* CSS for nbsphinx extension */
@@ -402,21 +494,21 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%writefile matmul_naive.cu
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%writefile</span> matmul_naive.cu
 
-#define WIDTH 4096
+<span class="c1">#define WIDTH 4096</span>
 
-__global__ void matmul_kernel(float *C, float *A, float *B) {
-    int x = blockIdx.x * block_size_x + threadIdx.x;
-    int y = blockIdx.y * block_size_y + threadIdx.y;
-    float sum = 0.0;
+<span class="n">__global__</span> <span class="n">void</span> <span class="n">matmul_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nb">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="nb">float</span> <span class="nb">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
 
-    for (int k=0; k&lt;WIDTH; k++) {
-        sum += A[y*WIDTH+k] * B[k*WIDTH+x];
-    }
+    <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">k</span><span class="o">&lt;</span><span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nb">sum</span> <span class="o">+=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">B</span><span class="p">[</span><span class="n">k</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">];</span>
+    <span class="p">}</span>
 
-    C[y*WIDTH+x] = sum;
-}
+    <span class="n">C</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">;</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -433,14 +525,14 @@ Parameters in the code that have this property are called <em>tunable parameters
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import numpy as np
-problem_size = (4096, 4096)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
 
-A = np.random.randn(*problem_size).astype(np.float32)
-B = np.random.randn(*problem_size).astype(np.float32)
-C = np.zeros_like(A)
+<span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">problem_size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">problem_size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
 
-args = [C, A, B]
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">C</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -450,10 +542,10 @@ args = [C, A, B]
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from collections import OrderedDict
-tune_params = OrderedDict()
-tune_params[&quot;block_size_x&quot;] = [16, 32, 64]
-tune_params[&quot;block_size_y&quot;] = [1, 2, 4, 8, 16, 32]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="n">tune_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -464,9 +556,9 @@ tune_params[&quot;block_size_y&quot;] = [1, 2, 4, 8, 16, 32]
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from collections import OrderedDict
-metrics = OrderedDict()
-metrics[&quot;GFLOP/s&quot;] = lambda p : (2*problem_size[0]**3/1e9)/(p[&quot;time&quot;]/1e3)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;GFLOP/s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span> <span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">problem_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">3</span><span class="o">/</span><span class="mf">1e9</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -475,8 +567,8 @@ metrics[&quot;GFLOP/s&quot;] = lambda p : (2*problem_size[0]**3/1e9)/(p[&quot;ti
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from kernel_tuner import tune_kernel
-results = tune_kernel(&quot;matmul_kernel&quot;, &quot;matmul_naive.cu&quot;, problem_size, args, tune_params, metrics=metrics)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">tune_kernel</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul_naive.cu&quot;</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -493,37 +585,37 @@ size, which is used by the tuner to compute the grid dimensions for our kernel. 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%writefile matmul_shared.cu
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%writefile</span> matmul_shared.cu
 
-#define WIDTH 4096
+<span class="c1">#define WIDTH 4096</span>
 
-__global__ void matmul_kernel(float *C, float *A, float *B) {
+<span class="n">__global__</span> <span class="n">void</span> <span class="n">matmul_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
 
-    __shared__ float sA[block_size_y][block_size_x];
-    __shared__ float sB[block_size_y][block_size_x];
+    <span class="n">__shared__</span> <span class="nb">float</span> <span class="n">sA</span><span class="p">[</span><span class="n">block_size_y</span><span class="p">][</span><span class="n">block_size_x</span><span class="p">];</span>
+    <span class="n">__shared__</span> <span class="nb">float</span> <span class="n">sB</span><span class="p">[</span><span class="n">block_size_y</span><span class="p">][</span><span class="n">block_size_x</span><span class="p">];</span>
 
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-    int x = blockIdx.x * block_size_x + tx;
-    int y = blockIdx.y * block_size_y + ty;
+    <span class="nb">int</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">tx</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">+</span> <span class="n">ty</span><span class="p">;</span>
 
-    float sum = 0.0;
-    int k,kb;
+    <span class="nb">float</span> <span class="nb">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">k</span><span class="p">,</span><span class="n">kb</span><span class="p">;</span>
 
-    for (k=0; k&lt;WIDTH; k+=block_size_x) {
-        __syncthreads();
-        sA[ty][tx] = A[y*WIDTH+k+tx];
-        sB[ty][tx] = B[(k+ty)*WIDTH+x];
-        __syncthreads();
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">k</span><span class="o">&lt;</span><span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span><span class="o">+=</span><span class="n">block_size_x</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">__syncthreads</span><span class="p">();</span>
+        <span class="n">sA</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">k</span><span class="o">+</span><span class="n">tx</span><span class="p">];</span>
+        <span class="n">sB</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">B</span><span class="p">[(</span><span class="n">k</span><span class="o">+</span><span class="n">ty</span><span class="p">)</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">];</span>
+        <span class="n">__syncthreads</span><span class="p">();</span>
 
-        for (kb=0; kb&lt;block_size_x; kb++) {
-            sum += sA[ty][kb] * sB[kb][tx];
-        }
+        <span class="k">for</span> <span class="p">(</span><span class="n">kb</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">kb</span><span class="o">&lt;</span><span class="n">block_size_x</span><span class="p">;</span> <span class="n">kb</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nb">sum</span> <span class="o">+=</span> <span class="n">sA</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">kb</span><span class="p">]</span> <span class="o">*</span> <span class="n">sB</span><span class="p">[</span><span class="n">kb</span><span class="p">][</span><span class="n">tx</span><span class="p">];</span>
+        <span class="p">}</span>
 
-    }
+    <span class="p">}</span>
 
-    C[y*WIDTH+x] = sum;
-}
+    <span class="n">C</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">;</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -535,7 +627,7 @@ only uses data in shared memory. The <code class="docutils literal notranslate">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>restrict = [&quot;block_size_x==block_size_y&quot;]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">restrict</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x==block_size_y&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -544,7 +636,7 @@ only uses data in shared memory. The <code class="docutils literal notranslate">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>restrict = lambda p: p[&quot;block_size_x&quot;]==p[&quot;block_size_y&quot;]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">restrict</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span><span class="o">==</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -552,9 +644,9 @@ only uses data in shared memory. The <code class="docutils literal notranslate">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>results = tune_kernel(&quot;matmul_kernel&quot;, &quot;matmul_shared.cu&quot;,
-                      problem_size, args, tune_params, metrics=metrics,
-                      restrictions=restrict)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul_shared.cu&quot;</span><span class="p">,</span>
+                      <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
+                      <span class="n">restrictions</span><span class="o">=</span><span class="n">restrict</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -574,64 +666,64 @@ increased shared memory and register usage, this optimization drastically reduce
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%writefile matmul.cu
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%writefile</span> matmul.cu
 
-#define WIDTH 4096
+<span class="c1">#define WIDTH 4096</span>
 
-__global__ void matmul_kernel(float *C, float *A, float *B) {
+<span class="n">__global__</span> <span class="n">void</span> <span class="n">matmul_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
 
-    __shared__ float sA[block_size_y*tile_size_y][block_size_x];
-    __shared__ float sB[block_size_y*tile_size_y][block_size_x * tile_size_x];
+    <span class="n">__shared__</span> <span class="nb">float</span> <span class="n">sA</span><span class="p">[</span><span class="n">block_size_y</span><span class="o">*</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">block_size_x</span><span class="p">];</span>
+    <span class="n">__shared__</span> <span class="nb">float</span> <span class="n">sB</span><span class="p">[</span><span class="n">block_size_y</span><span class="o">*</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">block_size_x</span> <span class="o">*</span> <span class="n">tile_size_x</span><span class="p">];</span>
 
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-    int x = blockIdx.x * block_size_x * tile_size_x + threadIdx.x;
-    int y = blockIdx.y * block_size_y * tile_size_y + threadIdx.y;
-    int k, kb;
+    <span class="nb">int</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">*</span> <span class="n">tile_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">tile_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">k</span><span class="p">,</span> <span class="n">kb</span><span class="p">;</span>
 
-    float sum[tile_size_y][tile_size_x];
+    <span class="nb">float</span> <span class="nb">sum</span><span class="p">[</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">tile_size_x</span><span class="p">];</span>
 
-    for (k = 0; k &lt; WIDTH; k += block_size_x) {
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span> <span class="o">+=</span> <span class="n">block_size_x</span><span class="p">)</span> <span class="p">{</span>
 
-        __syncthreads ();
-        #pragma unroll
-        for (int i = 0; i &lt; tile_size_y; i++) {
-            sA[ty + block_size_y * i][tx] = A[y * WIDTH + block_size_y * i * WIDTH + k + tx];
+        <span class="n">__syncthreads</span> <span class="p">();</span>
+        <span class="c1">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">sA</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">k</span> <span class="o">+</span> <span class="n">tx</span><span class="p">];</span>
 
-            #pragma unroll
-            for (int j = 0; j &lt; tile_size_x; j++) {
-                sB[ty + block_size_y * i][tx + j * block_size_x] =
-                                    B[(k + ty + block_size_y * i) * WIDTH + x + j * block_size_x];
-            }
-        }
-        __syncthreads ();
+            <span class="c1">#pragma unroll</span>
+            <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">sB</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">tx</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">]</span> <span class="o">=</span>
+                                    <span class="n">B</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">];</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">__syncthreads</span> <span class="p">();</span>
 
-        //compute
-        #pragma unroll
-        for (kb = 0; kb &lt; block_size_x; kb++) {
+        <span class="o">//</span><span class="n">compute</span>
+        <span class="c1">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">kb</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">kb</span> <span class="o">&lt;</span> <span class="n">block_size_x</span><span class="p">;</span> <span class="n">kb</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
 
-            #pragma unroll
-            for (int i = 0; i &lt; tile_size_y; i++) {
-                #pragma unroll
-                for (int j = 0; j &lt; tile_size_x; j++) {
-                        sum[i][j] += sA[ty + block_size_y * i][kb] * sB[kb][tx + j * block_size_x];
-                    }
-            }
+            <span class="c1">#pragma unroll</span>
+            <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">#pragma unroll</span>
+                <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nb">sum</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">sA</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">kb</span><span class="p">]</span> <span class="o">*</span> <span class="n">sB</span><span class="p">[</span><span class="n">kb</span><span class="p">][</span><span class="n">tx</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">];</span>
+                    <span class="p">}</span>
+            <span class="p">}</span>
 
-        }
+        <span class="p">}</span>
 
-    }
+    <span class="p">}</span>
 
-    //store result
-    #pragma unroll
-    for (int i = 0; i &lt; tile_size_y; i++) {
-        #pragma unroll
-        for (int j = 0; j &lt; tile_size_x; j++) {
-            C[y * WIDTH + x + block_size_y * i * WIDTH + j * block_size_x] = sum[i][j];
-        }
-    }
+    <span class="o">//</span><span class="n">store</span> <span class="n">result</span>
+    <span class="c1">#pragma unroll</span>
+    <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">C</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">];</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
 
-}
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -640,8 +732,8 @@ __global__ void matmul_kernel(float *C, float *A, float *B) {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>tune_params[&quot;tile_size_x&quot;] = [1, 2, 4]
-tune_params[&quot;tile_size_y&quot;] = [1, 2, 4]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -652,8 +744,8 @@ optional arguments when we call <code class="docutils literal notranslate"><span
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>grid_div_x = [&quot;block_size_x&quot;, &quot;tile_size_x&quot;]
-grid_div_y = [&quot;block_size_y&quot;, &quot;tile_size_y&quot;]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -663,11 +755,11 @@ again.</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>restrict = [&quot;block_size_x==block_size_y*tile_size_y&quot;]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">restrict</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x==block_size_y*tile_size_y&quot;</span><span class="p">]</span>
 
-results = tune_kernel(&quot;matmul_kernel&quot;, &quot;matmul/matmul.cu&quot;, problem_size, args, tune_params,
-                      grid_div_y=grid_div_y, grid_div_x=grid_div_x, metrics=metrics,
-                      restrictions=restrict)
+<span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul/matmul.cu&quot;</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
+                      <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
+                      <span class="n">restrictions</span><span class="o">=</span><span class="n">restrict</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -679,33 +771,50 @@ results = tune_kernel(&quot;matmul_kernel&quot;, &quot;matmul/matmul.cu&quot;, p
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="diffusion.html" class="btn btn-neutral float-left" title="Diffusion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="examples.html" class="btn btn-neutral float-right" title="Kernel Tuner Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="diffusion.html" class="btn btn-neutral float-left" title="Diffusion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
-  </div>
+    <p>
+        &#169; Copyright 2016, Ben van Werkhoven.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

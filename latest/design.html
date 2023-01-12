@@ -1,40 +1,78 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>Design documentation &mdash; Kernel Tuner 0.4.3 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Contribution guide" href="contributing.html" />
     <link rel="prev" title="Parameter Vocabulary" href="vocabulary.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="contents.html" class="icon icon-home"> Kernel Tuner
+          
+
+          
           </a>
+
+          
+            
+            
               <div class="version">
                 0.4.3
               </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -42,7 +80,18 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
@@ -181,30 +230,73 @@
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="contents.html">Kernel Tuner</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home"></a></li>
-      <li class="breadcrumb-item active">Design documentation</li>
+    
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Design documentation</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
+            
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/design.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   
 <style>
 /* CSS overrides for sphinx_rtd_theme */
@@ -357,7 +449,7 @@ discussed above. For the documentation of the user API see the
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiate the SequentialRunner</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel source</p></li>
 <li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
@@ -375,7 +467,7 @@ each kernel instance.</p></li>
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate through the entire parameter space using a single Python process</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>parameter_space</strong> (<em>iterable</em>) – The parameter space as an iterable.</p></li>
 <li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
@@ -383,12 +475,12 @@ each kernel instance.</p></li>
 process.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A list of dictionaries for executed kernel configurations and their
 execution times. And a dictionary that contains information
 about the hardware/software environment on which the tuning took place.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list(dict()), dict()</p>
 </dd>
 </dl>
@@ -408,7 +500,7 @@ about the hardware/software environment on which the tuning took place.</p>
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.simulation.SimulationRunner.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiate the SimulationRunner</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel source</p></li>
 <li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
@@ -426,7 +518,7 @@ each kernel instance.</p></li>
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.simulation.SimulationRunner.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate through the entire parameter space using a single Python process</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>parameter_space</strong> (<em>iterable</em>) – The parameter space as an iterable.</p></li>
 <li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
@@ -434,12 +526,12 @@ each kernel instance.</p></li>
 process.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A list of dictionaries for executed kernel configurations and their
 execution times. And a dictionary that contains information
 about the hardware/software environment on which the tuning took place.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list(dict()), dict()</p>
 </dd>
 </dl>
@@ -462,7 +554,7 @@ about the hardware/software environment on which the tuning took place.</p>
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiate the DeviceInterface, based on language in kernel source</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel sources</p></li>
 <li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
@@ -583,7 +675,7 @@ runtime, which are used during compilation and/or execution of kernels by the
 kernel tuner. It also maintains a reference to the most recently compiled
 source module for copying data to constant memory before kernel launch.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>device</strong> (<em>int</em>) – Number of CUDA device to use for this context</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – Number of iterations used while benchmarking a kernel, 7 by default.</p></li>
@@ -597,17 +689,17 @@ source module for copying data to constant memory before kernel launch.</p>
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.pycuda.PyCudaFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the CUDA compiler to compile the kernel, return the device function</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel to be compiled, used to lookup the
 function after compilation.</p></li>
 <li><p><strong>kernel_string</strong> (<em>string</em>) – The CUDA kernel code that contains the function <cite>kernel_name</cite></p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An CUDA kernel that can be called directly.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>pycuda.driver.Function</p>
 </dd>
 </dl>
@@ -618,7 +710,7 @@ function after compilation.</p></li>
 <span class="sig-name descname"><span class="pre">copy_constant_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.pycuda.PyCudaFunctions.copy_constant_memory_args" title="Permalink to this definition">¶</a></dt>
 <dd><p>adds constant memory arguments to the most recently compiled module</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>cmem_args</strong> (<em>dict</em><em>( </em><em>string: numpy.ndarray</em><em>, </em><em>...</em><em> )</em>) – A dictionary containing the data to be passed to the
 device constant memory. The format to be used is as follows: A
 string key is used to name the constant memory symbol to which the
@@ -639,7 +731,7 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 <span class="sig-name descname"><span class="pre">copy_texture_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.pycuda.PyCudaFunctions.copy_texture_memory_args" title="Permalink to this definition">¶</a></dt>
 <dd><p>adds texture memory arguments to the most recently compiled module</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>texmem_args</strong> (<em>dict</em>) – A dictionary containing the data to be passed to the
 device texture memory. See tune_kernel().</p>
 </dd>
@@ -657,7 +749,7 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.pycuda.PyCudaFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a device to host memory copy</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
 <li><p><strong>src</strong> (<em>pycuda.driver.DeviceAllocation</em>) – A GPU memory allocation unit</p></li>
@@ -671,7 +763,7 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">memcpy_htod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.pycuda.PyCudaFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a host to device memory copy</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>pycuda.driver.DeviceAllocation</em>) – A GPU memory allocation unit</p></li>
 <li><p><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
@@ -685,7 +777,7 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">memset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allocation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.pycuda.PyCudaFunctions.memset" title="Permalink to this definition">¶</a></dt>
 <dd><p>set the memory in allocation to the value in value</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>allocation</strong> (<em>pycuda.driver.DeviceAllocation</em>) – A GPU memory allocation unit</p></li>
 <li><p><strong>value</strong> (<em>a single 8-bit unsigned int</em>) – The value to set the memory to</p></li>
@@ -700,15 +792,15 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.pycuda.PyCudaFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy objects</em><em>)</em>) – List of arguments to be passed to the kernel.
 The order should match the argument list on the CUDA kernel.
 Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A list of arguments that can be passed to an CUDA kernel.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list( pycuda.driver.DeviceAllocation, numpy.int32, … )</p>
 </dd>
 </dl>
@@ -719,7 +811,7 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.pycuda.PyCudaFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the CUDA kernel passed as ‘func’</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>func</strong> (<em>pycuda.driver.Function</em>) – A PyCuda kernel compiled for this specific kernel configuration</p></li>
 <li><p><strong>gpu_args</strong> (<em>list</em><em>( </em><em>pycuda.driver.DeviceAllocation</em><em>, </em><em>numpy.int32</em><em>, </em><em>...</em><em>)</em>) – A list of arguments to the kernel, order should match the
@@ -770,7 +862,7 @@ runtime, which are used during compilation and/or execution of kernels by the
 kernel tuner. It also maintains a reference to the most recently compiled
 source module for copying data to constant memory before kernel launch.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>device</strong> (<em>int</em>) – Number of CUDA device to use for this context</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – Number of iterations used while benchmarking a kernel, 7 by default.</p></li>
@@ -784,17 +876,17 @@ source module for copying data to constant memory before kernel launch.</p>
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the CUDA compiler to compile the kernel, return the device function</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel to be compiled, used to lookup the
 function after compilation.</p></li>
 <li><p><strong>kernel_string</strong> (<em>string</em>) – The CUDA kernel code that contains the function <cite>kernel_name</cite></p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An CUDA kernel that can be called directly.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>cupy.RawKernel</p>
 </dd>
 </dl>
@@ -805,7 +897,7 @@ function after compilation.</p></li>
 <span class="sig-name descname"><span class="pre">copy_constant_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.copy_constant_memory_args" title="Permalink to this definition">¶</a></dt>
 <dd><p>adds constant memory arguments to the most recently compiled module</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>cmem_args</strong> (<em>dict</em><em>( </em><em>string: numpy.ndarray</em><em>, </em><em>...</em><em> )</em>) – A dictionary containing the data to be passed to the
 device constant memory. The format to be used is as follows: A
 string key is used to name the constant memory symbol to which the
@@ -826,7 +918,7 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 <span class="sig-name descname"><span class="pre">copy_texture_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.copy_texture_memory_args" title="Permalink to this definition">¶</a></dt>
 <dd><p>adds texture memory arguments to the most recently compiled module</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>texmem_args</strong> (<em>dict</em>) – A dictionary containing the data to be passed to the
 device texture memory. See tune_kernel().</p>
 </dd>
@@ -844,7 +936,7 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a device to host memory copy</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
 <li><p><strong>src</strong> (<em>cupy.ndarray</em>) – A GPU memory allocation unit</p></li>
@@ -858,7 +950,7 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">memcpy_htod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a host to device memory copy</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>cupy.ndarray</em>) – A GPU memory allocation unit</p></li>
 <li><p><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
@@ -872,7 +964,7 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">memset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allocation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.memset" title="Permalink to this definition">¶</a></dt>
 <dd><p>set the memory in allocation to the value in value</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>allocation</strong> (<em>cupy.ndarray</em>) – A GPU memory allocation unit</p></li>
 <li><p><strong>value</strong> (<em>a single 8-bit unsigned int</em>) – The value to set the memory to</p></li>
@@ -887,15 +979,15 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy objects</em><em>)</em>) – List of arguments to be passed to the kernel.
 The order should match the argument list on the CUDA kernel.
 Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A list of arguments that can be passed to an CUDA kernel.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list( cupy.ndarray, numpy.int32, … )</p>
 </dd>
 </dl>
@@ -906,7 +998,7 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.cupy.CupyFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the CUDA kernel passed as ‘func’</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>func</strong> (<em>cupy.RawKernel</em>) – A cupy kernel compiled for this specific kernel configuration</p></li>
 <li><p><strong>gpu_args</strong> (<em>list</em><em>( </em><em>cupy.ndarray</em><em>, </em><em>numpy.int32</em><em>, </em><em>...</em><em>)</em>) – A list of arguments to the kernel, order should match the
@@ -957,7 +1049,7 @@ runtime, which are used during compilation and/or execution of kernels by the
 kernel tuner. It also maintains a reference to the most recently compiled
 source module for copying data to constant memory before kernel launch.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>device</strong> (<em>int</em>) – Number of CUDA device to use for this context</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – Number of iterations used while benchmarking a kernel, 7 by default.</p></li>
@@ -973,17 +1065,17 @@ source module for copying data to constant memory before kernel launch.</p>
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the CUDA compiler to compile the kernel, return the device function</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel to be compiled, used to lookup the
 function after compilation.</p></li>
 <li><p><strong>kernel_string</strong> (<em>string</em>) – The CUDA kernel code that contains the function <cite>kernel_name</cite></p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A kernel that can be launched by the CUDA runtime</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p></p>
 </dd>
 </dl>
@@ -994,7 +1086,7 @@ function after compilation.</p></li>
 <span class="sig-name descname"><span class="pre">copy_constant_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.copy_constant_memory_args" title="Permalink to this definition">¶</a></dt>
 <dd><p>adds constant memory arguments to the most recently compiled module</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>cmem_args</strong> (<em>dict</em><em>( </em><em>string: numpy.ndarray</em><em>, </em><em>...</em><em> )</em>) – A dictionary containing the data to be passed to the
 device constant memory. The format to be used is as follows: A
 string key is used to name the constant memory symbol to which the
@@ -1015,7 +1107,7 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 <span class="sig-name descname"><span class="pre">copy_texture_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.copy_texture_memory_args" title="Permalink to this definition">¶</a></dt>
 <dd><p>adds texture memory arguments to the most recently compiled module</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>texmem_args</strong> (<em>dict</em>) – A dictionary containing the data to be passed to the
 device texture memory. See tune_kernel().</p>
 </dd>
@@ -1033,7 +1125,7 @@ device texture memory. See tune_kernel().</p>
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a device to host memory copy</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
 <li><p><strong>src</strong> (<em>cuda.CUdeviceptr</em>) – A GPU memory allocation unit</p></li>
@@ -1047,7 +1139,7 @@ device texture memory. See tune_kernel().</p>
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">memcpy_htod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a host to device memory copy</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>cuda.CUdeviceptr</em>) – A GPU memory allocation unit</p></li>
 <li><p><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
@@ -1061,7 +1153,7 @@ device texture memory. See tune_kernel().</p>
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">memset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allocation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.memset" title="Permalink to this definition">¶</a></dt>
 <dd><p>set the memory in allocation to the value in value</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>allocation</strong> (<em>cupy.ndarray</em>) – A GPU memory allocation unit</p></li>
 <li><p><strong>value</strong> (<em>a single 8-bit unsigned int</em>) – The value to set the memory to</p></li>
@@ -1076,15 +1168,15 @@ device texture memory. See tune_kernel().</p>
 <span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy objects</em><em>)</em>) – List of arguments to be passed to the kernel.
 The order should match the argument list on the CUDA kernel.
 Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A list of arguments that can be passed to an CUDA kernel.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list( pycuda.driver.DeviceAllocation, numpy.int32, … )</p>
 </dd>
 </dl>
@@ -1095,7 +1187,7 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvcuda.CudaFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the CUDA kernel passed as ‘func’</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>func</strong> (<em>cuda.CUfunction</em>) – A CUDA kernel compiled for this specific kernel configuration</p></li>
 <li><p><strong>gpu_args</strong> (<em>list</em><em>( </em><em>cupy.ndarray</em><em>, </em><em>numpy.int32</em><em>, </em><em>...</em><em>)</em>) – A list of arguments to the kernel, order should match the
@@ -1142,7 +1234,7 @@ of the grid</p></li>
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates OpenCL device context and reads device properties</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>device</strong> (<em>int</em>) – The ID of the OpenCL device to use for benchmarking</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – The number of iterations to run the kernel during benchmarking, 7 by default.</p></li>
@@ -1156,17 +1248,17 @@ of the grid</p></li>
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the OpenCL compiler to compile the kernel, return the device function</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel to be compiled, used to lookup the
 function after compilation.</p></li>
 <li><p><strong>kernel_string</strong> (<em>string</em>) – The OpenCL kernel code that contains the function <cite>kernel_name</cite></p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An OpenCL kernel that can be called directly.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>pyopencl.Kernel</p>
 </dd>
 </dl>
@@ -1183,7 +1275,7 @@ function after compilation.</p></li>
 <span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a device to host memory copy</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
 <li><p><strong>src</strong> (<em>pyopencl.Buffer</em>) – An OpenCL Buffer to copy data from</p></li>
@@ -1197,7 +1289,7 @@ function after compilation.</p></li>
 <span class="sig-name descname"><span class="pre">memcpy_htod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a host to device memory copy</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>pyopencl.Buffer</em>) – An OpenCL Buffer to copy data from</p></li>
 <li><p><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
@@ -1211,7 +1303,7 @@ function after compilation.</p></li>
 <span class="sig-name descname"><span class="pre">memset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.memset" title="Permalink to this definition">¶</a></dt>
 <dd><p>set the memory in allocation to the value in value</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>allocation</strong> (<em>pyopencl.Buffer</em>) – An OpenCL Buffer to fill</p></li>
 <li><p><strong>value</strong> (<em>a single 32-bit int</em>) – The value to set the memory to</p></li>
@@ -1226,15 +1318,15 @@ function after compilation.</p></li>
 <span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>ready argument list to be passed to the kernel, allocates gpu mem</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy objects</em><em>)</em>) – List of arguments to be passed to the kernel.
 The order should match the argument list on the OpenCL kernel.
 Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A list of arguments that can be passed to an OpenCL kernel.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list( pyopencl.Buffer, numpy.int32, … )</p>
 </dd>
 </dl>
@@ -1245,7 +1337,7 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 <span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.opencl.OpenCLFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the OpenCL kernel passed as ‘func’</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>func</strong> (<em>pyopencl.Kernel</em>) – An OpenCL Kernel</p></li>
 <li><p><strong>gpu_args</strong> (<em>list</em><em>( </em><em>pyopencl.Buffer</em><em>, </em><em>numpy.int32</em><em>, </em><em>...</em><em>)</em>) – A list of arguments to the kernel, order should match the
@@ -1294,7 +1386,7 @@ of the NDRange.</p></li>
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>instantiate CFunctions object used for interacting with C code</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>iterations</strong> (<em>int</em>) – Number of iterations used while benchmarking a kernel, 7 by default.</p>
 </dd>
 </dl>
@@ -1311,14 +1403,14 @@ of the NDRange.</p></li>
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.compile" title="Permalink to this definition">¶</a></dt>
 <dd><p>call the C compiler to compile the kernel, return the function</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>kernel_instance</strong> (<em>kernel_tuner.core.KernelInstance</em>) – An object representing the specific instance of the tunable kernel
 in the parameter space.</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An ctypes function that can be called directly.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>ctypes._FuncPtr</p>
 </dd>
 </dl>
@@ -1336,7 +1428,7 @@ in the parameter space.</p>
 <span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
 <dd><p>a simple memcpy copying from an Argument to a numpy array</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>np.ndarray</em>) – A numpy array to store the data</p></li>
 <li><p><strong>src</strong> (<em>Argument</em>) – An Argument for some memory allocation</p></li>
@@ -1350,7 +1442,7 @@ in the parameter space.</p>
 <span class="sig-name descname"><span class="pre">memcpy_htod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memcpy_htod" title="Permalink to this definition">¶</a></dt>
 <dd><p>a simple memcpy copying from a numpy array to an Argument</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> – An Argument for some memory allocation</p></li>
 <li><p><strong>src</strong> (<em>np.ndarray</em>) – A numpy array containing the source data</p></li>
@@ -1364,7 +1456,7 @@ in the parameter space.</p>
 <span class="sig-name descname"><span class="pre">memset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allocation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.memset" title="Permalink to this definition">¶</a></dt>
 <dd><p>set the memory in allocation to the value in value</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>allocation</strong> (<em>Argument</em>) – An Argument for some memory allocation unit</p></li>
 <li><p><strong>value</strong> (<em>a single 8-bit unsigned int</em>) – The value to set the memory to</p></li>
@@ -1379,15 +1471,15 @@ in the parameter space.</p>
 <span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.ready_argument_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>ready argument list to be passed to the C function</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy objects</em><em>)</em>) – List of arguments to be passed to the C function.
 The order should match the argument list on the C function.
 Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.</p>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A list of arguments that can be passed to the C function.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>list(Argument)</p>
 </dd>
 </dl>
@@ -1398,7 +1490,7 @@ Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.</p>
 <span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.c.CFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel once, returns whatever the kernel returns</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>func</strong> (<em>ctypes._FuncPtr</em>) – A C function compiled for this specific configuration</p></li>
 <li><p><strong>c_args</strong> (<em>list</em><em>(</em><em>Argument</em><em>)</em>) – A list of arguments to the function, order should match the
@@ -1410,10 +1502,10 @@ interface as CudaFunctions and OpenCLFunctions.</p></li>
 interface as CudaFunctions and OpenCLFunctions.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A robust average of values returned by the C function.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
 </dd>
 </dl>
@@ -1622,7 +1714,7 @@ parameters in ‘params’ as the only argument.</p>
 the file does not exist, it is assumed that the string is not a filename
 after all.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_source</strong> (<em>string</em><em> or </em><em>callable</em>) – One of the sources for the kernel, could be a
 function that generates the kernel code, a string containing a filename
@@ -1631,10 +1723,10 @@ that points to the kernel source, or just a string that contains the code.</p></
 kernel instance, only needed when kernel_source is a generator.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A string containing the kernel code.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>string</p>
 </dd>
 </dl>
@@ -1706,7 +1798,7 @@ to this kernel instance:</p>
 </ul>
 </div></blockquote>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_name</strong> (<em>string</em>) – Name of the kernel.</p></li>
 <li><p><strong>kernel_string</strong> (<em>string</em>) – One of the source files of the kernel as a string containing code.</p></li>
@@ -1722,10 +1814,10 @@ is either a string or a function that returns a string. If <cite>None</cite>, ea
 tunable parameter is defined as preprocessor macro instead.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A string containing the source code made specific to this kernel instance.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>string</p>
 </dd>
 </dl>
@@ -1783,16 +1875,16 @@ Example:
 metrics = OrderedDict()
 metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>params</strong> (<em>dict</em>) – A dictionary with tunable parameters and benchmark results.</p></li>
 <li><p><strong>metrics</strong> (<em>OrderedDict</em>) – An OrderedDict with user-defined metrics that can be used to create derived benchmark results.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An updated params dictionary with the derived metrics inserted along with the benchmark results.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
@@ -1840,33 +1932,50 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="vocabulary.html" class="btn btn-neutral float-left" title="Parameter Vocabulary" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="contributing.html" class="btn btn-neutral float-right" title="Contribution guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="vocabulary.html" class="btn btn-neutral float-left" title="Parameter Vocabulary" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
-  </div>
+    <p>
+        &#169; Copyright 2016, Ben van Werkhoven.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

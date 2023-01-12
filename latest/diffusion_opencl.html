@@ -1,40 +1,78 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>Tutorial: From physics to tuned GPU kernels &mdash; Kernel Tuner 0.4.3 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="contents.html" class="icon icon-home"> Kernel Tuner
+          
+
+          
           </a>
+
+          
+            
+            
               <div class="version">
                 0.4.3
               </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -42,7 +80,18 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
@@ -75,30 +124,73 @@
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="contents.html">Kernel Tuner</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="contents.html" class="icon icon-home"></a></li>
-      <li class="breadcrumb-item active">Tutorial: From physics to tuned GPU kernels</li>
+    
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Tutorial: From physics to tuned GPU kernels</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
+            
               <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/diffusion_opencl.ipynb" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   
 <style>
 /* CSS for nbsphinx extension */
@@ -400,8 +492,8 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>nx = 1024
-ny = 1024
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nx</span> <span class="o">=</span> <span class="mi">1024</span>
+<span class="n">ny</span> <span class="o">=</span> <span class="mi">1024</span>
 </pre></div>
 </div>
 </div>
@@ -429,11 +521,11 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>def diffuse(field, dt=0.225):
-    field[1:nx-1,1:ny-1] = field[1:nx-1,1:ny-1] + dt * (
-        field[1:nx-1,2:ny]+field[2:nx,1:ny-1]-4*field[1:nx-1,1:ny-1]+
-        field[0:nx-2,1:ny-1]+field[1:nx-1,0:ny-2] )
-    return field
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">diffuse</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.225</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">:</span><span class="n">ny</span><span class="p">]</span><span class="o">+</span><span class="n">field</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">nx</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span>
+        <span class="n">field</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">field</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">ny</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">field</span>
 </pre></div>
 </div>
 </div>
@@ -442,26 +534,26 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#do the imports we need
-import numpy
-from matplotlib import pyplot
-%matplotlib inline
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#do the imports we need</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
 
-#setup initial conditions
-def get_initial_conditions(nx, ny):
-    field = numpy.ones((ny, nx)).astype(numpy.float32)
-    field[numpy.random.randint(0,nx,size=10), numpy.random.randint(0,ny,size=10)] = 1e3
-    return field
-field = get_initial_conditions(nx, ny)
+<span class="c1">#setup initial conditions</span>
+<span class="k">def</span> <span class="nf">get_initial_conditions</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">):</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">ny</span><span class="p">,</span> <span class="n">nx</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">field</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nx</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ny</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">1e3</span>
+    <span class="k">return</span> <span class="n">field</span>
+<span class="n">field</span> <span class="o">=</span> <span class="n">get_initial_conditions</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
 
-#run the diffuse function a 1000 times and another 2000 times and make plots
-fig, (ax1, ax2) = pyplot.subplots(1,2)
-for i in range(1000):
-    field = diffuse(field)
-ax1.imshow(field)
-for i in range(2000):
-    field = diffuse(field)
-ax2.imshow(field)
+<span class="c1">#run the diffuse function a 1000 times and another 2000 times and make plots</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">diffuse</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2000</span><span class="p">):</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">diffuse</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -486,14 +578,14 @@ ax2.imshow(field)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>%%time
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
 
-#save the current field for later use
-field_copy = numpy.copy(field)
+<span class="c1">#save the current field for later use</span>
+<span class="n">field_copy</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
 
-#run another 1000 steps of the diffuse function and measure the time
-for i in range(1000):
-    field = diffuse(field)
+<span class="c1">#run another 1000 steps of the diffuse function and measure the time</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">diffuse</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -510,8 +602,8 @@ Wall time: 3.98 s
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>pyplot.imshow(field)
-pyplot.show()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pyplot</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -530,22 +622,22 @@ pyplot.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>def get_kernel_string(nx, ny):
-    return &quot;&quot;&quot;
-    #define nx %d
-    #define ny %d
-    #define dt 0.225f
-    __kernel void diffuse_kernel(global float *u_new, global float *u) {
-        unsigned x = get_group_id(0) * block_size_x + get_local_id(0);
-        unsigned y = get_group_id(1) * block_size_y + get_local_id(1);
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_kernel_string</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    #define nx </span><span class="si">%d</span>
+<span class="s2">    #define ny </span><span class="si">%d</span>
+<span class="s2">    #define dt 0.225f</span>
+<span class="s2">    __kernel void diffuse_kernel(global float *u_new, global float *u) {</span>
+<span class="s2">        unsigned x = get_group_id(0) * block_size_x + get_local_id(0);</span>
+<span class="s2">        unsigned y = get_group_id(1) * block_size_y + get_local_id(1);</span>
 
-        if (x&gt;0 &amp;&amp; x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y&lt;ny-1) {
-            u_new[y*nx+x] = u[y*nx+x] + dt * (
-                u[(y+1)*nx+x]+u[y*nx+x+1]-4.0f*u[y*nx+x]+u[y*nx+x-1]+u[(y-1)*nx+x]);
-        }
-    }
-    &quot;&quot;&quot; % (nx, ny)
-kernel_string = get_kernel_string(nx, ny)
+<span class="s2">        if (x&gt;0 &amp;&amp; x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y&lt;ny-1) {</span>
+<span class="s2">            u_new[y*nx+x] = u[y*nx+x] + dt * (</span>
+<span class="s2">                u[(y+1)*nx+x]+u[y*nx+x+1]-4.0f*u[y*nx+x]+u[y*nx+x-1]+u[(y-1)*nx+x]);</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">    &quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+<span class="n">kernel_string</span> <span class="o">=</span> <span class="n">get_kernel_string</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -556,24 +648,24 @@ kernel_string = get_kernel_string(nx, ny)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import pyopencl as cl
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyopencl</span> <span class="k">as</span> <span class="nn">cl</span>
 
-#initialize OpenCL and get compute capability needed for compilation
-ctx = cl.create_some_context()
-mf = cl.mem_flags
+<span class="c1">#initialize OpenCL and get compute capability needed for compilation</span>
+<span class="n">ctx</span> <span class="o">=</span> <span class="n">cl</span><span class="o">.</span><span class="n">create_some_context</span><span class="p">()</span>
+<span class="n">mf</span> <span class="o">=</span> <span class="n">cl</span><span class="o">.</span><span class="n">mem_flags</span>
 
-#reserve host memory
-a_h = field_copy.astype(numpy.float32)
+<span class="c1">#reserve host memory</span>
+<span class="n">a_h</span> <span class="o">=</span> <span class="n">field_copy</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
-#allocate GPU memory (and copy from host buffer)
-a_d = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=a_h)
-b_d = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=a_h)
+<span class="c1">#allocate GPU memory (and copy from host buffer)</span>
+<span class="n">a_d</span> <span class="o">=</span> <span class="n">cl</span><span class="o">.</span><span class="n">Buffer</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">mf</span><span class="o">.</span><span class="n">READ_WRITE</span> <span class="o">|</span> <span class="n">mf</span><span class="o">.</span><span class="n">COPY_HOST_PTR</span><span class="p">,</span> <span class="n">hostbuf</span><span class="o">=</span><span class="n">a_h</span><span class="p">)</span>
+<span class="n">b_d</span> <span class="o">=</span> <span class="n">cl</span><span class="o">.</span><span class="n">Buffer</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">mf</span><span class="o">.</span><span class="n">READ_WRITE</span> <span class="o">|</span> <span class="n">mf</span><span class="o">.</span><span class="n">COPY_HOST_PTR</span><span class="p">,</span> <span class="n">hostbuf</span><span class="o">=</span><span class="n">a_h</span><span class="p">)</span>
 
-#setup thread block dimensions and compile the kernel
-threads = (16,16)
-kernel_src = &quot;#define block_size_x %d\n#define block_size_y %d&quot; % threads \
-    + get_kernel_string(nx, ny)
-prg = cl.Program(ctx, kernel_src).build()
+<span class="c1">#setup thread block dimensions and compile the kernel</span>
+<span class="n">threads</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">kernel_src</span> <span class="o">=</span> <span class="s2">&quot;#define block_size_x </span><span class="si">%d</span><span class="se">\n</span><span class="s2">#define block_size_y </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">threads</span> \
+    <span class="o">+</span> <span class="n">get_kernel_string</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+<span class="n">prg</span> <span class="o">=</span> <span class="n">cl</span><span class="o">.</span><span class="n">Program</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">kernel_src</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -583,16 +675,16 @@ prg = cl.Program(ctx, kernel_src).build()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>queue = cl.CommandQueue(ctx)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">queue</span> <span class="o">=</span> <span class="n">cl</span><span class="o">.</span><span class="n">CommandQueue</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
 
-def run_gpu():
-    for i in range(500):
-        prg.diffuse_kernel(
-            queue, [nx, ny], threads, b_d, a_d)
-        prg.diffuse_kernel(
-            queue, [nx, ny], threads, a_d, b_d)
+<span class="k">def</span> <span class="nf">run_gpu</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">500</span><span class="p">):</span>
+        <span class="n">prg</span><span class="o">.</span><span class="n">diffuse_kernel</span><span class="p">(</span>
+            <span class="n">queue</span><span class="p">,</span> <span class="p">[</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">],</span> <span class="n">threads</span><span class="p">,</span> <span class="n">b_d</span><span class="p">,</span> <span class="n">a_d</span><span class="p">)</span>
+        <span class="n">prg</span><span class="o">.</span><span class="n">diffuse_kernel</span><span class="p">(</span>
+            <span class="n">queue</span><span class="p">,</span> <span class="p">[</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">],</span> <span class="n">threads</span><span class="p">,</span> <span class="n">a_d</span><span class="p">,</span> <span class="n">b_d</span><span class="p">)</span>
 
-%time run_gpu()
+<span class="o">%</span><span class="k">time</span> run_gpu()
 </pre></div>
 </div>
 </div>
@@ -609,16 +701,16 @@ Wall time: 985 ms
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#copy the result from the GPU to Python for plotting
-cl.enqueue_copy(queue, a_h, a_d)
-queue.finish()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#copy the result from the GPU to Python for plotting</span>
+<span class="n">cl</span><span class="o">.</span><span class="n">enqueue_copy</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">a_h</span><span class="p">,</span> <span class="n">a_d</span><span class="p">)</span>
+<span class="n">queue</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
 
-fig, (ax1, ax2) = pyplot.subplots(1,2)
-ax1.imshow(a_h)
-ax1.set_title(&quot;GPU Result&quot;)
-ax2.imshow(field)
-ax2.set_title(&quot;Python Result&quot;)
-pyplot.show()
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">a_h</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;GPU Result&quot;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Python Result&quot;</span><span class="p">)</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -640,10 +732,10 @@ pyplot.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>nx = 4096
-ny = 4096
-field = get_initial_conditions(nx, ny)
-kernel_string = get_kernel_string(nx, ny)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nx</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">ny</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">field</span> <span class="o">=</span> <span class="n">get_initial_conditions</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+<span class="n">kernel_string</span> <span class="o">=</span> <span class="n">get_kernel_string</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -653,10 +745,10 @@ kernel_string = get_kernel_string(nx, ny)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from collections import OrderedDict
-tune_params = OrderedDict()
-tune_params[&quot;block_size_x&quot;] = [16, 32, 48, 64, 128]
-tune_params[&quot;block_size_y&quot;] = [2, 4, 8, 16, 32]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="n">tune_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -666,7 +758,7 @@ tune_params[&quot;block_size_y&quot;] = [2, 4, 8, 16, 32]
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>args = [field, field]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span><span class="p">,</span> <span class="n">field</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -675,7 +767,7 @@ tune_params[&quot;block_size_y&quot;] = [2, 4, 8, 16, 32]
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>problem_size = (nx, ny)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -684,8 +776,8 @@ tune_params[&quot;block_size_y&quot;] = [2, 4, 8, 16, 32]
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from kernel_tuner import tune_kernel
-result = tune_kernel(&quot;diffuse_kernel&quot;, kernel_string, problem_size, args, tune_params)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">tune_kernel</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;diffuse_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -736,45 +828,45 @@ too much shared memory. And likewise for kernels that use too many registers to 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>kernel_string = &quot;&quot;&quot;
-#define nx %d
-#define ny %d
-#define dt 0.225f
-__kernel void diffuse_kernel(global float *u_new, global float *u) {
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">#define nx </span><span class="si">%d</span>
+<span class="s2">#define ny </span><span class="si">%d</span>
+<span class="s2">#define dt 0.225f</span>
+<span class="s2">__kernel void diffuse_kernel(global float *u_new, global float *u) {</span>
 
-    int tx = get_local_id(0);
-    int ty = get_local_id(1);
-    int bx = get_group_id(0) * block_size_x;
-    int by = get_group_id(1) * block_size_y;
+<span class="s2">    int tx = get_local_id(0);</span>
+<span class="s2">    int ty = get_local_id(1);</span>
+<span class="s2">    int bx = get_group_id(0) * block_size_x;</span>
+<span class="s2">    int by = get_group_id(1) * block_size_y;</span>
 
-    __local float sh_u[block_size_y+2][block_size_x+2];
+<span class="s2">    __local float sh_u[block_size_y+2][block_size_x+2];</span>
 
-    #pragma unroll
-    for (int i = ty; i&lt;block_size_y+2; i+=block_size_y) {
-        #pragma unroll
-        for (int j = tx; j&lt;block_size_x+2; j+=block_size_x) {
-            int y = by+i-1;
-            int x = bx+j-1;
-            if (x&gt;=0 &amp;&amp; x&lt;nx &amp;&amp; y&gt;=0 &amp;&amp; y&lt;ny) {
-                sh_u[i][j] = u[y*nx+x];
-            }
-        }
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);  // __syncthreads();
+<span class="s2">    #pragma unroll</span>
+<span class="s2">    for (int i = ty; i&lt;block_size_y+2; i+=block_size_y) {</span>
+<span class="s2">        #pragma unroll</span>
+<span class="s2">        for (int j = tx; j&lt;block_size_x+2; j+=block_size_x) {</span>
+<span class="s2">            int y = by+i-1;</span>
+<span class="s2">            int x = bx+j-1;</span>
+<span class="s2">            if (x&gt;=0 &amp;&amp; x&lt;nx &amp;&amp; y&gt;=0 &amp;&amp; y&lt;ny) {</span>
+<span class="s2">                sh_u[i][j] = u[y*nx+x];</span>
+<span class="s2">            }</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">    barrier(CLK_LOCAL_MEM_FENCE);  // __syncthreads();</span>
 
-    int x = bx+tx;
-    int y = by+ty;
-    if (x&gt;0 &amp;&amp; x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y&lt;ny-1) {
-        int i = ty+1;
-        int j = tx+1;
-        u_new[y*nx+x] = sh_u[i][j] + dt * (
-            sh_u[i+1][j] + sh_u[i][j+1] -4.0f * sh_u[i][j] +
-            sh_u[i][j-1] + sh_u[i-1][j] );
-    }
+<span class="s2">    int x = bx+tx;</span>
+<span class="s2">    int y = by+ty;</span>
+<span class="s2">    if (x&gt;0 &amp;&amp; x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y&lt;ny-1) {</span>
+<span class="s2">        int i = ty+1;</span>
+<span class="s2">        int j = tx+1;</span>
+<span class="s2">        u_new[y*nx+x] = sh_u[i][j] + dt * (</span>
+<span class="s2">            sh_u[i+1][j] + sh_u[i][j+1] -4.0f * sh_u[i][j] +</span>
+<span class="s2">            sh_u[i][j-1] + sh_u[i-1][j] );</span>
+<span class="s2">    }</span>
 
-}
-&quot;&quot;&quot; % (nx, ny)
-result = tune_kernel(&quot;diffuse_kernel&quot;, kernel_string, problem_size, args, tune_params)
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;diffuse_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -819,56 +911,56 @@ element beyond the first.</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>kernel_string = &quot;&quot;&quot;
-#define nx %d
-#define ny %d
-#define dt 0.225f
-__kernel void diffuse_kernel(global float *u_new, global float *u) {
-    int tx = get_local_id(0);
-    int ty = get_local_id(1);
-    int bx = get_group_id(0) * block_size_x * tile_size_x;
-    int by = get_group_id(1) * block_size_y * tile_size_y;
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">#define nx </span><span class="si">%d</span>
+<span class="s2">#define ny </span><span class="si">%d</span>
+<span class="s2">#define dt 0.225f</span>
+<span class="s2">__kernel void diffuse_kernel(global float *u_new, global float *u) {</span>
+<span class="s2">    int tx = get_local_id(0);</span>
+<span class="s2">    int ty = get_local_id(1);</span>
+<span class="s2">    int bx = get_group_id(0) * block_size_x * tile_size_x;</span>
+<span class="s2">    int by = get_group_id(1) * block_size_y * tile_size_y;</span>
 
-    /*
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-    int bx = blockIdx.x * block_size_x * tile_size_x;
-    int by = blockIdx.y * block_size_y * tile_size_y;
-    */
-    __local float sh_u[block_size_y*tile_size_y+2][block_size_x*tile_size_x+2];
+<span class="s2">    /*</span>
+<span class="s2">    int tx = threadIdx.x;</span>
+<span class="s2">    int ty = threadIdx.y;</span>
+<span class="s2">    int bx = blockIdx.x * block_size_x * tile_size_x;</span>
+<span class="s2">    int by = blockIdx.y * block_size_y * tile_size_y;</span>
+<span class="s2">    */</span>
+<span class="s2">    __local float sh_u[block_size_y*tile_size_y+2][block_size_x*tile_size_x+2];</span>
 
-    #pragma unroll
-    for (int i = ty; i&lt;block_size_y*tile_size_y+2; i+=block_size_y) {
-        #pragma unroll
-        for (int j = tx; j&lt;block_size_x*tile_size_x+2; j+=block_size_x) {
-            int y = by+i-1;
-            int x = bx+j-1;
-            if (x&gt;=0 &amp;&amp; x&lt;nx &amp;&amp; y&gt;=0 &amp;&amp; y&lt;ny) {
-                sh_u[i][j] = u[y*nx+x];
-            }
-        }
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);  // __syncthreads();
+<span class="s2">    #pragma unroll</span>
+<span class="s2">    for (int i = ty; i&lt;block_size_y*tile_size_y+2; i+=block_size_y) {</span>
+<span class="s2">        #pragma unroll</span>
+<span class="s2">        for (int j = tx; j&lt;block_size_x*tile_size_x+2; j+=block_size_x) {</span>
+<span class="s2">            int y = by+i-1;</span>
+<span class="s2">            int x = bx+j-1;</span>
+<span class="s2">            if (x&gt;=0 &amp;&amp; x&lt;nx &amp;&amp; y&gt;=0 &amp;&amp; y&lt;ny) {</span>
+<span class="s2">                sh_u[i][j] = u[y*nx+x];</span>
+<span class="s2">            }</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">    barrier(CLK_LOCAL_MEM_FENCE);  // __syncthreads();</span>
 
-    #pragma unroll
-    for (int tj=0; tj&lt;tile_size_y; tj++) {
-        int i = ty+tj*block_size_y+1;
-        int y = by + ty + tj*block_size_y;
-        #pragma unroll
-        for (int ti=0; ti&lt;tile_size_x; ti++) {
-            int j = tx+ti*block_size_x+1;
-            int x = bx + tx + ti*block_size_x;
-            if (x&gt;0 &amp;&amp; x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y&lt;ny-1) {
-                u_new[y*nx+x] = sh_u[i][j] + dt * (
-                    sh_u[i+1][j] + sh_u[i][j+1] -4.0f * sh_u[i][j] +
-                    sh_u[i][j-1] + sh_u[i-1][j] );
-            }
-        }
+<span class="s2">    #pragma unroll</span>
+<span class="s2">    for (int tj=0; tj&lt;tile_size_y; tj++) {</span>
+<span class="s2">        int i = ty+tj*block_size_y+1;</span>
+<span class="s2">        int y = by + ty + tj*block_size_y;</span>
+<span class="s2">        #pragma unroll</span>
+<span class="s2">        for (int ti=0; ti&lt;tile_size_x; ti++) {</span>
+<span class="s2">            int j = tx+ti*block_size_x+1;</span>
+<span class="s2">            int x = bx + tx + ti*block_size_x;</span>
+<span class="s2">            if (x&gt;0 &amp;&amp; x&lt;nx-1 &amp;&amp; y&gt;0 &amp;&amp; y&lt;ny-1) {</span>
+<span class="s2">                u_new[y*nx+x] = sh_u[i][j] + dt * (</span>
+<span class="s2">                    sh_u[i+1][j] + sh_u[i][j+1] -4.0f * sh_u[i][j] +</span>
+<span class="s2">                    sh_u[i][j-1] + sh_u[i-1][j] );</span>
+<span class="s2">            }</span>
+<span class="s2">        }</span>
 
-    }
+<span class="s2">    }</span>
 
-}
-&quot;&quot;&quot; % (nx, ny)
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -881,12 +973,12 @@ Tuner only uses the block_size_x and block_size_y tunable parameters to divide t
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>tune_params[&quot;tile_size_x&quot;] = [1,2,4]            #add tile_size_x to the tune_params
-tune_params[&quot;tile_size_y&quot;] = [1,2,4]            #add tile_size_y to the tune_params
-grid_div_x = [&quot;block_size_x&quot;, &quot;tile_size_x&quot;]    #tile_size_x impacts grid dimensions
-grid_div_y = [&quot;block_size_y&quot;, &quot;tile_size_y&quot;]    #tile_size_y impacts grid dimensions
-result = tune_kernel(&quot;diffuse_kernel&quot;, kernel_string, problem_size, args,
-                     tune_params, grid_div_x=grid_div_x, grid_div_y=grid_div_y)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span>            <span class="c1">#add tile_size_x to the tune_params</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span>            <span class="c1">#add tile_size_y to the tune_params</span>
+<span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>    <span class="c1">#tile_size_x impacts grid dimensions</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>    <span class="c1">#tile_size_y impacts grid dimensions</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;diffuse_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span>
+                     <span class="n">tune_params</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1092,10 +1184,10 @@ thread block between the naive and the tiled kernel is a factor 32.</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>best_time = min(result[0], key=lambda x:x[&#39;time&#39;])[&#39;time&#39;]
-for i in result[0]:
-    if i[&quot;time&quot;] &lt; best_time*1.05:
-        print(&quot;&quot;.join([k + &quot;=&quot; + str(v) + &quot;, &quot; for k,v in i.items()]))
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best_time</span><span class="o">*</span><span class="mf">1.05</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">k</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">i</span><span class="o">.</span><span class="n">items</span><span class="p">()]))</span>
 </pre></div>
 </div>
 </div>
@@ -1124,15 +1216,15 @@ block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.5116928,
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>#store output as json
-import json
-with open(&quot;tutorial.json&quot;, &#39;w&#39;) as fp:
-    json.dump(result[0], fp)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#store output as json</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;tutorial.json&quot;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fp</span><span class="p">)</span>
 
-#store output as csv
-from pandas import DataFrame
-df = DataFrame(result[0])
-df.to_csv(&quot;tutorial.csv&quot;)
+<span class="c1">#store output as csv</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;tutorial.csv&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1141,30 +1233,46 @@ df.to_csv(&quot;tutorial.csv&quot;)
 
 
            </div>
+           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
-  </div>
+    <p>
+        &#169; Copyright 2016, Ben van Werkhoven.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
