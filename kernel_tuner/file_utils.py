@@ -165,7 +165,7 @@ def get_device_query(target):
         raise ValueError("get_device_query target not supported")
 
 
-def store_metadata_file(metadata_filename, target="nvidia"):
+def store_metadata_file(metadata_filename):
     """ Store the metadata about the current hardware and software environment in a JSON output file
 
     This function produces a JSON file that adheres to the T4 auto-tuning metadata JSON schema.
@@ -173,19 +173,33 @@ def store_metadata_file(metadata_filename, target="nvidia"):
     :param metadata_filename: Name of the to be created metadata file
     :type metadata_filename: string
 
-    :param target: Target specifies whether to include the metadata of the 'nvidia' or 'amd' GPUs in the system
-    :type target: string
-
     """
     metadata_filename = filename_ensure_json_extension(metadata_filename)
     metadata = {}
 
     # lshw only works on Linux, this intentionally raises a FileNotFoundError when ran on systems that do not have it
     lshw_out = subprocess.run(["lshw", "-json"], capture_output=True)
-    metadata["hardware"] = dict(lshw=json.loads(lshw_out.stdout))
 
-    # only works if nvidia-smi (for NVIDIA) or rocm-smi (for AMD) is present, raises FileNotFoundError when not present
-    device_query = get_device_query(target)
+    # sometimes lshw outputs a list of length 1, sometimes just as a dict, schema wants a list
+    lshw_string = lshw_out.stdout.decode('utf-8').strip()
+    if lshw_string[0] == '{' and lshw_string[-1] == '}':
+        lshw_string = '[' + lshw_string + ']'
+
+    metadata["hardware"] = dict(lshw=json.loads(lshw_string))
+
+    # attempts to use nvidia-smi or rocm-smi if present
+    device_query = {}
+    try:
+        device_query['nvidia-smi'] = get_device_query("nvidia")
+    except FileNotFoundError:
+        # ignore if nvidia-smi is not found
+        pass
+
+    try:
+        device_query['rocm-smi'] = get_device_query("amd")
+    except FileNotFoundError:
+        # ignore if rocm-smi is not found
+        pass
 
     metadata["environment"] = dict(device_query=device_query,
                                    requirements=get_dependencies())
