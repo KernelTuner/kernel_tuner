@@ -11,41 +11,46 @@ from jsonschema import validate
 def test_store_output_file(env):
     # setup variables
     filename = "test_output_file.json"
-    results, _ = tune_kernel(*env, cache=cache_filename, simulation_mode=True)
-    tune_params = env[-1]
 
-    # run store_output_file
-    store_output_file(filename, results, tune_params)
+    try:
+        results, _ = tune_kernel(*env, cache=cache_filename, simulation_mode=True)
+        tune_params = env[-1]
 
-    # retrieve output file
-    _, schema = output_file_schema("results")
-    with open(filename) as json_file:
-        output_json = json.load(json_file)
+        # run store_output_file
+        store_output_file(filename, results, tune_params)
 
-    # validate
-    validate(output_json, schema=schema)
+        # retrieve output file
+        _, schema = output_file_schema("results")
+        with open(filename) as json_file:
+            output_json = json.load(json_file)
 
-    # clean up
-    delete_temp_file(filename)
+        # validate
+        validate(output_json, schema=schema)
+
+    finally:
+        # clean up
+        delete_temp_file(filename)
 
 
 def test_store_metadata_file():
     # setup variables
     filename = "test_metadata_file.json"
 
-    # run store_metadata_file
     try:
-        store_metadata_file(filename, target="nvidia")
-    except FileNotFoundError:
-        pytest.skip("'lshw' or 'nvidia-smi' not present on this system")
+        # run store_metadata_file
+        try:
+            store_metadata_file(filename)
+        except FileNotFoundError:
+            pytest.skip("'lshw' not present on this system")
 
-    # retrieve metadata file
-    _, schema = output_file_schema("metadata")
-    with open(filename) as json_file:
-        metadata_json = json.load(json_file)
+        # retrieve metadata file
+        _, schema = output_file_schema("metadata")
+        with open(filename) as json_file:
+            metadata_json = json.load(json_file)
 
-    # validate
-    validate(metadata_json, schema=schema)
+        # validate
+        validate(metadata_json, schema=schema)
 
-    # clean up
-    delete_temp_file(filename)
+    finally:
+        # clean up
+        delete_temp_file(filename)
