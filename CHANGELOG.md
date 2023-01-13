@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Support for using time_limit in simulation mode
 - Helper functions for energy tuning
 - Example to show ridge frequency and power-frequency model
+- Functions to store tuning output and metadata
 
 ### Changed
 - Changed what timings are stored in cache files
