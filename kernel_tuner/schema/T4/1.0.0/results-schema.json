@@ -1,0 +1,75 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/odgaard/TuningSchema/blob/T4/results-schema.json",
+    "description": "Open Autotuning Results Schema",
+    "type": "object",
+    "properties": {
+       "schema_version": {
+         "description": "The version number of the schema in major.minor.patch format.",
+         "type": "string",
+         "pattern": "^[0-9]{1,}.[0-9]{1,}.[0-9]{1,}$",
+         "example": "1.0.0"
+       },
+       "results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "timestamp": {
+                        "type": "string"
+                    },
+                    "configuration": {
+                        "type": "object"
+                    },
+                    "objectives": {
+                        "type": "array"
+                    },
+                    "times": {
+                        "type": "object",
+                        "properties": {
+                            "compilation_time": {
+                                "type": "number"
+                            },
+                            "runtimes": {
+                                "type": "array"
+                            },
+                            "framework": {
+                                "type": "number"
+                            },
+                            "search_algorithm": {
+                                "type": "number"
+                            },
+                            "validation": {
+                                "type": "number"
+                            }
+                        }
+                    },
+                    "invalidity": {
+                        "enum": ["timeout", "compile", "runtime", "correctness", "constraints", "correct"]
+                    },
+                    "correctness": {
+                        "type": "number"
+                    },
+                    "measurements": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "number"
+                                },
+                                "unit": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": ["configuration", "times", "invalidity", "correctness"]
+            }
+        }
+    }
+}
