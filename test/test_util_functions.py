@@ -550,7 +550,7 @@ def test_process_cache():
     delete_temp_file(cache)
 
     kernel_options = Options(kernel_name="test_kernel", problem_size=(1, 2))
-    tuning_options = Options(cache=cache, tune_params=Options(x=[1, 2, 3, 4]), simulation_mode=False)
+    tuning_options = Options(cache=cache, tune_params=Options(x=[1, 2, 3, 4]), simulation_mode=False, objective="time")
     runner = Options(dev=Options(name="test_device"), simulation_mode=False)
 
     try:
