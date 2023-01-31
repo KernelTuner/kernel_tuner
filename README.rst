@@ -34,7 +34,7 @@ Or both:
 
 More information about how to install Kernel Tuner and its
 dependencies can be found in the `installation guide 
-<http://kerneltuner.github.io/kernel_tuner/stable/install.html>`__
+<http://kerneltuner.github.io/kernel_tuner/stable/install.html>`__.
 
 Example usage
 -------------
@@ -97,7 +97,8 @@ Search strategies for tuning
 Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process. Currently 
 implemented search algorithms are: Brute Force (default), Nelder-Mead, Powell, CG, BFGS, L-BFGS-B, TNC, 
 COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Algorithm, Particle Swarm 
-Optimization, the Firefly Algorithm, and Simulated Annealing.
+Optimization, the Firefly Algorithm, Simulated Annealing, Dual Annealing, Iterative Local Search,
+Multi-start Local Search, and Bayesian Optimization.
 
 .. image:: doc/gemm-amd-summary.png
     :width: 100%
@@ -105,8 +106,8 @@ Optimization, the Firefly Algorithm, and Simulated Annealing.
 
 Using a search strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method 
 you would like to use, for example ``strategy="genetic_algorithm"`` or ``strategy="basinhopping"``. 
-For a full overview of the supported search strategies and methods please see the `user 
-api documentation <http://kerneltuner.github.io/kernel_tuner/stable/user-api.html>`__.
+For a full overview of the supported search strategies and methods please see the 
+Kernel Tuner documentation on `Optimization Strategies <https://kerneltuner.github.io/kernel_tuner/stable/optimization.html>`__.
 
 Tuning host and kernel code
 ---------------------------
