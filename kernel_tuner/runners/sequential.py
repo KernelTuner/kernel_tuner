@@ -95,7 +95,7 @@ class SequentialRunner:
                 params.update(result)
 
                 # only compute metrics on configs that have not errored
-                if isinstance(result[tuning_options.objective], ErrorConfig):
+                if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
                     logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
                 elif tuning_options.metrics:
                     params = process_metrics(params, tuning_options.metrics)

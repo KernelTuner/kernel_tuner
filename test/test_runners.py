@@ -261,7 +261,8 @@ def test_runner(env):
     platform = 0
     iterations = 7
     verbose = False
-    objective = "time"
+    objective = "GFLOP/s"
+    metrics = OrderedDict({objective: lambda p: 1})
     opts = locals()
     kernel_options = Options([(k, opts.get(k, None))
                               for k in _kernel_options.keys()])

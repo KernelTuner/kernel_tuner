@@ -155,7 +155,14 @@ def get_device_query(target):
         nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"],
                                         capture_output=True)
         nvidia_smi = xmltodict.parse(nvidia_smi_out.stdout)
-        del nvidia_smi["nvidia_smi_log"]["gpu"]["processes"]
+        gpu_info = nvidia_smi["nvidia_smi_log"]["gpu"]
+        del_key = "processes"
+        # on multi-GPU systems gpu_info is a list
+        if isinstance(gpu_info, list):
+            for gpu in gpu_info:
+                del gpu[del_key]
+        elif isinstance(gpu_info, dict) and del_key in gpu_info:
+                del gpu_info[del_key]
         return nvidia_smi
     elif target == "amd":
         rocm_smi_out = subprocess.run(["rocm-smi", "--showallinfo", "--json"],

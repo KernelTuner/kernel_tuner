@@ -758,6 +758,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"
         c["tune_params_keys"] = list(tuning_options.tune_params.keys())
         c["tune_params"] = tuning_options.tune_params
+        c["objective"] = tuning_options.objective
         c["cache"] = {}
 
         contents = json.dumps(c, cls=NpEncoder, indent="")[:-3]    # except the last "}\n}"
