@@ -23,15 +23,23 @@ from kernel_tuner.nvml import NVMLObserver
 
 # number of special values to insert when a configuration cannot be measured
 
+
 class ErrorConfig(str):
-    def __str__(self): return self.__class__.__name__
-    def __repr__(self): return self.__class__.__name__
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__class__.__name__
+
 
 class InvalidConfig(ErrorConfig):
     pass
 
+
 class CompilationFailedConfig(ErrorConfig):
     pass
+
 
 class RuntimeFailedConfig(ErrorConfig):
     pass
@@ -45,6 +53,7 @@ class TorchPlaceHolder():
 
 class SkippableFailure(Exception):
     """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected"""
+
 
 class StopCriterionReached(Exception):
     """Exception thrown when a stop criterion has been reached"""
@@ -122,7 +131,7 @@ def check_stop_criterion(to):
     """ checks if max_fevals is reached or time limit is exceeded """
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
         raise StopCriterionReached("max_fevals reached")
-    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time*1e-3)) > to.time_limit):
+    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
         raise StopCriterionReached("time limit exceeded")
 
 
@@ -663,6 +672,7 @@ def normalize_verify_function(v):
 
     Undefined behaviour if the passed function does not match the required signatures.
     """
+
     # python 3.3+
     def has_kw_argument(func, name):
         sig = signature(func)
@@ -681,12 +691,14 @@ def parse_restrictions(restrictions: list, tune_params: dict):
 
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
+
     def replace_params(match_object):
         key = match_object.group(1)
         if key in tune_params:
             return 'params["' + key + '"]'
         else:
             return key
+
     parsed = ") and (".join([re.sub(regex_match_variable, replace_params, res) for res in restrictions])
 
     # tidy up the code by removing the last suffix and unnecessary spaces
@@ -709,6 +721,7 @@ def compile_restrictions(restrictions: list, tune_params: dict):
 
 
 class NpEncoder(json.JSONEncoder):
+
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -794,7 +807,11 @@ def process_cache(cache, kernel_options, tuning_options, runner):
             elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
                 raise ValueError("Cannot load cache which contains results for different problem_size")
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
-            raise ValueError("Cannot load cache which contains results obtained with different tunable parameters")
+            if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
+                raise ValueError(f"All tunable parameters are present, but the order is wrong. \
+                    Cache has order: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}")
+            raise ValueError(f"Cannot load cache which contains results obtained with different tunable parameters. \
+                Cache has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}")
 
         tuning_options.cachefile = cache
         tuning_options.cache = cached_data["cache"]
@@ -817,9 +834,11 @@ def read_cache(cache, open_cache=True):
             with open(cache, "w") as cachefile:
                 cachefile.write(filestr[:-3] + ",")
 
-    error_configs = {"InvalidConfig": InvalidConfig(),
-                     "CompilationFailedConfig": CompilationFailedConfig(),
-                     "RuntimeFailedConfig": RuntimeFailedConfig()}
+    error_configs = {
+        "InvalidConfig": InvalidConfig(),
+        "CompilationFailedConfig": CompilationFailedConfig(),
+        "RuntimeFailedConfig": RuntimeFailedConfig()
+    }
 
     # replace strings with ErrorConfig instances
     cache_data = json.loads(filestr)
@@ -864,7 +883,7 @@ def store_cache(key, params, tuning_options):
 
             # Convert ErrorConfig objects to string, wanted to do this inside the JSONconverter but couldn't get it to work
             output_params = params.copy()
-            for k,v in output_params.items():
+            for k, v in output_params.items():
                 if isinstance(v, ErrorConfig):
                     output_params[k] = str(v)
 
