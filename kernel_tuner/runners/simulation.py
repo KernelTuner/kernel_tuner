@@ -6,6 +6,8 @@ from time import perf_counter
 from kernel_tuner import util
 
 _SimulationDevice = namedtuple("_SimulationDevice", ["max_threads", "env", "quiet"])
+
+
 class SimulationDevice(_SimulationDevice):
     """ Simulated device used by simulation runner """
 
@@ -118,7 +120,9 @@ class SimulationRunner:
                     tuning_options.simulated_time += simulated_time
                 except KeyError:
                     if "time_limit" in tuning_options:
-                        raise RuntimeError("Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations")
+                        raise RuntimeError(
+                            "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
+                        )
 
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
@@ -128,8 +132,7 @@ class SimulationRunner:
                 continue
 
             # if the element is not in the cache, raise an error
-            logging.debug('kernel configuration not in cache')
-            print(element)
-            raise ValueError("Kernel configuration not in cache - in simulation mode, all configurations must be present in the cache")
+            logging.debug(f"kernel configuration {element} not in cache")
+            raise ValueError(f"Kernel configuration {element} not in cache - in simulation mode, all configurations must be present in the cache")
 
         return results, self.get_environment(tuning_options)
