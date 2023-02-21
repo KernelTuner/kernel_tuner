@@ -134,6 +134,9 @@ def parse_function_sign(kernel_string, size=128):
     ###  Parse tunable params
     #Select only those lines with dots in them
     tune_params_str = [x for x in kernel_string.split("\n") if '.' in x]
+    # Sometimes I ask chatGPT to include TUNE in the variable names for tunable params
+    tune_params_str += [x for x in kernel_string.split("\n") if 'TUNE' in x]
+    #TODO: This is not enough to find all the lines!
 
     # Clean it up
     tune_strs =  [x.replace("+", '') for x in tune_params_str]
@@ -154,12 +157,19 @@ def parse_function_sign(kernel_string, size=128):
 
     # Dots in names are not "valid identifiers", so we replace them
     valid_cands = [x.replace(".", "") for x in candidates]
-    for i in range(len(candidates)):
+    valid_cands = [x for x in valid_cands if x.isidentifier()]
+    valid_cands = [x for x in valid_cands if '__' not in x]
+    for i in range(len(valid_cands)):
         kernel_string = kernel_string.replace(candidates[i], valid_cands[i])
 
     tune_params = dict()
     for cand in valid_cands:
         tune_params[cand] = 1
+
+    ## Remove double argument and tune_params
+    #for param in tune_params.keys():
+    #    if param in args.keys():
+    #        del args[param]
     return kernel_string, kernel_name, list(args.values()), tune_params
 
 
@@ -191,6 +201,7 @@ def validate_kernel(kernel_string, size, compiler_options=None):
     kernel_string, kernel_name, args, tune_params = parse_function_sign(
                                                          kernel_string,
                                                          size=size)
+
     # Verify if this kernel string compiles
     kernel_options, device_options = verify_kernel_string(kernel_name,
                          kernel_string,

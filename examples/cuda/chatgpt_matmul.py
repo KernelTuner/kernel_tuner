@@ -11,7 +11,7 @@ from chatGPT import validate_kernel
 
 if __name__ == "__main__":
     # Default array size for testing
-    size = 128
+    size = 512
 
 
     """
