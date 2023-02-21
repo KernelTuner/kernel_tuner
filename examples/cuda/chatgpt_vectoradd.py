@@ -139,7 +139,63 @@ def parse_function_sign(kernel_string, size=128):
     return kernel_string, kernel_name, list(args.values()), tune_params
 
 
+def setup_var_defs(kernel_options, tune_params):
+    grid_div = (kernel_options.grid_div_x,
+                kernel_options.grid_div_y,
+                kernel_options.grid_div_z)
+
+    threads, grid = kernel_tuner.util.setup_block_and_grid(
+                        kernel_options.problem_size,
+                        grid_div,
+                        tune_params,
+                        kernel_options.block_size_names)
+
+    defines = OrderedDict()
+    grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
+    for i, g in enumerate(grid):
+        defines[grid_dim_names[i]] = g
+    for i, g in enumerate(threads):
+        defines[kernel_options.block_size_names[i]] = g
+    for k, v in tune_params.items():
+        defines[k] = 256 # <--- again, how to set this in general?
+    defines["kernel_tuner"] = 1
+    return defines
+
+
+def validate_kernel(kernel_string, size, compiler_options=None):
+    # Parse as much as possible from the ChatGPT kernel string
+    kernel_string, kernel_name, args, tune_params = parse_function_sign(
+                                                         kernel_string,
+                                                         size=size)
+
+    # Verify if this kernel string compiles
+    kernel_options, device_options = verify_kernel_string(kernel_name,
+                         kernel_string,
+                         size,
+                         args,
+                         tune_params,
+                         compiler_options=compiler_options)
+                         #compiler_options=['-Wno-deprecated-gpu-targets'])
+
+    # Setup the variables for pre-definition
+    defines = setup_var_defs(kernel_options, tune_params)
+
+    # Run kernel
+    run_kernel(kernel_name,
+               kernel_string,
+               size,
+               args,
+               tune_params,
+               defines=defines,
+               compiler_options=compiler_options)
+    return kernel_name, kernel_string, size, args, tune_params, defines
+
+
 if __name__ == "__main__":
+    # Default array size for testing
+    size = 100000
+
+
     """
     >> Query to ChatGPT:
         "Can you write a CUDA kernel for adding vectors"
@@ -153,70 +209,19 @@ if __name__ == "__main__":
         }
     """
 
-    if False:
-        kernel_string = """
-        __global__ void add_vectors(float* a, float* b, float* c, int n) {
-            int i = blockIdx.x * blockDim.x + threadIdx.x;
-            if (i < n) {
-                c[i] = a[i] + b[i];
-            }
-        }
-        """
-
     kernel_string = """
-    __global__ void vector_add(float* c, float* a, float* b, int n) {
-        int i = blockIdx.x * block_size_x + threadIdx.x;
-        if (i<n) {
+    __global__ void add_vectors(float* a, float* b, float* c, int n) {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i < n) {
             c[i] = a[i] + b[i];
         }
     }
     """
 
-    size = 100000
-    kernel_string, kernel_name, args, tune_params = parse_function_sign(
-                                                         kernel_string,
-                                                         size=size)
-
-    # Verify if this kernel string compiles
-    print(tune_params)
-    kernel_options, device_options = verify_kernel_string(kernel_name,
-                         kernel_string,
-                         size,
-                         args,
-                         tune_params,
-                         compiler_options=['-allow-unsupported-compiler'])
-                         #compiler_options=['-Wno-deprecated-gpu-targets'])
-
-    # Setup the variables for pre-definition
-    grid_div = (kernel_options.grid_div_x,
-                kernel_options.grid_div_y,
-                kernel_options.grid_div_z)
-    threads, grid = kernel_tuner.util.setup_block_and_grid(
-                        kernel_options.problem_size,
-                        grid_div,
-                        tune_params,
-                        kernel_options.block_size_names)
-    defines = OrderedDict()
-    grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
-    for i, g in enumerate(grid):
-        defines[grid_dim_names[i]] = g
-    for i, g in enumerate(threads):
-        defines[kernel_options.block_size_names[i]] = g
-    for k, v in tune_params.items():
-        defines[k] = 256 # <--- again, how to set this in general?
-    defines["kernel_tuner"] = 1
-    del defines["block_size_x"]
-    print(defines)
-
-    # Run kernel
-    run_kernel(kernel_name,
-               kernel_string,
-               size,
-               args,
-               tune_params,
-               defines=defines,
-               compiler_options=['-allow-unsupported-compiler'])
-
+    kname, kstring, size, args, tune_params, defines = validate_kernel(
+                    kernel_string,
+                    size,
+                    compiler_options=['-allow-unsupported-compiler'])
 
     """
     >> Query to ChatGPT:
@@ -243,3 +248,9 @@ if __name__ == "__main__":
         }
     }
     """
+
+    kname, kstring, size, args, tune_params, defines = validate_kernel(
+                    kernel_string,
+                    size,
+                    compiler_options=['-allow-unsupported-compiler'])
+    print(tune_params)
