@@ -2,6 +2,8 @@
 """This is the minimal example from the README"""
 
 import numpy
+from collections import OrderedDict
+
 import kernel_tuner
 from kernel_tuner import tune_kernel, run_kernel
 from kernel_tuner.file_utils import store_output_file, store_metadata_file
@@ -43,28 +45,26 @@ def verify_kernel_string(kernel_name,
     #detect language and create the right device function interface
     dev = DeviceInterface(kernelsource, iterations=1, **device_options)
 
-    try: # Create kernel instance
-        instance = None
-        instance = dev.create_kernel_instance(kernelsource,
-                                              kernel_options,
-                                              params,
-                                              True)
-        if instance is None:
-            raise RuntimeError("cannot create kernel instance, too many threads per block")
-        # see if the kernel arguments have correct type
-        kernel_tuner.util.check_argument_list(instance.name,
-                                              instance.kernel_string,
-                                              arguments)
-    except:
-        print("Failed to create kernel instance, exiting...")
-        return
-
+    #TODO: MAKE PROPER TRY EXCEPT ETC>
+    instance = None
+    instance = dev.create_kernel_instance(kernelsource,
+                                          kernel_options,
+                                          params,
+                                          True)
+    if instance is None:
+        raise RuntimeError("cannot create kernel instance,"+
+                           " too many threads per block")
+    # see if the kernel arguments have correct type
+    kernel_tuner.util.check_argument_list(instance.name,
+                                          instance.kernel_string,
+                                          arguments)
 
     #compile the kernel
     func = dev.compile_kernel(instance, True)
     if func is None:
-        raise RuntimeError("cannot compile kernel, too much shared memory used")
-
+        raise RuntimeError("cannot compile kernel"+
+                           " too much shared memory used")
+    return kernel_options, device_options
 
 CUDA_type_converter = {
     'int': int,
@@ -120,16 +120,23 @@ def parse_function_sign(kernel_string, size=128):
     tune_strs =  [x.replace(",", '') for x in tune_strs]
 
     # Select potential candidates for tunable params
+    # TODO: This will be hard to do accurately
     candidates = [y for x in tune_strs for y in x.split(" ")]
-    candidates = [x for x in candidates if '.' in x]
+    #candidates = [x for x in candidates if '.' in x]
+    candidates = [x for x in candidates if len(x) > 7]
 
     # Remove those with 'Idx' in the name because they are CUDA idx variables
     candidates = [x for x in candidates if 'Idx' not in x]
+
+    # Dots in names are not "valid identifiers", so we replace them
+    valid_cands = [x.replace(".", "") for x in candidates]
+    for i in range(len(candidates)):
+        kernel_string = kernel_string.replace(candidates[i], valid_cands[i])
+
     tune_params = dict()
-    for cand in candidates:
-        tune_params[cand] = [128+64*i for i in range(10)]
-        # <-- TODO How to select ranges?
-    return kernel_name, list(args.values()), tune_params
+    for cand in valid_cands:
+        tune_params[cand] = 1
+    return kernel_string, kernel_name, list(args.values()), tune_params
 
 
 if __name__ == "__main__":
@@ -146,29 +153,69 @@ if __name__ == "__main__":
         }
     """
 
+    if False:
+        kernel_string = """
+        __global__ void add_vectors(float* a, float* b, float* c, int n) {
+            int i = blockIdx.x * blockDim.x + threadIdx.x;
+            if (i < n) {
+                c[i] = a[i] + b[i];
+            }
+        }
+        """
+
     kernel_string = """
-    __global__ void add_vectors(float* a, float* b, float* c, int n) {
-        int i = blockIdx.x * blockDim.x + threadIdx.x;
-        if (i < n) {
+    __global__ void vector_add(float* c, float* a, float* b, int n) {
+        int i = blockIdx.x * block_size_x + threadIdx.x;
+        if (i<n) {
             c[i] = a[i] + b[i];
         }
     }
     """
 
     size = 100000
-    kernel_name, args, tune_params = parse_function_sign(kernel_string,
+    kernel_string, kernel_name, args, tune_params = parse_function_sign(
+                                                         kernel_string,
                                                          size=size)
 
     # Verify if this kernel string compiles
     print(tune_params)
-    tune_params = dict()
-    verify_kernel_string(kernel_name,
+    kernel_options, device_options = verify_kernel_string(kernel_name,
                          kernel_string,
                          size,
                          args,
                          tune_params,
                          compiler_options=['-allow-unsupported-compiler'])
                          #compiler_options=['-Wno-deprecated-gpu-targets'])
+
+    # Setup the variables for pre-definition
+    grid_div = (kernel_options.grid_div_x,
+                kernel_options.grid_div_y,
+                kernel_options.grid_div_z)
+    threads, grid = kernel_tuner.util.setup_block_and_grid(
+                        kernel_options.problem_size,
+                        grid_div,
+                        tune_params,
+                        kernel_options.block_size_names)
+    defines = OrderedDict()
+    grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
+    for i, g in enumerate(grid):
+        defines[grid_dim_names[i]] = g
+    for i, g in enumerate(threads):
+        defines[kernel_options.block_size_names[i]] = g
+    for k, v in tune_params.items():
+        defines[k] = 256 # <--- again, how to set this in general?
+    defines["kernel_tuner"] = 1
+    del defines["block_size_x"]
+    print(defines)
+
+    # Run kernel
+    run_kernel(kernel_name,
+               kernel_string,
+               size,
+               args,
+               tune_params,
+               defines=defines,
+               compiler_options=['-allow-unsupported-compiler'])
 
 
     """
