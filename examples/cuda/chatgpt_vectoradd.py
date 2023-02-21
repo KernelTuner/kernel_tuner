@@ -87,6 +87,11 @@ def parse_function_sign(kernel_string, size=128):
     for k in range(0, len(args_str), 2):# Steps of 2
         CUDA_type_str = args_str[k]
         var_name = args_str[k+1]
+        # Sometimes chatGPT/people put the * before the variable name
+        if var_name[0] == '*':
+            var_name = var_name[1:]
+            CUDA_type_str += "*"
+
         python_type = CUDA_type_converter[CUDA_type_str]
         if 'numpy' in str(python_type):
             if str(python_type) == 'numpy.int':
@@ -237,7 +242,8 @@ if __name__ == "__main__":
             }
         }
     """
-
+    #NOTE: ChatGPT also told us that blockDim.x and gridDim.x are
+    # tunable here
     kernel_string = """
     __global__ void add_vectors(float* a, float* b, float* c, int n) {
         int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -253,4 +259,64 @@ if __name__ == "__main__":
                     kernel_string,
                     size,
                     compiler_options=['-allow-unsupported-compiler'])
+
+
+    # CHAT GPT TIMED OUT, another try:
+    kernel_string = """
+    __global__ void vectorAdd(float *a, float *b, float *c, int n)
+    {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if (idx < n) {
+            c[idx] = a[idx] + b[idx];
+        }
+    }
+    """
+
+    kname, kstring, size, args, tune_params, defines = validate_kernel(
+                    kernel_string,
+                    size,
+                    compiler_options=['-allow-unsupported-compiler'])
+
+
+    #Make it tunable: this returned the same thing
+    kernel_string = """
+    __global__ void vectorAdd(float *a, float *b, float *c, int n)
+    {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if (idx < n) {
+            c[idx] = a[idx] + b[idx];
+        }
+    }
+    """
+
+    kname, kstring, size, args, tune_params, defines = validate_kernel(
+                    kernel_string,
+                    size,
+                    compiler_options=['-allow-unsupported-compiler'])
+
+    # Ask chatGPT for good tuning range:
+    # What would be a good range for blockDim.x tuning?
+    # << It gave a long story about how to choose it
+
+    # Ask chatGPT for a list of numbers: got this:
+    tune_values = [32, 64, 96, 128, 192, 256, 384, 512, 768, 1024]
+    for k,v in tune_params.items():
+        tune_params[k] = tune_values
     print(tune_params)
+
+    # Run tuning with these parsed values:
+    results, env = tune_kernel(kname,
+                               kstring,
+                               size,
+                               args,
+                               tune_params,
+                               defines=defines,
+                               compiler_options=['-allow-unsupported-compiler'])
+
+    # Store the tuning results in an output file
+    store_output_file("ChatGPT_vector_add.json", results, tune_params)
+
+    # Store the metadata of this run
+    store_metadata_file("ChatGPT_vector_add-metadata.json")
