@@ -8,10 +8,13 @@ from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import _cost_func
 
-_options = OrderedDict(popsize=("population size", 20),
-                       maxiter=("maximum number of generations", 50),
-                       method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
-                       mutation_chance=("chance to mutate is 1 in mutation_chance", 10))
+_options = OrderedDict(
+    popsize=("population size", 20),
+    maxiter=("maximum number of generations", 100),
+    method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
+    mutation_chance=("chance to mutate is 1 in mutation_chance", 10),
+)
+
 
 def tune(runner, kernel_options, device_options, tuning_options):
 
@@ -114,9 +117,9 @@ def mutate(dna, mutation_chance, searchspace: Searchspace, cache=True):
     # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
     if int(random.random() * mutation_chance) == 0:
         if cache:
-            neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method='Hamming')
+            neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
         else:
-            neighbors = searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method='Hamming')
+            neighbors = searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
         if len(neighbors) > 0:
             return list(random.choice(neighbors))
     return dna
@@ -176,5 +179,5 @@ supported_methods = {
     "single_point": single_point_crossover,
     "two_point": two_point_crossover,
     "uniform": uniform_crossover,
-    "disruptive_uniform": disruptive_uniform_crossover
+    "disruptive_uniform": disruptive_uniform_crossover,
 }

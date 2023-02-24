@@ -4,15 +4,15 @@ from collections import OrderedDict
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import (_cost_func, get_bounds)
+from kernel_tuner.strategies.common import _cost_func, get_bounds
 from scipy.optimize import differential_evolution
 
-supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp",
-                     "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
+supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
 
 _options = OrderedDict(method=(f"Creation method for new population, any of {supported_methods}", "best1bin"),
                        popsize=("Population size", 20),
-                       maxiter=("Number of generations", 50))
+                       maxiter=("Number of generations", 100))
+
 
 def tune(runner, kernel_options, device_options, tuning_options):
 
@@ -33,8 +33,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     # call the differential evolution optimizer
     opt_result = None
     try:
-        opt_result = differential_evolution(_cost_func, bounds, args, maxiter=maxiter, popsize=popsize, init=population,
-                                        polish=False, strategy=method, disp=tuning_options.verbose)
+        opt_result = differential_evolution(_cost_func, bounds, args, maxiter=maxiter, popsize=popsize, init=population, polish=False, strategy=method, disp=tuning_options.verbose)
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
