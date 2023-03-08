@@ -6,6 +6,8 @@ import logging
 import re
 import numpy as np
 
+from kernel_tuner.accuracy import Tunable
+
 try:
     import cupy as cp
 except ImportError:
@@ -405,23 +407,38 @@ class DeviceInterface(object):
         if not correct:
             raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
 
-    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
-        """ Compile and benchmark a kernel instance based on kernel strings and parameters """
-        instance_string = util.get_instance_string(params)
+    def preprocess_gpu_arguments(self, old_arguments, params):
+        """ Get a flat list of arguments based on the configuration given by `params` """
+        new_arguments = []
 
+        for argument in old_arguments:
+            if isinstance(argument, Tunable):
+                new_arguments.append(argument.select_for_configuration(params))
+            else:
+                new_arguments.append(argument)
+
+        return new_arguments
+
+    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
         # reset previous timers
         last_compilation_time = None
         last_verification_time = None
         last_benchmark_time = None
 
-        logging.debug('compile_and_benchmark ' + instance_string)
-
         verbose = to.verbose
         result = {}
+
+        # Compile and benchmark a kernel instance based on kernel strings and parameters
+        instance_string = util.get_instance_string(params)
+
+        logging.debug('compile_and_benchmark ' + instance_string)
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
             return instance
+
+        # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
+        gpu_args = self.preprocess_gpu_arguments(gpu_args, params)
 
         try:
             # compile the kernel
@@ -550,7 +567,30 @@ class DeviceInterface(object):
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem if necessary"""
-        return self.dev.ready_argument_list(arguments)
+        flat_args = []
+
+        # Flatten all arguments into a single list. Required to deal with `MixedPrecisionArray`s
+        for argument in arguments:
+            if isinstance(argument, Tunable):
+                flat_args.extend(argument.values())
+            else:
+                flat_args.append(argument)
+
+        flag_gpu_args = iter(self.dev.ready_argument_list(flat_args))
+
+        # Unflatten the arguments back into arrays.
+        gpu_args = []
+        for argument in arguments:
+            if isinstance(argument, Tunable):
+                arrays = dict()
+                for key in argument:
+                    arrays[key] = next(flag_gpu_args)
+
+                gpu_args.append(Tunable(argument.param_key, arrays))
+            else:
+                gpu_args.append(next(flag_gpu_args))
+
+        return gpu_args
 
     def run_kernel(self, func, gpu_args, instance):
         """ Run a compiled kernel instance on a device """
