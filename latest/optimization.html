@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Optimization strategies &mdash; Kernel Tuner 0.4.3 documentation</title>
+  <title>Optimization strategies &mdash; Kernel Tuner 0.4.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -34,7 +34,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                0.4.3
+                0.4.4
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -234,7 +234,9 @@ parameters that can be passed to the strategies using the <code class="docutils 
 can also override whatever internal stop criterion the strategy uses, and set either a time limit in seconds (using <code class="docutils literal notranslate"><span class="pre">time_limit=</span></code>) or a maximum
 number of unique function evaluations (using <code class="docutils literal notranslate"><span class="pre">max_fevals=</span></code>).</p>
 <p>To give an example, one could simply add these two arguments to any code calling <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;random_sample&quot;</span><span class="p">,</span> <span class="n">strategy_options</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">max_fevals</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
+                           <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;random_sample&quot;</span><span class="p">,</span>
+                           <span class="n">strategy_options</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">max_fevals</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>A ‘unique function evaluation’ corresponds to the first time that Kernel Tuner tries to compile and benchmark a parameter
