@@ -606,9 +606,10 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             # pragma unroll loop_unroll_factor, loop_unroll_factor should be a constant integer expression
             # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
             # using 0 to disable specifying a loop unrolling factor for this loop
-            kernel_prefix += f"constexpr int {k} = {v};\n"
             if v == "0":
                 kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)    # + r"[^\S]*"
+            else:
+                kernel_prefix += f"constexpr int {k} = {v};\n"
         else:
             kernel_prefix += f"#define {k} {v}\n"
 
