@@ -28,16 +28,24 @@ the ``strategy=`` optional argument of ``tune_kernel()``. Kernel Tuner currently
 
 Most strategies have some mechanism built in to detect when to stop tuning, which may be controlled through specific 
 parameters that can be passed to the strategies using the ``strategy_options=`` optional argument of ``tune_kernel()``. You 
-can also override whatever internal stop criterion the strategy uses, and set either a time limit in seconds or a maximum 
-number of unique function evaluations.
+can also override whatever internal stop criterion the strategy uses, and set either a time limit in seconds (using ``time_limit=``) or a maximum 
+number of unique function evaluations (using ``max_fevals=``).
+
+To give an example, one could simply add these two arguments to any code calling ``tune_kernel()``:
+
+.. code-block:: python
+
+    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, strategy="random_sample", strategy_options=dict(max_fevals=5))
+
 
 A 'unique function evaluation' corresponds to the first time that Kernel Tuner tries to compile and benchmark a parameter 
 configuration that has been selected by the optimization strategy. If you are continuing from a previous tuning session using 
-cache files, serving a value from the cache also counts as a function evaluation for the strategy. Only unique function 
-evaluations are counted, so the second time a parameter configuration is selected by the strategy it is served from the 
+cache files, serving a value from the cache for the first time in the run also counts as a function evaluation for the strategy.
+Only unique function evaluations are counted, so the second time a parameter configuration is selected by the strategy it is served from the 
 cache, but not counted as a unique function evaluation.
 
-The ``strategy_options=`` argument of ``tune_kernel()`` should be used as follows:
+Below all the strategies are listed with their strategy-specific options that can be passed in a dictionary to the ``strategy_options=`` argument
+of ``tune_kernel()``.
 
 
 kernel_tuner.strategies.basinhopping

@@ -231,14 +231,19 @@ the <code class="docutils literal notranslate"><span class="pre">strategy=</span
 </div></blockquote>
 <p>Most strategies have some mechanism built in to detect when to stop tuning, which may be controlled through specific
 parameters that can be passed to the strategies using the <code class="docutils literal notranslate"><span class="pre">strategy_options=</span></code> optional argument of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>. You
-can also override whatever internal stop criterion the strategy uses, and set either a time limit in seconds or a maximum
-number of unique function evaluations.</p>
+can also override whatever internal stop criterion the strategy uses, and set either a time limit in seconds (using <code class="docutils literal notranslate"><span class="pre">time_limit=</span></code>) or a maximum
+number of unique function evaluations (using <code class="docutils literal notranslate"><span class="pre">max_fevals=</span></code>).</p>
+<p>To give an example, one could simply add these two arguments to any code calling <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;random_sample&quot;</span><span class="p">,</span> <span class="n">strategy_options</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">max_fevals</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
 <p>A ‘unique function evaluation’ corresponds to the first time that Kernel Tuner tries to compile and benchmark a parameter
 configuration that has been selected by the optimization strategy. If you are continuing from a previous tuning session using
-cache files, serving a value from the cache also counts as a function evaluation for the strategy. Only unique function
-evaluations are counted, so the second time a parameter configuration is selected by the strategy it is served from the
+cache files, serving a value from the cache for the first time in the run also counts as a function evaluation for the strategy.
+Only unique function evaluations are counted, so the second time a parameter configuration is selected by the strategy it is served from the
 cache, but not counted as a unique function evaluation.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">strategy_options=</span></code> argument of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> should be used as follows:</p>
+<p>Below all the strategies are listed with their strategy-specific options that can be passed in a dictionary to the <code class="docutils literal notranslate"><span class="pre">strategy_options=</span></code> argument
+of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
 <section id="module-kernel_tuner.strategies.basinhopping">
 <span id="kernel-tuner-strategies-basinhopping"></span><h2>kernel_tuner.strategies.basinhopping<a class="headerlink" href="#module-kernel_tuner.strategies.basinhopping" title="Permalink to this heading">¶</a></h2>
 <p>The strategy that uses the basinhopping global optimization method</p>
