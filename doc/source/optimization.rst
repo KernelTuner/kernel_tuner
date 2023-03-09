@@ -35,7 +35,9 @@ To give an example, one could simply add these two arguments to any code calling
 
 .. code-block:: python
 
-    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, strategy="random_sample", strategy_options=dict(max_fevals=5))
+    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params,
+                               strategy="random_sample",
+                               strategy_options=dict(max_fevals=5))
 
 
 A 'unique function evaluation' corresponds to the first time that Kernel Tuner tries to compile and benchmark a parameter 
