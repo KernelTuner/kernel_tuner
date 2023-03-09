@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Kernel Tuner documentation &mdash; Kernel Tuner 0.4.4 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="install.html" />
+    <link rel="prev" title="The Kernel Tuner documentation" href="contents.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                0.4.4
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#quick-install">Quick install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-usage">Example usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#citation">Citation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">The Kernel Tuner documentation</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/index.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="the-kernel-tuner-documentation">
+<h1>The Kernel Tuner documentation<a class="headerlink" href="#the-kernel-tuner-documentation" title="Permalink to this heading">¶</a></h1>
+<p>Kernel Tuner is a software development tool for the creation of highly-optimized and tuned GPU applications.</p>
+<p>The Kernel Tuner documentation pages are mostly about Kernel Tuner itself, but there are a number of related repositories that
+are considered part of the Kernel Tuner family:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://github.com/KernelTuner/kernel_tuner_tutorial">Kernel Tuner Tutorial</a></p></li>
+<li><p><a class="reference external" href="https://github.com/KernelTuner/kernel_launcher">Kernel Launcher</a></p></li>
+<li><p><a class="reference external" href="https://github.com/KernelTuner/dashboard">KT Dashboard</a></p></li>
+</ul>
+</div></blockquote>
+<section id="quick-install">
+<h2>Quick install<a class="headerlink" href="#quick-install" title="Permalink to this heading">¶</a></h2>
+<p>The easiest way to install the Kernel Tuner is using pip:</p>
+<p>To tune CUDA kernels:</p>
+<ul class="simple">
+<li><p>First, make sure you have the <a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA Toolkit</a> installed</p></li>
+<li><p>Then type: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda]</span></code></p></li>
+</ul>
+<p>To tune OpenCL kernels:</p>
+<ul class="simple">
+<li><p>First, make sure you have an OpenCL compiler for your intended OpenCL platform</p></li>
+<li><p>Then type: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[opencl]</span></code></p></li>
+</ul>
+<p>Or both:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda,opencl]</span></code></p></li>
+</ul>
+<p>More information about how to install Kernel Tuner and its
+dependencies can be found under <a class="reference internal" href="install.html#install"><span class="std std-ref">Installation</span></a>.</p>
+</section>
+<section id="example-usage">
+<h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this heading">¶</a></h2>
+<p>The following shows a simple example for tuning a CUDA kernel:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">__global__ void vector_add(float *c, float *a, float *b, int n) {</span>
+<span class="s2">    int i = blockIdx.x * block_size_x + threadIdx.x;</span>
+<span class="s2">    if (i&lt;n) {</span>
+<span class="s2">        c[i] = a[i] + b[i];</span>
+<span class="s2">    }</span>
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">size</span> <span class="o">=</span> <span class="mi">10000000</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="n">n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
+
+<span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">]</span>
+
+<span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="citation">
+<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading">¶</a></h2>
+<p>If you use Kernel Tuner in research or research software, please cite the most relevant among the following publications:</p>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@article<span class="nb">{</span>kerneltuner,
+  author  = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,
+  title   = <span class="nb">{</span>Kernel Tuner: A search-optimizing GPU code auto-tuner<span class="nb">}</span>,
+  journal = <span class="nb">{</span>Future Generation Computer Systems<span class="nb">}</span>,
+  year = <span class="nb">{</span>2019<span class="nb">}</span>,
+  volume  = <span class="nb">{</span>90<span class="nb">}</span>,
+  pages = <span class="nb">{</span>347-358<span class="nb">}</span>,
+  url = <span class="nb">{</span>https://www.sciencedirect.com/science/article/pii/S0167739X18313359<span class="nb">}</span>,
+  doi = <span class="nb">{</span>https://doi.org/10.1016/j.future.2018.08.004<span class="nb">}</span>
+<span class="nb">}</span>
+
+@article<span class="nb">{</span>willemsen2021bayesian,
+  author = <span class="nb">{</span>Willemsen, Floris-Jan and Van Nieuwpoort, Rob and Van Werkhoven, Ben<span class="nb">}</span>,
+  title = <span class="nb">{</span>Bayesian Optimization for auto-tuning GPU kernels<span class="nb">}</span>,
+  journal = <span class="nb">{</span>International Workshop on Performance Modeling, Benchmarking and Simulation
+     of High Performance Computer Systems (PMBS) at Supercomputing (SC21)<span class="nb">}</span>,
+  year = <span class="nb">{</span>2021<span class="nb">}</span>,
+  url = <span class="nb">{</span>https://arxiv.org/abs/2111.14991<span class="nb">}</span>
+<span class="nb">}</span>
+
+@article<span class="nb">{</span>schoonhoven2022benchmarking,
+  title=<span class="nb">{</span>Benchmarking optimization algorithms for auto-tuning GPU kernels<span class="nb">}</span>,
+  author=<span class="nb">{</span>Schoonhoven, Richard and van Werkhoven, Ben and Batenburg, K Joost<span class="nb">}</span>,
+  journal=<span class="nb">{</span>IEEE Transactions on Evolutionary Computation<span class="nb">}</span>,
+  year=<span class="nb">{</span>2022<span class="nb">}</span>,
+  publisher=<span class="nb">{</span>IEEE<span class="nb">}</span>
+<span class="nb">}</span>
+
+@article<span class="nb">{</span>schoonhoven2022going,
+  author = <span class="nb">{</span>Schoonhoven, Richard and Veenboer, Bram, and van Werkhoven, Ben and Batenburg, K Joost<span class="nb">}</span>,
+  title = <span class="nb">{</span>Going green: optimizing GPUs for energy efficiency through model-steered auto-tuning<span class="nb">}</span>,
+  journal = <span class="nb">{</span>International Workshop on Performance Modeling, Benchmarking and Simulation
+     of High Performance Computer Systems (PMBS) at Supercomputing (SC22)<span class="nb">}</span>,
+  year = <span class="nb">{</span>2022<span class="nb">}</span>,
+  url = <span class="nb">{</span>https://arxiv.org/abs/2211.07260<span class="nb">}</span>
+<span class="nb">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="contents.html" class="btn btn-neutral float-left" title="The Kernel Tuner documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="install.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
