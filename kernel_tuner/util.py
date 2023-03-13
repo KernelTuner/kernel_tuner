@@ -877,7 +877,7 @@ def store_cache(key, params, tuning_options):
             return obj.tolist()
         return obj.__str__()
 
-    logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
+    #logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict):
         if not key in tuning_options.cache:
             tuning_options.cache[key] = params
