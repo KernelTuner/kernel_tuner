@@ -100,31 +100,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="using-structs">
+  <section id="using-structs">
 <h1>Using structs<a class="headerlink" href="#using-structs" title="Permalink to this heading">¶</a></h1>
 <p>One of the issues with calling GPU kernels from Python is the use of custom data types in kernel arguments. In general, it is recommended for portability of your GPU code, which may be
 used in any host program in any host programming language, to keep the interface of your kernels as simple as possible. This means sticking to simple pointers of primitive types such as integer, float, and double.

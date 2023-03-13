@@ -103,31 +103,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="tuning-host-code">
+  <section id="tuning-host-code">
 <h1>Tuning Host Code<a class="headerlink" href="#tuning-host-code" title="Permalink to this heading">¶</a></h1>
 <p>With the Kernel Tuner it is also possible to tune the host code of your GPU programs, or even just any C function for that matter.
 Tuning host code can be useful when it contains parameters that have impact on the performance of kernel on the GPU, such as the number of
