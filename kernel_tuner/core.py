@@ -14,7 +14,7 @@ except ImportError:
     cp = np
 
 from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver
+from kernel_tuner.observers.observer import ContinuousObserver, AccuracyObserver
 from kernel_tuner.backends.cupy import CupyFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
@@ -250,6 +250,7 @@ class DeviceInterface(object):
         #look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
         self.continuous_observers = []
+        self.accuracy_observers = []
         if observers:
             for obs in observers:
                 if isinstance(obs, NVMLObserver):
@@ -257,6 +258,9 @@ class DeviceInterface(object):
                     self.use_nvml = True
                 if hasattr(obs, "continuous_observer"):
                     self.continuous_observers.append(obs.continuous_observer)
+                if isinstance(obs, AccuracyObserver):
+                    self.accuracy_observers.append(obs)
+
 
         self.iterations = iterations
 
@@ -337,6 +341,10 @@ class DeviceInterface(object):
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
 
+        # Call the observers to register the configuration to be benchmarked
+        for obs in self.dev.observers:
+            obs.register_configuration(instance.params)
+
         result = {}
         try:
             self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
@@ -372,13 +380,18 @@ class DeviceInterface(object):
         logging.debug('check_kernel_output')
 
         #if not using custom verify function, check if the length is the same
-        if not verify and len(instance.arguments) != len(answer):
-            raise TypeError("The length of argument list and provided results do not match.")
+        if answer:
+            if len(instance.arguments) != len(answer):
+                raise TypeError("The length of argument list and provided results do not match.")
+
+            should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
+        else:
+            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)) for arg in instance.arguments]
 
         #re-copy original contents of output arguments to GPU memory, to overwrite any changes
         #by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
-            if (verify or answer[i] is not None) and isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)):
+            if should_sync[i]:
                 self.dev.memcpy_htod(gpu_args[i], arg)
 
         #run the kernel
@@ -389,24 +402,38 @@ class DeviceInterface(object):
         #retrieve gpu results to host memory
         result_host = []
         for i, arg in enumerate(instance.arguments):
-            if (verify or answer[i] is not None) and isinstance(arg, (np.ndarray, cp.ndarray)):
-                result_host.append(np.zeros_like(arg))
-                self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
-            elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
-                if not answer[i].is_cuda:
-                    #if the answer is on the host, copy gpu output to host as well
-                    result_host.append(torch.zeros_like(answer[i]))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+            if should_sync[i]:
+                if isinstance(arg, (np.ndarray, cp.ndarray)):
+                    result_host.append(np.zeros_like(arg))
+                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+                elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
+                    if not answer[i].is_cuda:
+                        #if the answer is on the host, copy gpu output to host as well
+                        result_host.append(torch.zeros_like(answer[i]))
+                        self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+                    else:
+                        result_host.append(gpu_args[i].tensor)
                 else:
-                    result_host.append(gpu_args[i].tensor)
+                    # We should sync this argument, but we do not know how to transfer this type of argument
+                    # What do we do? Should we throw an error?
+                    result_host.append(None)
             else:
                 result_host.append(None)
 
-        #if the user has specified a custom verify function, then call it, else use default based on numpy allclose
+        # Call the accuracy observers
+        for obs in self.accuracy_observers:
+            obs.process_kernel_output(answer, result_host)
+
+        # There are three scenarios:
+        # - if there is a custom verify function, call that.
+        # - otherwise, if there are no accuracy observer, call the default verify function
+        # - otherwise, the answer is correct (we assume the accuracy observers verified the output)
         if verify:
             correct = verify(answer, result_host, atol=atol)
-        else:
+        elif not self.accuracy_observers:
             correct = _default_verify_function(instance, answer, result_host, atol, verbose)
+        else:
+            correct = True
 
         if not correct:
             raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
@@ -444,7 +471,6 @@ class DeviceInterface(object):
 
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
             gpu_args = self.preprocess_gpu_arguments(gpu_args, params)
-
             try:
                 # compile the kernel
                 start_compilation = time.perf_counter()
@@ -466,7 +492,7 @@ class DeviceInterface(object):
                 last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
                 # test kernel for correctness
-                if func and (to.answer or to.verify):
+                if func and (to.answer or to.verify or self.accuracy_observers):
                     start_verification = time.perf_counter()
                     self.check_kernel_output(func, gpu_args, instance, to.answer, to.atol, to.verify, verbose)
                     last_verification_time = 1000 * (time.perf_counter() - start_verification)
@@ -559,8 +585,11 @@ class DeviceInterface(object):
         if kernel_source.lang in ["CUDA", "NVCUDA"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
+        # Preprocess GPU arguments. Require for handling `Tunable` arguments
+        arguments = self.preprocess_gpu_arguments(kernel_options.arguments, params)
+
         #collect everything we know about this instance and return it
-        return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, kernel_options.arguments)
+        return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, arguments)
 
     def get_environment(self):
         """Return dictionary with information about the environment"""
