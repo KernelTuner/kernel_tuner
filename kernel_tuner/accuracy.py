@@ -2,6 +2,8 @@ from collections import UserDict
 from typing import Dict
 import numpy as np
 
+from kernel_tuner.observers import AccuracyObserver
+
 
 class Tunable(UserDict):
     def __init__(self, param_key: str, arrays: Dict):
@@ -70,8 +72,9 @@ class TunablePrecision(Tunable):
 
             # Try to get bfloat16 from tensorflow if available.
             try:
-                import tensorflow
-                dtypes["bfloat16"] = tensorflow.bfloat16.as_numpy_dtype
+                #import tensorflow
+                #dtypes["bfloat16"] = tensorflow.bfloat16.as_numpy_dtype
+                pass
             except ImportError:
                 pass  # Ignore error if tensorflow is not available
 
@@ -84,3 +87,26 @@ class TunablePrecision(Tunable):
             arrays[precision] = np.array(array).astype(dtype)
 
         super().__init__(param_key, arrays)
+
+
+class CalculateErrorObserver(AccuracyObserver):
+    def __init__(self, metric=None, key="error"):
+        # The default metric is the mean squared error
+        if metric is None:
+            metric = lambda a, b: np.average(np.square(a - b))
+
+        self.key = key
+        self.function = metric
+        self.result = None
+
+    def process_kernel_output(self, answers, outputs):
+        errors = []
+
+        for answer, output in zip(answers, outputs):
+            if answer is not None:
+                errors.append(self.metric(answer, output))
+
+        self.result = max(errors)
+
+    def get_results(self):
+        return dict([(self.key, self.result)])

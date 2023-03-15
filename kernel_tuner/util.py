@@ -14,6 +14,9 @@ from types import FunctionType
 
 import numpy as np
 from constraint import Constraint, AllDifferentConstraint, AllEqualConstraint, MaxSumConstraint, ExactSumConstraint, MinSumConstraint, InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint, FunctionConstraint
+
+from kernel_tuner.accuracy import Tunable
+
 try:
     import cupy as cp
 except ImportError:
@@ -97,6 +100,10 @@ def check_argument_list(kernel_name, kernel_string, args):
             continue
         for (i, arg) in enumerate(args):
             kernel_argument = arguments[i]
+
+            # Fix to deal with tunable arguments
+            if isinstance(arg, Tunable):
+                continue
 
             if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
                 raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type np.ndarray or numpy scalar")

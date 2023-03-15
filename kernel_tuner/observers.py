@@ -15,6 +15,11 @@ class BenchmarkObserver(ABC):
         """Sets self.dev, for inspection by the observer at various points during benchmarking"""
         self.dev = dev
 
+    def register_configuration(self, params):
+        """Called once before benchmarking of a single kernel configuration. The `params` argument is a `dict`
+        that stores the configuration parameters."""
+        pass
+
     def before_start(self):
         """before start is called every iteration before the kernel starts"""
         pass
@@ -41,16 +46,26 @@ class BenchmarkObserver(ABC):
         pass
 
 
+class AccuracyObserver(BenchmarkObserver):
+    """ Observer that can verify or measure the accuracy of the output produced by a kernel. """
+
+    @abstractmethod
+    def process_kernel_output(self, answer, output):
+        """method will be called once before benchmarking of a single kernel configuration. The arguments
+        provided are the `answer` as passed `tune_kernel` and the `output` produced by the kernel"""
+        pass
+
+
 class IterationObserver(BenchmarkObserver):
     pass
+
 
 class ContinuousObserver(BenchmarkObserver):
     pass
 
 
-
 class PowerSensorObserver(BenchmarkObserver):
-    """ Observer that an external PowerSensor2 device to accurately measure power
+    """ Observer that an external PowerSensor2 device uses to accurately measure power
 
     Requires PowerSensor2 hardware and power_sensor Python bindings.
 
