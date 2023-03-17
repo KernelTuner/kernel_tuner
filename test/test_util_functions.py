@@ -198,6 +198,28 @@ def test_prepare_kernel_string():
         prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", invalid_defines)
 
 
+def test_prepare_kernel_string_partial_loop_unrolling():
+
+    kernel = """this is a weird kernel(what * language, is this, anyway* C) {
+        #pragma unroll loop_unroll_factor_monkey
+        for monkey in the forest {
+            eat(banana);
+        }
+    }"""
+    threads = (1, 2, 3)
+    grid = (4, 5, 6)
+    params = dict()
+    params["loop_unroll_factor_monkey"] = 8
+
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
+    assert "constexpr int loop_unroll_factor_monkey = 8;" in output
+
+    params["loop_unroll_factor_monkey"] = 0
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
+    assert not "constexpr int loop_unroll_factor_monkey" in output
+    assert not "#pragma unroll loop_unroll_factor_monkey" in output
+
+
 
 def test_replace_param_occurrences():
     kernel = "this is a weird kernel"

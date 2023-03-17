@@ -54,7 +54,7 @@ __global__ void sum_floats(float *sum_global, floatvector *array, int n) {
         sum = sh_mem[ti];
         #pragma unroll
         for (unsigned int s=16; s>0; s>>=1) {
-            sum += __shfl_down_sync(0, sum, s);
+            sum += __shfl_down_sync(0xffffffff, sum, s);
         }
     }
     #else

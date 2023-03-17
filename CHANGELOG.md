@@ -4,6 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [0.4.4] - 2023-03-09
 ### Added
 - Support for using time_limit in simulation mode
 - Helper functions for energy tuning
@@ -12,6 +13,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - Changed what timings are stored in cache files
+- No longer inserting partial loop unrolling factor of 0 in CUDA
 
 ## [0.4.3] - 2022-10-19
 ### Added
