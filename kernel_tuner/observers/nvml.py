@@ -27,7 +27,8 @@ class nvml():
             self.pwr_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.dev)
         except pynvml.NVMLError_NotSupported:
             self.pwr_limit_default = None
-            self.pwr_constraints = [1, 0] # inverted range to make all range checks fail
+            # inverted range to make all range checks fail
+            self.pwr_constraints = [1, 0]
 
         try:
             self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
@@ -35,7 +36,8 @@ class nvml():
             self._persistence_mode = None
 
         try:
-            self._auto_boost = pynvml.nvmlDeviceGetAutoBoostedClocksEnabled(self.dev)[0]  # returns [isEnabled, isDefaultEnabled]
+            # returns [isEnabled, isDefaultEnabled]
+            self._auto_boost = pynvml.nvmlDeviceGetAutoBoostedClocksEnabled(self.dev)[0]
         except pynvml.NVMLError_NotSupported:
             self._auto_boost = None
 
@@ -100,7 +102,8 @@ class nvml():
             pynvml.nvmlDeviceSetPowerManagementLimit(self.dev, new_limit)
         except pynvml.NVMLError_NoPermission:
             if self.nvidia_smi:
-                new_limit_watt = int(new_limit / 1000.0) # nvidia-smi expects Watts rather than milliwatts
+                # nvidia-smi expects Watts rather than milliwatts
+                new_limit_watt = int(new_limit / 1000.0)
                 args = ["sudo", self.nvidia_smi, "-i", str(self.id), "--power-limit="+str(new_limit_watt)]
                 subprocess.run(args, check=True)
 
@@ -307,7 +310,8 @@ class NVMLObserver(BenchmarkObserver):
 
     def after_start(self):
         self.t0 = time.perf_counter()
-        self.during() # ensure during is called at least once
+        # ensure during is called at least once
+        self.during()
 
     def during(self):
         if "temperature" in self.observables:
@@ -332,7 +336,8 @@ class NVMLObserver(BenchmarkObserver):
             gr_voltage_readings = self.gr_voltage_readings
             gr_voltage_readings = [[0.0, gr_voltage_readings[0][1]]] + gr_voltage_readings
             gr_voltage_readings = gr_voltage_readings + [[execution_time, gr_voltage_readings[-1][1]]]
-            self.results["gr_voltages"].append(np.average(gr_voltage_readings[:][:][1])) #time in s, graphics voltage in millivolts
+            # time in s, graphics voltage in millivolts
+            self.results["gr_voltages"].append(np.average(gr_voltage_readings[:][:][1]))
 
     def get_results(self):
         averaged_results = {}
@@ -365,14 +370,16 @@ class NVMLPowerObserver(ContinuousObserver):
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
         self.observables = observables
 
-        self.continuous_duration = continous_duration # seconds
+        # duration in seconds
+        self.continuous_duration = continous_duration
 
         self.power = 0
         self.energy = 0
         self.power_readings = []
         self.t0 = 0
 
-        self.results = None # results from the last iteration-based benchmark
+        # results from the last iteration-based benchmark
+        self.results = None
 
     def before_start(self):
         self.parent.before_start()
@@ -398,7 +405,8 @@ class NVMLPowerObserver(ContinuousObserver):
         if not self.power_readings:
             return
 
-        execution_time = (self.results["time"]/1e3) # converted to seconds from milliseconds
+        # convert to seconds from milliseconds
+        execution_time = (self.results["time"]/1e3)
         self.power = np.median([d[1] / 1e3 for d in self.power_readings])
         self.energy = self.power * execution_time
 
@@ -427,8 +435,9 @@ def get_nvml_pwr_limits(device, n=None, quiet=False):
     power_limits = d.pwr_constraints
     power_limit_min = power_limits[0]
     power_limit_max = power_limits[-1]
-    power_limit_min *= 1e-3  # Convert to Watt
-    power_limit_max *= 1e-3  # Convert to Watt
+    # Min and Max converted to Watt
+    power_limit_min *= 1e-3
+    power_limit_max *= 1e-3
     power_limit_round = 5
     tune_params = OrderedDict()
     if n == None:
