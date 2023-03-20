@@ -18,7 +18,7 @@ def setup_mock(nvml):
     return nvml
 
 
-@patch('kernel_tuner.nvml.nvml')
+@patch('kernel_tuner.observers.nvml.nvml')
 def test_get_nvml_pwr_limits(nvml):
     nvml = setup_mock(nvml)
     result = get_nvml_pwr_limits(0, quiet=True)
@@ -30,7 +30,7 @@ def test_get_nvml_pwr_limits(nvml):
     assert result['nvml_pwr_limit'][-1] == 150
 
 
-@patch('kernel_tuner.nvml.nvml')
+@patch('kernel_tuner.observers.nvml.nvml')
 def test_get_nvml_gr_clocks(nvml):
     nvml = setup_mock(nvml)
     result = get_nvml_gr_clocks(0, quiet=True)
@@ -40,7 +40,7 @@ def test_get_nvml_gr_clocks(nvml):
     assert result['nvml_gr_clock'] == [1000, 3000]
 
 
-@patch('kernel_tuner.nvml.nvml')
+@patch('kernel_tuner.observers.nvml.nvml')
 def test_get_nvml_mem_clocks(nvml):
     nvml = setup_mock(nvml)
     result = get_nvml_mem_clocks(0, quiet=False)
@@ -48,7 +48,7 @@ def test_get_nvml_mem_clocks(nvml):
     assert result['nvml_mem_clock'] == [2100]
 
 
-@patch('kernel_tuner.nvml.nvml')
+@patch('kernel_tuner.observers.nvml.nvml')
 def test_get_idle_power(nvml):
     nvml = setup_mock(nvml)
     result = get_idle_power(0)
