@@ -4,6 +4,7 @@ from collections import namedtuple
 from time import perf_counter
 
 from kernel_tuner import util
+from kernel_tuner.runners.runner import Runner
 
 _SimulationDevice = namedtuple("_SimulationDevice", ["max_threads", "env", "quiet"])
 
@@ -25,7 +26,7 @@ class SimulationDevice(_SimulationDevice):
         return self.env
 
 
-class SimulationRunner:
+class SimulationRunner(Runner):
     """ SimulationRunner is used for tuning with a single process/thread """
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
