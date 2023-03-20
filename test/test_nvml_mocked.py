@@ -5,7 +5,7 @@ try:
 except ImportError:
     from unittest.mock import patch, Mock
 
-from kernel_tuner.nvml import get_nvml_pwr_limits, get_nvml_gr_clocks, get_nvml_mem_clocks, get_idle_power
+from kernel_tuner.observers.nvml import get_nvml_pwr_limits, get_nvml_gr_clocks, get_nvml_mem_clocks, get_idle_power
 
 
 
