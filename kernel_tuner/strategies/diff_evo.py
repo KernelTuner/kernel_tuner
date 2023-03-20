@@ -4,7 +4,7 @@ from collections import OrderedDict
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import CostFunc, get_bounds
+from kernel_tuner.strategies.common import CostFunc
 from scipy.optimize import differential_evolution
 
 supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
