@@ -92,7 +92,8 @@ class OpenCLFunctions(GPUBackend):
             # if arg i is a numpy array copy to device
             if isinstance(arg, np.ndarray):
                 gpu_args.append(cl.Buffer(self.ctx, self.mf.READ_WRITE | self.mf.COPY_HOST_PTR, hostbuf=arg))
-            else: # if not an array, just pass argument along
+            # if not an array, just pass argument along
+            else:
                 gpu_args.append(arg)
         return gpu_args
 
@@ -201,7 +202,7 @@ class OpenCLFunctions(GPUBackend):
         """
         if isinstance(dest, cl.Buffer):
             cl.enqueue_copy(self.queue, dest, src)
-    
+
     def copy_constant_memory_args(self, cmem_args):
         raise NotImplementedError('PyOpenCL backend does not support constant memory')
 

@@ -93,7 +93,8 @@ class PyCudaFunctions(GPUBackend):
         """
         self.allocations = []
         self.texrefs = []
-        if not pycuda_available and isinstance(drv, PyCudaPlaceHolder):    #and part to allow mocking
+        # if not PyCuda available, check if mocking before raising exception
+        if not pycuda_available and isinstance(drv, PyCudaPlaceHolder):
             raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
 
         drv.init()
@@ -162,7 +163,8 @@ class PyCudaFunctions(GPUBackend):
 
     def __del__(self):
         for gpu_mem in self.allocations:
-            if hasattr(gpu_mem, 'free'):    #if needed for when using mocks during testing
+            # if needed for when using mocks during testing
+            if hasattr(gpu_mem, 'free'):
                 gpu_mem.free()
 
     def ready_argument_list(self, arguments):
@@ -192,7 +194,8 @@ class PyCudaFunctions(GPUBackend):
             # pycuda does not support bool, convert to uint8 instead
             elif isinstance(arg, np.bool_):
                 gpu_args.append(arg.astype(np.uint8))
-            else:    # if not an array, just pass argument along
+            # if not an array, just pass argument along
+            else:
                 gpu_args.append(arg)
         return gpu_args
 

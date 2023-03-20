@@ -65,7 +65,8 @@ class CFunctions(CompilerBackend):
         self.iterations = iterations
         self.max_threads = 1024
         self.compiler_options = compiler_options
-        self.compiler = compiler or "g++"  # use gcc by default
+        # if no compiler is specified, use g++ by default
+        self.compiler = compiler or "g++"
         self.lib = None
         self.using_openmp = False
         self.observers = [CRuntimeObserver(self)]

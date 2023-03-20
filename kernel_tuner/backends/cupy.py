@@ -118,7 +118,8 @@ class CupyFunctions(GPUBackend):
                 alloc = cp.array(arg)
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
-            else: # if not a numpy array, just pass argument along
+            # if not a numpy array, just pass argument along
+            else:
                 gpu_args.append(arg)
         return gpu_args
 
