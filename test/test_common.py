@@ -39,7 +39,9 @@ def test_get_bounds():
         random.shuffle(tune_params[k])
 
     expected = [(0, 4), (0, 9900), (-11.2, 123.27)]
-    answer = common.get_bounds(tune_params)
+    searchspace = Searchspace(tune_params, None, 1024)
+    cost_func = common.CostFunc(searchspace, None, None)
+    answer = cost_func.get_bounds()
     assert answer == expected
 
 

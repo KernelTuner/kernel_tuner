@@ -26,9 +26,8 @@ def fake_runner():
 tune_params = OrderedDict([("x", [1, 2, 3]), ("y", [4, 5, 6])])
 
 
-def test__cost_func():
+def test_cost_func():
     x = [1, 4]
-    kernel_options = None
     tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
                              restrictions=None, strategy_options={}, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
@@ -39,12 +38,12 @@ def test__cost_func():
     assert time == 5
 
     # check if restrictions are properly handled
-    restrictions = ["False"]
+    restrictions = lambda _: False
     tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
                              restrictions=restrictions, strategy_options={},
                              verbose=True, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
-    time = CostFunc(Searchspace(tune_params, None, 1024), tuning_options, runner)(x)
+    time = CostFunc(Searchspace(tune_params, restrictions, 1024), tuning_options, runner)(x)
     assert time == sys.float_info.max
 
 

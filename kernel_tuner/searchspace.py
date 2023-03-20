@@ -47,7 +47,7 @@ class Searchspace:
         if neighbor_method is not None and neighbor_method != "Hamming":
             self.__prepare_neighbors_index()
         if build_neighbors_index:
-            self.neighbors_index = self.__build_neighbors_index(neighbor_method, max_threads)
+            self.neighbors_index = self.__build_neighbors_index(neighbor_method)
 
     def __build_searchspace(self, block_size_names: list, max_threads: int) -> Tuple[List[tuple], np.ndarray, dict, int]:
         """compute valid configurations in a search space based on restrictions and max_threads, returns the searchspace, a dict of the searchspace for fast lookups and the size"""

@@ -52,7 +52,6 @@ sort_tune_params = OrderedDict()
 sort_tune_params["gpu1"] = list(range(num_layers))
 sort_tune_params["gpu2"] = list(range(num_layers))
 sort_tune_params["gpu3"] = list(range(num_layers))
-sort_tuning_options = Options(dict(restrictions=[], tune_params=sort_tune_params))
 searchspace_sort = Searchspace(sort_tune_params, [], max_threads)
 
 def test_size():
@@ -73,8 +72,13 @@ def test_internal_representation():
 
 def test_sort():
     """test that the sort searchspace option works as expected"""
-    simple_searchspace_sort = Searchspace(simple_tuning_options.tune_params, simple_tuning_options.restrictions, max_threads, sort=True, sort_last_param_first=False)
-    assert simple_searchspace_sort.list == [
+    simple_searchspace_sort = Searchspace(
+        simple_tuning_options.tune_params,
+        simple_tuning_options.restrictions,
+        max_threads
+    )
+
+    expected = [
         (1, 4, "string_1"),
         (1, 4, "string_2"),
         (1, 5.5, "string_1"),
@@ -89,7 +93,11 @@ def test_sort():
         (3, 5.5, "string_2"),
     ]
 
-    assert simple_searchspace.sorted_list(sort_last_param_first=False) == expected
+    # Check if lists match without considering order
+    assert set(simple_searchspace_sort.list) == set(expected)
+
+    # Check if lists match, also considering order
+    assert simple_searchspace_sort.sorted_list() == expected
 
     sorted_list = searchspace_sort.sorted_list(sort_last_param_first=False)
     num_params = len(sorted_list[0])
@@ -102,8 +110,13 @@ def test_sort():
 
 def test_sort_reversed():
     """test that the sort searchspace option with the sort_last_param_first option enabled works as expected"""
-    simple_searchspace_sort_reversed = Searchspace(simple_tuning_options, max_threads, sort=True, sort_last_param_first=True)
-    assert simple_searchspace_sort_reversed.list == [
+    simple_searchspace_sort_reversed = Searchspace(
+        simple_tuning_options.tune_params,
+        simple_tuning_options.restrictions,
+        max_threads
+    )
+
+    expected = [
         (1, 4, "string_1"),
         (2, 4, "string_1"),
         (3, 4, "string_1"),
@@ -118,6 +131,10 @@ def test_sort_reversed():
         (3, 5.5, "string_2"),
     ]
 
+    # Check if lists match without considering order
+    assert set(simple_searchspace_sort_reversed.list) == set(expected)
+
+    # Check if lists match, also considering order
     assert simple_searchspace_sort_reversed.sorted_list(sort_last_param_first=True) == expected
 
     sorted_list = searchspace_sort.sorted_list(sort_last_param_first=True)
@@ -178,7 +195,8 @@ def test_random_sample():
 
 def __test_neighbors_prebuilt(param_config: tuple, expected_neighbors: list, neighbor_method: str):
     simple_searchspace_prebuilt = Searchspace(
-        simple_tuning_options,
+        simple_tuning_options.tune_params,
+        simple_tuning_options.restrictions,
         max_threads,
         build_neighbors_index=True,
         neighbor_method=neighbor_method,
@@ -271,7 +289,13 @@ def test_neighbors_fictious():
 
 def test_neighbors_cached():
     """test whether retrieving a set of neighbors twice returns the cached version"""
-    simple_searchspace_duplicate = Searchspace(simple_tuning_options, max_threads, neighbor_method="Hamming")
+    simple_searchspace_duplicate = Searchspace(
+        simple_tuning_options.tune_params,
+        simple_tuning_options.restrictions,
+        max_threads,
+        neighbor_method="Hamming"
+    )
+
     test_configs = simple_searchspace_duplicate.get_random_sample(10)
     for test_config in test_configs:
         assert not simple_searchspace_duplicate.are_neighbors_indices_cached(test_config)
