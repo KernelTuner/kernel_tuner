@@ -15,13 +15,13 @@ class Searchspace:
     """Class that offers the search space to strategies"""
 
     def __init__(
-        self,
-        tuning_options: dict,
-        max_threads: int,
-        build_neighbors_index=False,
-        neighbor_method=None,
-        sort=False,
-        sort_last_param_first=False,
+            self,
+            tune_params: dict,
+            restrictions,
+            max_threads: int,
+            block_size_names=default_block_size_names,
+            build_neighbors_index=False,
+            neighbor_method=None
     ) -> None:
         """Build a searchspace using the variables and constraints.
         Optionally build the neighbors index - only faster if you repeatedly look up neighbors. Methods:
@@ -47,9 +47,9 @@ class Searchspace:
         if neighbor_method is not None and neighbor_method != "Hamming":
             self.__prepare_neighbors_index()
         if build_neighbors_index:
-            self.neighbors_index = self.__build_neighbors_index(neighbor_method)
+            self.neighbors_index = self.__build_neighbors_index(neighbor_method, max_threads)
 
-    def __build_searchspace(self, sort: bool, sort_last_param_first: bool) -> Tuple[List[tuple], np.ndarray, dict, int]:
+    def __build_searchspace(self, block_size_names: list, max_threads: int) -> Tuple[List[tuple], np.ndarray, dict, int]:
         """compute valid configurations in a search space based on restrictions and max_threads, returns the searchspace, a dict of the searchspace for fast lookups and the size"""
 
         # instantiate the parameter space with all the variables

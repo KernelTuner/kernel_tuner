@@ -53,7 +53,7 @@ sort_tune_params["gpu1"] = list(range(num_layers))
 sort_tune_params["gpu2"] = list(range(num_layers))
 sort_tune_params["gpu3"] = list(range(num_layers))
 sort_tuning_options = Options(dict(restrictions=[], tune_params=sort_tune_params))
-searchspace_sort = Searchspace(sort_tuning_options.tune_params, sort_tuning_options.restrictions, max_threads)
+searchspace_sort = Searchspace(sort_tune_params, [], max_threads)
 
 def test_size():
     """test that the searchspace after applying restrictions is the expected size"""
@@ -73,7 +73,7 @@ def test_internal_representation():
 
 def test_sort():
     """test that the sort searchspace option works as expected"""
-    simple_searchspace_sort = Searchspace(simple_tuning_options, max_threads, sort=True, sort_last_param_first=False)
+    simple_searchspace_sort = Searchspace(simple_tuning_options.tune_params, simple_tuning_options.restrictions, max_threads, sort=True, sort_last_param_first=False)
     assert simple_searchspace_sort.list == [
         (1, 4, "string_1"),
         (1, 4, "string_2"),
