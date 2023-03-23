@@ -37,7 +37,7 @@ class Backend(ABC):
     @abstractmethod
     def memset(self, allocation, value, size):
         pass
-    
+
     @abstractmethod
     def memcpy_dtoh(self, dest, src):
         pass
@@ -57,11 +57,11 @@ class GPUBackend(Backend):
     def copy_constant_memory_args(self, cmem_args):
         pass
 
-    # @abstractmethod
+    @abstractmethod
     def copy_shared_memory_args(self, smem_args):
         pass
 
-    # @abstractmethod
+    @abstractmethod
     def copy_texture_memory_args(self, texmem_args):
         pass
 
