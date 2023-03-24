@@ -7,7 +7,8 @@ import time
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
-from kernel_tuner.observers.observer import BenchmarkObserver
+from kernel_tuner.observers.cupy import CupyRuntimeObserver
+
 
 #embedded in try block to be able to generate documentation
 #and run tests without cupy installed
@@ -15,24 +16,6 @@ try:
     import cupy as cp
 except ImportError:
     cp = None
-
-
-class CupyRuntimeObserver(BenchmarkObserver):
-    """ Observer that measures time using CUDA events during benchmarking in the CuPy backend """
-    def __init__(self, dev):
-        self.dev = dev
-        self.stream = dev.stream
-        self.start = dev.start
-        self.end = dev.end
-        self.times = []
-
-    def after_finish(self):
-        self.times.append(cp.cuda.get_elapsed_time(self.start, self.end)) #ms
-
-    def get_results(self):
-        results = {"time": np.average(self.times), "times": self.times.copy()}
-        self.times = []
-        return results
 
 
 class CupyFunctions(GPUBackend):

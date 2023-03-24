@@ -6,7 +6,7 @@ import time
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
-from kernel_tuner.observers.observer import BenchmarkObserver
+from kernel_tuner.observers.pycuda import PyCudaRuntimeObserver
 from kernel_tuner.observers.nvml import nvml
 from kernel_tuner.util import TorchPlaceHolder, SkippableFailure
 
@@ -50,28 +50,6 @@ class Holder(drv.PointerHolderBase):
 
     def get_pointer(self):
         return self.t.data_ptr()
-
-
-class PyCudaRuntimeObserver(BenchmarkObserver):
-    """ Observer that measures time using CUDA events during benchmarking """
-
-    def __init__(self, dev):
-        self.dev = dev
-        self.stream = dev.stream
-        self.start = dev.start
-        self.end = dev.end
-        self.times = []
-
-    def after_finish(self):
-        self.times.append(self.end.time_since(self.start))    #ms
-
-    def get_results(self):
-        results = {
-            "time": np.average(self.times),
-            "times": self.times.copy()
-        }
-        self.times = []
-        return results
 
 
 class PyCudaFunctions(GPUBackend):

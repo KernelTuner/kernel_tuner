@@ -2,8 +2,8 @@
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
-from kernel_tuner.observers.observer import BenchmarkObserver
-from kernel_tuner.util import SkippableFailure
+from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
+from kernel_tuner.util import SkippableFailure, cuda_error_check
 
 #embedded in try block to be able to generate documentation
 #and run tests without cuda-python installed
@@ -11,46 +11,6 @@ try:
     from cuda import cuda, cudart, nvrtc
 except ImportError:
     cuda = None
-
-
-def error_check(error):
-    """ Checking the status of CUDA calls """
-    if isinstance(error, cuda.CUresult):
-        if error != cuda.CUresult.CUDA_SUCCESS:
-            _, name = cuda.cuGetErrorName(error)
-            raise RuntimeError(f"CUDA error: {name.decode()}")
-    elif isinstance(error, cudart.cudaError_t):
-        if error != cudart.cudaError_t.cudaSuccess:
-            _, name = cudart.getErrorName(error)
-            raise RuntimeError(f"CUDART error: {name.decode()}")
-    elif isinstance(error, nvrtc.nvrtcResult):
-        if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            _, desc = nvrtc.nvrtcGetErrorString(error)
-            raise RuntimeError(f"NVRTC error: {desc.decode()}")
-
-
-class CudaRuntimeObserver(BenchmarkObserver):
-    """ Observer that measures time using CUDA events during benchmarking """
-    def __init__(self, dev):
-        self.dev = dev
-        self.stream = dev.stream
-        self.start = dev.start
-        self.end = dev.end
-        self.times = []
-
-    def after_finish(self):
-        # time in ms
-        err, time = cudart.cudaEventElapsedTime(self.start, self.end)
-        error_check(err)
-        self.times.append(time)
-
-    def get_results(self):
-        results = {
-            "time": np.average(self.times),
-            "times": self.times.copy()
-        }
-        self.times = []
-        return results
 
 
 class CudaFunctions(GPUBackend):
@@ -82,23 +42,23 @@ class CudaFunctions(GPUBackend):
 
         # initialize and select device
         err = cuda.cuInit(0)
-        error_check(err)
+        cuda_error_check(err)
         err, self.device = cuda.cuDeviceGet(device)
-        error_check(err)
+        cuda_error_check(err)
         err, self.context = cuda.cuDevicePrimaryCtxRetain(device)
-        error_check(err)
+        cuda_error_check(err)
         if CudaFunctions.last_selected_device != device:
             err = cuda.cuCtxSetCurrent(self.context)
-            error_check(err)
+            cuda_error_check(err)
             CudaFunctions.last_selected_device = device
 
         # compute capabilities and device properties
         err, major = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMajor, device)
-        error_check(err)
+        cuda_error_check(err)
         err, minor = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMinor, device)
-        error_check(err)
+        cuda_error_check(err)
         err, self.max_threads = cudart.cudaDeviceGetAttribute(cudart.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device)
-        error_check(err)
+        cuda_error_check(err)
         self.cc = f"{major}{minor}"
         self.iterations = iterations
         self.current_module = None
@@ -110,11 +70,11 @@ class CudaFunctions(GPUBackend):
 
         # create a stream and events
         err, self.stream = cuda.cuStreamCreate(0)
-        error_check(err)
+        cuda_error_check(err)
         err, self.start = cuda.cuEventCreate(0)
-        error_check(err)
+        cuda_error_check(err)
         err, self.end = cuda.cuEventCreate(0)
-        error_check(err)
+        cuda_error_check(err)
 
         # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
@@ -127,7 +87,7 @@ class CudaFunctions(GPUBackend):
 
         # collect environment information
         err, device_properties = cudart.cudaGetDeviceProperties(device)
-        error_check(err)
+        cuda_error_check(err)
         env = dict()
         env["device_name"] = device_properties.name.decode()
         env["cuda_version"] = cuda.CUDA_VERSION
@@ -142,7 +102,7 @@ class CudaFunctions(GPUBackend):
         for device_memory in self.allocations:
             if isinstance(device_memory, cuda.CUdeviceptr):
                 err = cuda.cuMemFree(device_memory)
-                error_check(err)
+                cuda_error_check(err)
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem
@@ -160,7 +120,7 @@ class CudaFunctions(GPUBackend):
             # if arg is a numpy array copy it to device
             if isinstance(arg, np.ndarray):
                 err, device_memory = cuda.cuMemAlloc(arg.nbytes)
-                error_check(err)
+                cuda_error_check(err)
                 self.allocations.append(device_memory)
                 gpu_args.append(device_memory)
                 self.memcpy_htod(device_memory, arg)
@@ -201,21 +161,21 @@ class CudaFunctions(GPUBackend):
 
         err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
         try:
-            error_check(err)
+            cuda_error_check(err)
             err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
-            error_check(err)
+            cuda_error_check(err)
             err, size = nvrtc.nvrtcGetPTXSize(program)
-            error_check(err)
+            cuda_error_check(err)
             buff = b' ' * size
             err = nvrtc.nvrtcGetPTX(program, buff)
-            error_check(err)
+            cuda_error_check(err)
             err, self.current_module = cuda.cuModuleLoadData(np.char.array(buff))
             if err == cuda.CUresult.CUDA_ERROR_INVALID_PTX:
                 raise SkippableFailure("uses too much shared data")
             else:
-                error_check(err)
+                cuda_error_check(err)
             err, self.func = cuda.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
-            error_check(err)
+            cuda_error_check(err)
 
         except RuntimeError as re:
             _, n = nvrtc.nvrtcGetProgramLogSize(program)
@@ -229,12 +189,12 @@ class CudaFunctions(GPUBackend):
     def start_event(self):
         """ Records the event that marks the start of a measurement """
         err = cudart.cudaEventRecord(self.start, self.stream)
-        error_check(err)
+        cuda_error_check(err)
 
     def stop_event(self):
         """ Records the event that marks the end of a measurement """
         err = cudart.cudaEventRecord(self.end, self.stream)
-        error_check(err)
+        cuda_error_check(err)
 
     def kernel_finished(self):
         """ Returns True if the kernel has finished, False otherwise """
@@ -248,7 +208,7 @@ class CudaFunctions(GPUBackend):
     def synchronize():
         """ Halts execution until device has finished its tasks """
         err = cudart.cudaDeviceSynchronize()
-        error_check(err)
+        cuda_error_check(err)
 
 
     def copy_constant_memory_args(self, cmem_args):
@@ -263,9 +223,9 @@ class CudaFunctions(GPUBackend):
         """
         for k, v in cmem_args.items():
             err, symbol, _ = cuda.cuModuleGetGlobal(self.current_module, str.encode(k))
-            error_check(err)
+            cuda_error_check(err)
             err = cuda.cuMemcpyHtoD(symbol, v, v.nbytes)
-            error_check(err)
+            cuda_error_check(err)
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
@@ -307,7 +267,7 @@ class CudaFunctions(GPUBackend):
                 arg_types.append(np.ctypeslib.as_ctypes_type(arg.dtype))
         kernel_args  = (tuple(gpu_args), tuple(arg_types))
         err = cuda.cuLaunchKernel(func, grid[0], grid[1], grid[2], threads[0], threads[1], threads[2], self.smem_size, stream, kernel_args, 0)
-        error_check(err)
+        cuda_error_check(err)
 
     @staticmethod
     def memset(allocation, value, size):
@@ -324,7 +284,7 @@ class CudaFunctions(GPUBackend):
 
         """
         err = cudart.cudaMemset(allocation, value, size)
-        error_check(err)
+        cuda_error_check(err)
 
     @staticmethod
     def memcpy_dtoh(dest, src):
@@ -337,7 +297,7 @@ class CudaFunctions(GPUBackend):
         :type src: cuda.CUdeviceptr
         """
         err = cuda.cuMemcpyDtoH(dest, src, dest.nbytes)
-        error_check(err)
+        cuda_error_check(err)
 
     @staticmethod
     def memcpy_htod(dest, src):
@@ -350,7 +310,7 @@ class CudaFunctions(GPUBackend):
         :type src: numpy.ndarray
         """
         err = cuda.cuMemcpyHtoD(dest, src, src.nbytes)
-        error_check(err)
+        cuda_error_check(err)
 
     units = {'time': 'ms'}
 
