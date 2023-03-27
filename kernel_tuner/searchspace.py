@@ -192,24 +192,22 @@ class Searchspace:
             matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
         return matching_indices
 
-    def __build_neighbors_index(self, neighbor_method) -> np.ndarray:
+    def __build_neighbors_index(self, neighbor_method) -> List[List[int]]:
         """build an index of the neighbors for each parameter configuration"""
         # for Hamming no preperation is necessary, find the neighboring parameter configurations
         if neighbor_method == "Hamming":
-            return np.array(list(self.__get_neighbors_indices_hamming(param_config) for param_config in self.list))
+            return list(self.__get_neighbors_indices_hamming(param_config) for param_config in self.list)
 
         # for each parameter configuration, find the neighboring parameter configurations
         if self.params_values_indices is None:
             self.__prepare_neighbors_index()
         if neighbor_method == "strictly-adjacent":
-            return np.array(
-                list(
-                    self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
-                    for param_config_index, param_config in enumerate(self.list)))
+            return list(self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config) for param_config_index, param_config in enumerate(self.list))
+
         if neighbor_method == "adjacent":
-            return np.array(
-                list(self.__get_neighbors_indices_adjacent(param_config_index, param_config) for param_config_index, param_config in enumerate(self.list)))
-        raise NotImplementedError()
+            return list(self.__get_neighbors_indices_adjacent(param_config_index, param_config) for param_config_index, param_config in enumerate(self.list))
+
+        raise NotImplementedError(f"The neighbor method {neighbor_method} is not implemented")
 
     def get_random_sample_indices(self, num_samples: int) -> np.ndarray:
         """Get the list indices for a random, non-conflicting sample"""
