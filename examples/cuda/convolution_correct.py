@@ -84,7 +84,7 @@ if __name__ == "__main__":
     results = tune()
 
     e1 = time.time()*1000
-    print("\n Actualy time used:", e1-s1)
+    print("\n Actual time used:", e1-s1)
     import json
     with open("convolution_RTX_2070.json", 'w') as fp:
         json.dump(results, fp)
