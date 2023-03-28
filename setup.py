@@ -31,7 +31,7 @@ setup(
         'Source': 'https://github.com/KernelTuner/kernel_tuner',
         'Tracker': 'https://github.com/KernelTuner/kernel_tuner/issues',
     },
-    packages=['kernel_tuner', 'kernel_tuner.runners', 'kernel_tuner.strategies'],
+    packages=['kernel_tuner', 'kernel_tuner.backends', 'kernel_tuner.energy', 'kernel_tuner.observers', 'kernel_tuner.runners', 'kernel_tuner.strategies'],
     long_description=readme(),
     long_description_content_type='text/x-rst',
     classifiers=[
