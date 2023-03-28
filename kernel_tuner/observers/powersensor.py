@@ -2,7 +2,7 @@ import numpy as np
 
 from kernel_tuner.observers.observer import BenchmarkObserver
 
-#check if power_sensor is installed
+# check if power_sensor is installed
 try:
     import power_sensor
 except ImportError:
@@ -10,7 +10,7 @@ except ImportError:
 
 
 class PowerSensorObserver(BenchmarkObserver):
-    """ Observer that an external PowerSensor2 device to accurately measure power
+    """Observer that an external PowerSensor2 device to accurately measure power
 
     Requires PowerSensor2 hardware and power_sensor Python bindings.
 
@@ -46,11 +46,15 @@ class PowerSensorObserver(BenchmarkObserver):
     def after_finish(self):
         end_state = self.ps.read()
         if "ps_energy" in self.observables:
-            ps_measured_e = power_sensor.Joules(self.begin_state, end_state, -1) # Joules
+            ps_measured_e = power_sensor.Joules(
+                self.begin_state, end_state, -1
+            )  # Joules
             self.results["ps_energy"].append(ps_measured_e)
         if "ps_power" in self.observables:
-            ps_measured_t = end_state.time_at_read - self.begin_state.time_at_read # seconds
-            self.results["ps_power"].append(ps_measured_e / ps_measured_t) # Watt
+            ps_measured_t = (
+                end_state.time_at_read - self.begin_state.time_at_read
+            )  # seconds
+            self.results["ps_power"].append(ps_measured_e / ps_measured_t)  # Watt
 
     def get_results(self):
         averages = {key: np.average(values) for key, values in self.results.items()}

@@ -26,16 +26,17 @@ class BenchmarkObserver(ABC):
 
     @abstractmethod
     def get_results(self):
-        """ get_results should return a dict with results that adds to the benchmarking data
+        """get_results should return a dict with results that adds to the benchmarking data
 
-            get_results is called only once per benchmarking of a single kernel configuration and
-            generally returns averaged values over multiple iterations.
+        get_results is called only once per benchmarking of a single kernel configuration and
+        generally returns averaged values over multiple iterations.
         """
         pass
 
 
 class IterationObserver(BenchmarkObserver):
     pass
+
 
 class ContinuousObserver(BenchmarkObserver):
     pass
