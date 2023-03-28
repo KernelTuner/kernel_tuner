@@ -3,10 +3,14 @@ from __future__ import print_function
 
 from abc import ABC, abstractmethod
 
+
 class Runner(ABC):
     """Base class for kernel_tuner runners"""
+
     @abstractmethod
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
+    def __init__(
+        self, kernel_source, kernel_options, device_options, iterations, observers
+    ):
         pass
 
     @abstractmethod
