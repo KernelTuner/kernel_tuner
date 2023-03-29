@@ -7,23 +7,24 @@ from kernel_tuner.observers import AccuracyObserver
 
 class Tunable(UserDict):
     def __init__(self, param_key: str, arrays: Dict):
-        """Create a new ``Tunable``.
-
-        ``Tunable`` can be used one of the input arguments when tuning kernels. It can contain
-        several arrays and the array that will be used during benchmark of one kernel configuration
-        can be selected based on a tunable parameter.
+        """The ``Tunable`` object is used as an input argument when tuning
+        kernels. It is a container that holds several arrays internally and
+        selects one array during benchmarking based on a tunable parameter.
 
         Example
         -------
-        For example, it is possible to define a tunable parameter called ``matrix_layout`` and then
-        tunable for Fortran-order or C-order memory layout by passing the following object as a
-        kernel argument:
+        Consider this example::
 
-        ```
-        Tunable("matrix_layout", dict("c"=matrix, "f"=matrix.transpose()))
-        ```
+            arg = Tunable("matrix_layout", dict("c"=matrix, "f"=matrix.transpose()))
 
-        :param param_key: The tunable parameter used to select the array for benchmarking.
+        In this example, we create a Tunable object that selects either matrix
+        or matrix.transpose() for benchmarking, depending on the value of the
+        tunable parameter "matrix_layout". The arrays argument is a dictionary
+        that maps the tunable parameter values "c" and "f" to the arrays matrix
+        and matrix.transpose(), respectively. During benchmarking, the Tunable
+        object selects the appropriate array based on the value of "matrix_layout".
+
+        :param param_key: : The tunable parameter used to select the array for benchmarking.
         :param arrays: A dictionary that maps the parameter value to arrays.
         """
         if isinstance(arrays, (tuple, list)):
@@ -42,7 +43,9 @@ class Tunable(UserDict):
 
         if key not in self:
             list = ", ".join(map(str, self.keys()))
-            raise KeyError(f"'{key}' is not a valid parameter value, should be one of: {list}")
+            raise KeyError(
+                f"'{key}' is not a valid parameter value, should be one of: {list}"
+            )
 
         return self[key]
 
@@ -51,29 +54,39 @@ class Tunable(UserDict):
 
 
 class TunablePrecision(Tunable):
-    def __init__(self, param_key: str, array: np.ndarray, dtypes: Dict[str, np.dtype] = None):
-        """
-        Create a new ``TunablePrecision``.
+    def __init__(
+        self, param_key: str, array: np.ndarray, dtypes: Dict[str, np.dtype] = None
+    ):
+        """The ``Tunable`` object is used as an input argument when tuning
+        kernels. It is a container that internally holds several arrays
+        containing the same data, but stored in using different levels of
+        precision. During benchamrking, one array is selected based on a
+        tunable parameter ``param_key``.
 
-        ``TunablePrecision`` can be used one of the input arguments when tuning kernels. It
-        contains the same array data, but stored using different levels of precision. This can
-        be used to tune the optimal precision for a kernel argument.
+        Example
+        -------
+        Consider this example::
 
-        :param param_key: The tunable parameter used to select the precision for benchmarking.
-        :param array: The input array. Will be converted to the given precision levels.
-        :param dtypes: Dictionary that maps names to numpy data types.
+            arg = TunablePrecision("matrix_type", matrix)
+
+        This creates a ``TunablePrecision`` argument that selects the required
+        floating-point precision for ``matrix`` based on the tunable parameter
+        ``"matrix_type"``.
+
+        :param param_key: The tunable parameter used to select the level of precision.
+        :param array: The input array. It will automatically be converted to
+                      all data types given by ``dtypes``.
+        :param dtypes: Dictionary that maps names to numpy data types. The default
+                       types are ``double``, ``float``, and ``half``.
         """
         # If no dtypes are given, generate a default list
         if not dtypes:
-            dtypes = dict(
-                half=np.half,
-                float=np.single,
-                double=np.double)
+            dtypes = dict(half=np.half, float=np.single, double=np.double)
 
             # Try to get bfloat16 from tensorflow if available.
             try:
-                #import tensorflow
-                #dtypes["bfloat16"] = tensorflow.bfloat16.as_numpy_dtype
+                # import tensorflow
+                # dtypes["bfloat16"] = tensorflow.bfloat16.as_numpy_dtype
                 pass
             except ImportError:
                 pass  # Ignore error if tensorflow is not available
@@ -89,14 +102,28 @@ class TunablePrecision(Tunable):
         super().__init__(param_key, arrays)
 
 
-class CalculateErrorObserver(AccuracyObserver):
+class ErrorMetricObserver(AccuracyObserver):
+    """An ``AccuracyObserver`` that measure the error of the outputs produced
+    by a kernel by comparing it against reference outputs.
+
+    By default, it uses the mean-squared error (MSE) and appends this to
+    the results with a metric called ``error``.
+    """
+
     def __init__(self, metric=None, key="error"):
+        """Create a new ``AccuracyObserver``.
+
+        :param metric: The error metric. Should be function that accepts two numpy
+                       arrays as arguments (the reference output and the kernel output)
+        :param key: The name of this metric in the results.
+        """
+
         # The default metric is the mean squared error
         if metric is None:
             metric = lambda a, b: np.average(np.square(a - b))
 
         self.key = key
-        self.function = metric
+        self.metric = metric
         self.result = None
 
     def process_kernel_output(self, answers, outputs):
