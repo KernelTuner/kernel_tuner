@@ -98,33 +98,33 @@ kernel_tuner.core.DeviceInterface
     :special-members: __init__
     :members:
 
-kernel_tuner.pycuda.PyCudaFunctions
+kernel_tuner.backends.pycuda.PyCudaFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.pycuda.PyCudaFunctions
+.. autoclass:: kernel_tuner.backends.pycuda.PyCudaFunctions
     :special-members: __init__
     :members:
 
-kernel_tuner.cupy.CupyFunctions
+kernel_tuner.backends.cupy.CupyFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.cupy.CupyFunctions
+.. autoclass:: kernel_tuner.backends.cupy.CupyFunctions
     :special-members: __init__
     :members:
 
-kernel_tuner.nvcuda.CudaFunctions
+kernel_tuner.backends.nvcuda.CudaFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.nvcuda.CudaFunctions
+.. autoclass:: kernel_tuner.backends.nvcuda.CudaFunctions
     :special-members: __init__
     :members:
 
-kernel_tuner.opencl.OpenCLFunctions
+kernel_tuner.backends.opencl.OpenCLFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.opencl.OpenCLFunctions
+.. autoclass:: kernel_tuner.backends.opencl.OpenCLFunctions
     :special-members: __init__
     :members:
 
-kernel_tuner.c.CFunctions
+kernel_tuner.backends.c.CFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.c.CFunctions
+.. autoclass:: kernel_tuner.backends.c.CFunctions
     :special-members: __init__
     :members:
 

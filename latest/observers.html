@@ -76,12 +76,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.register_device"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.register_device()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#powersensorobserver">PowerSensorObserver</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.PowerSensorObserver"><code class="docutils literal notranslate"><span class="pre">PowerSensorObserver</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#powersensorobserver">PowerSensorObserver</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#nvmlobserver">NVMLObserver</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.nvml.NVMLObserver"><code class="docutils literal notranslate"><span class="pre">NVMLObserver</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#tuning-execution-parameters-with-nvml">Tuning execution parameters with NVML</a></li>
 </ul>
 </li>
@@ -205,23 +201,6 @@ it possible to use it from Python.</p>
 the user to record power and/or energy consumption of kernel configurations during auto-tuning. This allows
 Kernel Tuner to accurately determine the power and energy consumption of all kernel configurations it benchmarks
 during auto-tuning.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="kernel_tuner.observers.PowerSensorObserver">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.</span></span><span class="sig-name descname"><span class="pre">PowerSensorObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.PowerSensorObserver" title="Permalink to this definition">¶</a></dt>
-<dd><p>Observer that an external PowerSensor2 device to accurately measure power</p>
-<p>Requires PowerSensor2 hardware and power_sensor Python bindings.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>observables</strong> (<em>list</em>) – A list of string, containing any of “ps_energy” or “ps_power”.
-To measure energy in Joules or power consumption in Watt.
-If not passed “ps_energy” is used to report energy consumption of kernels in Joules.</p></li>
-<li><p><strong>device</strong> (<em>string</em>) – A string with the path to the PowerSensor2 device, default “/dev/ttyACM0”.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
 </section>
 <section id="nvmlobserver">
 <h2>NVMLObserver<a class="headerlink" href="#nvmlobserver" title="Permalink to this heading">¶</a></h2>
@@ -238,34 +217,6 @@ measurements are requested by the user. The downside of this approach is that it
 time it takes to benchmark different kernel configurations. However, NVML can be used for power measurements on
 almost all Nvidia GPUs, so this method is much more accessible to end-users compared to solutions that require
 custom hardware, such as PowerSensor2.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="kernel_tuner.nvml.NVMLObserver">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.nvml.</span></span><span class="sig-name descname"><span class="pre">NVMLObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nvidia_smi_fallback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_locked_clocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continous_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.nvml.NVMLObserver" title="Permalink to this definition">¶</a></dt>
-<dd><p>Observer that uses NVML to monitor power, energy, clock frequencies, voltages and temperature</p>
-<p>The NVMLObserver can also be used to tune application-specific clock frequencies or power limits
-in combination with other parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>observables</strong> (<em>list</em><em> of </em><em>strings</em>) – List of quantities that should be observed during tuning, supported are: “power_readings”,
-“nvml_power”, “nvml_energy”, “core_freq”, “mem_freq”, “temperature”, “gr_voltage”. If you want to measure the average power
-consumption of a GPU kernel executing on the GPU use “nvml_power”. The “power_readings” are the individual power readings
-as reported by NVML and will return a lot of data if you are benchmarking many different kernel configurations.</p></li>
-<li><p><strong>device</strong> (<em>integer</em>) – Device ordinal used by Nvidia to identify your device, same as reported by nvidia-smi.</p></li>
-<li><p><strong>save_all</strong> (<em>boolean</em>) – If set to True, all data collected by the NVMLObserver for every iteration during benchmarking will be returned.
-If set to False, data will be aggregated over multiple iterations during benchmarking. False by default.</p></li>
-<li><p><strong>nvidia_smi_fallback</strong> (<em>string</em>) – String with the location of your nvidia-smi executable to use when Python cannot execute with root privileges, default None.</p></li>
-<li><p><strong>use_locked_clocks</strong> (<em>boolean</em>) – Boolean to opt in to using the locked clocks feature on Ampere or newer GPUs.
-Note, this setting is only relevant when you are tuning with application-specific clocks.
-If set to True, using locked clocks will be preferred over application clocks. If set to False, the Observer
-will set the GPU clocks using the application clocks feature.
-Default is False.</p></li>
-<li><p><strong>continuous_duration</strong> (<em>float</em>) – Duration to use for energy/power measurements in seconds, default 1 second.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
 <section id="tuning-execution-parameters-with-nvml">
 <h3>Tuning execution parameters with NVML<a class="headerlink" href="#tuning-execution-parameters-with-nvml" title="Permalink to this heading">¶</a></h3>
 <p>When you are using the NVMLObserver, Kernel Tuner can use its interface to NVML to enable tuning of
