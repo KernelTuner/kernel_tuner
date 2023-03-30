@@ -11,7 +11,7 @@ except ImportError:
     from unittest.mock import patch, Mock
 
 import kernel_tuner
-from kernel_tuner.c import CFunctions, Argument
+from kernel_tuner.backends.c import CFunctions, Argument
 from kernel_tuner.core import KernelSource, KernelInstance
 from kernel_tuner import util
 
@@ -127,8 +127,8 @@ def test_byte_array_arguments():
     assert all(dest == arg1)
 
 
-@patch('kernel_tuner.c.subprocess')
-@patch('kernel_tuner.c.numpy.ctypeslib')
+@patch('kernel_tuner.backends.c.subprocess')
+@patch('kernel_tuner.backends.c.numpy.ctypeslib')
 def test_compile(npct, subprocess):
 
     kernel_string = "this is a fake C program"
@@ -157,8 +157,8 @@ def test_compile(npct, subprocess):
     assert not os.path.isfile(filename + ".so")
 
 
-@patch('kernel_tuner.c.subprocess')
-@patch('kernel_tuner.c.numpy.ctypeslib')
+@patch('kernel_tuner.backends.c.subprocess')
+@patch('kernel_tuner.backends.c.numpy.ctypeslib')
 def test_compile_detects_device_code(npct, subprocess):
 
     kernel_string = "this code clearly contains device code __global__ kernel(float* arg){ return; }"

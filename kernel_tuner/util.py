@@ -18,8 +18,12 @@ try:
     import cupy as cp
 except ImportError:
     cp = np
+try:
+    from cuda import cuda, cudart, nvrtc
+except ImportError:
+    cuda = None
 
-from kernel_tuner.nvml import NVMLObserver
+from kernel_tuner.observers.nvml import NVMLObserver
 
 # number of special values to insert when a configuration cannot be measured
 
@@ -942,3 +946,18 @@ class MaxProdConstraint(Constraint):
                     if not domain:
                         return False
         return True
+
+def cuda_error_check(error):
+    """ Checking the status of CUDA calls using the NVIDIA cuda-python backend """
+    if isinstance(error, cuda.CUresult):
+        if error != cuda.CUresult.CUDA_SUCCESS:
+            _, name = cuda.cuGetErrorName(error)
+            raise RuntimeError(f"CUDA error: {name.decode()}")
+    elif isinstance(error, cudart.cudaError_t):
+        if error != cudart.cudaError_t.cudaSuccess:
+            _, name = cudart.getErrorName(error)
+            raise RuntimeError(f"CUDART error: {name.decode()}")
+    elif isinstance(error, nvrtc.nvrtcResult):
+        if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
+            _, desc = nvrtc.nvrtcGetErrorString(error)
+            raise RuntimeError(f"NVRTC error: {desc.decode()}")

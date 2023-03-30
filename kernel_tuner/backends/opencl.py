@@ -3,35 +3,22 @@ from __future__ import print_function
 import time
 import numpy as np
 
-from kernel_tuner.observers import BenchmarkObserver
+from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.observers.opencl import OpenCLObserver
 
-#embedded in try block to be able to generate documentation
+# embedded in try block to be able to generate documentation
 try:
     import pyopencl as cl
 except ImportError:
     cl = None
 
 
-class OpenCLObserver(BenchmarkObserver):
-    """ Observer that measures time using CUDA events during benchmarking """
-    def __init__(self, dev):
-        self.dev = dev
-        self.times = []
-
-    def after_finish(self):
-        event = self.dev.event
-        self.times.append((event.profile.end - event.profile.start)*1e-6) #ms
-
-    def get_results(self):
-        results = {"time": np.average(self.times), "times": self.times.copy()}
-        self.times = []
-        return results
-
-
-class OpenCLFunctions():
+class OpenCLFunctions(GPUBackend):
     """Class that groups the OpenCL functions on maintains some state about the device"""
 
-    def __init__(self, device=0, platform=0, iterations=7, compiler_options=None, observers=None):
+    def __init__(
+        self, device=0, platform=0, iterations=7, compiler_options=None, observers=None
+    ):
         """Creates OpenCL device context and reads device properties
 
         :param device: The ID of the OpenCL device to use for benchmarking
@@ -41,27 +28,33 @@ class OpenCLFunctions():
         :type iterations: int
         """
         if not cl:
-            raise ImportError("Error: pyopencl not installed, please install e.g. using 'pip install pyopencl'.")
+            raise ImportError(
+                "Error: pyopencl not installed, please install e.g. using 'pip install pyopencl'."
+            )
 
         self.iterations = iterations
-        #setup context and queue
+        # setup context and queue
         platforms = cl.get_platforms()
         self.ctx = cl.Context(devices=[platforms[platform].get_devices()[device]])
 
-        self.queue = cl.CommandQueue(self.ctx, properties=cl.command_queue_properties.PROFILING_ENABLE)
+        self.queue = cl.CommandQueue(
+            self.ctx, properties=cl.command_queue_properties.PROFILING_ENABLE
+        )
         self.mf = cl.mem_flags
-        #inspect device properties
-        self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE)
+        # inspect device properties
+        self.max_threads = self.ctx.devices[0].get_info(
+            cl.device_info.MAX_WORK_GROUP_SIZE
+        )
         self.compiler_options = compiler_options or []
 
-        #observer stuff
+        # observer stuff
         self.observers = observers or []
         self.observers.append(OpenCLObserver(self))
         self.event = None
         for obs in self.observers:
             obs.register_device(self)
 
-        #collect environment information
+        # collect environment information
         dev = self.ctx.devices[0]
         env = dict()
         env["platform_name"] = dev.platform.name
@@ -90,8 +83,15 @@ class OpenCLFunctions():
         for arg in arguments:
             # if arg i is a numpy array copy to device
             if isinstance(arg, np.ndarray):
-                gpu_args.append(cl.Buffer(self.ctx, self.mf.READ_WRITE | self.mf.COPY_HOST_PTR, hostbuf=arg))
-            else: # if not an array, just pass argument along
+                gpu_args.append(
+                    cl.Buffer(
+                        self.ctx,
+                        self.mf.READ_WRITE | self.mf.COPY_HOST_PTR,
+                        hostbuf=arg,
+                    )
+                )
+            # if not an array, just pass argument along
+            else:
                 gpu_args.append(arg)
         return gpu_args
 
@@ -108,31 +108,31 @@ class OpenCLFunctions():
         :returns: An OpenCL kernel that can be called directly.
         :rtype: pyopencl.Kernel
         """
-        prg = cl.Program(self.ctx, kernel_instance.kernel_string).build(options=self.compiler_options)
+        prg = cl.Program(self.ctx, kernel_instance.kernel_string).build(
+            options=self.compiler_options
+        )
         func = getattr(prg, kernel_instance.name)
         return func
 
-
     def start_event(self):
-        """ Records the event that marks the start of a measurement
+        """Records the event that marks the start of a measurement
 
-        In OpenCL the event is created when the kernel is launched """
+        In OpenCL the event is created when the kernel is launched"""
         pass
 
     def stop_event(self):
-        """ Records the event that marks the end of a measurement
+        """Records the event that marks the end of a measurement
 
-        In OpenCL the event is created when the kernel is launched """
+        In OpenCL the event is created when the kernel is launched"""
         pass
 
     def kernel_finished(self):
-        """ Returns True if the kernel has finished, False otherwise """
+        """Returns True if the kernel has finished, False otherwise"""
         return self.event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) == 0
 
     def synchronize(self):
-        """ Halts execution until device has finished its tasks """
+        """Halts execution until device has finished its tasks"""
         self.queue.finish()
-
 
     def run_kernel(self, func, gpu_args, threads, grid):
         """runs the OpenCL kernel passed as 'func'
@@ -153,7 +153,7 @@ class OpenCLFunctions():
             of the NDRange.
         :type grid: tuple(int, int)
         """
-        global_size = (grid[0]*threads[0], grid[1]*threads[1], grid[2]*threads[2])
+        global_size = (grid[0] * threads[0], grid[1] * threads[1], grid[2] * threads[2])
         local_size = threads
         self.event = func(self.queue, global_size, local_size, *gpu_args)
 
@@ -174,7 +174,7 @@ class OpenCLFunctions():
             try:
                 cl.enqueue_fill_buffer(self.queue, buffer, np.uint32(value), 0, size)
             except AttributeError:
-                src=np.zeros(size, dtype='uint8')+np.uint8(value)
+                src = np.zeros(size, dtype="uint8") + np.uint8(value)
                 cl.enqueue_copy(self.queue, buffer, src)
 
     def memcpy_dtoh(self, dest, src):
@@ -201,4 +201,13 @@ class OpenCLFunctions():
         if isinstance(dest, cl.Buffer):
             cl.enqueue_copy(self.queue, dest, src)
 
-    units = {'time': 'ms'}
+    def copy_constant_memory_args(self, cmem_args):
+        raise NotImplementedError("PyOpenCL backend does not support constant memory")
+
+    def copy_shared_memory_args(self, smem_args):
+        raise NotImplementedError("PyOpenCL backend does not support shared memory")
+
+    def copy_texture_memory_args(self, texmem_args):
+        raise NotImplementedError("PyOpenCL backend does not support texture memory")
+
+    units = {"time": "ms"}

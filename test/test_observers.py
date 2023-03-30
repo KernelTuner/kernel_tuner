@@ -2,8 +2,8 @@
 import pytest
 
 import kernel_tuner
-from kernel_tuner.nvml import NVMLObserver
-from kernel_tuner.observers import BenchmarkObserver
+from kernel_tuner.observers.nvml import NVMLObserver
+from kernel_tuner.observers.observer import BenchmarkObserver
 
 from .context import skip_if_no_pycuda
 from .test_runners import env

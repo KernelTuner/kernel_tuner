@@ -7,7 +7,8 @@ from time import perf_counter
 import numpy as np
 import scipy.optimize
 from kernel_tuner import util
-from kernel_tuner.strategies.common import (_cost_func, get_bounds_x0_eps,
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies.common import (CostFunc,
                                             get_options,
                                             get_strategy_docstring,
                                             setup_method_arguments,
@@ -17,24 +18,20 @@ supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "
 
 _options = OrderedDict(method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "L-BFGS-B"))
 
-def tune(runner, kernel_options, device_options, tuning_options):
-
-    results = []
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     method = get_options(tuning_options.strategy_options, _options)[0]
 
     # scale variables in x to make 'eps' relevant for multiple variables
-    tuning_options["scaling"] = True
+    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
-    bounds, x0, _ = get_bounds_x0_eps(tuning_options, runner.dev.max_threads)
+    bounds, x0, _ = cost_func.get_bounds_x0_eps()
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
 
-    args = (kernel_options, tuning_options, runner, results)
-
     opt_result = None
     try:
-        opt_result = scipy.optimize.minimize(_cost_func, x0, args=args, method=method, options=options, **kwargs)
+        opt_result = scipy.optimize.minimize(cost_func, x0, method=method, options=options, **kwargs)
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
@@ -42,7 +39,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
     if opt_result and tuning_options.verbose:
         print(opt_result.message)
 
-    return results, runner.dev.get_environment()
+    return cost_func.results
 
 
 tune.__doc__ = get_strategy_docstring("Minimize", _options)

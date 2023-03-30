@@ -6,35 +6,19 @@ import logging
 import time
 import numpy as np
 
-from kernel_tuner.observers import BenchmarkObserver
+from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.observers.cupy import CupyRuntimeObserver
 
-#embedded in try block to be able to generate documentation
-#and run tests without cupy installed
+
+# embedded in try block to be able to generate documentation
+# and run tests without cupy installed
 try:
     import cupy as cp
 except ImportError:
     cp = None
 
 
-class CupyRuntimeObserver(BenchmarkObserver):
-    """ Observer that measures time using CUDA events during benchmarking """
-    def __init__(self, dev):
-        self.dev = dev
-        self.stream = dev.stream
-        self.start = dev.start
-        self.end = dev.end
-        self.times = []
-
-    def after_finish(self):
-        self.times.append(cp.cuda.get_elapsed_time(self.start, self.end)) #ms
-
-    def get_results(self):
-        results = {"time": np.average(self.times), "times": self.times.copy()}
-        self.times = []
-        return results
-
-
-class CupyFunctions:
+class CupyFunctions(GPUBackend):
     """Class that groups the Cupy functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
@@ -54,42 +38,46 @@ class CupyFunctions:
         self.allocations = []
         self.texrefs = []
         if not cp:
-            raise ImportError("Error: cupy not installed, please install e.g. " +
-                            "using 'pip install cupy', please check https://github.com/cupy/cupy.")
+            raise ImportError(
+                "Error: cupy not installed, please install e.g. "
+                + "using 'pip install cupy', please check https://github.com/cupy/cupy."
+            )
 
-        #select device
+        # select device
         self.dev = dev = cp.cuda.Device(device)
         dev.use()
 
-        #inspect device properties
+        # inspect device properties
         self.devprops = dev.attributes
         self.cc = dev.compute_capability
-        self.max_threads = self.devprops['MaxThreadsPerBlock']
+        self.max_threads = self.devprops["MaxThreadsPerBlock"]
 
         self.iterations = iterations
         self.current_module = None
         self.func = None
         self.compiler_options = compiler_options or []
 
-        #create a stream and events
+        # create a stream and events
         self.stream = cp.cuda.Stream()
         self.start = cp.cuda.Event()
         self.end = cp.cuda.Event()
 
-        #default dynamically allocated shared memory size, can be overwritten using smem_args
+        # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
 
-        #setup observers
+        # setup observers
         self.observers = observers or []
         self.observers.append(CupyRuntimeObserver(self))
         for obs in self.observers:
             obs.register_device(self)
 
-        #collect environment information
+        # collect environment information
         env = dict()
         cupy_info = str(cp._cupyx.get_runtime_info()).split("\n")[:-1]
-        info_dict = {s.split(":")[0].strip():s.split(":")[1].strip() for s in cupy_info}
-        env["device_name"] = info_dict[f'Device {device} Name']
+        info_dict = {
+            s.split(":")[0].strip(): s.split(":")[1].strip() for s in cupy_info
+        }
+        env["device_name"] = info_dict[f"Device {device} Name"]
 
         env["cuda_version"] = cp.cuda.runtime.driverGetVersion()
         env["compute_capability"] = self.cc
@@ -117,10 +105,10 @@ class CupyFunctions:
                 alloc = cp.array(arg)
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
-            else: # if not a numpy array, just pass argument along
+            # if not a numpy array, just pass argument along
+            else:
                 gpu_args.append(arg)
         return gpu_args
-
 
     def compile(self, kernel_instance):
         """call the CUDA compiler to compile the kernel, return the device function
@@ -139,34 +127,33 @@ class CupyFunctions:
         kernel_name = kernel_instance.name
 
         compiler_options = self.compiler_options
-        if not any(['-std=' in opt for opt in self.compiler_options]):
-            compiler_options = ['--std=c++11'] + self.compiler_options
+        if not any(["-std=" in opt for opt in self.compiler_options]):
+            compiler_options = ["--std=c++11"] + self.compiler_options
 
         options = tuple(compiler_options)
 
-        self.current_module = cp.RawModule(code=kernel_string, options=options,
-                                           name_expressions=[kernel_name])
+        self.current_module = cp.RawModule(
+            code=kernel_string, options=options, name_expressions=[kernel_name]
+        )
 
         self.func = self.current_module.get_function(kernel_name)
         return self.func
 
-
     def start_event(self):
-        """ Records the event that marks the start of a measurement """
+        """Records the event that marks the start of a measurement"""
         self.start.record(stream=self.stream)
 
     def stop_event(self):
-        """ Records the event that marks the end of a measurement """
+        """Records the event that marks the end of a measurement"""
         self.end.record(stream=self.stream)
 
     def kernel_finished(self):
-        """ Returns True if the kernel has finished, False otherwise """
+        """Returns True if the kernel has finished, False otherwise"""
         return self.end.done
 
     def synchronize(self):
-        """ Halts execution until device has finished its tasks """
+        """Halts execution until device has finished its tasks"""
         self.dev.synchronize()
-
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
@@ -180,7 +167,7 @@ class CupyFunctions:
         """
         for k, v in cmem_args.items():
             symbol = self.current_module.get_global(k)
-            constant_mem = cp.ndarray(v.shape,v.dtype,symbol)
+            constant_mem = cp.ndarray(v.shape, v.dtype, symbol)
             constant_mem[:] = cp.asarray(v)
 
     def copy_shared_memory_args(self, smem_args):
@@ -194,7 +181,7 @@ class CupyFunctions:
             device texture memory. See tune_kernel().
         :type texmem_args: dict
         """
-        raise NotImplementedError('CuPy backend does not yet support texture memory')
+        raise NotImplementedError("CuPy backend does not support texture memory")
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the CUDA kernel passed as 'func'
@@ -262,4 +249,4 @@ class CupyFunctions:
             src = cp.asarray(src)
         cp.copyto(dest, src)
 
-    units = {'time': 'ms'}
+    units = {"time": "ms"}

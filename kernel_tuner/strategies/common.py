@@ -16,13 +16,6 @@ $STRAT_OPT$
     :params runner: A runner from kernel_tuner.runners
     :type runner: kernel_tuner.runner
 
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
     :param tuning_options: A dictionary with all options regarding the tuning
         process.
     :type tuning_options: kernel_tuner.interface.Options
@@ -59,106 +52,113 @@ def get_options(strategy_options, options):
     return [strategy_options.get(opt, default) for opt, (_, default) in options.items()]
 
 
-def _cost_func(x, kernel_options, tuning_options, runner, results, check_restrictions=True):
-    """ Cost function used by almost all strategies """
-    runner.last_strategy_time = 1000 * (perf_counter() - runner.last_strategy_start_time)
+class CostFunc:
+    def __init__(self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True):
+        self.runner = runner
+        self.tuning_options = tuning_options
+        self.snap = snap
+        self.scaling = scaling
+        self.searchspace = searchspace
+        self.results = []
 
-    # error value to return for numeric optimizers that need a numerical value
-    logging.debug('_cost_func called')
-    logging.debug('x: ' + str(x))
+    def __call__(self, x, check_restrictions=True):
+        """ Cost function used by almost all strategies """
+        self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
 
-    # check if max_fevals is reached or time limit is exceeded
-    util.check_stop_criterion(tuning_options)
+        # error value to return for numeric optimizers that need a numerical value
+        logging.debug('_cost_func called')
+        logging.debug('x: ' + str(x))
 
-    # snap values in x to nearest actual value for each parameter unscale x if needed
-    if tuning_options.snap:
-        if tuning_options.scaling:
-            params = unscale_and_snap_to_nearest(x, tuning_options.tune_params, tuning_options.eps)
+        # check if max_fevals is reached or time limit is exceeded
+        util.check_stop_criterion(self.tuning_options)
+
+        # snap values in x to nearest actual value for each parameter unscale x if needed
+        if self.snap:
+            if self.scaling:
+                params = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)
+            else:
+                params = snap_to_nearest_config(x, self.searchspace.tune_params)
         else:
-            params = snap_to_nearest_config(x, tuning_options.tune_params)
-    else:
-        params = x
-    logging.debug('params ' + str(params))
+            params = x
+        logging.debug('params ' + str(params))
 
-    legal = True
-    result = {}
-    x_int = ",".join([str(i) for i in params])
+        legal = True
+        result = {}
+        x_int = ",".join([str(i) for i in params])
 
-    # else check if this is a legal (non-restricted) configuration
-    if check_restrictions and tuning_options.restrictions:
-        params_dict = OrderedDict(zip(tuning_options.tune_params.keys(), params))
-        legal = util.check_restrictions(tuning_options.restrictions, params_dict, tuning_options.verbose)
-        if not legal:
-            result = params_dict
-            result[tuning_options.objective] = util.InvalidConfig()
+        # else check if this is a legal (non-restricted) configuration
+        if check_restrictions and self.searchspace.restrictions:
+            params_dict = OrderedDict(zip(self.searchspace.tune_params.keys(), params))
+            legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
+            if not legal:
+                result = params_dict
+                result[self.tuning_options.objective] = util.InvalidConfig()
 
-    # compile and benchmark this instance
-    if not result:
-        res, _ = runner.run([params], kernel_options, tuning_options)
-        result = res[0]
+        # compile and benchmark this instance
+        if not result:
+            res = self.runner.run([params], self.tuning_options)
+            result = res[0]
 
-    # append to tuning results
-    if x_int not in tuning_options.unique_results:
-        tuning_options.unique_results[x_int] = result
+        # append to tuning results
+        if x_int not in self.tuning_options.unique_results:
+            self.tuning_options.unique_results[x_int] = result
 
-    results.append(result)
+        self.results.append(result)
 
-    # get numerical return value, taking optimization direction into account
-    return_value = result[tuning_options.objective] or sys.float_info.max
-    return_value = return_value if not tuning_options.objective_higher_is_better else -return_value
+        # get numerical return value, taking optimization direction into account
+        return_value = result[self.tuning_options.objective] or sys.float_info.max
+        return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
 
-    # upon returning from this function control will be given back to the strategy, so reset the start time
-    runner.last_strategy_start_time = perf_counter()
-    return return_value
+        # upon returning from this function control will be given back to the strategy, so reset the start time
+        self.runner.last_strategy_start_time = perf_counter()
+        return return_value
 
+    def get_bounds_x0_eps(self):
+        """compute bounds, x0 (the initial guess), and eps"""
+        values = list(self.searchspace.tune_params.values())
 
-def get_bounds_x0_eps(tuning_options, max_threads):
-    """compute bounds, x0 (the initial guess), and eps"""
-    values = list(tuning_options.tune_params.values())
-
-    if "x0" in tuning_options.strategy_options:
-        x0 = tuning_options.strategy_options.x0
-    else:
-        x0 = None
-
-    if tuning_options.scaling:
-        eps = np.amin([1.0 / len(v) for v in values])
-
-        # reducing interval from [0, 1] to [0, eps*len(v)]
-        bounds = [(0, eps * len(v)) for v in values]
-        if x0:
-            # x0 has been supplied by the user, map x0 into [0, eps*len(v)]
-            x0 = scale_from_params(x0, tuning_options, eps)
+        if "x0" in self.tuning_options.strategy_options:
+            x0 = self.tuning_options.strategy_options.x0
         else:
-            # get a valid x0
-            searchspace = Searchspace(tuning_options, max_threads)
-            pos = list(searchspace.get_random_sample(1)[0])
-            x0 = scale_from_params(pos, tuning_options.tune_params, eps)
-    else:
-        bounds = get_bounds(tuning_options.tune_params)
-        if not x0:
-            x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
-        eps = 1e9
-        for v_list in values:
-            vals = np.sort(v_list)
-            eps = min(eps, np.amin(np.gradient(vals)))
+            x0 = None
 
-    tuning_options["eps"] = eps
-    logging.debug('get_bounds_x0_eps called')
-    logging.debug('bounds ' + str(bounds))
-    logging.debug('x0 ' + str(x0))
-    logging.debug('eps ' + str(eps))
+        if self.scaling:
+            eps = np.amin([1.0 / len(v) for v in values])
 
-    return bounds, x0, eps
+            # reducing interval from [0, 1] to [0, eps*len(v)]
+            bounds = [(0, eps * len(v)) for v in values]
+            if x0:
+                # x0 has been supplied by the user, map x0 into [0, eps*len(v)]
+                x0 = scale_from_params(x0, self.tuning_options, eps)
+            else:
+                # get a valid x0
+                pos = list(self.searchspace.get_random_sample(1)[0])
+                x0 = scale_from_params(pos, self.searchspace.tune_params, eps)
+        else:
+            bounds = self.get_bounds()
+            if not x0:
+                x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
+            eps = 1e9
+            for v_list in values:
+                if len(v_list) > 1:
+                    vals = np.sort(v_list)
+                    eps = min(eps, np.amin(np.gradient(vals)))
 
+        self.tuning_options["eps"] = eps
+        logging.debug('get_bounds_x0_eps called')
+        logging.debug('bounds ' + str(bounds))
+        logging.debug('x0 ' + str(x0))
+        logging.debug('eps ' + str(eps))
 
-def get_bounds(tune_params):
-    """ create a bounds array from the tunable parameters """
-    bounds = []
-    for values in tune_params.values():
-        sorted_values = np.sort(values)
-        bounds.append((sorted_values[0], sorted_values[-1]))
-    return bounds
+        return bounds, x0, eps
+
+    def get_bounds(self):
+        """ create a bounds array from the tunable parameters """
+        bounds = []
+        for values in self.searchspace.tune_params.values():
+            sorted_values = np.sort(values)
+            bounds.append((sorted_values[0], sorted_values[-1]))
+        return bounds
 
 
 def setup_method_arguments(method, bounds):

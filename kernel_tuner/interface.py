@@ -37,6 +37,7 @@ import kernel_tuner.core as core
 
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
+from kernel_tuner.searchspace import Searchspace
 
 try:
     import torch
@@ -601,7 +602,6 @@ def tune_kernel(
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
-    tuning_options["snap"] = True
     tuning_options["unique_results"] = {}
     if strategy_options and "max_fevals" in strategy_options:
         tuning_options["max_fevals"] = strategy_options["max_fevals"]
@@ -662,9 +662,13 @@ def tune_kernel(
         tuning_options.cache = {}
         tuning_options.cachefile = None
 
+    # create search space
+    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
+
     # call the strategy to execute the tuning process
     tuning_options["start_time"] = perf_counter()
-    results, env = strategy.tune(runner, kernel_options, device_options, tuning_options)
+    results = strategy.tune(searchspace, runner, tuning_options)
+    env = runner.get_environment(tuning_options)
 
     # finished iterating over search space
     if not device_options.quiet:
