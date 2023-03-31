@@ -424,7 +424,7 @@ def test_check_argument_list7():
 def test_check_tune_params_list():
     tune_params = dict(zip(["one_thing", "led_to_another", "and_before_you_know_it", "grid_size_y"], [1, 2, 3, 4]))
     try:
-        check_tune_params_list(tune_params, None)
+        check_tune_params_list(tune_params, None, False)
         print("Expected a ValueError to be raised")
         assert False
     except ValueError as e:
@@ -437,7 +437,7 @@ def test_check_tune_params_list():
 
 def test_check_tune_params_list2():
     tune_params = dict(zip(["rock", "paper", "scissors"], [1, 2, 3]))
-    check_tune_params_list(tune_params, None)
+    check_tune_params_list(tune_params, None, False)
     # test that no exception is raised
     assert True
 
@@ -447,9 +447,9 @@ def test_check_tune_params_list3():
     for param in ["nvml_pwr_limit", "nvml_gr_clock", "nvml_mem_clock"]:
         tune_params = {param:[]}
         with pytest.raises(ValueError, match=r".*NVMLObserver.*"):
-            check_tune_params_list(tune_params, None)
+            check_tune_params_list(tune_params, None, False)
         with pytest.raises(ValueError, match=r".*NVMLObserver.*"):
-            check_tune_params_list(tune_params, [])
+            check_tune_params_list(tune_params, [], False)
 
 
 def test_check_block_size_params_names_list():

@@ -582,7 +582,7 @@ def tune_kernel(
     objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
 
     # check for forbidden names in tune parameters
-    util.check_tune_params_list(tune_params, observers)
+    util.check_tune_params_list(tune_params, observers, simulation_mode)
 
     # check whether block_size_names are used as expected
     util.check_block_size_params_names_list(block_size_names, tune_params)
