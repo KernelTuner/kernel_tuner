@@ -961,3 +961,26 @@ def cuda_error_check(error):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
+
+def extract_directive_code(code: str) -> list:
+    """ Extract explicitly marked directive sections from code """
+    
+    start_string = "#pragma tuner start"
+    end_string = "#pragma tuner stop"
+    found_section = False
+    sections = list()
+    tmp_string = list()
+    
+    for line in code.split("\n"):
+        if found_section:
+            if end_string in line:
+                found_section = False
+                sections.append("\n".join(tmp_string))
+                tmp_string = list()
+            else:
+                tmp_string.append(line)
+        else:
+            if start_string in line:
+                found_section = True
+
+    return sections
