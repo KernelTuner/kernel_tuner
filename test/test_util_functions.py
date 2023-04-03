@@ -730,10 +730,20 @@ def test_extract_directive_code():
     }
     """
 
-    expected_one = "            #pragma acc parallel\n            #pragma acc loop\n            for ( int i = 0; i < size; i++ ) {\n                    a[i] = i;\n                    b[i] = i + 1;\n            }"
-    expected_two = "            #pragma acc parallel\n            #pragma acc loop\n            for ( int i = 0; i < size; i++ ) {\n                    c[i] = a[i] + b[i];\n            }"
+    expected_one = """            #pragma acc parallel
+            #pragma acc loop
+            for ( int i = 0; i < size; i++ ) {
+                    a[i] = i;
+                    b[i] = i + 1;
+            }"""
+    expected_two = """            #pragma acc parallel
+            #pragma acc loop
+            for ( int i = 0; i < size; i++ ) {
+                    c[i] = a[i] + b[i];
+            }"""
 
     returns = extract_directive_code(code)
 
+    assert len(returns) == 2
     assert expected_one in returns
     assert expected_two in returns
