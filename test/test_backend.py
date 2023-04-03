@@ -1,14 +1,12 @@
-import pytest
-
-import kernel_tuner
 from .context import (
     skip_if_no_gcc,
     skip_if_no_cupy,
     skip_if_no_cuda,
     skip_if_no_opencl,
     skip_if_no_pycuda,
+    skip_if_no_openacc,
 )
-from kernel_tuner.backends import backend, c, cupy, nvcuda, opencl, pycuda
+from kernel_tuner.backends import backend, c, cupy, nvcuda, opencl, pycuda, openacc
 
 
 class WrongBackend(backend.Backend):
@@ -48,3 +46,8 @@ def test_opencl_backend():
 @skip_if_no_pycuda
 def test_pycuda_backend():
     dev = pycuda.PyCudaFunctions()
+
+
+@skip_if_no_openacc
+def test_openacc_backend():
+    dev = openacc.OpenACCFunctions()
