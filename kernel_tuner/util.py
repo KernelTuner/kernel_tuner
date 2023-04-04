@@ -259,7 +259,7 @@ def delete_temp_file(filename):
 
 def detect_language(kernel_string):
     """attempt to detect language from the kernel_string"""
-    elif "__global__" in kernel_string:
+    if "__global__" in kernel_string:
         lang = "CUDA"
     elif "__kernel" in kernel_string:
         lang = "OpenCL"
