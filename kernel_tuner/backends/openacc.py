@@ -10,14 +10,14 @@ from kernel_tuner.observers.c import CRuntimeObserver
 class OpenACCFunctions(CompilerBackend):
     """Class that groups the code for running and compiling OpenaCC functions in C++."""
 
-    def __init__(self, iterations=7, compiler_options=None, compiler=None):
+    def __init__(self, iterations=7, compiler_options=None, compiler="nvc++"):
         self.iterations = iterations
         # if no compiler is specified, use nvc++ by default
-        self.compiler = compiler or "nvc++"
+        self.compiler = compiler
         self.observers = [CRuntimeObserver(self)]
 
         cc_version = str(subprocess.check_output([self.compiler, "--version"]))
-        cc_version = cc_version.splitlines()[0].split(" ")[-1]
+        cc_version = cc_version.splitlines()[0].split(" ")[1]
 
         # environment info
         env = dict()
