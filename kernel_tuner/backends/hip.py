@@ -50,6 +50,11 @@ class HipFunctions(GPUBackend):
         :type iterations: int
         """
 
+        # create a stream and events
+        self.stream = hip.hipStreamCreate()
+        self.start = hip.hipEventCreate()
+        self.end = hip.hipEventCreate()
+
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the HIP function
         :param arguments: List of arguments to be passed to the HIP function.
@@ -104,3 +109,13 @@ class HipFunctions(GPUBackend):
         kernel = hip.hipModuleGetFunction(module, kernel_name)
         
         return kernel
+    
+    def start_event(self):
+        """Records the event that marks the start of a measurement"""
+        self.start = hip.hipEventCreate()
+        hip.hipEventRecord(self.start, self.stream)
+
+    def stop_event(self):
+        """Records the event that marks the end of a measurement"""
+        self.end = hip.hipEventCreate()
+        hip.hipEventRecord(self.end, self.stream)
