@@ -770,3 +770,45 @@ def test_extract_directive_code():
     assert len(returns) == 2
     assert expected_one in returns
     assert expected_two in returns
+
+def test_extract_preprocessor():
+    code = """
+        #include <stdlib.h>
+
+        #define VECTOR_SIZE 65536
+
+        int main(void) {
+            int size = VECTOR_SIZE;
+            __restrict float * a = (float *) malloc(VECTOR_SIZE * sizeof(float));
+            __restrict float * b = (float *) malloc(VECTOR_SIZE * sizeof(float));
+            __restrict float * c = (float *) malloc(VECTOR_SIZE * sizeof(float));
+
+            #pragma tuner start
+            #pragma acc parallel
+            #pragma acc loop
+            for ( int i = 0; i < size; i++ ) {
+                    a[i] = i;
+                    b[i] = i + 1;
+            }
+            #pragma tuner stop
+
+            #pragma tuner start
+            #pragma acc parallel
+            #pragma acc loop
+            for ( int i = 0; i < size; i++ ) {
+                    c[i] = a[i] + b[i];
+            }
+            #pragma tuner stop
+
+            free(a);
+            free(b);
+            free(c);
+    }
+    """
+
+    expected = ["        #include <stdlib.h>", "        #define VECTOR_SIZE 65536"]
+    results = extract_preprocessor(code)
+
+    assert len(results) == 2
+    for item in expected:
+        assert item in results

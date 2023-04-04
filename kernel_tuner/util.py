@@ -13,7 +13,20 @@ import re
 from types import FunctionType
 
 import numpy as np
-from constraint import Constraint, AllDifferentConstraint, AllEqualConstraint, MaxSumConstraint, ExactSumConstraint, MinSumConstraint, InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint, FunctionConstraint
+from constraint import (
+    Constraint,
+    AllDifferentConstraint,
+    AllEqualConstraint,
+    MaxSumConstraint,
+    ExactSumConstraint,
+    MinSumConstraint,
+    InSetConstraint,
+    NotInSetConstraint,
+    SomeInSetConstraint,
+    SomeNotInSetConstraint,
+    FunctionConstraint,
+)
+
 try:
     import cupy as cp
 except ImportError:
@@ -29,7 +42,6 @@ from kernel_tuner.observers.nvml import NVMLObserver
 
 
 class ErrorConfig(str):
-
     def __str__(self):
         return self.__class__.__name__
 
@@ -49,10 +61,9 @@ class RuntimeFailedConfig(ErrorConfig):
     pass
 
 
-class TorchPlaceHolder():
-
+class TorchPlaceHolder:
     def __init__(self):
-        self.Tensor = Exception    #using Exception here as a type that will never be among kernel arguments
+        self.Tensor = Exception  # using Exception here as a type that will never be among kernel arguments
 
 
 class SkippableFailure(Exception):
@@ -80,22 +91,25 @@ def check_argument_type(dtype, kernel_argument):
         "uint16": ["ushort", "unsigned short", "uint16_t"],
         "int16": ["short", "int16_t"],
         "uint32": ["uint", "unsigned int", "uint32_t"],
-        "int32": ["int", "int32_t"],    # discrepancy between OpenCL and C here, long may be 32bits in C
+        "int32": [
+            "int",
+            "int32_t",
+        ],  # discrepancy between OpenCL and C here, long may be 32bits in C
         "uint64": ["ulong", "unsigned long", "uint64_t"],
         "int64": ["long", "int64_t"],
         "float16": ["half"],
         "float32": ["float"],
         "float64": ["double"],
         "complex64": ["float2"],
-        "complex128": ["double2"]
+        "complex128": ["double2"],
     }
     if dtype in types_map:
         return any([substr in kernel_argument for substr in types_map[dtype]])
-    return False    # unknown dtype. do not throw exception to still allow kernel to run.
+    return False  # unknown dtype. do not throw exception to still allow kernel to run.
 
 
 def check_argument_list(kernel_name, kernel_string, args):
-    """ raise an exception if a kernel arguments do not match host arguments """
+    """raise an exception if a kernel arguments do not match host arguments"""
     kernel_arguments = list()
     collected_errors = list()
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
@@ -106,23 +120,38 @@ def check_argument_list(kernel_name, kernel_string, args):
     for arguments_set, arguments in enumerate(kernel_arguments):
         collected_errors.append(list())
         if len(arguments) != len(args):
-            collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
+            collected_errors[arguments_set].append(
+                "Kernel and host argument lists do not match in size."
+            )
             continue
-        for (i, arg) in enumerate(args):
+        for i, arg in enumerate(args):
             kernel_argument = arguments[i]
 
             if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
-                raise TypeError("Argument at position " + str(i) + " of type: " + str(type(arg)) + " should be of type np.ndarray or numpy scalar")
+                raise TypeError(
+                    "Argument at position "
+                    + str(i)
+                    + " of type: "
+                    + str(type(arg))
+                    + " should be of type np.ndarray or numpy scalar"
+                )
 
             correct = True
             if isinstance(arg, np.ndarray) and not "*" in kernel_argument:
-                correct = False    # array is passed to non-pointer kernel argument
+                correct = False  # array is passed to non-pointer kernel argument
 
             if correct and check_argument_type(str(arg.dtype), kernel_argument):
                 continue
 
-            collected_errors[arguments_set].append("Argument at position " + str(i) + " of dtype: " + str(arg.dtype) + " does not match " + kernel_argument +
-                                                   ".")
+            collected_errors[arguments_set].append(
+                "Argument at position "
+                + str(i)
+                + " of dtype: "
+                + str(arg.dtype)
+                + " does not match "
+                + kernel_argument
+                + "."
+            )
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one
             # it is the right one
@@ -132,22 +161,33 @@ def check_argument_list(kernel_name, kernel_string, args):
 
 
 def check_stop_criterion(to):
-    """ checks if max_fevals is reached or time limit is exceeded """
+    """checks if max_fevals is reached or time limit is exceeded"""
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
         raise StopCriterionReached("max_fevals reached")
-    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
+    if "time_limit" in to and (
+        ((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3))
+        > to.time_limit
+    ):
         raise StopCriterionReached("time limit exceeded")
 
 
 def check_tune_params_list(tune_params, observers):
-    """ raise an exception if a tune parameter has a forbidden name """
+    """raise an exception if a tune parameter has a forbidden name"""
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
-            raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
+            raise ValueError(
+                "Tune parameter "
+                + name
+                + " with value "
+                + str(param)
+                + " has a forbidden name!"
+            )
     if any("nvml_" in param for param in tune_params):
         if not observers or not any(isinstance(obs, NVMLObserver) for obs in observers):
-            raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
+            raise ValueError(
+                "Tune parameters starting with nvml_ require an NVMLObserver!"
+            )
 
 
 def check_block_size_names(block_size_names):
@@ -173,14 +213,22 @@ def check_block_size_params_names_list(block_size_names, tune_params):
     if block_size_names is not None:
         for name in block_size_names:
             if name not in tune_params.keys():
-                warnings.warn("Block size name " + name + " is not specified in the tunable parameters list!", UserWarning)
-    else:    # if default block size names are used
+                warnings.warn(
+                    "Block size name "
+                    + name
+                    + " is not specified in the tunable parameters list!",
+                    UserWarning,
+                )
+    else:  # if default block size names are used
         if not any([k in default_block_size_names for k in tune_params.keys()]):
-            warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
+            warnings.warn(
+                "None of the tunable parameters specify thread block dimensions!",
+                UserWarning,
+            )
 
 
 def check_restrictions(restrictions, params: dict, verbose: bool):
-    """ check whether a specific instance meets the search space restrictions """
+    """check whether a specific instance meets the search space restrictions"""
     valid = True
     if callable(restrictions):
         valid = restrictions(params)
@@ -200,12 +248,16 @@ def check_restrictions(restrictions, params: dict, verbose: bool):
             except ZeroDivisionError:
                 pass
     if not valid and verbose:
-        print("skipping config", get_instance_string(params), "reason: config fails restriction")
+        print(
+            "skipping config",
+            get_instance_string(params),
+            "reason: config fails restriction",
+        )
     return valid
 
 
 def convert_constraint_restriction(restrict: Constraint):
-    """ Convert the python-constraint to a function for backwards compatibility """
+    """Convert the python-constraint to a function for backwards compatibility"""
     if isinstance(restrict, FunctionConstraint):
         f_restrict = lambda p: restrict._func(*p)
     elif isinstance(restrict, AllDifferentConstraint):
@@ -220,7 +272,15 @@ def convert_constraint_restriction(restrict: Constraint):
         f_restrict = lambda p: sum(p) == restrict._exactsum
     elif isinstance(restrict, MinSumConstraint):
         f_restrict = lambda p: sum(p) >= restrict._exactsum
-    elif isinstance(restrict, (InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint)):
+    elif isinstance(
+        restrict,
+        (
+            InSetConstraint,
+            NotInSetConstraint,
+            SomeInSetConstraint,
+            SomeNotInSetConstraint,
+        ),
+    ):
         raise NotImplementedError(
             f"Restriction of the type {type(restrict)} is explicitely not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
         )
@@ -230,13 +290,13 @@ def convert_constraint_restriction(restrict: Constraint):
 
 
 def check_thread_block_dimensions(params, max_threads, block_size_names=None):
-    """ check on maximum thread block dimensions """
+    """check on maximum thread block dimensions"""
     dims = get_thread_block_dimensions(params, block_size_names)
     return np.prod(dims) <= max_threads
 
 
 def config_valid(config, tuning_options, max_threads):
-    """ combines restrictions and a check on the max thread block dimension to check config validity """
+    """combines restrictions and a check on the max thread block dimension to check config validity"""
     legal = True
     params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
     if tuning_options.restrictions:
@@ -244,12 +304,14 @@ def config_valid(config, tuning_options, max_threads):
         if not legal:
             return False
     block_size_names = tuning_options.get("block_size_names", None)
-    valid_thread_block_dimensions = check_thread_block_dimensions(params, max_threads, block_size_names)
+    valid_thread_block_dimensions = check_thread_block_dimensions(
+        params, max_threads, block_size_names
+    )
     return valid_thread_block_dimensions
 
 
 def delete_temp_file(filename):
-    """ delete a temporary file, don't complain if no longer exists """
+    """delete a temporary file, don't complain if no longer exists"""
     try:
         os.remove(filename)
     except OSError as e:
@@ -269,15 +331,20 @@ def detect_language(kernel_string):
 
 
 def get_best_config(results, objective, objective_higher_is_better=False):
-    """ Returns the best configuration from a list of results according to some objective """
+    """Returns the best configuration from a list of results according to some objective"""
     func = max if objective_higher_is_better else min
-    ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
-    best_config = func(results, key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
+    ignore_val = (
+        sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
+    )
+    best_config = func(
+        results,
+        key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val,
+    )
     return best_config
 
 
 def get_config_string(params, keys=None, units=None):
-    """ return a compact string representation of a measurement """
+    """return a compact string representation of a measurement"""
 
     def compact_number(v):
         if isinstance(v, float):
@@ -313,21 +380,29 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
         if callable(divisor_list):
             return divisor_list(params)
         else:
-            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+            return np.prod(
+                [int(eval(replace_param_occurrences(s, params))) for s in divisor_list]
+            )
 
-    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
-    return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
+    divisors = [
+        get_dimension_divisor(d, block_size_names[i], params)
+        for i, d in enumerate(grid_div)
+    ]
+    return tuple(
+        int(np.ceil(float(current_problem_size[i]) / float(d)))
+        for i, d in enumerate(divisors)
+    )
 
 
 def get_instance_string(params):
-    """ combine the parameters to a string mostly used for debug output
-        use of OrderedDict is advised
+    """combine the parameters to a string mostly used for debug output
+    use of OrderedDict is advised
     """
     return "_".join([str(i) for i in params.values()])
 
 
 def get_kernel_string(kernel_source, params=None):
-    """ retrieve the kernel source and return as a string
+    """retrieve the kernel source and return as a string
 
     This function processes the passed kernel_source argument, which could be
     a function, a string with a filename, or just a string with code already.
@@ -352,7 +427,7 @@ def get_kernel_string(kernel_source, params=None):
     :rtype: string
     """
     # logging.debug('get_kernel_string called with %s', str(kernel_source))
-    logging.debug('get_kernel_string called')
+    logging.debug("get_kernel_string called")
 
     kernel_string = None
     if callable(kernel_source):
@@ -372,7 +447,7 @@ def get_problem_size(problem_size, params):
     if callable(problem_size):
         problem_size = problem_size(params)
     if isinstance(problem_size, (str, int, np.integer)):
-        problem_size = (problem_size, )
+        problem_size = (problem_size,)
     current_problem_size = [1, 1, 1]
     for i, s in enumerate(problem_size):
         if isinstance(s, str):
@@ -380,27 +455,31 @@ def get_problem_size(problem_size, params):
         elif isinstance(s, (int, np.integer)):
             current_problem_size[i] = s
         else:
-            raise TypeError("Error: problem_size should only contain strings or integers")
+            raise TypeError(
+                "Error: problem_size should only contain strings or integers"
+            )
     return current_problem_size
 
 
 def get_smem_args(smem_args, params):
-    """ return a dict with kernel instance specific size """
+    """return a dict with kernel instance specific size"""
     result = smem_args.copy()
-    if 'size' in result:
-        size = result['size']
+    if "size" in result:
+        size = result["size"]
         if callable(size):
             size = size(params)
         elif isinstance(size, str):
             size = replace_param_occurrences(size, params)
             size = int(eval(size))
-        result['size'] = size
+        result["size"] = size
     return result
 
 
 def get_temp_filename(suffix=None):
-    """ return a string in the form of temp_X, where X is a large integer """
-    tmp_file = tempfile.mkstemp(suffix=suffix or "", prefix="temp_", dir=os.getcwd())    # or "" for Python 2 compatibility
+    """return a string in the form of temp_X, where X is a large integer"""
+    tmp_file = tempfile.mkstemp(
+        suffix=suffix or "", prefix="temp_", dir=os.getcwd()
+    )  # or "" for Python 2 compatibility
     os.close(tmp_file[0])
     return tmp_file[1]
 
@@ -417,7 +496,7 @@ def get_thread_block_dimensions(params, block_size_names=None):
 
 
 def get_total_timings(results, env, overhead_time):
-    """ Sum all timings and put their totals in the env """
+    """Sum all timings and put their totals in the env"""
     total_framework_time = 0
     total_strategy_time = 0
     total_compile_time = 0
@@ -425,30 +504,47 @@ def get_total_timings(results, env, overhead_time):
     total_benchmark_time = 0
     if results:
         for result in results:
-            if 'framework_time' not in result or 'strategy_time' not in result or 'compile_time' not in result or 'verification_time' not in result:
-                #warnings.warn("No detailed timings in results")
+            if (
+                "framework_time" not in result
+                or "strategy_time" not in result
+                or "compile_time" not in result
+                or "verification_time" not in result
+            ):
+                # warnings.warn("No detailed timings in results")
                 return env
-            total_framework_time += result['framework_time']
-            total_strategy_time += result['strategy_time']
-            total_compile_time += result['compile_time']
-            total_verification_time += result['verification_time']
-            total_benchmark_time += result['benchmark_time']
+            total_framework_time += result["framework_time"]
+            total_strategy_time += result["strategy_time"]
+            total_compile_time += result["compile_time"]
+            total_verification_time += result["verification_time"]
+            total_benchmark_time += result["benchmark_time"]
 
     # add the seperate times to the environment dict
-    env['total_framework_time'] = total_framework_time
-    env['total_strategy_time'] = total_strategy_time
-    env['total_compile_time'] = total_compile_time
-    env['total_verification_time'] = total_verification_time
-    env['total_benchmark_time'] = total_benchmark_time
-    if 'simulated_time' in env:
-        overhead_time += env['simulated_time']
-    env['overhead_time'] = overhead_time - (total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_benchmark_time)
+    env["total_framework_time"] = total_framework_time
+    env["total_strategy_time"] = total_strategy_time
+    env["total_compile_time"] = total_compile_time
+    env["total_verification_time"] = total_verification_time
+    env["total_benchmark_time"] = total_benchmark_time
+    if "simulated_time" in env:
+        overhead_time += env["simulated_time"]
+    env["overhead_time"] = overhead_time - (
+        total_framework_time
+        + total_strategy_time
+        + total_compile_time
+        + total_verification_time
+        + total_benchmark_time
+    )
     return env
 
 
 def print_config(config, tuning_options, runner):
     """print the configuration string with tunable parameters and benchmark results"""
-    print_config_output(tuning_options.tune_params, config, runner.quiet, tuning_options.metrics, runner.units)
+    print_config_output(
+        tuning_options.tune_params,
+        config,
+        runner.quiet,
+        tuning_options.metrics,
+        runner.units,
+    )
 
 
 def print_config_output(tune_params, params, quiet, metrics, units):
@@ -462,7 +558,7 @@ def print_config_output(tune_params, params, quiet, metrics, units):
 
 
 def process_metrics(params, metrics):
-    """ process user-defined metrics for derived benchmark results
+    """process user-defined metrics for derived benchmark results
 
     Metrics must be an OrderedDict to support composable metrics. The dictionary keys describe
     the name given to this user-defined metric and will be used as the key in the results dictionaries
@@ -490,7 +586,9 @@ def process_metrics(params, metrics):
 
     """
     if not isinstance(metrics, OrderedDict):
-        raise ValueError("metrics should be an OrderedDict to preserve order and support composability")
+        raise ValueError(
+            "metrics should be an OrderedDict to preserve order and support composability"
+        )
     for k, v in metrics.items():
         if isinstance(v, str):
             value = eval(replace_param_occurrences(v, params))
@@ -506,8 +604,8 @@ def process_metrics(params, metrics):
 
 
 def looks_like_a_filename(kernel_source):
-    """ attempt to detect whether source code or a filename was passed """
-    logging.debug('looks_like_a_filename called')
+    """attempt to detect whether source code or a filename was passed"""
+    logging.debug("looks_like_a_filename called")
     result = False
     if isinstance(kernel_source, str):
         result = True
@@ -524,12 +622,14 @@ def looks_like_a_filename(kernel_source):
                 result = False
         # string must contain substring ".c", ".opencl", or ".F"
         result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
-    logging.debug('kernel_source is a filename: %s' % str(result))
+    logging.debug("kernel_source is a filename: %s" % str(result))
     return result
 
 
-def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names, lang, defines):
-    """ prepare kernel string for compilation
+def prepare_kernel_string(
+    kernel_name, kernel_string, params, grid, threads, block_size_names, lang, defines
+):
+    """prepare kernel string for compilation
 
     Prepends the kernel with a series of C preprocessor defines specific
     to this kernel instance:
@@ -568,7 +668,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     :rtype: string
 
     """
-    logging.debug('prepare_kernel_string called for %s', kernel_name)
+    logging.debug("prepare_kernel_string called for %s", kernel_name)
 
     kernel_prefix = ""
 
@@ -611,7 +711,9 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             # in OpenCL this isn't the case and we can just insert "#define loop_unroll_factor N"
             # using 0 to disable specifying a loop unrolling factor for this loop
             if v == "0":
-                kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)    # + r"[^\S]*"
+                kernel_string = re.sub(
+                    r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string
+                )  # + r"[^\S]*"
             else:
                 kernel_prefix += f"constexpr int {k} = {v};\n"
         else:
@@ -629,18 +731,18 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
 
 def read_file(filename):
-    """ return the contents of the file named filename or None if file not found """
+    """return the contents of the file named filename or None if file not found"""
     if os.path.isfile(filename):
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             return f.read()
 
 
 def replace_param_occurrences(string, params):
     """replace occurrences of the tuning params with their current value"""
-    result = ''
+    result = ""
 
     # Split on tokens and replace a token if it is a key in `params`.
-    for part in re.split('([a-zA-Z0-9_]+)', string):
+    for part in re.split("([a-zA-Z0-9_]+)", string):
         if part in params:
             result += str(params[part])
         else:
@@ -661,10 +763,10 @@ def write_file(filename, string):
     """dump the contents of string to a file called filename"""
     # ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:
-        with open(filename, 'w', encoding="utf-8") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(string)
     else:
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             f.write(string.encode("utf-8"))
 
 
@@ -686,13 +788,13 @@ def normalize_verify_function(v):
     if v is None:
         return None
 
-    if has_kw_argument(v, 'atol'):
+    if has_kw_argument(v, "atol"):
         return v
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
 def parse_restrictions(restrictions: list, tune_params: dict):
-    """ parses restrictions from a list of strings into a compilable function """
+    """parses restrictions from a list of strings into a compilable function"""
 
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
@@ -704,7 +806,9 @@ def parse_restrictions(restrictions: list, tune_params: dict):
         else:
             return key
 
-    parsed = ") and (".join([re.sub(regex_match_variable, replace_params, res) for res in restrictions])
+    parsed = ") and (".join(
+        [re.sub(regex_match_variable, replace_params, res) for res in restrictions]
+    )
 
     # tidy up the code by removing the last suffix and unnecessary spaces
     parsed_restrictions = "(" + parsed.strip() + ")"
@@ -716,17 +820,16 @@ def parse_restrictions(restrictions: list, tune_params: dict):
 
 
 def compile_restrictions(restrictions: list, tune_params: dict):
-    """ parses restrictions from a list of strings into a callable function """
+    """parses restrictions from a list of strings into a callable function"""
     parsed_restrictions = parse_restrictions(restrictions, tune_params)
 
     # actually compile
-    code_object = compile(parsed_restrictions, '<string>', 'exec')
+    code_object = compile(parsed_restrictions, "<string>", "exec")
     func = FunctionType(code_object.co_consts[0], globals())
     return func
 
 
 class NpEncoder(json.JSONEncoder):
-
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -763,23 +866,33 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     """
     # caching only works correctly if tunable_parameters are stored in a OrderedDict
     if not isinstance(tuning_options.tune_params, OrderedDict):
-        raise ValueError("Caching only works correctly when tunable parameters are stored in a OrderedDict")
+        raise ValueError(
+            "Caching only works correctly when tunable parameters are stored in a OrderedDict"
+        )
 
     # if file does not exist, create new cache
     if not os.path.isfile(cache):
         if tuning_options.simulation_mode:
-            raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
+            raise ValueError(
+                f"Simulation mode requires an existing cachefile: file {cache} does not exist"
+            )
 
         c = OrderedDict()
         c["device_name"] = runner.dev.name
         c["kernel_name"] = kernel_options.kernel_name
-        c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"
+        c["problem_size"] = (
+            kernel_options.problem_size
+            if not callable(kernel_options.problem_size)
+            else "callable"
+        )
         c["tune_params_keys"] = list(tuning_options.tune_params.keys())
         c["tune_params"] = tuning_options.tune_params
         c["objective"] = tuning_options.objective
         c["cache"] = {}
 
-        contents = json.dumps(c, cls=NpEncoder, indent="")[:-3]    # except the last "}\n}"
+        contents = json.dumps(c, cls=NpEncoder, indent="")[
+            :-3
+        ]  # except the last "}\n}"
 
         # write the header to the cachefile
         with open(cache, "w") as cachefile:
@@ -798,32 +911,54 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != runner.dev.name:
-            raise ValueError("Cannot load cache which contains results for different device")
+            raise ValueError(
+                "Cannot load cache which contains results for different device"
+            )
         if cached_data["kernel_name"] != kernel_options.kernel_name:
-            raise ValueError("Cannot load cache which contains results for different kernel")
+            raise ValueError(
+                "Cannot load cache which contains results for different kernel"
+            )
         if "problem_size" in cached_data and not callable(kernel_options.problem_size):
             # if problem_size is not iterable, compare directly
             if not hasattr(kernel_options.problem_size, "__iter__"):
                 if cached_data["problem_size"] != kernel_options.problem_size:
-                    raise ValueError("Cannot load cache which contains results for different problem_size")
+                    raise ValueError(
+                        "Cannot load cache which contains results for different problem_size"
+                    )
             # else (problem_size is iterable)
             # cache returns list, problem_size is likely a tuple. Therefore, the next check
             # checks the equality of all items in the list/tuples individually
-            elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
-                raise ValueError("Cannot load cache which contains results for different problem_size")
+            elif not all(
+                [
+                    i == j
+                    for i, j in zip(
+                        cached_data["problem_size"], kernel_options.problem_size
+                    )
+                ]
+            ):
+                raise ValueError(
+                    "Cannot load cache which contains results for different problem_size"
+                )
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
-            if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
-                raise ValueError(f"All tunable parameters are present, but the order is wrong. \
-                    Cache has order: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}")
-            raise ValueError(f"Cannot load cache which contains results obtained with different tunable parameters. \
-                Cache has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}")
+            if all(
+                key in tuning_options.tune_params
+                for key in cached_data["tune_params_keys"]
+            ):
+                raise ValueError(
+                    f"All tunable parameters are present, but the order is wrong. \
+                    Cache has order: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
+                )
+            raise ValueError(
+                f"Cannot load cache which contains results obtained with different tunable parameters. \
+                Cache has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
+            )
 
         tuning_options.cachefile = cache
         tuning_options.cache = cached_data["cache"]
 
 
 def read_cache(cache, open_cache=True):
-    """ Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending """
+    """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending"""
     with open(cache, "r") as cachefile:
         filestr = cachefile.read().strip()
 
@@ -842,7 +977,7 @@ def read_cache(cache, open_cache=True):
     error_configs = {
         "InvalidConfig": InvalidConfig(),
         "CompilationFailedConfig": CompilationFailedConfig(),
-        "RuntimeFailedConfig": RuntimeFailedConfig()
+        "RuntimeFailedConfig": RuntimeFailedConfig(),
     }
 
     # replace strings with ErrorConfig instances
@@ -869,7 +1004,7 @@ def close_cache(cache):
 
 
 def store_cache(key, params, tuning_options):
-    """ stores a new entry (key, params) to the cachefile """
+    """stores a new entry (key, params) to the cachefile"""
 
     # create converter for dumping numpy objects to JSON
     def JSONconverter(obj):
@@ -881,7 +1016,7 @@ def store_cache(key, params, tuning_options):
             return obj.tolist()
         return obj.__str__()
 
-    #logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
+    # logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict):
         if not key in tuning_options.cache:
             tuning_options.cache[key] = params
@@ -894,21 +1029,25 @@ def store_cache(key, params, tuning_options):
 
             if tuning_options.cachefile:
                 with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({ key: output_params }, default=JSONconverter)[1:-1] + ",")
+                    cachefile.write(
+                        "\n"
+                        + json.dumps({key: output_params}, default=JSONconverter)[1:-1]
+                        + ","
+                    )
 
 
 def dump_cache(obj: str, tuning_options):
-    """ dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility! """
+    """dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility!"""
     if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
         with open(tuning_options.cachefile, "a") as cachefile:
             cachefile.write(obj)
 
 
 class MaxProdConstraint(Constraint):
-    """ Constraint enforcing that values of given variables create a product up to a given amount """
+    """Constraint enforcing that values of given variables create a product up to a given amount"""
 
     def __init__(self, maxprod):
-        """ Instantiate a MaxProdConstraint
+        """Instantiate a MaxProdConstraint
 
         :params maxprod: Value to be considered as the maximum product
         :type maxprod: number
@@ -917,7 +1056,7 @@ class MaxProdConstraint(Constraint):
         self._maxprod = maxprod
 
     def preProcess(self, variables, domains, constraints, vconstraints):
-        """  """
+        """ """
         Constraint.preProcess(self, variables, domains, constraints, vconstraints)
         maxprod = self._maxprod
         for variable in variables:
@@ -947,8 +1086,9 @@ class MaxProdConstraint(Constraint):
                         return False
         return True
 
+
 def cuda_error_check(error):
-    """ Checking the status of CUDA calls using the NVIDIA cuda-python backend """
+    """Checking the status of CUDA calls using the NVIDIA cuda-python backend"""
     if isinstance(error, cuda.CUresult):
         if error != cuda.CUresult.CUDA_SUCCESS:
             _, name = cuda.cuGetErrorName(error)
@@ -962,15 +1102,16 @@ def cuda_error_check(error):
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
+
 def extract_directive_code(code: str) -> list:
-    """ Extract explicitly marked directive sections from code """
-    
+    """Extract explicitly marked directive sections from code"""
+
     start_string = "#pragma tuner start"
     end_string = "#pragma tuner stop"
     found_section = False
     sections = list()
     tmp_string = list()
-    
+
     for line in code.split("\n"):
         if found_section:
             if end_string in line:
@@ -984,3 +1125,13 @@ def extract_directive_code(code: str) -> list:
                 found_section = True
 
     return sections
+
+
+def extract_preprocessor(code: str) -> list:
+    preprocessor = list()
+
+    for line in code.split("\n"):
+        if "#define" in line or "#include" in line:
+            preprocessor.append(line)
+
+    return preprocessor
