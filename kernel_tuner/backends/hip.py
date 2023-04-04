@@ -2,9 +2,16 @@
 
 import numpy as np
 import ctypes as C
+import ctypes.util
 from collections import namedtuple
 
 from kernel_tuner.backends.backend import GPUBackend
+
+try:
+    # Load the HIP runtime library
+    hip_lib = C.cdll.LoadLibrary(C.util.find_library('hip'))
+except ImportError:
+    hip_lib = None
 
 # embedded in try block to be able to generate documentation
 # and run tests without pyhip installed
@@ -119,3 +126,22 @@ class HipFunctions(GPUBackend):
         """Records the event that marks the end of a measurement"""
         self.end = hip.hipEventCreate()
         hip.hipEventRecord(self.end, self.stream)
+
+    def kernel_finished(self):
+        """Returns True if the kernel has finished, False otherwise"""
+        
+        # Define the argument and return types for hipEventQuery()
+        hip_lib.hipEventQuery.argtypes = [C.c_void_p]
+        hip_lib.hipEventQuery.restype = C.c_int
+
+        # Query the status of the event
+        status = hip_lib.hipEventQuery(self.end)
+        if status == hip_lib.hipSuccess:
+            # Kernel has finished
+            return True
+        elif status == hip_lib.hipErrorNotReady:
+            # Kernel is still running
+            return False
+        else:
+            # Error occurred
+            return False
