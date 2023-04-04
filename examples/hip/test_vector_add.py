@@ -33,6 +33,6 @@ def test_vector_add():
     args = [c, a, b, n]
     params = {"block_size_x": 512}
 
-    answer = run_kernel("vector_add", kernel_string, problem_size, args, params)
+    answer = run_kernel("vector_add", kernel_string, problem_size, args, params, lang="HIP")
 
     assert numpy.allclose(answer[0], a+b, atol=1e-8)
