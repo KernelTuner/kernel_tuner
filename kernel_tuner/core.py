@@ -19,6 +19,7 @@ from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.c import CFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
+from kernel_tuner.backends.hip import HipFunctions
 import kernel_tuner.util as util
 
 try:
@@ -239,6 +240,8 @@ class DeviceInterface(object):
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() in ["C", "FORTRAN"]:
             dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
+        elif lang.upper() == "HIP":
+            dev = HipFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
 
