@@ -1135,3 +1135,11 @@ def extract_preprocessor(code: str) -> list:
             preprocessor.append(line)
 
     return preprocessor
+
+
+def wrap_cpp_timing(code: str) -> str:
+    start = "auto start = std::chrono::high_resolution_clock::now();"
+    end = "auto end = std::chrono::high_resolution_clock::now();"
+    sum = "auto elapsed_time = end - start;"
+
+    return "\n".join([start, code, end, sum])

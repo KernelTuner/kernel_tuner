@@ -771,6 +771,7 @@ def test_extract_directive_code():
     assert expected_one in returns
     assert expected_two in returns
 
+
 def test_extract_preprocessor():
     code = """
         #include <stdlib.h>
@@ -812,3 +813,12 @@ def test_extract_preprocessor():
     assert len(results) == 2
     for item in expected:
         assert item in results
+
+
+def test_wrap_cpp_timing():
+    code = "for ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}"
+    wrapped = wrap_cpp_timing(code)
+    assert (
+        wrapped
+        == "auto start = std::chrono::high_resolution_clock::now();\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto end = std::chrono::high_resolution_clock::now();\nauto elapsed_time = end - start;"
+    )
