@@ -1103,7 +1103,7 @@ def cuda_error_check(error):
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
 
-def extract_directive_code(code: str) -> list:
+def extract_directive_code(code: str, kernel_name: str = None) -> list:
     """Extract explicitly marked directive sections from code"""
     start_string = "#pragma tuner start"
     end_string = "#pragma tuner stop"
@@ -1121,52 +1121,55 @@ def extract_directive_code(code: str) -> list:
                 tmp_string.append(line)
         else:
             if start_string in line:
-                found_section = True
+                if kernel_name is None or f" {kernel_name} " in line:
+                    found_section = True
 
     return sections
 
 
-def extract_directive_signature(code: str) -> list:
+def extract_directive_signature(code: str, kernel_name: str = None) -> list:
     """Extract the user defined signature for directive sections"""
     start_string = "#pragma tuner start"
     signatures = list()
 
     for line in code.split("\n"):
         if start_string in line:
-            tmp_string = line.split(" ")
-            name = tmp_string[3]
-            tmp_string = tmp_string[4:]
-            params = list()
-            for param in tmp_string:
-                p_name = param.split("(")[0]
-                param = param.replace(p_name, "", 1)
-                p_type = param[1:-1]
-                p_type = p_type.split(":")[0]
-                if "*" in p_type:
-                    p_type = p_type.replace("*", " *")
-                params.append(f"{p_type} {p_name}")
-            signatures.append(f"float {name}({', '.join(params)})")
+            if kernel_name is None or f" {kernel_name} " in line:
+                tmp_string = line.split(" ")
+                name = tmp_string[3]
+                tmp_string = tmp_string[4:]
+                params = list()
+                for param in tmp_string:
+                    p_name = param.split("(")[0]
+                    param = param.replace(p_name, "", 1)
+                    p_type = param[1:-1]
+                    p_type = p_type.split(":")[0]
+                    if "*" in p_type:
+                        p_type = p_type.replace("*", " *")
+                    params.append(f"{p_type} {p_name}")
+                signatures.append(f"float {name}({', '.join(params)})")
 
     return signatures
 
 
-def extract_directive_data(code: str) -> dict:
+def extract_directive_data(code: str, kernel_name: str = None) -> dict:
     """Extract the data used in the directive section"""
     start_string = "#pragma tuner start"
     data = dict()
 
     for line in code.split("\n"):
         if start_string in line:
-            name = line.split(" ")[3]
-            data[name] = dict()
-            tmp_string = line.split(" ")[4:]
-            for param in tmp_string:
-                p_name = param.split("(")[0]
-                param = param.replace(p_name, "", 1)
-                param = param[1:-1]
-                p_type = param.split(":")[0]
-                p_size = param.split(":")[1]
-                data[name][p_name] = [p_type, p_size]
+            if kernel_name is None or f" {kernel_name} " in line:
+                name = line.split(" ")[3]
+                data[name] = dict()
+                tmp_string = line.split(" ")[4:]
+                for param in tmp_string:
+                    p_name = param.split("(")[0]
+                    param = param.replace(p_name, "", 1)
+                    param = param[1:-1]
+                    p_type = param.split(":")[0]
+                    p_size = param.split(":")[1]
+                    data[name][p_name] = [p_type, p_size]
 
     return data
 

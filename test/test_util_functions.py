@@ -752,7 +752,6 @@ def test_extract_directive_code():
             free(c);
     }
     """
-
     expected_one = """            #pragma acc parallel
             #pragma acc loop
             for ( int i = 0; i < size; i++ ) {
@@ -764,12 +763,12 @@ def test_extract_directive_code():
             for ( int i = 0; i < size; i++ ) {
                     c[i] = a[i] + b[i];
             }"""
-
     returns = extract_directive_code(code)
-
     assert len(returns) == 2
     assert expected_one in returns
     assert expected_two in returns
+    returns = extract_directive_code(code, "vector_add")
+    assert len(returns) == 0
 
 
 def test_extract_preprocessor():
@@ -806,10 +805,8 @@ def test_extract_preprocessor():
             free(c);
     }
     """
-
     expected = ["        #include <stdlib.h>", "        #define VECTOR_SIZE 65536"]
     results = extract_preprocessor(code)
-
     assert len(results) == 2
     for item in expected:
         assert item in results
@@ -827,17 +824,22 @@ def test_wrap_cpp_timing():
 def test_extract_directive_signature():
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)"
     signatures = extract_directive_signature(code)
-
     assert len(signatures) == 1
     assert "float vector_add(float * a, float * b, float * c, int size)" in signatures
+    signatures = extract_directive_signature(code, "vector_add")
+    assert len(signatures) == 1
+    assert "float vector_add(float * a, float * b, float * c, int size)" in signatures
+    signatures = extract_directive_signature(code, "vector_add_ext")
+    assert len(signatures) == 0
 
 
 def test_extract_directive_data():
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)"
     data = extract_directive_data(code)
-
     assert len(data) == 1
     assert len(data["vector_add"]) == 4
     assert "float*" in data["vector_add"]["b"]
     assert "int" not in data["vector_add"]["c"]
     assert "VECTOR_SIZE" in data["vector_add"]["size"]
+    data = extract_directive_data(code, "vector_add_double")
+    assert len(data) == 0
