@@ -61,6 +61,13 @@ class HipFunctions(GPUBackend):
         :type iterations: int
         """
 
+        hipProps = hip.hipDeviceProperties()
+        self.name = hipProps.name
+        self.max_threads = hipProps.maxThreadsPerBlock
+
+        env = dict()
+        self.env = env
+
         # create a stream and events
         self.stream = hip.hipStreamCreate()
         self.start = hip.hipEventCreate()
@@ -181,3 +188,5 @@ class HipFunctions(GPUBackend):
     def copy_texture_memory_args(self, texmem_args):
         """This method must implement the allocation and copy of texture memory to the GPU."""
         pass
+
+    units = {"time": "ms"}
