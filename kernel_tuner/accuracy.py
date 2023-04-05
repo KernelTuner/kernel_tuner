@@ -83,10 +83,10 @@ class TunablePrecision(Tunable):
         if not dtypes:
             dtypes = dict(half=np.half, float=np.single, double=np.double)
 
-            # Try to get bfloat16 from tensorflow if available.
+            # Try to get bfloat16 if available.
             try:
-                # import tensorflow
-                # dtypes["bfloat16"] = tensorflow.bfloat16.as_numpy_dtype
+                from bfloat16 import bfloat16
+                dtypes["bfloat16"] = bfloat16
                 pass
             except ImportError:
                 pass  # Ignore error if tensorflow is not available
