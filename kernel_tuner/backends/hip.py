@@ -1,7 +1,7 @@
 """This module contains all HIP specific kernel_tuner functions"""
 
 import numpy as np
-import ctypes as C
+import ctypes
 import ctypes.util
 from collections import namedtuple
 
@@ -9,29 +9,33 @@ from kernel_tuner.backends.backend import GPUBackend
 
 try:
     # Load the HIP runtime library
-    hip_lib = C.cdll.LoadLibrary(C.util.find_library('hip'))
+    hip_lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('hip'))
 except ImportError:
+    print("Not able to import hip c lib")
     hip_lib = None
 
 # embedded in try block to be able to generate documentation
 # and run tests without pyhip installed
 try:
+    import sys 
+    sys.path.insert(0, '/home/mli940/PyHIP')
     from pyhip import hip, hiprtc
 except ImportError:
+    print("Not able to import pyhip")
     hip = None
     hiprtc = None
 
 dtype_map = {
-    "int8": C.c_int8,
-    "int16": C.c_int16,
-    "int32": C.c_int32,
-    "int64": C.c_int64,
-    "uint8": C.c_uint8,
-    "uint16": C.c_uint16,
-    "uint32": C.c_uint32,
-    "uint64": C.c_uint64,
-    "float32": C.c_float,
-    "float64": C.c_double,
+    "int8": ctypes.c_int8,
+    "int16": ctypes.c_int16,
+    "int32": ctypes.c_int32,
+    "int64": ctypes.c_int64,
+    "uint8": ctypes.c_uint8,
+    "uint16": ctypes.c_uint16,
+    "uint32": ctypes.c_uint32,
+    "uint64": ctypes.c_uint64,
+    "float32": ctypes.c_float,
+    "float64": ctypes.c_double,
 }
 
 # This represents an individual kernel argument.
@@ -85,8 +89,8 @@ class HipFunctions(GPUBackend):
                     # to its underlying array, so we need to store a reference to arg.copy()
                     # in the Argument object manually to avoid it being deleted.
                     # (This changed in numpy > 1.15.)
-                    # data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
-                    data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+                    # data_ctypes = data.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
+                    data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
@@ -131,8 +135,8 @@ class HipFunctions(GPUBackend):
         """Returns True if the kernel has finished, False otherwise"""
         
         # Define the argument and return types for hipEventQuery()
-        hip_lib.hipEventQuery.argtypes = [C.c_void_p]
-        hip_lib.hipEventQuery.restype = C.c_int
+        hip_lib.hipEventQuery.argtypes = [ctypes.c_void_p]
+        hip_lib.hipEventQuery.restype = ctypes.c_int
 
         # Query the status of the event
         status = hip_lib.hipEventQuery(self.end)
@@ -145,3 +149,35 @@ class HipFunctions(GPUBackend):
         else:
             # Error occurred
             return False
+
+    def synchronize(self):
+        """This method must implement a barrier that halts execution until device has finished its tasks."""
+        pass
+
+    def run_kernel(self, func, gpu_args, threads, grid, stream):
+        """This method must implement the execution of the kernel on the device."""
+        pass
+
+    def memset(self, allocation, value, size):
+        """This method must implement setting the memory to a value on the device."""
+        pass
+
+    def memcpy_dtoh(self, dest, src):
+        """This method must implement a device to host copy."""
+        pass
+
+    def memcpy_htod(self, dest, src):
+        """This method must implement a host to device copy."""
+        pass
+
+    def copy_constant_memory_args(self, cmem_args):
+        """This method must implement the allocation and copy of constant memory to the GPU."""
+        pass
+
+    def copy_shared_memory_args(self, smem_args):
+        """This method must implement the dynamic allocation of shared memory on the GPU."""
+        pass
+
+    def copy_texture_memory_args(self, texmem_args):
+        """This method must implement the allocation and copy of texture memory to the GPU."""
+        pass
