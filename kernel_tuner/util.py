@@ -1133,8 +1133,19 @@ def extract_directive_signature(code: str) -> list:
 
     for line in code.split("\n"):
         if start_string in line:
-            # TODO: generate C++ signature from line
-            signatures.append(line)
+            tmp_string = line.split(" ")
+            name = tmp_string[3]
+            tmp_string = tmp_string[4:]
+            params = list()
+            for param in tmp_string:
+                p_name = param.split("(")[0]
+                param = param.replace(p_name, "", 1)
+                p_type = param[1:-1]
+                p_type = p_type.split(":")[0]
+                if "*" in p_type:
+                    p_type = p_type.replace("*", " *")
+                params.append(f"{p_type} {p_name}")
+            signatures.append(f"float {name}({', '.join(params)})")
 
     return signatures
 

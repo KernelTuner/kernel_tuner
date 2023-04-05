@@ -822,3 +822,11 @@ def test_wrap_cpp_timing():
         wrapped
         == "auto start = std::chrono::high_resolution_clock::now();\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto end = std::chrono::high_resolution_clock::now();\nauto elapsed_time = end - start;\nreturn static_cast<float>(elapsed_time.count() * 1e3);"
     )
+
+
+def test_extract_directive_signature():
+    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)"
+    signatures = extract_directive_signature(code)
+
+    assert len(signatures) == 1
+    assert "float vector_add(float * a, float * b, float * c, int size)" in signatures
