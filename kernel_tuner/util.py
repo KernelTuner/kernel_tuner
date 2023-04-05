@@ -1105,7 +1105,6 @@ def cuda_error_check(error):
 
 def extract_directive_code(code: str) -> list:
     """Extract explicitly marked directive sections from code"""
-
     start_string = "#pragma tuner start"
     end_string = "#pragma tuner stop"
     found_section = False
@@ -1127,7 +1126,21 @@ def extract_directive_code(code: str) -> list:
     return sections
 
 
+def extract_directive_signature(code: str) -> list:
+    """Extract the user defined signature for directive sections"""
+    start_string = "#pragma tuner start"
+    signatures = list()
+
+    for line in code.split("\n"):
+        if start_string in line:
+            # TODO: generate C++ signature from line
+            signatures.append(line)
+
+    return signatures
+
+
 def extract_preprocessor(code: str) -> list:
+    """Extract include and define statements from C/C++ code"""
     preprocessor = list()
 
     for line in code.split("\n"):
@@ -1138,8 +1151,10 @@ def extract_preprocessor(code: str) -> list:
 
 
 def wrap_cpp_timing(code: str) -> str:
+    """Wrap C++ timing code using std::chrono around C++ code"""
     start = "auto start = std::chrono::high_resolution_clock::now();"
     end = "auto end = std::chrono::high_resolution_clock::now();"
     sum = "auto elapsed_time = end - start;"
+    ret = "return static_cast<float>(elapsed_time.count() * 1e3);"
 
-    return "\n".join([start, code, end, sum])
+    return "\n".join([start, code, end, sum, ret])

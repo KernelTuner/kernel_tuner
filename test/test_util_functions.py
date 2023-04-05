@@ -820,5 +820,5 @@ def test_wrap_cpp_timing():
     wrapped = wrap_cpp_timing(code)
     assert (
         wrapped
-        == "auto start = std::chrono::high_resolution_clock::now();\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto end = std::chrono::high_resolution_clock::now();\nauto elapsed_time = end - start;"
+        == "auto start = std::chrono::high_resolution_clock::now();\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto end = std::chrono::high_resolution_clock::now();\nauto elapsed_time = end - start;\nreturn static_cast<float>(elapsed_time.count() * 1e3);"
     )
