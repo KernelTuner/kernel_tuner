@@ -830,3 +830,14 @@ def test_extract_directive_signature():
 
     assert len(signatures) == 1
     assert "float vector_add(float * a, float * b, float * c, int size)" in signatures
+
+
+def test_extract_directive_data():
+    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)"
+    data = extract_directive_data(code)
+
+    assert len(data) == 1
+    assert len(data["vector_add"]) == 4
+    assert "float*" in data["vector_add"]["b"]
+    assert "int" not in data["vector_add"]["c"]
+    assert "VECTOR_SIZE" in data["vector_add"]["size"]

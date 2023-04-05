@@ -1150,6 +1150,27 @@ def extract_directive_signature(code: str) -> list:
     return signatures
 
 
+def extract_directive_data(code: str) -> dict:
+    """Extract the data used in the directive section"""
+    start_string = "#pragma tuner start"
+    data = dict()
+
+    for line in code.split("\n"):
+        if start_string in line:
+            name = line.split(" ")[3]
+            data[name] = dict()
+            tmp_string = line.split(" ")[4:]
+            for param in tmp_string:
+                p_name = param.split("(")[0]
+                param = param.replace(p_name, "", 1)
+                param = param[1:-1]
+                p_type = param.split(":")[0]
+                p_size = param.split(":")[1]
+                data[name][p_name] = [p_type, p_size]
+
+    return data
+
+
 def extract_preprocessor(code: str) -> list:
     """Extract include and define statements from C/C++ code"""
     preprocessor = list()
