@@ -1103,39 +1103,42 @@ def cuda_error_check(error):
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
 
-def extract_directive_code(code: str, kernel_name: str = None) -> list:
+def extract_directive_code(code: str, kernel_name: str = None) -> dict:
     """Extract explicitly marked directive sections from code"""
     start_string = "#pragma tuner start"
     end_string = "#pragma tuner stop"
     found_section = False
-    sections = list()
+    sections = dict()
     tmp_string = list()
+    name = ""
 
     for line in code.split("\n"):
         if found_section:
             if end_string in line:
                 found_section = False
-                sections.append("\n".join(tmp_string))
+                sections[name] = "\n".join(tmp_string)
                 tmp_string = list()
+                name = ""
             else:
                 tmp_string.append(line)
         else:
             if start_string in line:
                 if kernel_name is None or f" {kernel_name} " in line:
                     found_section = True
+                    name = line.strip().split(" ")[3]
 
     return sections
 
 
-def extract_directive_signature(code: str, kernel_name: str = None) -> list:
+def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
     """Extract the user defined signature for directive sections"""
     start_string = "#pragma tuner start"
-    signatures = list()
+    signatures = dict()
 
     for line in code.split("\n"):
         if start_string in line:
             if kernel_name is None or f" {kernel_name} " in line:
-                tmp_string = line.split(" ")
+                tmp_string = line.strip().split(" ")
                 name = tmp_string[3]
                 tmp_string = tmp_string[4:]
                 params = list()
@@ -1147,7 +1150,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> list:
                     if "*" in p_type:
                         p_type = p_type.replace("*", " *")
                     params.append(f"{p_type} {p_name}")
-                signatures.append(f"float {name}({', '.join(params)})")
+                signatures[name] = f"float {name}({', '.join(params)})"
 
     return signatures
 
@@ -1160,9 +1163,9 @@ def extract_directive_data(code: str, kernel_name: str = None) -> dict:
     for line in code.split("\n"):
         if start_string in line:
             if kernel_name is None or f" {kernel_name} " in line:
-                name = line.split(" ")[3]
+                name = line.strip().split(" ")[3]
                 data[name] = dict()
-                tmp_string = line.split(" ")[4:]
+                tmp_string = line.strip().split(" ")[4:]
                 for param in tmp_string:
                     p_name = param.split("(")[0]
                     param = param.replace(p_name, "", 1)
@@ -1186,7 +1189,7 @@ def extract_preprocessor(code: str) -> list:
 
 
 def wrap_cpp_timing(code: str) -> str:
-    """Wrap C++ timing code using std::chrono around C++ code"""
+    """Wrap C++ timing code (using std::chrono) around the provided code"""
     start = "auto start = std::chrono::high_resolution_clock::now();"
     end = "auto end = std::chrono::high_resolution_clock::now();"
     sum = "auto elapsed_time = end - start;"

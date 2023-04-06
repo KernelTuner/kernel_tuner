@@ -730,7 +730,7 @@ def test_extract_directive_code():
             __restrict float * b = (float *) malloc(VECTOR_SIZE * sizeof(float));
             __restrict float * c = (float *) malloc(VECTOR_SIZE * sizeof(float));
 
-            #pragma tuner start
+            #pragma tuner start initialize
             #pragma acc parallel
             #pragma acc loop
             for ( int i = 0; i < size; i++ ) {
@@ -739,7 +739,7 @@ def test_extract_directive_code():
             }
             #pragma tuner stop
 
-            #pragma tuner start
+            #pragma tuner start vector_add
             #pragma acc parallel
             #pragma acc loop
             for ( int i = 0; i < size; i++ ) {
@@ -765,9 +765,10 @@ def test_extract_directive_code():
             }"""
     returns = extract_directive_code(code)
     assert len(returns) == 2
-    assert expected_one in returns
-    assert expected_two in returns
-    returns = extract_directive_code(code, "vector_add")
+    assert expected_one in returns["initialize"]
+    assert expected_two in returns["vector_add"]
+    assert expected_one not in returns["vector_add"]
+    returns = extract_directive_code(code, "vector_a")
     assert len(returns) == 0
 
 
@@ -822,13 +823,19 @@ def test_wrap_cpp_timing():
 
 
 def test_extract_directive_signature():
-    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)"
+    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)  "
     signatures = extract_directive_signature(code)
     assert len(signatures) == 1
-    assert "float vector_add(float * a, float * b, float * c, int size)" in signatures
+    assert (
+        "float vector_add(float * a, float * b, float * c, int size)"
+        in signatures["vector_add"]
+    )
     signatures = extract_directive_signature(code, "vector_add")
     assert len(signatures) == 1
-    assert "float vector_add(float * a, float * b, float * c, int size)" in signatures
+    assert (
+        "float vector_add(float * a, float * b, float * c, int size)"
+        in signatures["vector_add"]
+    )
     signatures = extract_directive_signature(code, "vector_add_ext")
     assert len(signatures) == 0
 
