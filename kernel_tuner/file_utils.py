@@ -131,7 +131,7 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
     version, _ = output_file_schema("results")
     output_json = dict(results=output_data, schema_version=version)
     with open(output_filename, 'w+') as fh:
-        json.dump(output_json, fh)
+        json.dump(output_json, fh, cls=util.NpEncoder)
 
 
 def get_dependencies(package='kernel_tuner'):
