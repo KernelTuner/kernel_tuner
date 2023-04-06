@@ -1148,7 +1148,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                     p_type = param[1:-1]
                     p_type = p_type.split(":")[0]
                     if "*" in p_type:
-                        p_type = p_type.replace("*", " *")
+                        p_type = p_type.replace("*", " * restrict")
                     params.append(f"{p_type} {p_name}")
                 signatures[name] = f"float {name}({', '.join(params)})"
 
