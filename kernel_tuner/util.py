@@ -1192,7 +1192,7 @@ def wrap_cpp_timing(code: str) -> str:
     """Wrap C++ timing code (using std::chrono) around the provided code"""
     start = "auto start = std::chrono::high_resolution_clock::now();"
     end = "auto end = std::chrono::high_resolution_clock::now();"
-    sum = "auto elapsed_time = end - start;"
-    ret = "return static_cast<float>(elapsed_time.count() * 1e3);"
+    sum = "std::chrono::duration<double, std::milli> elapsed_time = end - start;"
+    ret = "return static_cast<float>(elapsed_time.count());"
 
     return "\n".join([start, code, end, sum, ret])
