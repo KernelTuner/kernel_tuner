@@ -4,6 +4,8 @@ import numpy as np
 import ctypes
 import ctypes.util
 from collections import namedtuple
+import os
+import sys
 
 from kernel_tuner.backends.backend import GPUBackend
 
@@ -16,12 +18,13 @@ except ImportError:
 
 # embedded in try block to be able to generate documentation
 # and run tests without pyhip installed
-try:
-    import sys 
-    sys.path.insert(0, '/home/mli940/PyHIP')
+PYHIP_PATH = os.environ.get('PYHIP_PATH')  # get the PYHIP_PATH environment variable
+try: 
+    if PYHIP_PATH is not None:
+        sys.path.insert(0, PYHIP_PATH)
     from pyhip import hip, hiprtc
 except ImportError:
-    print("Not able to import pyhip")
+    print("Not able to import pyhip, check if PYHIP_PATH is set")
     hip = None
     hiprtc = None
 
