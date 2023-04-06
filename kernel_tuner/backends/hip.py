@@ -60,9 +60,10 @@ class HipFunctions(GPUBackend):
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
-
-        hipProps = hip.hipDeviceProperties()
-        self.name = hipProps.name
+        hip.hipInit(0)
+        
+        hipProps = hip.hipGetDeviceProperties(device)
+        self.name = hipProps._name.decode('utf-8')
         self.max_threads = hipProps.maxThreadsPerBlock
 
         env = dict()
