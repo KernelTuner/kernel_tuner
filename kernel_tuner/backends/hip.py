@@ -19,12 +19,10 @@ except ImportError:
 # embedded in try block to be able to generate documentation
 # and run tests without pyhip installed
 PYHIP_PATH = os.environ.get('PYHIP_PATH')  # get the PYHIP_PATH environment variable
-try: 
-    if PYHIP_PATH is not None:
-        sys.path.insert(0, PYHIP_PATH)
+try:
     from pyhip import hip, hiprtc
 except ImportError:
-    print("Not able to import pyhip, check if PYHIP_PATH is set")
+    print("Not able to import pyhip, check if PYTHONPATH includes PyHIP")
     hip = None
     hiprtc = None
 
@@ -68,6 +66,8 @@ class HipFunctions(GPUBackend):
         hipProps = hip.hipGetDeviceProperties(device)
         self.name = hipProps._name.decode('utf-8')
         self.max_threads = hipProps.maxThreadsPerBlock
+        self.device = device
+        self.compiler_options = compiler_options
 
         env = dict()
         self.env = env
@@ -89,10 +89,6 @@ class HipFunctions(GPUBackend):
         ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not isinstance(arg, (np.ndarray, np.number)):
-                raise TypeError(
-                    "Argument is not numpy ndarray or numpy scalar %s" % type(arg)
-                )
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
@@ -104,8 +100,10 @@ class HipFunctions(GPUBackend):
                     data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
+            elif isinstance(arg, np.bool_):
+                data_ctypes = ctypes.c_bool(arg)
             elif isinstance(arg, np.generic):
-                data_ctypes = dtype_map[dtype_str](arg)
+                data_ctypes = dtype_map[dtype_str](arg)          
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
         return ctype_args
     
@@ -119,13 +117,28 @@ class HipFunctions(GPUBackend):
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
-
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
+
+        # if filename is known, use that one
+        suffix = kernel_instance.kernel_source.get_user_suffix()
+
+        if suffix is None:
+            # select right suffix based on compiler
+            suffix = ".cc"
+
+        if ".c" in suffix and 'extern "C"' not in kernel_string:
+            kernel_string = 'extern "C" {\n' + kernel_string + "\n}"
+
         kernel_ptr = hiprtc.hiprtcCreateProgram(kernel_string, kernel_name, [], [])
         
-        device_properties = hip.hipGetDeviceProperties(0)
-        hiprtc.hiprtcCompileProgram(kernel_ptr, [f'--offload-arch={device_properties.gcnArchName}'])
+        device_properties = hip.hipGetDeviceProperties(self.device)
+        plat = hip.hipGetPlatformName()
+        if plat == "amd":
+            hiprtc.hiprtcCompileProgram(
+                kernel_ptr, [f'--offload-arch={device_properties.gcnArchName}'])
+        else:
+            hiprtc.hiprtcCompileProgram(kernel_ptr, [])
         code = hiprtc.hiprtcGetCode(kernel_ptr)
         module = hip.hipModuleLoadData(code)
         kernel = hip.hipModuleGetFunction(module, kernel_name)
