@@ -46,13 +46,13 @@ b = numpy.random.randn(size).astype(numpy.float32)
 c = numpy.zeros_like(b)
 n = numpy.int32(size)
 
-args = [c, a, b, n]
+args = [a, b, c, n]
 
 tune_params = OrderedDict()
-tune_params["ngangs"] = [2**i for i in range(0, 21)]
+tune_params["ngangs"] = [2**i for i in range(0, 15)]
 tune_params["nthreads"] = [2**i for i in range(0, 11)]
 
-answer = [a+b, None, None, None]
+answer = [None, None, a+b, None]
 
 tune_kernel("vector_add", kernel_string, size, args, tune_params,
     answer=answer, compiler_options=["-fast", "-acc=gpu"], compiler="nvc++")
