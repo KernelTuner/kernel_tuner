@@ -1190,8 +1190,8 @@ def extract_preprocessor(code: str) -> list:
 
 def wrap_cpp_timing(code: str) -> str:
     """Wrap C++ timing code (using std::chrono) around the provided code"""
-    start = "auto start = std::chrono::high_resolution_clock::now();"
-    end = "auto end = std::chrono::high_resolution_clock::now();"
+    start = "auto start = std::chrono::steady_clock::now();"
+    end = "auto end = std::chrono::steady_clock::now();"
     sum = "std::chrono::duration<float, std::milli> elapsed_time = end - start;"
     ret = "return elapsed_time.count();"
 

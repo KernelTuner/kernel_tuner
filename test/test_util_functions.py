@@ -818,7 +818,7 @@ def test_wrap_cpp_timing():
     wrapped = wrap_cpp_timing(code)
     assert (
         wrapped
-        == "auto start = std::chrono::high_resolution_clock::now();\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto end = std::chrono::high_resolution_clock::now();\nauto elapsed_time = end - start;\nreturn static_cast<float>(elapsed_time.count() * 1e3);"
+        == "auto start = std::chrono::steady_clock::now();\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto end = std::chrono::steady_clock::now();\nstd::chrono::duration<float, std::milli> elapsed_time = end - start;\nreturn elapsed_time.count();"
     )
 
 
@@ -827,13 +827,13 @@ def test_extract_directive_signature():
     signatures = extract_directive_signature(code)
     assert len(signatures) == 1
     assert (
-        "float vector_add(float * a, float * b, float * c, int size)"
+        "float vector_add(float * restrict a, float * restrict b, float * restrict c, int size)"
         in signatures["vector_add"]
     )
     signatures = extract_directive_signature(code, "vector_add")
     assert len(signatures) == 1
     assert (
-        "float vector_add(float * a, float * b, float * c, int size)"
+        "float vector_add(float * restrict a, float * restrict b, float * restrict c, int size)"
         in signatures["vector_add"]
     )
     signatures = extract_directive_signature(code, "vector_add_ext")
