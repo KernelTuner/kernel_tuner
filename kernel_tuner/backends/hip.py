@@ -27,6 +27,7 @@ except ImportError:
     hiprtc = None
 
 dtype_map = {
+    "bool": ctypes.c_bool,
     "int8": ctypes.c_int8,
     "int16": ctypes.c_int16,
     "int32": ctypes.c_int32,
@@ -38,11 +39,6 @@ dtype_map = {
     "float32": ctypes.c_float,
     "float64": ctypes.c_double,
 }
-
-# This represents an individual kernel argument.
-# It contains a numpy object (ndarray or number) and a ctypes object with a copy
-# of the argument data. For an ndarray, the ctypes object is a wrapper for the ndarray's data.
-Argument = namedtuple("Argument", ["numpy", "ctypes"])
 
 class HipFunctions(GPUBackend):
     """Class that groups the HIP functions on maintains state about the device"""
@@ -83,29 +79,35 @@ class HipFunctions(GPUBackend):
             The order should match the argument list on the HIP function.
             Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
         :type arguments: list(numpy objects)
-        :returns: A list of arguments that can be passed to the HIP function.
-        :rtype: list(Argument)
+        :returns: A ctypes structure that can be passed to the HIP function.
+        :rtype: ctypes.Structure
         """
-        ctype_args = [None for _ in arguments]
 
+        ctype_args = []
         for i, arg in enumerate(arguments):
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
-                    # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
-                    # to its underlying array, so we need to store a reference to arg.copy()
-                    # in the Argument object manually to avoid it being deleted.
-                    # (This changed in numpy > 1.15.)
-                    # data_ctypes = data.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
                     data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
                 else:
-                    raise TypeError("unknown dtype for ndarray")
-            elif isinstance(arg, np.bool_):
-                data_ctypes = ctypes.c_bool(arg)
+                    raise TypeError("unknown dtype for ndarray")        
             elif isinstance(arg, np.generic):
-                data_ctypes = dtype_map[dtype_str](arg)          
-            ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
-        return ctype_args
+                data_ctypes = dtype_map[dtype_str](arg)
+            ctype_args.append(data_ctypes)  
+        
+        # Determine the number of fields in the structure
+        num_fields = len(ctype_args)
+        # Determine the types of the fields in the structure
+        field_types = [type(x) for x in ctype_args]
+        # Define a new ctypes structure with the inferred layout
+        class ArgListStructure(ctypes.Structure):
+            _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
+        ctypes_struct = ArgListStructure()
+        # Populate the fields of the structure with values from the list
+        for i, value in enumerate(ctype_args):
+            setattr(ctypes_struct, f'field{i}', value)
+        
+        return ctypes_struct
     
     def compile(self, kernel_instance):
         """call the HIP compiler to compile the kernel, return the function
