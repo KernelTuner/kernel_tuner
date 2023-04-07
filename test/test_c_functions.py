@@ -11,7 +11,7 @@ except ImportError:
     from unittest.mock import patch, Mock
 
 import kernel_tuner
-from kernel_tuner.backends.c import CFunctions, Argument
+from kernel_tuner.backends.compiler import CompilerFunctions, Argument
 from kernel_tuner.core import KernelSource, KernelInstance
 from kernel_tuner import util
 
@@ -24,7 +24,7 @@ def test_ready_argument_list1():
     arg3 = np.array([7, 8, 9]).astype(np.int32)
     arguments = [arg1, arg2, arg3]
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
 
     output = cfunc.ready_argument_list(arguments)
     print(output)
@@ -56,7 +56,7 @@ def test_ready_argument_list2():
     arg3 = np.float32(6.0)
     arguments = [arg1, arg2, arg3]
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
     output = cfunc.ready_argument_list(arguments)
     print(output)
 
@@ -75,7 +75,7 @@ def test_ready_argument_list2():
 def test_ready_argument_list3():
     arg1 = Mock()
     arguments = [arg1]
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
     try:
         cfunc.ready_argument_list(arguments)
         assert False
@@ -87,7 +87,7 @@ def test_ready_argument_list3():
 def test_ready_argument_list4():
     with raises(TypeError):
         arg1 = int(9)
-        cfunc = CFunctions()
+        cfunc = CompilerFunctions()
         cfunc.ready_argument_list([arg1])
 
 
@@ -96,7 +96,7 @@ def test_ready_argument_list5():
     arg1 = np.array([1, 2, 3]).astype(np.float32)
     arguments = [arg1]
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
     output = cfunc.ready_argument_list(arguments)
 
     assert all(output[0].numpy == arg1)
@@ -110,7 +110,7 @@ def test_ready_argument_list5():
 def test_byte_array_arguments():
     arg1 = np.array([1, 2, 3]).astype(np.int8)
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
 
     output = cfunc.ready_argument_list([arg1])
 
@@ -136,7 +136,7 @@ def test_compile(npct, subprocess):
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
     kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
     f = cfunc.compile(kernel_instance)
 
     print(subprocess.mock_calls)
@@ -166,7 +166,7 @@ def test_compile_detects_device_code(npct, subprocess):
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
     kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
     cfunc.compile(kernel_instance)
 
     print(subprocess.check_call.call_args_list)
@@ -191,7 +191,7 @@ def test_memset():
     x_c = x.ctypes.data_as(C.POINTER(C.c_float))
     arg = Argument(numpy=x, ctypes=x_c)
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
     cfunc.memset(arg, 0, x.nbytes)
 
     output = np.ctypeslib.as_array(x_c, shape=(4,))
@@ -209,7 +209,7 @@ def test_memcpy_dtoh():
     arg = Argument(numpy=x, ctypes=x_c)
     output = np.zeros_like(x)
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
     cfunc.memcpy_dtoh(output, arg)
 
     print(a)
@@ -227,7 +227,7 @@ def test_memcpy_htod():
     x_c = x.ctypes.data_as(C.POINTER(C.c_float))
     arg = Argument(numpy=x, ctypes=x_c)
 
-    cfunc = CFunctions()
+    cfunc = CompilerFunctions()
     cfunc.memcpy_htod(arg, src)
 
     assert all(arg.numpy == a)
@@ -247,7 +247,7 @@ def test_complies_fortran_function_no_module():
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
     kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
-    cfunc = CFunctions(compiler="gfortran")
+    cfunc = CompilerFunctions(compiler="gfortran")
     func = cfunc.compile(kernel_instance)
 
     result = cfunc.run_kernel(func, [], (), ())
@@ -278,7 +278,7 @@ def test_complies_fortran_function_with_module():
 
     try:
 
-        cfunc = CFunctions(compiler="gfortran")
+        cfunc = CompilerFunctions(compiler="gfortran")
         func = cfunc.compile(kernel_instance)
 
         result = cfunc.run_kernel(func, [], (), ())

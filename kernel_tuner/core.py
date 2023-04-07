@@ -17,7 +17,7 @@ from kernel_tuner.backends.cupy import CupyFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.c import CFunctions
+from kernel_tuner.backends.compiler import CompilerFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 import kernel_tuner.util as util
 
@@ -238,7 +238,7 @@ class DeviceInterface(object):
         elif lang.upper() == "OPENCL":
             dev = OpenCLFunctions(device, platform, compiler_options=compiler_options, iterations=iterations, observers=observers)
         elif lang.upper() in ["C", "FORTRAN"]:
-            dev = CFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
+            dev = CompilerFunctions(compiler=compiler, compiler_options=compiler_options, iterations=iterations)
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
 
