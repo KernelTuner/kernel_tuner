@@ -3,7 +3,12 @@
 
 import numpy
 from kernel_tuner import tune_kernel
-from kernel_tuner.util import extract_directive_signature, extract_directive_code, extract_preprocessor, wrap_cpp_timing
+from kernel_tuner.util import (
+    extract_directive_signature,
+    extract_directive_code,
+    extract_preprocessor,
+    wrap_cpp_timing,
+)
 from collections import OrderedDict
 
 code = """
@@ -52,7 +57,15 @@ tune_params = OrderedDict()
 tune_params["ngangs"] = [2**i for i in range(0, 15)]
 tune_params["nthreads"] = [2**i for i in range(0, 11)]
 
-answer = [None, None, a+b, None]
+answer = [None, None, a + b, None]
 
-tune_kernel("vector_add", kernel_string, size, args, tune_params,
-    answer=answer, compiler_options=["-fast", "-acc=gpu"], compiler="nvc++")
+tune_kernel(
+    "vector_add",
+    kernel_string,
+    size,
+    args,
+    tune_params,
+    answer=answer,
+    compiler_options=["-fast", "-acc=gpu"],
+    compiler="nvc++",
+)
