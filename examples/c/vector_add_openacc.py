@@ -35,7 +35,7 @@ int main(void) {
 preprocessor = extract_preprocessor(code)
 kernel_string = "\n".join(preprocessor) + "\n#include <chrono>\n#include <ratio>\n"
 directive_signatures = extract_directive_signature(code, kernel_name="vector_add")
-kernel_string += 'extern "C"' + directive_signatures["vector_add"] + "{\n"
+kernel_string += 'extern "C" ' + directive_signatures["vector_add"] + "{\n"
 directive_codes = extract_directive_code(code, kernel_name="vector_add")
 kernel_string += wrap_cpp_timing(directive_codes["vector_add"]) + "\n}"
 
