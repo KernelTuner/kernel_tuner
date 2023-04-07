@@ -6,6 +6,7 @@ import ctypes.util
 from collections import namedtuple
 import os
 import sys
+import logging
 
 from kernel_tuner.backends.backend import GPUBackend
 
@@ -57,6 +58,7 @@ class HipFunctions(GPUBackend):
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        logging.debug("HipFunction instantiated")
         hip.hipInit(0)
         
         hipProps = hip.hipGetDeviceProperties(device)
@@ -73,6 +75,10 @@ class HipFunctions(GPUBackend):
         self.start = hip.hipEventCreate()
         self.end = hip.hipEventCreate()
 
+        self.smem_size = 0
+
+        env["device_name"] = self.name
+
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the HIP function
         :param arguments: List of arguments to be passed to the HIP function.
@@ -82,7 +88,7 @@ class HipFunctions(GPUBackend):
         :returns: A ctypes structure that can be passed to the HIP function.
         :rtype: ctypes.Structure
         """
-
+        logging.debug("HipFunction ready_argument_list called")
         ctype_args = []
         for i, arg in enumerate(arguments):
             dtype_str = str(arg.dtype)
@@ -95,8 +101,6 @@ class HipFunctions(GPUBackend):
                 data_ctypes = dtype_map[dtype_str](arg)
             ctype_args.append(data_ctypes)  
         
-        # Determine the number of fields in the structure
-        num_fields = len(ctype_args)
         # Determine the types of the fields in the structure
         field_types = [type(x) for x in ctype_args]
         # Define a new ctypes structure with the inferred layout
@@ -119,6 +123,7 @@ class HipFunctions(GPUBackend):
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
+        logging.debug("HipFunction compile called")
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
 
@@ -136,6 +141,7 @@ class HipFunctions(GPUBackend):
         
         device_properties = hip.hipGetDeviceProperties(self.device)
         plat = hip.hipGetPlatformName()
+        #Compile based on device
         if plat == "amd":
             hiprtc.hiprtcCompileProgram(
                 kernel_ptr, [f'--offload-arch={device_properties.gcnArchName}'])
@@ -149,16 +155,17 @@ class HipFunctions(GPUBackend):
     
     def start_event(self):
         """Records the event that marks the start of a measurement"""
-        self.start = hip.hipEventCreate()
+        logging.debug("HipFunction start_event called")
         hip.hipEventRecord(self.start, self.stream)
 
     def stop_event(self):
         """Records the event that marks the end of a measurement"""
-        self.end = hip.hipEventCreate()
+        logging.debug("HipFunction stop_event called")
         hip.hipEventRecord(self.end, self.stream)
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise"""
+        logging.debug("HipFunction kernel_finished called")
         
         # Define the argument and return types for hipEventQuery()
         hip_lib.hipEventQuery.argtypes = [ctypes.c_void_p]
@@ -177,35 +184,90 @@ class HipFunctions(GPUBackend):
             return False
 
     def synchronize(self):
-        """This method must implement a barrier that halts execution until device has finished its tasks."""
+        """Halts execution until device has finished its tasks"""
+        logging.debug("HipFunction synchronize called")
+        hip.hipEventSynchronize(self.end)
         pass
 
     def run_kernel(self, func, gpu_args, threads, grid, stream):
-        """This method must implement the execution of the kernel on the device."""
+        """runs the HIP kernel passed as 'func'
+
+        :param func: A PyHIP kernel compiled for this specific kernel configuration
+        :type func: ctypes pionter
+
+        :param gpu_args: A list of arguments to the kernel, order should match the
+            order in the code. Allowed values are either variables in global memory
+            or single values passed by value.
+        :type gpu_args: ctypes.Structure
+
+        :param threads: A tuple listing the number of threads in each dimension of
+            the thread block
+        :type threads: tuple(int, int, int)
+
+        :param grid: A tuple listing the number of thread blocks in each dimension
+            of the grid
+        :type grid: tuple(int, int)
+        """
+        logging.debug("HipFunction run_kernel called")
+        hip.hipModuleLaunchKernel(func, 
+                                  grid[0], grid[1], grid[2], grid[3], 
+                                  threads[0], threads[1], threads[2],
+                                  self.smem_size,
+                                  stream,
+                                  gpu_args)
         pass
 
     def memset(self, allocation, value, size):
-        """This method must implement setting the memory to a value on the device."""
-        pass
+        """set the memory in allocation to the value in value
+
+        :param allocation: An Argument for some memory allocation unit
+        :type allocation: ctypes ptr
+
+        :param value: The value to set the memory to
+        :type value: a single 8-bit unsigned int
+
+        :param size: The size of to the allocation unit in bytes
+        :type size: int
+        """
+        logging.debug("HipFunction memset called")
+        allocation.contents.value = value
 
     def memcpy_dtoh(self, dest, src):
-        """This method must implement a device to host copy."""
-        pass
+        """perform a device to host memory copy
+
+        :param dest: A numpy array in host memory to store the data
+        :type dest: numpy.ndarray
+
+        :param src: A GPU memory allocation unit
+        :type src: ctypes ptr
+        """
+        logging.debug("HipFunction memcpy_dtoh called")
+        dtype_str = str(src.dtype)
+        hip.hipMemcpy_dtoh(ctypes.byref(dest.ctypes), src, ctypes.sizeof(dtype_map[dtype_str]) * src.size)
 
     def memcpy_htod(self, dest, src):
-        """This method must implement a host to device copy."""
-        pass
+        """perform a host to device memory copy
+
+        :param dest: A GPU memory allocation unit
+        :type dest: ctypes ptr
+
+        :param src: A numpy array in host memory to store the data
+        :type src: numpy.ndarray
+        """
+        logging.debug("HipFunction memcpy_htod called")
+        dtype_str = str(src.dtype)
+        hip.hipMemcpy_htod(dest, ctypes.byref(src.ctypes), ctypes.sizeof(dtype_map[dtype_str]) * src.size)
 
     def copy_constant_memory_args(self, cmem_args):
         """This method must implement the allocation and copy of constant memory to the GPU."""
-        pass
+        logging.debug("HipFunction copy_constant_memory_args called")
 
     def copy_shared_memory_args(self, smem_args):
         """This method must implement the dynamic allocation of shared memory on the GPU."""
-        pass
+        logging.debug("HipFunction copy_shared_memory_args called")
 
     def copy_texture_memory_args(self, texmem_args):
         """This method must implement the allocation and copy of texture memory to the GPU."""
-        pass
+        logging.debug("HipFunction copy_texture_memory_args called")
 
     units = {"time": "ms"}
