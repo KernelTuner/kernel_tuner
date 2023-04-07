@@ -17,6 +17,7 @@ from kernel_tuner import util
 
 from .context import skip_if_no_gfortran, skip_if_no_gcc, skip_if_no_openmp
 
+
 @skip_if_no_gcc
 def test_ready_argument_list1():
     arg1 = np.array([1, 2, 3]).astype(np.float32)
@@ -33,21 +34,22 @@ def test_ready_argument_list1():
     output_arg2 = np.ctypeslib.as_array(output[1].ctypes, shape=arg2.shape)
     output_arg3 = np.ctypeslib.as_array(output[2].ctypes, shape=arg3.shape)
 
-    assert output_arg1.dtype == 'float32'
-    assert output_arg2.dtype == 'float64'
-    assert output_arg3.dtype == 'int32'
+    assert output_arg1.dtype == "float32"
+    assert output_arg2.dtype == "float64"
+    assert output_arg3.dtype == "int32"
 
     assert all(output_arg1 == arg1)
     assert all(output_arg2 == arg2)
     assert all(output_arg3 == arg3)
 
-    assert output[0].numpy.dtype == 'float32'
-    assert output[1].numpy.dtype == 'float64'
-    assert output[2].numpy.dtype == 'int32'
+    assert output[0].numpy.dtype == "float32"
+    assert output[1].numpy.dtype == "float64"
+    assert output[2].numpy.dtype == "int32"
 
     assert all(output[0].numpy == arg1)
     assert all(output[1].numpy == arg2)
     assert all(output[2].numpy == arg3)
+
 
 @skip_if_no_gcc
 def test_ready_argument_list2():
@@ -62,7 +64,7 @@ def test_ready_argument_list2():
 
     output_arg1 = np.ctypeslib.as_array(output[0].ctypes, shape=arg1.shape)
 
-    assert output_arg1.dtype == 'float32'
+    assert output_arg1.dtype == "float32"
     assert isinstance(output[1].ctypes, C.c_int32)
     assert isinstance(output[2].ctypes, C.c_float)
 
@@ -116,7 +118,7 @@ def test_byte_array_arguments():
 
     output_arg1 = np.ctypeslib.as_array(output[0].ctypes, shape=arg1.shape)
 
-    assert output_arg1.dtype == 'int8'
+    assert output_arg1.dtype == "int8"
 
     assert all(output_arg1 == arg1)
 
@@ -127,14 +129,15 @@ def test_byte_array_arguments():
     assert all(dest == arg1)
 
 
-@patch('kernel_tuner.backends.c.subprocess')
-@patch('kernel_tuner.backends.c.numpy.ctypeslib')
+@patch("kernel_tuner.backends.compiler.subprocess")
+@patch("kernel_tuner.backends.compiler.numpy.ctypeslib")
 def test_compile(npct, subprocess):
-
     kernel_string = "this is a fake C program"
     kernel_name = "blabla"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+    kernel_instance = KernelInstance(
+        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
+    )
 
     cfunc = CompilerFunctions()
     f = cfunc.compile(kernel_instance)
@@ -148,23 +151,25 @@ def test_compile(npct, subprocess):
 
     args, _ = npct.load_library.call_args_list[0]
     filename = args[0]
-    print('filename=' + filename)
+    print("filename=" + filename)
 
     # check if temporary files are cleaned up correctly
     import os.path
+
     assert not os.path.isfile(filename + ".cu")
     assert not os.path.isfile(filename + ".o")
     assert not os.path.isfile(filename + ".so")
 
 
-@patch('kernel_tuner.backends.c.subprocess')
-@patch('kernel_tuner.backends.c.numpy.ctypeslib')
+@patch("kernel_tuner.backends.compiler.subprocess")
+@patch("kernel_tuner.backends.compiler.numpy.ctypeslib")
 def test_compile_detects_device_code(npct, subprocess):
-
     kernel_string = "this code clearly contains device code __global__ kernel(float* arg){ return; }"
     kernel_name = "blabla"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+    kernel_instance = KernelInstance(
+        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
+    )
 
     cfunc = CompilerFunctions()
     cfunc.compile(kernel_instance)
@@ -177,8 +182,8 @@ def test_compile_detects_device_code(npct, subprocess):
         args, kwargs = call
         args = args[0]
         print(args)
-        if args[0] == 'nvcc' and args[1] == '-c':
-            assert args[2][-3:] == '.cu'
+        if args[0] == "nvcc" and args[1] == "-c":
+            assert args[2][-3:] == ".cu"
             dot_cu_used = True
 
     assert dot_cu_used
@@ -245,7 +250,9 @@ def test_complies_fortran_function_no_module():
     """
     kernel_name = "my_test_function"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+    kernel_instance = KernelInstance(
+        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
+    )
 
     cfunc = CompilerFunctions(compiler="gfortran")
     func = cfunc.compile(kernel_instance)
@@ -274,10 +281,11 @@ def test_complies_fortran_function_with_module():
     """
     kernel_name = "my_test_function"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+    kernel_instance = KernelInstance(
+        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
+    )
 
     try:
-
         cfunc = CompilerFunctions(compiler="gfortran")
         func = cfunc.compile(kernel_instance)
 
@@ -291,7 +299,6 @@ def test_complies_fortran_function_with_module():
 
 @pytest.fixture
 def env():
-
     kernel_string = """
         #include <omp.h>
 
@@ -319,6 +326,7 @@ def env():
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
+
 @skip_if_no_openmp
 @skip_if_no_gcc
 def test_benchmark(env):
@@ -327,6 +335,3 @@ def test_benchmark(env):
     assert all(["nthreads" in result for result in results])
     assert all(["time" in result for result in results])
     assert all([result["time"] > 0.0 for result in results])
-
-
-

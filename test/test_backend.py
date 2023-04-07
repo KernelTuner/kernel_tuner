@@ -24,7 +24,7 @@ def test_wrong_backend():
 
 @skip_if_no_gcc
 def test_c_backend():
-    dev = c.CompilerFunctions()
+    dev = compiler.CompilerFunctions()
 
 
 @skip_if_no_cupy
