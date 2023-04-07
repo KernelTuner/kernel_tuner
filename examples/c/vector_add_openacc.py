@@ -17,7 +17,7 @@ int main(void) {
 	float * b = (float *) malloc(VECTOR_SIZE * sizeof(float));
 	float * c = (float *) malloc(VECTOR_SIZE * sizeof(float));
 
-	#pragma tuner start vector_add a(float:VECTOR_SIZE) b(float:VECTOR_SIZE) c(float:VECTOR_SIZE) size(int:VECTOR_SIZE)
+	#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)
 	#pragma acc parallel num_gangs(ngangs) vector_length(nthreads)
 	#pragma acc loop
 	for ( int i = 0; i < size; i++ ) {
@@ -33,11 +33,11 @@ int main(void) {
 
 # Extract tunable directive and generate kernel_string
 preprocessor = extract_preprocessor(code)
-kernel_string = "\n".join(preprocessor) + "\n"
+kernel_string = "\n".join(preprocessor) + "\n#include <chrono>\n#include <ratio>\n"
 directive_signatures = extract_directive_signature(code, kernel_name="vector_add")
 kernel_string += directive_signatures["vector_add"] + "{\n"
 directive_codes = extract_directive_code(code, kernel_name="vector_add")
-kernel_string += directive_codes["vector_add"] + "\n}"
+kernel_string += wrap_cpp_timing(directive_codes["vector_add"]) + "\n}"
 
 size = 65536
 
@@ -55,4 +55,4 @@ tune_params["nthreads"] = [2**i for i in range(0, 11)]
 answer = [a+b, None, None, None]
 
 tune_kernel("vector_add", kernel_string, size, args, tune_params,
-    answer=answer, compiler_options=["-fPIC -fast -acc=gpu"], compiler="nvc++")
+    answer=answer, compiler_options=["-fast", "-acc=gpu"], compiler="nvc++")
