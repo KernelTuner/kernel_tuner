@@ -9,6 +9,7 @@ import sys
 import logging
 
 from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.observers.hip import HipRuntimeObserver
 
 _libhip = None
 _hip_platform_name = ''
@@ -33,7 +34,6 @@ else:
 
 # embedded in try block to be able to generate documentation
 # and run tests without pyhip installed
-PYHIP_PATH = os.environ.get('PYHIP_PATH')  # get the PYHIP_PATH environment variable
 try:
     from pyhip import hip, hiprtc
 except ImportError:
@@ -99,6 +99,12 @@ class HipFunctions(GPUBackend):
         self.end = hip.hipEventCreate()
 
         self.smem_size = 0
+
+        # setup observers
+        self.observers = observers or []
+        self.observers.append(HipRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the HIP function
@@ -210,7 +216,7 @@ class HipFunctions(GPUBackend):
         hip.hipEventSynchronize(self.end)
         pass
 
-    def run_kernel(self, func, gpu_args, threads, grid, stream):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the HIP kernel passed as 'func'
 
         :param func: A PyHIP kernel compiled for this specific kernel configuration
@@ -230,8 +236,10 @@ class HipFunctions(GPUBackend):
         :type grid: tuple(int, int)
         """
         logging.debug("HipFunction run_kernel called")
+        if stream is None:
+            stream = self.stream
         hip.hipModuleLaunchKernel(func, 
-                                  grid[0], grid[1], grid[2], grid[3], 
+                                  grid[0], grid[1], grid[2], 
                                   threads[0], threads[1], threads[2],
                                   self.smem_size,
                                   stream,
