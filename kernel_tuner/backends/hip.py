@@ -10,12 +10,26 @@ import logging
 
 from kernel_tuner.backends.backend import GPUBackend
 
-try:
-    # Load the HIP runtime library
-    hip_lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library('hip'))
-except ImportError:
-    print("Not able to import hip c lib")
-    hip_lib = None
+_libhip = None
+_hip_platform_name = ''
+
+# Try to find amd hip library, if not found, fallback to nvhip library
+if 'linux' in sys.platform:
+    try:
+        _libhip_libname = 'libamdhip64.so'
+        _libhip = ctypes.cdll.LoadLibrary(_libhip_libname)
+        _hip_platform_name = 'amd'
+    except:
+        try:
+            _libhip_libname = 'libnvhip64.so'
+            _libhip = ctypes.cdll.LoadLibrary(_libhip_libname)
+            _hip_platform_name = 'nvidia'
+        except:
+            raise RuntimeError(
+                'cant find libamdhip64.so or libnvhip64.so. make sure LD_LIBRARY_PATH is set')
+else:
+    # Currently we do not support windows
+    raise RuntimeError('Only linux is supported')
 
 # embedded in try block to be able to generate documentation
 # and run tests without pyhip installed
@@ -59,15 +73,24 @@ class HipFunctions(GPUBackend):
         :type iterations: int
         """
         logging.debug("HipFunction instantiated")
-        hip.hipInit(0)
+        #hip.hipInit(0)
+        #hip.hipSetDevice(device)
         
         hipProps = hip.hipGetDeviceProperties(device)
+        # Print out all the values
+        #for field_name, field_type in hipProps._fields_:
+        #    print(f"{field_name}: {getattr(hipProps, field_name)}")
+
         self.name = hipProps._name.decode('utf-8')
         self.max_threads = hipProps.maxThreadsPerBlock
+        print("self.max_threads: " + str(self.max_threads))
+        self.max_threads = 1024 # PATCH FOR NOW
+
         self.device = device
         self.compiler_options = compiler_options
 
         env = dict()
+        env["device_name"] = self.name
         self.env = env
 
         # create a stream and events
@@ -76,8 +99,6 @@ class HipFunctions(GPUBackend):
         self.end = hip.hipEventCreate()
 
         self.smem_size = 0
-
-        env["device_name"] = self.name
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the HIP function
