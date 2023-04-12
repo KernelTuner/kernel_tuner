@@ -113,10 +113,11 @@ class HipFunctions(GPUBackend):
             Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
         :type arguments: list(numpy objects)
         :returns: A ctypes structure that can be passed to the HIP function.
-        :rtype: ctypes.Structure
-        """
+        :rtype: ctypes.Structure"""
+        
         logging.debug("HipFunction ready_argument_list called")
         ctype_args = []
+        data_ctypes = None
         for i, arg in enumerate(arguments):
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
@@ -137,8 +138,10 @@ class HipFunctions(GPUBackend):
         # Populate the fields of the structure with values from the list
         for i, value in enumerate(ctype_args):
             setattr(ctypes_struct, f'field{i}', value)
+            print(f'field{i} = {value} of {type(value)}')
         
         return ctypes_struct
+    
     
     def compile(self, kernel_instance):
         """call the HIP compiler to compile the kernel, return the function
@@ -195,15 +198,15 @@ class HipFunctions(GPUBackend):
         logging.debug("HipFunction kernel_finished called")
         
         # Define the argument and return types for hipEventQuery()
-        hip_lib.hipEventQuery.argtypes = [ctypes.c_void_p]
-        hip_lib.hipEventQuery.restype = ctypes.c_int
+        _libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
+        _libhip.hipEventQuery.restype = ctypes.c_int
 
         # Query the status of the event
-        status = hip_lib.hipEventQuery(self.end)
-        if status == hip_lib.hipSuccess:
+        status = _libhip.hipEventQuery(self.end)
+        if status == _libhip.hipSuccess:
             # Kernel has finished
             return True
-        elif status == hip_lib.hipErrorNotReady:
+        elif status == _libhip.hipErrorNotReady:
             # Kernel is still running
             return False
         else:
@@ -233,18 +236,23 @@ class HipFunctions(GPUBackend):
 
         :param grid: A tuple listing the number of thread blocks in each dimension
             of the grid
-        :type grid: tuple(int, int)
+        :type grid: tuple(int, int, int)
         """
         logging.debug("HipFunction run_kernel called")
         if stream is None:
             stream = self.stream
+        print(func)
+        print(grid)
+        print(threads)
+        print(self.smem_size)
+        print(stream)
+        print(gpu_args)
         hip.hipModuleLaunchKernel(func, 
                                   grid[0], grid[1], grid[2], 
                                   threads[0], threads[1], threads[2],
                                   self.smem_size,
                                   stream,
                                   gpu_args)
-        pass
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
@@ -294,6 +302,7 @@ class HipFunctions(GPUBackend):
     def copy_shared_memory_args(self, smem_args):
         """This method must implement the dynamic allocation of shared memory on the GPU."""
         logging.debug("HipFunction copy_shared_memory_args called")
+        self.smem_size = smem_args["size"]
 
     def copy_texture_memory_args(self, texmem_args):
         """This method must implement the allocation and copy of texture memory to the GPU."""
