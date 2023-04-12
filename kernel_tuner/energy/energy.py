@@ -80,13 +80,20 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
     metrics = OrderedDict()
     metrics["f"] = lambda p: p["core_freq"]
 
-    nvmlobserver = NVMLObserver(
-        ["core_freq", "nvml_power"], device=device, nvidia_smi_fallback=nvidia_smi_fallback, use_locked_clocks=use_locked_clocks)
+    if not simulation_mode:
+        nvmlobserver = NVMLObserver(
+            ["core_freq", "nvml_power"], device=device, nvidia_smi_fallback=nvidia_smi_fallback, use_locked_clocks=use_locked_clocks)
 
-    results, _ = tune_kernel("fp32_kernel", fp32_kernel_string, problem_size=(multiprocessor_count, 64),
-                             arguments=arguments, tune_params=tune_params, observers=[nvmlobserver],
-                             verbose=False, quiet=True, metrics=metrics, iterations=10, simulation_mode=simulation_mode,
-                             grid_div_x=[], grid_div_y=[], cache=cache or f"synthetic_fp32_cache_{device_name}.json")
+        results, _ = tune_kernel("fp32_kernel", fp32_kernel_string, problem_size=(multiprocessor_count, 64),
+                                 arguments=arguments, tune_params=tune_params, observers=[nvmlobserver],
+                                 verbose=False, quiet=True, metrics=metrics, iterations=10, simulation_mode=simulation_mode,
+                                 grid_div_x=[], grid_div_y=[], cache=cache or f"synthetic_fp32_cache_{device_name}.json")
+    else:
+        results, _ = tune_kernel("fp32_kernel", fp32_kernel_string, problem_size=(multiprocessor_count, 64),
+                                 arguments=arguments, tune_params=tune_params,
+                                 verbose=False, quiet=True, metrics=metrics, iterations=10, simulation_mode=simulation_mode,
+                                 grid_div_x=[], grid_div_y=[], cache=cache or f"synthetic_fp32_cache_{device_name}.json")
+
 
     freqs = np.array([res["core_freq"] for res in results])
     nvml_power = np.array([res["nvml_power"] for res in results])
