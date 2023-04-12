@@ -84,7 +84,7 @@ class HipFunctions(GPUBackend):
         self.name = hipProps._name.decode('utf-8')
         self.max_threads = hipProps.maxThreadsPerBlock
         print("self.max_threads: " + str(self.max_threads))
-        self.max_threads = 1024 # PATCH FOR NOW
+        #self.max_threads = 1024 # PATCH FOR NOW
 
         self.device = device
         self.compiler_options = compiler_options
