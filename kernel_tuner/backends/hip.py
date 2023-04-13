@@ -135,10 +135,14 @@ class HipFunctions(GPUBackend):
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
+                    print(f'dtype_stre = {dtype_str}')
+                    print(f'arg.size = {arg.size}')
+                    print(f'arg.nbytes = {arg.nbytes}')
                     device_ptr = hip.hipMalloc(arg.nbytes)
+                    print(f'device_ptr = {device_ptr}')
                     data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
-                    print(data_ctypes)
-                    hip.hipMemcpy_htod(device_ptr, ctypes.byref(data_ctypes), arg.nbytes)
+                    print(f'data_ctypes = {data_ctypes}')
+                    hip.hipMemcpy_htod(device_ptr, data_ctypes, arg.nbytes)
                 else:
                     raise TypeError("unknown dtype for ndarray")        
             elif isinstance(arg, np.generic):
@@ -226,7 +230,7 @@ class HipFunctions(GPUBackend):
     def synchronize(self):
         """Halts execution until device has finished its tasks"""
         logging.debug("HipFunction synchronize called")
-        status = hip.hipEventSynchronize(self.end)
+        status = hip.hipDeviceSynchronize()
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the HIP kernel passed as 'func'
