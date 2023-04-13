@@ -28,9 +28,18 @@ if 'linux' in sys.platform:
         except:
             raise RuntimeError(
                 'cant find libamdhip64.so or libnvhip64.so. make sure LD_LIBRARY_PATH is set')
+    
+    _libhiprtc_libname = 'libhiprtc.so'
+    _libhiprtc = None
+    try:
+        _libhiprtc = ctypes.cdll.LoadLibrary(_libhiprtc_libname)
+    except:
+        raise OSError('hiprtc library not found')
+    
 else:
     # Currently we do not support windows
     raise RuntimeError('Only linux is supported')
+
 
 # embedded in try block to be able to generate documentation
 # and run tests without pyhip installed
@@ -83,7 +92,7 @@ class HipFunctions(GPUBackend):
 
         self.name = hipProps._name.decode('utf-8')
         self.max_threads = hipProps.maxThreadsPerBlock
-        print("self.max_threads: " + str(self.max_threads))
+        logging.debug("self.max_threads: " + str(self.max_threads))
         #self.max_threads = 1024 # PATCH FOR NOW
 
         self.device = device
@@ -105,6 +114,10 @@ class HipFunctions(GPUBackend):
         self.observers.append(HipRuntimeObserver(self))
         for obs in self.observers:
             obs.register_device(self)
+
+        # define arguments and return value ctypes for hipEventQuery
+        _libhip.hipEventQuery.restype = ctypes.c_int
+        _libhip.hipEventQuery.argtypes = ctypes.c_void_p
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the HIP function
@@ -138,7 +151,7 @@ class HipFunctions(GPUBackend):
         # Populate the fields of the structure with values from the list
         for i, value in enumerate(ctype_args):
             setattr(ctypes_struct, f'field{i}', value)
-            print(f'field{i} = {value} of {type(value)}')
+            #print(f'field{i} = {value} of {type(value)}')
         
         return ctypes_struct
     
@@ -197,27 +210,20 @@ class HipFunctions(GPUBackend):
         """Returns True if the kernel has finished, False otherwise"""
         logging.debug("HipFunction kernel_finished called")
         
-        # Define the argument and return types for hipEventQuery()
-        _libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
-        _libhip.hipEventQuery.restype = ctypes.c_int
-
         # Query the status of the event
         status = _libhip.hipEventQuery(self.end)
-        if status == _libhip.hipSuccess:
-            # Kernel has finished
+        logging.debug(f'_libhip.hipEventQuery(self.end) = {status}')
+        if status == 34: # 34 = hipErrorNotReady
+            logging.debug("kernel finished")
             return True
-        elif status == _libhip.hipErrorNotReady:
-            # Kernel is still running
-            return False
         else:
-            # Error occurred
+            logging.debug("kernel not finished")
             return False
 
     def synchronize(self):
         """Halts execution until device has finished its tasks"""
         logging.debug("HipFunction synchronize called")
-        hip.hipEventSynchronize(self.end)
-        pass
+        status = hip.hipEventSynchronize(self.end)
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the HIP kernel passed as 'func'
@@ -241,12 +247,6 @@ class HipFunctions(GPUBackend):
         logging.debug("HipFunction run_kernel called")
         if stream is None:
             stream = self.stream
-        print(func)
-        print(grid)
-        print(threads)
-        print(self.smem_size)
-        print(stream)
-        print(gpu_args)
         hip.hipModuleLaunchKernel(func, 
                                   grid[0], grid[1], grid[2], 
                                   threads[0], threads[1], threads[2],
