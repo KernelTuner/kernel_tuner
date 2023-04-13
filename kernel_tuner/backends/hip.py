@@ -36,18 +36,9 @@ if 'linux' in sys.platform:
     except:
         raise OSError('hiprtc library not found')
     
-    
-    _libhiprtc_libname = 'libhiprtc.so'
-    _libhiprtc = None
-    try:
-        _libhiprtc = ctypes.cdll.LoadLibrary(_libhiprtc_libname)
-    except:
-        raise OSError('hiprtc library not found')
-    
 else:
     # Currently we do not support windows
     raise RuntimeError('Only linux is supported')
-
 
 
 # embedded in try block to be able to generate documentation
@@ -124,6 +115,10 @@ class HipFunctions(GPUBackend):
         for obs in self.observers:
             obs.register_device(self)
 
+        # define arguments and return value ctypes for hipEventQuery
+        _libhip.hipEventQuery.restype = ctypes.c_int
+        _libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
+
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the HIP function
         :param arguments: List of arguments to be passed to the HIP function.
@@ -157,9 +152,9 @@ class HipFunctions(GPUBackend):
             _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
         ctypes_struct = ArgListStructure(*ctype_args)
         # Populate the fields of the structure with values from the list
-        for i, value in enumerate(ctype_args):
-            setattr(ctypes_struct, f'field{i}', value)
-            print(f'field{i} = {value} of {type(value)}')
+        #for i, value in enumerate(ctype_args):
+        #    setattr(ctypes_struct, f'field{i}', value)
+            #print(f'field{i} = {value} of {type(value)}')
         
         return ctypes_struct
     
