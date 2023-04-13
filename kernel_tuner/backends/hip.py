@@ -64,6 +64,12 @@ dtype_map = {
     "float64": ctypes.c_double,
 }
 
+# define arguments and return value ctypes for hipEventQuery
+_libhip.hipEventQuery.restype = ctypes.c_int
+_libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
+
+hipSuccess = 0
+
 class HipFunctions(GPUBackend):
     """Class that groups the HIP functions on maintains state about the device"""
 
@@ -109,9 +115,6 @@ class HipFunctions(GPUBackend):
         for obs in self.observers:
             obs.register_device(self)
 
-        # define arguments and return value ctypes for hipEventQuery
-        _libhip.hipEventQuery.restype = ctypes.c_int
-        _libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the HIP function
@@ -132,11 +135,12 @@ class HipFunctions(GPUBackend):
                     device_ptr = hip.hipMalloc(arg.nbytes)
                     data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
                     hip.hipMemcpy_htod(device_ptr, data_ctypes, arg.nbytes)
+                    ctype_args.append(device_ptr)
                 else:
                     raise TypeError("unknown dtype for ndarray")        
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
-            ctype_args.append(data_ctypes)  
+                ctype_args.append(data_ctypes)  
         
         # Determine the types of the fields in the structure
         field_types = [type(x) for x in ctype_args]
@@ -196,7 +200,7 @@ class HipFunctions(GPUBackend):
         # Query the status of the event
         status = _libhip.hipEventQuery(self.end)
         logging.debug(f'_libhip.hipEventQuery(self.end) = {status}')
-        if status == 34: # 34 = hipErrorNotReady --> still have to look into this
+        if status == hipSuccess:
             logging.debug("kernel finished")
             return True
         else:
