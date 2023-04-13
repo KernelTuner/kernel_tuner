@@ -23,7 +23,7 @@ class HipRuntimeObserver(BenchmarkObserver):
     def after_finish(self):
         # Time is measured in milliseconds
         EventElapsedTime = hip.hipEventElapsedTime(self.start, self.end)
-        self.times.append(EventElapsedTime.value)
+        self.times.append(EventElapsedTime)
 
     def get_results(self):
         results = {"time": np.average(self.times), "times": self.times.copy()}

@@ -123,7 +123,8 @@ class HipFunctions(GPUBackend):
             Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
         :type arguments: list(numpy objects)
         :returns: A ctypes structure that can be passed to the HIP function.
-        :rtype: ctypes.Structure"""
+        :rtype: ctypes.Structure
+        """
         
         logging.debug("HipFunction ready_argument_list called")
         ctype_args = []
@@ -199,12 +200,9 @@ class HipFunctions(GPUBackend):
         
         # Query the status of the event
         status = _libhip.hipEventQuery(self.end)
-        logging.debug(f'_libhip.hipEventQuery(self.end) = {status}')
         if status == hipSuccess:
-            logging.debug("kernel finished")
             return True
         else:
-            logging.debug("kernel not finished")
             return False
 
     def synchronize(self):
