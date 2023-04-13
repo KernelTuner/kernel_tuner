@@ -82,18 +82,12 @@ class HipFunctions(GPUBackend):
         :type iterations: int
         """
         logging.debug("HipFunction instantiated")
-        #hip.hipInit(0)
-        #hip.hipSetDevice(device)
         
-        hipProps = hip.hipGetDeviceProperties(device)
-        # Print out all the values
-        #for field_name, field_type in hipProps._fields_:
-        #    print(f"{field_name}: {getattr(hipProps, field_name)}")
+        self.hipProps = hip.hipGetDeviceProperties(device)
 
-        self.name = hipProps._name.decode('utf-8')
-        self.max_threads = hipProps.maxThreadsPerBlock
+        self.name = self.hipProps._name.decode('utf-8')
+        self.max_threads = self.hipProps.maxThreadsPerBlock
         logging.debug("self.max_threads: " + str(self.max_threads))
-        #self.max_threads = 1024 # PATCH FOR NOW
 
         self.device = device
         self.compiler_options = compiler_options
@@ -131,17 +125,12 @@ class HipFunctions(GPUBackend):
         logging.debug("HipFunction ready_argument_list called")
         ctype_args = []
         data_ctypes = None
-        for i, arg in enumerate(arguments):
+        for arg in enumerate(arguments):
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
-                    print(f'dtype_stre = {dtype_str}')
-                    print(f'arg.size = {arg.size}')
-                    print(f'arg.nbytes = {arg.nbytes}')
                     device_ptr = hip.hipMalloc(arg.nbytes)
-                    print(f'device_ptr = {device_ptr}')
                     data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
-                    print(f'data_ctypes = {data_ctypes}')
                     hip.hipMemcpy_htod(device_ptr, data_ctypes, arg.nbytes)
                 else:
                     raise TypeError("unknown dtype for ndarray")        
@@ -154,13 +143,8 @@ class HipFunctions(GPUBackend):
         # Define a new ctypes structure with the inferred layout
         class ArgListStructure(ctypes.Structure):
             _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
-        ctypes_struct = ArgListStructure(*ctype_args)
-        # Populate the fields of the structure with values from the list
-        #for i, value in enumerate(ctype_args):
-        #    setattr(ctypes_struct, f'field{i}', value)
-            #print(f'field{i} = {value} of {type(value)}')
         
-        return ctypes_struct
+        return ArgListStructure(*ctype_args)
     
     
     def compile(self, kernel_instance):
@@ -177,24 +161,16 @@ class HipFunctions(GPUBackend):
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
 
-        # if filename is known, use that one
-        suffix = kernel_instance.kernel_source.get_user_suffix()
-
-        if suffix is None:
-            # select right suffix based on compiler
-            suffix = ".cc"
-
-        if ".c" in suffix and 'extern "C"' not in kernel_string:
+        if 'extern "C"' not in kernel_string:
             kernel_string = 'extern "C" {\n' + kernel_string + "\n}"
 
         kernel_ptr = hiprtc.hiprtcCreateProgram(kernel_string, kernel_name, [], [])
         
-        device_properties = hip.hipGetDeviceProperties(self.device)
         plat = hip.hipGetPlatformName()
         #Compile based on device
         if plat == "amd":
             hiprtc.hiprtcCompileProgram(
-                kernel_ptr, [f'--offload-arch={device_properties.gcnArchName}'])
+                kernel_ptr, [f'--offload-arch={self.hipProps.gcnArchName}'])
         else:
             hiprtc.hiprtcCompileProgram(kernel_ptr, [])
         code = hiprtc.hiprtcGetCode(kernel_ptr)
@@ -220,7 +196,7 @@ class HipFunctions(GPUBackend):
         # Query the status of the event
         status = _libhip.hipEventQuery(self.end)
         logging.debug(f'_libhip.hipEventQuery(self.end) = {status}')
-        if status == 34: # 34 = hipErrorNotReady
+        if status == 34: # 34 = hipErrorNotReady --> still have to look into this
             logging.debug("kernel finished")
             return True
         else:
@@ -230,7 +206,7 @@ class HipFunctions(GPUBackend):
     def synchronize(self):
         """Halts execution until device has finished its tasks"""
         logging.debug("HipFunction synchronize called")
-        status = hip.hipDeviceSynchronize()
+        hip.hipDeviceSynchronize()
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """runs the HIP kernel passed as 'func'
@@ -274,7 +250,7 @@ class HipFunctions(GPUBackend):
         :type size: int
         """
         logging.debug("HipFunction memset called")
-        allocation.contents.value = value
+        allocation.contents.value = value # probably wrong, still have to look into this
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
