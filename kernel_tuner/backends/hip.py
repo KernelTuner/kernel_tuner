@@ -36,9 +36,18 @@ if 'linux' in sys.platform:
     except:
         raise OSError('hiprtc library not found')
     
+    
+    _libhiprtc_libname = 'libhiprtc.so'
+    _libhiprtc = None
+    try:
+        _libhiprtc = ctypes.cdll.LoadLibrary(_libhiprtc_libname)
+    except:
+        raise OSError('hiprtc library not found')
+    
 else:
     # Currently we do not support windows
     raise RuntimeError('Only linux is supported')
+
 
 
 # embedded in try block to be able to generate documentation
@@ -115,10 +124,6 @@ class HipFunctions(GPUBackend):
         for obs in self.observers:
             obs.register_device(self)
 
-        # define arguments and return value ctypes for hipEventQuery
-        _libhip.hipEventQuery.restype = ctypes.c_int
-        _libhip.hipEventQuery.argtypes = ctypes.c_void_p
-
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the HIP function
         :param arguments: List of arguments to be passed to the HIP function.
@@ -135,7 +140,10 @@ class HipFunctions(GPUBackend):
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
+                    device_ptr = hip.hipMalloc(arg.nbytes)
                     data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
+                    print(data_ctypes)
+                    hip.hipMemcpy_htod(device_ptr, ctypes.byref(data_ctypes), arg.nbytes)
                 else:
                     raise TypeError("unknown dtype for ndarray")        
             elif isinstance(arg, np.generic):
@@ -147,11 +155,11 @@ class HipFunctions(GPUBackend):
         # Define a new ctypes structure with the inferred layout
         class ArgListStructure(ctypes.Structure):
             _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
-        ctypes_struct = ArgListStructure()
+        ctypes_struct = ArgListStructure(*ctype_args)
         # Populate the fields of the structure with values from the list
         for i, value in enumerate(ctype_args):
             setattr(ctypes_struct, f'field{i}', value)
-            #print(f'field{i} = {value} of {type(value)}')
+            print(f'field{i} = {value} of {type(value)}')
         
         return ctypes_struct
     
