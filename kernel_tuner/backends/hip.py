@@ -129,7 +129,7 @@ class HipFunctions(GPUBackend):
         logging.debug("HipFunction ready_argument_list called")
         ctype_args = []
         data_ctypes = None
-        for arg in enumerate(arguments):
+        for arg in arguments:
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
