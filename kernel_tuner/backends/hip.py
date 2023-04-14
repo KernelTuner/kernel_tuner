@@ -314,13 +314,13 @@ class HipFunctions(GPUBackend):
             hip.hipMemcpy_htod(symbol, ctypes.byref(v.ctypes), ctypes.sizeof(dtype_map[dtype_str]) * v.size)
 
     def copy_shared_memory_args(self, smem_args):
-        """This method must implement the dynamic allocation of shared memory on the GPU."""
+        """add shared memory arguments to the kernel"""
         logging.debug("HipFunction copy_shared_memory_args called")
         self.smem_size = smem_args["size"]
 
     def copy_texture_memory_args(self, texmem_args):
         """This method must implement the allocation and copy of texture memory to the GPU."""
         logging.debug("HipFunction copy_texture_memory_args called")
-        # NOT SUPPORTED?
+        raise NotImplementedError("HIP backend does not support texture memory") # NOT SUPPORTED?
 
     units = {"time": "ms"}
