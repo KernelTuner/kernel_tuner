@@ -64,9 +64,14 @@ dtype_map = {
     "float64": ctypes.c_double,
 }
 
-# define arguments and return value ctypes for hipEventQuery
+# define arguments and return value types of HIP functions
 _libhip.hipEventQuery.restype = ctypes.c_int
 _libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
+_libhip.hipModuleGetGlobal.restype = ctypes.c_int
+_libhip.hipModuleGetGlobal.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_char_p]
+_libhip.hipMemset.restype = ctypes.c_int
+_libhip.hipModuleGetGlobal.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_size_t]
+
 
 hipSuccess = 0
 
@@ -108,6 +113,7 @@ class HipFunctions(GPUBackend):
         self.end = hip.hipEventCreate()
 
         self.smem_size = 0
+        self.current_module = None
 
         # setup observers
         self.observers = observers or []
@@ -125,12 +131,13 @@ class HipFunctions(GPUBackend):
         :returns: A ctypes structure that can be passed to the HIP function.
         :rtype: ctypes.Structure
         """
-        
         logging.debug("HipFunction ready_argument_list called")
+
         ctype_args = []
         data_ctypes = None
         for arg in arguments:
             dtype_str = str(arg.dtype)
+            # Allocate space on device for array and convert to ctypes
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
                     device_ptr = hip.hipMalloc(arg.nbytes)
@@ -138,7 +145,8 @@ class HipFunctions(GPUBackend):
                     hip.hipMemcpy_htod(device_ptr, data_ctypes, arg.nbytes)
                     ctype_args.append(device_ptr)
                 else:
-                    raise TypeError("unknown dtype for ndarray")        
+                    raise TypeError("unknown dtype for ndarray")  
+            # Convert valid non-array arguments to ctypes      
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
                 ctype_args.append(data_ctypes)  
@@ -180,6 +188,7 @@ class HipFunctions(GPUBackend):
             hiprtc.hiprtcCompileProgram(kernel_ptr, [])
         code = hiprtc.hiprtcGetCode(kernel_ptr)
         module = hip.hipModuleLoadData(code)
+        self.current_module = module
         kernel = hip.hipModuleGetFunction(module, kernel_name)
         
         return kernel
@@ -242,7 +251,7 @@ class HipFunctions(GPUBackend):
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
 
-        :param allocation: An Argument for some memory allocation unit
+        :param allocation: A GPU memory allocation unit
         :type allocation: ctypes ptr
 
         :param value: The value to set the memory to
@@ -250,9 +259,12 @@ class HipFunctions(GPUBackend):
 
         :param size: The size of to the allocation unit in bytes
         :type size: int
+
         """
-        logging.debug("HipFunction memset called")
-        allocation.contents.value = value # probably wrong, still have to look into this
+        ctypes_value = ctypes.c_int(value)
+        ctypes_size = ctypes.c_size_t(size)
+        status = _libhip.hipMemset(allocation, ctypes_value, ctypes_size)
+        hip.hipCheckStatus(status)
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
@@ -281,8 +293,25 @@ class HipFunctions(GPUBackend):
         hip.hipMemcpy_htod(dest, ctypes.byref(src.ctypes), ctypes.sizeof(dtype_map[dtype_str]) * src.size)
 
     def copy_constant_memory_args(self, cmem_args):
-        """This method must implement the allocation and copy of constant memory to the GPU."""
+        """adds constant memory arguments to the most recently compiled module
+
+        :param cmem_args: A dictionary containing the data to be passed to the
+            device constant memory. The format to be used is as follows: A
+            string key is used to name the constant memory symbol to which the
+            value needs to be copied. Similar to regular arguments, these need
+            to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.
+        :type cmem_args: dict( string: numpy.ndarray, ... )
+        """
         logging.debug("HipFunction copy_constant_memory_args called")
+        logging.debug("current module: " + str(self.current_module))
+
+        for k, v in cmem_args.items():
+            symbol = ctypes.c_void_p
+            size_kernel = ctypes.c_size_t
+            status = _libhip.hipModuleGetGlobal(symbol, size_kernel, self.current_module, str.encode(k))
+            hip.hipCheckStatus(status)
+            dtype_str = str(v.dtype)
+            hip.hipMemcpy_htod(symbol, ctypes.byref(v.ctypes), ctypes.sizeof(dtype_map[dtype_str]) * v.size)
 
     def copy_shared_memory_args(self, smem_args):
         """This method must implement the dynamic allocation of shared memory on the GPU."""
@@ -292,5 +321,6 @@ class HipFunctions(GPUBackend):
     def copy_texture_memory_args(self, texmem_args):
         """This method must implement the allocation and copy of texture memory to the GPU."""
         logging.debug("HipFunction copy_texture_memory_args called")
+        # NOT SUPPORTED?
 
     units = {"time": "ms"}
