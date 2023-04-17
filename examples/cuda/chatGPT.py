@@ -10,8 +10,213 @@ from kernel_tuner.file_utils import store_output_file, store_metadata_file
 from kernel_tuner.core import KernelSource, DeviceInterface
 from kernel_tuner.interface import (_kernel_options, _device_options,
                                     _check_user_input, Options)
+from chatgpt_queries import *
+import openai
 
 
+
+class ChatBot:
+    def __init__(self, system="", temperature=0.0):
+        self.system = system
+        self.messages = []
+        self.temperature = temperature
+        if self.system:
+            self.messages.append({"role": "system", "content": system})
+
+    def __call__(self, message):
+        self.messages.append({"role": "user", "content": message})
+        result = self.execute()
+        self.messages.append({"role": "assistant", "content": result})
+        return result
+
+    def execute(self):
+        completion = openai.ChatCompletion.create(model="gpt-3.5-turbo",
+                                                  messages=self.messages,
+                                                  temperature=self.temperature)
+        # Uncomment this to print out token usage each time, e.g.
+        # {"completion_tokens": 86, "prompt_tokens": 26, "total_tokens": 112}
+        #print(completion.usage)
+        return completion.choices[0].message.content
+
+
+class ChatGPTuner:
+    def __init__(self,
+                 kernel_name,
+                 start_kernel,
+                 size,
+                 args,
+                 tune_params,
+                 compiler_options=None,
+                 prompt=None,
+                 max_turns=5,
+                 verbose=True,
+                 temperature=0.6):
+        self.kernel_name = kernel_name
+        self.starting_kernel = start_kernel
+        self.size = size
+        self.args = args
+        self.tune_params = tune_params
+        self.compiler_options = compiler_options
+        self.prompt = prompt
+        self.max_turns = max_turns
+        self.verbose = verbose
+
+        self.inputs = []
+        self.answers = []
+
+        # Set up the chat bot
+        if self.verbose:
+            print("Setting up ChatGPTuner...")
+        self.bot = ChatBot(self.prompt, temperature=temperature)
+
+        # Obtain kernel desired output for correctness checking:
+        if self.verbose:
+            print("Calculating validation answer...")
+        self.answer = run_kernel(self.kernel_name,
+                                 self.starting_kernel,
+                                 self.size,
+                                 self.args,
+                                 self.tune_params,
+                                 compiler_options=self.compiler_options)
+
+    def vary_work_per_thread(self):
+        response1 = self.initial_2elem()
+        response2 = self.tunable_nr_elem()
+
+    def tunable_nr_elem(self):
+        query = chatGPT_queries['vary_work_per_thread']['Tunable_nr_elem']()
+        tune_pars = self.tune_params.copy()
+        tune_pars['tile_size_x'] = 8
+
+        response_kernel = self.query_kernel(query)
+
+        correct = self.check_correctness(response_kernel, tune_pars)
+        if correct:
+            return response_kernel
+        else:
+            print("Was not able to produce a correct tunable kernel.")
+            return
+
+    def initial_2elem(self):
+        query = chatGPT_queries['vary_work_per_thread']['Initial_2elem'](self.starting_kernel)
+        #TODO: Is this what we want?
+        tune_pars = self.tune_params.copy()
+        tune_pars['tile_size_x'] = 2
+
+        response_kernel = self.query_kernel(query)
+
+        correct = self.check_correctness(response_kernel, tune_pars)
+        if correct:
+            return response_kernel
+        else:
+            print("Was not able to produce a correct tunable kernel.")
+            return
+
+    def query_kernel(self, query):
+        if self.verbose:
+            print("Query to ChatGPT:")
+            print(query)
+            print()
+
+        response = self.bot(query)
+
+        try:
+            response_kernel = self.extract_kernel_string(response)
+        except Exception as e:
+            if self.verbose:
+                print("Failed to extract Kernel code from:")
+                print(response)
+                print()
+
+            query = str(e) + ' Remember to first write "START", then write the rewritten kernel and write "END" straight after the kernel.'
+            if self.verbose:
+                print("New query to ChatGPT:")
+                print(query)
+                print()
+            response = self.bot(query)
+            try:
+                response_kernel = self.extract_kernel_string(response)
+            except Exception as e:
+                print("Again failed to extract Kernel code from:")
+                print(response)
+                raise Exception("ChatGPT does not want to listen, cannot extract kernel string.")
+        if self.verbose:
+            print("Response given by ChatGPT:")
+            print(response_kernel)
+            print()
+        return response_kernel
+
+    def check_correctness(self, response_kernel, tune_pars, tries=3):
+        correct = False
+        iter_count = 0
+        while not correct:
+            iter_count += 1
+            if self.verbose:
+                print(f"Testing chatGPT response {iter_count}")
+
+            # TODO: How to deal with grid_div_x
+            correct = self.validate_kernel(self.kernel_name,
+                                           response_kernel,
+                                           self.size,
+                                           self.args,
+                                           tune_pars,
+                                           answer=self.answer,
+                                           grid_div_x=['block_size_x', 'tile_size_x'],
+                                           compiler_options=self.compiler_options)
+
+            if isinstance(correct, Exception):
+                print("There was an error in compiling and running the kernel.")
+                query = chatGPT_queries['vary_work_per_thread']['Fails_to_compile']()
+                response_kernel = self.query_kernel(query)
+            else:
+                print("Kernel is correct is", correct)
+                if not correct:
+                    query = chatGPT_queries['vary_work_per_thread']['Incorrect_kernel']()
+                    response_kernel = self.query_kernel(query)
+
+            # Break the while loop if conditions are met
+            if iter_count >= tries:
+                print("Failed to obtain a valid kernel from chatGPT...")
+                break
+            if correct:
+                break
+        return correct
+
+    def extract_kernel_string(self, response):
+        if 'START' not in response:
+            raise Exception(f"Could not extract kernel code from response.")
+        if 'END' not in response:
+            raise Exception(f"Could not extract kernel code from response.")
+        x = response.split('START')[1]
+        x = x.split('END')[0]
+        return x
+
+    def validate_kernel(self, kernel_name, kernel_string, size, args, tune_params,
+                        compiler_options=None, answer=None, **kwargs):
+        # Does the kernel code compile and run
+        try:
+            output = run_kernel(kernel_name,
+                       kernel_string,
+                       size,
+                       args,
+                       tune_params,
+                       compiler_options=compiler_options,
+                       **kwargs)
+
+            res = True
+            if answer:
+                for i,ans in enumerate(answer):
+                    if not ans is None:
+                        res = res and numpy.allclose(output[i], ans)
+
+            return res
+        except Exception as e:
+            print(e)
+            return e
+
+
+
+"""
 CUDA_type_converter = {
     'int': int,
     'float': float,
@@ -223,3 +428,4 @@ def validate_kernel(kernel_string, size, compiler_options=None):
                defines=defines,
                compiler_options=compiler_options)
     return kernel_name, kernel_string, size, args, tune_params, defines
+"""
