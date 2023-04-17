@@ -128,8 +128,8 @@ class HipFunctions(GPUBackend):
             The order should match the argument list on the HIP function.
             Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
         :type arguments: list(numpy objects)
-        :returns: A ctypes structure that can be passed to the HIP function.
-        :rtype: ctypes.Structure
+        :returns: List of ctypes arguments to be passed to the HIP function.
+        :rtype: list of ctypes
         """
         logging.debug("HipFunction ready_argument_list called")
 
@@ -151,13 +151,7 @@ class HipFunctions(GPUBackend):
                 data_ctypes = dtype_map[dtype_str](arg)
                 ctype_args.append(data_ctypes)  
         
-        # Determine the types of the fields in the structure
-        field_types = [type(x) for x in ctype_args]
-        # Define a new ctypes structure with the inferred layout
-        class ArgListStructure(ctypes.Structure):
-            _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
-        
-        return ArgListStructure(*ctype_args)
+        return ctype_args
     
     
     def compile(self, kernel_instance):
@@ -228,7 +222,7 @@ class HipFunctions(GPUBackend):
         :param gpu_args: A list of arguments to the kernel, order should match the
             order in the code. Allowed values are either variables in global memory
             or single values passed by value.
-        :type gpu_args: ctypes.Structure
+        :type gpu_args: list of ctypes
 
         :param threads: A tuple listing the number of threads in each dimension of
             the thread block
@@ -241,6 +235,15 @@ class HipFunctions(GPUBackend):
         logging.debug("HipFunction run_kernel called")
         if stream is None:
             stream = self.stream
+
+        # Determine the types of the fields in the structure
+        field_types = [type(x) for x in gpu_args]
+        # Define a new ctypes structure with the inferred layout
+        class ArgListStructure(ctypes.Structure):
+            _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
+        
+        gpu_args = ArgListStructure(*gpu_args)
+
         hip.hipModuleLaunchKernel(func, 
                                   grid[0], grid[1], grid[2], 
                                   threads[0], threads[1], threads[2],
@@ -261,6 +264,8 @@ class HipFunctions(GPUBackend):
         :type size: int
 
         """
+        logging.debug("HipFunction memset called")
+        print("HipFunction memset called")
         ctypes_value = ctypes.c_int(value)
         ctypes_size = ctypes.c_size_t(size)
         status = _libhip.hipMemset(allocation, ctypes_value, ctypes_size)
@@ -276,8 +281,10 @@ class HipFunctions(GPUBackend):
         :type src: ctypes ptr
         """
         logging.debug("HipFunction memcpy_dtoh called")
-        dtype_str = str(src.dtype)
-        hip.hipMemcpy_dtoh(ctypes.byref(dest.ctypes), src, ctypes.sizeof(dtype_map[dtype_str]) * src.size)
+        print("HipFunction memcpy_dtoh called")
+
+        address = dest.ctypes.data
+        hip.hipMemcpy_dtoh(ctypes.c_void_p(address), src, dest.nbytes)
 
     def memcpy_htod(self, dest, src):
         """perform a host to device memory copy
@@ -289,6 +296,7 @@ class HipFunctions(GPUBackend):
         :type src: numpy.ndarray
         """
         logging.debug("HipFunction memcpy_htod called")
+        print("HipFunction memcpy_htod called")
         dtype_str = str(src.dtype)
         hip.hipMemcpy_htod(dest, ctypes.byref(src.ctypes), ctypes.sizeof(dtype_map[dtype_str]) * src.size)
 
@@ -303,6 +311,7 @@ class HipFunctions(GPUBackend):
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
         logging.debug("HipFunction copy_constant_memory_args called")
+        print("HipFunction copy_constant_memory_args called")
         logging.debug("current module: " + str(self.current_module))
 
         for k, v in cmem_args.items():
@@ -316,11 +325,13 @@ class HipFunctions(GPUBackend):
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
         logging.debug("HipFunction copy_shared_memory_args called")
+        print("HipFunction copy_shared_memory_args called")
         self.smem_size = smem_args["size"]
 
     def copy_texture_memory_args(self, texmem_args):
         """This method must implement the allocation and copy of texture memory to the GPU."""
         logging.debug("HipFunction copy_texture_memory_args called")
+        print("HipFunction copy_texture_memory_args called")
         raise NotImplementedError("HIP backend does not support texture memory") # NOT SUPPORTED?
 
     units = {"time": "ms"}

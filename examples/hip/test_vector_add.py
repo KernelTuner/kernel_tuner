@@ -5,13 +5,15 @@ import numpy
 from kernel_tuner import run_kernel
 import pytest
 
+#Check pyhip is installed and if a HIP capable device is present, if not skip the test
+try:
+    from pyhip import hip, hiprtc
+except ImportError:
+    pytest.skip("PyHIP not installed or PYTHONPATH does not includes PyHIP")
+    hip = None
+    hiprtc = None
+
 def test_vector_add():
-    #Check pyhip is installed and if a HIP capable device is present, if not skip the test
-    try:
-        import pyhip as hip
-        hip.hipGetDeviceProperties(0)
-    except (ImportError, Exception):
-        pytest.skip("PyHIP not installed or no HIP device detected")
 
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
