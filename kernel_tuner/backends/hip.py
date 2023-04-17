@@ -281,7 +281,6 @@ class HipFunctions(GPUBackend):
         :type src: ctypes ptr
         """
         logging.debug("HipFunction memcpy_dtoh called")
-        print("HipFunction memcpy_dtoh called")
 
         address = dest.ctypes.data
         hip.hipMemcpy_dtoh(ctypes.c_void_p(address), src, dest.nbytes)
@@ -296,9 +295,9 @@ class HipFunctions(GPUBackend):
         :type src: numpy.ndarray
         """
         logging.debug("HipFunction memcpy_htod called")
-        print("HipFunction memcpy_htod called")
-        dtype_str = str(src.dtype)
-        hip.hipMemcpy_htod(dest, ctypes.byref(src.ctypes), ctypes.sizeof(dtype_map[dtype_str]) * src.size)
+
+        address = src.ctypes.data
+        hip.hipMemcpy_htod(dest, ctypes.c_void_p(address), src.nbytes)
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
@@ -325,13 +324,13 @@ class HipFunctions(GPUBackend):
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
         logging.debug("HipFunction copy_shared_memory_args called")
-        print("HipFunction copy_shared_memory_args called")
+
         self.smem_size = smem_args["size"]
 
     def copy_texture_memory_args(self, texmem_args):
         """This method must implement the allocation and copy of texture memory to the GPU."""
         logging.debug("HipFunction copy_texture_memory_args called")
-        print("HipFunction copy_texture_memory_args called")
-        raise NotImplementedError("HIP backend does not support texture memory") # NOT SUPPORTED?
+
+        raise NotImplementedError("HIP backend does not support texture memory")
 
     units = {"time": "ms"}
