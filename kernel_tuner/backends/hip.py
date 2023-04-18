@@ -70,7 +70,7 @@ _libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
 _libhip.hipModuleGetGlobal.restype = ctypes.c_int
 _libhip.hipModuleGetGlobal.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_char_p]
 _libhip.hipMemset.restype = ctypes.c_int
-_libhip.hipModuleGetGlobal.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_size_t]
+_libhip.hipMemset.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_size_t]
 
 
 hipSuccess = 0
@@ -266,7 +266,7 @@ class HipFunctions(GPUBackend):
 
         """
         logging.debug("HipFunction memset called")
-        print("HipFunction memset called")
+        
         ctypes_value = ctypes.c_int(value)
         ctypes_size = ctypes.c_size_t(size)
         status = _libhip.hipMemset(allocation, ctypes_value, ctypes_size)
@@ -283,8 +283,9 @@ class HipFunctions(GPUBackend):
         """
         logging.debug("HipFunction memcpy_dtoh called")
 
-        address = dest.ctypes.data
-        hip.hipMemcpy_dtoh(ctypes.c_void_p(address), src, dest.nbytes)
+        dtype_str = str(dest.dtype)
+        dest_c = dest.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
+        hip.hipMemcpy_dtoh(dest_c, src, dest.nbytes)
 
     def memcpy_htod(self, dest, src):
         """perform a host to device memory copy
@@ -297,8 +298,9 @@ class HipFunctions(GPUBackend):
         """
         logging.debug("HipFunction memcpy_htod called")
 
-        address = src.ctypes.data
-        hip.hipMemcpy_htod(dest, ctypes.c_void_p(address), src.nbytes)
+        dtype_str = str(src.dtype)
+        src_c = src.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
+        hip.hipMemcpy_htod(dest, src_c, src.nbytes)
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module

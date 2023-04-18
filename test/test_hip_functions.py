@@ -3,6 +3,7 @@ import ctypes
 from .context import skip_if_no_pyhip
 
 import pytest
+import kernel_tuner
 from kernel_tuner.backends import hip as kt_hip
 from kernel_tuner.core import KernelSource, KernelInstance
 
@@ -23,10 +24,24 @@ def test_ready_argument_list():
 
     arguments = [d, a, b, c]
 
+    class ArgListStructure(ctypes.Structure):
+        _fields_ = [("field0", ctypes.POINTER(ctypes.c_float)),
+                    ("field1", ctypes.c_int),
+                    ("field2", ctypes.POINTER(ctypes.c_float)),
+                    ("field3", ctypes.c_bool)]
+        def __getitem__(self, key):
+                return self._fields_[key]
+
     dev = kt_hip.HipFunctions(0)
     gpu_args = dev.ready_argument_list(arguments)
 
-    assert(gpu_args, ctypes.Structure)
+    argListStructure = ArgListStructure(d.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                                        ctypes.c_int(a),
+                                        b.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                                        ctypes.c_bool(c))
+    
+    assert(gpu_args[1] == argListStructure[1])
+    assert(gpu_args[3] == argListStructure[3])
 
 @skip_if_no_pyhip
 def test_compile():
@@ -49,6 +64,33 @@ def test_compile():
     except Exception as e:
         pytest.fail("Did not expect any exception:" + str(e))
 
+
+@skip_if_no_pyhip
+def test_memset_and_memcpy_dtoh():
+    a = [1, 2, 3, 4]
+    x = np.array(a).astype(np.int8)
+    x_d = hip.hipMalloc(x.nbytes)
+
+    Hipfunc = kt_hip.HipFunctions()
+    Hipfunc.memset(x_d, 4, x.nbytes)
+
+    output = np.empty(4, dtype=np.int8)
+    Hipfunc.memcpy_dtoh(output, x_d)
+
+    assert all(output == np.full(4, 4))
+
+@skip_if_no_pyhip
+def test_memcpy_htod():
+    a = [1, 2, 3, 4]
+    x = np.array(a).astype(np.float32)
+    x_d = hip.hipMalloc(x.nbytes)
+    output = np.empty(4, dtype=np.float32)
+
+    Hipfunc = kt_hip.HipFunctions()
+    Hipfunc.memcpy_htod(x_d, x)
+    Hipfunc.memcpy_dtoh(output, x_d)
+
+    assert all(output == x)
 
 def dummy_func(a, b, block=0, grid=0, stream=None, shared=0, texrefs=None):
     pass
