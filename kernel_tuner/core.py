@@ -404,7 +404,7 @@ class DeviceInterface(object):
             correct = _default_verify_function(instance, answer, result_host, atol, verbose)
 
         if not correct:
-            raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
+            raise util.VerificationError("Kernel result verification failed for: " + util.get_config_string(instance.params))
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
         """ Compile and benchmark a kernel instance based on kernel strings and parameters """

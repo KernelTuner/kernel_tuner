@@ -56,7 +56,11 @@ class TorchPlaceHolder():
 
 
 class CompilerError(Exception):
-    """Generic Compiler Error Exception to generalize over the specific compiler exceptions raised by various backends """
+    """Generic Compiler Error Exception to generalize over the specific compiler exceptions raised by various backends"""
+
+
+class VerificationError(Exception):
+    """Verification Exception to raise when kernel verification fails"""
 
 
 class SkippableFailure(Exception):
