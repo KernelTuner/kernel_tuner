@@ -43,6 +43,10 @@ class TorchPlaceHolder():
         self.Tensor = Exception    #using Exception here as a type that will never be among kernel arguments
 
 
+class CompilerError(Exception):
+    """Generic Compiler Error Exception to generalize over the specific compiler exceptions raised by various backends """
+
+
 class SkippableFailure(Exception):
     """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected"""
 
