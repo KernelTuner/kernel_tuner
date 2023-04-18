@@ -15,16 +15,22 @@ import openai
 import datetime
 import logging
 
-logger = logging.getLogger(__name__)
-hdlr = logging.FileHandler('logs/log{}.log'.format(datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S_%f')))
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.DEBUG)
+
+logging.basicConfig(filename='logs/log{}.log'.format(datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S_%f')), level=logging.DEBUG)
+
+#logger = logging.getLogger(__name__)
+#hdlr = logging.FileHandler('logs/log{}.log'.format(datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S_%f')))
+#formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+#hdlr.setFormatter(formatter)
+#logger.addHandler(hdlr)
+#logger.setLevel(logging.DEBUG)
 
 
 class ChatBot:
     def __init__(self, system="", temperature=0.0):
+        r"""
+        Temperature is between 0 and 2.
+        """
         self.system = system
         self.messages = []
         self.temperature = temperature
@@ -39,19 +45,19 @@ class ChatBot:
         return result
 
     def execute(self):
-        logger.debug("Doing another query:")
-        logger.debug(f"Using model {self.model}")
-        logger.debug(f"Using temperature {self.temperature}")
+        logging.debug("Doing another query:")
+        logging.debug(f"Using model {self.model}")
+        logging.debug(f"Using temperature {self.temperature}")
         for msg in self.messages:
-            logger.debug("Role: "+msg["role"])
-            logger.debug("content: "+msg["content"])
+            logging.debug("Role: "+msg["role"])
+            logging.debug("content: "+msg["content"])
         completion = openai.ChatCompletion.create(model=self.model,
                                                   messages=self.messages,
                                                   temperature=self.temperature)
         # Uncomment this to print out token usage each time, e.g.
         # {"completion_tokens": 86, "prompt_tokens": 26, "total_tokens": 112}
         #print(completion.usage)
-        logger.debug("Response: "+completion.choices[0].message.content)
+        logging.debug("Response: "+completion.choices[0].message.content)
         return completion.choices[0].message.content
 
 
@@ -94,39 +100,46 @@ class ChatGPTuner:
                                  self.args,
                                  self.tune_params,
                                  compiler_options=self.compiler_options)
+        for i, x in enumerate(self.answer):
+            if not isinstance(x, numpy.ndarray):
+                self.answer[i] = None
 
-    def vary_work_per_thread(self):
-        response1 = self.initial_2elem()
-        response2 = self.tunable_nr_elem()
+    def vary_work_per_thread_x(self):
+        _ = self.initial_2elem_x()
+        response_kernel, tune_pars = self.tunable_nr_elem_x()
+        return response_kernel, tune_pars
 
-    def tunable_nr_elem(self):
-        query = chatGPT_queries['vary_work_per_thread']['Tunable_nr_elem']()
-        tune_pars = self.tune_params.copy()
-        tune_pars['tile_size_x'] = 8
-
-        response_kernel = self.query_kernel(query)
-
-        correct = self.check_correctness(response_kernel, tune_pars)
-        if correct:
-            return response_kernel
-        else:
-            print("Was not able to produce a correct tunable kernel.")
-            return
-
-    def initial_2elem(self):
-        query = chatGPT_queries['vary_work_per_thread']['Initial_2elem'](self.starting_kernel)
-        #TODO: Is this what we want?
+    def tunable_nr_elem_x(self):
+        query = chatGPT_queries['vary_work_per_thread_x']['Tunable_nr_elem_x']()
         tune_pars = self.tune_params.copy()
         tune_pars['tile_size_x'] = 2
 
         response_kernel = self.query_kernel(query)
 
-        correct = self.check_correctness(response_kernel, tune_pars)
+        correct, response_kernel = self.check_correctness(response_kernel,
+                                         tune_pars,
+                                         grid_divs=['block_size_x','tile_size_x'])
         if correct:
-            return response_kernel
+            return response_kernel, tune_pars
         else:
             print("Was not able to produce a correct tunable kernel.")
-            return
+            return "", None
+
+    def initial_2elem_x(self):
+        query = chatGPT_queries['vary_work_per_thread_x']['Initial_2elem_x'](self.starting_kernel)
+        tune_pars = self.tune_params.copy()
+        tune_pars['tile_size_x'] = 2
+
+        response_kernel = self.query_kernel(query)
+
+        correct, response_kernel = self.check_correctness(response_kernel,
+                                         tune_pars,
+                                         grid_divs=['block_size_x','tile_size_x'])
+        if correct:
+            return response_kernel, tune_pars
+        else:
+            print("Was not able to produce a correct tunable kernel.")
+            return "", None
 
     def query_kernel(self, query):
         if self.verbose:
@@ -162,7 +175,7 @@ class ChatGPTuner:
             print()
         return response_kernel
 
-    def check_correctness(self, response_kernel, tune_pars, tries=3):
+    def check_correctness(self, response_kernel, tune_pars, grid_divs=None, tries=3):
         correct = False
         iter_count = 0
         while not correct:
@@ -171,24 +184,19 @@ class ChatGPTuner:
                 print(f"Testing chatGPT response {iter_count}")
 
             # TODO: How to deal with grid_div_x
-            correct = self.validate_kernel(self.kernel_name,
+            correct, err_msg = self.validate_kernel(self.kernel_name,
                                            response_kernel,
                                            self.size,
                                            self.args,
                                            tune_pars,
-                                           answer=self.answer,
-                                           grid_div_x=['block_size_x', 'tile_size_x'],
+                                           grid_div_x=grid_divs,
                                            compiler_options=self.compiler_options)
 
-            if isinstance(correct, Exception):
+            print("Kernel is correct is", correct)
+            if not correct:
                 print("There was an error in compiling and running the kernel.")
-                query = chatGPT_queries['vary_work_per_thread']['Fails_to_compile'](str(correct))
+                query = chatGPT_queries['vary_work_per_thread_x']['Fails_to_compile'](err_msg)
                 response_kernel = self.query_kernel(query)
-            else:
-                print("Kernel is correct is", correct)
-                if not correct:
-                    query = chatGPT_queries['vary_work_per_thread']['Incorrect_kernel']()
-                    response_kernel = self.query_kernel(query)
 
             # Break the while loop if conditions are met
             if iter_count >= tries:
@@ -196,7 +204,7 @@ class ChatGPTuner:
                 break
             if correct:
                 break
-        return correct
+        return correct, response_kernel
 
     def extract_kernel_string(self, response):
         if 'START' not in response:
@@ -208,27 +216,22 @@ class ChatGPTuner:
         return x
 
     def validate_kernel(self, kernel_name, kernel_string, size, args, tune_params,
-                        compiler_options=None, answer=None, **kwargs):
+                        compiler_options=None, **kwargs):
         # Does the kernel code compile and run
         try:
-            output = run_kernel(kernel_name,
+            tune_pars = {k:[v] for k,v in tune_params.items()}
+            output = tune_kernel(kernel_name,
                        kernel_string,
                        size,
                        args,
-                       tune_params,
+                       tune_pars,
+                       answer=self.answer,
                        compiler_options=compiler_options,
                        **kwargs)
-
-            res = True
-            if answer:
-                for i,ans in enumerate(answer):
-                    if not ans is None:
-                        res = res and numpy.allclose(output[i], ans)
-
-            return res
+            return True, None
         except Exception as e:
             print(e)
-            return e
+            return False, str(e)
 
 
 
