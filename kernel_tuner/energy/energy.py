@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 import numpy as np
 from kernel_tuner import tune_kernel, util
-from kernel_tuner.nvml import NVMLObserver, get_nvml_gr_clocks
+from kernel_tuner.observers.nvml import NVMLObserver, get_nvml_gr_clocks
 from scipy import optimize
 
 try:

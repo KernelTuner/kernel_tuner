@@ -5,28 +5,24 @@ import numpy as np
 
 from kernel_tuner.interface import Options
 import kernel_tuner.strategies.common as common
+from kernel_tuner.searchspace import Searchspace
 
 
 def test_get_bounds_x0_eps():
-
-    tuning_options = Options()
-    tuning_options["scaling"] = True
     tune_params = OrderedDict()
     tune_params['x'] = [0, 1, 2, 3, 4]
+    searchspace = Searchspace(tune_params, [], 1024)
 
-    tuning_options["tune_params"] = tune_params
-    tuning_options["restrictions"] = None
+    tuning_options = Options()
     tuning_options["strategy_options"] = {}
 
-    bounds, x0, eps = common.get_bounds_x0_eps(tuning_options, 1024)
+    bounds, x0, eps = common.CostFunc(searchspace, tuning_options, None, scaling=True).get_bounds_x0_eps()
 
     assert bounds == [(0.0, 1.0)]
     assert x0 >= 0.0 and x0 <= 1.0
     assert eps == 0.2
 
-    tuning_options["scaling"] = False
-
-    bounds, x0, eps = common.get_bounds_x0_eps(tuning_options, 1024)
+    bounds, x0, eps = common.CostFunc(searchspace, tuning_options, None, scaling=False).get_bounds_x0_eps()
 
     assert bounds == [(0, 4)]
     assert eps == 1.0
@@ -43,7 +39,9 @@ def test_get_bounds():
         random.shuffle(tune_params[k])
 
     expected = [(0, 4), (0, 9900), (-11.2, 123.27)]
-    answer = common.get_bounds(tune_params)
+    searchspace = Searchspace(tune_params, None, 1024)
+    cost_func = common.CostFunc(searchspace, None, None)
+    answer = cost_func.get_bounds()
     assert answer == expected
 
 

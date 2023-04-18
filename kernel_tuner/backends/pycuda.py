@@ -5,19 +5,20 @@ import logging
 import time
 import numpy as np
 
-from kernel_tuner.observers import BenchmarkObserver
-from kernel_tuner.nvml import nvml
+from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.observers.pycuda import PyCudaRuntimeObserver
+from kernel_tuner.observers.nvml import nvml
 from kernel_tuner.util import TorchPlaceHolder, SkippableFailure
 
-#embedded in try block to be able to generate documentation
-#and run tests without pycuda installed
+# embedded in try block to be able to generate documentation
+# and run tests without pycuda installed
 try:
     import pycuda.driver as drv
+
     pycuda_available = True
 except ImportError:
 
-    class PyCudaPlaceHolder():
-
+    class PyCudaPlaceHolder:
         def __init__(self):
             self.PointerHolderBase = object
 
@@ -40,7 +41,7 @@ except ImportError:
 
 
 class Holder(drv.PointerHolderBase):
-    """ class to interoperate torch device memory allocations with PyCUDA """
+    """class to interoperate torch device memory allocations with PyCUDA"""
 
     def __init__(self, tensor):
         super(Holder, self).__init__()
@@ -51,29 +52,7 @@ class Holder(drv.PointerHolderBase):
         return self.t.data_ptr()
 
 
-class PyCudaRuntimeObserver(BenchmarkObserver):
-    """ Observer that measures time using CUDA events during benchmarking """
-
-    def __init__(self, dev):
-        self.dev = dev
-        self.stream = dev.stream
-        self.start = dev.start
-        self.end = dev.end
-        self.times = []
-
-    def after_finish(self):
-        self.times.append(self.end.time_since(self.start))    #ms
-
-    def get_results(self):
-        results = {
-            "time": np.average(self.times),
-            "times": self.times.copy()
-        }
-        self.times = []
-        return results
-
-
-class PyCudaFunctions(object):
+class PyCudaFunctions(GPUBackend):
     """Class that groups the CUDA functions on maintains state about the device"""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
@@ -92,8 +71,11 @@ class PyCudaFunctions(object):
         """
         self.allocations = []
         self.texrefs = []
-        if not pycuda_available and isinstance(drv, PyCudaPlaceHolder):    #and part to allow mocking
-            raise ImportError("Error: pycuda not installed, please install e.g. using 'pip install pycuda'.")
+        # if not PyCuda available, check if mocking before raising exception
+        if not pycuda_available and isinstance(drv, PyCudaPlaceHolder):
+            raise ImportError(
+                "Error: pycuda not installed, please install e.g. using 'pip install pycuda'."
+            )
 
         drv.init()
         self.context = drv.Device(device).retain_primary_context()
@@ -105,18 +87,23 @@ class PyCudaFunctions(object):
                 PyCudaFunctions.last_selected_context.pop()
             else:
                 import atexit
+
                 def _finish_up():
                     PyCudaFunctions.last_selected_context.pop()
+
                 atexit.register(_finish_up)
             self.context.push()
             PyCudaFunctions.last_selected_device = device
             PyCudaFunctions.last_selected_context = self.context
 
-        #inspect device properties
-        devprops = {str(k): v
-                    for (k, v) in self.context.get_device().get_attributes().items()}
-        self.max_threads = devprops['MAX_THREADS_PER_BLOCK']
-        cc = str(devprops.get('COMPUTE_CAPABILITY_MAJOR', '0')) + str(devprops.get('COMPUTE_CAPABILITY_MINOR', '0'))
+        # inspect device properties
+        devprops = {
+            str(k): v for (k, v) in self.context.get_device().get_attributes().items()
+        }
+        self.max_threads = devprops["MAX_THREADS_PER_BLOCK"]
+        cc = str(devprops.get("COMPUTE_CAPABILITY_MAJOR", "0")) + str(
+            devprops.get("COMPUTE_CAPABILITY_MINOR", "0")
+        )
         if cc == "00":
             cc = self.context.get_device().compute_capability()
         self.cc = str(cc[0]) + str(cc[1])
@@ -125,30 +112,31 @@ class PyCudaFunctions(object):
         self.func = None
         self.compiler_options = compiler_options or []
 
-        #select PyCUDA source module
+        # select PyCUDA source module
         if int(self.cc) >= 35:
             self.source_mod = DynamicSourceModule
         else:
             self.source_mod = SourceModule
         if not self.source_mod:
             raise ImportError(
-                "Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now")
+                "Error: pycuda not correctly installed, please ensure pycuda is installed on the same CUDA installation as you're using right now"
+            )
 
-        #create a stream and events
+        # create a stream and events
         self.stream = drv.Stream()
         self.start = drv.Event()
         self.end = drv.Event()
 
-        #default dynamically allocated shared memory size, can be overwritten using smem_args
+        # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
 
-        #setup observers
+        # setup observers
         self.observers = observers or []
         self.observers.append(PyCudaRuntimeObserver(self))
         for obs in self.observers:
             obs.register_device(self)
 
-        #collect environment information
+        # collect environment information
         env = dict()
         env["device_name"] = self.context.get_device().name()
         env["cuda_version"] = ".".join([str(i) for i in drv.get_version()])
@@ -161,7 +149,8 @@ class PyCudaFunctions(object):
 
     def __del__(self):
         for gpu_mem in self.allocations:
-            if hasattr(gpu_mem, 'free'):    #if needed for when using mocks during testing
+            # if needed for when using mocks during testing
+            if hasattr(gpu_mem, "free"):
                 gpu_mem.free()
 
     def ready_argument_list(self, arguments):
@@ -191,7 +180,8 @@ class PyCudaFunctions(object):
             # pycuda does not support bool, convert to uint8 instead
             elif isinstance(arg, np.bool_):
                 gpu_args.append(arg.astype(np.uint8))
-            else:    # if not an array, just pass argument along
+            # if not an array, just pass argument along
+            else:
                 gpu_args.append(arg)
         return gpu_args
 
@@ -214,13 +204,18 @@ class PyCudaFunctions(object):
         try:
             no_extern_c = 'extern "C"' in kernel_string
 
-            compiler_options = ['-Xcompiler=-Wall']
+            compiler_options = ["-Xcompiler=-Wall"]
             if self.compiler_options:
                 compiler_options += self.compiler_options
 
-            self.current_module = self.source_mod(kernel_string, options=compiler_options + ["-e", kernel_name],
-                                                  arch=('compute_' + self.cc) if self.cc != "00" else None, code=('sm_' + self.cc) if self.cc != "00" else None,
-                                                  cache_dir=False, no_extern_c=no_extern_c)
+            self.current_module = self.source_mod(
+                kernel_string,
+                options=compiler_options + ["-e", kernel_name],
+                arch=("compute_" + self.cc) if self.cc != "00" else None,
+                code=("sm_" + self.cc) if self.cc != "00" else None,
+                cache_dir=False,
+                no_extern_c=no_extern_c,
+            )
 
             self.func = self.current_module.get_function(kernel_name)
             return self.func
@@ -230,23 +225,21 @@ class PyCudaFunctions(object):
             else:
                 raise e
 
-
     def start_event(self):
-        """ Records the event that marks the start of a measurement """
+        """Records the event that marks the start of a measurement"""
         self.start.record(stream=self.stream)
 
     def stop_event(self):
-        """ Records the event that marks the end of a measurement """
+        """Records the event that marks the end of a measurement"""
         self.end.record(stream=self.stream)
 
     def kernel_finished(self):
-        """ Returns True if the kernel has finished, False otherwise """
+        """Returns True if the kernel has finished, False otherwise"""
         return self.end.query()
 
     def synchronize(self):
-        """ Halts execution until device has finished its tasks """
+        """Halts execution until device has finished its tasks"""
         self.context.synchronize()
-
 
     def copy_constant_memory_args(self, cmem_args):
         """adds constant memory arguments to the most recently compiled module
@@ -258,12 +251,12 @@ class PyCudaFunctions(object):
             to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
-        logging.debug('copy_constant_memory_args called')
-        logging.debug('current module: ' + str(self.current_module))
+        logging.debug("copy_constant_memory_args called")
+        logging.debug("current module: " + str(self.current_module))
         for k, v in cmem_args.items():
             symbol = self.current_module.get_global(k)[0]
-            logging.debug('copying to symbol: ' + str(symbol))
-            logging.debug('array to be copied: ')
+            logging.debug("copying to symbol: " + str(symbol))
+            logging.debug("array to be copied: ")
             logging.debug(v.nbytes)
             logging.debug(v.dtype)
             logging.debug(v.flags)
@@ -282,29 +275,29 @@ class PyCudaFunctions(object):
         """
 
         filter_mode_map = {
-            'point': drv.filter_mode.POINT,
-            'linear': drv.filter_mode.LINEAR
+            "point": drv.filter_mode.POINT,
+            "linear": drv.filter_mode.LINEAR,
         }
         address_mode_map = {
-            'border': drv.address_mode.BORDER,
-            'clamp': drv.address_mode.CLAMP,
-            'mirror': drv.address_mode.MIRROR,
-            'wrap': drv.address_mode.WRAP
+            "border": drv.address_mode.BORDER,
+            "clamp": drv.address_mode.CLAMP,
+            "mirror": drv.address_mode.MIRROR,
+            "wrap": drv.address_mode.WRAP,
         }
 
-        logging.debug('copy_texture_memory_args called')
-        logging.debug('current module: ' + str(self.current_module))
+        logging.debug("copy_texture_memory_args called")
+        logging.debug("current module: " + str(self.current_module))
         self.texrefs = []
         for k, v in texmem_args.items():
             tex = self.current_module.get_texref(k)
             self.texrefs.append(tex)
 
-            logging.debug('copying to texture: ' + str(k))
+            logging.debug("copying to texture: " + str(k))
             if not isinstance(v, dict):
                 data = v
             else:
-                data = v['array']
-            logging.debug('texture to be copied: ')
+                data = v["array"]
+            logging.debug("texture to be copied: ")
             logging.debug(data.nbytes)
             logging.debug(data.dtype)
             logging.debug(data.flags)
@@ -312,9 +305,9 @@ class PyCudaFunctions(object):
             drv.matrix_to_texref(data, tex, order="C")
 
             if isinstance(v, dict):
-                if 'address_mode' in v and v['address_mode'] is not None:
+                if "address_mode" in v and v["address_mode"] is not None:
                     # address_mode is set per axis
-                    amode = v['address_mode']
+                    amode = v["address_mode"]
                     if not isinstance(amode, list):
                         amode = [amode] * data.ndim
                     for i, m in enumerate(amode):
@@ -322,14 +315,14 @@ class PyCudaFunctions(object):
                             if m is not None:
                                 tex.set_address_mode(i, address_mode_map[m])
                         except KeyError:
-                            raise ValueError('Unknown address mode: ' + m)
-                if 'filter_mode' in v and v['filter_mode'] is not None:
-                    fmode = v['filter_mode']
+                            raise ValueError("Unknown address mode: " + m)
+                if "filter_mode" in v and v["filter_mode"] is not None:
+                    fmode = v["filter_mode"]
                     try:
                         tex.set_filter_mode(filter_mode_map[fmode])
                     except KeyError:
-                        raise ValueError('Unknown filter mode: ' + fmode)
-                if 'normalized_coordinates' in v and v['normalized_coordinates']:
+                        raise ValueError("Unknown filter mode: " + fmode)
+                if "normalized_coordinates" in v and v["normalized_coordinates"]:
                     tex.set_flags(tex.get_flags() | drv.TRSF_NORMALIZED_COORDINATES)
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
@@ -353,7 +346,14 @@ class PyCudaFunctions(object):
         """
         if stream is None:
             stream = self.stream
-        func(*gpu_args, block=threads, grid=grid, stream=stream, shared=self.smem_size, texrefs=self.texrefs)
+        func(
+            *gpu_args,
+            block=threads,
+            grid=grid,
+            stream=stream,
+            shared=self.smem_size,
+            texrefs=self.texrefs
+        )
 
     def memset(self, allocation, value, size):
         """set the memory in allocation to the value in value
@@ -396,11 +396,7 @@ class PyCudaFunctions(object):
         if isinstance(dest, drv.DeviceAllocation):
             drv.memcpy_htod(dest, src)
 
-    units = {
-        'time': 'ms',
-        'power': 's,mW',
-        'energy': 'J'
-    }
+    units = {"time": "ms", "power": "s,mW", "energy": "J"}
 
     last_selected_device = None
     last_selected_context = None

@@ -2,7 +2,7 @@ import numpy as np
 from .context import skip_if_no_pycuda
 
 import pytest
-from kernel_tuner import pycuda as kt_pycuda
+from kernel_tuner.backends import pycuda as kt_pycuda
 from kernel_tuner.core import KernelSource, KernelInstance
 
 try:

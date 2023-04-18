@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 
 import kernel_tuner
-from kernel_tuner import opencl
+from kernel_tuner.backends import opencl
 from kernel_tuner.core import KernelSource, KernelInstance
 
 from .context import skip_if_no_opencl

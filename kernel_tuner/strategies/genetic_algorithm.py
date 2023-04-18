@@ -6,25 +6,25 @@ import numpy as np
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import _cost_func
+from kernel_tuner.strategies.common import CostFunc
 
-_options = OrderedDict(popsize=("population size", 20),
-                       maxiter=("maximum number of generations", 50),
-                       method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
-                       mutation_chance=("chance to mutate is 1 in mutation_chance", 10))
+_options = OrderedDict(
+    popsize=("population size", 20),
+    maxiter=("maximum number of generations", 100),
+    method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
+    mutation_chance=("chance to mutate is 1 in mutation_chance", 10),
+)
 
-def tune(runner, kernel_options, device_options, tuning_options):
+
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
     pop_size, generations, method, mutation_chance = common.get_options(options, _options)
     crossover = supported_methods[method]
 
-    tuning_options["scaling"] = False
-
     best_score = 1e20
-    results = []
+    cost_func = CostFunc(searchspace, tuning_options, runner)
 
-    searchspace = Searchspace(tuning_options, runner.dev.max_threads)
     population = list(list(p) for p in searchspace.get_random_sample(pop_size))
 
     for generation in range(generations):
@@ -33,11 +33,11 @@ def tune(runner, kernel_options, device_options, tuning_options):
         weighted_population = []
         for dna in population:
             try:
-                time = _cost_func(dna, kernel_options, tuning_options, runner, results, check_restrictions=False)
+                time = cost_func(dna, check_restrictions=False)
             except util.StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
-                return results, runner.dev.get_environment()
+                return cost_func.results
 
             weighted_population.append((dna, time))
 
@@ -45,8 +45,8 @@ def tune(runner, kernel_options, device_options, tuning_options):
         weighted_population.sort(key=lambda x: x[1])
 
         # 'best_score' is used only for printing
-        if tuning_options.verbose and results:
-            best_score = util.get_best_config(results, tuning_options.objective, tuning_options.objective_higher_is_better)[tuning_options.objective]
+        if tuning_options.verbose and cost_func.results:
+            best_score = util.get_best_config(cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better)[tuning_options.objective]
 
         if tuning_options.verbose:
             print("Generation %d, best_score %f" % (generation, best_score))
@@ -70,7 +70,7 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         # could combine old + new generation here and do a selection
 
-    return results, runner.dev.get_environment()
+    return cost_func.results
 
 
 tune.__doc__ = common.get_strategy_docstring("Genetic Algorithm", _options)
@@ -114,9 +114,9 @@ def mutate(dna, mutation_chance, searchspace: Searchspace, cache=True):
     # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
     if int(random.random() * mutation_chance) == 0:
         if cache:
-            neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method='Hamming')
+            neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
         else:
-            neighbors = searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method='Hamming')
+            neighbors = searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
         if len(neighbors) > 0:
             return list(random.choice(neighbors))
     return dna
@@ -176,5 +176,5 @@ supported_methods = {
     "single_point": single_point_crossover,
     "two_point": two_point_crossover,
     "uniform": uniform_crossover,
-    "disruptive_uniform": disruptive_uniform_crossover
+    "disruptive_uniform": disruptive_uniform_crossover,
 }
