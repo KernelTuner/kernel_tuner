@@ -518,10 +518,9 @@ def process_metrics(params, metrics):
             value = v(params)
         else:
             raise ValueError("metric dicts values should be strings or callable")
-        if not k in params:
-            params[k] = value
-        else:
-            raise ValueError("metric dicts keys should not already exist in params")
+
+        # We overwrite any existing values for the given key
+        params[k] = value
     return params
 
 
