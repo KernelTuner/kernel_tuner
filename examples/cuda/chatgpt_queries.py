@@ -21,9 +21,11 @@ chatGPT_queries = {
             f"""
             Thank you, the response is in markdown, can you make it a code block?
             """,
-        "Fails_to_compile": lambda:
+        "Fails_to_compile": lambda error:
             f"""
-            This kernel does not compile for me, can you try again?
+This kernel does not compile for me, I get the error:
+{error}
+Can you try again?
             """,
     }
 }

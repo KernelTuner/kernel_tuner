@@ -65,7 +65,6 @@ __global__ void sum_array(float *d_array, float *d_sum, int size) {
                           args,
                           tune_params,
                           compiler_options=['-allow-unsupported-compiler'],
-                          prompt=None,
                           temperature=0.6,
                           verbose=verbose)
 

@@ -12,7 +12,15 @@ from kernel_tuner.interface import (_kernel_options, _device_options,
                                     _check_user_input, Options)
 from chatgpt_queries import *
 import openai
+import datetime
+import logging
 
+logger = logging.getLogger(__name__)
+hdlr = logging.FileHandler('logs/log{}.log'.format(datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S_%f')))
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
+logger.setLevel(logging.DEBUG)
 
 
 class ChatBot:
@@ -20,6 +28,7 @@ class ChatBot:
         self.system = system
         self.messages = []
         self.temperature = temperature
+        self.model = "gpt-3.5-turbo"
         if self.system:
             self.messages.append({"role": "system", "content": system})
 
@@ -30,12 +39,19 @@ class ChatBot:
         return result
 
     def execute(self):
-        completion = openai.ChatCompletion.create(model="gpt-3.5-turbo",
+        logger.debug("Doing another query:")
+        logger.debug(f"Using model {self.model}")
+        logger.debug(f"Using temperature {self.temperature}")
+        for msg in self.messages:
+            logger.debug("Role: "+msg["role"])
+            logger.debug("content: "+msg["content"])
+        completion = openai.ChatCompletion.create(model=self.model,
                                                   messages=self.messages,
                                                   temperature=self.temperature)
         # Uncomment this to print out token usage each time, e.g.
         # {"completion_tokens": 86, "prompt_tokens": 26, "total_tokens": 112}
         #print(completion.usage)
+        logger.debug("Response: "+completion.choices[0].message.content)
         return completion.choices[0].message.content
 
 
@@ -47,7 +63,7 @@ class ChatGPTuner:
                  args,
                  tune_params,
                  compiler_options=None,
-                 prompt=None,
+                 prompt="You are a helpful assistant that rewrites CUDA code.",
                  max_turns=5,
                  verbose=True,
                  temperature=0.6):
@@ -166,7 +182,7 @@ class ChatGPTuner:
 
             if isinstance(correct, Exception):
                 print("There was an error in compiling and running the kernel.")
-                query = chatGPT_queries['vary_work_per_thread']['Fails_to_compile']()
+                query = chatGPT_queries['vary_work_per_thread']['Fails_to_compile'](str(correct))
                 response_kernel = self.query_kernel(query)
             else:
                 print("Kernel is correct is", correct)
