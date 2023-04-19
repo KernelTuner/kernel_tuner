@@ -1,9 +1,11 @@
 import numpy as np
 import ctypes
 from .context import skip_if_no_pyhip
+from collections import OrderedDict
 
 import pytest
 import kernel_tuner
+from kernel_tuner import tune_kernel
 from kernel_tuner.backends import hip as kt_hip
 from kernel_tuner.core import KernelSource, KernelInstance
 
@@ -12,6 +14,29 @@ try:
     hip_present = True
 except ImportError:
     pass
+
+@pytest.fixture
+def env():
+    kernel_string = """
+    extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
+        int i = blockIdx.x * block_size_x + threadIdx.x;
+        if (i<n) {
+            c[i] = a[i] + b[i];
+        }
+    }
+    """
+
+    size = 100
+    a = np.random.randn(size).astype(np.float32)
+    b = np.random.randn(size).astype(np.float32)
+    c = np.zeros_like(b)
+    n = np.int32(size)
+
+    args = [c, a, b, n]
+    tune_params = OrderedDict()
+    tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
+
+    return ["vector_add", kernel_string, size, args, tune_params]
 
 @skip_if_no_pyhip
 def test_ready_argument_list():
@@ -125,6 +150,18 @@ def test_copy_constant_memory_args():
 
     assert(my_constant_data == output).all()
 
-def dummy_func(a, b, block=0, grid=0, stream=None, shared=0, texrefs=None):
-    pass
+@skip_if_no_pyhip
+def test_smem_args(env):
+    result, _ = tune_kernel(*env,
+                            smem_args=dict(size="block_size_x*4"),
+                            verbose=True, lang="HIP")
+    tune_params = env[-1]
+    assert len(result) == len(tune_params["block_size_x"])
+    result, _ = tune_kernel(
+        *env,
+        smem_args=dict(size=lambda p: p['block_size_x'] * 4),
+        verbose=True, lang="HIP")
+    tune_params = env[-1]
+    assert len(result) == len(tune_params["block_size_x"])
+
 
