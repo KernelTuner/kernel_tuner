@@ -11,10 +11,10 @@ def tune():
 
     tune_params = OrderedDict()
     tune_params["block_size_x"] = [2**i for i in range(5,11)]
-    tune_params["use_shuffle"] = [0, 1]
     tune_params["vector"] = [2**i for i in range(3)]
     tune_params["num_blocks"] = [2**i for i in range(5,16)]
     tune_params["loop_unroll_factor_0"] = [0, 1, 8, 16, 32, 64]
+    tune_params["use_shuffle"] = [0, 1]
 
     problem_size = "num_blocks"
     size = 800000000

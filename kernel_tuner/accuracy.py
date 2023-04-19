@@ -1,9 +1,18 @@
+from abc import abstractmethod
 from collections import UserDict
 from typing import Dict
 import numpy as np
 
-from kernel_tuner.observers import AccuracyObserver
+from kernel_tuner.observers import BenchmarkObserver
 
+class AccuracyObserver(BenchmarkObserver):
+    """ Observer that can verify or measure the accuracy of the output produced by a kernel. """
+
+    @abstractmethod
+    def process_kernel_output(self, answer, output):
+        """method will be called once before benchmarking of a single kernel configuration. The arguments
+        provided are the `answer` as passed `tune_kernel` and the `output` produced by the kernel"""
+        pass
 
 class Tunable(UserDict):
     def __init__(self, param_key: str, arrays: Dict):

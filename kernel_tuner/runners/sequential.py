@@ -7,9 +7,10 @@ from time import perf_counter
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.util import (ErrorConfig, print_config_output,
                                process_metrics, store_cache)
+from kernel_tuner.runners.runner import Runner
 
 
-class SequentialRunner:
+class SequentialRunner(Runner):
     """ SequentialRunner is used for tuning with a single process/thread """
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
@@ -41,30 +42,30 @@ class SequentialRunner:
         self.start_time = perf_counter()
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
+        self.kernel_options = kernel_options
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
-    def run(self, parameter_space, kernel_options, tuning_options):
+    def get_environment(self, tuning_options):
+        return self.dev.get_environment()
+
+    def run(self, parameter_space, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
 
         :param parameter_space: The parameter space as an iterable.
         :type parameter_space: iterable
-
-        :param kernel_options: A dictionary with all options for the kernel.
-        :type kernel_options: kernel_tuner.interface.Options
 
         :param tuning_options: A dictionary with all options regarding the tuning
             process.
         :type tuning_options: kernel_tuner.iterface.Options
 
         :returns: A list of dictionaries for executed kernel configurations and their
-            execution times. And a dictionary that contains information
-            about the hardware/software environment on which the tuning took place.
-        :rtype: list(dict()), dict()
+            execution times.
+        :rtype: dict())
 
         """
-        logging.debug('sequential runner started for ' + kernel_options.kernel_name)
+        logging.debug('sequential runner started for ' + self.kernel_options.kernel_name)
 
         results = []
 
@@ -83,15 +84,15 @@ class SequentialRunner:
                 params['verification_time'] = 0
                 params['benchmark_time'] = 0
             else:
-
                 # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
                 if not self.warmed_up:
                     warmup_time = perf_counter()
-                    self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+                    self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
                     self.warmed_up = True
                     warmup_time = 1e3 * (perf_counter() - warmup_time)
 
-                result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, kernel_options, tuning_options)
+                result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
+
                 params.update(result)
 
                 if isinstance(result.get(tuning_options.objective), ErrorConfig):
@@ -118,4 +119,4 @@ class SequentialRunner:
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
 
-        return results, self.dev.get_environment()
+        return results

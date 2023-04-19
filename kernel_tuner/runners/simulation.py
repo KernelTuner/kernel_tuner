@@ -4,8 +4,11 @@ from collections import namedtuple
 from time import perf_counter
 
 from kernel_tuner import util
+from kernel_tuner.runners.runner import Runner
 
 _SimulationDevice = namedtuple("_SimulationDevice", ["max_threads", "env", "quiet"])
+
+
 class SimulationDevice(_SimulationDevice):
     """ Simulated device used by simulation runner """
 
@@ -23,7 +26,7 @@ class SimulationDevice(_SimulationDevice):
         return self.env
 
 
-class SimulationRunner:
+class SimulationRunner(Runner):
     """ SimulationRunner is used for tuning with a single process/thread """
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
@@ -49,6 +52,7 @@ class SimulationRunner:
 
         self.kernel_source = kernel_source
         self.simulation_mode = True
+        self.kernel_options = kernel_options
 
         self.start_time = perf_counter()
         self.last_strategy_start_time = self.start_time
@@ -61,26 +65,22 @@ class SimulationRunner:
         env["simulated_time"] = tuning_options.simulated_time
         return env
 
-    def run(self, parameter_space, kernel_options, tuning_options):
+    def run(self, parameter_space, tuning_options):
         """ Iterate through the entire parameter space using a single Python process
 
         :param parameter_space: The parameter space as an iterable.
         :type parameter_space: iterable
-
-        :param kernel_options: A dictionary with all options for the kernel.
-        :type kernel_options: kernel_tuner.interface.Options
 
         :param tuning_options: A dictionary with all options regarding the tuning
             process.
         :type tuning_options: kernel_tuner.iterface.Options
 
         :returns: A list of dictionaries for executed kernel configurations and their
-            execution times. And a dictionary that contains information
-            about the hardware/software environment on which the tuning took place.
-        :rtype: list(dict()), dict()
+            execution times.
+        :rtype: dict()
 
         """
-        logging.debug('simulation runner started for ' + kernel_options.kernel_name)
+        logging.debug('simulation runner started for ' + self.kernel_options.kernel_name)
 
         results = []
 
@@ -118,7 +118,9 @@ class SimulationRunner:
                     tuning_options.simulated_time += simulated_time
                 except KeyError:
                     if "time_limit" in tuning_options:
-                        raise RuntimeError("Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations")
+                        raise RuntimeError(
+                            "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
+                        )
 
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
@@ -128,8 +130,7 @@ class SimulationRunner:
                 continue
 
             # if the element is not in the cache, raise an error
-            logging.debug('kernel configuration not in cache')
-            print(element)
-            raise ValueError("Kernel configuration not in cache - in simulation mode, all configurations must be present in the cache")
+            logging.debug(f"kernel configuration {element} not in cache")
+            raise ValueError(f"Kernel configuration {element} not in cache - in simulation mode, all configurations must be present in the cache")
 
-        return results, self.get_environment(tuning_options)
+        return results

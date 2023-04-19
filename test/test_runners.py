@@ -290,7 +290,7 @@ def test_runner(env):
         [32])  # vector_add only has one tunable parameter (block_size_x)
 
     # call the runner
-    results, _ = runner.run(searchspace, kernel_options, tuning_options)
+    results = runner.run(searchspace, tuning_options)
 
     assert len(results) == 1
     assert results[0]['block_size_x'] == 32

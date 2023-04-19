@@ -12,46 +12,35 @@ import _ctypes
 import numpy as np
 import numpy.ctypeslib
 
-from kernel_tuner.observers import BenchmarkObserver
-from kernel_tuner.util import get_temp_filename, delete_temp_file, write_file, SkippableFailure
+from kernel_tuner.backends.backend import CompilerBackend
+from kernel_tuner.observers.c import CRuntimeObserver
+from kernel_tuner.util import (
+    get_temp_filename,
+    delete_temp_file,
+    write_file,
+    SkippableFailure,
+)
 
-dtype_map = {"int8": C.c_int8,
-             "int16": C.c_int16,
-             "int32": C.c_int32,
-             "int64": C.c_int64,
-             "uint8": C.c_uint8,
-             "uint16": C.c_uint16,
-             "uint32": C.c_uint32,
-             "uint64": C.c_uint64,
-             "float32": C.c_float,
-             "float64": C.c_double}
+dtype_map = {
+    "int8": C.c_int8,
+    "int16": C.c_int16,
+    "int32": C.c_int32,
+    "int64": C.c_int64,
+    "uint8": C.c_uint8,
+    "uint16": C.c_uint16,
+    "uint32": C.c_uint32,
+    "uint64": C.c_uint64,
+    "float32": C.c_float,
+    "float64": C.c_double,
+}
 
 # This represents an individual kernel argument.
 # It contains a numpy object (ndarray or number) and a ctypes object with a copy
 # of the argument data. For an ndarray, the ctypes object is a wrapper for the ndarray's data.
 Argument = namedtuple("Argument", ["numpy", "ctypes"])
 
-class CRuntimeObserver(BenchmarkObserver):
-    """ Observer that collects results returned by benchmarking function """
 
-    def __init__(self, dev):
-        self.dev = dev
-        self.objective = "time"
-        self.times = []
-
-    def after_finish(self):
-        self.times.append(self.dev.last_result)
-
-    def get_results(self):
-        results = {
-            self.objective: np.average(self.times),
-            self.objective + "s": self.times.copy()
-        }
-        self.times = []
-        return results
-
-
-class CFunctions(object):
+class CFunctions(CompilerBackend):
     """Class that groups the code for running and compiling C functions"""
 
     def __init__(self, iterations=7, compiler_options=None, compiler=None):
@@ -63,7 +52,8 @@ class CFunctions(object):
         self.iterations = iterations
         self.max_threads = 1024
         self.compiler_options = compiler_options
-        self.compiler = compiler or "g++"  # use gcc by default
+        # if no compiler is specified, use g++ by default
+        self.compiler = compiler or "g++"
         self.lib = None
         self.using_openmp = False
         self.observers = [CRuntimeObserver(self)]
@@ -75,7 +65,7 @@ class CFunctions(object):
         except OSError as e:
             raise e
 
-        #check if nvcc is available
+        # check if nvcc is available
         self.nvcc_available = False
         try:
             nvcc_version = str(subprocess.check_output(["nvcc", "--version"]))
@@ -85,7 +75,7 @@ class CFunctions(object):
             if e.errno != errno.ENOENT:
                 raise e
 
-        #environment info
+        # environment info
         env = dict()
         env["CC Version"] = cc_version
         if self.nvcc_available:
@@ -106,11 +96,13 @@ class CFunctions(object):
         :returns: A list of arguments that can be passed to the C function.
         :rtype: list(Argument)
         """
-        ctype_args = [ None for _ in arguments]
+        ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
             if not isinstance(arg, (np.ndarray, np.number)):
-                raise TypeError("Argument is not numpy ndarray or numpy scalar %s" % type(arg))
+                raise TypeError(
+                    "Argument is not numpy ndarray or numpy scalar %s" % type(arg)
+                )
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
@@ -118,7 +110,7 @@ class CFunctions(object):
                     # to its underlying array, so we need to store a reference to arg.copy()
                     # in the Argument object manually to avoid it being deleted.
                     # (This changed in numpy > 1.15.)
-                    #data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+                    # data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                     data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
@@ -137,7 +129,7 @@ class CFunctions(object):
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
-        logging.debug('compiling ' + kernel_instance.name)
+        logging.debug("compiling " + kernel_instance.name)
 
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
@@ -147,9 +139,9 @@ class CFunctions(object):
 
         compiler_options = ["-fPIC"]
 
-        #detect openmp
+        # detect openmp
         if "#include <omp.h>" in kernel_string or "use omp_lib" in kernel_string:
-            logging.debug('set using_openmp to true')
+            logging.debug("set using_openmp to true")
             self.using_openmp = True
             if self.compiler == "pgfortran":
                 compiler_options.append("-mp")
@@ -159,20 +151,28 @@ class CFunctions(object):
                 else:
                     compiler_options.append("-fopenmp")
 
-        #if filename is known, use that one
+        # if filename is known, use that one
         suffix = kernel_instance.kernel_source.get_user_suffix()
 
-        #if code contains device code, suffix .cu is required
+        # if code contains device code, suffix .cu is required
         device_code_signals = ["__global", "__syncthreads()", "threadIdx"]
         if any([snippet in kernel_string for snippet in device_code_signals]):
             suffix = ".cu"
 
-        #detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
-        if ((suffix == ".cu") or ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string)) and self.compiler == "g++" and self.nvcc_available:
+        # detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
+        if (
+            (
+                (suffix == ".cu")
+                or ("#include <cuda" in kernel_string)
+                or ("cudaMemcpy" in kernel_string)
+            )
+            and self.compiler == "g++"
+            and self.nvcc_available
+        ):
             self.compiler = "nvcc"
 
         if suffix is None:
-            #select right suffix based on compiler
+            # select right suffix based on compiler
             suffix = ".cc"
 
             if self.compiler in ["gfortran", "pgfortran", "ftn", "ifort"]:
@@ -181,12 +181,12 @@ class CFunctions(object):
         if self.compiler == "nvcc":
             compiler_options = ["-Xcompiler=" + c for c in compiler_options]
 
-        #this basically checks if we aren't compiling Fortran
-        #at the moment any C, C++, or CUDA code is assumed to use extern "C" linkage
-        if ".c" in suffix and "extern \"C\"" not in kernel_string:
-            kernel_string = "extern \"C\" {\n" + kernel_string + "\n}"
+        # this basically checks if we aren't compiling Fortran
+        # at the moment any C, C++, or CUDA code is assumed to use extern "C" linkage
+        if ".c" in suffix and 'extern "C"' not in kernel_string:
+            kernel_string = 'extern "C" {\n' + kernel_string + "\n}"
 
-        #copy user specified compiler options to current list
+        # copy user specified compiler options to current list
         if self.compiler_options:
             compiler_options += self.compiler_options
 
@@ -194,14 +194,14 @@ class CFunctions(object):
         if "CL/cl.h" in kernel_string:
             lib_args = ["-lOpenCL"]
 
-        logging.debug('using compiler ' + self.compiler)
-        logging.debug('compiler_options ' + " ".join(compiler_options))
-        logging.debug('lib_args ' + " ".join(lib_args))
+        logging.debug("using compiler " + self.compiler)
+        logging.debug("compiler_options " + " ".join(compiler_options))
+        logging.debug("lib_args " + " ".join(lib_args))
 
         source_file = get_temp_filename(suffix=suffix)
         filename = ".".join(source_file.split(".")[:-1])
 
-        #detect Fortran modules
+        # detect Fortran modules
         match = re.search(r"\s*module\s+([a-zA-Z_]*)", kernel_string)
         if match:
             if self.compiler == "gfortran":
@@ -211,7 +211,7 @@ class CFunctions(object):
             elif self.compiler == "pgfortran":
                 kernel_name = match.group(1) + "_" + kernel_name + "_"
         else:
-            #for functions outside of modules
+            # for functions outside of modules
             if self.compiler in ["gfortran", "ftn", "ifort", "pgfortran"]:
                 kernel_name = kernel_name + "_"
 
@@ -222,44 +222,52 @@ class CFunctions(object):
             if platform.system() == "Darwin":
                 lib_extension = ".dylib"
 
-            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
-            subprocess.check_call([self.compiler, filename + ".o"] + compiler_options + ["-shared", "-o", filename + lib_extension] + lib_args)
+            subprocess.check_call(
+                [self.compiler, "-c", source_file]
+                + compiler_options
+                + ["-o", filename + ".o"]
+            )
+            subprocess.check_call(
+                [self.compiler, filename + ".o"]
+                + compiler_options
+                + ["-shared", "-o", filename + lib_extension]
+                + lib_args
+            )
 
-            self.lib = np.ctypeslib.load_library(filename, '.')
+            self.lib = np.ctypeslib.load_library(filename, ".")
             func = getattr(self.lib, kernel_name)
             func.restype = C.c_float
 
         finally:
             delete_temp_file(source_file)
-            delete_temp_file(filename+".o")
-            delete_temp_file(filename+".so")
-            delete_temp_file(filename+".dylib")
+            delete_temp_file(filename + ".o")
+            delete_temp_file(filename + ".so")
+            delete_temp_file(filename + ".dylib")
 
         return func
 
-
     def start_event(self):
-        """ Records the event that marks the start of a measurement
+        """Records the event that marks the start of a measurement
 
-        C backend does not use events """
+        C backend does not use events"""
         pass
 
     def stop_event(self):
-        """ Records the event that marks the end of a measurement
+        """Records the event that marks the end of a measurement
 
-        C backend does not use events """
+        C backend does not use events"""
         pass
 
     def kernel_finished(self):
-        """ Returns True if the kernel has finished, False otherwise
+        """Returns True if the kernel has finished, False otherwise
 
-        C backend does not support asynchronous launches """
+        C backend does not support asynchronous launches"""
         return True
 
     def synchronize(self):
-        """ Halts execution until device has finished its tasks
+        """Halts execution until device has finished its tasks
 
-        C backend does not support asynchronous launches """
+        C backend does not support asynchronous launches"""
         pass
 
     def run_kernel(self, func, c_args, threads, grid):
@@ -329,11 +337,11 @@ class CFunctions(object):
         dest.numpy[:] = src
 
     def cleanup_lib(self):
-        """ unload the previously loaded shared library """
+        """unload the previously loaded shared library"""
         if not self.using_openmp:
-            #this if statement is necessary because shared libraries that use
-            #OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
-            logging.debug('unloading shared library')
+            # this if statement is necessary because shared libraries that use
+            # OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
+            logging.debug("unloading shared library")
             _ctypes.dlclose(self.lib._handle)
 
     units = {}

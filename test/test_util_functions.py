@@ -12,9 +12,9 @@ from .context import skip_if_no_pycuda, skip_if_no_cuda, skip_if_no_opencl
 
 from kernel_tuner.interface import Options
 import kernel_tuner.core as core
-import kernel_tuner.pycuda as pycuda
-import kernel_tuner.nvcuda as nvcuda
-import kernel_tuner.opencl as opencl
+import kernel_tuner.backends.pycuda as pycuda
+import kernel_tuner.backends.nvcuda as nvcuda
+import kernel_tuner.backends.opencl as opencl
 from kernel_tuner.util import *
 
 block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
@@ -196,6 +196,28 @@ def test_prepare_kernel_string():
     invalid_defines = {"invalid name": "1"}
     with pytest.raises(ValueError):
         prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", invalid_defines)
+
+
+def test_prepare_kernel_string_partial_loop_unrolling():
+
+    kernel = """this is a weird kernel(what * language, is this, anyway* C) {
+        #pragma unroll loop_unroll_factor_monkey
+        for monkey in the forest {
+            eat(banana);
+        }
+    }"""
+    threads = (1, 2, 3)
+    grid = (4, 5, 6)
+    params = dict()
+    params["loop_unroll_factor_monkey"] = 8
+
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
+    assert "constexpr int loop_unroll_factor_monkey = 8;" in output
+
+    params["loop_unroll_factor_monkey"] = 0
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
+    assert not "constexpr int loop_unroll_factor_monkey" in output
+    assert not "#pragma unroll loop_unroll_factor_monkey" in output
 
 
 
