@@ -8,6 +8,11 @@ class BenchmarkObserver(ABC):
         """Sets self.dev, for inspection by the observer at various points during benchmarking"""
         self.dev = dev
 
+    def register_configuration(self, params):
+        """Called once before benchmarking of a single kernel configuration. The `params` argument is a `dict`
+        that stores the configuration parameters."""
+        pass
+    
     def before_start(self):
         """before start is called every iteration before the kernel starts"""
         pass
