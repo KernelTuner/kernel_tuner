@@ -68,9 +68,11 @@ dtype_map = {
 _libhip.hipEventQuery.restype = ctypes.c_int
 _libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
 _libhip.hipModuleGetGlobal.restype = ctypes.c_int
-_libhip.hipModuleGetGlobal.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_char_p]
+_libhip.hipModuleGetGlobal.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.c_void_p, ctypes.c_char_p]
 _libhip.hipMemset.restype = ctypes.c_int
 _libhip.hipMemset.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_size_t]
+_libhip.hipMemcpyToSymbol.restype = ctypes.c_int
+_libhip.hipMemcpyToSymbol.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_int]
 
 
 hipSuccess = 0
@@ -313,16 +315,23 @@ class HipFunctions(GPUBackend):
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
         logging.debug("HipFunction copy_constant_memory_args called")
-        print("HipFunction copy_constant_memory_args called")
-        logging.debug("current module: " + str(self.current_module))
 
         for k, v in cmem_args.items():
-            symbol = ctypes.c_void_p
-            size_kernel = ctypes.c_size_t
-            status = _libhip.hipModuleGetGlobal(symbol, size_kernel, self.current_module, str.encode(k))
+            #Format arguments, call hipModuleGetGlobal, and check return status
+            symbol_string = ctypes.c_char_p(k.encode('utf-8'))
+            symbol = ctypes.c_void_p()
+            symbol_ptr = ctypes.POINTER(ctypes.c_void_p)(symbol)
+            size_kernel = ctypes.c_size_t(0)
+
+            size_kernel_ptr = ctypes.POINTER(ctypes.c_size_t)(size_kernel)
+            status = _libhip.hipModuleGetGlobal(symbol_ptr, size_kernel_ptr, self.current_module, symbol_string)
             hip.hipCheckStatus(status)
+
+            #Format arguments and call hipMemcpy_htod
             dtype_str = str(v.dtype)
-            hip.hipMemcpy_htod(symbol, ctypes.byref(v.ctypes), ctypes.sizeof(dtype_map[dtype_str]) * v.size)
+            v_c = v.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
+
+            hip.hipMemcpy_htod(symbol_ptr.contents, v_c, v.nbytes)
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
