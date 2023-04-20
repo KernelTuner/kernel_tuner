@@ -50,13 +50,17 @@ __global__ void sum_array(float *d_array, float *d_sum, int size) {
     size = 1000017
     problem_size = size
 
-    input_data = 100 + 10*np.random.randn(size).astype(np.float32)
+    input_data = (100 + 10*np.random.randn(size)).astype(np.float32)
     output_data = np.zeros_like(input_data)
     n = np.int32(size)
 
-    args = [output_data, input_data, n]
+    args = [input_data, output_data, n]
     kernel_name = 'sum_array'
     tune_params = {'block_size_x': 256}
+
+    reference = [None, np.sum(input_data), None]
+    def verify_partial_reduce(cpu_result, gpu_result, atol=None):
+        return np.isclose(cpu_result[1], np.sum(gpu_result[1]), atol=atol)
 
     verbose = True
     handler = ChatGPTuner(kernel_name,
@@ -66,6 +70,8 @@ __global__ void sum_array(float *d_array, float *d_sum, int size) {
                           tune_params,
                           compiler_options=['-allow-unsupported-compiler'],
                           temperature=0.6,
+                          answer=reference,
+                          verify=verify_partial_reduce,
                           verbose=verbose)
 
-    handler.vary_work_per_thread()
+    handler.vary_work_per_thread_x()
