@@ -33,7 +33,7 @@ except ImportError as e:
     raise e
 
 from kernel_tuner.energy import energy
-from kernel_tuner.nvml import get_nvml_gr_clocks
+from kernel_tuner.observers.nvml import get_nvml_gr_clocks
 
 def get_default_parser():
     parser = argparse.ArgumentParser(
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     ridge_frequency, freqs, nvml_power, fitted_params, scaling = energy.create_power_frequency_model(device=args.device,
-                                                                                               n_samples=args.samples,
+                                                                                               n_samples=int(args.samples),
                                                                                                verbose=True,
                                                                                                nvidia_smi_fallback=args.nvidia_smi_fallback,
                                                                                                use_locked_clocks=args.locked_clocks)
