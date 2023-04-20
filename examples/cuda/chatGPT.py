@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 """This is the minimal example from the README"""
 
+import re
 import numpy
 from collections import OrderedDict
 
 import kernel_tuner
 from kernel_tuner import tune_kernel, run_kernel
+from kernel_tuner import util
 from kernel_tuner.file_utils import store_output_file, store_metadata_file
 from kernel_tuner.core import KernelSource, DeviceInterface
 from kernel_tuner.interface import (_kernel_options, _device_options,
                                     _check_user_input, Options)
-from chatgpt_queries import *
+#from chatgpt_queries import *
 import openai
 import datetime
 import logging
@@ -18,46 +20,102 @@ import logging
 
 logging.basicConfig(filename='logs/log{}.log'.format(datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S_%f')), level=logging.DEBUG)
 
-#logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
 #hdlr = logging.FileHandler('logs/log{}.log'.format(datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S_%f')))
 #formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 #hdlr.setFormatter(formatter)
 #logger.addHandler(hdlr)
 #logger.setLevel(logging.DEBUG)
 
+chatGPT_queries = {
+    "start": lambda kernel_string:
+        f"""
+        I will give you a simple CUDA kernel as a starting point and will ask you to rewrite the code in some way.
+        Do not change the name or the argument list of the kernel.
+        First write "START", then write the rewritten kernel and write "END" straight after the kernel.
+        This is the kernel we will be working with:
+        START
+        {kernel_string}
+        END
+        """,
+    "vary_work_per_thread_x" : {
+        "Initial_2elem_x": lambda kernel_string:
+            """Rewrite this kernel such that each thread processes 2 elements in the x dimension instead of one.""",
+             #  Make sure that each thread works on 2 adjacent elements, rewrite the calculation that uses threadIdx and blockIdx accordingly.
+             #  Do not change the data types of variables.
+        "Tunable_nr_elem_x": lambda:
+            f"""
+Please rewrite the code to allow the number of elements processed by each thread in the x-dimension to vary using a for loop.
+This means we need to change the calculation that uses the threadIdx and blockIdx to account for this change.
+This number is specified using a C preprocessor defined constant.
+Please call this constant 'tile_size_x' in lower case.
+Omit the definition of the 'tile_size_x' constant.
+Make sure processed elements beyond the first adhere to the same bound checks.
+            """,
+# Make sure that threads work on elements that are blockDim.x apart.
+
+    },
+    "Incorrect_kernel": lambda error:
+        f"""
+        This kernel does not produce the correct result. I received the following error:
+        {error}
+        Can you try again?
+        """,
+    "Markdown_response": lambda:
+        f"""
+        Thank you, the response is in markdown, can you make it a code block?
+        """,
+    "Fails_to_compile": lambda error:
+        f"""
+This kernel is not correct, I get the error:
+{error}
+Can you try again?
+         """,
+}
+
 
 class ChatBot:
-    def __init__(self, system="", temperature=0.0):
+    def __init__(self, system="", temperature=0.0, verbose=True):
         r"""
         Temperature is between 0 and 2.
         """
         self.system = system
         self.messages = []
         self.temperature = temperature
+        self.verbose = verbose
         self.model = "gpt-3.5-turbo"
         if self.system:
             self.messages.append({"role": "system", "content": system})
 
     def __call__(self, message):
+        if self.verbose:
+            print("Query to ChatGPT:")
+            print(message)
+            print()
         self.messages.append({"role": "user", "content": message})
         result = self.execute()
         self.messages.append({"role": "assistant", "content": result})
+        if self.verbose:
+            print("Response given by ChatGPT:")
+            print(result)
+            print()
         return result
 
     def execute(self):
-        logging.debug("Doing another query:")
-        logging.debug(f"Using model {self.model}")
-        logging.debug(f"Using temperature {self.temperature}")
+        logger.debug("Doing another query:")
+        logger.debug(f"Using model {self.model}")
+        logger.debug(f"Using temperature {self.temperature}")
         for msg in self.messages:
-            logging.debug("Role: "+msg["role"])
-            logging.debug("content: "+msg["content"])
+            logger.debug("Role: "+msg["role"])
+            logger.debug("content: "+msg["content"])
         completion = openai.ChatCompletion.create(model=self.model,
                                                   messages=self.messages,
                                                   temperature=self.temperature)
         # Uncomment this to print out token usage each time, e.g.
         # {"completion_tokens": 86, "prompt_tokens": 26, "total_tokens": 112}
         #print(completion.usage)
-        logging.debug("Response: "+completion.choices[0].message.content)
+        logger.debug("Response: "+completion.choices[0].message.content)
         return completion.choices[0].message.content
 
 
@@ -69,10 +127,11 @@ class ChatGPTuner:
                  args,
                  tune_params,
                  compiler_options=None,
-                 prompt="You are a helpful assistant that rewrites CUDA code.",
                  max_turns=5,
                  verbose=True,
-                 temperature=0.6):
+                 answer=None,
+                 prompt=None,
+                 temperature=0.1):
         self.kernel_name = kernel_name
         self.starting_kernel = start_kernel
         self.size = size
@@ -86,39 +145,52 @@ class ChatGPTuner:
         self.inputs = []
         self.answers = []
 
+        if not prompt:
+            prompt = """You are a helpful assistant that rewrites CUDA code."""
+
         # Set up the chat bot
         if self.verbose:
             print("Setting up ChatGPTuner...")
-        self.bot = ChatBot(self.prompt, temperature=temperature)
+        self.bot = ChatBot(self.prompt, temperature=temperature, verbose=verbose)
+
+        self.started = False
+        self.start_query = chatGPT_queries['start'](start_kernel)
 
         # Obtain kernel desired output for correctness checking:
-        if self.verbose:
-            print("Calculating validation answer...")
-        self.answer = run_kernel(self.kernel_name,
-                                 self.starting_kernel,
-                                 self.size,
-                                 self.args,
-                                 self.tune_params,
-                                 compiler_options=self.compiler_options)
-        for i, x in enumerate(self.answer):
-            if not isinstance(x, numpy.ndarray):
-                self.answer[i] = None
+        if not answer:
+            if self.verbose:
+                print("Calculating validation answer...")
+            self.answer = run_kernel(self.kernel_name,
+                                     self.starting_kernel,
+                                     self.size,
+                                     self.args,
+                                     self.tune_params,
+                                     compiler_options=self.compiler_options)
+            for i, x in enumerate(self.answer):
+                if not isinstance(x, numpy.ndarray):
+                    self.answer[i] = None
+        else:
+            self.answer = answer
 
     def vary_work_per_thread_x(self):
-        _ = self.initial_2elem_x()
+        self.initial_2elem_x()
         response_kernel, tune_pars = self.tunable_nr_elem_x()
         return response_kernel, tune_pars
 
     def tunable_nr_elem_x(self):
         query = chatGPT_queries['vary_work_per_thread_x']['Tunable_nr_elem_x']()
         tune_pars = self.tune_params.copy()
-        tune_pars['tile_size_x'] = 2
+        tune_pars['tile_size_x'] = [1, 2, 4]
 
         response_kernel = self.query_kernel(query)
+
+        if "#define tile_size_x" in response_kernel:
+            response_kernel = "\n".join([s for s in response_kernel.split('\n') if "#define tile_size_x" not in s])
 
         correct, response_kernel = self.check_correctness(response_kernel,
                                          tune_pars,
                                          grid_divs=['block_size_x','tile_size_x'])
+
         if correct:
             return response_kernel, tune_pars
         else:
@@ -142,13 +214,16 @@ class ChatGPTuner:
             return "", None
 
     def query_kernel(self, query):
-        if self.verbose:
-            print("Query to ChatGPT:")
-            print(query)
-            print()
+
+        # On the first call to this method, we check if ChatGPT has been started already,
+        # if not, we prepend the query with the start_query that includes the original kernel
+        if not self.started:
+            query = self.start_query + query
+            self.started = True
 
         response = self.bot(query)
 
+        # despite instructions to omit the definition of tile_size_x ChatGPT is very persistent to insert it
         try:
             response_kernel = self.extract_kernel_string(response)
         except Exception as e:
@@ -169,10 +244,7 @@ class ChatGPTuner:
                 print("Again failed to extract Kernel code from:")
                 print(response)
                 raise Exception("ChatGPT does not want to listen, cannot extract kernel string.")
-        if self.verbose:
-            print("Response given by ChatGPT:")
-            print(response_kernel)
-            print()
+
         return response_kernel
 
     def check_correctness(self, response_kernel, tune_pars, grid_divs=None, tries=3):
@@ -184,7 +256,7 @@ class ChatGPTuner:
                 print(f"Testing chatGPT response {iter_count}")
 
             # TODO: How to deal with grid_div_x
-            correct, err_msg = self.validate_kernel(self.kernel_name,
+            correct, err = self.validate_kernel(self.kernel_name,
                                            response_kernel,
                                            self.size,
                                            self.args,
@@ -195,15 +267,21 @@ class ChatGPTuner:
             print("Kernel is correct is", correct)
             if not correct:
                 print("There was an error in compiling and running the kernel.")
-                query = chatGPT_queries['vary_work_per_thread_x']['Fails_to_compile'](err_msg)
+                if isinstance(err, util.CompilerError):
+                    query = chatGPT_queries['Fails_to_compile'](str(err))
+                elif isinstance(err, util.VerificationError):
+                    query = chatGPT_queries['Incorrect_kernel'](str(err))
+                else:
+                    print("Unrecognized Exception")
+                    raise err
+
+                # Break the while loop if conditions are met
+                if iter_count >= tries:
+                    print("Failed to obtain a valid kernel from chatGPT...")
+                    break
+
                 response_kernel = self.query_kernel(query)
 
-            # Break the while loop if conditions are met
-            if iter_count >= tries:
-                print("Failed to obtain a valid kernel from chatGPT...")
-                break
-            if correct:
-                break
         return correct, response_kernel
 
     def extract_kernel_string(self, response):
@@ -219,19 +297,21 @@ class ChatGPTuner:
                         compiler_options=None, **kwargs):
         # Does the kernel code compile and run
         try:
-            tune_pars = {k:[v] for k,v in tune_params.items()}
+            tune_pars = tune_params.copy()
+            tune_pars.update({k:[v] for k,v in tune_params.items() if not isinstance(v,list)})
             output = tune_kernel(kernel_name,
                        kernel_string,
                        size,
                        args,
                        tune_pars,
                        answer=self.answer,
+                       verbose=True,
                        compiler_options=compiler_options,
                        **kwargs)
             return True, None
         except Exception as e:
             print(e)
-            return False, str(e)
+            return False, e
 
 
 
