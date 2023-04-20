@@ -39,9 +39,6 @@ class PMTObserver(BenchmarkObserver):
         else:
             # User specifices a string (single platform) as observable
             observable = {observable: None}
-
-        print(observable)
-
         supported = ["arduino", "jetson", "likwid", "nvml", "rapl", "rocm", "xilinx"]
         for obs in observable.keys():
             if not obs in supported:
