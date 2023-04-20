@@ -28,8 +28,8 @@ if __name__ == "__main__":
     size = 1000017
     problem_size = size
 
-    a = 100 + 10*np.random.randn(size).astype(np.float32)
-    b = 10*np.random.randn(size).astype(np.float32)
+    a = (100 + 10*np.random.randn(size)).astype(np.float32)
+    b = (10*np.random.randn(size)).astype(np.float32)
     c = np.zeros_like(b)
     n = np.int32(size)
 
@@ -48,4 +48,8 @@ if __name__ == "__main__":
                           temperature=0.6,
                           verbose=verbose)
 
-    handler.vary_work_per_thread()
+    result_kernel, tune_params = handler.vary_work_per_thread_x()
+
+    print("Final result:")
+    print(result_kernel)
+    print(f"{tune_params=}")
