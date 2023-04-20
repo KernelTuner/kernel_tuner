@@ -131,7 +131,7 @@ class ChatGPTuner:
                  verbose=True,
                  answer=None,
                  prompt=None,
-                 temperature=0.1):
+                 temperature=0.1, **kwargs):
         self.kernel_name = kernel_name
         self.starting_kernel = start_kernel
         self.size = size
@@ -141,6 +141,7 @@ class ChatGPTuner:
         self.prompt = prompt
         self.max_turns = max_turns
         self.verbose = verbose
+        self.kwargs = kwargs
 
         self.inputs = []
         self.answers = []
@@ -165,7 +166,7 @@ class ChatGPTuner:
                                      self.size,
                                      self.args,
                                      self.tune_params,
-                                     compiler_options=self.compiler_options)
+                                     compiler_options=self.compiler_options, **self.kwargs)
             for i, x in enumerate(self.answer):
                 if not isinstance(x, numpy.ndarray):
                     self.answer[i] = None
@@ -262,7 +263,7 @@ class ChatGPTuner:
                                            self.args,
                                            tune_pars,
                                            grid_div_x=grid_divs,
-                                           compiler_options=self.compiler_options)
+                                           compiler_options=self.compiler_options, **self.kwargs)
 
             print("Kernel is correct is", correct)
             if not correct:
