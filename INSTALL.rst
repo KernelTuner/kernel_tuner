@@ -111,6 +111,28 @@ Or you could install Kernel Tuner and PyOpenCL together if you haven't done so a
 
 If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.net/PyOpenCL/Installation)
 
+HIP and PyHIP
+-------------
+
+Before we can install PyHIP, you'll need to have the HIP runtime and compiler installed on your system. 
+The HIP compiler is included as part of the ROCm software stack. Here is AMD's installation guide:
+
+* `ROCm Documentation: HIP Installation Guide <https://docs.amd.com/bundle/HIP-Installation-Guide-v5.3/page/Introduction_to_HIP_Installation_Guide.html>`__
+
+After you've installed HIP, you will need to install PyHIP. As of the writing of this documentation, PyHIP 
+is not yet available on PyPI, meaning we will have to install it from GitHub.
+
+Clone the GitHub repo:
+
+.. code-block:: bash
+
+    git clone https://github.com/jatinx/PyHIP
+
+Set the PYTHONPATH:
+
+.. code-block:: bash
+    
+    export PYTHONPATH=/path/to/pyhip:$PYTHONPATH
 
 Installing the git version
 --------------------------
