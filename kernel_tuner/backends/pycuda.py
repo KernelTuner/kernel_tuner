@@ -8,7 +8,7 @@ import numpy as np
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.pycuda import PyCudaRuntimeObserver
 from kernel_tuner.observers.nvml import nvml
-from kernel_tuner.util import TorchPlaceHolder, SkippableFailure
+from kernel_tuner.util import TorchPlaceHolder, SkippableFailure, CompilerError
 
 # embedded in try block to be able to generate documentation
 # and run tests without pycuda installed
@@ -223,7 +223,7 @@ class PyCudaFunctions(GPUBackend):
             if "uses too much shared data" in e.stderr:
                 raise SkippableFailure("uses too much shared data")
             else:
-                raise e
+                raise CompilerError("PyCUDA Compiler error occurred") from e
 
     def start_event(self):
         """Records the event that marks the start of a measurement"""
