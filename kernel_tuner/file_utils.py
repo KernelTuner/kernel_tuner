@@ -194,7 +194,7 @@ def store_metadata_file(metadata_filename):
             lshw_string = '[' + lshw_string + ']'
         hardware_desc = dict(lshw=json.loads(lshw_string))
     except:
-        hardware_desc = ["lshw error"]
+        hardware_desc = dict(lshw=["lshw error"])
 
     metadata["hardware"] = hardware_desc
 
