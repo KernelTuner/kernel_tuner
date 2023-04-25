@@ -287,7 +287,7 @@ class HipFunctions(GPUBackend):
             #Format arguments and perform memory copy
             dtype_str = str(v.dtype)
             v_c = v.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
-            hip.hipMemcpy_htod(symbol_ptr.contents, v_c, v.nbytes)
+            hip.hipMemcpy_htod(symbol_ptr, v_c, v.nbytes)
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
