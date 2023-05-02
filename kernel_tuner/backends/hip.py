@@ -9,29 +9,6 @@ import logging
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.hip import HipRuntimeObserver
 
-_libhip = None
-_hip_platform_name = ''
-
-# Try to find amd hip library, if not found, fallback to nvhip library
-if 'linux' in sys.platform:
-    try:
-        _libhip_libname = 'libamdhip64.so'
-        _libhip = ctypes.cdll.LoadLibrary(_libhip_libname)
-        _hip_platform_name = 'amd'
-    except:
-        try:
-            _libhip_libname = 'libnvhip64.so'
-            _libhip = ctypes.cdll.LoadLibrary(_libhip_libname)
-            _hip_platform_name = 'nvidia'
-        except:
-            raise RuntimeError(
-                'cant find libamdhip64.so or libnvhip64.so. make sure LD_LIBRARY_PATH is set')
-    
-else:
-    # Currently we do not support windows
-    raise RuntimeError('Only linux is supported')
-
-
 # embedded in try block to be able to generate documentation
 # and run tests without pyhip installed
 try:
@@ -54,14 +31,6 @@ dtype_map = {
     "float32": ctypes.c_float,
     "float64": ctypes.c_double,
 }
-
-# define arguments and return value types of HIP functions
-_libhip.hipEventQuery.restype = ctypes.c_int
-_libhip.hipEventQuery.argtypes = [ctypes.c_void_p]
-_libhip.hipModuleGetGlobal.restype = ctypes.c_int
-_libhip.hipModuleGetGlobal.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.c_void_p, ctypes.c_char_p]
-_libhip.hipMemset.restype = ctypes.c_int
-_libhip.hipMemset.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_size_t]
 
 hipSuccess = 0
 
@@ -210,11 +179,7 @@ class HipFunctions(GPUBackend):
         logging.debug("HipFunction kernel_finished called")
         
         # Query the status of the event
-        status = _libhip.hipEventQuery(self.end)
-        if status == hipSuccess:
-            return True
-        else:
-            return False
+        return hip.hipEventQuery(self.end)
 
     def synchronize(self):
         """Halts execution until device has finished its tasks"""
@@ -268,12 +233,7 @@ class HipFunctions(GPUBackend):
         """
         logging.debug("HipFunction memset called")
         
-        # Format arguments to correct type, set the memory and 
-        # check return value of memset (as done in PyHIP with hipCheckStatus)
-        ctypes_value = ctypes.c_int(value)
-        ctypes_size = ctypes.c_size_t(size)
-        status = _libhip.hipMemset(allocation, ctypes_value, ctypes_size)
-        hip.hipCheckStatus(status)
+        hip.hipMemset(allocation, value, size)
 
     def memcpy_dtoh(self, dest, src):
         """perform a device to host memory copy
@@ -321,23 +281,13 @@ class HipFunctions(GPUBackend):
 
         # Iterate over dictionary
         for k, v in cmem_args.items():
-            # Format arguments, call hipModuleGetGlobal, 
-            # and check return status (as done in PyHIP with hipCheckStatus)
-            symbol_string = ctypes.c_char_p(k.encode('utf-8'))
-            symbol = ctypes.c_void_p()
-            symbol_ptr = ctypes.POINTER(ctypes.c_void_p)(symbol)
-            size_kernel = ctypes.c_size_t(0)
-
-            # Get constant memory symbol and check return value of hipModuleGetGlobal 
-            # (as done in PyHIP with hipCheckStatus)
-            size_kernel_ptr = ctypes.POINTER(ctypes.c_size_t)(size_kernel)
-            status = _libhip.hipModuleGetGlobal(symbol_ptr, size_kernel_ptr, self.current_module, symbol_string)
-            hip.hipCheckStatus(status)
+            #Get symbol pointer
+            symbol_ptr, _ = hip.hipModuleGetGlobal(self.current_module, k)
 
             #Format arguments and perform memory copy
             dtype_str = str(v.dtype)
             v_c = v.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
-            hip.hipMemcpy_htod(symbol_ptr.contents, v_c, v.nbytes)
+            hip.hipMemcpy_htod(symbol_ptr, v_c, v.nbytes)
 
     def copy_shared_memory_args(self, smem_args):
         """add shared memory arguments to the kernel"""
