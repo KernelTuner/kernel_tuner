@@ -119,20 +119,23 @@ The HIP compiler is included as part of the ROCm software stack. Here is AMD's i
 
 * `ROCm Documentation: HIP Installation Guide <https://docs.amd.com/bundle/HIP-Installation-Guide-v5.3/page/Introduction_to_HIP_Installation_Guide.html>`__
 
-After you've installed HIP, you will need to install PyHIP. As of the writing of this documentation, PyHIP 
-is not yet available on PyPI, meaning we will have to install it from GitHub.
+After you've installed HIP, you will need to install PyHIP. Run the following command in your terminal to install:
 
-Clone the GitHub repo:
+.. code-block:: bash
+
+    pip install pyhip-interface
+
+Alternatively, you can install PyHIP from the source code. First, clone the repository from GitHub:
 
 .. code-block:: bash
 
     git clone https://github.com/jatinx/PyHIP
 
-Set the PYTHONPATH:
+Then, navigate to the repository directory and run the following command to install:
 
 .. code-block:: bash
     
-    export PYTHONPATH=/path/to/pyhip:$PYTHONPATH
+    python setup.py install
 
 Installing the git version
 --------------------------
