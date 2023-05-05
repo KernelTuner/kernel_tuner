@@ -12,7 +12,7 @@ The Kernel Tuner is designed to be extensible and support
 different search and execution strategies. The current architecture of 
 the Kernel Tuner can be seen as:
 
-.. image:: architecture_0.4.3.png
+.. image:: architecture.png
    :width: 500pt
 
 At the top we have the kernel code and the Python script that tunes it, 
@@ -48,7 +48,7 @@ building blocks for implementing runners.
 The observers are explained in :ref:`observers`.
 
 At the bottom, the backends are shown. 
-PyCUDA, CuPy, cuda-python and PyOpenCL are for tuning either CUDA or OpenCL kernels.
+PyCUDA, CuPy, cuda-python, PyOpenCL and PyHIP are for tuning either CUDA, OpenCL, or HIP kernels.
 The C 
 Functions implementation can actually call any compiler, typically NVCC 
 or GCC is used. There is limited support for tuning Fortran kernels. 
