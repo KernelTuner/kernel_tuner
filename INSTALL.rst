@@ -153,7 +153,7 @@ You can install Kernel Tuner with several optional dependencies, the full list i
 
 - `cuda`: install pycuda along with kernel_tuner
 - `opencl`: install pycuda along with kernel_tuner
-- `pyhip`: install pyhip along with kernel_tuner
+- `hip`: install pyhip along with kernel_tuner
 - `doc`: installs packages required to build the documentation
 - `tutorial`: install packages required to run the guides
 - `dev`: install everything you need to start development on Kernel Tuner
