@@ -213,7 +213,7 @@ class DeviceInterface(object):
         :type device: int
 
         :param lang: Specifies the language used for GPU kernels.
-            Currently supported: "CUDA", "OpenCL", or "C"
+            Currently supported: "CUDA", "OpenCL", "HIP" or "C"
         :type lang: string
 
         :param compiler_options: The compiler options to use when compiling kernels for this device.
