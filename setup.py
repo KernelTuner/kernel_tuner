@@ -76,6 +76,7 @@ setup(
         "cuda": ["pycuda", "nvidia-ml-py", "pynvml>=11.4.1"],
         "opencl": ["pyopencl"],
         "cuda_opencl": ["pycuda", "pyopencl"],
+        "hip": ["pyhip-interface"],
         "tutorial": ["jupyter", "matplotlib", "pandas"],
         "dev": [
             "numpy>=1.13.3",
