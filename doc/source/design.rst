@@ -128,6 +128,12 @@ kernel_tuner.backends.c.CFunctions
     :special-members: __init__
     :members:
 
+kernel_tuner.backends.hip.HipFunctions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.backends.hip.HipFunctions
+    :special-members: __init__
+    :members:
+
 
 Util Functions
 --------------
