@@ -98,7 +98,7 @@ _kernel_options = Options([
     (
         "kernel_source",
         (
-            """The CUDA, OpenCL, or C kernel code.
+            """The CUDA, OpenCL, HIP, or C kernel code.
             It is allowed for the code to be passed as a string, a filename, a function
             that returns a string of code, or a list when the code needs auxilliary files.
 
@@ -124,7 +124,7 @@ _kernel_options = Options([
             """Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
         the language using this argument, currently supported: "CUDA", "Cupy",
-        "OpenCL", or "C".""",
+        "OpenCL", "HIP", or "C".""",
             "string",
         ),
     ),
