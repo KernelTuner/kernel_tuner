@@ -66,7 +66,7 @@ class CompilerFunctions(CompilerBackend):
                 cc_version = cc_version.split("\\n")[0].split(" ")[2]
             except OSError as e:
                 raise e
-        elif self.compiler in ["nvc++", "nvfortran"]:
+        elif self.compiler in ["nvc", "nvc++", "nvfortran"]:
             try:
                 cc_version = str(subprocess.check_output([self.compiler, "--version"]))
                 cc_version = cc_version.split(" ")[1]
@@ -153,7 +153,7 @@ class CompilerFunctions(CompilerBackend):
         if "#include <omp.h>" in kernel_string or "use omp_lib" in kernel_string:
             logging.debug("set using_openmp to true")
             self.using_openmp = True
-            if self.compiler in ["nvc++", "nvfortran"]:
+            if self.compiler in ["nvc", "nvc++", "nvfortran"]:
                 compiler_options.append("-mp")
             else:
                 compiler_options.append("-fopenmp")
