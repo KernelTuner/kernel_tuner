@@ -61,7 +61,21 @@ class RuntimeFailedConfig(ErrorConfig):
     pass
 
 
-class TorchPlaceHolder:
+class NpEncoder(json.JSONEncoder):
+    """ Class we use for dumping Numpy objects to JSON """
+
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
+
+
+class TorchPlaceHolder():
+
     def __init__(self):
         self.Tensor = Exception  # using Exception here as a type that will never be among kernel arguments
 
@@ -829,17 +843,6 @@ def compile_restrictions(restrictions: list, tune_params: dict):
     return func
 
 
-class NpEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return super(NpEncoder, self).default(obj)
-
-
 def process_cache(cache, kernel_options, tuning_options, runner):
     """cache file for storing tuned configurations
 
@@ -1006,17 +1009,7 @@ def close_cache(cache):
 def store_cache(key, params, tuning_options):
     """stores a new entry (key, params) to the cachefile"""
 
-    # create converter for dumping numpy objects to JSON
-    def JSONconverter(obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return obj.__str__()
-
-    # logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
+    #logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict):
         if not key in tuning_options.cache:
             tuning_options.cache[key] = params
@@ -1029,11 +1022,7 @@ def store_cache(key, params, tuning_options):
 
             if tuning_options.cachefile:
                 with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write(
-                        "\n"
-                        + json.dumps({key: output_params}, default=JSONconverter)[1:-1]
-                        + ","
-                    )
+                    cachefile.write("\n" + json.dumps({ key: output_params }, cls=NpEncoder)[1:-1] + ",")
 
 
 def dump_cache(obj: str, tuning_options):

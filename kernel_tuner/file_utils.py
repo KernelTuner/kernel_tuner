@@ -131,7 +131,7 @@ def store_output_file(output_filename, results, tune_params, objective="time"):
     version, _ = output_file_schema("results")
     output_json = dict(results=output_data, schema_version=version)
     with open(output_filename, 'w+') as fh:
-        json.dump(output_json, fh)
+        json.dump(output_json, fh, cls=util.NpEncoder)
 
 
 def get_dependencies(package='kernel_tuner'):
@@ -184,15 +184,19 @@ def store_metadata_file(metadata_filename):
     metadata_filename = filename_ensure_json_extension(metadata_filename)
     metadata = {}
 
-    # lshw only works on Linux, this intentionally raises a FileNotFoundError when ran on systems that do not have it
-    lshw_out = subprocess.run(["lshw", "-json"], capture_output=True)
+    # lshw only works on Linux
+    try:
+        lshw_out = subprocess.run(["lshw", "-json"], capture_output=True)
 
-    # sometimes lshw outputs a list of length 1, sometimes just as a dict, schema wants a list
-    lshw_string = lshw_out.stdout.decode('utf-8').strip()
-    if lshw_string[0] == '{' and lshw_string[-1] == '}':
-        lshw_string = '[' + lshw_string + ']'
+        # sometimes lshw outputs a list of length 1, sometimes just as a dict, schema wants a list
+        lshw_string = lshw_out.stdout.decode('utf-8').strip()
+        if lshw_string[0] == '{' and lshw_string[-1] == '}':
+            lshw_string = '[' + lshw_string + ']'
+        hardware_desc = dict(lshw=json.loads(lshw_string))
+    except:
+        hardware_desc = dict(lshw=["lshw error"])
 
-    metadata["hardware"] = dict(lshw=json.loads(lshw_string))
+    metadata["hardware"] = hardware_desc
 
     # attempts to use nvidia-smi or rocm-smi if present
     device_query = {}
