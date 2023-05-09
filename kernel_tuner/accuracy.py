@@ -106,7 +106,13 @@ class TunablePrecision(Tunable):
 
         arrays = dict()
         for precision, dtype in dtypes.items():
-            arrays[precision] = np.array(array).astype(dtype)
+            # We convert the array into a `np.ndarray` by using `np.array`.
+            # However, if the value is a numpy scalar, then we do not want to
+            # convert it into an array but instead keep the original value
+            if not np.isinstance(array, np.generic)
+                array = np.array(array)
+
+            arrays[precision] = array.astype(dtype)
 
         super().__init__(param_key, arrays)
 
