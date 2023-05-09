@@ -143,7 +143,7 @@ def test_compile(npct, subprocess):
     print(npct.mock_calls)
     print(f)
 
-    assert len(subprocess.mock_calls) == 8
+    assert len(subprocess.mock_calls) == 6
     assert npct.load_library.called == 1
 
     args, _ = npct.load_library.call_args_list[0]
