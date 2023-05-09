@@ -425,48 +425,48 @@ class DeviceInterface(object):
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
-            return instance
+            result[to.objective] = util.InvalidConfig()
+        else:
+            try:
+                # compile the kernel
+                start_compilation = time.perf_counter()
+                func = self.compile_kernel(instance, verbose)
+                if not func:
+                    result[to.objective] = util.CompilationFailedConfig()
+                else:
+                    # add shared memory arguments to compiled module
+                    if kernel_options.smem_args is not None:
+                        self.dev.copy_shared_memory_args(util.get_smem_args(kernel_options.smem_args, params))
+                    # add constant memory arguments to compiled module
+                    if kernel_options.cmem_args is not None:
+                        self.dev.copy_constant_memory_args(kernel_options.cmem_args)
+                    # add texture memory arguments to compiled module
+                    if kernel_options.texmem_args is not None:
+                        self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
-        try:
-            # compile the kernel
-            start_compilation = time.perf_counter()
-            func = self.compile_kernel(instance, verbose)
-            if not func:
-                result[to.objective] = util.CompilationFailedConfig()
-            else:
-                # add shared memory arguments to compiled module
-                if kernel_options.smem_args is not None:
-                    self.dev.copy_shared_memory_args(util.get_smem_args(kernel_options.smem_args, params))
-                # add constant memory arguments to compiled module
-                if kernel_options.cmem_args is not None:
-                    self.dev.copy_constant_memory_args(kernel_options.cmem_args)
-                # add texture memory arguments to compiled module
-                if kernel_options.texmem_args is not None:
-                    self.dev.copy_texture_memory_args(kernel_options.texmem_args)
+                # stop compilation stopwatch and convert to miliseconds
+                last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
-            # stop compilation stopwatch and convert to miliseconds
-            last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
+                # test kernel for correctness
+                if func and (to.answer or to.verify):
+                    start_verification = time.perf_counter()
+                    self.check_kernel_output(func, gpu_args, instance, to.answer, to.atol, to.verify, verbose)
+                    last_verification_time = 1000 * (time.perf_counter() - start_verification)
 
-            # test kernel for correctness
-            if func and (to.answer or to.verify):
-                start_verification = time.perf_counter()
-                self.check_kernel_output(func, gpu_args, instance, to.answer, to.atol, to.verify, verbose)
-                last_verification_time = 1000 * (time.perf_counter() - start_verification)
+                # benchmark
+                if func:
+                    start_benchmark = time.perf_counter()
+                    result.update(self.benchmark(func, gpu_args, instance, verbose, to.objective))
+                    last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
 
-            # benchmark
-            if func:
-                start_benchmark = time.perf_counter()
-                result.update(self.benchmark(func, gpu_args, instance, verbose, to.objective))
-                last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
+            except Exception as e:
+                # dump kernel sources to temp file
+                temp_filenames = instance.prepare_temp_files_for_error_msg()
+                print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
+                raise e
 
-        except Exception as e:
-            # dump kernel sources to temp file
-            temp_filenames = instance.prepare_temp_files_for_error_msg()
-            print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
-            raise e
-
-        #clean up any temporary files, if no error occured
-        instance.delete_temp_files()
+            #clean up any temporary files, if no error occured
+            instance.delete_temp_files()
 
         result['compile_time'] = last_compilation_time or 0
         result['verification_time'] = last_verification_time or 0

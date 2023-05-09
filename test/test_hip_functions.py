@@ -55,7 +55,7 @@ def test_ready_argument_list():
                     ("field2", ctypes.POINTER(ctypes.c_float)),
                     ("field3", ctypes.c_bool)]
         def __getitem__(self, key):
-                return self._fields_[key]
+                return getattr(self, self._fields_[key][0])
 
     dev = kt_hip.HipFunctions(0)
     gpu_args = dev.ready_argument_list(arguments)
