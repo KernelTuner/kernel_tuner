@@ -109,7 +109,7 @@ class TunablePrecision(Tunable):
             # We convert the array into a `np.ndarray` by using `np.array`.
             # However, if the value is a numpy scalar, then we do not want to
             # convert it into an array but instead keep the original value
-            if not np.isinstance(array, np.generic)
+            if not isinstance(array, np.generic):
                 array = np.array(array)
 
             arrays[precision] = array.astype(dtype)

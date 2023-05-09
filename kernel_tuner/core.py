@@ -607,7 +607,7 @@ class DeviceInterface(object):
             else:
                 flat_args.append(argument)
 
-        flag_gpu_args = iter(self.dev.ready_argument_list(flat_args))
+        flat_gpu_args = iter(self.dev.ready_argument_list(flat_args))
 
         # Unflatten the arguments back into arrays.
         gpu_args = []
@@ -615,11 +615,11 @@ class DeviceInterface(object):
             if isinstance(argument, Tunable):
                 arrays = dict()
                 for key in argument:
-                    arrays[key] = next(flag_gpu_args)
+                    arrays[key] = next(flat_gpu_args)
 
                 gpu_args.append(Tunable(argument.param_key, arrays))
             else:
-                gpu_args.append(next(flag_gpu_args))
+                gpu_args.append(next(flat_gpu_args))
 
         return gpu_args
 
