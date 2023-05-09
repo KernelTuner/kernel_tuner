@@ -1134,6 +1134,8 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                 tmp_string = tmp_string[4:]
                 params = list()
                 for param in tmp_string:
+                    if len(param) == 0:
+                        continue
                     p_name = param.split("(")[0]
                     param = param.replace(p_name, "", 1)
                     p_type = param[1:-1]
@@ -1158,6 +1160,8 @@ def extract_directive_data(code: str, kernel_name: str = None) -> dict:
                 data[name] = dict()
                 tmp_string = line.strip().split(" ")[4:]
                 for param in tmp_string:
+                    if len(param) == 0:
+                        continue
                     p_name = param.split("(")[0]
                     param = param.replace(p_name, "", 1)
                     param = param[1:-1]
