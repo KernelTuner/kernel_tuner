@@ -1103,7 +1103,7 @@ def extract_directive_code(code: str, kernel_name: str = None) -> dict:
     tmp_string = list()
     name = ""
 
-    for line in code.split("\n"):
+    for line in code.replace("\\\n", "").split("\n"):
         if found_section:
             if end_string in line:
                 found_section = False
@@ -1126,7 +1126,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
     start_string = "#pragma tuner start"
     signatures = dict()
 
-    for line in code.split("\n"):
+    for line in code.replace("\\\n", "").split("\n"):
         if start_string in line:
             if kernel_name is None or f" {kernel_name} " in line:
                 tmp_string = line.strip().split(" ")
@@ -1151,7 +1151,7 @@ def extract_directive_data(code: str, kernel_name: str = None) -> dict:
     start_string = "#pragma tuner start"
     data = dict()
 
-    for line in code.split("\n"):
+    for line in code.replace("\\\n", "").split("\n"):
         if start_string in line:
             if kernel_name is None or f" {kernel_name} " in line:
                 name = line.strip().split(" ")[3]
@@ -1172,7 +1172,7 @@ def extract_preprocessor(code: str) -> list:
     """Extract include and define statements from C/C++ code"""
     preprocessor = list()
 
-    for line in code.split("\n"):
+    for line in code.replace("\\\n", "").split("\n"):
         if "#define" in line or "#include" in line:
             preprocessor.append(line)
 
