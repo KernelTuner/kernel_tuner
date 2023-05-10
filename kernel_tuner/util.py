@@ -1191,3 +1191,12 @@ def wrap_cpp_timing(code: str) -> str:
     ret = "return elapsed_time.count();"
 
     return "\n".join([start, code, end, timing, ret])
+
+
+def generate_directive_function(preprocessor: str, signature: str, body: str) -> str:
+    """Generate tunable function for one directive"""
+    code = "\n".join(preprocessor) + "\n#include <chrono>\n"
+    code += 'extern "C" ' + signature + "{\n"
+    code += wrap_cpp_timing(body) + "\n}"
+
+    return code
