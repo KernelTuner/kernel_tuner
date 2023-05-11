@@ -35,7 +35,7 @@ def tune():
     if os.path.isfile(filename):
         results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, 
                                 strategy="simulated_annealing",
-                                lang="HIP", simulation_mode=True, cache="vector_add.json")
+                                lang="HIP", simulation_mode=True, cache="vector_add_cache.json")
 
         # Store the tuning results in an output file
         store_output_file("vector_add_simulated_annealing.json", results, tune_params)

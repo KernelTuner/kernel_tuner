@@ -29,10 +29,8 @@ def tune():
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, lang="HIP", log=logging.DEBUG)
-
-    # Store the tuning results in an output file
-    store_output_file("vector_add.json", results, tune_params)
+    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, lang="HIP", 
+                               cache="vector_add_cache.json", log=logging.DEBUG)
 
     # Store the metadata of this run
     store_metadata_file("vector_add-metadata.json")
