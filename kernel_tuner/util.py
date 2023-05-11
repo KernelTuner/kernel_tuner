@@ -1227,7 +1227,7 @@ def generate_directive_function(
         signature = signature.split("(")[0] + "()"
     code += 'extern "C" ' + signature + "{\n"
     if len(initialization) > 1:
-        code += initialization
+        code += initialization + "\n"
     code += wrap_cpp_timing(body) + "\n}"
 
     return code
