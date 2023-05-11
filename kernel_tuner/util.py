@@ -1094,10 +1094,8 @@ def cuda_error_check(error):
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
 
-def extract_directive_code(code: str, kernel_name: str = None) -> dict:
-    """Extract explicitly marked directive sections from code"""
-    start_string = "#pragma tuner start"
-    end_string = "#pragma tuner stop"
+def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> dict:
+    """Extract an arbitrary section of code"""
     found_section = False
     sections = dict()
     tmp_string = list()
@@ -1105,7 +1103,7 @@ def extract_directive_code(code: str, kernel_name: str = None) -> dict:
 
     for line in code.replace("\\\n", "").split("\n"):
         if found_section:
-            if end_string in line:
+            if stop in line:
                 found_section = False
                 sections[name] = "\n".join(tmp_string)
                 tmp_string = list()
@@ -1113,12 +1111,33 @@ def extract_directive_code(code: str, kernel_name: str = None) -> dict:
             else:
                 tmp_string.append(line)
         else:
-            if start_string in line:
+            if start in line:
                 if kernel_name is None or f" {kernel_name} " in line:
                     found_section = True
                     name = line.strip().split(" ")[3]
 
     return sections
+
+
+def extract_directive_code(code: str, kernel_name: str = None) -> dict:
+    """Extract explicitly marked directive sections from code"""
+    start_string = "#pragma tuner start"
+    end_string = "#pragma tuner stop"
+
+    return extract_code(start_string, end_string, code, kernel_name)
+
+
+def extract_initialization_code(code: str) -> str:
+    """Extract the initialization section from code"""
+    start_string = "#pragma tuner initialize"
+    end_string = "#pragma tuner stop"
+
+    function = extract_code(start_string, end_string, code)
+    if len(function) == 1:
+        _, value = function.popitem()
+        return value
+    else:
+        return ""
 
 
 def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
@@ -1166,7 +1185,10 @@ def extract_directive_data(code: str, kernel_name: str = None) -> dict:
                     param = param.replace(p_name, "", 1)
                     param = param[1:-1]
                     p_type = param.split(":")[0]
-                    p_size = param.split(":")[1]
+                    try:
+                        p_size = param.split(":")[1]
+                    except IndexError:
+                        p_size = 0
                     data[name][p_name] = [p_type, p_size]
 
     return data
@@ -1193,9 +1215,12 @@ def wrap_cpp_timing(code: str) -> str:
     return "\n".join([start, code, end, timing, ret])
 
 
-def generate_directive_function(preprocessor: str, signature: str, body: str) -> str:
+def generate_directive_function(
+    preprocessor: str, signature: str, body: str, initialization: str = ""
+) -> str:
     """Generate tunable function for one directive"""
     code = "\n".join(preprocessor) + "\n#include <chrono>\n"
+    code += initialization
     code += 'extern "C" ' + signature + "{\n"
     code += wrap_cpp_timing(body) + "\n}"
 
