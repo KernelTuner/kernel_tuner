@@ -1219,9 +1219,14 @@ def generate_directive_function(
     preprocessor: str, signature: str, body: str, initialization: str = ""
 ) -> str:
     """Generate tunable function for one directive"""
-    code = "\n".join(preprocessor) + "\n#include <chrono>\n"
+    code = "\n".join(preprocessor)
+    if "#include <chrono>" not in preprocessor:
+        code += "\n#include <chrono>\n"
+    # If initialization is provided use simplified signature
+    if len(initialization) > 1:
+        code += initialization
+        signature = signature.split("(")[0] + "()"
     code += 'extern "C" ' + signature + "{\n"
-    code += initialization
     code += wrap_cpp_timing(body) + "\n}"
 
     return code
