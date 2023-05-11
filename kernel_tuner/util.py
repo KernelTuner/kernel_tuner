@@ -1224,9 +1224,10 @@ def generate_directive_function(
         code += "\n#include <chrono>\n"
     # If initialization is provided use simplified signature
     if len(initialization) > 1:
-        code += initialization
         signature = signature.split("(")[0] + "()"
     code += 'extern "C" ' + signature + "{\n"
+    if len(initialization) > 1:
+        code += initialization
     code += wrap_cpp_timing(body) + "\n}"
 
     return code
