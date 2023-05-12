@@ -23,3 +23,6 @@ temp_*.*
 .DS_Store
 .AppleDouble
 .LSOverride
+
+.vscode
+.idea
