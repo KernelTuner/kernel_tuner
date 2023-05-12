@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """This is a simple example for tuning C++ OpenACC code with the kernel tuner"""
 
-import numpy
 from kernel_tuner import tune_kernel
 from kernel_tuner.util import (
     extract_directive_signature,
