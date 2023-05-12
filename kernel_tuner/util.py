@@ -1231,3 +1231,29 @@ def generate_directive_function(
     code += wrap_cpp_timing(body) + "\n}"
 
     return code
+
+
+def allocate_signature_memory(data: dict) -> list:
+    """Allocates the data needed by a kernel and returns the arguments array"""
+    args = []
+    max_int = 1024
+
+    for type, size in data.items():
+        if "*" in type:
+            # The parameter is an array
+            if type == "float*":
+                args.append(np.random.rand(size).astype(np.float32))
+            elif type == "double*":
+                args.append(np.random.rand(size).astype(np.float64))
+            elif type == "int*":
+                args.append(np.random.randint(max_int, size=size))
+        else:
+            # The parameter is a scalar
+            if type == "float":
+                args.append(np.float32(size))
+            elif type == "double":
+                args.append(np.float64(size))
+            elif type == "int":
+                args.append(np.int32(size))
+
+    return args
