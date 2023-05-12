@@ -40,7 +40,7 @@ int main(void) {
 preprocessor = extract_preprocessor(code)
 signature = extract_directive_signature(code, kernel_name="vector_add")
 body = extract_directive_code(code, kernel_name="vector_add")
-kernel_string = generate_directive_function(preprocessor, signature, body)
+kernel_string = generate_directive_function(preprocessor, signature["vector_add"], body["vector_add"])
 
 size = 65536
 
