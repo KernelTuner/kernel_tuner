@@ -7,7 +7,7 @@ from kernel_tuner.util import (
     extract_directive_signature,
     extract_directive_code,
     extract_preprocessor,
-    wrap_cpp_timing,
+    generate_directive_function
 )
 from collections import OrderedDict
 
@@ -38,11 +38,9 @@ int main(void) {
 
 # Extract tunable directive and generate kernel_string
 preprocessor = extract_preprocessor(code)
-kernel_string = "\n".join(preprocessor) + "\n#include <chrono>\n#include <ratio>\n"
-directive_signatures = extract_directive_signature(code, kernel_name="vector_add")
-kernel_string += 'extern "C" ' + directive_signatures["vector_add"] + "{\n"
-directive_codes = extract_directive_code(code, kernel_name="vector_add")
-kernel_string += wrap_cpp_timing(directive_codes["vector_add"]) + "\n}"
+signature = extract_directive_signature(code, kernel_name="vector_add")
+body = extract_directive_code(code, kernel_name="vector_add")
+kernel_string = generate_directive_function(preprocessor, signature, body)
 
 size = 65536
 
