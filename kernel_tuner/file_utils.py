@@ -134,7 +134,7 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
     version, _ = output_file_schema("results")
     output_json = dict(results=output_data, schema_version=version)
     with open(output_filenamepath, "w+") as fh:
-        json.dump(output_json, fh)
+        json.dump(output_json, fh, cls=util.NpEncoder)
 
 
 def get_dependencies(package="kernel_tuner"):
@@ -185,41 +185,48 @@ def store_metadata_file(metadata_filename: str):
     metadata_filenamepath = Path(filename_ensure_json_extension(metadata_filename))
     make_filenamepath(metadata_filenamepath)
     metadata = {}
+    supported_operating_systems = ["linux", "win32", "darwin"]
 
-    # differentiate between OSes, possible values: https://docs.python.org/3/library/sys.html#sys.platform
-    if platform == "linux":
-        os_string = "Linux"
-        hardware_description_out = subprocess.run(["lshw", "-json"], capture_output=True)
-    elif platform == "win32":
-        os_string = "Windows"
-        raise NotImplementedError(f"Hardware specification not yet implemented for Windows")
-    elif platform == "darwin":
-        os_string = "Mac"
-        hardware_description_out = subprocess.run(
-            [
-                "system_profiler",
-                "-json",
-                "-detailLevel",
-                "mini",
-                "SPSoftwareDataType",
-                "SPHardwareDataType",
-                "SPiBridgeDataType",
-                "SPPCIDataType",
-                "SPMemoryDataType",
-                "SPNVMeDataType",
-            ],
-            capture_output=True,
-        )
-    else:
+    if all(platform != supported for supported in supported_operating_systems):
         raise ValueError(f"Platform {platform} not supported for metadata collection")
 
-    # process the hardware description output
-    hardware_description_string = hardware_description_out.stdout.decode("utf-8").strip()
-    if hardware_description_string[0] == "{" and hardware_description_string[-1] == "}":
-        # sometimes lshw outputs a list of length 1, sometimes just as a dict, schema wants a list
-        hardware_description_string = "[" + hardware_description_string + "]"
-    metadata["hardware"] = dict(hardware_description=json.loads(hardware_description_string))
-    metadata["operating_system"] = os_string
+    try:
+        # differentiate between OSes, possible values: https://docs.python.org/3/library/sys.html#sys.platform
+        if platform == "linux":
+            os_string = "Linux"
+            hardware_description_out = subprocess.run(["lshw", "-json"], capture_output=True)
+        elif platform == "win32":
+            os_string = "Windows"
+            raise NotImplementedError("Hardware specification not yet implemented for Windows")
+        elif platform == "darwin":
+            os_string = "Mac"
+            hardware_description_out = subprocess.run(
+                [
+                    "system_profiler",
+                    "-json",
+                    "-detailLevel",
+                    "mini",
+                    "SPSoftwareDataType",
+                    "SPHardwareDataType",
+                    "SPiBridgeDataType",
+                    "SPPCIDataType",
+                    "SPMemoryDataType",
+                    "SPNVMeDataType",
+                ],
+                capture_output=True,
+            )
+        else:
+            raise ValueError("This code is supposed to be unreachable, the supported platform check has failed")
+
+        # process the hardware description output
+        hardware_description_string = hardware_description_out.stdout.decode("utf-8").strip()
+        if hardware_description_string[0] == "{" and hardware_description_string[-1] == "}":
+            # sometimes lshw outputs a list of length 1, sometimes just as a dict, schema wants a list
+            hardware_description_string = "[" + hardware_description_string + "]"
+        metadata["hardware"] = dict(hardware_description=json.loads(hardware_description_string))
+        metadata["operating_system"] = os_string
+    except:
+        metadata["hardware"] = "error retrieving hardware description"
 
     # attempts to use nvidia-smi or rocm-smi if present
     device_query = {}
