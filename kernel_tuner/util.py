@@ -1233,27 +1233,42 @@ def generate_directive_function(
     return code
 
 
-def allocate_signature_memory(data: dict) -> list:
+def allocate_signature_memory(data: dict, preprocessor: list = None) -> list:
     """Allocates the data needed by a kernel and returns the arguments array"""
     args = []
     max_int = 1024
 
-    for type, size in data.items():
-        if "*" in type:
+    for parameter in data.keys():
+        p_type = data[parameter][0]
+        size = data[parameter][1]
+        if type(size) is not int:
+            try:
+                # Try to convert the size to an integer
+                size = int(size)
+            except ValueError:
+                # If size cannot be natively converted to string, we try to derive it from the preprocessor
+                for line in preprocessor:
+                    if f"#define {size}" in line:
+                        try:
+                            size = int(line.split(" ")[2])
+                            break
+                        except ValueError:
+                            continue
+        if "*" in p_type:
             # The parameter is an array
-            if type == "float*":
+            if p_type == "float*":
                 args.append(np.random.rand(size).astype(np.float32))
-            elif type == "double*":
+            elif p_type == "double*":
                 args.append(np.random.rand(size).astype(np.float64))
-            elif type == "int*":
+            elif p_type == "int*":
                 args.append(np.random.randint(max_int, size=size))
         else:
             # The parameter is a scalar
-            if type == "float":
+            if p_type == "float":
                 args.append(np.float32(size))
-            elif type == "double":
+            elif p_type == "double":
                 args.append(np.float64(size))
-            elif type == "int":
+            elif p_type == "int":
                 args.append(np.int32(size))
 
     return args

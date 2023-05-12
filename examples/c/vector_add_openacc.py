@@ -7,7 +7,9 @@ from kernel_tuner.util import (
     extract_directive_signature,
     extract_directive_code,
     extract_preprocessor,
-    generate_directive_function
+    generate_directive_function,
+    extract_directive_data,
+    allocate_signature_memory,
 )
 from collections import OrderedDict
 
@@ -38,29 +40,26 @@ int main(void) {
 
 # Extract tunable directive and generate kernel_string
 preprocessor = extract_preprocessor(code)
-signature = extract_directive_signature(code, kernel_name="vector_add")
-body = extract_directive_code(code, kernel_name="vector_add")
-kernel_string = generate_directive_function(preprocessor, signature["vector_add"], body["vector_add"])
+signature = extract_directive_signature(code)
+body = extract_directive_code(code)
+kernel_string = generate_directive_function(
+    preprocessor, signature["vector_add"], body["vector_add"]
+)
 
-size = 65536
-
-a = numpy.random.randn(size).astype(numpy.float32)
-b = numpy.random.randn(size).astype(numpy.float32)
-c = numpy.zeros_like(b)
-n = numpy.int32(size)
-
-args = [a, b, c, n]
+# Allocate memory on the host
+data = extract_directive_data(code)
+args = allocate_signature_memory(data["vector_add"], preprocessor)
 
 tune_params = OrderedDict()
 tune_params["ngangs"] = [2**i for i in range(0, 15)]
 tune_params["nthreads"] = [2**i for i in range(0, 11)]
 
-answer = [None, None, a + b, None]
+answer = [None, None, args[0] + args[1], None]
 
 tune_kernel(
     "vector_add",
     kernel_string,
-    size,
+    0,
     args,
     tune_params,
     answer=answer,
