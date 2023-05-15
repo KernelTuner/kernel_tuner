@@ -2,17 +2,17 @@ import numpy as np
 
 from kernel_tuner.observers.observer import BenchmarkObserver
 
-# check if power_sensor is installed
+# check if powersensor is installed
 try:
-    import power_sensor
+    import powersensor
 except ImportError:
-    power_sensor = None
+    powersensor = None
 
 
 class PowerSensorObserver(BenchmarkObserver):
     """Observer that an external PowerSensor2 device to accurately measure power
 
-    Requires PowerSensor2 hardware and power_sensor Python bindings.
+    Requires PowerSensor2 hardware and powersensor Python bindings.
 
     :param observables: A list of string, containing any of "ps_energy" or "ps_power".
         To measure energy in Joules or power consumption in Watt.
@@ -25,8 +25,8 @@ class PowerSensorObserver(BenchmarkObserver):
     """
 
     def __init__(self, observables=None, device=None):
-        if not power_sensor:
-            raise ImportError("could not import power_sensor")
+        if not powersensor:
+            raise ImportError("could not import powersensor")
 
         supported = ["ps_energy", "ps_power"]
         for obs in observables:
@@ -35,10 +35,10 @@ class PowerSensorObserver(BenchmarkObserver):
         self.observables = observables or ["ps_energy"]
 
         device = device or "/dev/ttyACM0"
-        self.ps = power_sensor.PowerSensor(device)
+        self.ps = powersensor.PowerSensor(device)
 
         self.begin_state = None
-        self.results = {"ps_energy": [], "ps_power": []}
+        self.results = {key: [] for key in self.observables}
 
     def after_start(self):
         self.begin_state = self.ps.read()
@@ -46,7 +46,7 @@ class PowerSensorObserver(BenchmarkObserver):
     def after_finish(self):
         end_state = self.ps.read()
         if "ps_energy" in self.observables:
-            ps_measured_e = power_sensor.Joules(
+            ps_measured_e = powersensor.Joules(
                 self.begin_state, end_state, -1
             )  # Joules
             self.results["ps_energy"].append(ps_measured_e)
@@ -58,5 +58,5 @@ class PowerSensorObserver(BenchmarkObserver):
 
     def get_results(self):
         averages = {key: np.average(values) for key, values in self.results.items()}
-        self.results = {"ps_energy": [], "ps_power": []}
+        self.results = {key: [] for key in self.observables}
         return averages

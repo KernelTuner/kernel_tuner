@@ -94,23 +94,24 @@ class CostFunc:
                 result = params_dict
                 result[self.tuning_options.objective] = util.InvalidConfig()
 
-        # compile and benchmark this instance
-        if not result:
+        if legal:
+            # compile and benchmark this instance
             res = self.runner.run([params], self.tuning_options)
             result = res[0]
 
-        # append to tuning results
-        if x_int not in self.tuning_options.unique_results:
-            self.tuning_options.unique_results[x_int] = result
+            # append to tuning results
+            if x_int not in self.tuning_options.unique_results:
+                self.tuning_options.unique_results[x_int] = result
 
-        self.results.append(result)
+            self.results.append(result)
+
+            # upon returning from this function control will be given back to the strategy, so reset the start time
+            self.runner.last_strategy_start_time = perf_counter()
 
         # get numerical return value, taking optimization direction into account
         return_value = result[self.tuning_options.objective] or sys.float_info.max
         return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
 
-        # upon returning from this function control will be given back to the strategy, so reset the start time
-        self.runner.last_strategy_start_time = perf_counter()
         return return_value
 
     def get_bounds_x0_eps(self):
