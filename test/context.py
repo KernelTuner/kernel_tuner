@@ -12,6 +12,12 @@ except Exception:
     pycuda_present = False
 
 try:
+    import pynvml
+    pynvml_present = True
+except ImportError:
+    pynvml_present = False
+
+try:
     import pyopencl
     opencl_present = True
     if 'namespace' in str(sys.modules['pyopencl']):
@@ -39,6 +45,7 @@ except Exception:
     cuda_present = False
 
 skip_if_no_pycuda = pytest.mark.skipif(not pycuda_present, reason="PyCuda not installed or no CUDA device detected")
+skip_if_no_pynvml = pytest.mark.skipif(not pynvml_present, reason="NVML not installed")
 skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed or no CUDA device detected")
 skip_if_no_cuda = pytest.mark.skipif(not cuda_present, reason="NVIDIA CUDA not installed")
 skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected")
