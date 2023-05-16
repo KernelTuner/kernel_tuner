@@ -1222,9 +1222,6 @@ def generate_directive_function(
     code = "\n".join(preprocessor)
     if "#include <chrono>" not in preprocessor:
         code += "\n#include <chrono>\n"
-    # If initialization is provided use simplified signature
-    if len(initialization) > 1:
-        signature = signature.split("(")[0] + "()"
     code += 'extern "C" ' + signature + "{\n"
     if len(initialization) > 1:
         code += initialization + "\n"
