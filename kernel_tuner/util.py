@@ -92,7 +92,7 @@ try:
 except ImportError:
     torch = TorchPlaceHolder()
 
-default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+default_block_size_names = ["block_size_x", "block_size_y", "block_size_z", "ngangs", "nworkers", "vlength"]
 
 
 def check_argument_type(dtype, kernel_argument):
