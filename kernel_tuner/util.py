@@ -1221,6 +1221,11 @@ def wrap_cpp_timing(code: str) -> str:
 
     return "\n".join([start, code, end, timing, ret])
 
+def wrap_fortran_timing(code: str) -> str:
+    """Wrap Fortran timing around the provided code"""
+
+    return "\n"
+
 
 def generate_directive_function(
     preprocessor: str, signature: str, body: str, initialization: str = ""
