@@ -1128,16 +1128,38 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
 
 def extract_directive_code(code: str, kernel_name: str = None) -> dict:
     """Extract explicitly marked directive sections from code"""
-    start_string = "#pragma tuner start"
-    end_string = "#pragma tuner stop"
+    cpp = False
+    f90 = False
+    if "#pragma acc" in code:
+        cpp = True
+    elif "!$acc" in code:
+        f90 = True
+
+    if cpp:
+        start_string = "#pragma tuner start"
+        end_string = "#pragma tuner stop"
+    elif f90:
+        start_string = "!$tuner start"
+        end_string = "!$tuner stop"
 
     return extract_code(start_string, end_string, code, kernel_name)
 
 
 def extract_initialization_code(code: str) -> str:
     """Extract the initialization section from code"""
-    start_string = "#pragma tuner initialize"
-    end_string = "#pragma tuner stop"
+    cpp = False
+    f90 = False
+    if "#pragma acc" in code:
+        cpp = True
+    elif "!$acc" in code:
+        f90 = True
+
+    if cpp:
+        start_string = "#pragma tuner initialize"
+        end_string = "#pragma tuner stop"
+    elif f90:
+        start_string = "!$tuner initialize"
+        end_string = "!$tuner stop"
 
     function = extract_code(start_string, end_string, code)
     if len(function) == 1:
@@ -1149,7 +1171,17 @@ def extract_initialization_code(code: str) -> str:
 
 def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
     """Extract the user defined signature for directive sections"""
-    start_string = "#pragma tuner start"
+    cpp = False
+    f90 = False
+    if "#pragma acc" in code:
+        cpp = True
+    elif "!$acc" in code:
+        f90 = True
+
+    if cpp:
+        start_string = "#pragma tuner start"
+    elif f90:
+        start_string = "!$tuner start"
     signatures = dict()
 
     for line in code.replace("\\\n", "").split("\n"):
@@ -1168,15 +1200,31 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                     p_type = p_type.split(":")[0]
                     if "*" in p_type:
                         p_type = p_type.replace("*", " * restrict")
-                    params.append(f"{p_type} {p_name}")
-                signatures[name] = f"float {name}({', '.join(params)})"
+                    if cpp:
+                        params.append(f"{p_type} {p_name}")
+                    elif f90:
+                        params.append(p_name)
+                if cpp:
+                    signatures[name] = f"float {name}({', '.join(params)})"
+                elif f90:
+                    signatures[name] = f"function {name}({', '.join(params)})"
 
     return signatures
 
 
 def extract_directive_data(code: str, kernel_name: str = None) -> dict:
     """Extract the data used in the directive section"""
-    start_string = "#pragma tuner start"
+    cpp = False
+    f90 = False
+    if "#pragma acc" in code:
+        cpp = True
+    elif "!$acc" in code:
+        f90 = True
+
+    if cpp:
+        start_string = "#pragma tuner start"
+    elif f90:
+        start_string = "!$tuner start"
     data = dict()
 
     for line in code.replace("\\\n", "").split("\n"):
@@ -1202,7 +1250,7 @@ def extract_directive_data(code: str, kernel_name: str = None) -> dict:
 
 
 def extract_preprocessor(code: str) -> list:
-    """Extract include and define statements from C/C++ code"""
+    """Extract include and define statements from code"""
     preprocessor = list()
 
     for line in code.replace("\\\n", "").split("\n"):
@@ -1212,32 +1260,55 @@ def extract_preprocessor(code: str) -> list:
     return preprocessor
 
 
-def wrap_cpp_timing(code: str) -> str:
-    """Wrap C++ timing code (using std::chrono) around the provided code"""
-    start = "auto start = std::chrono::steady_clock::now();"
-    end = "auto end = std::chrono::steady_clock::now();"
-    timing = "std::chrono::duration<float, std::milli> elapsed_time = end - start;"
-    ret = "return elapsed_time.count();"
+def wrap_timing(code: str) -> str:
+    """Wrap timing code around the provided code"""
+    cpp = False
+    f90 = False
+    if "#pragma acc" in code:
+        cpp = True
+    elif "!$acc" in code:
+        f90 = True
+
+    if cpp:
+        start = "auto start = std::chrono::steady_clock::now();"
+        end = "auto end = std::chrono::steady_clock::now();"
+        timing = "std::chrono::duration<float, std::milli> elapsed_time = end - start;"
+        ret = "return elapsed_time.count();"
+    elif f90:
+        start = "integer,intent(out) start\nreal,intent(out) rate\ninteger,intent(out) end\ncall system_clock(start, rate)"
+        end = "call system_clock(end)"
+        timing = "timing = (real(end - start) / real(rate)) * 1e3"
+        ret = ""
 
     return "\n".join([start, code, end, timing, ret])
-
-def wrap_fortran_timing(code: str) -> str:
-    """Wrap Fortran timing around the provided code"""
-
-    return "\n"
 
 
 def generate_directive_function(
     preprocessor: str, signature: str, body: str, initialization: str = ""
 ) -> str:
     """Generate tunable function for one directive"""
+    cpp = False
+    f90 = False
+    if "#pragma acc" in code:
+        cpp = True
+    elif "!$acc" in code:
+        f90 = True
+
     code = "\n".join(preprocessor)
-    if "#include <chrono>" not in preprocessor:
+    if cpp and "#include <chrono>" not in preprocessor:
         code += "\n#include <chrono>\n"
-    code += 'extern "C" ' + signature + "{\n"
+    if cpp:
+        code += 'extern "C" ' + signature + "{\n"
+    elif f90:
+        code += signature + " result(timing)\n"
     if len(initialization) > 1:
         code += initialization + "\n"
-    code += wrap_cpp_timing(body) + "\n}"
+    code += wrap_timing(body) + "\n}"
+    if cpp:
+        code += "\n}"
+    elif f90:
+        name = signature.split(" ")[1]
+        code += f"\nend function {name}\n"
 
     return code
 
