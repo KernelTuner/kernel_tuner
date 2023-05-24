@@ -6,9 +6,9 @@ import json
 import numpy as np
 from kernel_tuner import tune_kernel
 
-def tune():
 
-    size = int(72*1024*1024)
+def tune():
+    size = int(72 * 1024 * 1024)
 
     a = np.random.randn(size).astype(np.float32)
     b = np.random.randn(size).astype(np.float32)
@@ -21,11 +21,19 @@ def tune():
     tune_params["N"] = [size]
     tune_params["block_size_x"] = [32, 64, 128, 256, 512]
 
-    result, env = tune_kernel("time_vector_add", "vector_add_acc.F90", size, args,
-                              tune_params, lang="C", compiler="pgfortran",
-                              compiler_options=["-acc=verystrict", "-ta=tesla,lineinfo"])
+    result, env = tune_kernel(
+        "time_vector_add",
+        "vector_add_acc.F90",
+        size,
+        args,
+        tune_params,
+        lang="C",
+        compiler="pgfortran",
+        compiler_options=["-acc=verystrict", "-ta=tesla,lineinfo"],
+    )
 
     return result
+
 
 if __name__ == "__main__":
     tune()
