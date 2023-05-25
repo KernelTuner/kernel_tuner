@@ -1289,9 +1289,9 @@ def generate_directive_function(
     """Generate tunable function for one directive"""
     cpp = False
     f90 = False
-    if "#pragma acc" in code:
+    if "#pragma acc" in body:
         cpp = True
-    elif "!$acc" in code:
+    elif "!$acc" in body:
         f90 = True
 
     code = "\n".join(preprocessor)
