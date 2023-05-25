@@ -13,6 +13,12 @@ except Exception:
     pycuda_present = False
 
 try:
+    import pynvml
+    pynvml_present = True
+except ImportError:
+    pynvml_present = False
+
+try:
     import pyopencl
 
     opencl_present = True

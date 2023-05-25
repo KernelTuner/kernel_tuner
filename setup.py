@@ -26,6 +26,7 @@ setup(
     license="Apache 2.0",
     keywords="auto-tuning gpu computing pycuda cuda pyopencl opencl",
     url="https://KernelTuner.github.io/kernel_tuner/",
+    include_package_data=True,  # use MANIFEST.in during install
     project_urls={
         "Documentation": "https://KernelTuner.github.io/kernel_tuner/",
         "Source": "https://github.com/KernelTuner/kernel_tuner",
