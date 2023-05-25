@@ -14,6 +14,7 @@ except Exception:
 
 try:
     import pynvml
+
     pynvml_present = True
 except ImportError:
     pynvml_present = False
@@ -54,6 +55,7 @@ except Exception:
 skip_if_no_pycuda = pytest.mark.skipif(
     not pycuda_present, reason="PyCuda not installed or no CUDA device detected"
 )
+skip_if_no_pynvml = pytest.mark.skipif(not pynvml_present, reason="NVML not installed")
 skip_if_no_cupy = pytest.mark.skipif(
     not cupy_present, reason="CuPy not installed or no CUDA device detected"
 )
