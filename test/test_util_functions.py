@@ -813,9 +813,9 @@ def test_extract_preprocessor():
         assert item in results
 
 
-def test_wrap_cpp_timing():
+def test_wrap_timing():
     code = "for ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}"
-    wrapped = wrap_cpp_timing(code)
+    wrapped = wrap_timing(code)
     assert (
         wrapped
         == "auto start = std::chrono::steady_clock::now();\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto end = std::chrono::steady_clock::now();\nstd::chrono::duration<float, std::milli> elapsed_time = end - start;\nreturn elapsed_time.count();"
