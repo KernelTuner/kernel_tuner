@@ -823,7 +823,7 @@ def test_wrap_timing():
 
 
 def test_extract_directive_signature():
-    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)  "
+    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)  \n#pragma acc"
     signatures = extract_directive_signature(code)
     assert len(signatures) == 1
     assert (
@@ -841,7 +841,7 @@ def test_extract_directive_signature():
 
 
 def test_extract_directive_data():
-    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)"
+    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)\n#pragma acc"
     data = extract_directive_data(code)
     assert len(data) == 1
     assert len(data["vector_add"]) == 4
