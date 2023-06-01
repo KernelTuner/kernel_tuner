@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Observers &mdash; Kernel Tuner 0.4.4 documentation</title>
+  <title>Observers &mdash; Kernel Tuner 0.4.5 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -34,7 +34,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                0.4.4
+                0.4.5
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -76,9 +76,17 @@
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.register_device"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.register_device()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#powersensorobserver">PowerSensorObserver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#powersensorobserver">PowerSensorObserver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.powersensor.PowerSensorObserver"><code class="docutils literal notranslate"><span class="pre">PowerSensorObserver</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#nvmlobserver">NVMLObserver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.nvml.NVMLObserver"><code class="docutils literal notranslate"><span class="pre">NVMLObserver</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#tuning-execution-parameters-with-nvml">Tuning execution parameters with NVML</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pmtobserver">PMTObserver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.pmt.PMTObserver"><code class="docutils literal notranslate"><span class="pre">PMTObserver</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -126,7 +134,7 @@ design pattern, observers can be used to subscribe to certain types of events an
 observer will be called when the event takes place.</p>
 <p>Kernel Tuner implements an abstract BenchmarkObserver with methods that may be overwritten by classes extending
 the BenchmarkObserver class, shown below. The only mandatory method to implement
-is <code class="docutils literal notranslate"><span class="pre">get\_results</span></code>, which is used to return the resulting observations at the end of benchmarking a
+is <code class="docutils literal notranslate"><span class="pre">get_results</span></code>, which is used to return the resulting observations at the end of benchmarking a
 particular kernel configuration and usually returns aggregated results over multiple iterations of kernel
 execution. Before tuning starts, each observer is given a reference to the lower-level backend that is used for
 compiling and benchmarking the kernel configurations. In this way, the observer can inspect the compiled module,
@@ -201,6 +209,23 @@ it possible to use it from Python.</p>
 the user to record power and/or energy consumption of kernel configurations during auto-tuning. This allows
 Kernel Tuner to accurately determine the power and energy consumption of all kernel configurations it benchmarks
 during auto-tuning.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.observers.powersensor.PowerSensorObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.powersensor.</span></span><span class="sig-name descname"><span class="pre">PowerSensorObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.powersensor.PowerSensorObserver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observer that an external PowerSensor2 device to accurately measure power</p>
+<p>Requires PowerSensor2 hardware and powersensor Python bindings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>observables</strong> (<em>list</em>) – A list of string, containing any of “ps_energy” or “ps_power”.
+To measure energy in Joules or power consumption in Watt.
+If not passed “ps_energy” is used to report energy consumption of kernels in Joules.</p></li>
+<li><p><strong>device</strong> (<em>string</em>) – A string with the path to the PowerSensor2 device, default “/dev/ttyACM0”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="nvmlobserver">
 <h2>NVMLObserver<a class="headerlink" href="#nvmlobserver" title="Permalink to this heading">¶</a></h2>
@@ -217,6 +242,34 @@ measurements are requested by the user. The downside of this approach is that it
 time it takes to benchmark different kernel configurations. However, NVML can be used for power measurements on
 almost all Nvidia GPUs, so this method is much more accessible to end-users compared to solutions that require
 custom hardware, such as PowerSensor2.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.observers.nvml.NVMLObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.nvml.</span></span><span class="sig-name descname"><span class="pre">NVMLObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nvidia_smi_fallback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_locked_clocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continous_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.nvml.NVMLObserver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observer that uses NVML to monitor power, energy, clock frequencies, voltages and temperature</p>
+<p>The NVMLObserver can also be used to tune application-specific clock frequencies or power limits
+in combination with other parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>observables</strong> (<em>list</em><em> of </em><em>strings</em>) – List of quantities that should be observed during tuning, supported are: “power_readings”,
+“nvml_power”, “nvml_energy”, “core_freq”, “mem_freq”, “temperature”, “gr_voltage”. If you want to measure the average power
+consumption of a GPU kernel executing on the GPU use “nvml_power”. The “power_readings” are the individual power readings
+as reported by NVML and will return a lot of data if you are benchmarking many different kernel configurations.</p></li>
+<li><p><strong>device</strong> (<em>integer</em>) – Device ordinal used by Nvidia to identify your device, same as reported by nvidia-smi.</p></li>
+<li><p><strong>save_all</strong> (<em>boolean</em>) – If set to True, all data collected by the NVMLObserver for every iteration during benchmarking will be returned.
+If set to False, data will be aggregated over multiple iterations during benchmarking. False by default.</p></li>
+<li><p><strong>nvidia_smi_fallback</strong> (<em>string</em>) – String with the location of your nvidia-smi executable to use when Python cannot execute with root privileges, default None.</p></li>
+<li><p><strong>use_locked_clocks</strong> (<em>boolean</em>) – Boolean to opt in to using the locked clocks feature on Ampere or newer GPUs.
+Note, this setting is only relevant when you are tuning with application-specific clocks.
+If set to True, using locked clocks will be preferred over application clocks. If set to False, the Observer
+will set the GPU clocks using the application clocks feature.
+Default is False.</p></li>
+<li><p><strong>continuous_duration</strong> (<em>float</em>) – Duration to use for energy/power measurements in seconds, default 1 second.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <section id="tuning-execution-parameters-with-nvml">
 <h3>Tuning execution parameters with NVML<a class="headerlink" href="#tuning-execution-parameters-with-nvml" title="Permalink to this heading">¶</a></h3>
 <p>When you are using the NVMLObserver, Kernel Tuner can use its interface to NVML to enable tuning of
@@ -237,6 +290,35 @@ setting does require root privileges. As such, these features may not be availab
 the path where you are allowed to run nvidia-smi with privileges. This allows your Kernel Tuner application to run without privileges, and configurating the clock frequencies or power
 limits will be done through nvidia-smi.</p>
 </section>
+</section>
+<section id="pmtobserver">
+<h2>PMTObserver<a class="headerlink" href="#pmtobserver" title="Permalink to this heading">¶</a></h2>
+<p>The PMTObserver can be used to measure power and energy on various platforms including Nvidia Jetson, Nvidia NVML,
+the RAPL interface, AMD ROCM, and Xilinx. It requires PMT to be installed, as well as the PMT’s Python interface.
+More information about PMT can be found here: <a class="reference external" href="https://git.astron.nl/RD/pmt/">https://git.astron.nl/RD/pmt/</a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.observers.pmt.PMTObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.pmt.</span></span><span class="sig-name descname"><span class="pre">PMTObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.pmt.PMTObserver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observer that uses the PMT library to measure power</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>observables</strong> (<em>string</em><em>,</em><em>list/dictionary</em>) – <p>One of:</p>
+<ul class="simple">
+<li><p>A string specifying a single power meter to use</p></li>
+<li><p>A list of string, specifying one or more power meters to use</p></li>
+<li><p>A dictionary, specifying one or more power meters to use,
+including the device identifier. For arduino this should be for
+instance “/dev/ttyACM0”. For nvml, it should correspond to the GPU
+id (e.g. ‘0’, or ‘1’). For some sensors (such as rapl) the device
+id is not used, it should be ‘None’ in those cases.</p></li>
+</ul>
+<p>This observer will report “&lt;platform&gt;_energy&gt;” and “&lt;platform&gt;_power” for
+all specified platforms.</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 </section>
 
