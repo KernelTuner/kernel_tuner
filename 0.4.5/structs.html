@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Using structs &mdash; Kernel Tuner 0.4.5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Templated kernels" href="templates.html" />
+    <link rel="prev" title="Tuning Host Code" href="hostcode.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                0.4.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Using structs</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/structs.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-structs">
+<h1>Using structs<a class="headerlink" href="#using-structs" title="Permalink to this heading">¶</a></h1>
+<p>One of the issues with calling GPU kernels from Python is the use of custom data types in kernel arguments. In general, it is recommended for portability of your GPU code, which may be
+used in any host program in any host programming language, to keep the interface of your kernels as simple as possible. This means sticking to simple pointers of primitive types such as integer, float, and double.
+For performance reasons, it is also recommended to not use arrays of structs for kernel arguments, as this is very likely to lead to inefficient memory accesses on the GPU.</p>
+<p>However, there are situations, in particular in scientific applications, where the GPU code needs a lot of input parameters where it makes sense to collect these in a struct that
+describes the simulation or experimental setup. For these use cases, it is possible to use Python’s built-in <code class="docutils literal notranslate"><span class="pre">struct</span></code> library, in particular the function <code class="docutils literal notranslate"><span class="pre">struct.pack()</span></code>. For how to use
+<code class="docutils literal notranslate"><span class="pre">struct.pack</span></code>, please consult the <a class="reference external" href="https://docs.python.org/3/library/struct.html">Python documentation</a>. In the code below we show part of Python script that uses <code class="docutils literal notranslate"><span class="pre">struct.pack</span></code>,
+Numpy, and Kernel Tuner to call a CUDA kernel that uses a struct as kernel argument.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">kernel_tuner</span> <span class="k">as</span> <span class="nn">kt</span>
+
+<span class="k">def</span> <span class="nf">create_receive_spec_struct</span><span class="p">():</span>
+    <span class="o">...</span>
+
+    <span class="c1"># Use struct.pack to create a byte representation of our struct</span>
+    <span class="c1"># The format string uses:</span>
+    <span class="c1">#   i for integer, P for Pointer, f for float, ? for bool</span>
+    <span class="c1"># The 0l at the end ensures padding to the next long (8bytes)</span>
+    <span class="n">packstr</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;iiiiiiiiiiiPPi?fffi?0l&#39;</span><span class="p">,</span>
+                          <span class="n">nSamples</span><span class="p">,</span> <span class="n">nSamplesIQ</span><span class="p">,</span> <span class="n">nSlowTimeSamples</span><span class="p">,</span>
+                          <span class="n">nChannels</span><span class="p">,</span> <span class="n">nTX</span><span class="p">,</span> <span class="n">nRepeats</span><span class="p">,</span> <span class="n">nFastTimeSamples</span><span class="p">,</span>
+                          <span class="n">rfSize</span><span class="p">,</span> <span class="n">mNRows</span><span class="p">,</span> <span class="n">mNRowsIQ</span><span class="p">,</span> <span class="n">nActiveChannels</span><span class="p">,</span>
+                          <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">isIQ</span><span class="p">,</span> <span class="n">Fs</span><span class="p">,</span> <span class="n">FsIQ</span><span class="p">,</span> <span class="n">Fc</span><span class="p">,</span> <span class="n">nBuffers</span><span class="p">,</span>
+                          <span class="n">initialized</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">packstr</span><span class="p">),</span>
+                         <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">void</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">packstr</span><span class="p">))))[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">receive_spec</span> <span class="o">=</span> <span class="n">create_receive_spec_struct</span><span class="p">()</span>
+
+<span class="o">...</span>
+
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">bf</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">receive_spec</span><span class="p">,</span> <span class="n">recon</span><span class="p">]</span>
+
+<span class="n">kt</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_source</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The most difficult part of this code is ensuring the struct.pack format string is correct and keeping it in sync with the GPU code. Note the <code class="docutils literal notranslate"><span class="pre">0l</span></code> at the end of string. This enables
+padding to the next long, which is sometimes needed when the struct argument is not the last argument in the kernel argument list.</p>
+<p>Using the packstr returned by struct.pack, we can create a numpy buffer, in this case we are only interested in the first element in the array, hence the <code class="docutils literal notranslate"><span class="pre">[0]</span></code> at the end. To tell Numpy
+what data type our packstr hold we specify the dtype as an np.void of length <code class="docutils literal notranslate"><span class="pre">len(packstr)</span></code>, which is the number of bytes in our data type. If you need an array of structs, you only
+need some slight modifications to the example code above.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hostcode.html" class="btn btn-neutral float-left" title="Tuning Host Code" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="templates.html" class="btn btn-neutral float-right" title="Templated kernels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
