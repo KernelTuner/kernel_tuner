@@ -43,12 +43,15 @@ Argument = namedtuple("Argument", ["numpy", "ctypes"])
 class CFunctions(CompilerBackend):
     """Class that groups the code for running and compiling C functions"""
 
-    def __init__(self, iterations=7, compiler_options=None, compiler=None):
+    def __init__(self, iterations=7, compiler_options=None, compiler=None, observers=None):
         """instantiate CFunctions object used for interacting with C code
 
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        self.observers = observers or []
+        self.observers.append(CRuntimeObserver(self))
+
         self.iterations = iterations
         self.max_threads = 1024
         self.compiler_options = compiler_options
@@ -56,7 +59,6 @@ class CFunctions(CompilerBackend):
         self.compiler = compiler or "g++"
         self.lib = None
         self.using_openmp = False
-        self.observers = [CRuntimeObserver(self)]
         self.last_result = None
 
         try:
