@@ -69,6 +69,7 @@ dev = [
     "scipy>=0.18.1",
     "mock>=2.0.0",
     "pytest>=3.0.3",
+    "ruff >= 0.0.263",
     "Sphinx>=1.4.8",
     "scikit-learn>=0.24.2",
     "scikit-optimize>=0.8.1",
@@ -94,3 +95,18 @@ include-package-data = true
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
+
+[tool.black]
+line-length = 120
+[tool.ruff]
+line-length = 120
+respect-gitignore = true
+exclude = ["doc"]
+select = [
+  "E",   # pycodestyle
+  "F",   # pyflakes,
+  "D",   # pydocstyle,
+]
+# target-version = "py310"   # inferred from project.requires-python
+[tool.ruff.pydocstyle]
+convention = "google"

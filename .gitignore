@@ -18,6 +18,10 @@ deploy_key
 *.mod
 temp_*.*
 
+### Visual Studio Code ###
+!.vscode/settings.json
+!.vscode/extensions.json
+
 ### macOS ###
 # General
 .DS_Store

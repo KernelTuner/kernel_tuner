@@ -1,0 +1,25 @@
+{
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnType": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": true,
+      "source.organizeImports": true,
+    }
+  },
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [
+    "--config=pyproject.toml"
+  ],
+  "ruff.args": [
+    "--config=pyproject.toml"
+  ],
+  "autoDocstring.docstringFormat": "google-notypes",
+}
