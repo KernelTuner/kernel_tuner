@@ -2,7 +2,13 @@ from random import choice, shuffle
 from typing import Tuple, List
 
 from constraint import Problem, Constraint, FunctionConstraint
-from constraint import Solver, BacktrackingSolver, RecursiveBacktrackingSolver, MinConflictsSolver
+from constraint import (
+    Solver,
+    BacktrackingSolver,
+    OptimizedBacktrackingSolver,
+    RecursiveBacktrackingSolver,
+    MinConflictsSolver,
+)
 import numpy as np
 
 # PySMT imports
@@ -33,7 +39,7 @@ from pysmt.shortcuts import Solver as PySMTSolver
 import re
 import ast
 
-from kernel_tuner.util import default_block_size_names
+from kernel_tuner.util import default_block_size_names, compile_restrictions
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import MaxProdConstraint
 
@@ -64,6 +70,7 @@ class Searchspace:
         # set the object attributes using the arguments
         self.tune_params = tune_params
         self.restrictions = restrictions
+        self.pc_var_mapping = None
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
@@ -72,6 +79,18 @@ class Searchspace:
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
+
+        # map parameter names to variables for faster evaluation (in PythonConstraint)
+        if framework.lower() == "pythonconstraint":
+            self.pc_var_mapping = {}
+            self.__map_var_to_int_counter = 0
+            self.tune_params_int = dict([(self.__map_var_to_int(k), v) for k, v in self.tune_params.items()])
+            self.param_names_int = list(self.tune_params_int.keys())
+
+        # if there are strings in the restrictions, parse them to functions (increases restrictions check performance significantly)
+        restrictions = list(restrictions) if not isinstance(restrictions, list) else restrictions
+        if len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions):
+            self.restrictions = compile_restrictions(restrictions, tune_params, self.pc_var_mapping)
 
         # get the framework given the framework argument
         if framework.lower() == "pythonconstraint":
@@ -85,6 +104,8 @@ class Searchspace:
         solver = ""
         if solver_method.lower() == "pc_backtrackingsolver":
             solver = BacktrackingSolver()
+        elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
+            solver = OptimizedBacktrackingSolver()
         elif solver_method.lower() == "pc_recursivebacktrackingsolver":
             solver = RecursiveBacktrackingSolver()
         elif solver_method.lower() == "pc_minconflictssolver":
@@ -207,6 +228,11 @@ class Searchspace:
             size_list,
         )
 
+    def __map_var_to_int(self, var_name):
+        self.pc_var_mapping[var_name] = self.__map_var_to_int_counter
+        self.__map_var_to_int_counter += 1
+        return self.pc_var_mapping[var_name]
+
     def __build_searchspace(
         self, block_size_names: list, max_threads: int, solver: Solver
     ) -> Tuple[List[tuple], np.ndarray, dict, int]:
@@ -214,13 +240,14 @@ class Searchspace:
 
         # instantiate the parameter space with all the variables
         parameter_space = Problem(solver=solver)
-        for param_name, param_values in self.tune_params.items():
+        for param_name, param_values in self.tune_params_int.items():
             parameter_space.addVariable(param_name, param_values)
 
         # add the user-specified restrictions as constraints on the parameter space
         parameter_space = self.__add_restrictions(parameter_space)
 
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
+        # TODO make this work with the integer mapping
         valid_block_size_names = list(
             block_size_name for block_size_name in block_size_names if block_size_name in self.param_names
         )
@@ -232,7 +259,7 @@ class Searchspace:
 
         # form the parameter tuples in the order specified by tune_params.keys()
         parameter_space_list = list(
-            (tuple(params[param_name] for param_name in self.param_names)) for params in parameter_space
+            (tuple(params[param_name] for param_name in self.param_names_int)) for params in parameter_space
         )
 
         # create a numpy array of the search space
@@ -265,18 +292,20 @@ class Searchspace:
                 if callable(restriction) and not isinstance(restriction, Constraint):
                     restriction = FunctionConstraint(restriction)
                 if isinstance(restriction, FunctionConstraint):
-                    parameter_space.addConstraint(restriction, self.param_names)
+                    parameter_space.addConstraint(restriction, self.param_names_int)
                 elif isinstance(restriction, Constraint):
                     parameter_space.addConstraint(restriction)
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
+            if len(self.restrictions) > 0:
+                exit(1)
 
         # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
         elif callable(self.restrictions):
             restrictions_wrapper = lambda *args: check_instance_restrictions(
-                self.restrictions, dict(zip(self.param_names, args)), False
+                self.restrictions, dict(zip(self.param_names_int, args)), False
             )
-            parameter_space.addConstraint(restrictions_wrapper, self.param_names)
+            parameter_space.addConstraint(restrictions_wrapper, self.param_names_int)
         elif self.restrictions is not None:
             raise ValueError(f"The restrictions are of unsupported type {type(self.restrictions)}")
         return parameter_space
