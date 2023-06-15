@@ -68,6 +68,7 @@ class Searchspace:
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         """
         # set the object attributes using the arguments
+        restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.restrictions = restrictions
         self.pc_var_mapping = None
@@ -88,7 +89,7 @@ class Searchspace:
             self.param_names_int = list(self.tune_params_int.keys())
 
         # if there are strings in the restrictions, parse them to functions (increases restrictions check performance significantly)
-        restrictions = list(restrictions) if not isinstance(restrictions, list) else restrictions
+        restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
         if len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions):
             self.restrictions = compile_restrictions(restrictions, tune_params, self.pc_var_mapping)
 
@@ -249,7 +250,9 @@ class Searchspace:
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
         # TODO make this work with the integer mapping
         valid_block_size_names = list(
-            block_size_name for block_size_name in block_size_names if block_size_name in self.param_names
+            self.pc_var_mapping[block_size_name]
+            for block_size_name in block_size_names
+            if block_size_name in self.param_names
         )
         if len(valid_block_size_names) > 0:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
@@ -297,8 +300,6 @@ class Searchspace:
                     parameter_space.addConstraint(restriction)
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
-            if len(self.restrictions) > 0:
-                exit(1)
 
         # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
         elif callable(self.restrictions):

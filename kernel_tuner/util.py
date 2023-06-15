@@ -748,8 +748,10 @@ def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dic
     def replace_params(match_object):
         key = match_object.group(1)
         if key in tune_params:
-            mapped_key = str(param_mapping[key]) if param_mapping else key
-            return "params[" + mapped_key + "]"
+            if param_mapping:
+                return "params[" + str(param_mapping[key]) + "]"
+            else:
+                return "params['" + key + "']"
         else:
             return key
 
