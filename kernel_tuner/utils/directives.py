@@ -192,7 +192,7 @@ def generate_directive_function(
     if cpp:
         code += 'extern "C" ' + signature + "{\n"
     elif f90:
-        code += signature + " result(timing)\n"
+        code += "\n" + signature + " result(timing)\n"
     if len(initialization) > 1:
         code += initialization + "\n"
     code += wrap_timing(body)
