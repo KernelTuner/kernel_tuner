@@ -2,7 +2,7 @@
 """This is a simple example for tuning Fortran OpenACC code with the kernel tuner"""
 
 from kernel_tuner import tune_kernel
-from kernel_tuner.util import (
+from kernel_tuner.utils.directives import (
     extract_directive_signature,
     extract_directive_code,
     extract_preprocessor,

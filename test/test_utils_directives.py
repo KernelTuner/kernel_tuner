@@ -1,5 +1,6 @@
 from kernel_tuner.utils.directives import *
 
+
 def test_extract_directive_code():
     code = """
         #include <stdlib.h>

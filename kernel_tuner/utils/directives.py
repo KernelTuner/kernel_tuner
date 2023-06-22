@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> dict:
     """Extract an arbitrary section of code"""
     found_section = False
