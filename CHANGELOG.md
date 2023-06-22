@@ -4,6 +4,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [0.4.5] - 2023-06-01
+### Added
+- PMTObserver to measure power and energy on various platforms
+
+### Changed
+- Improved functionality for storing output and metadata files
+- Updated PowerSensorObserver to support PowerSensor3
+- Refactored interal interfaces of runners and backends
+- Bugfix in interface to set objective and optimization direction
+
 ## [0.4.4] - 2023-03-09
 ### Added
 - Support for using time_limit in simulation mode

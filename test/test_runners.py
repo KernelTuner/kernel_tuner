@@ -67,7 +67,7 @@ def test_sequential_runner_alt_block_size_names(env):
     result, _ = tune_kernel(*env,
                             grid_div_x=["block_dim_x"],
                             answer=answer,
-                            block_size_names=block_size_names)
+                            block_size_names=block_size_names, objective='time', objective_higher_is_better=False)
 
     assert len(result) == len(tune_params["block_dim_x"])
 
