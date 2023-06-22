@@ -199,7 +199,7 @@ def generate_directive_function(
     if cpp:
         code += "\n}"
     elif f90:
-        name = signature.split(" ")[1]
+        name = signature.split("(")[0]
         code += f"\nend function {name}\n"
 
     return code
