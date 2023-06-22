@@ -128,9 +128,13 @@ def extract_directive_data(code: str, kernel_name: str = None) -> dict:
     for line in code.replace("\\\n", "").split("\n"):
         if start_string in line:
             if kernel_name is None or correct_kernel(kernel_name, line):
-                name = line.strip().split(" ")[3]
+                if cpp:
+                    name = line.strip().split(" ")[3]
+                    tmp_string = line.strip().split(" ")[4:]
+                elif f90:
+                    name = line.strip().split(" ")[2]
+                    tmp_string = line.strip().split(" ")[3:]
                 data[name] = dict()
-                tmp_string = line.strip().split(" ")[4:]
                 for param in tmp_string:
                     if len(param) == 0:
                         continue

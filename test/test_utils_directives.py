@@ -155,3 +155,10 @@ def test_extract_directive_data():
     assert "VECTOR_SIZE" in data["vector_add"]["size"]
     data = extract_directive_data(code, "vector_add_double")
     assert len(data) == 0
+    code = "!$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)\n!$acc"
+    data = extract_directive_data(code)
+    assert len(data) == 1
+    assert len(data["vector_add"]) == 4
+    assert "float*" in data["vector_add"]["B"]
+    assert "int" not in data["vector_add"]["C"]
+    assert "VECTOR_SIZE" in data["vector_add"]["n"]
