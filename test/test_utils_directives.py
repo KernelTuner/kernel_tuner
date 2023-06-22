@@ -51,8 +51,26 @@ def test_extract_directive_code():
     assert expected_one in returns["initialize"]
     assert expected_two in returns["vector_add"]
     assert expected_one not in returns["vector_add"]
-    returns = extract_directive_code(code, "vector_a")
+    returns = extract_directive_code(code, "vector")
     assert len(returns) == 0
+
+    code = """
+    !$tuner start vector_add
+    !$acc parallel loop num_gangs(ngangs) vector_length(vlength)
+    do i = 1, N
+      C(i) = A(i) + B(i)
+    end do
+    !$acc end parallel loop
+    !$tuner stop
+    """
+    expected = """    !$acc parallel loop num_gangs(ngangs) vector_length(vlength)
+    do i = 1, N
+      C(i) = A(i) + B(i)
+    end do
+    !$acc end parallel loop"""
+    returns = extract_directive_code(code, "vector_add")
+    assert len(returns) == 1
+    assert expected in returns["vector_add"]
 
 
 def test_extract_preprocessor():

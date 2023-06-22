@@ -7,6 +7,12 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
     sections = dict()
     tmp_string = list()
     name = ""
+    cpp = False
+    f90 = False
+    if "#pragma acc" in code:
+        cpp = True
+    elif "!$acc" in code:
+        f90 = True
 
     for line in code.replace("\\\n", "").split("\n"):
         if found_section:
@@ -19,9 +25,12 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
                 tmp_string.append(line)
         else:
             if start in line:
-                if kernel_name is None or f" {kernel_name} " in line:
+                if kernel_name is None or f" {kernel_name} " in line or ( kernel_name in line and len(line.partition(kernel_name)[2]) == 0):
                     found_section = True
-                    name = line.strip().split(" ")[3]
+                    if cpp:
+                        name = line.strip().split(" ")[3]
+                    elif f90:
+                        name = line.strip().split(" ")[2]
 
     return sections
 
