@@ -97,8 +97,12 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
         if start_string in line:
             if kernel_name is None or f" {kernel_name} " in line:
                 tmp_string = line.strip().split(" ")
-                name = tmp_string[3]
-                tmp_string = tmp_string[4:]
+                if cpp:
+                    name = tmp_string[3]
+                    tmp_string = tmp_string[4:]
+                elif f90:
+                    name = tmp_string[2]
+                    tmp_string = tmp_string[3:]
                 params = list()
                 for param in tmp_string:
                     if len(param) == 0:

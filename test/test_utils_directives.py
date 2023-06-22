@@ -139,6 +139,10 @@ def test_extract_directive_signature():
     )
     signatures = extract_directive_signature(code, "vector_add_ext")
     assert len(signatures) == 0
+    code = "!$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)\n!$acc"
+    signatures = extract_directive_signature(code)
+    assert len(signatures) == 1
+    assert "function vector_add(A, B, C, n)" in signatures["vector_add"]
 
 
 def test_extract_directive_data():
