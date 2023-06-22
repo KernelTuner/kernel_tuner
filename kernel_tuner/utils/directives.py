@@ -110,7 +110,29 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                 if cpp:
                     signatures[name] = f"float {name}({', '.join(params)})"
                 elif f90:
-                    signatures[name] = f"function {name}({', '.join(params)})"
+                    signatures[name] = f"function {name}({', '.join(params)}) result(timing)"
+                    params = list()
+                    for param in tmp_string:
+                        if len(param) == 0:
+                            continue
+                        p_name = param.split("(")[0]
+                        param = param.replace(p_name, "", 1)
+                        p_type = param[1:-1]
+                        p_size = p_type.split(":")[1]
+                        p_type = p_type.split(":")[0]
+                        if "float*" in p_type:
+                            params.append(f"real (c_float), dimension({p_size}) :: {p_name}")
+                        elif "double*" in p_type:
+                            params.append(f"real (c_double), dimension({p_size}) :: {p_name}")
+                        elif "int*" in p_type:
+                            params.append(f"integer (c_int), dimension({p_size}) :: {p_name}")
+                        elif "float" in p_type:
+                            params.append(f"real (c_float) :: {p_name}")
+                        elif "double" in p_type:
+                            params.append(f"real (c_double) :: {p_name}")
+                        elif "int" in p_type:
+                            params.append(f"integer (c_int) :: {p_name}")
+                    signatures[name] += "\n".join(params)
 
     return signatures
 
@@ -172,7 +194,7 @@ def wrap_timing(code: str) -> str:
         timing = "std::chrono::duration<float, std::milli> elapsed_time = end - start;"
         ret = "return elapsed_time.count();"
     elif f90:
-        start = "integer :: start\nreal :: rate\ninteger :: end\ncall system_clock(start, rate)"
+        start = "integer (c_int) :: start\nreal (c_float) :: rate\ninteger (c_int) :: end\ncall system_clock(start, rate)"
         end = "call system_clock(end)"
         timing = "timing = (real(end - start) / real(rate)) * 1e3"
         ret = ""
@@ -192,7 +214,7 @@ def generate_directive_function(
     if cpp:
         code += 'extern "C" ' + signature + "{\n"
     elif f90:
-        code += "\n" + signature + " result(timing)\n"
+        code += "\n" + signature
     if len(initialization) > 1:
         code += initialization + "\n"
     code += wrap_timing(body)
