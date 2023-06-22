@@ -1,18 +1,23 @@
 import numpy as np
 
 
+def correct_kernel(kernel_name: str, line: str) -> bool:
+    return f" {kernel_name} " in line or (
+        kernel_name in line and len(line.partition(kernel_name)[2]) == 0
+    )
+
+
+def cpp_or_f90(code: str) -> list:
+    return "#pragma acc" in code, "!$acc" in code
+
+
 def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> dict:
     """Extract an arbitrary section of code"""
     found_section = False
     sections = dict()
     tmp_string = list()
     name = ""
-    cpp = False
-    f90 = False
-    if "#pragma acc" in code:
-        cpp = True
-    elif "!$acc" in code:
-        f90 = True
+    cpp, f90 = cpp_or_f90(code)
 
     for line in code.replace("\\\n", "").split("\n"):
         if found_section:
@@ -25,7 +30,7 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
                 tmp_string.append(line)
         else:
             if start in line:
-                if kernel_name is None or f" {kernel_name} " in line or ( kernel_name in line and len(line.partition(kernel_name)[2]) == 0):
+                if kernel_name is None or correct_kernel(kernel_name, line):
                     found_section = True
                     if cpp:
                         name = line.strip().split(" ")[3]
@@ -37,12 +42,7 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
 
 def extract_directive_code(code: str, kernel_name: str = None) -> dict:
     """Extract explicitly marked directive sections from code"""
-    cpp = False
-    f90 = False
-    if "#pragma acc" in code:
-        cpp = True
-    elif "!$acc" in code:
-        f90 = True
+    cpp, f90 = cpp_or_f90(code)
 
     if cpp:
         start_string = "#pragma tuner start"
@@ -56,12 +56,7 @@ def extract_directive_code(code: str, kernel_name: str = None) -> dict:
 
 def extract_initialization_code(code: str) -> str:
     """Extract the initialization section from code"""
-    cpp = False
-    f90 = False
-    if "#pragma acc" in code:
-        cpp = True
-    elif "!$acc" in code:
-        f90 = True
+    cpp, f90 = cpp_or_f90(code)
 
     if cpp:
         start_string = "#pragma tuner initialize"
@@ -80,12 +75,7 @@ def extract_initialization_code(code: str) -> str:
 
 def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
     """Extract the user defined signature for directive sections"""
-    cpp = False
-    f90 = False
-    if "#pragma acc" in code:
-        cpp = True
-    elif "!$acc" in code:
-        f90 = True
+    cpp, f90 = cpp_or_f90(code)
 
     if cpp:
         start_string = "#pragma tuner start"
@@ -95,7 +85,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
 
     for line in code.replace("\\\n", "").split("\n"):
         if start_string in line:
-            if kernel_name is None or f" {kernel_name} " in line:
+            if kernel_name is None or correct_kernel(kernel_name, line):
                 tmp_string = line.strip().split(" ")
                 if cpp:
                     name = tmp_string[3]
@@ -127,12 +117,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
 
 def extract_directive_data(code: str, kernel_name: str = None) -> dict:
     """Extract the data used in the directive section"""
-    cpp = False
-    f90 = False
-    if "#pragma acc" in code:
-        cpp = True
-    elif "!$acc" in code:
-        f90 = True
+    cpp, f90 = cpp_or_f90(code)
 
     if cpp:
         start_string = "#pragma tuner start"
@@ -142,7 +127,7 @@ def extract_directive_data(code: str, kernel_name: str = None) -> dict:
 
     for line in code.replace("\\\n", "").split("\n"):
         if start_string in line:
-            if kernel_name is None or f" {kernel_name} " in line:
+            if kernel_name is None or correct_kernel(kernel_name, line):
                 name = line.strip().split(" ")[3]
                 data[name] = dict()
                 tmp_string = line.strip().split(" ")[4:]
@@ -175,12 +160,7 @@ def extract_preprocessor(code: str) -> list:
 
 def wrap_timing(code: str) -> str:
     """Wrap timing code around the provided code"""
-    cpp = False
-    f90 = False
-    if "#pragma acc" in code:
-        cpp = True
-    elif "!$acc" in code:
-        f90 = True
+    cpp, f90 = cpp_or_f90(code)
 
     if cpp:
         start = "auto start = std::chrono::steady_clock::now();"
@@ -200,12 +180,7 @@ def generate_directive_function(
     preprocessor: str, signature: str, body: str, initialization: str = ""
 ) -> str:
     """Generate tunable function for one directive"""
-    cpp = False
-    f90 = False
-    if "#pragma acc" in body:
-        cpp = True
-    elif "!$acc" in body:
-        f90 = True
+    cpp, f90 = cpp_or_f90(code)
 
     code = "\n".join(preprocessor)
     if cpp and "#include <chrono>" not in preprocessor:
