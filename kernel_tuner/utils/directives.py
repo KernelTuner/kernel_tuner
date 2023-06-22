@@ -203,7 +203,7 @@ def generate_directive_function(
         code += signature + " result(timing)\n"
     if len(initialization) > 1:
         code += initialization + "\n"
-    code += wrap_timing(body) + "\n}"
+    code += wrap_timing(body)
     if cpp:
         code += "\n}"
     elif f90:
