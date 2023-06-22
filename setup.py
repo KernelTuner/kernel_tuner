@@ -39,6 +39,7 @@ setup(
         "kernel_tuner.observers",
         "kernel_tuner.runners",
         "kernel_tuner.strategies",
+        "kernel_tuner.utils"
     ],
     long_description=readme(),
     long_description_content_type="text/x-rst",
