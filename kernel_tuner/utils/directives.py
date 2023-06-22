@@ -184,7 +184,7 @@ def generate_directive_function(
     preprocessor: str, signature: str, body: str, initialization: str = ""
 ) -> str:
     """Generate tunable function for one directive"""
-    cpp, f90 = cpp_or_f90(code)
+    cpp, f90 = cpp_or_f90(body)
 
     code = "\n".join(preprocessor)
     if cpp and "#include <chrono>" not in preprocessor:
