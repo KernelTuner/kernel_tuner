@@ -223,7 +223,7 @@ class CompilerFunctions(CompilerBackend):
                 kernel_name = match.group(1) + "_" + kernel_name + "_"
         else:
             # for functions outside of modules
-            if self.compiler in ["gfortran", "ftn", "ifort", "pgfortran"]:
+            if self.compiler in ["gfortran", "ftn", "ifort", "nvfortran"]:
                 kernel_name = kernel_name + "_"
 
         try:
