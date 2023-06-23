@@ -132,7 +132,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                             params.append(f"real (c_double) :: {p_name}")
                         elif "int" in p_type:
                             params.append(f"integer (c_int) :: {p_name}")
-                    signatures[name] += "\n".join(params)
+                    signatures[name] += "\n".join(params) + "\n"
 
     return signatures
 
