@@ -110,7 +110,9 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                 if cpp:
                     signatures[name] = f"float {name}({', '.join(params)})"
                 elif f90:
-                    signatures[name] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\n"
+                    signatures[
+                        name
+                    ] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\n"
                     params = list()
                     for param in tmp_string:
                         if len(param) == 0:
@@ -121,11 +123,17 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                         p_size = p_type.split(":")[1]
                         p_type = p_type.split(":")[0]
                         if "float*" in p_type:
-                            params.append(f"real (c_float), dimension({p_size}) :: {p_name}")
+                            params.append(
+                                f"real (c_float), dimension({p_size}) :: {p_name}"
+                            )
                         elif "double*" in p_type:
-                            params.append(f"real (c_double), dimension({p_size}) :: {p_name}")
+                            params.append(
+                                f"real (c_double), dimension({p_size}) :: {p_name}"
+                            )
                         elif "int*" in p_type:
-                            params.append(f"integer (c_int), dimension({p_size}) :: {p_name}")
+                            params.append(
+                                f"integer (c_int), dimension({p_size}) :: {p_name}"
+                            )
                         elif "float" in p_type:
                             params.append(f"real (c_float) :: {p_name}")
                         elif "double" in p_type:
