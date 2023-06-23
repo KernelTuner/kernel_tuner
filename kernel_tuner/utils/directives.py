@@ -110,7 +110,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                 if cpp:
                     signatures[name] = f"float {name}({', '.join(params)})"
                 elif f90:
-                    signatures[name] = f"function {name}({', '.join(params)}) result(timing)"
+                    signatures[name] = f"function {name}({', '.join(params)}) result(timing)\n"
                     params = list()
                     for param in tmp_string:
                         if len(param) == 0:
