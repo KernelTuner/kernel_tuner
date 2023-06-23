@@ -222,6 +222,7 @@ def generate_directive_function(
     if cpp:
         code += 'extern "C" ' + signature + "{\n"
     elif f90:
+        code += "\nmodule kt\ncontains\n"
         code += "\n" + signature
     if len(initialization) > 1:
         code += initialization + "\n"
@@ -230,7 +231,7 @@ def generate_directive_function(
         code += "\n}"
     elif f90:
         name = signature.split(" ")[1].split("(")[0]
-        code += f"\nend function {name}\n"
+        code += f"\nend function {name}\nend module kt\n"
 
     return code
 
