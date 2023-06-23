@@ -15,7 +15,7 @@ from collections import OrderedDict
 code = """
 #define VECTOR_SIZE 65536
 
-subroutine vector_add(C, A, B, n)
+subroutine vector_add(A, B, C, n)
     use iso_c_binding
     real (c_float), intent(out), dimension(VECTOR_SIZE) :: C
     real (c_float), intent(in), dimension(VECTOR_SIZE) :: A, B
