@@ -20,7 +20,7 @@ subroutine vector_add(C, A, B, n)
     !$acc data copyin(A, B) copyout(C)
 
     !$acc parallel loop device_type(nvidia) vector_length(block_size_x)
-    do i = 1, N
+    do i = 1, n
       C(i) = A(i) + B(i)
     end do
     !$acc end parallel loop
