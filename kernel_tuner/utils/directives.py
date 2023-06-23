@@ -135,11 +135,11 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                                 f"integer (c_int), dimension({p_size}) :: {p_name}"
                             )
                         elif "float" in p_type:
-                            params.append(f"real (c_float) :: {p_name}")
+                            params.append(f"real (c_float), value :: {p_name}")
                         elif "double" in p_type:
-                            params.append(f"real (c_double) :: {p_name}")
+                            params.append(f"real (c_double), value :: {p_name}")
                         elif "int" in p_type:
-                            params.append(f"integer (c_int) :: {p_name}")
+                            params.append(f"integer (c_int), value :: {p_name}")
                     signatures[name] += "\n".join(params) + "\n"
 
     return signatures
