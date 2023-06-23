@@ -23,7 +23,7 @@ subroutine vector_add(C, A, B, n)
 
     !$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)
     !$acc parallel loop num_gangs(ngangs) vector_length(vlength)
-    do i = 1, N
+    do i = 1, n
       C(i) = A(i) + B(i)
     end do
     !$acc end parallel loop

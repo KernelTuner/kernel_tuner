@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """This is a minimal example for calling Fortran functions"""
 
-import logging
-import json
 import numpy as np
 from kernel_tuner import tune_kernel
 
@@ -28,8 +26,8 @@ def tune():
         args,
         tune_params,
         lang="C",
-        compiler="pgfortran",
-        compiler_options=["-acc=verystrict", "-ta=tesla,lineinfo"],
+        compiler="nvfortran",
+        compiler_options=["-fast", "-acc=gpu"],
     )
 
     return result
