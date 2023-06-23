@@ -202,7 +202,7 @@ def wrap_timing(code: str) -> str:
         timing = "std::chrono::duration<float, std::milli> elapsed_time = end - start;"
         ret = "return elapsed_time.count();"
     elif f90:
-        start = "integer (c_int) :: start\nreal (c_float) :: rate\ninteger (c_int) :: end\ncall system_clock(start, rate)"
+        start = "integer (c_int) :: start\nreal (c_float) :: rate\ninteger (c_int) :: end\nreal (c_float) :: timing\ncall system_clock(start, rate)"
         end = "call system_clock(end)"
         timing = "timing = (real(end - start) / real(rate)) * 1e3"
         ret = ""
