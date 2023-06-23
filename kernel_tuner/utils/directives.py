@@ -222,7 +222,7 @@ def generate_directive_function(
     if cpp:
         code += 'extern "C" ' + signature + "{\n"
     elif f90:
-        code += "\nmodule kt\ncontains\n"
+        code += "\nmodule kt\nuse iso_c_binding\ncontains\n"
         code += "\n" + signature
     if len(initialization) > 1:
         code += initialization + "\n"
