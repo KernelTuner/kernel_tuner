@@ -1,31 +1,23 @@
-""" Module for kernel tuner utility functions """
-import time
-from inspect import signature
-import json
-from collections import OrderedDict
-import os
-import sys
+"""Module for kernel tuner utility functions."""
 import errno
-import tempfile
+import json
 import logging
-import warnings
+import os
 import re
+import sys
+import tempfile
+import time
+import warnings
+from collections import OrderedDict
+from inspect import signature
 from types import FunctionType
 
 import numpy as np
-from constraint import (
-    Constraint,
-    AllDifferentConstraint,
-    AllEqualConstraint,
-    MaxSumConstraint,
-    ExactSumConstraint,
-    MinSumConstraint,
-    InSetConstraint,
-    NotInSetConstraint,
-    SomeInSetConstraint,
-    SomeNotInSetConstraint,
-    FunctionConstraint,
-)
+from constraint import (AllDifferentConstraint, AllEqualConstraint, Constraint,
+                        ExactSumConstraint, FunctionConstraint,
+                        InSetConstraint, MaxSumConstraint, MinSumConstraint,
+                        NotInSetConstraint, SomeInSetConstraint,
+                        SomeNotInSetConstraint)
 
 try:
     import cupy as cp
@@ -62,7 +54,7 @@ class RuntimeFailedConfig(ErrorConfig):
 
 
 class NpEncoder(json.JSONEncoder):
-    """Class we use for dumping Numpy objects to JSON"""
+    """Class we use for dumping Numpy objects to JSON."""
 
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -80,11 +72,11 @@ class TorchPlaceHolder:
 
 
 class SkippableFailure(Exception):
-    """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected"""
+    """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected."""
 
 
 class StopCriterionReached(Exception):
-    """Exception thrown when a stop criterion has been reached"""
+    """Exception thrown when a stop criterion has been reached."""
 
 
 try:
@@ -96,7 +88,7 @@ default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
 
 def check_argument_type(dtype, kernel_argument):
-    """check if the numpy.dtype matches the type used in the code"""
+    """Check if the numpy.dtype matches the type used in the code."""
     types_map = {
         "bool": ["bool"],
         "uint8": ["uchar", "unsigned char", "uint8_t"],
@@ -119,7 +111,7 @@ def check_argument_type(dtype, kernel_argument):
 
 
 def check_argument_list(kernel_name, kernel_string, args):
-    """raise an exception if a kernel arguments do not match host arguments"""
+    """Raise an exception if a kernel arguments do not match host arguments."""
     kernel_arguments = list()
     collected_errors = list()
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
@@ -145,7 +137,7 @@ def check_argument_list(kernel_name, kernel_string, args):
                 )
 
             correct = True
-            if isinstance(arg, np.ndarray) and not "*" in kernel_argument:
+            if isinstance(arg, np.ndarray) and "*" not in kernel_argument:
                 correct = False  # array is passed to non-pointer kernel argument
 
             if correct and check_argument_type(str(arg.dtype), kernel_argument):
@@ -169,7 +161,7 @@ def check_argument_list(kernel_name, kernel_string, args):
 
 
 def check_stop_criterion(to):
-    """checks if max_fevals is reached or time limit is exceeded"""
+    """Checks if max_fevals is reached or time limit is exceeded."""
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
         raise StopCriterionReached("max_fevals reached")
     if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
@@ -177,7 +169,7 @@ def check_stop_criterion(to):
 
 
 def check_tune_params_list(tune_params, observers):
-    """raise an exception if a tune parameter has a forbidden name"""
+    """Raise an exception if a tune parameter has a forbidden name."""
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
@@ -219,7 +211,7 @@ def check_block_size_params_names_list(block_size_names, tune_params):
 
 
 def check_restrictions(restrictions, params: dict, verbose: bool):
-    """check whether a specific instance meets the search space restrictions"""
+    """Check whether a specific instance meets the search space restrictions."""
     valid = True
     if callable(restrictions):
         valid = restrictions(params)
@@ -244,21 +236,28 @@ def check_restrictions(restrictions, params: dict, verbose: bool):
 
 
 def convert_constraint_restriction(restrict: Constraint):
-    """Convert the python-constraint to a function for backwards compatibility"""
+    """Convert the python-constraint to a function for backwards compatibility."""
     if isinstance(restrict, FunctionConstraint):
-        f_restrict = lambda p: restrict._func(*p)
+        def f_restrict(p):
+            return restrict._func(*p)
     elif isinstance(restrict, AllDifferentConstraint):
-        f_restrict = lambda p: len(set(p)) == len(p)
+        def f_restrict(p):
+            return len(set(p)) == len(p)
     elif isinstance(restrict, AllEqualConstraint):
-        f_restrict = lambda p: all(x == p[0] for x in p)
+        def f_restrict(p):
+            return all(x == p[0] for x in p)
     elif isinstance(restrict, MaxProdConstraint):
-        f_restrict = lambda p: np.prod(p) <= restrict._exactsum
+        def f_restrict(p):
+            return np.prod(p) <= restrict._exactsum
     elif isinstance(restrict, MaxSumConstraint):
-        f_restrict = lambda p: sum(p) <= restrict._exactsum
+        def f_restrict(p):
+            return sum(p) <= restrict._exactsum
     elif isinstance(restrict, ExactSumConstraint):
-        f_restrict = lambda p: sum(p) == restrict._exactsum
+        def f_restrict(p):
+            return sum(p) == restrict._exactsum
     elif isinstance(restrict, MinSumConstraint):
-        f_restrict = lambda p: sum(p) >= restrict._exactsum
+        def f_restrict(p):
+            return sum(p) >= restrict._exactsum
     elif isinstance(restrict, (InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint)):
         raise NotImplementedError(
             f"Restriction of the type {type(restrict)} is explicitely not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
@@ -269,13 +268,13 @@ def convert_constraint_restriction(restrict: Constraint):
 
 
 def check_thread_block_dimensions(params, max_threads, block_size_names=None):
-    """check on maximum thread block dimensions"""
+    """Check on maximum thread block dimensions."""
     dims = get_thread_block_dimensions(params, block_size_names)
     return np.prod(dims) <= max_threads
 
 
 def config_valid(config, tuning_options, max_threads):
-    """combines restrictions and a check on the max thread block dimension to check config validity"""
+    """Combines restrictions and a check on the max thread block dimension to check config validity."""
     legal = True
     params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
     if tuning_options.restrictions:
@@ -288,7 +287,7 @@ def config_valid(config, tuning_options, max_threads):
 
 
 def delete_temp_file(filename):
-    """delete a temporary file, don't complain if no longer exists"""
+    """Delete a temporary file, don't complain if no longer exists."""
     try:
         os.remove(filename)
     except OSError as e:
@@ -297,7 +296,7 @@ def delete_temp_file(filename):
 
 
 def detect_language(kernel_string):
-    """attempt to detect language from the kernel_string"""
+    """Attempt to detect language from the kernel_string."""
     if "__global__" in kernel_string:
         lang = "CUDA"
     elif "__kernel" in kernel_string:
@@ -308,7 +307,7 @@ def detect_language(kernel_string):
 
 
 def get_best_config(results, objective, objective_higher_is_better=False):
-    """Returns the best configuration from a list of results according to some objective"""
+    """Returns the best configuration from a list of results according to some objective."""
     func = max if objective_higher_is_better else min
     ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
     best_config = func(results, key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
@@ -316,7 +315,7 @@ def get_best_config(results, objective, objective_higher_is_better=False):
 
 
 def get_config_string(params, keys=None, units=None):
-    """return a compact string representation of a measurement"""
+    """Return a compact string representation of a measurement."""
 
     def compact_number(v):
         if isinstance(v, float):
@@ -341,7 +340,7 @@ def get_config_string(params, keys=None, units=None):
 
 
 def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
-    """compute grid dims based on problem sizes and listed grid divisors"""
+    """Compute grid dims based on problem sizes and listed grid divisors."""
 
     def get_dimension_divisor(divisor_list, default, params):
         if divisor_list is None:
@@ -359,14 +358,14 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
 
 
 def get_instance_string(params):
-    """combine the parameters to a string mostly used for debug output
-    use of OrderedDict is advised
+    """Combine the parameters to a string mostly used for debug output
+    use of OrderedDict is advised.
     """
     return "_".join([str(i) for i in params.values()])
 
 
 def get_kernel_string(kernel_source, params=None):
-    """retrieve the kernel source and return as a string
+    """Retrieve the kernel source and return as a string.
 
     This function processes the passed kernel_source argument, which could be
     a function, a string with a filename, or just a string with code already.
@@ -407,7 +406,7 @@ def get_kernel_string(kernel_source, params=None):
 
 
 def get_problem_size(problem_size, params):
-    """compute current problem size"""
+    """Compute current problem size."""
     if callable(problem_size):
         problem_size = problem_size(params)
     if isinstance(problem_size, (str, int, np.integer)):
@@ -424,7 +423,7 @@ def get_problem_size(problem_size, params):
 
 
 def get_smem_args(smem_args, params):
-    """return a dict with kernel instance specific size"""
+    """Return a dict with kernel instance specific size."""
     result = smem_args.copy()
     if "size" in result:
         size = result["size"]
@@ -438,7 +437,7 @@ def get_smem_args(smem_args, params):
 
 
 def get_temp_filename(suffix=None):
-    """return a string in the form of temp_X, where X is a large integer"""
+    """Return a string in the form of temp_X, where X is a large integer."""
     tmp_file = tempfile.mkstemp(
         suffix=suffix or "", prefix="temp_", dir=os.getcwd()
     )  # or "" for Python 2 compatibility
@@ -447,7 +446,7 @@ def get_temp_filename(suffix=None):
 
 
 def get_thread_block_dimensions(params, block_size_names=None):
-    """thread block size from tuning params, currently using convention"""
+    """Thread block size from tuning params, currently using convention."""
     if not block_size_names:
         block_size_names = default_block_size_names
 
@@ -458,7 +457,7 @@ def get_thread_block_dimensions(params, block_size_names=None):
 
 
 def get_total_timings(results, env, overhead_time):
-    """Sum all timings and put their totals in the env"""
+    """Sum all timings and put their totals in the env."""
     total_framework_time = 0
     total_strategy_time = 0
     total_compile_time = 0
@@ -495,12 +494,12 @@ def get_total_timings(results, env, overhead_time):
 
 
 def print_config(config, tuning_options, runner):
-    """print the configuration string with tunable parameters and benchmark results"""
+    """Print the configuration string with tunable parameters and benchmark results."""
     print_config_output(tuning_options.tune_params, config, runner.quiet, tuning_options.metrics, runner.units)
 
 
 def print_config_output(tune_params, params, quiet, metrics, units):
-    """print the configuration string with tunable parameters and benchmark results"""
+    """Print the configuration string with tunable parameters and benchmark results."""
     print_keys = list(tune_params.keys()) + ["time"]
     if metrics:
         print_keys += metrics.keys()
@@ -510,19 +509,22 @@ def print_config_output(tune_params, params, quiet, metrics, units):
 
 
 def process_metrics(params, metrics):
-    """process user-defined metrics for derived benchmark results
+    """Process user-defined metrics for derived benchmark results.
 
     Metrics must be an OrderedDict to support composable metrics. The dictionary keys describe
     the name given to this user-defined metric and will be used as the key in the results dictionaries
     return by Kernel Tuner. The values describe how to calculate the user-defined metric, using either a
     string expression in which the tunable parameters and benchmark results can be used as variables, or
     as a function that accepts a dictionary as argument.
+
     Example:
     metrics = OrderedDict()
     metrics["x"] = "10000 / time"
     metrics["x2"] = "x*x"
 
     Note that the values in the metric dictionary can also be functions that accept params as argument.
+
+
     Example:
     metrics = OrderedDict()
     metrics["GFLOP/s"] = lambda p : 10000 / p["time"]
@@ -546,7 +548,7 @@ def process_metrics(params, metrics):
             value = v(params)
         else:
             raise ValueError("metric dicts values should be strings or callable")
-        if not k in params:
+        if k not in params:
             params[k] = value
         else:
             raise ValueError("metric dicts keys should not already exist in params")
@@ -554,7 +556,7 @@ def process_metrics(params, metrics):
 
 
 def looks_like_a_filename(kernel_source):
-    """attempt to detect whether source code or a filename was passed"""
+    """Attempt to detect whether source code or a filename was passed."""
     logging.debug("looks_like_a_filename called")
     result = False
     if isinstance(kernel_source, str):
@@ -577,7 +579,7 @@ def looks_like_a_filename(kernel_source):
 
 
 def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, block_size_names, lang, defines):
-    """prepare kernel string for compilation
+    """Prepare kernel string for compilation.
 
     Prepends the kernel with a series of C preprocessor defines specific
     to this kernel instance:
@@ -677,14 +679,14 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
 
 def read_file(filename):
-    """return the contents of the file named filename or None if file not found"""
+    """Return the contents of the file named filename or None if file not found."""
     if os.path.isfile(filename):
         with open(filename, "r") as f:
             return f.read()
 
 
-def replace_param_occurrences(string, params):
-    """replace occurrences of the tuning params with their current value"""
+def replace_param_occurrences(string: str, params: dict):
+    """Replace occurrences of the tuning params with their current value."""
     result = ""
 
     # Split on tokens and replace a token if it is a key in `params`.
@@ -698,7 +700,7 @@ def replace_param_occurrences(string, params):
 
 
 def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
-    """compute problem size, thread block and grid dimensions for this kernel"""
+    """Compute problem size, thread block and grid dimensions for this kernel."""
     threads = get_thread_block_dimensions(params, block_size_names)
     current_problem_size = get_problem_size(problem_size, params)
     grid = get_grid_dimensions(current_problem_size, params, grid_div, block_size_names)
@@ -706,7 +708,7 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
 
 
 def write_file(filename, string):
-    """dump the contents of string to a file called filename"""
+    """Dump the contents of string to a file called filename."""
     # ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:
         with open(filename, "w", encoding="utf-8") as f:
@@ -740,8 +742,7 @@ def normalize_verify_function(v):
 
 
 def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None):
-    """parses restrictions from a list of strings into a compilable function"""
-
+    """Parses restrictions from a list of strings into a compilable function."""
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
 
@@ -761,13 +762,13 @@ def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dic
     parsed_restrictions = "(" + parsed.strip() + ")"
     parsed_restrictions = " ".join(parsed_restrictions.split())
 
-    parsed_restrictions = f"def restrictions(params): return {parsed_restrictions} \n"
+    parsed_restrictions = f"def restrictions(*params): return {parsed_restrictions} \n"
 
     return parsed_restrictions
 
 
 def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None):
-    """parses restrictions from a list of strings into a callable function"""
+    """Parses restrictions from a list of strings into a callable function."""
     restrictions_str = list(filter(lambda r: isinstance(r, str), restrictions))
     restrictions_ignore = list(filter(lambda r: not isinstance(r, str), restrictions))
     parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping)
@@ -776,12 +777,12 @@ def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: d
     code_object = compile(parsed_restrictions, "<string>", "exec")
     func = FunctionType(code_object.co_consts[0], globals())
     if len(restrictions_ignore) == 0:
-        return func
+        return list([func])
     return restrictions_ignore.append(func)
 
 
 def process_cache(cache, kernel_options, tuning_options, runner):
-    """cache file for storing tuned configurations
+    """Cache file for storing tuned configurations.
 
     the cache file is stored using JSON and uses the following format:
 
@@ -870,7 +871,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
 
 def read_cache(cache, open_cache=True):
-    """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending"""
+    """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending."""
     with open(cache, "r") as cachefile:
         filestr = cachefile.read().strip()
 
@@ -916,11 +917,10 @@ def close_cache(cache):
 
 
 def store_cache(key, params, tuning_options):
-    """stores a new entry (key, params) to the cachefile"""
-
+    """Stores a new entry (key, params) to the cachefile."""
     # logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
     if isinstance(tuning_options.cache, dict):
-        if not key in tuning_options.cache:
+        if key not in tuning_options.cache:
             tuning_options.cache[key] = params
 
             # Convert ErrorConfig objects to string, wanted to do this inside the JSONconverter but couldn't get it to work
@@ -935,17 +935,17 @@ def store_cache(key, params, tuning_options):
 
 
 def dump_cache(obj: str, tuning_options):
-    """dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility!"""
+    """Dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility!"""
     if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
         with open(tuning_options.cachefile, "a") as cachefile:
             cachefile.write(obj)
 
 
 class MaxProdConstraint(Constraint):
-    """Constraint enforcing that values of given variables create a product up to a given amount"""
+    """Constraint enforcing that values of given variables create a product up to a given amount."""
 
     def __init__(self, maxprod):
-        """Instantiate a MaxProdConstraint
+        """Instantiate a MaxProdConstraint.
 
         :params maxprod: Value to be considered as the maximum product
         :type maxprod: number
@@ -986,7 +986,7 @@ class MaxProdConstraint(Constraint):
 
 
 def cuda_error_check(error):
-    """Checking the status of CUDA calls using the NVIDIA cuda-python backend"""
+    """Checking the status of CUDA calls using the NVIDIA cuda-python backend."""
     if isinstance(error, cuda.CUresult):
         if error != cuda.CUresult.CUDA_SUCCESS:
             _, name = cuda.cuGetErrorName(error)
