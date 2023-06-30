@@ -13,11 +13,19 @@ from inspect import signature
 from types import FunctionType
 
 import numpy as np
-from constraint import (AllDifferentConstraint, AllEqualConstraint, Constraint,
-                        ExactSumConstraint, FunctionConstraint,
-                        InSetConstraint, MaxSumConstraint, MinSumConstraint,
-                        NotInSetConstraint, SomeInSetConstraint,
-                        SomeNotInSetConstraint)
+from constraint import (
+    AllDifferentConstraint,
+    AllEqualConstraint,
+    Constraint,
+    ExactSumConstraint,
+    FunctionConstraint,
+    InSetConstraint,
+    MaxSumConstraint,
+    MinSumConstraint,
+    NotInSetConstraint,
+    SomeInSetConstraint,
+    SomeNotInSetConstraint,
+)
 
 try:
     import cupy as cp
@@ -225,7 +233,11 @@ def check_restrictions(restrictions, params: dict, verbose: bool):
                         valid = False
                         break
                 # if it's a string, fill in the parameters and evaluate
-                elif not eval(replace_param_occurrences(restrict, params)):
+                elif isinstance(restrict, str) and not eval(replace_param_occurrences(restrict, params)):
+                    valid = False
+                    break
+                # if it's a function, call it
+                elif callable(restrict) and not restrict(params):
                     valid = False
                     break
             except ZeroDivisionError:
@@ -750,9 +762,13 @@ def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dic
         key = match_object.group(1)
         if key in tune_params:
             if param_mapping:
-                return "params[" + str(param_mapping[key]) + "]"
+                return "params[params_index['" + str(param_mapping[key]) + "']]"
             else:
-                return "params['" + key + "']"
+                return "params[params_index['" + key + "']]"
+            # if param_mapping:
+            #     return f"'{str(param_mapping[key])}'"
+            # else:
+            #     return f"'{key}'"
         else:
             return key
 
@@ -762,18 +778,27 @@ def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dic
     parsed_restrictions = "(" + parsed.strip() + ")"
     parsed_restrictions = " ".join(parsed_restrictions.split())
 
-    parsed_restrictions = f"def restrictions(*params): return {parsed_restrictions} \n"
+    # provide a mapping of the parameter names to the index in the tuple received
+    params_index = dict(zip(tune_params.keys(), range(len(tune_params.keys()))))
+
+    parsed_restrictions = f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n"
 
     return parsed_restrictions
 
 
 def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None):
     """Parses restrictions from a list of strings into a callable function."""
-    restrictions_str = list(filter(lambda r: isinstance(r, str), restrictions))
-    restrictions_ignore = list(filter(lambda r: not isinstance(r, str), restrictions))
+    # filter the restrictions to get only the strings
+    restrictions_str, restrictions_ignore = [], []
+    for r in restrictions:
+        (restrictions_str if isinstance(r, str) else restrictions_ignore).append(r)
+    if len(restrictions_str) == 0:
+        return restrictions_ignore
+
+    # parse the strings
     parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping)
 
-    # actually compile
+    # compile the parsed restrictions into a function
     code_object = compile(parsed_restrictions, "<string>", "exec")
     func = FunctionType(code_object.co_consts[0], globals())
     if len(restrictions_ignore) == 0:

@@ -4,20 +4,45 @@ from random import choice, shuffle
 from typing import Any, List, Tuple
 
 import numpy as np
-from constraint import (BacktrackingSolver, Constraint, FunctionConstraint,
-                        MinConflictsSolver, OptimizedBacktrackingSolver,
-                        Problem, RecursiveBacktrackingSolver, Solver)
+from constraint import (
+    BacktrackingSolver,
+    Constraint,
+    FunctionConstraint,
+    MinConflictsSolver,
+    OptimizedBacktrackingSolver,
+    Problem,
+    RecursiveBacktrackingSolver,
+    Solver,
+)
 from pysmt.oracles import get_logic
+
 # PySMT imports
-from pysmt.shortcuts import (GE, GT, LE, LT, And, Bool, Div, Equals,
-                             EqualsOrIff, Int, Minus, Not, Or, Plus, Pow, Real)
+from pysmt.shortcuts import (
+    GE,
+    GT,
+    LE,
+    LT,
+    And,
+    Bool,
+    Div,
+    Equals,
+    EqualsOrIff,
+    Int,
+    Minus,
+    Not,
+    Or,
+    Plus,
+    Pow,
+    Real,
+    String,
+    Symbol,
+    Times,
+)
 from pysmt.shortcuts import Solver as PySMTSolver
-from pysmt.shortcuts import String, Symbol, Times
 from pysmt.typing import REAL
 
-from kernel_tuner.util import MaxProdConstraint
+from kernel_tuner.util import MaxProdConstraint, compile_restrictions, default_block_size_names
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
-from kernel_tuner.util import compile_restrictions, default_block_size_names
 
 supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming"]
 
@@ -60,10 +85,17 @@ class Searchspace:
 
         # map parameter names to variables for faster evaluation (in PythonConstraint)
         if framework.lower() == "pythonconstraint":
-            self.pc_var_mapping = {}
-            self.__map_var_to_int_counter = 0
-            self.tune_params_int: dict[int, Any] = dict([(self.__map_var_to_int(k), v) for k, v in self.tune_params.items()])
-            self.param_names_int = list(self.tune_params_int.keys())
+            map_var_names_to_int = False
+            if map_var_names_to_int:
+                self.pc_var_mapping = {}
+                self.__map_var_to_int_counter = 0
+                self.tune_params_int: dict[str, Any] = dict([(self.__map_var_to_int(k), v) for k, v in self.tune_params.items()])
+                self.param_names_int = list(self.tune_params_int.keys())
+            else:
+                self.pc_var_mapping = None
+                self.tune_params_int = self.tune_params
+                self.param_names_int = list(self.tune_params.keys())
+
 
         # if there are strings in the restrictions, parse them to functions (increases restrictions check performance)
         restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
@@ -208,10 +240,10 @@ class Searchspace:
             size_list,
         )
 
-    def __map_var_to_int(self, var_name):
-        self.pc_var_mapping[var_name] = self.__map_var_to_int_counter
+    def __map_var_to_int(self, var_name) -> str:
+        self.pc_var_mapping[var_name] = str(self.__map_var_to_int_counter)
         self.__map_var_to_int_counter += 1
-        return self.pc_var_mapping[var_name]
+        return str(self.pc_var_mapping[var_name])
 
     def __build_searchspace(
         self, block_size_names: list, max_threads: int, solver: Solver
@@ -220,7 +252,7 @@ class Searchspace:
         # instantiate the parameter space with all the variables
         parameter_space = Problem(solver=solver)
         for param_name, param_values in self.tune_params_int.items():
-            parameter_space.addVariable(int(param_name), param_values)
+            parameter_space.addVariable(str(param_name), param_values)
 
         # add the user-specified restrictions as constraints on the parameter space
         parameter_space = self.__add_restrictions(parameter_space)
@@ -228,13 +260,12 @@ class Searchspace:
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
         # TODO make this work with the integer mapping
         valid_block_size_names = list(
-            self.pc_var_mapping[block_size_name]
+            self.pc_var_mapping[block_size_name] if self.pc_var_mapping is not None else block_size_name
             for block_size_name in block_size_names
             if block_size_name in self.param_names
         )
         if len(valid_block_size_names) > 0:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
-
 
         # construct the parameter space with the constraints applied
         parameter_space = parameter_space.getSolutions()
@@ -259,7 +290,6 @@ class Searchspace:
             raise ValueError(
                 f"{size_list - size_dict} duplicate parameter configurations in the searchspace, this should not happen"
             )
-
 
         return (
             parameter_space_list,
