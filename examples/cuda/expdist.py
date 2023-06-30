@@ -4,6 +4,7 @@ import json
 import numpy
 
 from kernel_tuner import tune_kernel
+from kernel_tuner import util
 
 def tune_expdist():
 
@@ -43,7 +44,7 @@ def tune_expdist():
         json.dump(kernel1, fp)
 
     #get the number of blocks used by the best configuration in the first kernel
-    best_config1 = min(kernel1[0], key=lambda x:x['time'])
+    best_config1 = util.get_best_config(kernel1[0], 'time')
     nblocks = numpy.int32( numpy.ceil(size / float(best_config1["block_size_x"]*best_config1["tile_size_x"])) *
                            numpy.ceil(size / float(best_config1["block_size_y"]*best_config1["tile_size_y"])) )
 
@@ -56,7 +57,7 @@ def tune_expdist():
     kernel2 = tune_kernel("reduce_cross_term", kernel_string, 1, arguments, tune_params,
                 grid_div_x=[], verbose=True)
 
-    best_config2 = min(kernel2[0], key=lambda x:x['time'])
+    best_config2 = util.get_best_config(kernel2[0], 'time')
     print("best GPU configuration, total time=", best_config1['time'] + best_config2['time'])
     print(best_config1)
     print(best_config2)

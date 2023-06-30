@@ -5,11 +5,12 @@ import kernel_tuner
 from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import BenchmarkObserver
 
-from .context import skip_if_no_pycuda
+from .context import skip_if_no_pycuda, skip_if_no_pynvml
 from .test_runners import env
 
 
 @skip_if_no_pycuda
+@skip_if_no_pynvml
 def test_nvml_observer(env):
     nvmlobserver = NVMLObserver(["nvml_energy", "temperature"])
     env[-1]["block_size_x"] = [128]

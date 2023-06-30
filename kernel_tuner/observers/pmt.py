@@ -12,7 +12,9 @@ except ImportError:
 class PMTObserver(BenchmarkObserver):
     """Observer that uses the PMT library to measure power
 
-    :param observables:  One of:
+    :param observables:
+        One of:
+
         - A string specifying a single power meter to use
         - A list of string, specifying one or more power meters to use
         - A dictionary, specifying one or more power meters to use,
@@ -20,8 +22,10 @@ class PMTObserver(BenchmarkObserver):
           instance "/dev/ttyACM0". For nvml, it should correspond to the GPU
           id (e.g. '0', or '1'). For some sensors (such as rapl) the device
           id is not used, it should be 'None' in those cases.
+
         This observer will report "<platform>_energy>" and "<platform>_power" for
         all specified platforms.
+
     :type observables: string,list/dictionary
 
     """
