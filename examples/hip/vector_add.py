@@ -5,6 +5,7 @@ import numpy
 from kernel_tuner import tune_kernel
 from kernel_tuner.file_utils import store_output_file, store_metadata_file
 import logging
+from collections import OrderedDict
 
 def tune():
 
@@ -26,7 +27,7 @@ def tune():
 
     args = [c, a, b, n]
 
-    tune_params = dict()
+    tune_params = OrderedDict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
     results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, lang="HIP", 
