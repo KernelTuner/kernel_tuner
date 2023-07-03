@@ -53,6 +53,28 @@ class Tunable(UserDict):
         return self.select_for_configuration(params)
 
 
+def _to_float_dtype(x):
+    """Convert a string to a numpy data type (``dtype``). This function recognizes
+    common names (such as ``f16`` or ``kfloat``), and uses ``np.dtype(x)`` as a
+    fallback.
+    """
+    if isinstance(x, str):
+        x = x.lower()
+
+    if x in ("bfloat16", "bf16", "kbfloat16", "__nv_bfloat16"):
+        from bfloat16 import bfloat16
+
+        return bfloat16
+    if x in ("half", "f16", "float16", "__half", "khalf", 16):
+        return np.half
+    if x in ("float", "single", "f32", "float32", "kfloat", 32):
+        return np.float32
+    if x in ("double", "f64", "float64", "kdouble", 64):
+        return np.float64
+
+    return np.dtype(x)
+
+
 class TunablePrecision(Tunable):
     def __init__(
         self, param_key: str, array: np.ndarray, dtypes: Dict[str, np.dtype] = None
@@ -86,6 +108,7 @@ class TunablePrecision(Tunable):
             # Try to get bfloat16 if available.
             try:
                 from bfloat16 import bfloat16
+
                 dtypes["bfloat16"] = bfloat16
                 pass
             except ImportError:
@@ -93,7 +116,7 @@ class TunablePrecision(Tunable):
 
         # If dtype is a list, convert it to a dictionary
         if isinstance(dtypes, (list, tuple)):
-            dtypes = dict((name, np.dtype(name)) for name in dtypes)
+            dtypes = dict((name, _to_float_dtype(name)) for name in dtypes)
 
         arrays = dict()
         for precision, dtype in dtypes.items():
