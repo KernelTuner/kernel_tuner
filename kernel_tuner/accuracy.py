@@ -131,7 +131,54 @@ class TunablePrecision(Tunable):
         super().__init__(param_key, arrays)
 
 
-class ErrorMetricObserver(AccuracyObserver):
+class AccuracyObserver(BenchmarkObserver):
+    """Observer that can verify or measure the accuracy of the output produced by a kernel."""
+
+    @abstractmethod
+    def process_kernel_output(self, answer, output):
+        """method will be called once before benchmarking of a single kernel configuration. The arguments
+        provided are the `answer` as passed `tune_kernel` and the `output` produced by the kernel
+        """
+        pass
+
+
+def error_metric_from_name(key):
+    """Find the error metric function for the given name.
+
+    Returns an function that takes two parameters (the real values and the
+    estimated values) as numpy array and returns the error between the two
+    according to the given error metric.
+
+    Valid values for the ``key`` are:
+
+    * MSE (mean square error)
+    * RSME (Root mean square error)
+    * MAE (mean absolute error)
+    * MRE (mean relative error)
+    * MALE (mean absolute log error)
+    * RMSLE (root mean square log error)
+    """
+    key = key.lower().strip().replace("_", " ")
+
+    if key in ("mse", "smd", "mean square error"):
+        return lambda a, b: np.average(np.square(a - b))
+    elif key in ("rmse", "rsmd", "root mean square error"):
+        return lambda a, b: np.sqrt(np.average(np.square(a - b)))
+    elif key in ("nrmse", "nrmsd"):
+        return lambda a, b: np.sqrt(np.average(np.square(a - b))) / np.average(a)
+    elif key in ("mae", "absolute error", "absolute", "mean absolute error", "abs"):
+        return lambda a, b: np.average(np.abs(a - b))
+    elif key in ("mre", "relative error", "relative", "mean relative error", "rel"):
+        return lambda a, b: np.average(np.abs(a - b) / np.abs(a) - 1)
+    elif key in ("male", "mean absolute log error"):
+        return lambda a, b: np.average(np.abs(np.log(a) - np.log(b)))
+    elif key in ("rmsle", "root mean square log error"):
+        return lambda a, b: np.sqrt(np.average(np.square(np.log(a) - np.log(b))))
+    else:
+        raise ValuError(f"invalid error metric provided: {key}")
+
+
+class ErrorObserver(AccuracyObserver):
     """An ``AccuracyObserver`` that measure the error of the outputs produced
     by a kernel by comparing it against reference outputs.
 
@@ -150,6 +197,9 @@ class ErrorMetricObserver(AccuracyObserver):
         # The default metric is the mean squared error
         if metric is None:
             metric = lambda a, b: np.average(np.square(a - b))
+
+        if isinstance(metric, str):
+            metric = error_metric_from_name(metric)
 
         self.key = key
         self.metric = metric
