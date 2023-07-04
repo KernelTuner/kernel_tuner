@@ -153,23 +153,24 @@ def error_metric_from_name(key):
 
     * MSE (mean square error)
     * RSME (Root mean square error)
+    * NRMSE (normalized root mean square error)
+    * RMSRE (root mean square relative error)
+    * RMSLE (root mean square log error)
     * MAE (mean absolute error)
     * MRE (mean relative error)
     * MALE (mean absolute log error)
-    * RMSLE (root mean square log error)
     * max (maximum absolute error)
-    * max_rel (maximum relative error)
     """
 
     # Small value to prevent division by zero in relative metrics
     EPS = np.finfo(np.float64).eps
 
     # lowercase the metric name
-    key = key.lower().strip().replace("_", " ")
+    key = key.lower().replace("_", " ").strip()
 
     if key in ("mse", "smd", "mean square error"):
         metric = lambda a, b: np.average(np.square(a - b))
-    elif key in ("rmse", "rsmd", "root mean square error"):
+    elif key in ("rmse", "rmsd", "root mean square error"):
         metric = lambda a, b: np.sqrt(np.average(np.square(a - b)))
     elif key in ("nrmse", "nrmsd"):
         metric = lambda a, b: np.sqrt(np.average(np.square(a - b))) / np.average(a)
@@ -177,15 +178,19 @@ def error_metric_from_name(key):
         metric = lambda a, b: np.average(np.abs(a - b))
     elif key in ("mre", "relative error", "relative", "mean relative error", "rel"):
         metric = lambda a, b: np.average(np.abs(a - b) / np.maximum(np.abs(a), EPS))
+    elif key in ("rmsre", "root mean square relative error"):
+        metric = lambda a, b: np.sqrt(
+            np.average(np.square(a - b) / np.maximum(np.square(a), EPS**2))
+        )
     elif key in ("male", "mean absolute log error"):
         metric = lambda a, b: np.average(np.abs(np.log(a + EPS) - np.log(b + EPS)))
     elif key in ("rmsle", "root mean square log error"):
         metric = lambda a, b: np.sqrt(
             np.average(np.square(np.log(a + EPS) - np.log(b + EPS)))
         )
-    elif key in ("max", "max_abs", "maximum", "maximum absolute"):
+    elif key in ("max", "max abs", "maximum", "maximum absolute"):
         metric = lambda a, b: np.amax(np.abs(a - b))
-    elif key in ("max_rel", "maximum relative"):
+    elif key in ("max rel", "maximum relative"):
         metric = lambda a, b: np.amax(np.abs(a - b) / np.maximum(np.abs(a), EPS))
     else:
         raise ValueError(f"invalid error metric provided: {key}")
