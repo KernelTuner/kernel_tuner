@@ -32,10 +32,13 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
             if start in line:
                 if kernel_name is None or correct_kernel(kernel_name, line):
                     found_section = True
-                    if cpp:
-                        name = line.strip().split(" ")[3]
-                    elif f90:
-                        name = line.strip().split(" ")[2]
+                    try:
+                        if cpp:
+                            name = line.strip().split(" ")[3]
+                        elif f90:
+                            name = line.strip().split(" ")[2]
+                    except IndexError:
+                        name = "init"
 
     return sections
 
