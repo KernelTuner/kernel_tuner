@@ -753,41 +753,54 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
-def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None):
-    """Parses restrictions from a list of strings into a compilable function."""
+def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, split = True) -> list[tuple]:
+    """Parses restrictions from a list of strings into a compilable function. Returns either a list of strings or a list of tuples of strings and parameters depending on whether `split` is true."""
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
 
     def replace_params(match_object):
         key = match_object.group(1)
         if key in tune_params:
-            if param_mapping:
-                return "params[params_index['" + str(param_mapping[key]) + "']]"
-            else:
-                return "params[params_index['" + key + "']]"
-            # if param_mapping:
-            #     return f"'{str(param_mapping[key])}'"
-            # else:
-            #     return f"'{key}'"
+            param = str(key if param_mapping is None else param_mapping[key])
+            return "params[params_index['" + param + "']]"
         else:
             return key
 
-    parsed = ") and (".join([re.sub(regex_match_variable, replace_params, res) for res in restrictions])
+    def replace_params_split(match_object):
+        key = match_object.group(1)
+        if key in tune_params:
+            param = str(key if param_mapping is None else param_mapping[key])
+            params_used.add(param)
+            return param
+        else:
+            return key
 
-    # tidy up the code by removing the last suffix and unnecessary spaces
-    parsed_restrictions = "(" + parsed.strip() + ")"
-    parsed_restrictions = " ".join(parsed_restrictions.split())
+    # split into functions that only take their relevant parameters
+    if split is True:
+        parsed_restrictions = list()
+        for res in restrictions:
+            params_used = set()
+            parsed_restriction = re.sub(regex_match_variable, replace_params_split, res).strip()
+            params_used = list(params_used)
+            parsed_restriction = f"def restriction({', '.join(params_used)}): return {parsed_restriction} \n"
+            parsed_restrictions.append(tuple([parsed_restriction, params_used]))
+    else:
+        parsed_restrictions = ") and (".join([re.sub(regex_match_variable, replace_params, res) for res in restrictions])
 
-    # provide a mapping of the parameter names to the index in the tuple received
-    params_index = dict(zip(tune_params.keys(), range(len(tune_params.keys()))))
+        # tidy up the code by removing the last suffix and unnecessary spaces
+        parsed_restrictions = "(" + parsed_restrictions.strip() + ")"
+        parsed_restrictions = " ".join(parsed_restrictions.split())
 
-    parsed_restrictions = f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n"
+        # provide a mapping of the parameter names to the index in the tuple received
+        params_index = dict(zip(tune_params.keys(), range(len(tune_params.keys()))))
+
+        parsed_restrictions = [tuple([f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n", list(tune_params.keys())])]
 
     return parsed_restrictions
 
 
-def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None):
-    """Parses restrictions from a list of strings into a callable function."""
+def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, split = True) -> list:
+    """Parses restrictions from a list of strings into a callable function or a list of callable functions if split is true."""
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
@@ -796,14 +809,21 @@ def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: d
         return restrictions_ignore
 
     # parse the strings
-    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping)
+    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, split=split)
 
     # compile the parsed restrictions into a function
-    code_object = compile(parsed_restrictions, "<string>", "exec")
-    func = FunctionType(code_object.co_consts[0], globals())
+    # TODO try if using lambdas is more efficient
+    compiled_restrictions = list()
+    for restriction, params_used in parsed_restrictions:
+        code_object = compile(restriction, "<string>", "exec")
+        func = FunctionType(code_object.co_consts[0], globals())
+        compiled_restrictions.append(tuple([func, params_used]))
+
+    # return the restrictions and used parameters
     if len(restrictions_ignore) == 0:
-        return list([func])
-    return restrictions_ignore.append(func)
+        return compiled_restrictions
+    restrictions_ignore = list(zip(restrictions_ignore, (() for _ in restrictions_ignore)))
+    return restrictions_ignore + compiled_restrictions
 
 
 def process_cache(cache, kernel_options, tuning_options, runner):

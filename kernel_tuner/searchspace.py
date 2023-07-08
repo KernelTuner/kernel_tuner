@@ -302,10 +302,13 @@ class Searchspace:
         """Add the user-specified restrictions as constraints on the parameter space."""
         if isinstance(self.restrictions, list):
             for restriction in self.restrictions:
+                required_params = self.param_names_int
+                if isinstance(restriction, tuple):
+                    restriction, required_params = restriction
                 if callable(restriction) and not isinstance(restriction, Constraint):
                     restriction = FunctionConstraint(restriction)
                 if isinstance(restriction, FunctionConstraint):
-                    parameter_space.addConstraint(restriction, self.param_names_int)
+                    parameter_space.addConstraint(restriction, required_params)
                 elif isinstance(restriction, Constraint):
                     parameter_space.addConstraint(restriction)
                 else:
