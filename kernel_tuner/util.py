@@ -808,6 +808,9 @@ def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: d
     if len(restrictions_str) == 0:
         return restrictions_ignore
 
+    if param_mapping is not None:
+        raise NotImplementedError("Parameter mapping is to be re-implemented.")
+
     # parse the strings
     parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, split=split)
 

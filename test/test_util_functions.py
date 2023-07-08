@@ -1,21 +1,21 @@
 from __future__ import print_function
 
-from collections import OrderedDict
-import os
 import json
+import os
 import warnings
+from collections import OrderedDict
 
 import numpy as np
 import pytest
 
-from .context import skip_if_no_pycuda, skip_if_no_cuda, skip_if_no_opencl
-
-from kernel_tuner.interface import Options
-import kernel_tuner.core as core
-import kernel_tuner.backends.pycuda as pycuda
 import kernel_tuner.backends.nvcuda as nvcuda
 import kernel_tuner.backends.opencl as opencl
+import kernel_tuner.backends.pycuda as pycuda
+import kernel_tuner.core as core
+from kernel_tuner.interface import Options
 from kernel_tuner.util import *
+
+from .context import skip_if_no_cuda, skip_if_no_opencl, skip_if_no_pycuda
 
 block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
@@ -190,8 +190,8 @@ def test_prepare_kernel_string_partial_loop_unrolling():
 
     params["loop_unroll_factor_monkey"] = 0
     _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
-    assert not "constexpr int loop_unroll_factor_monkey" in output
-    assert not "#pragma unroll loop_unroll_factor_monkey" in output
+    assert "constexpr int loop_unroll_factor_monkey" not in output
+    assert "#pragma unroll loop_unroll_factor_monkey" not in output
 
 
 def test_replace_param_occurrences():
@@ -275,7 +275,7 @@ def test_get_device_interface3():
 def test_get_device_interface4():
     with pytest.raises(Exception):
         lang = "blabla"
-        dev = core.DeviceInterface(lang)
+        core.DeviceInterface(lang)
 
 
 def assert_user_warning(f, args, substring=None):
@@ -635,20 +635,25 @@ def test_process_metrics():
 
 def test_parse_restrictions():
     tune_params = {"block_size_x": [50, 100], "use_padding": [0, 1]}
-
     restrict = ["block_size_x != 320"]
-    parsed = parse_restrictions(restrict, tune_params)
-    expected = "(params['block_size_x'] != 320)"
-    assert expected in parsed
+    restrictions = ["block_size_x != 320", "use_padding == 0 or block_size_x % 32 != 0"]
 
-    # test again but with a parameter mapping
-    parameter_mapping = {"block_size_x": 1}
-    parsed = parse_restrictions(restrict, tune_params, parameter_mapping)
-    expected = "(params[1] != 320)"
-    assert expected in parsed
+    # test the monolithic parsed function
+    parsed = parse_restrictions(restrict, tune_params, split=False)[0]
+    expected = "params[params_index['block_size_x']] != 320"
+    assert expected in parsed[0]
 
-    # test again but with an 'or' in the expression
-    restrict.append("use_padding == 0 or block_size_x % 32 != 0")
-    parsed = parse_restrictions(restrict, tune_params)
-    expected = "(params['block_size_x'] != 320) and (params['use_padding'] == 0 or params['block_size_x'] % 32 != 0)"
-    assert expected in parsed
+    # test the split parsed function
+    parsed_multi = parse_restrictions(restrictions, tune_params)
+    parsed, params = parsed_multi[0]
+    assert restrictions[0] in parsed
+    assert params == ["block_size_x"]
+    parsed, params = parsed_multi[1]
+    assert restrictions[1] in parsed
+    assert params == list(tune_params.keys())
+
+    # # test with a parameter mapping
+    # parameter_mapping = {"block_size_x": 1}
+    # parsed, params = parse_restrictions(restrict, tune_params, parameter_mapping)[0]
+    # expected = "params[1] != 320"
+    # assert expected in parsed
