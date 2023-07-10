@@ -17,6 +17,7 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
     sections = dict()
     tmp_string = list()
     name = ""
+    init_found = 0
     cpp, f90 = cpp_or_f90(code)
 
     for line in code.replace("\\\n", "").split("\n"):
@@ -38,7 +39,8 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
                         elif f90:
                             name = line.strip().split(" ")[2]
                     except IndexError:
-                        name = "init"
+                        name = f"init_{init_found}"
+                        init_found += 1
 
     return sections
 
@@ -70,7 +72,7 @@ def extract_initialization_code(code: str) -> str:
 
     init_code = extract_code(start_string, end_string, code)
     if len(init_code) >= 1:
-        return "\n".join(init_code)
+        return "\n".join(init_code.values())
     else:
         return ""
 
