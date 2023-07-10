@@ -69,7 +69,7 @@ def extract_initialization_code(code: str) -> str:
         end_string = "!$tuner stop"
 
     init_code = extract_code(start_string, end_string, code)
-    if len(function) >= 1:
+    if len(init_code) >= 1:
         return "\n".join(init_code)
     else:
         return ""
