@@ -68,10 +68,9 @@ def extract_initialization_code(code: str) -> str:
         start_string = "!$tuner initialize"
         end_string = "!$tuner stop"
 
-    function = extract_code(start_string, end_string, code)
-    if len(function) == 1:
-        _, value = function.popitem()
-        return value
+    init_code = extract_code(start_string, end_string, code)
+    if len(function) >= 1:
+        return "\n".join(init_code)
     else:
         return ""
 
