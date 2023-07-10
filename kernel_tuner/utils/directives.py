@@ -200,14 +200,14 @@ def wrap_timing(code: str) -> str:
     cpp, f90 = cpp_or_f90(code)
 
     if cpp:
-        start = "auto start = std::chrono::steady_clock::now();"
-        end = "auto end = std::chrono::steady_clock::now();"
-        timing = "std::chrono::duration<float, std::milli> elapsed_time = end - start;"
+        start = "auto kt_timing_start = std::chrono::steady_clock::now();"
+        end = "auto kt_timing_end = std::chrono::steady_clock::now();"
+        timing = "std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;"
         ret = "return elapsed_time.count();"
     elif f90:
-        start = "integer (c_int) :: start\nreal (c_float) :: rate\ninteger (c_int) :: end\nreal (c_float) :: timing\ncall system_clock(start, rate)"
-        end = "call system_clock(end)"
-        timing = "timing = (real(end - start) / real(rate)) * 1e3"
+        start = "integer (c_int) :: kt_timing_start\nreal (c_float) :: kt_rate\ninteger (c_int) :: kt_timing_end\nreal (c_float) :: timing\ncall system_clock(kt_timing_start, kt_rate)"
+        end = "call system_clock(kt_timing_end)"
+        timing = "timing = (real(kt_timing_end - kt_timing_start) / real(kt_rate)) * 1e3"
         ret = ""
 
     return "\n".join([start, code, end, timing, ret])
