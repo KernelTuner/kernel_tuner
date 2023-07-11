@@ -7,7 +7,7 @@ def correct_kernel(kernel_name: str, line: str) -> bool:
     )
 
 
-def cpp_or_f90(code: str) -> list:
+def cpp_or_f90(code: str) -> tuple:
     return "#pragma acc" in code, "!$acc" in code
 
 
