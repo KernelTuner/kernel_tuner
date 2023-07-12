@@ -801,15 +801,15 @@ def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dic
 
 def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, split = True) -> list:
     """Parses restrictions from a list of strings into a callable function or a list of callable functions if split is true."""
+    if param_mapping is not None:
+        raise NotImplementedError("Parameter mapping is to be re-implemented.")
+
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
         (restrictions_str if isinstance(r, str) else restrictions_ignore).append(r)
     if len(restrictions_str) == 0:
         return restrictions_ignore
-
-    if param_mapping is not None:
-        raise NotImplementedError("Parameter mapping is to be re-implemented.")
 
     # parse the strings
     parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, split=split)

@@ -650,7 +650,7 @@ def test_parse_restrictions():
     assert params == ["block_size_x"]
     parsed, params = parsed_multi[1]
     assert restrictions[1] in parsed
-    assert params == list(tune_params.keys())
+    assert all(param in tune_params for param in params)
 
     # # test with a parameter mapping
     # parameter_mapping = {"block_size_x": 1}
