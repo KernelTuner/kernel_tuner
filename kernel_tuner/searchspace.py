@@ -124,7 +124,7 @@ class Searchspace:
             raise ValueError(f"Solver method {solver_method} not recognized.")
 
         # build the search space
-        self.list, self.__numpy, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
+        self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
         self.num_params = len(self.tune_params)
         self.indices = np.arange(self.size)
         if neighbor_method is not None and neighbor_method != "Hamming":
@@ -224,18 +224,12 @@ class Searchspace:
                 sol_dict[key] = value
             parameter_space_list.append(tuple(sol_dict[param_name] for param_name in list(tune_params.keys())))
 
-        # create a numpy array of the search space
-        # in order to have the tuples as tuples in numpy, the types are set with a string, but this will make the type np.void
-        # type_string = ",".join(list(type(param).__name__ for param in parameter_space_list[0]))
-        parameter_space_numpy = np.array(parameter_space_list)
-
         # create a dictionary with the hashed parameter configurations as keys and indices as values for fast lookups
-        parameter_space_dict = dict(zip(parameter_space_list, list(range(parameter_space_numpy.size))))
+        parameter_space_dict = dict(zip(parameter_space_list, range(len(parameter_space_list))))
 
         # return the valid configurations
         return (
             parameter_space_list,
-            parameter_space_numpy,
             parameter_space_dict,
             size_list,
         )
@@ -268,20 +262,28 @@ class Searchspace:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
 
         # construct the parameter space with the constraints applied
-        parameter_space = parameter_space.getSolutions()
+        # import cProfile
+        # pr = cProfile.Profile()
+        # pr.enable()
+        parameter_space_list = parameter_space.getSolutionsOrderedList(self.param_names_int)
+        # pr.disable()
+        # pr.dump_stats("profile.prof")
+        # pr.print_stats()
 
-        # form the parameter tuples in the order specified by tune_params.keys()
-        parameter_space_list = list(
-            (tuple(params[param_name] for param_name in self.param_names_int)) for params in parameter_space
-        )
-
-        # create a numpy array of the search space
-        # in order to have the tuples as tuples in numpy, the types are set with a string, but this will make the type np.void
-        # type_string = ",".join(list(type(param).__name__ for param in parameter_space_list[0]))
-        parameter_space_numpy = np.array(parameter_space_list)
+        # # form the parameter tuples in the order specified by tune_params.keys()
+        # parameter_space = parameter_space.getSolutions()
+        # for params in parameter_space:
+        #     vals = list(params.values())
+        #     for param_index, param_name in enumerate(self.param_names_int):
+        #         assert params[param_name] == vals[param_index], f"{params[param_name]} != {vals[param_index]}"
+        # #     # assert False
+        # parameter_space_list = list(tuple(params.values()) for params in parameter_space)
+        # parameter_space_list = list(
+        #     (tuple(params[param_name] for param_name in self.param_names_int)) for params in parameter_space
+        # )
 
         # create a dictionary with the hashed parameter configurations as keys and indices as values for fast lookups
-        parameter_space_dict = dict(zip(parameter_space_list, list(range(parameter_space_numpy.size))))
+        parameter_space_dict = dict(zip(parameter_space_list, range(len(parameter_space_list))))
 
         # check for duplicates
         size_list = len(parameter_space_list)
@@ -293,7 +295,6 @@ class Searchspace:
 
         return (
             parameter_space_list,
-            parameter_space_numpy,
             parameter_space_dict,
             size_list,
         )
@@ -435,6 +436,19 @@ class Searchspace:
         """Get the internal dictionary."""
         return self.__dict
 
+    def get_list_numpy(self) -> np.ndarray:
+        """Get the parameter space list as a NumPy array. Initializes the NumPy array if not yet done.
+
+        Returns:
+            the NumPy array.
+        """
+        if not self.__numpy:
+            # create a numpy array of the search space
+            # in order to have the tuples as tuples in numpy, the types are set with a string, but this will make the type np.void
+            # type_string = ",".join(list(type(param).__name__ for param in parameter_space_list[0]))
+            self.__numpy = np.array(self.list)
+        return self.__numpy
+
     def get_param_indices(self, param_config: tuple) -> tuple:
         """For each parameter value in the param config, find the index in the tunable parameters."""
         return tuple(self.params_values[index].index(param_value) for index, param_value in enumerate(param_config))
@@ -455,7 +469,7 @@ class Searchspace:
 
     def __get_neighbors_indices_hamming(self, param_config: tuple) -> List[int]:
         """Get the neighbors using Hamming distance from the parameter configuration."""
-        num_matching_params = np.count_nonzero(self.__numpy == param_config, -1)
+        num_matching_params = np.count_nonzero(self.get_list_numpy() == param_config, -1)
         matching_indices = (num_matching_params == self.num_params - 1).nonzero()[0]
         return matching_indices
 
