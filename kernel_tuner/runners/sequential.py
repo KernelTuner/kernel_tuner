@@ -94,7 +94,7 @@ class SequentialRunner(Runner):
                 result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
                 params.update(result)
 
-                if isinstance(result.get(tuning_options.objective), ErrorConfig):
+                if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
                     logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
 
             # only compute metrics on configs that have not errored
