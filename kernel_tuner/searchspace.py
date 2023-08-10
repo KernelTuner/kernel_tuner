@@ -231,6 +231,8 @@ class Searchspace:
 
     def __build_searchspace_ATF_cache(self, block_size_names: list, max_threads: int, solver: Solver):
         """Imports the valid configurations from an ATF CSV file, returns the searchspace, a dict of the searchspace for fast lookups and the size."""
+        if block_size_names != default_block_size_names or max_threads != 1024:
+            raise ValueError("It is not possible to change 'block_size_names' or 'max_threads here, because at this point ATF has already ran.'")
         import pandas as pd
         try:
             df = pd.read_csv(self.path_to_ATF_cache, sep=';')
