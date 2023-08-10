@@ -1,7 +1,8 @@
 import ast
 import re
+from pathlib import Path
 from random import choice, shuffle
-from typing import Any, List, Tuple
+from typing import Any, List
 
 import numpy as np
 from constraint import (
@@ -60,6 +61,7 @@ class Searchspace:
         neighbor_method=None,
         framework="PythonConstraint",
         solver_method="PC_OptimizedBacktrackingSolver",
+        path_to_ATF_cache: Path = None,
     ) -> None:
         """Build a searchspace using the variables and constraints.
 
@@ -107,6 +109,9 @@ class Searchspace:
             searchspace_builder = self.__build_searchspace
         elif framework.lower() == "pysmt":
             searchspace_builder = self.__build_searchspace_pysmt
+        elif framework.lower() == "atf_cache":
+            searchspace_builder = self.__build_searchspace_ATF_cache
+            self.path_to_ATF_cache = path_to_ATF_cache
         else:
             ValueError(f"Invalid framework parameter {framework}")
 
@@ -125,6 +130,7 @@ class Searchspace:
 
         # build the search space
         self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
+        self.__numpy = None
         self.num_params = len(self.tune_params)
         self.indices = np.arange(self.size)
         if neighbor_method is not None and neighbor_method != "Hamming":
@@ -166,9 +172,7 @@ class Searchspace:
     #         num_solutions: int = csp.n_solutions()  # number of solutions
     #         solutions = [csp.values(sol=i) for i in range(num_solutions)]  # list of solutions
 
-    def __build_searchspace_pysmt(
-        self, block_size_names: list, max_threads: int, solver: Solver
-    ) -> Tuple[List[tuple], np.ndarray, dict, int]:
+    def __build_searchspace_pysmt(self, block_size_names: list, max_threads: int, solver: Solver):
         tune_params = self.tune_params
         restrictions = self.restrictions
 
@@ -205,7 +209,6 @@ class Searchspace:
         # get all solutions
         keys = list(symbols.values())
         all_solutions = all_smt(formula, keys)
-        size_list = len(all_solutions)
 
         # get the values for the parameters
         parameter_space_list = list()
@@ -224,10 +227,29 @@ class Searchspace:
                 sol_dict[key] = value
             parameter_space_list.append(tuple(sol_dict[param_name] for param_name in list(tune_params.keys())))
 
-        # create a dictionary with the hashed parameter configurations as keys and indices as values for fast lookups
-        parameter_space_dict = dict(zip(parameter_space_list, range(len(parameter_space_list))))
+        return self.__parameter_space_list_to_lookup_and_return_type(parameter_space_list)
 
-        # return the valid configurations
+    def __build_searchspace_ATF_cache(self, block_size_names: list, max_threads: int, solver: Solver):
+        """Imports the valid configurations from an ATF CSV file, returns the searchspace, a dict of the searchspace for fast lookups and the size."""
+        import pandas as pd
+        try:
+            df = pd.read_csv(self.path_to_ATF_cache, sep=';')
+            list_of_tuples_of_parameters = list(zip(*(df[column] for column in self.param_names)))
+        except pd.errors.EmptyDataError:
+            list_of_tuples_of_parameters = list()
+        return self.__parameter_space_list_to_lookup_and_return_type(list_of_tuples_of_parameters)
+
+    def __parameter_space_list_to_lookup_and_return_type(self, parameter_space_list: list[tuple], validate=True) -> tuple[list[tuple], dict[tuple, int], int]:
+        """Returns a tuple of the searchspace as a list of tuples, a dict of the searchspace for fast lookups and the size."""
+        parameter_space_dict = dict(zip(parameter_space_list, range(len(parameter_space_list))))
+        if validate:
+            # check for duplicates
+            size_list = len(parameter_space_list)
+            size_dict = len(parameter_space_dict.keys())
+            if size_list != size_dict:
+                raise ValueError(
+                    f"{size_list - size_dict} duplicate parameter configurations in the searchspace, this should not happen."
+                )
         return (
             parameter_space_list,
             parameter_space_dict,
@@ -241,8 +263,8 @@ class Searchspace:
 
     def __build_searchspace(
         self, block_size_names: list, max_threads: int, solver: Solver
-    ) -> Tuple[List[tuple], np.ndarray, dict, int]:
-        """Compute valid configurations in a search space based on restrictions and max_threads, returns the searchspace, a dict of the searchspace for fast lookups and the size."""
+    ):
+        """Compute valid configurations in a search space based on restrictions and max_threads."""
         # instantiate the parameter space with all the variables
         parameter_space = Problem(solver=solver)
         for param_name, param_values in self.tune_params_int.items():
@@ -282,22 +304,7 @@ class Searchspace:
         #     (tuple(params[param_name] for param_name in self.param_names_int)) for params in parameter_space
         # )
 
-        # create a dictionary with the hashed parameter configurations as keys and indices as values for fast lookups
-        parameter_space_dict = dict(zip(parameter_space_list, range(len(parameter_space_list))))
-
-        # check for duplicates
-        size_list = len(parameter_space_list)
-        size_dict = len(parameter_space_dict.keys())
-        if size_list != size_dict:
-            raise ValueError(
-                f"{size_list - size_dict} duplicate parameter configurations in the searchspace, this should not happen"
-            )
-
-        return (
-            parameter_space_list,
-            parameter_space_dict,
-            size_list,
-        )
+        return self.__parameter_space_list_to_lookup_and_return_type(parameter_space_list)
 
     def __add_restrictions(self, parameter_space: Problem) -> Problem:
         """Add the user-specified restrictions as constraints on the parameter space."""
@@ -442,7 +449,7 @@ class Searchspace:
         Returns:
             the NumPy array.
         """
-        if not self.__numpy:
+        if self.__numpy is None:
             # create a numpy array of the search space
             # in order to have the tuples as tuples in numpy, the types are set with a string, but this will make the type np.void
             # type_string = ",".join(list(type(param).__name__ for param in parameter_space_list[0]))
