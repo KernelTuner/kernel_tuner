@@ -120,7 +120,7 @@ class Searchspace:
         if solver_method.lower() == "pc_backtrackingsolver":
             solver = BacktrackingSolver()
         elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
-            solver = OptimizedBacktrackingSolver()
+            solver = OptimizedBacktrackingSolver(forwardcheck=True)
         elif solver_method.lower() == "pc_recursivebacktrackingsolver":
             solver = RecursiveBacktrackingSolver()
         elif solver_method.lower() == "pc_minconflictssolver":

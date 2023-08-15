@@ -260,16 +260,16 @@ def convert_constraint_restriction(restrict: Constraint):
             return all(x == p[0] for x in p)
     elif isinstance(restrict, MaxProdConstraint):
         def f_restrict(p):
-            return np.prod(p) <= restrict._exactsum
+            return np.prod(p) <= restrict._maxprod
     elif isinstance(restrict, MaxSumConstraint):
         def f_restrict(p):
-            return sum(p) <= restrict._exactsum
+            return sum(p) <= restrict._maxsum
     elif isinstance(restrict, ExactSumConstraint):
         def f_restrict(p):
             return sum(p) == restrict._exactsum
     elif isinstance(restrict, MinSumConstraint):
         def f_restrict(p):
-            return sum(p) >= restrict._exactsum
+            return sum(p) >= restrict._minsum
     elif isinstance(restrict, (InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint)):
         raise NotImplementedError(
             f"Restriction of the type {type(restrict)} is explicitely not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
