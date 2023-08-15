@@ -9,6 +9,7 @@ from constraint import (
     BacktrackingSolver,
     Constraint,
     FunctionConstraint,
+    MaxProdConstraint,
     MinConflictsSolver,
     OptimizedBacktrackingSolver,
     Problem,
@@ -42,8 +43,8 @@ from pysmt.shortcuts import (
 from pysmt.shortcuts import Solver as PySMTSolver
 from pysmt.typing import REAL
 
-from kernel_tuner.util import MaxProdConstraint, compile_restrictions, default_block_size_names
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
+from kernel_tuner.util import compile_restrictions, default_block_size_names
 
 supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming"]
 
@@ -120,7 +121,7 @@ class Searchspace:
         if solver_method.lower() == "pc_backtrackingsolver":
             solver = BacktrackingSolver()
         elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
-            solver = OptimizedBacktrackingSolver(forwardcheck=True)
+            solver = OptimizedBacktrackingSolver(forwardcheck=False)
         elif solver_method.lower() == "pc_recursivebacktrackingsolver":
             solver = RecursiveBacktrackingSolver()
         elif solver_method.lower() == "pc_minconflictssolver":
