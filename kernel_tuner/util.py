@@ -11,6 +11,7 @@ import warnings
 from collections import OrderedDict
 from inspect import signature
 from types import FunctionType
+from typing import Optional, Union
 
 import numpy as np
 from constraint import (
@@ -754,8 +755,8 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
-def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, split = True) -> list[tuple]:
-    """Parses restrictions from a list of strings into a compilable function. Returns either a list of strings or a list of tuples of strings and parameters depending on whether `split` is true."""
+def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping: dict = None, monolithic = False) -> list[tuple]:
+    """Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters."""
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
 
@@ -768,6 +769,7 @@ def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dic
             return key
 
     def replace_params_split(match_object):
+        # NOTE careful: has side-effect of adding to set
         key = match_object.group(1)
         if key in tune_params:
             param = str(key if param_mapping is None else param_mapping[key])
@@ -776,16 +778,127 @@ def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dic
         else:
             return key
 
-    # split into functions that only take their relevant parameters
-    if split is True:
+    def to_numeric_constraint(restriction: str, params: list[str]) -> Optional[Union[MinSumConstraint, ExactSumConstraint, MaxSumConstraint, MaxProdConstraint]]:
+        """Converts a restriction to a built-in numeric constraint if possible."""
+        comparators = ['<=', '==', '>=']
+        comparators_found = re.findall('|'.join(comparators), restriction)
+        # check if there is exactly one comparator, if not, return None
+        if len(comparators_found) != 1:
+            return None
+        comparator = comparators_found[0]
+
+        # split the string on the comparison and remove leading and trailing whitespace
+        left, right = tuple(s.strip() for s in restriction.split(comparator))
+
+        # find out which side is the constant number
+        def is_or_evals_to_number(s: str) -> Optional[Union[int, float]]:
+            try:
+                # check if it's a number or solvable to a number (e.g. '32*2')
+                number = eval(s)
+                assert isinstance(number, (int, float))
+                return number
+            except Exception:
+                # it's not a solvable subexpression, return None
+                return None
+
+        left_num = is_or_evals_to_number(left)
+        right_num = is_or_evals_to_number(right)
+        assert (left_num is not None) ^ (right_num is not None), f"left_num ({left_num}) and right_num ({right_num}) can't be both None or both a constant"
+        number, variables, variables_on_left = (left_num, right.strip(), False) if left_num is not None else (right_num, left.strip(), True)
+
+        # check if an operator is applied on the variables, if not return
+        operators = ['\*\*', '\*', '\+']
+        operators_found = re.findall(str('|'.join(operators)), variables)
+        if len(operators_found) == 0:
+            # no operators found, return only based on comparator
+            if len(params) != 1 or variables not in params:
+                # there were more than one variable but no operator
+                return None
+            # map to a Constraint
+            elif comparator == '==':
+                return ExactSumConstraint(number)
+            elif comparator == '<=':
+                return  MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
+            elif comparator == '>=':
+                return  MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
+            raise ValueError(f"Invalid comparator {comparator}")
+
+        # check which operator is applied on the variables
+        operator = operators_found[0]
+        if not all(o == operator for o in operators_found):
+            # if the operator is inconsistent (e.g. 'x + y * z == 3'), return None
+            return None
+
+        # split the string on the comparison
+        splitted = variables.split(operator)
+        # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
+        if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
+            # map to a Constraint
+            if operator == '*':
+                if comparator == '<=' and variables_on_left:
+                    return MaxProdConstraint(number)
+                elif comparator == '>=' and not variables_on_left:
+                    return MaxProdConstraint(number)
+            elif operator == '+':
+                if comparator == '==':
+                    return ExactSumConstraint(number)
+                elif comparator == '<=':
+                    return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
+                elif comparator == '>=':
+                    return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
+            elif operator == '**':
+                # power operations are not (yet) supported, added to avoid matching the double asteriks
+                return None
+            else:
+                raise ValueError(f"Invalid operator {operator}")
+        return None
+
+
+    def to_equality_constraint(restriction: str, params: list[str]) -> Optional[Union[AllEqualConstraint, AllDifferentConstraint]]:
+        """Converts a restriction to either an equality or inequality constraint on all the parameters if possible."""
+        # check if all parameters are involved
+        if len(params) != len(tune_params):
+            return None
+
+        # find whether (in)equalities appear in this restriction
+        equalities_found = re.findall('==', restriction)
+        inequalities_found = re.findall('!=', restriction)
+        # check if one of the two have been found, if none or both have been found, return None
+        if len(equalities_found) > 0 ^ len(inequalities_found) > 0:
+            return None
+        comparator = equalities_found[0] if len(equalities_found) > 0 else inequalities_found[0]
+
+        # split the string on the comparison
+        splitted = restriction.split(comparator)
+        # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
+        if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
+            # map to a Constraint
+            if comparator == '==':
+                return AllEqualConstraint()
+            elif comparator == '!=':
+                return AllDifferentConstraint()
+            return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
+        return None
+
+    # create the parsed restrictions
+    if monolithic is False:
+        # split into functions that only take their relevant parameters
         parsed_restrictions = list()
         for res in restrictions:
-            params_used = set()
+            params_used: set[str] = set()
             parsed_restriction = re.sub(regex_match_variable, replace_params_split, res).strip()
             params_used = list(params_used)
-            parsed_restriction = f"def restriction({', '.join(params_used)}): return {parsed_restriction} \n"
-            parsed_restrictions.append(tuple([parsed_restriction, params_used]))
+            # check if we can turn this into the built-in numeric comparison constraint
+            finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
+            if finalized_constraint is None:
+                # check if we can turn this into the built-in equality comparison constraint
+                finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
+                if finalized_constraint is None:
+                    # we must turn it into a general FunctionConstraint
+                    finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
+            parsed_restrictions.append((finalized_constraint, params_used))
     else:
+        # create one monolithic function
         parsed_restrictions = ") and (".join([re.sub(regex_match_variable, replace_params, res) for res in restrictions])
 
         # tidy up the code by removing the last suffix and unnecessary spaces
@@ -795,13 +908,13 @@ def parse_restrictions(restrictions: list, tune_params: dict, param_mapping: dic
         # provide a mapping of the parameter names to the index in the tuple received
         params_index = dict(zip(tune_params.keys(), range(len(tune_params.keys()))))
 
-        parsed_restrictions = [tuple([f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n", list(tune_params.keys())])]
+        parsed_restrictions = [(f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n", list(tune_params.keys()))]
 
     return parsed_restrictions
 
 
-def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, split = True) -> list:
-    """Parses restrictions from a list of strings into a callable function or a list of callable functions if split is true."""
+def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, monolithic = False) -> list[tuple]:
+    """Parses restrictions from a list of strings into a list of Constraints and parameters used, or a single Constraint if monolithic is true."""
     if param_mapping is not None:
         raise NotImplementedError("Parameter mapping is to be re-implemented.")
 
@@ -813,15 +926,22 @@ def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: d
         return restrictions_ignore
 
     # parse the strings
-    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, split=split)
+    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, monolithic=monolithic)
 
     # compile the parsed restrictions into a function
     # TODO try if using lambdas is more efficient
-    compiled_restrictions = list()
+    compiled_restrictions: list[tuple] = list()
     for restriction, params_used in parsed_restrictions:
-        code_object = compile(restriction, "<string>", "exec")
-        func = FunctionType(code_object.co_consts[0], globals())
-        compiled_restrictions.append(tuple([func, params_used]))
+        if isinstance(restriction, str):
+            # if it's a string, parse it to a function
+            code_object = compile(restriction, "<string>", "exec")
+            func = FunctionType(code_object.co_consts[0], globals())
+            compiled_restrictions.append(tuple([func, params_used]))
+        elif isinstance(restriction, Constraint):
+            # otherwise it already is a Constraint, pass it directly
+            compiled_restrictions.append((restriction, params_used))
+        else:
+            raise ValueError(f"Restriction {restriction} is neither a string or Constraint {type(restriction)}")
 
     # return the restrictions and used parameters
     if len(restrictions_ignore) == 0:

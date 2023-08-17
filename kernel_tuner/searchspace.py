@@ -16,32 +16,6 @@ from constraint import (
     RecursiveBacktrackingSolver,
     Solver,
 )
-from pysmt.oracles import get_logic
-
-# PySMT imports
-from pysmt.shortcuts import (
-    GE,
-    GT,
-    LE,
-    LT,
-    And,
-    Bool,
-    Div,
-    Equals,
-    EqualsOrIff,
-    Int,
-    Minus,
-    Not,
-    Or,
-    Plus,
-    Pow,
-    Real,
-    String,
-    Symbol,
-    Times,
-)
-from pysmt.shortcuts import Solver as PySMTSolver
-from pysmt.typing import REAL
 
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import compile_restrictions, default_block_size_names
@@ -174,6 +148,20 @@ class Searchspace:
     #         solutions = [csp.values(sol=i) for i in range(num_solutions)]  # list of solutions
 
     def __build_searchspace_pysmt(self, block_size_names: list, max_threads: int, solver: Solver):
+        # PySMT imports
+        from pysmt.oracles import get_logic
+        from pysmt.shortcuts import (
+            And,
+            Equals,
+            EqualsOrIff,
+            Not,
+            Or,
+            Real,
+            Symbol,
+        )
+        from pysmt.shortcuts import Solver as PySMTSolver
+        from pysmt.typing import REAL
+
         tune_params = self.tune_params
         restrictions = self.restrictions
 
@@ -290,6 +278,7 @@ class Searchspace:
         # import cProfile
         # pr = cProfile.Profile()
         # pr.enable()
+        return parameter_space.getSolutionsAsListDict(order=self.param_names_int)
         parameter_space_list = parameter_space.getSolutionsOrderedList(self.param_names_int)
         # pr.disable()
         # pr.dump_stats("profile.prof")
@@ -336,6 +325,24 @@ class Searchspace:
 
     def __parse_restrictions_pysmt(self, restrictions: list, tune_params: dict, symbols: dict):
         """Parses restrictions from a list of strings into PySMT compatible restrictions."""
+        from pysmt.shortcuts import (
+            GE,
+            GT,
+            LE,
+            LT,
+            And,
+            Bool,
+            Div,
+            Equals,
+            Int,
+            Minus,
+            Or,
+            Plus,
+            Pow,
+            Real,
+            String,
+            Times,
+        )
         regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
 
         boolean_comparison_mapping = {
