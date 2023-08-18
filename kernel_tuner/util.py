@@ -755,7 +755,7 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
-def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping: dict = None, monolithic = False) -> list[tuple]:
+def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping: dict = None, monolithic = False, try_to_constraint = True) -> list[tuple[Union[Constraint, str], list[str]]]:
     """Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters."""
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
@@ -864,7 +864,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
         equalities_found = re.findall('==', restriction)
         inequalities_found = re.findall('!=', restriction)
         # check if one of the two have been found, if none or both have been found, return None
-        if len(equalities_found) > 0 ^ len(inequalities_found) > 0:
+        if not (len(equalities_found) > 0 ^ len(inequalities_found) > 0):
             return None
         comparator = equalities_found[0] if len(equalities_found) > 0 else inequalities_found[0]
 
@@ -888,14 +888,16 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
             params_used: set[str] = set()
             parsed_restriction = re.sub(regex_match_variable, replace_params_split, res).strip()
             params_used = list(params_used)
-            # check if we can turn this into the built-in numeric comparison constraint
-            finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
-            if finalized_constraint is None:
-                # check if we can turn this into the built-in equality comparison constraint
-                finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
+            finalized_constraint = None
+            if try_to_constraint:
+                # check if we can turn this into the built-in numeric comparison constraint
+                finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
                 if finalized_constraint is None:
-                    # we must turn it into a general FunctionConstraint
-                    finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
+                    # check if we can turn this into the built-in equality comparison constraint
+                    finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
+            if finalized_constraint is None:
+                # we must turn it into a general function
+                finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
             parsed_restrictions.append((finalized_constraint, params_used))
     else:
         # create one monolithic function
@@ -913,8 +915,8 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
     return parsed_restrictions
 
 
-def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, monolithic = False) -> list[tuple]:
-    """Parses restrictions from a list of strings into a list of Constraints and parameters used, or a single Constraint if monolithic is true."""
+def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, monolithic = False, try_to_constraint = True) -> list[tuple[Union[Constraint, FunctionType], list[str]]]:
+    """Parses restrictions from a list of strings into a list of Functions or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
     if param_mapping is not None:
         raise NotImplementedError("Parameter mapping is to be re-implemented.")
 
@@ -926,7 +928,7 @@ def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: d
         return restrictions_ignore
 
     # parse the strings
-    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, monolithic=monolithic)
+    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, monolithic=monolithic, try_to_constraint=try_to_constraint)
 
     # compile the parsed restrictions into a function
     # TODO try if using lambdas is more efficient

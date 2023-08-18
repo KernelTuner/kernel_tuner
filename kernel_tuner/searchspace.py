@@ -77,7 +77,7 @@ class Searchspace:
         # if there are strings in the restrictions, parse them to functions (increases restrictions check performance)
         restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
         if len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions):
-            self.restrictions = compile_restrictions(restrictions, tune_params, self.pc_var_mapping)
+            self.restrictions = compile_restrictions(restrictions, tune_params, self.pc_var_mapping, monolithic=False, try_to_constraint=framework.lower() == "pythonconstraint")
 
         # get the framework given the framework argument
         if framework.lower() == "pythonconstraint":
@@ -310,7 +310,7 @@ class Searchspace:
                 if isinstance(restriction, FunctionConstraint):
                     parameter_space.addConstraint(restriction, required_params)
                 elif isinstance(restriction, Constraint):
-                    parameter_space.addConstraint(restriction)
+                    parameter_space.addConstraint(restriction, required_params if required_params != self.param_names_int else None)
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
 
