@@ -73,7 +73,6 @@ class Searchspace:
                 self.tune_params_int = self.tune_params
                 self.param_names_int = list(self.tune_params.keys())
 
-
         # if there are strings in the restrictions, parse them to functions (increases restrictions check performance)
         restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
         if len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions):

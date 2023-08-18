@@ -807,21 +807,31 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
         assert (left_num is not None) ^ (right_num is not None), f"left_num ({left_num}) and right_num ({right_num}) can't be both None or both a constant"
         number, variables, variables_on_left = (left_num, right.strip(), False) if left_num is not None else (right_num, left.strip(), True)
 
+        # if the number is an integer, we can map '>' to '>=' and '<' to '<=' by changing the number (does not work with floating points!)
+        number_is_int = isinstance(number, int)
+        if number_is_int:
+            if comparator == '<':
+                # (2 < x) == (2+1 <= x)
+                number += 1
+            elif comparator == '>':
+                # (2 > x) == (2-1 >= x)
+                number -= 1
+
         # check if an operator is applied on the variables, if not return
         operators = ['\*\*', '\*', '\+']
         operators_found = re.findall(str('|'.join(operators)), variables)
         if len(operators_found) == 0:
-            # TODO if there are restrictions with a single variable, use it to prune the domain instead
             # no operators found, return only based on comparator
             if len(params) != 1 or variables not in params:
                 # there were more than one variable but no operator
                 return None
             # map to a Constraint
+            # if there are restrictions with a single variable, it will be used to prune the domain at the start
             elif comparator == '==':
                 return ExactSumConstraint(number)
-            elif comparator == '<=':
+            elif comparator == '<=' or (comparator == '<' and number_is_int):
                 return  MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
-            elif comparator == '>=':
+            elif comparator == '>=' or (comparator == '>' and number_is_int):
                 return  MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
             raise ValueError(f"Invalid comparator {comparator}")
 
@@ -835,16 +845,6 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
         splitted = variables.split(operator)
         # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
         if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
-            # if the number is an integer, we can map '>' to '>=' and '<' to '<=' by changing the number (does not work with floating points!)
-            number_is_int = isinstance(number, int)
-            if number_is_int:
-                if comparator == '<':
-                    # (2 < x) == (2+1 <= x)
-                    number += 1
-                elif comparator == '>':
-                    # (2 > x) == (2-1 >= x)
-                    number -= 1
-
             # map to a Constraint
             if operator == '*':
                 if comparator == '<=' or (comparator == '<' and number_is_int):
@@ -902,6 +902,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
             params_used = list(params_used)
             finalized_constraint = None
             if try_to_constraint:
+                # TODO split into multiple constraints if there are multiple comparators (e.g. 3 <= x * y < 9 < z -> [(MinProd(3), [x, y]), (MaxProd(9), [x, y]), (MinProd(9), [z])])
                 # check if we can turn this into the built-in numeric comparison constraint
                 finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
                 if finalized_constraint is None:
