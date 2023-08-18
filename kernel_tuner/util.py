@@ -802,9 +802,12 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
                 # it's not a solvable subexpression, return None
                 return None
 
+        # either the left or right side of the equation must evaluate to a constant number
         left_num = is_or_evals_to_number(left)
         right_num = is_or_evals_to_number(right)
-        assert (left_num is not None) ^ (right_num is not None), f"left_num ({left_num}) and right_num ({right_num}) can't be both None or both a constant"
+        if (left_num is not None) ^ (right_num is not None):
+            # left_num and right_num can't be both None or both a constant
+            return None
         number, variables, variables_on_left = (left_num, right.strip(), False) if left_num is not None else (right_num, left.strip(), True)
 
         # if the number is an integer, we can map '>' to '>=' and '<' to '<=' by changing the number (does not work with floating points!)
