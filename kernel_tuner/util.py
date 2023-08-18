@@ -23,6 +23,7 @@ from constraint import (
     InSetConstraint,
     MaxProdConstraint,
     MaxSumConstraint,
+    MinProdConstraint,
     MinSumConstraint,
     NotInSetConstraint,
     SomeInSetConstraint,
@@ -780,7 +781,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
 
     def to_numeric_constraint(restriction: str, params: list[str]) -> Optional[Union[MinSumConstraint, ExactSumConstraint, MaxSumConstraint, MaxProdConstraint]]:
         """Converts a restriction to a built-in numeric constraint if possible."""
-        comparators = ['<=', '==', '>=']
+        comparators = ['<=', '==', '>=', '>', '<']
         comparators_found = re.findall('|'.join(comparators), restriction)
         # check if there is exactly one comparator, if not, return None
         if len(comparators_found) != 1:
@@ -810,6 +811,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
         operators = ['\*\*', '\*', '\+']
         operators_found = re.findall(str('|'.join(operators)), variables)
         if len(operators_found) == 0:
+            # TODO if there are restrictions with a single variable, use it to prune the domain instead
             # no operators found, return only based on comparator
             if len(params) != 1 or variables not in params:
                 # there were more than one variable but no operator
@@ -833,18 +835,28 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
         splitted = variables.split(operator)
         # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
         if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
+            # if the number is an integer, we can map '>' to '>=' and '<' to '<=' by changing the number (does not work with floating points!)
+            number_is_int = isinstance(number, int)
+            if number_is_int:
+                if comparator == '<':
+                    # (2 < x) == (2+1 <= x)
+                    number += 1
+                elif comparator == '>':
+                    # (2 > x) == (2-1 >= x)
+                    number -= 1
+
             # map to a Constraint
             if operator == '*':
-                if comparator == '<=' and variables_on_left:
-                    return MaxProdConstraint(number)
-                elif comparator == '>=' and not variables_on_left:
-                    return MaxProdConstraint(number)
+                if comparator == '<=' or (comparator == '<' and number_is_int):
+                    return MaxProdConstraint(number) if variables_on_left else MinProdConstraint(number)
+                elif comparator == '>=' or (comparator == '>' and number_is_int):
+                    return MinProdConstraint(number) if variables_on_left else MaxProdConstraint(number)
             elif operator == '+':
                 if comparator == '==':
                     return ExactSumConstraint(number)
-                elif comparator == '<=':
+                elif comparator == '<=' or (comparator == '<' and number_is_int):
                     return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
-                elif comparator == '>=':
+                elif comparator == '>=' or (comparator == '>' and number_is_int):
                     return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
             elif operator == '**':
                 # power operations are not (yet) supported, added to avoid matching the double asteriks
