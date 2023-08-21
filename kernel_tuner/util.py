@@ -770,7 +770,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
             return key
 
     def replace_params_split(match_object):
-        # NOTE careful: has side-effect of adding to set
+        # careful: has side-effect of adding to set `params_used`
         key = match_object.group(1)
         if key in tune_params:
             param = str(key if param_mapping is None else param_mapping[key])
@@ -778,6 +778,29 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
             return param
         else:
             return key
+
+    def to_multiple_restrictions(restrictions: list[str]) -> list[str]:
+        """Split the restrictions into multiple restriction where possible (e.g. 3 <= x * y < 9 <= z -> [(MinProd(3), [x, y]), (MaxProd(9-1), [x, y]), (MinProd(9), [z])])."""
+        split_restrictions = list()
+        for res in restrictions:
+            # if there are logic chains in the restriction, skip splitting further
+            if " and " in res or " or " in res:
+                split_restrictions.append(res)
+                continue
+            # find the indices of splittable comparators
+            comparators = ['<=', '>=', '>', '<']
+            comparators_indices = [(m.start(0), m.end(0)) for m in re.finditer('|'.join(comparators), res)]
+            if len(comparators_indices) <= 1:
+                # this can't be split further
+                split_restrictions.append(res)
+                continue
+            # split the restrictions from the previous to the next comparator
+            for index in range(len(comparators_indices)):
+                temp_copy = res
+                prev_stop = comparators_indices[index-1][1] + 1 if index > 0 else 0
+                next_stop = comparators_indices[index+1][0] if index < len(comparators_indices) - 1 else len(temp_copy)
+                split_restrictions.append(temp_copy[prev_stop:next_stop].strip())
+        return split_restrictions
 
     def to_numeric_constraint(restriction: str, params: list[str]) -> Optional[Union[MinSumConstraint, ExactSumConstraint, MaxSumConstraint, MaxProdConstraint]]:
         """Converts a restriction to a built-in numeric constraint if possible."""
@@ -868,7 +891,6 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
                 raise ValueError(f"Invalid operator {operator}")
         return None
 
-
     def to_equality_constraint(restriction: str, params: list[str]) -> Optional[Union[AllEqualConstraint, AllDifferentConstraint]]:
         """Converts a restriction to either an equality or inequality constraint on all the parameters if possible."""
         # check if all parameters are involved
@@ -897,6 +919,9 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
 
     # create the parsed restrictions
     if monolithic is False:
+        # split into multiple restrictions where possible
+        if try_to_constraint:
+            restrictions = to_multiple_restrictions(restrictions)
         # split into functions that only take their relevant parameters
         parsed_restrictions = list()
         for res in restrictions:
@@ -905,7 +930,6 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
             params_used = list(params_used)
             finalized_constraint = None
             if try_to_constraint:
-                # TODO split into multiple constraints if there are multiple comparators (e.g. 3 <= x * y < 9 < z -> [(MinProd(3), [x, y]), (MaxProd(9), [x, y]), (MinProd(9), [z])])
                 # check if we can turn this into the built-in numeric comparison constraint
                 finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
                 if finalized_constraint is None:
@@ -947,7 +971,6 @@ def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: d
     parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, monolithic=monolithic, try_to_constraint=try_to_constraint)
 
     # compile the parsed restrictions into a function
-    # TODO try if using lambdas is more efficient
     compiled_restrictions: list[tuple] = list()
     for restriction, params_used in parsed_restrictions:
         if isinstance(restriction, str):
