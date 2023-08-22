@@ -73,9 +73,9 @@ class Searchspace:
                 self.tune_params_int = self.tune_params
                 self.param_names_int = list(self.tune_params.keys())
 
-        # if there are strings in the restrictions, parse them to functions (increases restrictions check performance)
+        # if there are strings in the restrictions, parse them to split constraints or functions (improves solver performance)
         restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
-        if len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions):
+        if len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions) and not framework.lower() == "pysmt":
             self.restrictions = compile_restrictions(restrictions, tune_params, self.pc_var_mapping, monolithic=False, try_to_constraint=framework.lower() == "pythonconstraint")
 
         # get the framework given the framework argument
@@ -274,28 +274,7 @@ class Searchspace:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
 
         # construct the parameter space with the constraints applied
-        # import cProfile
-        # pr = cProfile.Profile()
-        # pr.enable()
         return parameter_space.getSolutionsAsListDict(order=self.param_names_int)
-        parameter_space_list = parameter_space.getSolutionsOrderedList(self.param_names_int)
-        # pr.disable()
-        # pr.dump_stats("profile.prof")
-        # pr.print_stats()
-
-        # # form the parameter tuples in the order specified by tune_params.keys()
-        # parameter_space = parameter_space.getSolutions()
-        # for params in parameter_space:
-        #     vals = list(params.values())
-        #     for param_index, param_name in enumerate(self.param_names_int):
-        #         assert params[param_name] == vals[param_index], f"{params[param_name]} != {vals[param_index]}"
-        # #     # assert False
-        # parameter_space_list = list(tuple(params.values()) for params in parameter_space)
-        # parameter_space_list = list(
-        #     (tuple(params[param_name] for param_name in self.param_names_int)) for params in parameter_space
-        # )
-
-        return self.__parameter_space_list_to_lookup_and_return_type(parameter_space_list)
 
     def __add_restrictions(self, parameter_space: Problem) -> Problem:
         """Add the user-specified restrictions as constraints on the parameter space."""
@@ -345,7 +324,7 @@ class Searchspace:
         regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
 
         boolean_comparison_mapping = {
-            "=": Equals,
+            "==": Equals,
             "<": LT,
             "<=": LE,
             ">=": GE,
@@ -375,6 +354,8 @@ class Searchspace:
         parsed = [re.sub(regex_match_variable, replace_params, res) for res in restrictions]
         # ensure no duplicates are in the list
         parsed = list(set(parsed))
+        # replace ' or ' and ' and ' with ' || ' and ' && '
+        parsed = list(r.replace(' or ', ' || ').replace(' and ', ' && ') for r in parsed)
 
         # compile each restriction by replacing parameters and operators with their PySMT equivalent
         compiled_restrictions = list()
@@ -406,16 +387,18 @@ class Searchspace:
             # for each of the operators, instantiate them with variables or constants
             for operator in operator_backlog:
                 # merges the first two symbols in the backlog into one
+                left, right = var_or_constant_backlog.pop(0), var_or_constant_backlog.pop(0)
                 var_or_constant_backlog.insert(
                     0,
-                    operator(var_or_constant_backlog.pop(0), var_or_constant_backlog.pop(0)),
+                    operator(left, right),
                 )
 
             # for each of the booleans, instantiate them with variables or constants
             compiled = list()
             assert len(boolean_backlog) <= 1, "Max. one boolean operator per restriction."
             for boolean in boolean_backlog:
-                compiled.append(boolean(var_or_constant_backlog.pop(0), var_or_constant_backlog.pop(0)))
+                left, right = var_or_constant_backlog.pop(0), var_or_constant_backlog.pop(0)
+                compiled.append(boolean(left, right))
 
             # add the restriction to the list of restrictions
             compiled_restrictions.append(compiled[0])

@@ -955,8 +955,8 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
     return parsed_restrictions
 
 
-def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, monolithic = False, try_to_constraint = True) -> list[tuple[Union[Constraint, FunctionType], list[str]]]:
-    """Parses restrictions from a list of strings into a list of Functions or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
+def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, monolithic = False, try_to_constraint = True) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
+    """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
     if param_mapping is not None:
         raise NotImplementedError("Parameter mapping is to be re-implemented.")
 
