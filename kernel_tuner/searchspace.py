@@ -149,15 +149,7 @@ class Searchspace:
     def __build_searchspace_pysmt(self, block_size_names: list, max_threads: int, solver: Solver):
         # PySMT imports
         from pysmt.oracles import get_logic
-        from pysmt.shortcuts import (
-            And,
-            Equals,
-            EqualsOrIff,
-            Not,
-            Or,
-            Real,
-            Symbol,
-        )
+        from pysmt.shortcuts import And, Equals, EqualsOrIff, Not, Or, Real, Symbol
         from pysmt.shortcuts import Solver as PySMTSolver
         from pysmt.typing import REAL
 
@@ -173,7 +165,8 @@ class Searchspace:
                 solver.add_assertion(formula)
                 while solver.solve():
                     partial_model = [EqualsOrIff(k, solver.get_value(k)) for k in keys]
-                    solver.add_assertion(Not(And(partial_model)))
+                    assertion = Not(And(partial_model))
+                    solver.add_assertion(assertion)
                     partial_models.append(partial_model)
             return partial_models
 
@@ -363,19 +356,28 @@ class Searchspace:
             words = parsed_restriction.split(" ")
 
             # make a forward pass over all the words to organize and substitute
+            add_next_var_or_constant = False
             var_or_constant_backlog = list()
             operator_backlog = list()
+            operator_backlog_left_right = list()
             boolean_backlog = list()
             for word in words:
                 if word.startswith("params["):
+                    # if variable
                     varname = word.replace('params["', "").replace('"]', "")
-                    var_or_constant_backlog.append(symbols[varname])
+                    var = symbols[varname]
+                    var_or_constant_backlog.append(var)
                 elif word in boolean_comparison_mapping:
+                    # if comparator
                     boolean_backlog.append(boolean_comparison_mapping[word])
+                    continue
                 elif word in operators_mapping:
+                    # if operator
                     operator_backlog.append(operators_mapping[word])
+                    add_next_var_or_constant = True
+                    continue
                 else:
-                    # evaluate the constant to check if it is an integer, float, etc. If not, treat it as a string.
+                    # if constant: evaluate to check if it is an integer, float, etc. If not, treat it as a string.
                     try:
                         constant = ast.literal_eval(word)
                     except ValueError:
@@ -383,15 +385,19 @@ class Searchspace:
                     # convert from Python type to PySMT equivalent
                     type_instance = constant_init_mapping[type(constant).__name__]
                     var_or_constant_backlog.append(type_instance(constant))
+                if add_next_var_or_constant:
+                    right, left = var_or_constant_backlog.pop(-1), var_or_constant_backlog.pop(-1)
+                    operator_backlog_left_right.append((left, right, len(var_or_constant_backlog)))
+                    add_next_var_or_constant = False
+                    # reserve an empty spot for the combined operation to preserve the order
+                    var_or_constant_backlog.append(None)
 
             # for each of the operators, instantiate them with variables or constants
-            for operator in operator_backlog:
+            for i, operator in enumerate(operator_backlog):
                 # merges the first two symbols in the backlog into one
-                left, right = var_or_constant_backlog.pop(0), var_or_constant_backlog.pop(0)
-                var_or_constant_backlog.insert(
-                    0,
-                    operator(left, right),
-                )
+                left, right, new_index = operator_backlog_left_right[i]
+                assert var_or_constant_backlog[new_index] is None   # make sure that this is a reserved spot to avoid changing the order
+                var_or_constant_backlog[new_index] = operator(left, right)
 
             # for each of the booleans, instantiate them with variables or constants
             compiled = list()
