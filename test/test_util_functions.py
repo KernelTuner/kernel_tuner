@@ -673,9 +673,3 @@ def test_parse_restrictions():
     parsed, params = parsed_multi_constraints[3]
     assert isinstance(parsed, MaxProdConstraint)
     assert all(param in tune_params for param in params)
-
-    # # test with a parameter mapping
-    # parameter_mapping = {"block_size_x": 1}
-    # parsed, params = parse_restrictions(restrict, tune_params, parameter_mapping)[0]
-    # expected = "params[1] != 320"
-    # assert expected in parsed

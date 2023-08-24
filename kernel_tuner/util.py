@@ -756,7 +756,7 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
-def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping: dict = None, monolithic = False, try_to_constraint = True) -> list[tuple[Union[Constraint, str], list[str]]]:
+def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = False, try_to_constraint = True) -> list[tuple[Union[Constraint, str], list[str]]]:
     """Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters."""
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
@@ -764,7 +764,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
     def replace_params(match_object):
         key = match_object.group(1)
         if key in tune_params:
-            param = str(key if param_mapping is None else param_mapping[key])
+            param = str(key)
             return "params[params_index['" + param + "']]"
         else:
             return key
@@ -773,7 +773,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
         # careful: has side-effect of adding to set `params_used`
         key = match_object.group(1)
         if key in tune_params:
-            param = str(key if param_mapping is None else param_mapping[key])
+            param = str(key)
             params_used.add(param)
             return param
         else:
@@ -955,11 +955,8 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
     return parsed_restrictions
 
 
-def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: dict = None, monolithic = False, try_to_constraint = True) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
+def compile_restrictions(restrictions: list, tune_params: dict, monolithic = False, try_to_constraint = True) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
     """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
-    if param_mapping is not None:
-        raise NotImplementedError("Parameter mapping is to be re-implemented.")
-
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
@@ -968,7 +965,7 @@ def compile_restrictions(restrictions: list, tune_params: dict, param_mapping: d
         return restrictions_ignore
 
     # parse the strings
-    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, param_mapping, monolithic=monolithic, try_to_constraint=try_to_constraint)
+    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, monolithic=monolithic, try_to_constraint=try_to_constraint)
 
     # compile the parsed restrictions into a function
     compiled_restrictions: list[tuple] = list()
