@@ -3,9 +3,8 @@ requires = ["setuptools>=61.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-description = "An easy to use CUDA/OpenCL kernel tuner in Python"
 name = "kernel_tuner"
-python = ">=3.7"
+description = "An easy to use CUDA/OpenCL kernel tuner in Python"
 version = "0.4.5"
 authors = [
     { name = "Ben van Werkhoven", email = "b.vanwerkhoven@esciencecenter.nl" },
@@ -28,22 +27,24 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.8",              # if we drop 3.8 support, remove "from __future__ import annotations"
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development",
     "Topic :: System :: Distributed Computing",
     "Development Status :: 5 - Production/Stable",
 ]
 dependencies = [
-    "numpy>=1.13.3,<1.24.0",
+    "numpy>=1.13.3,<1.24.0", # numpy <1.24.0 restriction can be removed once scikit-optimize / skopt stops using np.int
     "scipy>=1.8.1",
     "jsonschema",
     "python-constraint",
     "xmltodict",
     "pandas",
+    "scikit-learn",
+    "scikit-optimize",
 ]
 
 [project.readme]
@@ -86,6 +87,12 @@ dev = [
     "pylint>=1.7.1",
     "bayesian-optimization>=1.0.1",
 ]
+test = [
+    "pytest >= 7.3.1",
+    "pytest-cov >= 4.0.0",
+    "nox >= 2023.4.22",
+    "ruff >= 0.0.263",
+]
 
 [tool.setuptools]
 packages = [
@@ -106,7 +113,7 @@ line-length = 120
 [tool.ruff]
 line-length = 120
 respect-gitignore = true
-exclude = ["doc"]
+exclude = ["doc", "examples"]
 select = [
     "E", # pycodestyle
     "F", # pyflakes,

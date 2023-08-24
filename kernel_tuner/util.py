@@ -1,4 +1,6 @@
 """Module for kernel tuner utility functions."""
+from __future__ import annotations
+
 import errno
 import json
 import logging
