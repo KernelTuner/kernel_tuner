@@ -636,20 +636,42 @@ def test_process_metrics():
 def test_parse_restrictions():
     tune_params = {"block_size_x": [50, 100], "use_padding": [0, 1]}
     restrict = ["block_size_x != 320"]
-    restrictions = ["block_size_x != 320", "use_padding == 0 or block_size_x % 32 != 0"]
+    restrictions = ["block_size_x != 320", "use_padding == 0 or block_size_x % 32 != 0", "50 <= block_size_x * use_padding < 100"]
 
     # test the monolithic parsed function
-    parsed = parse_restrictions(restrict, tune_params, split=False)[0]
+    parsed = parse_restrictions(restrict, tune_params, monolithic=True)[0]
     expected = "params[params_index['block_size_x']] != 320"
     assert expected in parsed[0]
 
     # test the split parsed function
-    parsed_multi = parse_restrictions(restrictions, tune_params)
+    parsed_multi = parse_restrictions(restrictions, tune_params, try_to_constraint=False)
+    assert isinstance(parsed_multi, list) and isinstance(parsed_multi[0], tuple)
+    assert len(parsed_multi) == 3
     parsed, params = parsed_multi[0]
     assert restrictions[0] in parsed
     assert params == ["block_size_x"]
     parsed, params = parsed_multi[1]
     assert restrictions[1] in parsed
+    assert all(param in tune_params for param in params)
+    parsed, params = parsed_multi[2]
+    assert restrictions[2] in parsed
+    assert all(param in tune_params for param in params)
+
+    # test the conversion to constraints
+    parsed_multi_constraints = parse_restrictions(restrictions, tune_params, try_to_constraint=True)
+    assert isinstance(parsed_multi_constraints, list) and isinstance(parsed_multi_constraints[0], tuple)
+    assert len(parsed_multi_constraints) == 4
+    parsed, params = parsed_multi_constraints[0]
+    assert isinstance(parsed, str)
+    assert params == ["block_size_x"]
+    parsed, params = parsed_multi_constraints[1]
+    assert isinstance(parsed, str)
+    assert all(param in tune_params for param in params)
+    parsed, params = parsed_multi_constraints[2]
+    assert isinstance(parsed, MinProdConstraint)
+    assert all(param in tune_params for param in params)
+    parsed, params = parsed_multi_constraints[3]
+    assert isinstance(parsed, MaxProdConstraint)
     assert all(param in tune_params for param in params)
 
     # # test with a parameter mapping

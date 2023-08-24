@@ -828,7 +828,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
         # either the left or right side of the equation must evaluate to a constant number
         left_num = is_or_evals_to_number(left)
         right_num = is_or_evals_to_number(right)
-        if (left_num is not None) ^ (right_num is not None):
+        if (left_num is None and right_num is None) or (left_num is not None and right_num is not None):
             # left_num and right_num can't be both None or both a constant
             return None
         number, variables, variables_on_left = (left_num, right.strip(), False) if left_num is not None else (right_num, left.strip(), True)
@@ -929,7 +929,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, param_mapping
             parsed_restriction = re.sub(regex_match_variable, replace_params_split, res).strip()
             params_used = list(params_used)
             finalized_constraint = None
-            if try_to_constraint:
+            if try_to_constraint and " or " not in res and " and " not in res:
                 # check if we can turn this into the built-in numeric comparison constraint
                 finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
                 if finalized_constraint is None:

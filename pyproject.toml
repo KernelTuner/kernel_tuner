@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
 name = "kernel_tuner"
+python = ">=3.7"
 version = "0.4.5"
 authors = [
     { name = "Ben van Werkhoven", email = "b.vanwerkhoven@esciencecenter.nl" },
@@ -30,6 +31,7 @@ classifiers = [
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development",
     "Topic :: System :: Distributed Computing",
