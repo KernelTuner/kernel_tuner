@@ -227,7 +227,7 @@ def store_metadata_file(metadata_filename: str):
             hardware_description_string = "[" + hardware_description_string + "]"
         metadata["operating_system"] = os_string
     except:
-        hardware_description_string = "[error retrieving hardware description]"
+        hardware_description_string = '["error retrieving hardware description"]'
         metadata["operating_system"] = "unidentified OS"
     metadata["hardware"] = dict(hardware_description=json.loads(hardware_description_string))
 
@@ -235,14 +235,14 @@ def store_metadata_file(metadata_filename: str):
     device_query = {}
     try:
         device_query["nvidia-smi"] = get_device_query("nvidia")
-    except FileNotFoundError:
-        # ignore if nvidia-smi is not found
+    except Exception:
+        # ignore if nvidia-smi is not found, or parse error occurs
         pass
 
     try:
         device_query["rocm-smi"] = get_device_query("amd")
-    except FileNotFoundError:
-        # ignore if rocm-smi is not found
+    except Exception:
+        # ignore if rocm-smi is not found, or parse error occurs
         pass
 
     metadata["environment"] = dict(device_query=device_query, requirements=get_dependencies())
