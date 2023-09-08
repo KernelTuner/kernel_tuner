@@ -1,15 +1,23 @@
 [build-system]
-requires = ["setuptools>=61.2"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.7.0", "setuptools>=67.7.2", "tomli>=2.0.1"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "kernel_tuner"
+packages = [{ include = "kernel_tuner", from = "." }]
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "0.4.5"
+version = "0.5.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+license = "Apache-2.0"
 authors = [
-    { name = "Ben van Werkhoven", email = "b.vanwerkhoven@esciencecenter.nl" },
+    "Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>",
+    "Alessio Sclocco",
+    "Stijn Heldens",
+    "Floris-Jan Willemsen <fjwillemsen97@gmail.com>",
 ]
-license = { file = "LICENSE" }
+readme = "README.rst"
+homepage = "https://KernelTuner.github.io/kernel_tuner/"
+documentation = "https://KernelTuner.github.io/kernel_tuner/"
+repository = "https://github.com/KernelTuner/kernel_tuner"
 keywords = [
     "auto-tuning",
     "gpu",
@@ -26,86 +34,98 @@ classifiers = [
     "Intended Audience :: Education",
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
-    "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3.8",              # if we drop 3.8 support, remove "from __future__ import annotations"
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development",
     "Topic :: System :: Distributed Computing",
     "Development Status :: 5 - Production/Stable",
 ]
-dependencies = [
-    "numpy>=1.13.3,<1.24.0", # numpy <1.24.0 restriction can be removed once scikit-optimize / skopt stops using np.int
-    "scipy>=1.8.1",
-    "jsonschema",
-    "python-constraint",
-    "xmltodict",
-    "pandas",
-    "scikit-learn",
-    "scikit-optimize",
-]
+[tool.poetry.urls]
+"Tracker" = "https://github.com/KernelTuner/kernel_tuner/issues"
+[tool.poetry.build]
+generate-setup-file = false
 
-[project.readme]
-file = "README.rst"
-content-type = "text/x-rst"
+# ATTENTION: if anything is changed here, run `poetry update`
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"          # TODO if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
+numpy = "^1.22.4"
+scipy = "^1.11.2"
+jsonschema = "*"
+python-constraint2 = "^2.0.0b2"
+xmltodict = "*"
+pandas = "^1.4.3"
+scikit-learn = "^1.0.2"
 
-[project.urls]
-Homepage = "https://KernelTuner.github.io/kernel_tuner/"
-Documentation = "https://KernelTuner.github.io/kernel_tuner/"
-Source = "https://github.com/KernelTuner/kernel_tuner"
-Tracker = "https://github.com/KernelTuner/kernel_tuner/issues"
+# ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt > docs/requirements.txt`
+# Please note that there is overlap with the `dev` group
+[tool.poetry.group.docs]
+optional = true
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.2.4"
+sphinx_rtd_theme = "^1.3.0" # updated from "^0.1.9"
+sphinx-pyproject = "^0.3"
+nbsphinx = "^0.2.13"
+pytest = "^7.4.0"           # TODO why do we need pytest here?
+ipython = "*"               # TODO why do we need ipython here?
+markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
+# sphinx-autodoc-typehints = "^1.24.0"
+# toml = "^0.10.2"
 
-[project.optional-dependencies]
-doc = [
-    "sphinx",
-    "sphinx_rtd_theme",
-    "nbsphinx",
-    "pytest",
-    "ipython",
-    "markupsafe==2.0.1",
-]
-cuda = ["pycuda", "nvidia-ml-py", "pynvml>=11.4.1"]
+# ATTENTION: if anything is changed here, run `poetry update`
+[tool.poetry.group.test]
+optional = true
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+mock = "^2.0.0"
+nox = "^2023.4.22"
+ruff = "^0.0.286"
+pep440 = "^0.1.2"
+tomli = "^2.0.1"      # can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11
+
+# ATTENTION: if anything is changed here, run `poetry update`
+[tool.poetry.group.dev.dependencies]
+pylint = "^1.7.1"                # TODO remove this in favor of ruff
+bayesian-optimization = "^1.0.1"
+# TODO include docs group
+# TODO include test group
+# TODO include tutorial group
+
+# List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
+# Please note that this is different from the dependency groups above, e.g. `dev` and `test`, those are for development.
+# CUDA
+pycuda = { version = "*", optional = true }
+nvidia-ml-py = { version = "*", optional = true }
+pynvml = { version = "^11.4.1", optional = true }
+# OpenCL
+pyopencl = { version = "*", optional = true }
+# Tutorial
+jupyter = { version = "^1.0.0", optional = true }
+matplotlib = { version = "^1.5.3", optional = true }
+
+[tool.poetry.extras]
+cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
 opencl = ["pyopencl"]
 cuda_opencl = ["pycuda", "pyopencl"]
-tutorial = ["jupyter", "matplotlib", "pandas"]
-dev = [
-    "numpy>=1.13.3",
-    "scipy>=0.18.1",
-    "mock>=2.0.0",
-    "pytest>=3.0.3",
-    "ruff >= 0.0.263",
-    "Sphinx>=1.4.8",
-    "scikit-learn>=0.24.2",
-    "scikit-optimize>=0.8.1",
-    "sphinx-rtd-theme>=0.1.9",
-    "nbsphinx>=0.2.13",
-    "jupyter>=1.0.0",
-    "matplotlib>=1.5.3",
-    "pandas>=0.19.1",
-    "pylint>=1.7.1",
-    "bayesian-optimization>=1.0.1",
-]
-test = [
-    "pytest >= 7.3.1",
-    "pytest-cov >= 4.0.0",
-    "nox >= 2023.4.22",
-    "ruff >= 0.0.263",
-]
+tutorial = ["jupyter", "matplotlib"]
 
-[tool.setuptools]
-packages = [
-    "kernel_tuner",
-    "kernel_tuner.backends",
-    "kernel_tuner.energy",
-    "kernel_tuner.observers",
-    "kernel_tuner.runners",
-    "kernel_tuner.strategies",
-]
-include-package-data = true
+# TODO check if this works correctly automatically
+# [tool.setuptools]
+# packages = [
+#     "kernel_tuner",
+#     "kernel_tuner.backends",
+#     "kernel_tuner.energy",
+#     "kernel_tuner.observers",
+#     "kernel_tuner.runners",
+#     "kernel_tuner.strategies",
+# ]
+# include-package-data = true
 
 [tool.pytest.ini_options]
+minversion = "7.4"
+pythonpath = [
+    "kernel_tuner",
+] # necessary to get coverage reports without installing with `-e`
+addopts = "--cov --cov-config=.coveragerc --cov-report html --cov-report term-missing --cov-fail-under 80"
 testpaths = ["test"]
 
 [tool.black]
@@ -119,6 +139,5 @@ select = [
     "F", # pyflakes,
     "D", # pydocstyle,
 ]
-# target-version = "py310"   # inferred from project.requires-python
 [tool.ruff.pydocstyle]
 convention = "google"
