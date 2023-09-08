@@ -11,9 +11,9 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/documentation_options.js?v=340bb9e5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -120,7 +120,7 @@
   <div class="toctree-wrapper compound">
 </div>
 <section id="kernel-tuner-examples">
-<span id="examples"></span><h1>Kernel Tuner Examples<a class="headerlink" href="#kernel-tuner-examples" title="Permalink to this heading">¶</a></h1>
+<span id="examples"></span><h1>Kernel Tuner Examples<a class="headerlink" href="#kernel-tuner-examples" title="Link to this heading">¶</a></h1>
 <p>Most of the examples show how to use Kernel Tuner to tune a
 CUDA, OpenCL, or C kernel, while demonstrating a particular usecase of Kernel Tuner.</p>
 <p>Except for <a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/test_vector_add.py">test_vector_add.py</a>  and
@@ -128,7 +128,7 @@ CUDA, OpenCL, or C kernel, while demonstrating a particular usecase of Kernel Tu
 which show how to write tests for GPU kernels with Kernel Tuner.</p>
 <p>Below we list the example applications and the features they illustrate.</p>
 <section id="vector-add">
-<h2>Vector Add<a class="headerlink" href="#vector-add" title="Permalink to this heading">¶</a></h2>
+<h2>Vector Add<a class="headerlink" href="#vector-add" title="Link to this heading">¶</a></h2>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda-c++/vector_add.py">CUDA-C++</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add.py">OpenCL</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py">C</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/fortran/vector_add.py">Fortran</a>]</dt><dd><ul class="simple">
 <li><p>use Kernel Tuner to tune a simple kernel</p></li>
@@ -137,7 +137,7 @@ which show how to write tests for GPU kernels with Kernel Tuner.</p>
 </dl>
 </section>
 <section id="stencil">
-<h2>Stencil<a class="headerlink" href="#stencil" title="Permalink to this heading">¶</a></h2>
+<h2>Stencil<a class="headerlink" href="#stencil" title="Link to this heading">¶</a></h2>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/stencil.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/stencil.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>use a 2-dimensional problem domain with 2-dimensional thread blocks in a simple and clean example</p></li>
@@ -146,7 +146,7 @@ which show how to write tests for GPU kernels with Kernel Tuner.</p>
 </dl>
 </section>
 <section id="matrix-multiplication">
-<h2>Matrix Multiplication<a class="headerlink" href="#matrix-multiplication" title="Permalink to this heading">¶</a></h2>
+<h2>Matrix Multiplication<a class="headerlink" href="#matrix-multiplication" title="Link to this heading">¶</a></h2>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/matmul.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/matmul.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>pass a filename instead of a string with code</p></li>
@@ -159,12 +159,12 @@ which show how to write tests for GPU kernels with Kernel Tuner.</p>
 </dl>
 </section>
 <section id="convolution">
-<h2>Convolution<a class="headerlink" href="#convolution" title="Permalink to this heading">¶</a></h2>
+<h2>Convolution<a class="headerlink" href="#convolution" title="Link to this heading">¶</a></h2>
 <p>There are several different examples centered around the convolution
 kernel [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/convolution.cu">CUDA</a>]
 [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/convolution.cl">OpenCL</a>]</p>
 <section id="convolution-py">
-<h3>convolution.py<a class="headerlink" href="#convolution-py" title="Permalink to this heading">¶</a></h3>
+<h3>convolution.py<a class="headerlink" href="#convolution-py" title="Link to this heading">¶</a></h3>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/convolution.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/convolution.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>use tunable parameters for tuning for multiple input sizes</p></li>
@@ -175,7 +175,7 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 </dl>
 </section>
 <section id="sepconv-py">
-<h3>sepconv.py<a class="headerlink" href="#sepconv-py" title="Permalink to this heading">¶</a></h3>
+<h3>sepconv.py<a class="headerlink" href="#sepconv-py" title="Link to this heading">¶</a></h3>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/sepconv.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/sepconv.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>use the convolution kernel for separable filters</p></li>
@@ -185,7 +185,7 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 </dl>
 </section>
 <section id="convolution-correct-py">
-<h3>convolution_correct.py<a class="headerlink" href="#convolution-correct-py" title="Permalink to this heading">¶</a></h3>
+<h3>convolution_correct.py<a class="headerlink" href="#convolution-correct-py" title="Link to this heading">¶</a></h3>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/convolution_correct.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/convolution_correct.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>use run_kernel to compute a reference answer</p></li>
@@ -195,7 +195,7 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 </dl>
 </section>
 <section id="convolution-streams-py">
-<h3>convolution_streams.py<a class="headerlink" href="#convolution-streams-py" title="Permalink to this heading">¶</a></h3>
+<h3>convolution_streams.py<a class="headerlink" href="#convolution-streams-py" title="Link to this heading">¶</a></h3>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/convolution_streams.py">CUDA</a>]</dt><dd><ul class="simple">
 <li><p>allocate page-locked host memory from Python</p></li>
@@ -209,7 +209,7 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 </section>
 </section>
 <section id="reduction">
-<h2>Reduction<a class="headerlink" href="#reduction" title="Permalink to this heading">¶</a></h2>
+<h2>Reduction<a class="headerlink" href="#reduction" title="Link to this heading">¶</a></h2>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/reduction.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/reduction.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>use vector types and shuffle instructions (shuffle is only available in CUDA)</p></li>
@@ -222,7 +222,7 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 </dl>
 </section>
 <section id="sparse-matrix-vector-multiplication">
-<h2>Sparse Matrix Vector Multiplication<a class="headerlink" href="#sparse-matrix-vector-multiplication" title="Permalink to this heading">¶</a></h2>
+<h2>Sparse Matrix Vector Multiplication<a class="headerlink" href="#sparse-matrix-vector-multiplication" title="Link to this heading">¶</a></h2>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/spmv.py">CUDA</a>]</dt><dd><ul class="simple">
 <li><p>use scipy to compute a reference answer and verify all benchmarked kernels</p></li>
@@ -232,7 +232,7 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 </dl>
 </section>
 <section id="point-in-polygon">
-<h2>Point-in-Polygon<a class="headerlink" href="#point-in-polygon" title="Permalink to this heading">¶</a></h2>
+<h2>Point-in-Polygon<a class="headerlink" href="#point-in-polygon" title="Link to this heading">¶</a></h2>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/pnpoly.py">CUDA</a>]</dt><dd><ul class="simple">
 <li><p>overlap transfers with device mapped host memory</p></li>
@@ -242,7 +242,7 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 </dl>
 </section>
 <section id="expdist">
-<h2>ExpDist<a class="headerlink" href="#expdist" title="Permalink to this heading">¶</a></h2>
+<h2>ExpDist<a class="headerlink" href="#expdist" title="Link to this heading">¶</a></h2>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/expdist.py">CUDA</a>]</dt><dd><ul class="simple">
 <li><p>in-thread block 2D reduction using CUB library</p></li>
@@ -253,7 +253,7 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 </dl>
 </section>
 <section id="code-generator">
-<h2>Code Generator<a class="headerlink" href="#code-generator" title="Permalink to this heading">¶</a></h2>
+<h2>Code Generator<a class="headerlink" href="#code-generator" title="Link to this heading">¶</a></h2>
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add_codegen.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add_codegen.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>use a Python function as a code generator</p></li>

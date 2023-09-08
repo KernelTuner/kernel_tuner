@@ -11,9 +11,9 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/documentation_options.js?v=340bb9e5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -104,7 +104,7 @@
            <div itemprop="articleBody">
              
   <section id="tuning-host-code">
-<h1>Tuning Host Code<a class="headerlink" href="#tuning-host-code" title="Permalink to this heading">¶</a></h1>
+<h1>Tuning Host Code<a class="headerlink" href="#tuning-host-code" title="Link to this heading">¶</a></h1>
 <p>With the Kernel Tuner it is also possible to tune the host code of your GPU programs, or even just any C function for that matter.
 Tuning host code can be useful when it contains parameters that have impact on the performance of kernel on the GPU, such as the number of
 streams to use when executing a kernel across multiple streams. Another example is when you want to include the data transfers between
@@ -128,7 +128,7 @@ of the parameter space the returned floats will be averaged for the multiple run
 CUDA Events to do the timing for you. However, if you are using plain C then you have to supply your own timing function.
 In the <a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py">C vector add example</a> we are using the <code class="docutils literal notranslate"><span class="pre">omp_get_wtime()</span></code> function from OpenMP to measure time on the CPU.</p>
 <section id="tuning-the-number-of-streams">
-<h2>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Permalink to this heading">¶</a></h2>
+<h2>Tuning the number of streams<a class="headerlink" href="#tuning-the-number-of-streams" title="Link to this heading">¶</a></h2>
 <p>The following describes the example in <code class="docutils literal notranslate"><span class="pre">examples/cuda/convolution_streams.py</span></code>.
 In this example, the same convolution kernel is used as with correctness checking and convolution application example.</p>
 <p>What is different is that we also supply the host code, which you can find in <code class="docutils literal notranslate"><span class="pre">examples/cuda/convolution_streams.cu</span></code>. It is a bit

@@ -12,9 +12,9 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/documentation_options.js?v=340bb9e5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -110,13 +110,13 @@
            <div itemprop="articleBody">
              
   <section id="Convolution">
-<h1>Convolution<a class="headerlink" href="#Convolution" title="Permalink to this heading">¶</a></h1>
+<h1>Convolution<a class="headerlink" href="#Convolution" title="Link to this heading">¶</a></h1>
 <p>This guide is meant to get you started with writing your tests and tuning scripts using Kernel Tuner. We’ll use a simple 2D Convolution kernel as an example kernel, but as you will find out shortly, much of the scripts that you write with Kernel Tuner can be reused for testing and tuning other kernels.</p>
 <div class="admonition note">
 <p><strong>Note:</strong> If you are reading this guide on the Kernel Tuner’s documentation pages, note that you can actually run this guide as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/kerneltuner/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the guide by typing “jupyter notebook” in the “kernel_tuner/doc/source” directory.</p>
 </div>
 <section id="2D-Convolution-example">
-<h2>2D Convolution example<a class="headerlink" href="#2D-Convolution-example" title="Permalink to this heading">¶</a></h2>
+<h2>2D Convolution example<a class="headerlink" href="#2D-Convolution-example" title="Link to this heading">¶</a></h2>
 <p>Convolution operations are essential to signal and image processing applications and are the main operation in convolutional neural networks used for deep learning. A convolution operation computes the linear combination of the weights in a <em>convolution filter</em> and a range of pixels from the input image for each output pixel. A 2D convolution of an input image <span class="math notranslate nohighlight">\(I\)</span> of size <span class="math notranslate nohighlight">\((w\times h)\)</span> and a convolution filter <span class="math notranslate nohighlight">\(F\)</span> of size <span class="math notranslate nohighlight">\((F_w\times F_h)\)</span> computes an output image
 <span class="math notranslate nohighlight">\(O\)</span> of size <span class="math notranslate nohighlight">\(((w-F_w)\times (h-F_h))\)</span>: <span class="math">\begin{equation}\nonumber
 O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
@@ -152,7 +152,7 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </div>
 </section>
 <section id="Implement-a-test">
-<h2>Implement a test<a class="headerlink" href="#Implement-a-test" title="Permalink to this heading">¶</a></h2>
+<h2>Implement a test<a class="headerlink" href="#Implement-a-test" title="Link to this heading">¶</a></h2>
 <p>We will start with using Kernel Tuner’s <code class="docutils literal notranslate"><span class="pre">run_kernel</span></code> function to call our naive 2D convolution kernel. But first we will have to create some input data, which we will do as follows:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
@@ -264,7 +264,7 @@ GPU in a list of Numpy arrays that we have named <strong>answer</strong> in the 
 <p>The <strong>answer</strong> list contains Numpy objects (arrays and/or scalars) in the same order and of the same type as the <strong>arguments</strong> list that we used to call the kernel with, but in contrast to <strong>arguments</strong> it contains the data that was stored in GPU memory after our naive convolution kernel had finished executing. This feature is particularly useful for implementing tests for your GPU kernels. You can perform the same operation in Python and compare the results.</p>
 </section>
 <section id="Tuning-2D-Convolution">
-<h2>Tuning 2D Convolution<a class="headerlink" href="#Tuning-2D-Convolution" title="Permalink to this heading">¶</a></h2>
+<h2>Tuning 2D Convolution<a class="headerlink" href="#Tuning-2D-Convolution" title="Link to this heading">¶</a></h2>
 <p>In many cases there are more tunable parameters than just the thread block dimensions. We have included a highly-optimized 2D Convolution kernel that contains many parametrized code optimizations. It’s a bit long to include here, so instead we just point to the file, you may need to adjust the path a little bit depending on where you’ve stored the Kernel Tuner’s source code and where this notebook is executing.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
@@ -309,7 +309,7 @@ GPU in a list of Numpy arrays that we have named <strong>answer</strong> in the 
 device information. This second dictionary can be stored along with the results so that you can always find out under what circumstances those results were obtained.</p>
 </section>
 <section id="More-tunable-parameters">
-<h2>More tunable parameters<a class="headerlink" href="#More-tunable-parameters" title="Permalink to this heading">¶</a></h2>
+<h2>More tunable parameters<a class="headerlink" href="#More-tunable-parameters" title="Link to this heading">¶</a></h2>
 <p>I promised that we would use more tunable parameters than just thread block dimensions. Our 2D Convolution kernel also also supports tiling factors in the x and y dimensions. Tiling factors indicate that the amount of work performed by the thread block in a particular dimension is increased with a certain factor.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:

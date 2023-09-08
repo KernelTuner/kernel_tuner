@@ -11,9 +11,9 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/documentation_options.js?v=340bb9e5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -106,7 +106,7 @@
            <div itemprop="articleBody">
              
   <section id="the-kernel-tuner-documentation">
-<h1>The Kernel Tuner documentation<a class="headerlink" href="#the-kernel-tuner-documentation" title="Permalink to this heading">¶</a></h1>
+<h1>The Kernel Tuner documentation<a class="headerlink" href="#the-kernel-tuner-documentation" title="Link to this heading">¶</a></h1>
 <p>Kernel Tuner is a software development tool for the creation of highly-optimized and tuned GPU applications.</p>
 <p>The Kernel Tuner documentation pages are mostly about Kernel Tuner itself, but there are a number of related repositories that
 are considered part of the Kernel Tuner family:</p>
@@ -118,7 +118,7 @@ are considered part of the Kernel Tuner family:</p>
 </ul>
 </div></blockquote>
 <section id="quick-install">
-<h2>Quick install<a class="headerlink" href="#quick-install" title="Permalink to this heading">¶</a></h2>
+<h2>Quick install<a class="headerlink" href="#quick-install" title="Link to this heading">¶</a></h2>
 <p>The easiest way to install the Kernel Tuner is using pip:</p>
 <p>To tune CUDA kernels:</p>
 <ul class="simple">
@@ -130,15 +130,20 @@ are considered part of the Kernel Tuner family:</p>
 <li><p>First, make sure you have an OpenCL compiler for your intended OpenCL platform</p></li>
 <li><p>Then type: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[opencl]</span></code></p></li>
 </ul>
-<p>Or both:</p>
+<p>To tune HIP kernels:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda,opencl]</span></code></p></li>
+<li><p>First, make sure you have an HIP runtime and compiler installed</p></li>
+<li><p>Then type: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[hip]</span></code></p></li>
+</ul>
+<p>Or all:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">kernel_tuner[cuda,opencl,hip]</span></code></p></li>
 </ul>
 <p>More information about how to install Kernel Tuner and its
 dependencies can be found under <a class="reference internal" href="install.html#install"><span class="std std-ref">Installation</span></a>.</p>
 </section>
 <section id="example-usage">
-<h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this heading">¶</a></h2>
+<h2>Example usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
 <p>The following shows a simple example for tuning a CUDA kernel:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">__global__ void vector_add(float *c, float *a, float *b, int n) {</span>
@@ -165,7 +170,7 @@ dependencies can be found under <a class="reference internal" href="install.html
 </div>
 </section>
 <section id="citation">
-<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading">¶</a></h2>
+<h2>Citation<a class="headerlink" href="#citation" title="Link to this heading">¶</a></h2>
 <p>If you use Kernel Tuner in research or research software, please cite the most relevant among the following publications:</p>
 <div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@article<span class="nb">{</span>kerneltuner,
   author  = <span class="nb">{</span>Ben van Werkhoven<span class="nb">}</span>,

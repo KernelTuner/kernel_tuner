@@ -11,9 +11,9 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/documentation_options.js?v=340bb9e5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -105,12 +105,12 @@
            <div itemprop="articleBody">
              
   <section id="templated-kernels">
-<h1>Templated kernels<a class="headerlink" href="#templated-kernels" title="Permalink to this heading">¶</a></h1>
+<h1>Templated kernels<a class="headerlink" href="#templated-kernels" title="Link to this heading">¶</a></h1>
 <p>It is quite common in CUDA programming to write kernels that use C++ templates. This can be very useful when writing code that can work for several types, for example floats and doubles. However, the use of C++ templates makes it slightly more difficult to directly
 integrate the CUDA kernel into applications that are not written in C++, for example Matlab, Fortran, or Python. And since Kernel Tuner is written in Python, we needed to take a few extra steps to provide support for templated CUDA kernels. Let’s first look at an
 example of what it’s like to tune a templated kernel with Kernel Tuner.</p>
 <section id="example">
-<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h2>
 <p>Say we have a templated CUDA kernel in a file called vector_add.cu:</p>
 <div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">template</span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
 <span class="linenos">2</span><span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">vector_add</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="o">*</span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">*</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">*</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -151,7 +151,7 @@ example of what it’s like to tune a templated kernel with Kernel Tuner.</p>
 </div>
 </section>
 <section id="selecting-a-backend">
-<h2>Selecting a backend<a class="headerlink" href="#selecting-a-backend" title="Permalink to this heading">¶</a></h2>
+<h2>Selecting a backend<a class="headerlink" href="#selecting-a-backend" title="Link to this heading">¶</a></h2>
 <p>Kernel Tuner supports multiple backends, for CUDA these are based on PyCUDA and Cupy. The following explains how to enable tuning of templated kernels with either backend.</p>
 <p>The PyCuda backend is the default backend in Kernel Tuner and is selected if the user does not supply the ‘lang’ option and CUDA code is detected in the kernel source, or when lang is set to “CUDA” by the user. PyCuda requires CUDA kernels to have extern C linkage,
 which means that C++ templated kernels are not supported. To support templated kernels regardless of this limitation Kernel Tuner attempts to wrap the templated CUDA kernel by inserting a compile-time template instantiation statement and a wrapper kernel that calls
