@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+- Major speedup due to new parser and using revamped python-constraint for searchspace building
+- Implemented ability to use `PySMT` and `ATF` for searchspace building
+- Added Poetry for dependency and build management
+- Switched from `setup.py` and `setup.cfg` to `pyproject.toml` for centralized metadata, added relevant tests
+- Updated GitHub Action workflows to use Poetry
+- Updated dependencies, most notably NumPy is no longer version-locked as scikit-opt is no longer a dependency
+- Set up Nox for testing on all supported Python versions in isolated environments
+- Added linting information, VS Code settings and recommendations
+- Dropped Python 3.7 support
 
 ## [0.4.5] - 2023-06-01
 ### Added
