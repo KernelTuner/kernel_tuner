@@ -27,6 +27,7 @@ The Kernel Tuner documentation
    :maxdepth: 1
    :caption: Features
 
+   backends
    cache_files
    correctness
    hostcode

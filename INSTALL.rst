@@ -26,7 +26,8 @@ Installing Python Packages
 --------------------------
 
 Note that when you are using a native Python installation, the `pip` command used 
-Kernel Tuner and its dependencies require `sudo` rights for system wide installation. 
+to install
+Kernel Tuner and its dependencies requires `sudo` rights for system wide installation. 
 
 Sudo rights are typically not required when using Miniconda or virtual environments.
 You could also use e.g. the `--user` or `--prefix` option of `pip` to install into 
@@ -77,6 +78,15 @@ If you retry the ``pip install pycuda`` command, you may need to use the
 from an installation that is failing.
 
 If this fails, I recommend to see the PyCuda installation guide (https://wiki.tiker.net/PyCuda/Installation)
+
+
+Other CUDA Backends
+-------------------
+
+Kernel Tuner can also be used with CuPy (https://cupy.dev/) or Nvidia's CUDA Python bindings (https://nvidia.github.io/cuda-python/). Please see the installation instructions of those projects for how the required Python packages.
+
+Please refer to the documentation on `backends <https://kerneltuner.github.io/kernel_tuner/stable/backends.html>`__ on how to use and select these backends.
+
 
 
 OpenCL and PyOpenCL
