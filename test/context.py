@@ -1,6 +1,7 @@
 import sys
 import subprocess
 import shutil
+import os
 
 import pytest
 
@@ -44,6 +45,15 @@ try:
 except Exception:
     cuda_present = False
 
+PYHIP_PATH = os.environ.get('PYHIP_PATH')  # get the PYHIP_PATH environment variable
+try: 
+    if PYHIP_PATH is not None:
+        sys.path.insert(0, PYHIP_PATH)
+    from pyhip import hip, hiprtc
+    pyhip_present = True
+except ImportError:
+    pyhip_present = False
+
 skip_if_no_pycuda = pytest.mark.skipif(not pycuda_present, reason="PyCuda not installed or no CUDA device detected")
 skip_if_no_pynvml = pytest.mark.skipif(not pynvml_present, reason="NVML not installed")
 skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed or no CUDA device detected")
@@ -52,6 +62,7 @@ skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not 
 skip_if_no_gcc = pytest.mark.skipif(not gcc_present, reason="No gcc on PATH")
 skip_if_no_gfortran = pytest.mark.skipif(not gfortran_present, reason="No gfortran on PATH")
 skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
+skip_if_no_pyhip = pytest.mark.skipif(not pyhip_present, reason="No PyHIP found")
 
 
 def skip_backend(backend: str):
