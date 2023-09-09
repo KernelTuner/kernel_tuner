@@ -63,8 +63,14 @@ class Searchspace:
 
         # if there are strings in the restrictions, parse them to split constraints or functions (improves solver performance)
         restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
-        if len(restrictions) > 0 and any(isinstance(restriction, str) for restriction in restrictions) and not framework.lower() == "pysmt":
-            self.restrictions = compile_restrictions(restrictions, tune_params, monolithic=False, try_to_constraint=framework.lower() == "pythonconstraint")
+        if (
+            len(restrictions) > 0
+            and any(isinstance(restriction, str) for restriction in restrictions)
+            and not framework.lower() == "pysmt"
+        ):
+            self.restrictions = compile_restrictions(
+                restrictions, tune_params, monolithic=False, try_to_constraint=framework.lower() == "pythonconstraint"
+            )
 
         # get the framework given the framework argument
         if framework.lower() == "pythonconstraint":
@@ -75,7 +81,7 @@ class Searchspace:
             searchspace_builder = self.__build_searchspace_ATF_cache
             self.path_to_ATF_cache = path_to_ATF_cache
         else:
-            ValueError(f"Invalid framework parameter {framework}")
+            raise ValueError(f"Invalid framework parameter {framework}")
 
         # get the solver given the solver method argument
         solver = ""
@@ -201,16 +207,21 @@ class Searchspace:
     def __build_searchspace_ATF_cache(self, block_size_names: list, max_threads: int, solver: Solver):
         """Imports the valid configurations from an ATF CSV file, returns the searchspace, a dict of the searchspace for fast lookups and the size."""
         if block_size_names != default_block_size_names or max_threads != 1024:
-            raise ValueError("It is not possible to change 'block_size_names' or 'max_threads here, because at this point ATF has already ran.'")
+            raise ValueError(
+                "It is not possible to change 'block_size_names' or 'max_threads here, because at this point ATF has already ran.'"
+            )
         import pandas as pd
+
         try:
-            df = pd.read_csv(self.path_to_ATF_cache, sep=';')
+            df = pd.read_csv(self.path_to_ATF_cache, sep=";")
             list_of_tuples_of_parameters = list(zip(*(df[column] for column in self.param_names)))
         except pd.errors.EmptyDataError:
             list_of_tuples_of_parameters = list()
         return self.__parameter_space_list_to_lookup_and_return_type(list_of_tuples_of_parameters)
 
-    def __parameter_space_list_to_lookup_and_return_type(self, parameter_space_list: list[tuple], validate=True) -> tuple[list[tuple], dict[tuple, int], int]:
+    def __parameter_space_list_to_lookup_and_return_type(
+        self, parameter_space_list: list[tuple], validate=True
+    ) -> tuple[list[tuple], dict[tuple, int], int]:
         """Returns a tuple of the searchspace as a list of tuples, a dict of the searchspace for fast lookups and the size."""
         parameter_space_dict = dict(zip(parameter_space_list, range(len(parameter_space_list))))
         if validate:
@@ -227,9 +238,7 @@ class Searchspace:
             size_list,
         )
 
-    def __build_searchspace(
-        self, block_size_names: list, max_threads: int, solver: Solver
-    ):
+    def __build_searchspace(self, block_size_names: list, max_threads: int, solver: Solver):
         """Compute valid configurations in a search space based on restrictions and max_threads."""
         # instantiate the parameter space with all the variables
         parameter_space = Problem(solver=solver)
@@ -240,7 +249,9 @@ class Searchspace:
         parameter_space = self.__add_restrictions(parameter_space)
 
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
-        valid_block_size_names = list(block_size_name for block_size_name in block_size_names if block_size_name in self.param_names)
+        valid_block_size_names = list(
+            block_size_name for block_size_name in block_size_names if block_size_name in self.param_names
+        )
         if len(valid_block_size_names) > 0:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
 
@@ -259,14 +270,21 @@ class Searchspace:
                 if isinstance(restriction, FunctionConstraint):
                     parameter_space.addConstraint(restriction, required_params)
                 elif isinstance(restriction, Constraint):
-                    parameter_space.addConstraint(restriction, required_params if not all(required in self.param_names for required in required_params) else None)
+                    parameter_space.addConstraint(
+                        restriction,
+                        required_params
+                        if not all(required in self.param_names for required in required_params)
+                        else None,
+                    )
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
 
         # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
         elif callable(self.restrictions):
+
             def restrictions_wrapper(*args):
                 return check_instance_restrictions(self.restrictions, dict(zip(self.param_names, args)), False)
+
             parameter_space.addConstraint(FunctionConstraint(restrictions_wrapper), self.param_names)
         elif self.restrictions is not None:
             raise ValueError(f"The restrictions are of unsupported type {type(self.restrictions)}")
@@ -292,6 +310,7 @@ class Searchspace:
             String,
             Times,
         )
+
         regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
 
         boolean_comparison_mapping = {
@@ -313,7 +332,6 @@ class Searchspace:
             "bool": Bool,
         }
 
-
         def replace_params(match_object):
             key = match_object.group(1)
             if key in tune_params:
@@ -326,7 +344,7 @@ class Searchspace:
         # ensure no duplicates are in the list
         parsed = list(set(parsed))
         # replace ' or ' and ' and ' with ' || ' and ' && '
-        parsed = list(r.replace(' or ', ' || ').replace(' and ', ' && ') for r in parsed)
+        parsed = list(r.replace(" or ", " || ").replace(" and ", " && ") for r in parsed)
 
         # compile each restriction by replacing parameters and operators with their PySMT equivalent
         compiled_restrictions = list()
@@ -374,7 +392,9 @@ class Searchspace:
             for i, operator in enumerate(operator_backlog):
                 # merges the first two symbols in the backlog into one
                 left, right, new_index = operator_backlog_left_right[i]
-                assert var_or_constant_backlog[new_index] is None   # make sure that this is a reserved spot to avoid changing the order
+                assert (
+                    var_or_constant_backlog[new_index] is None
+                )  # make sure that this is a reserved spot to avoid changing the order
                 var_or_constant_backlog[new_index] = operator(left, right)
 
             # for each of the booleans, instantiate them with variables or constants

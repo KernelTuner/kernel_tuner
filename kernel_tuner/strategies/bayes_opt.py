@@ -510,7 +510,7 @@ class BayesianOptimization:
             raise ImportError(
                 "LHS is no longer available as skopt (scikit-optimize) is no longer maintained, change to random"
             )
-            samples = self.draw_latin_hypercube_samples(self.num_initial_samples)
+            # samples = self.draw_latin_hypercube_samples(self.num_initial_samples)
         elif self.sampling_method == "random":
             samples = list()
         else:
