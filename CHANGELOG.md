@@ -7,8 +7,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Implemented ability to use `PySMT` and `ATF` for searchspace building
 - Added Poetry for dependency and build management
 - Switched from `setup.py` and `setup.cfg` to `pyproject.toml` for centralized metadata, added relevant tests
-- Updated GitHub Action workflows to use Poetry
-- Updated dependencies, most notably NumPy is no longer version-locked as scikit-opt is no longer a dependency
+- Updated GitHub Action workflows to use Poetry [TODO]
+- Updated dependencies, most notably NumPy is no longer version-locked as scikit-opt is no longer a dependency [TODO]
+- Documentation now uses `pyproject.toml` metadata, minor changes to be compatible with updated dependencies [TODO]
 - Set up Nox for testing on all supported Python versions in isolated environments
 - Added linting information, VS Code settings and recommendations
 - Dropped Python 3.7 support

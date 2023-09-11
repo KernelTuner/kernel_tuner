@@ -46,11 +46,11 @@ generate-setup-file = false
 
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"          # TODO if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
+python = ">=3.8,<3.12"          # TODO if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
 numpy = "^1.22.4"
-scipy = "^1.11.2"
+scipy = "^1.10.1"               # held back by Python 3.8 support (dropped from ^1.11)
 jsonschema = "*"
-python-constraint2 = "^2.0.0b2"
+python-constraint2 = "^2.0.0b3"
 xmltodict = "*"
 pandas = "^1.4.3"
 scikit-learn = "^1.0.2"
@@ -60,7 +60,7 @@ scikit-learn = "^1.0.2"
 [tool.poetry.group.docs]
 optional = true
 [tool.poetry.group.docs.dependencies]
-sphinx = "^7.2.4"
+sphinx = "^7.1.2"           # held back by Python 3.8 support (dropped from ^7.2)
 sphinx_rtd_theme = "^1.3.0" # updated from "^0.1.9"
 sphinx-pyproject = "^0.3"
 nbsphinx = "^0.9"
