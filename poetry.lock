@@ -2102,6 +2102,16 @@ files = [
 plugins = ["importlib-metadata"]
 
 [[package]]
+name = "pyhip-interface"
+version = "0.1.2"
+description = "Python Interface to HIP and hiprtc Library"
+optional = true
+python-versions = "*"
+files = [
+    {file = "pyhip-interface-0.1.2.tar.gz", hash = "sha256:0a19f4c2a6ae1ece88d537b8890523d149a12d676591b2ba073ff3ec9b11dfbb"},
+]
+
+[[package]]
 name = "pylint"
 version = "1.9.4"
 description = "python code static checker"
@@ -3423,10 +3433,11 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [extras]
 cuda = []
 cuda-opencl = []
+hip = []
 opencl = []
 tutorial = []
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "9d8c102e2798e6e496baa72c24cdcffa7975a5d85f6fd988f8da9baec4e851eb"
+content-hash = "346748d0dceb39e136c2fe5e730c0a69dbc6d467909a37cbdc35521e28f14f26"

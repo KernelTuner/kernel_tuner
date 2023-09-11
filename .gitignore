@@ -17,6 +17,7 @@ examples/cuda/output
 deploy_key
 *.mod
 temp_*.*
+.python-version
 
 ### Visual Studio Code ###
 !.vscode/settings.json

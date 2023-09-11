@@ -98,6 +98,8 @@ nvidia-ml-py = { version = "*", optional = true }
 pynvml = { version = "^11.4.1", optional = true }
 # OpenCL
 pyopencl = { version = "*", optional = true }
+# HIP
+pyhip-interface = { version = "*", optional = true }
 # Tutorial
 jupyter = { version = "^1.0.0", optional = true }
 matplotlib = { version = "^1.5.3", optional = true }
@@ -106,6 +108,7 @@ matplotlib = { version = "^1.5.3", optional = true }
 cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
 opencl = ["pyopencl"]
 cuda_opencl = ["pycuda", "pyopencl"]
+hip = ["pyhip-interface"]
 tutorial = ["jupyter", "matplotlib"]
 
 # TODO check if this works correctly automatically

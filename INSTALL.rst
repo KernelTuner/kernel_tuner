@@ -111,6 +111,31 @@ Or you could install Kernel Tuner and PyOpenCL together if you haven't done so a
 
 If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.net/PyOpenCL/Installation)
 
+HIP and PyHIP
+-------------
+
+Before we can install PyHIP, you'll need to have the HIP runtime and compiler installed on your system. 
+The HIP compiler is included as part of the ROCm software stack. Here is AMD's installation guide:
+
+* `ROCm Documentation: HIP Installation Guide <https://docs.amd.com/bundle/HIP-Installation-Guide-v5.3/page/Introduction_to_HIP_Installation_Guide.html>`__
+
+After you've installed HIP, you will need to install PyHIP. Run the following command in your terminal to install:
+
+.. code-block:: bash
+
+    pip install pyhip-interface
+
+Alternatively, you can install PyHIP from the source code. First, clone the repository from GitHub:
+
+.. code-block:: bash
+
+    git clone https://github.com/jatinx/PyHIP
+
+Then, navigate to the repository directory and run the following command to install:
+
+.. code-block:: bash
+    
+    python setup.py install
 
 Installing the git version
 --------------------------
@@ -128,6 +153,7 @@ You can install Kernel Tuner with several optional dependencies, the full list i
 
 - `cuda`: install pycuda along with kernel_tuner
 - `opencl`: install pycuda along with kernel_tuner
+- `hip`: install pyhip along with kernel_tuner
 - `doc`: installs packages required to build the documentation
 - `tutorial`: install packages required to run the guides
 - `dev`: install everything you need to start development on Kernel Tuner
