@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Updated dependencies, most notably NumPy is no longer version-locked as scikit-opt is no longer a dependency [TODO]
 - Documentation now uses `pyproject.toml` metadata, minor changes to be compatible with updated dependencies [TODO]
 - Set up Nox for testing on all supported Python versions in isolated environments
-- Added linting information, VS Code settings and recommendations
+- Added linting information, VS Code settings and recommendations [TODO]: update documentation (contributing etc.)
 - Dropped Python 3.7 support
 
 ## [0.4.5] - 2023-06-01

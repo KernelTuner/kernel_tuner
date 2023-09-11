@@ -1,0 +1,31 @@
+# This workflow will use Nox to run tests and lint for the supported Python versions, and upload the test coverage data.
+
+name: Build & Test
+
+on:
+    push:
+        branches:
+            - master
+            - release/*
+    pull_request:
+        branches:
+            - master
+
+jobs:
+    build:
+        name: Test on ${{ matrix.os }} with all supported Python versions
+        runs-on: ${{ matrix.os }}
+
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+
+        steps:
+            - uses: actions/checkout@v2
+            - uses: excitedleigh/setup-nox@v2.0.0
+            - run: nox
+            # TODO use with Codecov instead: https://github.com/marketplace/actions/codecov
+            # - name: Report to Coveralls
+            #   uses: coverallsapp/github-action@v2
+            #   with:
+            #       file: ".coverage"

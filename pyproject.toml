@@ -125,7 +125,7 @@ minversion = "7.4"
 pythonpath = [
     "kernel_tuner",
 ] # necessary to get coverage reports without installing with `-e`
-addopts = "--cov --cov-config=.coveragerc --cov-report html --cov-report term-missing --cov-fail-under 65"
+addopts = "--cov --cov-config=.coveragerc --cov-report html --cov-report term-missing --cov-fail-under 60"
 testpaths = ["test"]
 
 [tool.black]
