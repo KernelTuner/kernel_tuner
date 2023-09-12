@@ -27,5 +27,5 @@ nox.options.error_on_missing_interpreters = True
 def tests(session: nox.Session) -> None:
     """Run the tests for the specified Python versions."""
     session.install("poetry")
-    session.run("poetry", "install", "--with", "dev,test", external=True)
+    session.run("poetry", "install", "--with", "test", external=True)
     session.run("pytest")

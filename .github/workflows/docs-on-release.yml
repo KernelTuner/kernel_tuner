@@ -25,7 +25,7 @@ jobs:
                   python -m pip install --upgrade pip
                   poetry install --with docs
             - name: Build and Commit
-              uses: sphinx-notes/pages@v2
+              uses: sphinx-notes/pages@v2 # NOTE when switching to v3, export dependencies to requirements.txt in pyproject.toml: `poetry export --with docs --without-hashes --format=requirements.txt > docs/requirements.txt`
               with:
                   documentation_path: doc/source
                   target_path: ${{ env.RELEASE_VERSION }}

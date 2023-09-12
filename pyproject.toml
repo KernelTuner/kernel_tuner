@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry-core>=1.7.0", "setuptools>=67.7.2", "tomli>=2.0.1"]
+requires = ["poetry-core>=1.7.0", "setuptools>=67.7.2"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
@@ -56,41 +56,6 @@ pandas = "^1.4.3"
 scikit-learn = "^1.0.2"
 # TODO torch is used in some places, consider adding it as an (optional) dependency
 
-# ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt > docs/requirements.txt`
-# Please note that there is overlap with the `dev` group
-[tool.poetry.group.docs]
-optional = true
-[tool.poetry.group.docs.dependencies]
-sphinx = "^7.1.2"           # held back by Python 3.8 support (dropped from ^7.2)
-sphinx_rtd_theme = "^1.3.0" # updated from "^0.1.9"
-sphinx-pyproject = "^0.3"
-nbsphinx = "^0.9"
-pytest = "^7.4.0"           # TODO why do we need pytest here?
-ipython = "*"               # TODO why do we need ipython here?
-markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
-# sphinx-autodoc-typehints = "^1.24.0"
-# toml = "^0.10.2"
-
-# ATTENTION: if anything is changed here, run `poetry update`
-[tool.poetry.group.test]
-optional = true
-[tool.poetry.group.test.dependencies]
-pytest = "^7.4.0"
-pytest-cov = "^4.1.0"
-mock = "^2.0.0"
-nox = "^2023.4.22"
-ruff = "^0.0.286"
-pep440 = "^0.1.2"
-tomli = "^2.0.1"      # can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11
-
-# ATTENTION: if anything is changed here, run `poetry update`
-[tool.poetry.group.dev.dependencies]
-pylint = "^1.7.1"                # TODO remove this in favor of ruff
-bayesian-optimization = "^1.0.1"
-# TODO include docs group
-# TODO include test group
-# TODO include tutorial group
-
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
 # Please note that this is different from the dependency groups above, e.g. `dev` and `test`, those are for development.
 # CUDA
@@ -112,17 +77,35 @@ cuda_opencl = ["pycuda", "pyopencl"]
 hip = ["pyhip-interface"]
 tutorial = ["jupyter", "matplotlib"]
 
-# TODO check if this works correctly automatically
-# [tool.setuptools]
-# packages = [
-#     "kernel_tuner",
-#     "kernel_tuner.backends",
-#     "kernel_tuner.energy",
-#     "kernel_tuner.observers",
-#     "kernel_tuner.runners",
-#     "kernel_tuner.strategies",
-# ]
-# include-package-data = true
+# ATTENTION: if anything is changed here, run `poetry update`
+# Please note that there is overlap with the `dev` group
+[tool.poetry.group.docs]
+optional = true
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.1.2"           # held back by Python 3.8 support (dropped from ^7.2)
+sphinx_rtd_theme = "^1.3.0" # updated from "^0.1.9"
+sphinx-pyproject = "^0.3"
+nbsphinx = "^0.9"
+pytest = "^7.4.0"           # TODO why do we need pytest here?
+ipython = "*"               # TODO why do we need ipython here?
+markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
+# sphinx-autodoc-typehints = "^1.24.0"
+
+# ATTENTION: if anything is changed here, run `poetry update`
+[tool.poetry.group.test]
+optional = true
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+mock = "^2.0.0"
+nox = "^2023.4.22"
+ruff = "^0.0.286"
+pep440 = "^0.1.2"
+tomli = "^2.0.1"      # can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11
+
+# development dependencies are unused for now, as this is already covered by test and docs
+# # ATTENTION: if anything is changed here, run `poetry update`
+# [tool.poetry.group.dev.dependencies]
 
 [tool.pytest.ini_options]
 minversion = "7.4"
