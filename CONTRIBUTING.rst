@@ -9,20 +9,18 @@ Not all contributions are code, creating an issue also helps us to improve. When
 * Describe what you expected to happen.
 * If possible, include a minimal example to help us reproduce the issue.
 * Describe what actually happened, including the output of any errors printed.
-* List the version of Python, CUDA or OpenCL, and C compiler, if applicable. 
+* List the version of Python, CUDA or OpenCL, and C compiler, if applicable.
 
 Contributing Code
 -----------------
 For contributing code to Kernel Tuner please select an issue to work on or create a new issue to propose a change or addition. For significant changes, it is required to first create an issue and discuss the proposed changes. Then fork the repository, create a branch, one per change or addition, and create a pull request.
 
-Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings for module public functions. Please use `pylint` to check your Python changes.
+Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings for module public functions.
 
 Before creating a pull request please ensure the following:
 
-* You have written unit tests to test your additions and all unit tests pass
+* You have written unit tests to test your additions and all unit tests pass (run `nox`)
 * The examples still work and produce the same (or better) results
-* The code is compatible with Python 3.5 or newer
-* You have run `pylint` to check your code
 * An entry about the change or addition is created in CHANGELOG.md
 * Any matching entries in the roadmap.md are updated/removed
 
@@ -32,20 +30,24 @@ have look at the `design documentation
 
 Development setup
 -----------------
-You can install the packages required to run the tests using:
+Afer cloning, you can install the packages required to run the tests using:
 
 .. code-block:: bash
 
-    pip install -e .[dev]
+    poetry install --no-root --with test,docs
+    pip install -e .
 
 After this command you should be able to run the tests and build the documentation.
 See below on how to do that. The ``-e`` flag installs the package in *development mode*.
 This means files are not copied, but linked to, such that your installation tracks
 changes in the source files.
+Additionally you can install any of the optional runtime dependencies by appending e.g. `--extras cuda,opencl` to the Poetry command.
+If you want to go all-out, use `--all-extras`.
+
 
 Running tests
 -------------
-To run the tests you can use ``pytest -v test/`` in the top-level directory.
+To run the tests you can use ``pytest`` (to run against the local Python version) and ``nox``` (to run against all supported Python versions) in the top-level directory.
 
 Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
 are not installed/present. The same holds for tests that require PyOpenCL, Cupy, Nvidia CUDA.
@@ -61,14 +63,13 @@ Building documentation
 Documentation is located in the ``doc/`` directory. This is where you can type
 ``make html`` to generate the html pages in the ``doc/build/html`` directory.
 The source files used for building the documentation are located in
-``doc/source``. 
+``doc/source``.
 To locally inspect the documentation before committing you can browse through
 the documentation pages generated locally in ``doc/build/html``.
 
-To make sure you have all the dependencies required to build the documentation,
-you can install the extras using ``pip install -e .[doc]``. Pandoc is also required,
-you can install pandoc on ubuntu using ``sudo apt install pandoc``, for different
-setups please see `pandoc's install documentation <https://pandoc.org/installing.html>`__.
+To make sure you have all the dependencies required to build the documentation, at least those in ``--with docs``.
+Pandoc is also required, you can install pandoc on Ubuntu using ``sudo apt install pandoc`` and on Mac using ``brew install pandoc``.
+For different setups please see `pandoc's install documentation <https://pandoc.org/installing.html>`__.
 
 The documentation pages hosted online are built automatically using GitHub actions.
 The documentation pages corresponding to the master branch are hosted in /latest/.
