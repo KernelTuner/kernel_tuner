@@ -54,6 +54,7 @@ python-constraint2 = "^2.0.0b3"
 xmltodict = "*"
 pandas = "^1.4.3"
 scikit-learn = "^1.0.2"
+# TODO torch is used in some places, consider adding it as an (optional) dependency
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt > docs/requirements.txt`
 # Please note that there is overlap with the `dev` group

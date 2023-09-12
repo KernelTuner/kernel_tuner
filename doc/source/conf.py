@@ -50,7 +50,7 @@ release = config.version  # full version, including alpha/beta/rc tags. (e.g. 2.
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "7.2"
+needs_sphinx = "7.1"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -58,8 +58,8 @@ needs_sphinx = "7.2"
 extensions = [
     "nbsphinx",
     "sphinx.ext.autodoc",
-    "sphinx.ext.mathjax",
-    "sphinx.ext.napoleon",
+    # "sphinx.ext.mathjax",
+    # "sphinx.ext.napoleon",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
