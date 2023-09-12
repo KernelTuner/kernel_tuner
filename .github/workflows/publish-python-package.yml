@@ -8,6 +8,9 @@ on:
     release:
         types:
             - published
+    push:
+        branches:
+            - "searchspace_improvements"
 
     # Allows you to run this workflow manually from the Actions tab
     workflow_dispatch:
@@ -23,15 +26,13 @@ jobs:
             id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
         steps:
             - uses: actions/checkout@v4
-            - name: Build the source distribution and pure-Python wheel
-              uses: actions/checkout@v4
             - name: Setup Python
               uses: actions/setup-python@v4
               with:
                   python-version: "3.11"
             - name: Setup Poetry
               uses: Gr1N/setup-poetry@v8
-            - name: Build for Python 3.11 on ubuntu-latest
+            - name: Build the source distribution and pure-Python wheel
               run: |
                   poetry install
                   poetry build
