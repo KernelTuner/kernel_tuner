@@ -22,9 +22,9 @@ jobs:
         permissions:
             id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
             - name: Build the source distribution and pure-Python wheel
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
             - name: Setup Python
               uses: actions/setup-python@v4
               with:

@@ -24,8 +24,8 @@ jobs:
                 os: [ubuntu-latest, macos-latest, windows-latest]
 
         steps:
-            - uses: actions/checkout@v2
-            - uses: excitedleigh/setup-nox@v2.0.0
+            - uses: actions/checkout@v4
+            - uses: fjwillemsen/setup-nox2@v3.0.0
             - run: nox
             # TODO use with Codecov instead: https://github.com/marketplace/actions/codecov
             # - name: Report to Coveralls
