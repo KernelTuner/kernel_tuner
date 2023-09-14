@@ -1,9 +1,9 @@
 import logging
 import sys
-from collections import OrderedDict
 from time import perf_counter
 
 import numpy as np
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 
@@ -29,12 +29,12 @@ $STRAT_OPT$
 
 
 def get_strategy_docstring(name, strategy_options):
-    """ Generate docstring for a 'tune' method of a strategy """
+    """Generate docstring for a 'tune' method of a strategy."""
     return _docstring_template.replace("$NAME$", name).replace("$STRAT_OPT$", make_strategy_options_doc(strategy_options))
 
 
 def make_strategy_options_doc(strategy_options):
-    """ Generate documentation for the supported strategy options and their defaults """
+    """Generate documentation for the supported strategy options and their defaults."""
     doc = ""
     for opt, val in strategy_options.items():
         doc += f"     * {opt}: {val[0]}, default {str(val[1])}. \n"
@@ -43,12 +43,12 @@ def make_strategy_options_doc(strategy_options):
 
 
 def get_options(strategy_options, options):
-    """ Get the strategy-specific options or their defaults from user-supplied strategy_options """
+    """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
     accepted = list(options.keys()) + ["max_fevals", "time_limit"]
     for key in strategy_options:
         if key not in accepted:
             raise ValueError(f"Unrecognized option {key} in strategy_options")
-    assert isinstance(options, OrderedDict)
+    assert isinstance(options, dict)
     return [strategy_options.get(opt, default) for opt, (_, default) in options.items()]
 
 
@@ -62,7 +62,7 @@ class CostFunc:
         self.results = []
 
     def __call__(self, x, check_restrictions=True):
-        """ Cost function used by almost all strategies """
+        """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
 
         # error value to return for numeric optimizers that need a numerical value
@@ -88,7 +88,7 @@ class CostFunc:
 
         # else check if this is a legal (non-restricted) configuration
         if check_restrictions and self.searchspace.restrictions:
-            params_dict = OrderedDict(zip(self.searchspace.tune_params.keys(), params))
+            params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
             legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
             if not legal:
                 result = params_dict
@@ -115,7 +115,7 @@ class CostFunc:
         return return_value
 
     def get_bounds_x0_eps(self):
-        """compute bounds, x0 (the initial guess), and eps"""
+        """Compute bounds, x0 (the initial guess), and eps."""
         values = list(self.searchspace.tune_params.values())
 
         if "x0" in self.tuning_options.strategy_options:
@@ -154,7 +154,7 @@ class CostFunc:
         return bounds, x0, eps
 
     def get_bounds(self):
-        """ create a bounds array from the tunable parameters """
+        """Create a bounds array from the tunable parameters."""
         bounds = []
         for values in self.searchspace.tune_params.values():
             sorted_values = np.sort(values)
@@ -163,7 +163,7 @@ class CostFunc:
 
 
 def setup_method_arguments(method, bounds):
-    """ prepare method specific arguments """
+    """Prepare method specific arguments."""
     kwargs = {}
     # pass bounds to methods that support it
     if method in ["L-BFGS-B", "TNC", "SLSQP"]:
@@ -172,7 +172,7 @@ def setup_method_arguments(method, bounds):
 
 
 def setup_method_options(method, tuning_options):
-    """ prepare method specific options """
+    """Prepare method specific options."""
     kwargs = {}
 
     # Note that not all methods iterpret maxiter in the same manner
@@ -200,7 +200,7 @@ def setup_method_options(method, tuning_options):
 
 
 def snap_to_nearest_config(x, tune_params):
-    """helper func that for each param selects the closest actual value"""
+    """Helper func that for each param selects the closest actual value."""
     params = []
     for i, k in enumerate(tune_params.keys()):
         values = np.array(tune_params[k])
@@ -210,7 +210,7 @@ def snap_to_nearest_config(x, tune_params):
 
 
 def unscale_and_snap_to_nearest(x, tune_params, eps):
-    """helper func that snaps a scaled variable to the nearest config"""
+    """Helper func that snaps a scaled variable to the nearest config."""
     x_u = [i for i in x]
     for i, v in enumerate(tune_params.values()):
         # create an evenly spaced linear space to map [0,1]-interval
@@ -232,7 +232,7 @@ def unscale_and_snap_to_nearest(x, tune_params, eps):
 
 
 def scale_from_params(params, tune_params, eps):
-    """helper func to do the inverse of the 'unscale' function"""
+    """Helper func to do the inverse of the 'unscale' function."""
     x = np.zeros(len(params))
     for i, v in enumerate(tune_params.values()):
         x[i] = 0.5 * eps + v.index(params[i])*eps

@@ -24,7 +24,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-from collections import OrderedDict
 from datetime import datetime
 from time import perf_counter
 
@@ -79,7 +78,7 @@ strategy_map = {
 }
 
 
-class Options(OrderedDict):
+class Options(dict):
     """read-only class for passing options around."""
 
     def __getattr__(self, name):
@@ -462,7 +461,7 @@ _tuning_options = Options(
                 "string",
             ),
         ),
-        ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "OrderedDict")),
+        ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
     ]

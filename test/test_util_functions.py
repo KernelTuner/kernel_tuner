@@ -3,7 +3,6 @@ from __future__ import print_function
 import json
 import os
 import warnings
-from collections import OrderedDict
 
 import numpy as np
 import pytest
@@ -161,7 +160,7 @@ def test_prepare_kernel_string():
     assert output == expected
 
     # Check custom defines
-    defines = OrderedDict(foo=1, bar="custom", baz=lambda config: config["is"] * 5)
+    defines = dict(foo=1, bar="custom", baz=lambda config: config["is"] * 5)
 
     _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", defines)
     expected = "#define foo 1\n" "#define bar custom\n" "#define baz 40\n" "#line 1\n" "this is a weird kernel"
@@ -600,7 +599,7 @@ def test_process_cache():
 
 def test_process_metrics():
     params = {"x": 15, "b": 12}
-    metrics = OrderedDict()
+    metrics = dict()
     metrics["y"] = lambda p: p["x"]
 
     # test if lambda function is correctly evaluated
@@ -615,19 +614,19 @@ def test_process_metrics():
 
     # test if composability works correctly
     params = {"x": 15, "b": 12}
-    metrics = OrderedDict()
+    metrics = dict()
     metrics["y"] = "x"
     metrics["z"] = "y"
     params = process_metrics(params, metrics)
     assert params["z"] == params["x"]
 
-    # test ValueError is raised when metrics is not an OrderedDict
+    # test ValueError is raised when metrics is not a dictionary
     with pytest.raises(ValueError):
-        params = process_metrics(params, {})
+        params = process_metrics(params, list())
 
     # test ValueError is raised when b already exists in params
     params = {"x": 15, "b": 12}
-    metrics = OrderedDict()
+    metrics = dict()
     metrics["b"] = "x"
     with pytest.raises(ValueError):
         params = process_metrics(params, metrics)

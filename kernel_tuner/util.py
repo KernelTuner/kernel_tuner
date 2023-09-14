@@ -10,7 +10,6 @@ import sys
 import tempfile
 import time
 import warnings
-from collections import OrderedDict
 from inspect import signature
 from types import FunctionType
 from typing import Optional, Union
@@ -293,7 +292,7 @@ def check_thread_block_dimensions(params, max_threads, block_size_names=None):
 def config_valid(config, tuning_options, max_threads):
     """Combines restrictions and a check on the max thread block dimension to check config validity."""
     legal = True
-    params = OrderedDict(zip(tuning_options.tune_params.keys(), config))
+    params = dict(zip(tuning_options.tune_params.keys(), config))
     if tuning_options.restrictions:
         legal = check_restrictions(tuning_options.restrictions, params, False)
         if not legal:
@@ -375,9 +374,7 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
 
 
 def get_instance_string(params):
-    """Combine the parameters to a string mostly used for debug output
-    use of OrderedDict is advised.
-    """
+    """Combine the parameters to a string mostly used for debug output use of dict is advised."""
     return "_".join([str(i) for i in params.values()])
 
 
@@ -528,14 +525,14 @@ def print_config_output(tune_params, params, quiet, metrics, units):
 def process_metrics(params, metrics):
     """Process user-defined metrics for derived benchmark results.
 
-    Metrics must be an OrderedDict to support composable metrics. The dictionary keys describe
+    Metrics must be a dictionary to support composable metrics. The dictionary keys describe
     the name given to this user-defined metric and will be used as the key in the results dictionaries
     return by Kernel Tuner. The values describe how to calculate the user-defined metric, using either a
     string expression in which the tunable parameters and benchmark results can be used as variables, or
     as a function that accepts a dictionary as argument.
 
     Example:
-    metrics = OrderedDict()
+    metrics = dict()
     metrics["x"] = "10000 / time"
     metrics["x2"] = "x*x"
 
@@ -543,21 +540,21 @@ def process_metrics(params, metrics):
 
 
     Example:
-    metrics = OrderedDict()
+    metrics = dict()
     metrics["GFLOP/s"] = lambda p : 10000 / p["time"]
 
     :param params: A dictionary with tunable parameters and benchmark results.
     :type params: dict
 
-    :param metrics: An OrderedDict with user-defined metrics that can be used to create derived benchmark results.
-    :type metrics: OrderedDict
+    :param metrics: A dictionary with user-defined metrics that can be used to create derived benchmark results.
+    :type metrics: dict
 
     :returns: An updated params dictionary with the derived metrics inserted along with the benchmark results.
     :rtype: dict
 
     """
-    if not isinstance(metrics, OrderedDict):
-        raise ValueError("metrics should be an OrderedDict to preserve order and support composability")
+    if not isinstance(metrics, dict):
+        raise ValueError("metrics should be a dictionary to preserve order and support composability")
     for k, v in metrics.items():
         if isinstance(v, str):
             value = eval(replace_param_occurrences(v, params))
@@ -645,7 +642,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
     #  * each tunable parameter
     #  * kernel_tuner=1
     if defines is None:
-        defines = OrderedDict()
+        defines = dict()
 
         grid_dim_names = ["grid_size_x", "grid_size_y", "grid_size_z"]
         for i, g in enumerate(grid):
@@ -1014,16 +1011,16 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     from an earlier (abruptly ended) tuning session.
 
     """
-    # caching only works correctly if tunable_parameters are stored in a OrderedDict
-    if not isinstance(tuning_options.tune_params, OrderedDict):
-        raise ValueError("Caching only works correctly when tunable parameters are stored in a OrderedDict")
+    # caching only works correctly if tunable_parameters are stored in a dictionary
+    if not isinstance(tuning_options.tune_params, dict):
+        raise ValueError("Caching only works correctly when tunable parameters are stored in a dictionary")
 
     # if file does not exist, create new cache
     if not os.path.isfile(cache):
         if tuning_options.simulation_mode:
             raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
 
-        c = OrderedDict()
+        c = dict()
         c["device_name"] = runner.dev.name
         c["kernel_name"] = kernel_options.kernel_name
         c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"

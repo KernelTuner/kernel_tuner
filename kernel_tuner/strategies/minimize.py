@@ -1,22 +1,20 @@
-""" The strategy that uses a minimizer method for searching through the parameter space """
-import logging
-import sys
-from collections import OrderedDict
-from time import perf_counter
+"""The strategy that uses a minimizer method for searching through the parameter space."""
 
-import numpy as np
 import scipy.optimize
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies.common import (CostFunc,
-                                            get_options,
-                                            get_strategy_docstring,
-                                            setup_method_arguments,
-                                            setup_method_options)
+from kernel_tuner.strategies.common import (
+    CostFunc,
+    get_options,
+    get_strategy_docstring,
+    setup_method_arguments,
+    setup_method_options,
+)
 
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
-_options = OrderedDict(method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "L-BFGS-B"))
+_options = dict(method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "L-BFGS-B"))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 

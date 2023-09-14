@@ -1,16 +1,16 @@
-import enum
 import itertools
-from re import L
+from collections import namedtuple
 from random import uniform as randfloat
+
 import numpy as np
-from collections import OrderedDict, namedtuple
+
 from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import bayes_opt
 from kernel_tuner.strategies.bayes_opt import BayesianOptimization
 from kernel_tuner.strategies.common import CostFunc
 
-tune_params = OrderedDict()
+tune_params = dict()
 tune_params["x"] = [1, 2, 3]
 tune_params["y"] = [4, 5, 6]
 tune_params["z"] = [7]

@@ -1,11 +1,9 @@
-from collections import OrderedDict
-
-import pytest
 import numpy as np
+import pytest
 
 import kernel_tuner
 from kernel_tuner.backends import opencl
-from kernel_tuner.core import KernelSource, KernelInstance
+from kernel_tuner.core import KernelInstance, KernelSource
 
 from .context import skip_if_no_opencl
 
@@ -88,7 +86,7 @@ def env():
     n = np.int32(size)
 
     args = [c, a, b, n]
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params["block_size_x"] = [32, 64, 128]
 
     return ["vector_add", kernel_string, size, args, tune_params]

@@ -1,13 +1,9 @@
-"""
-This module contains a set of helper functions specifically for auto-tuning codes
-for energy efficiency.
-"""
-from collections import OrderedDict
-
+"""This module contains a set of helper functions specifically for auto-tuning codes for energy efficiency."""
 import numpy as np
+from scipy import optimize
+
 from kernel_tuner import tune_kernel, util
 from kernel_tuner.observers.nvml import NVMLObserver, get_nvml_gr_clocks
-from scipy import optimize
 
 try:
     import pycuda.driver as drv
@@ -42,8 +38,7 @@ __global__ void fp32_kernel(float *ptr)
 """
 
 def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=None, use_locked_clocks=False, cache=None, simulation_mode=None):
-    """ Use NVML and PyCUDA with a synthetic kernel to obtain samples of frequency-power pairs """
-
+    """Use NVML and PyCUDA with a synthetic kernel to obtain samples of frequency-power pairs."""
     # get some numbers about the device
     if not cache:
         if drv is None:
@@ -70,14 +65,14 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
     arguments = [data]
 
     # setup tunable parameters
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params["block_size_x"] = [max_block_dim_x]
     tune_params["nr_outer"] = [64]
     tune_params["nr_inner"] = [1024]
     tune_params.update(nvml_gr_clocks)
 
     # metrics
-    metrics = OrderedDict()
+    metrics = dict()
     metrics["f"] = lambda p: p["core_freq"]
 
     nvmlobserver = NVMLObserver(
@@ -95,12 +90,12 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
 
 
 def estimated_voltage(clocks, clock_threshold, voltage_scale):
-    """ estimate voltage based on clock_threshold and voltage_scale """
+    """Estimate voltage based on clock_threshold and voltage_scale."""
     return [1 + ((clock > clock_threshold) * (1e-3 * voltage_scale * (clock-clock_threshold))) for clock in clocks]
 
 
 def estimated_power(clocks, clock_threshold, voltage_scale, clock_scale, power_max):
-    """ estimate power consumption based on clock threshold, clock_scale and max power """
+    """Estimate power consumption based on clock threshold, clock_scale and max power."""
     n = len(clocks)
     powers = np.zeros(n)
 
@@ -116,7 +111,7 @@ def estimated_power(clocks, clock_threshold, voltage_scale, clock_scale, power_m
 
 
 def fit_power_frequency_model(freqs, nvml_power):
-    """ Fit the power-frequency model based on frequency and power measurements """
+    """Fit the power-frequency model based on frequency and power measurements."""
     nvml_gr_clocks = np.array(freqs)
     nvml_power = np.array(nvml_power)
 
@@ -148,7 +143,7 @@ def fit_power_frequency_model(freqs, nvml_power):
 
 
 def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_smi_fallback=None, use_locked_clocks=False, cache=None, simulation_mode=None):
-    """ Calculate the most energy-efficient clock frequency of device
+    """Calculate the most energy-efficient clock frequency of device.
 
     This function uses a performance model to fit the power-frequency curve
     using a synthethic benchmarking kernel. The method has been described in:
@@ -202,8 +197,7 @@ def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_s
 
 
 def get_frequency_range_around_ridge(ridge_frequency, all_frequencies, freq_range, number_of_freqs, verbose=False):
-    """ Return number_of_freqs frequencies in a freq_range percentage around the ridge_frequency from among all_frequencies """
-
+    """Return number_of_freqs frequencies in a freq_range percentage around the ridge_frequency from among all_frequencies."""
     min_freq = 1e-2 * (100 - int(freq_range)) * ridge_frequency
     max_freq = 1e-2 * (100 + int(freq_range)) * ridge_frequency
     frequency_selection = np.unique([all_frequencies[np.argmin(abs(

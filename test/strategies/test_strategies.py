@@ -1,12 +1,11 @@
-from collections import OrderedDict
 import os
 
-import pytest
 import numpy as np
+import pytest
 
 import kernel_tuner
-from kernel_tuner.interface import strategy_map
 from kernel_tuner import util
+from kernel_tuner.interface import strategy_map
 
 cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/../test_cache_file.json"
 
@@ -28,7 +27,7 @@ def vector_add():
     n = np.int32(size)
 
     args = [c, a, b, n]
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
 
     return ["vector_add", kernel_string, size, args, tune_params]

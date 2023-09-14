@@ -1,24 +1,24 @@
 from __future__ import print_function
-from collections import OrderedDict
-from random import randrange
+
 from math import ceil
+from random import randrange
 
 try:
     from mock import patch
 except ImportError:
     from unittest.mock import patch
 
+import numpy as np
+from constraint import ExactSumConstraint, FunctionConstraint
+
 from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
-
-from constraint import ExactSumConstraint, FunctionConstraint
-import numpy as np
 
 max_threads = 1024
 value_error_expectation_message = "Expected a ValueError to be raised"
 
 # 9 combinations without restrictions
-simple_tune_params = OrderedDict()
+simple_tune_params = dict()
 simple_tune_params["x"] = [1, 1.5, 2, 3]
 simple_tune_params["y"] = [4, 5.5]
 simple_tune_params["z"] = ["string_1", "string_2"]
@@ -28,7 +28,7 @@ simple_searchspace = Searchspace(simple_tune_params, restrict, max_threads)
 
 # 3.1 million combinations, of which 10600 pass the restrictions
 num_layers = 42
-tune_params = OrderedDict()
+tune_params = dict()
 tune_params["gpu1"] = list(range(num_layers))
 tune_params["gpu2"] = list(range(num_layers))
 tune_params["gpu3"] = list(range(num_layers))
@@ -48,20 +48,20 @@ restrict = [ExactSumConstraint(num_layers), FunctionConstraint(min_func)]
 searchspace = Searchspace(tune_params, restrict, max_threads)
 
 # 74088 combinations intended to test whether sorting works
-sort_tune_params = OrderedDict()
+sort_tune_params = dict()
 sort_tune_params["gpu1"] = list(range(num_layers))
 sort_tune_params["gpu2"] = list(range(num_layers))
 sort_tune_params["gpu3"] = list(range(num_layers))
 searchspace_sort = Searchspace(sort_tune_params, [], max_threads)
 
 def test_size():
-    """test that the searchspace after applying restrictions is the expected size"""
+    """Test that the searchspace after applying restrictions is the expected size."""
     assert simple_searchspace.size == 12
     assert searchspace.size == 10660
 
 
 def test_internal_representation():
-    """test that the list and dict representations match in size, type and elements"""
+    """Test that the list and dict representations match in size, type and elements."""
     assert searchspace.size == len(searchspace.list)
     assert searchspace.size == len(searchspace.get_list_dict().keys())
     assert isinstance(searchspace.list[0], tuple)
@@ -71,7 +71,7 @@ def test_internal_representation():
 
 
 def test_sort():
-    """test that the sort searchspace option works as expected"""
+    """Test that the sort searchspace option works as expected."""
     simple_searchspace_sort = Searchspace(
         simple_tuning_options.tune_params,
         simple_tuning_options.restrictions,
@@ -109,7 +109,7 @@ def test_sort():
 
 
 def test_sort_reversed():
-    """test that the sort searchspace option with the sort_last_param_first option enabled works as expected"""
+    """Test that the sort searchspace option with the sort_last_param_first option enabled works as expected."""
     simple_searchspace_sort_reversed = Searchspace(
         simple_tuning_options.tune_params,
         simple_tuning_options.restrictions,
@@ -147,7 +147,7 @@ def test_sort_reversed():
 
 
 def test_index_lookup():
-    """test that index lookups are consistent for ~1% of the searchspace"""
+    """Test that index lookups are consistent for ~1% of the searchspace."""
     size = searchspace.size
     for _ in range(ceil(size / 100)):
         random_index = randrange(0, size)
@@ -157,7 +157,7 @@ def test_index_lookup():
 
 
 def test_param_index_lookup():
-    """test the parameter index lookup for a parameter config is as expected"""
+    """Test the parameter index lookup for a parameter config is as expected."""
     first = tuple([1, 4, "string_1"])
     last = tuple([3, 5.5, "string_2"])
     assert simple_searchspace.get_param_indices(first) == (0, 0, 0)
@@ -165,7 +165,7 @@ def test_param_index_lookup():
 
 
 def test_random_sample():
-    """test whether the random sample indices exists and are unique, and if it throws an error for too many samples"""
+    """Test whether the random sample indices exists and are unique, and if it throws an error for too many samples."""
     random_sample_indices = searchspace.get_random_sample_indices(100)
     assert len(random_sample_indices) == 100
     for index in random_sample_indices:
@@ -222,7 +222,7 @@ def __test_neighbors(param_config: tuple, expected_neighbors: list, neighbor_met
 
 
 def test_neighbors_hamming():
-    """test whether the neighbors with Hamming distance are as expected"""
+    """Test whether the neighbors with Hamming distance are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
         (2, 4, "string_1"),
@@ -234,7 +234,7 @@ def test_neighbors_hamming():
 
 
 def test_neighbors_strictlyadjacent():
-    """test whether the strictly adjacent neighbors are as expected"""
+    """Test whether the strictly adjacent neighbors are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
         (1, 5.5, "string_2"),
@@ -246,7 +246,7 @@ def test_neighbors_strictlyadjacent():
 
 
 def test_neighbors_adjacent():
-    """test whether the adjacent neighbors are as expected"""
+    """Test whether the adjacent neighbors are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
         (2, 5.5, "string_2"),
@@ -262,7 +262,7 @@ def test_neighbors_adjacent():
 
 
 def test_neighbors_fictious():
-    """test whether the neighbors are as expected for a fictious parameter configuration (i.e. not existing in the search space due to restrictions)"""
+    """Test whether the neighbors are as expected for a fictious parameter configuration (i.e. not existing in the search space due to restrictions)."""
     test_config = tuple([1.5, 4, "string_1"])
     expected_neighbors_hamming = [
         (1, 4, "string_1"),
@@ -288,7 +288,7 @@ def test_neighbors_fictious():
 
 
 def test_neighbors_cached():
-    """test whether retrieving a set of neighbors twice returns the cached version"""
+    """Test whether retrieving a set of neighbors twice returns the cached version."""
     simple_searchspace_duplicate = Searchspace(
         simple_tuning_options.tune_params,
         simple_tuning_options.restrictions,
@@ -306,7 +306,7 @@ def test_neighbors_cached():
 
 
 def test_param_neighbors():
-    """test whether for a given parameter configuration and index the correct neighboring parameters are returned"""
+    """Test whether for a given parameter configuration and index the correct neighboring parameters are returned."""
     test_config = tuple([1.5, 4, "string_1"])
     expected_neighbors = [[1, 2], [5.5], ["string_2"]]
 
@@ -320,7 +320,7 @@ def test_param_neighbors():
 
 @patch("kernel_tuner.searchspace.choice", lambda x: x[0])
 def test_order_param_configs():
-    """test whether the ordering of parameter configurations according to parameter index happens as expected"""
+    """Test whether the ordering of parameter configurations according to parameter index happens as expected."""
     test_order = [1, 2, 0]
     test_config = tuple([1, 4, "string_1"])
     expected_order = [
