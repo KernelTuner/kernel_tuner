@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## [1.0.0] - Unreleased
 - Major speedup due to new parser and using revamped python-constraint for searchspace building
 - Implemented ability to use `PySMT` and `ATF` for searchspace building
 - Added Poetry for dependency and build management

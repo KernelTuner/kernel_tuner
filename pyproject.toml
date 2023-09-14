@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 name = "kernel_tuner"
 packages = [{ include = "kernel_tuner", from = "." }]
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "0.5.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.0.0b1" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 license = "Apache-2.0"
 authors = [
     "Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>",
@@ -15,9 +15,6 @@ authors = [
     "Floris-Jan Willemsen <fjwillemsen97@gmail.com>",
 ]
 readme = "README.rst"
-homepage = "https://KernelTuner.github.io/kernel_tuner/"
-documentation = "https://KernelTuner.github.io/kernel_tuner/"
-repository = "https://github.com/KernelTuner/kernel_tuner"
 keywords = [
     "auto-tuning",
     "gpu",
@@ -39,6 +36,12 @@ classifiers = [
     "Topic :: System :: Distributed Computing",
     "Development Status :: 5 - Production/Stable",
 ]
+include = [
+    { path = "doc/source/*.ipynb" },
+] # this ensures that people won't have to clone the whole repo to include notebooks, they can just do `pip install kernel_tuner[tutorial,cuda]`
+homepage = "https://KernelTuner.github.io/kernel_tuner/"
+documentation = "https://KernelTuner.github.io/kernel_tuner/"
+repository = "https://github.com/KernelTuner/kernel_tuner"
 [tool.poetry.urls]
 "Tracker" = "https://github.com/KernelTuner/kernel_tuner/issues"
 [tool.poetry.build]
@@ -86,8 +89,8 @@ sphinx = "^7.1.2"           # held back by Python 3.8 support (dropped from ^7.2
 sphinx_rtd_theme = "^1.3.0" # updated from "^0.1.9"
 sphinx-pyproject = "^0.3"
 nbsphinx = "^0.9"
+ipython = "*"
 pytest = "^7.4.0"           # TODO why do we need pytest here?
-ipython = "*"               # TODO why do we need ipython here?
 markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
 # sphinx-autodoc-typehints = "^1.24.0"
 
