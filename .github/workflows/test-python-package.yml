@@ -1,0 +1,37 @@
+# This workflow will use Nox to run tests and lint for the supported Python versions, and upload the test coverage data.
+
+name: Test
+
+on:
+    push:
+        branches:
+            - master
+            - release/*
+    pull_request:
+        branches:
+            - master
+
+    # Allows you to run this workflow manually from the Actions tab
+    workflow_dispatch:
+
+jobs:
+    build:
+        name: Test on ${{ matrix.os }} with all supported Python versions
+        runs-on: ${{ format('{0}-latest', matrix.os)  }} # "-latest" is added here so we can use OS in the format expected by CodeCov
+
+        strategy:
+            matrix:
+                os: [ubuntu, macos]
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Run tests with Nox
+              uses: fjwillemsen/setup-nox2@v3.0.0
+            - run: nox
+            - name: Upload Coverage report to CodeCov
+              uses: codecov/codecov-action@v3
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./coverage
+                  os: ${{ matrix.os }}
+                  fail_ci_if_error: false # option to Specify if CI pipeline should fail when Codecov runs into errors during upload

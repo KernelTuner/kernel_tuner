@@ -28,4 +28,12 @@ def tests(session: nox.Session) -> None:
     """Run the tests for the specified Python versions."""
     session.install("poetry")
     session.run("poetry", "install", "--with", "test", external=True)
-    session.run("pytest")
+
+    # for the last Python version session:
+    if session.python == python_versions_to_test[-1]:
+        # run pytest on the package without C-extensions to generate the correct coverage report
+        session.run("pytest")
+    else:
+        # for the other Python version sessions:
+        # run pytest without coverage reporting
+        session.run("pytest", "--no-cov")

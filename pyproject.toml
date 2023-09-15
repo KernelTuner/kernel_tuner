@@ -26,15 +26,18 @@ keywords = [
 ]
 classifiers = [
     "Environment :: Console",
+    "Environment :: GPU",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
     "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development",
     "Topic :: System :: Distributed Computing",
-    "Development Status :: 5 - Production/Stable",
 ]
 include = [
     { path = "doc/source/*.ipynb" },
