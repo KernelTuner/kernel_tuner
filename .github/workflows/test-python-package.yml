@@ -28,10 +28,10 @@ jobs:
             - name: Run tests with Nox
               uses: fjwillemsen/setup-nox2@v3.0.0
             - run: nox
-            - name: Upload Coverage report to CodeCov
-              uses: codecov/codecov-action@v3
-              with:
-                  token: ${{ secrets.CODECOV_TOKEN }}
-                  files: ./coverage
-                  os: ${{ matrix.os }}
-                  fail_ci_if_error: false # option to Specify if CI pipeline should fail when Codecov runs into errors during upload
+            # - name: Upload Coverage report to CodeCov
+            #   uses: codecov/codecov-action@v3
+            #   with:
+            #       token: ${{ secrets.CODECOV_TOKEN }}
+            #       files: ./coverage
+            #       os: ${{ matrix.os }}
+            #       fail_ci_if_error: false # option to Specify if CI pipeline should fail when Codecov runs into errors during upload
