@@ -3,6 +3,7 @@ from collections import namedtuple
 from random import uniform as randfloat
 
 import numpy as np
+from pytest import raises
 
 from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
@@ -11,8 +12,8 @@ from kernel_tuner.strategies.bayes_opt import BayesianOptimization
 from kernel_tuner.strategies.common import CostFunc
 
 tune_params = dict()
-tune_params["x"] = [1, 2, 3]
-tune_params["y"] = [4, 5, 6]
+tune_params["x"] = [1, 2]
+tune_params["y"] = [4.1, 5, 6.9]
 tune_params["z"] = [7]
 
 strategy_options = dict(popsize=0, max_fevals=10)
@@ -75,6 +76,21 @@ def test_bo_initialization():
     assert len(BO.observations) == len(pruned_parameter_space)
     assert BO.current_optimum == np.PINF
 
+def test_bo_initial_sample_lhs():
+    sample = BO.draw_latin_hypercube_samples(num_samples=1)
+    print(sample)
+    assert isinstance(sample, list)
+    assert len(sample) == 1
+    assert isinstance(sample[0], tuple)
+    assert len(sample[0]) == 2
+    assert isinstance(sample[0][0], tuple)
+    assert isinstance(sample[0][1], int)
+    assert len(sample[0][0]) == 2   # tune_params["z"] is dropped because it only has a single value
+    assert isinstance(sample[0][0][0], float)
+    samples = BO.draw_latin_hypercube_samples(num_samples=3)
+    assert len(samples) == 3
+    with raises(ValueError):
+        samples = BO.draw_latin_hypercube_samples(num_samples=30)
 
 def test_bo_is_better_than():
     BO.opt_direction = 'max'

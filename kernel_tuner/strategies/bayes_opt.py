@@ -8,6 +8,7 @@ from typing import Tuple
 
 import numpy as np
 from scipy.stats import norm
+from scipy.stats.qmc import LatinHypercube
 
 # BO imports
 from kernel_tuner.searchspace import Searchspace
@@ -164,8 +165,8 @@ _options = dict(
         "multi-advanced",
     ),
     samplingmethod=(
-        "Method used for initial sampling the parameter space, only random is supported as LHS is deprecated",
-        "random",
+        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
+        "lhs",
     ),
     popsize=("Number of initial samples", 20),
 )
@@ -187,8 +188,7 @@ class BayesianOptimization:
         # supported hyperparameter values
         self.supported_cov_kernels = ["constantrbf", "rbf", "matern32", "matern52"]
         self.supported_methods = supported_methods
-        self.supported_sampling_methods = ["random"]
-        self.supported_sampling_criterion = ["correlation", "ratio", "maximin", None]
+        self.supported_sampling_methods = ["random", "lhs"]
 
         def get_hyperparam(name: str, default, supported_values=list()):
             value = tuning_options.strategy_options.get(name, default)
@@ -210,9 +210,8 @@ class BayesianOptimization:
         self.num_initial_samples = get_hyperparam("popsize", 20)
         if self.num_initial_samples < 0:
             raise ValueError(f"Number of initial samples (popsize) must be >= 0 (given: {self.num_initial_samples})")
-        self.sampling_method = get_hyperparam("samplingmethod", "random", self.supported_sampling_methods)
-        self.sampling_crit = get_hyperparam("samplingcriterion", "maximin", self.supported_sampling_criterion)
-        self.sampling_iter = get_hyperparam("samplingiterations", 1000)
+        self.sampling_method = get_hyperparam("samplingmethod", "lhs", self.supported_sampling_methods)
+        # note: more parameters are available for LHS if required: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.LatinHypercube.html
 
         # set acquisition function hyperparameter defaults where missing
         if "explorationfactor" not in acq_params:
@@ -478,26 +477,32 @@ class BayesianOptimization:
 
     def draw_latin_hypercube_samples(self, num_samples: int) -> list:
         """Draws an LHS-distributed sample from the search space."""
-        from skopt.sampler import Lhs
-
+        # setup, removes params with single value because they are not in the normalized searchspace
         if self.searchspace_size < num_samples:
             raise ValueError("Can't sample more than the size of the search space")
-        if self.sampling_crit is None:
-            lhs = Lhs(lhs_type="centered", criterion=None)
-        else:
-            lhs = Lhs(lhs_type="classic", criterion=self.sampling_crit, iterations=self.sampling_iter)
-        param_configs = lhs.generate(self.dimensions(), num_samples)
+        values_per_parameter = list(param for param in self.dimensions() if len(param) > 1)
+        num_dimensions = len(values_per_parameter)
+
+        # draw Latin Hypercube samples
+        sampler = LatinHypercube(d=num_dimensions)
+        lower_bounds = [0 for _ in range(num_dimensions)]
+        upper_bounds = [len(param) for param in values_per_parameter]
+        samples = sampler.integers(l_bounds=lower_bounds, u_bounds=upper_bounds, n=num_samples)
+        param_configs = list(tuple(values_per_parameter[p_i][v_i] for p_i, v_i in enumerate(s)) for s in samples)
+
+        # only return valid samples
         indices = list()
         normalized_param_configs = list()
-        for i in range(len(param_configs) - 1):
+        for param_config in param_configs:
+            normalized_param_config = self.normalize_param_config(param_config)
             try:
-                param_config = self.normalize_param_config(param_configs[i])
-                index = self.find_param_config_index(param_config)
+                index = self.find_param_config_index(normalized_param_config)
                 indices.append(index)
-                normalized_param_configs.append(param_config)
+                normalized_param_configs.append(normalized_param_config)
             except ValueError:
-                """Due to search space restrictions, the search space may not be an exact cartesian product of the tunable parameter values.
-                It is thus possible for LHS to generate a parameter combination that is not in the actual searchspace, which must be skipped.
+                """With search space restrictions, the search space may not be a cartesian product of parameter values.
+                It is thus possible for LHS to generate a parameter combination that is not in the actual searchspace.
+                These configurations are skipped and replaced with a randomly drawn configuration.
                 """
                 continue
         return list(zip(normalized_param_configs, indices))
@@ -507,10 +512,7 @@ class BayesianOptimization:
         if self.num_initial_samples <= 0:
             raise ValueError("At least one initial sample is required")
         if self.sampling_method == "lhs":
-            raise ImportError(
-                "LHS is no longer available as skopt (scikit-optimize) is no longer maintained, change to random"
-            )
-            # samples = self.draw_latin_hypercube_samples(self.num_initial_samples)
+            samples = self.draw_latin_hypercube_samples(self.num_initial_samples)
         elif self.sampling_method == "random":
             samples = list()
         else:
@@ -576,7 +578,11 @@ class BayesianOptimization:
             self.fit_observations_to_model()
 
     def __optimize_multi(self, max_fevals):
-        """Optimize with a portfolio of multiple acquisition functions. Predictions are always only taken once. Skips AFs if they suggest X/max_evals duplicates in a row, prefers AF with best discounted average."""
+        """Optimize with a portfolio of multiple acquisition functions.
+
+        Predictions are always only taken once.
+        Skips AFs if they suggest X/max_evals duplicates in a row, prefers AF with best discounted average.
+        """
         if self.opt_direction != "min":
             raise ValueError(f"Optimization direction must be minimization ('min'), is {self.opt_direction}")
         # calculate how many times an AF can suggest a duplicate candidate before the AF is skipped
