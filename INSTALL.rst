@@ -159,12 +159,12 @@ The runtime dependencies are:
 - `hip`: install pyhip along with kernel_tuner
 - `tutorial`: install packages required to run the guides
 
-These can be installed by appending e.g. ``--extras cuda,opencl``.
+These can be installed by appending e.g. ``-E cuda -E opencl``.
 If you want to go all-out, use ``--all-extras``.
 
 For example, use:
 ```
-pip install --with test,docs --extras cuda,opencl
+pip install --with test,docs -E cuda -E opencl
 ```
 To install Kernel Tuner along with all the packages required for development.
 
