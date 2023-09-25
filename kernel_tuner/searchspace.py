@@ -26,7 +26,7 @@ supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming"]
 
 
 class Searchspace:
-    """Class that offers the search space to strategies."""
+    """Class that provides the search space to strategies."""
 
     def __init__(
         self,
@@ -66,7 +66,7 @@ class Searchspace:
         if (
             len(restrictions) > 0
             and any(isinstance(restriction, str) for restriction in restrictions)
-            and not framework.lower() == "pysmt"
+            and not (framework.lower() == "pysmt" or framework.lower() == "bruteforce")
         ):
             self.restrictions = compile_restrictions(
                 restrictions, tune_params, monolithic=False, try_to_constraint=framework.lower() == "pythonconstraint"
@@ -80,6 +80,8 @@ class Searchspace:
         elif framework.lower() == "atf_cache":
             searchspace_builder = self.__build_searchspace_ATF_cache
             self.path_to_ATF_cache = path_to_ATF_cache
+        elif framework.lower() == "bruteforce":
+            searchspace_builder = self.__build_searchspace_bruteforce
         else:
             raise ValueError(f"Invalid framework parameter {framework}")
 
@@ -139,6 +141,40 @@ class Searchspace:
     #     if csp.solve(sols=csp.ALL) is csp.SAT:
     #         num_solutions: int = csp.n_solutions()  # number of solutions
     #         solutions = [csp.values(sol=i) for i in range(num_solutions)]  # list of solutions
+
+    def __build_searchspace_bruteforce(self, block_size_names: list, max_threads: int, solver = None):
+        # bruteforce solving of the searchspace
+
+        from itertools import product
+
+        from kernel_tuner.util import check_restrictions
+
+        tune_params = self.tune_params
+        restrictions = self.restrictions
+
+        # compute cartesian product of all tunable parameters
+        parameter_space = product(*tune_params.values())
+
+        # check if there are block sizes in the parameters, if so add default restrictions
+        used_block_size_names = list(
+            block_size_name for block_size_name in default_block_size_names if block_size_name in tune_params
+        )
+        if len(used_block_size_names) > 0:
+            if not isinstance(restrictions, list):
+                restrictions = [restrictions]
+            restrictions.append(f"{' * '.join(used_block_size_names)} <= {max_threads}")
+
+        # check for search space restrictions
+        if restrictions is not None:
+            parameter_space = filter(
+                lambda p: check_restrictions(restrictions, dict(zip(tune_params.keys(), p)), False), parameter_space
+            )
+
+        # evaluate to a list
+        parameter_space = list(parameter_space)
+
+        # return the results
+        return self.__parameter_space_list_to_lookup_and_return_type(parameter_space)
 
     def __build_searchspace_pysmt(self, block_size_names: list, max_threads: int, solver: Solver):
         # PySMT imports

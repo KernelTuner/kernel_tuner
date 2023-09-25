@@ -17,14 +17,15 @@ from kernel_tuner.searchspace import Searchspace
 max_threads = 1024
 value_error_expectation_message = "Expected a ValueError to be raised"
 
-# 9 combinations without restrictions
+# 16 combinations, of 6 which pass the restrictions
 simple_tune_params = dict()
 simple_tune_params["x"] = [1, 1.5, 2, 3]
 simple_tune_params["y"] = [4, 5.5]
 simple_tune_params["z"] = ["string_1", "string_2"]
-restrict = [lambda x, y, z: x != 1.5]
+restrict = ["y % x == 1"]
 simple_tuning_options = Options(dict(restrictions=restrict, tune_params=simple_tune_params))
 simple_searchspace = Searchspace(simple_tune_params, restrict, max_threads)
+simple_searchspace_bruteforce = Searchspace(simple_tune_params, restrict, max_threads, framework="bruteforce")
 
 # 3.1 million combinations, of which 10600 pass the restrictions
 num_layers = 42
@@ -37,15 +38,16 @@ tune_params["gpu4"] = list(range(num_layers))
 # each GPU must have at least one layer and the sum of all layers must not exceed the total number of layers
 
 
-def min_func(gpu1, gpu2, gpu3, gpu4):
+def _min_func(gpu1, gpu2, gpu3, gpu4):
     return min([gpu1, gpu2, gpu3, gpu4]) >= 1
 
 
 # test three different types of restrictions: python-constraint, a function and a string
-restrict = [ExactSumConstraint(num_layers), FunctionConstraint(min_func)]
+restrict = [ExactSumConstraint(num_layers), FunctionConstraint(_min_func)]
 
 # create the searchspace object
 searchspace = Searchspace(tune_params, restrict, max_threads)
+searchspace_bruteforce = Searchspace(tune_params, restrict, max_threads, framework="bruteforce")
 
 # 74088 combinations intended to test whether sorting works
 sort_tune_params = dict()
@@ -54,9 +56,17 @@ sort_tune_params["gpu2"] = list(range(num_layers))
 sort_tune_params["gpu3"] = list(range(num_layers))
 searchspace_sort = Searchspace(sort_tune_params, [], max_threads)
 
+
+def compare_two_searchspace_objects(searchspace_1: Searchspace, searchspace_2: Searchspace):
+    """Helper test function to assert that two searchspace objects are identical in outcome."""
+    assert searchspace_1.size == searchspace_2.size
+    for dict_config in searchspace_1.get_list_dict().keys():
+        assert searchspace_2.is_param_config_valid(dict_config)
+
+
 def test_size():
     """Test that the searchspace after applying restrictions is the expected size."""
-    assert simple_searchspace.size == 12
+    assert simple_searchspace.size == 6
     assert searchspace.size == 10660
 
 
@@ -69,6 +79,10 @@ def test_internal_representation():
     for index, dict_config in enumerate(searchspace.get_list_dict().keys()):
         assert dict_config == searchspace.list[index]
 
+def test_against_bruteforce():
+    """Tests the default Searchspace framework against bruteforcing the searchspace."""
+    compare_two_searchspace_objects(simple_searchspace, simple_searchspace_bruteforce)
+    compare_two_searchspace_objects(searchspace, searchspace_bruteforce)
 
 def test_sort():
     """Test that the sort searchspace option works as expected."""
@@ -79,18 +93,12 @@ def test_sort():
     )
 
     expected = [
-        (1, 4, "string_1"),
-        (1, 4, "string_2"),
-        (1, 5.5, "string_1"),
-        (1, 5.5, "string_2"),
-        (2, 4, "string_1"),
-        (2, 4, "string_2"),
-        (2, 5.5, "string_1"),
-        (2, 5.5, "string_2"),
+        (1.5, 4, "string_1"),
+        (1.5, 4, "string_2"),
+        (1.5, 5.5, "string_1"),
+        (1.5, 5.5, "string_2"),
         (3, 4, "string_1"),
         (3, 4, "string_2"),
-        (3, 5.5, "string_1"),
-        (3, 5.5, "string_2"),
     ]
 
     # Check if lists match without considering order
@@ -117,18 +125,12 @@ def test_sort_reversed():
     )
 
     expected = [
-        (1, 4, "string_1"),
-        (2, 4, "string_1"),
+        (1.5, 4, "string_1"),
         (3, 4, "string_1"),
-        (1, 5.5, "string_1"),
-        (2, 5.5, "string_1"),
-        (3, 5.5, "string_1"),
-        (1, 4, "string_2"),
-        (2, 4, "string_2"),
+        (1.5, 5.5, "string_1"),
+        (1.5, 4, "string_2"),
         (3, 4, "string_2"),
-        (1, 5.5, "string_2"),
-        (2, 5.5, "string_2"),
-        (3, 5.5, "string_2"),
+        (1.5, 5.5, "string_2"),
     ]
 
     # Check if lists match without considering order
@@ -225,11 +227,10 @@ def test_neighbors_hamming():
     """Test whether the neighbors with Hamming distance are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
-        (2, 4, "string_1"),
-        (3, 4, "string_1"),
-        (1, 5.5, "string_1"),
-        (1, 4, "string_2"),
+        (1.5, 4, 'string_1'),
+        (3, 4, 'string_1'),
     ]
+
     __test_neighbors(test_config, expected_neighbors, "Hamming")
 
 
@@ -237,9 +238,10 @@ def test_neighbors_strictlyadjacent():
     """Test whether the strictly adjacent neighbors are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
-        (1, 5.5, "string_2"),
-        (1, 5.5, "string_1"),
-        (1, 4, "string_2"),
+        (1.5, 4, 'string_1'),
+        (1.5, 4, 'string_2'),
+        (1.5, 5.5, 'string_1'),
+        (1.5, 5.5, 'string_2'),
     ]
 
     __test_neighbors(test_config, expected_neighbors, "strictly-adjacent")
@@ -249,13 +251,10 @@ def test_neighbors_adjacent():
     """Test whether the adjacent neighbors are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
-        (2, 5.5, "string_2"),
-        (1, 5.5, "string_2"),
-        (2, 5.5, "string_1"),
-        (1, 5.5, "string_1"),
-        (2, 4, "string_2"),
-        (1, 4, "string_2"),
-        (2, 4, "string_1"),
+        (1.5, 4, 'string_1'),
+        (1.5, 4, 'string_2'),
+        (1.5, 5.5, 'string_1'),
+        (1.5, 5.5, 'string_2'),
     ]
 
     __test_neighbors(test_config, expected_neighbors, "adjacent")
@@ -265,22 +264,23 @@ def test_neighbors_fictious():
     """Test whether the neighbors are as expected for a fictious parameter configuration (i.e. not existing in the search space due to restrictions)."""
     test_config = tuple([1.5, 4, "string_1"])
     expected_neighbors_hamming = [
-        (1, 4, "string_1"),
-        (2, 4, "string_1"),
-        (3, 4, "string_1"),
+        (1.5, 4, 'string_2'),
+        (1.5, 5.5, 'string_1'),
+        (3, 4, 'string_1'),
     ]
     expected_neighbors_strictlyadjacent = [
-        (2, 5.5, "string_2"),
-        (1, 5.5, "string_2"),
-        (2, 5.5, "string_1"),
-        (1, 5.5, "string_1"),
-        (2, 4, "string_2"),
-        (1, 4, "string_2"),
-        (2, 4, "string_1"),
-        (1, 4, "string_1"),
+        (1.5, 5.5, 'string_2'),
+        (1.5, 5.5, 'string_1'),
+        (1.5, 4, 'string_2')
     ]
 
-    expected_neighbors_adjacent = expected_neighbors_strictlyadjacent
+    expected_neighbors_adjacent = [
+        (1.5, 5.5, 'string_2'),
+        (1.5, 5.5, 'string_1'),
+        (1.5, 4, 'string_2'),
+        (3, 4, 'string_1'),
+        (3, 4, 'string_2'),
+    ]
 
     __test_neighbors_direct(test_config, expected_neighbors_hamming, "Hamming")
     __test_neighbors_direct(test_config, expected_neighbors_strictlyadjacent, "strictly-adjacent")
@@ -296,7 +296,7 @@ def test_neighbors_cached():
         neighbor_method="Hamming"
     )
 
-    test_configs = simple_searchspace_duplicate.get_random_sample(10)
+    test_configs = simple_searchspace_duplicate.get_random_sample(5)
     for test_config in test_configs:
         assert not simple_searchspace_duplicate.are_neighbors_indices_cached(test_config)
         neighbors = simple_searchspace_duplicate.get_neighbors(test_config)
@@ -308,11 +308,10 @@ def test_neighbors_cached():
 def test_param_neighbors():
     """Test whether for a given parameter configuration and index the correct neighboring parameters are returned."""
     test_config = tuple([1.5, 4, "string_1"])
-    expected_neighbors = [[1, 2], [5.5], ["string_2"]]
+    expected_neighbors = [[3], [5.5], ["string_2"]]
 
     for index in range(3):
         neighbor_params = simple_searchspace.get_param_neighbors(test_config, index, "adjacent", randomize=False)
-        print(neighbor_params)
         assert len(neighbor_params) == len(expected_neighbors[index])
         for param_index, param in enumerate(neighbor_params):
             assert param == expected_neighbors[index][param_index]
@@ -324,13 +323,10 @@ def test_order_param_configs():
     test_order = [1, 2, 0]
     test_config = tuple([1, 4, "string_1"])
     expected_order = [
-        (2, 5.5, "string_2"),
-        (2, 4, "string_2"),
-        (1, 4, "string_2"),
-        (2, 4, "string_1"),
-        (2, 5.5, "string_1"),
-        (1, 5.5, "string_1"),
-        (1, 5.5, "string_2"),
+        (1.5, 5.5, 'string_2'),
+        (1.5, 4, 'string_2'),
+        (1.5, 4, 'string_1'),
+        (1.5, 5.5, 'string_1')
     ]
     neighbors = simple_searchspace.get_neighbors_no_cache(test_config, "adjacent")
 
@@ -370,6 +366,7 @@ def test_order_param_configs():
     # test usecase
     ordered_neighbors = simple_searchspace.order_param_configs(neighbors, test_order, randomize_in_params=False)
     for index, expected_param_config in enumerate(expected_order):
+        assert expected_param_config in ordered_neighbors
         assert expected_param_config == ordered_neighbors[index]
 
     # test randomize in params
@@ -380,12 +377,11 @@ def test_order_param_configs():
 
 
 def test_max_threads():
+    """Test the usage of the `max_threads` parameter."""
     max_threads = 1024
     tune_params = dict()
     tune_params["block_size_x"] = [512, 1024]
     tune_params["block_size_y"] = [1]
     searchspace = Searchspace(tune_params, None, max_threads)
-
-    print(searchspace.list)
 
     assert len(searchspace.list) > 1
