@@ -3340,4 +3340,4 @@ tutorial = ["jupyter", "matplotlib"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "84fcae0dc664f74ad8e475722af354e740022803fdb28d0a513e3a66d59e15fc"
+content-hash = "49d4160d00de8929510f020b517c86c73be6b95fa207193df9276fc9add6cdbc"

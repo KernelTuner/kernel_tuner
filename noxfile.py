@@ -10,7 +10,8 @@ import platform
 
 import nox
 
-# from nox_poetry import Session, session   # nox_poetry is a better option, but <=1.0.3 has a bug with filename-URLs
+# from nox import Session, session
+from nox_poetry import Session, session  # nox_poetry is a better option, but <=1.0.3 has a bug with filename-URLs
 
 python_versions_to_test = ["3.8", "3.9", "3.10", "3.11"]
 nox.options.stop_on_first_error = True
@@ -23,13 +24,11 @@ nox.options.error_on_missing_interpreters = True
 #     session.run("ruff", "--format=github", "--config=pyproject.toml", ".")
 
 
-# @nox.session  # uncomment this line to only run on the current python interpreter
-@nox.session(python=python_versions_to_test)  # missing versions can be installed with `pyenv install ...`
+# @session  # uncomment this line to only run on the current python interpreter
+@session(python=python_versions_to_test)  # missing versions can be installed with `pyenv install ...`
 # do not forget check / set the versions with `pyenv global`, or `pyenv local` in case of virtual environment
-def tests(session: nox.Session) -> None:
+def tests(session: Session) -> None:
     """Run the tests for the specified Python versions."""
-    session.install("poetry")
-
     # check if optional dependencies have been disabled by user arguments (e.g. `nox -- skip-gpu`, `nox -- skip-cuda`)
     install_cuda = True
     install_hip = True
@@ -72,7 +71,8 @@ def tests(session: nox.Session) -> None:
         # if we need to install the CUDA extras, first install pycuda seperately.
         #   since version 2022.2 it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry
         try:
-            session.install("pycuda")       # Attention: if changed, check `pycuda` in pyproject.toml as well
+            pass
+            # session.install("pycuda")       # Attention: if changed, check `pycuda` in pyproject.toml as well
         except Exception as error:
             print(error)
             session.warn(install_warning)
@@ -87,7 +87,7 @@ def tests(session: nox.Session) -> None:
 
     # finally, install the dependencies, optional dependencies and the package itself
     try:
-        session.run("poetry", "install", "--with", "test", *extras_args, external=True)
+        session.run_always("poetry", "install", "--with", "test", *extras_args, external=True)
     except Exception as error:
         session.warn(install_warning)
         raise error

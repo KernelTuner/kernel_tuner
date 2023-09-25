@@ -18,6 +18,7 @@ deploy_key
 *.mod
 temp_*.*
 .python-version
+.nox
 
 ### Visual Studio Code ###
 !.vscode/settings.json

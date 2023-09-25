@@ -65,7 +65,7 @@ scikit-learn = "^1.0.2"
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
 # Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
 # CUDA
-pycuda = { version = "*", optional = true }       # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
+pycuda = { version = "^2022.1", optional = true } # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 nvidia-ml-py = { version = "*", optional = true }
 pynvml = { version = "^11.4.1", optional = true }
 cupy-cuda11x = { version = "*", optional = true }

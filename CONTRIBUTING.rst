@@ -22,7 +22,7 @@ Steps with :bash:`sudo` access:
 
 #. Clone the git repository to the desired location
 #. Install `pyenv <https://github.com/pyenv/pyenv#installation>`__: :bash:`curl https://pyenv.run | bash` (remember to add the output to :bash:`.bash_profile` and :bash:`.bashrc` as specified)
-    * [Optional] setup a local virtual environment in the folder: pyenv virtualenv [virtualenv-name]
+    * [Optional] setup a local virtual environment in the folder: :bash:`pyenv virtualenv [virtualenv-name]`
 #. Install the required Python versions: :bash:`pyenv install 3.8 3.9 3.10 3.11`
 #. Set the Python versions so they can be found: :bash:`pyenv global 3.8 3.10 3.11` (replace :bash:`global` with :bash:`local` when using the virtualenv)
 #. Install Nox: :bash:`pip install nox`
@@ -32,7 +32,10 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
 #. Clone the git repository to the desired location
 #. Install Conda with `Mamba <https://mamba.readthedocs.io/en/latest/mamba-installation.html>`__ (for better performance) or `Miniconda <https://docs.conda.io/projects/conda/en/latest/user-guide/install>`__ (for traditional minimal Conda).
     * [Optional] both Mamba and Miniconda can be automatically activated via :bash:`~/.bashrc`. Do not forget to add these (usually mentioned at the end of the installation).
-#. Setup a Conda virtual environment for each of the required Python versions: :bash:`conda create --name python3.x python=3.x`. Verify the environments are setup with `conda info --envs`.
+#. Setup a virtual environment: :bash:`conda create --name kerneltuner python=3.11`
+#. Activate the virtual environment: :bash:`conda activate kerneltuner`
+#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`
+#. Install PyCUDA: :bash:`pycuda`:
 #. Install Nox: :bash:`pip install nox`
 #. Set Nox to use the correct backend:
     * If you used Mamba in step 2: :bash:`nox --default-venv-backend mamba`
