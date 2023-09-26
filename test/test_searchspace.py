@@ -376,12 +376,57 @@ def test_order_param_configs():
     assert len(ordered_neighbors) == len(expected_order)
 
 
-def test_max_threads():
-    """Test the usage of the `max_threads` parameter."""
+def test_small_searchspace():
+    """Test a small real-world searchspace and the usage of the `max_threads` parameter."""
     max_threads = 1024
     tune_params = dict()
-    tune_params["block_size_x"] = [512, 1024]
-    tune_params["block_size_y"] = [1]
-    searchspace = Searchspace(tune_params, None, max_threads)
+    tune_params["block_size_x"] = [1, 2, 4, 8, 16] + [32*i for i in range(1,33)]
+    tune_params["block_size_y"] = [2**i for i in range(6)]
+    tune_params["tile_size_x"] = [i for i in range(1,11)]
+    restrictions = [
+        "block_size_x*block_size_y >= 32",
+        f"block_size_x*block_size_y <= {max_threads}",
+    ]
+    searchspace = Searchspace(tune_params, restrictions, max_threads)
+    searchspace_bruteforce = Searchspace(tune_params, restrictions, max_threads, framework="bruteforce")
+    compare_two_searchspace_objects(searchspace, searchspace_bruteforce)
 
-    assert len(searchspace.list) > 1
+def test_full_searchspace(compare_against_bruteforce=False):
+    """Tests a full real-world searchspace (expdist). If `compare_against_bruteforce`, the searcspace will be bruteforced to compare against, this can take a long time!."""
+    # device characteristics
+    dev = {
+        'device_name': 'NVIDIA A40',
+        'max_threads': 1024,
+        'max_shared_memory_per_block': 49152,
+        'max_shared_memory': 102400
+    }
+
+    # tunable parameters and restrictions
+    tune_params = dict()
+    tune_params["block_size_x"] = [1, 2, 4, 8, 16] + [32*i for i in range(1,33)]
+    tune_params["block_size_y"] = [2**i for i in range(6)]
+    tune_params["tile_size_x"] = [i for i in range(1,11)]
+    tune_params["tile_size_y"] = [i for i in range(1,11)]
+    tune_params["temporal_tiling_factor"] = [i for i in range(1,11)]
+    max_tfactor = max(tune_params["temporal_tiling_factor"])
+    tune_params["max_tfactor"] = [max_tfactor]
+    tune_params["loop_unroll_factor_t"] = [i for i in range(1,max_tfactor+1)]
+    tune_params["sh_power"] = [0,1]
+    tune_params["blocks_per_sm"] = [0,1,2,3,4]
+
+    restrictions = [
+            "block_size_x*block_size_y >= 32",    # doesn't work on its own (3719987 vs 7800000)
+            "temporal_tiling_factor % loop_unroll_factor_t == 0",   # works fine on its own
+            f"block_size_x*block_size_y <= {dev['max_threads']}",   # doesn't work on its own (1688843 vs 9300000)
+            f"(block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4 <= {dev['max_shared_memory_per_block']}", # works fine on its own
+            f"blocks_per_sm == 0 or (((block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4) * blocks_per_sm <= {dev['max_shared_memory']})" # works fine on its own
+        ]
+
+    # build the searchspace
+    searchspace = Searchspace(tune_params, restrictions, max_threads=dev['max_threads'])
+
+    if compare_against_bruteforce:
+        searchspace_bruteforce = Searchspace(tune_params, restrictions, max_threads=dev['max_threads'], framework='bruteforce')
+        compare_two_searchspace_objects(searchspace, searchspace_bruteforce)
+    else:
+        assert searchspace.size == len(searchspace.list) == 349853

@@ -843,7 +843,7 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
                 number -= 1
 
         # check if an operator is applied on the variables, if not return
-        operators = ['\*\*', '\*', '\+']
+        operators = [r'\*\*', r'\*', r'\+']
         operators_found = re.findall(str('|'.join(operators)), variables)
         if len(operators_found) == 0:
             # no operators found, return only based on comparator
@@ -871,7 +871,10 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
         # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
         if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
             # map to a Constraint
-            if operator == '*':
+            if operator == '**':
+                # power operations are not (yet) supported, added to avoid matching the double asterisk
+                return None
+            elif operator == '*':
                 if comparator == '<=' or (comparator == '<' and number_is_int):
                     return MaxProdConstraint(number) if variables_on_left else MinProdConstraint(number)
                 elif comparator == '>=' or (comparator == '>' and number_is_int):
@@ -883,9 +886,6 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
                     return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
                 elif comparator == '>=' or (comparator == '>' and number_is_int):
                     return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
-            elif operator == '**':
-                # power operations are not (yet) supported, added to avoid matching the double asteriks
-                return None
             else:
                 raise ValueError(f"Invalid operator {operator}")
         return None
@@ -973,7 +973,7 @@ def compile_restrictions(restrictions: list, tune_params: dict, monolithic = Fal
             # if it's a string, parse it to a function
             code_object = compile(restriction, "<string>", "exec")
             func = FunctionType(code_object.co_consts[0], globals())
-            compiled_restrictions.append(tuple([func, params_used]))
+            compiled_restrictions.append((func, params_used))
         elif isinstance(restriction, Constraint):
             # otherwise it already is a Constraint, pass it directly
             compiled_restrictions.append((restriction, params_used))

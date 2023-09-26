@@ -162,7 +162,10 @@ class Searchspace:
         if len(used_block_size_names) > 0:
             if not isinstance(restrictions, list):
                 restrictions = [restrictions]
-            restrictions.append(f"{' * '.join(used_block_size_names)} <= {max_threads}")
+            block_size_restriction_spaced = f"{' * '.join(used_block_size_names)} <= {max_threads}"
+            block_size_restriction_unspaced = f"{'*'.join(used_block_size_names)} <= {max_threads}"
+            if block_size_restriction_spaced not in restrictions and block_size_restriction_unspaced not in restrictions:
+                restrictions.append(block_size_restriction_spaced)
 
         # check for search space restrictions
         if restrictions is not None:
@@ -306,11 +309,10 @@ class Searchspace:
                 if isinstance(restriction, FunctionConstraint):
                     parameter_space.addConstraint(restriction, required_params)
                 elif isinstance(restriction, Constraint):
+                    all_params_required = all(param_name in required_params for param_name in self.param_names)
                     parameter_space.addConstraint(
                         restriction,
-                        required_params
-                        if not all(required in self.param_names for required in required_params)
-                        else None,
+                        None if all_params_required else required_params
                     )
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
