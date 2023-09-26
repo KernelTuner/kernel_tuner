@@ -415,11 +415,11 @@ def test_full_searchspace(compare_against_bruteforce=False):
     tune_params["blocks_per_sm"] = [0,1,2,3,4]
 
     restrictions = [
-            "block_size_x*block_size_y >= 32",    # doesn't work on its own (3719987 vs 7800000)
-            "temporal_tiling_factor % loop_unroll_factor_t == 0",   # works fine on its own
-            f"block_size_x*block_size_y <= {dev['max_threads']}",   # doesn't work on its own (1688843 vs 9300000)
-            f"(block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4 <= {dev['max_shared_memory_per_block']}", # works fine on its own
-            f"blocks_per_sm == 0 or (((block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4) * blocks_per_sm <= {dev['max_shared_memory']})" # works fine on its own
+            "block_size_x*block_size_y >= 32",
+            "temporal_tiling_factor % loop_unroll_factor_t == 0",
+            f"block_size_x*block_size_y <= {dev['max_threads']}",
+            f"(block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4 <= {dev['max_shared_memory_per_block']}",
+            f"blocks_per_sm == 0 or (((block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4) * blocks_per_sm <= {dev['max_shared_memory']})"
         ]
 
     # build the searchspace
