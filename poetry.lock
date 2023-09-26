@@ -1635,6 +1635,22 @@ virtualenv = ">=14"
 tox-to-nox = ["jinja2", "tox (<4)"]
 
 [[package]]
+name = "nox-poetry"
+version = "1.0.3"
+description = "nox-poetry"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "nox_poetry-1.0.3-py3-none-any.whl", hash = "sha256:a2fffeb70ae81840479e68287afe1c772bf376f70f1e92f99832a20b3c64d064"},
+    {file = "nox_poetry-1.0.3.tar.gz", hash = "sha256:dc7ecbbd812a333a0c0b558f57e5b37f7c12926cddbcecaf2264957fd373824e"},
+]
+
+[package.dependencies]
+nox = ">=2020.8.22"
+packaging = ">=20.9"
+tomlkit = ">=0.7"
+
+[[package]]
 name = "numpy"
 version = "1.24.4"
 description = "Fundamental package for array computing in Python"
@@ -3030,6 +3046,17 @@ files = [
 ]
 
 [[package]]
+name = "tomlkit"
+version = "0.12.1"
+description = "Style preserving TOML library"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tomlkit-0.12.1-py3-none-any.whl", hash = "sha256:712cbd236609acc6a3e2e97253dfc52d4c2082982a88f61b640ecf0817eab899"},
+    {file = "tomlkit-0.12.1.tar.gz", hash = "sha256:38e1ff8edb991273ec9f6181244a6a391ac30e9f5098e7535640ea6be97a7c86"},
+]
+
+[[package]]
 name = "tornado"
 version = "6.3.3"
 description = "Tornado is a Python web framework and asynchronous networking library, originally developed at FriendFeed."
@@ -3226,4 +3253,4 @@ tutorial = ["jupyter", "matplotlib"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "7680fb4fde204ad1009e7ee7ec4a8aee29e33264dbec20eadf4e4b185fd6e67c"
+content-hash = "2fa5c38d1019fb4f288f75df9e84eeb411d4fae03fd3b314d8fc442f02ae5a27"
