@@ -25,9 +25,12 @@ jobs:
 
         steps:
             - uses: actions/checkout@v4
-            - name: Run tests with Nox
+            - name: Setup Nox
               uses: fjwillemsen/setup-nox2@v3.0.0
-            - run: |
+            - name: Setup Poetry
+              uses: Gr1N/setup-poetry@v8
+            - name: Run tests with Nox
+              run: |
                   pip install nox-poetry
                   nox -- skip-gpu
             # - name: Upload Coverage report to CodeCov
