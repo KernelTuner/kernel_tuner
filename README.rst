@@ -19,17 +19,17 @@ Installation
 
 The easiest way to install the Kernel Tuner is using pip:
 
-To tune CUDA kernels:
+To tune CUDA kernels (`detailed instructions <https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda>`__):
 
 - First, make sure you have the `CUDA Toolkit <https://developer.nvidia.com/cuda-toolkit>`_ installed
 - Then type: ``pip install kernel_tuner[cuda]``
 
-To tune OpenCL kernels:
+To tune OpenCL kernels (`detailed instructions <https://kerneltuner.github.io/kernel_tuner/stable/install.html#opencl-and-pyopencl>`__):
 
 - First, make sure you have an OpenCL compiler for your intended OpenCL platform
 - Then type: ``pip install kernel_tuner[opencl]``
 
-To tune HIP kernels:
+To tune HIP kernels (`detailed instructions <https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-pyhipl>`__):
 
 - First, make sure you have an HIP runtime and compiler installed
 - Then type: ``pip install kernel_tuner[hip]``

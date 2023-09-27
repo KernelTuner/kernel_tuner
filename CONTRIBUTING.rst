@@ -14,39 +14,6 @@ Not all contributions are code, creating an issue also helps us to improve. When
 * Describe what actually happened, including the output of any errors printed.
 * List the version of Python, CUDA or OpenCL, and C compiler, if applicable.
 
-Development environment
------------------------
-The following steps help you set up a minimal development environment. This is just a suggestion, and can be done in many other ways.
-
-Steps with :bash:`sudo` access:
-
-#. Clone the git repository to the desired location
-#. Install `pyenv <https://github.com/pyenv/pyenv#installation>`__: :bash:`curl https://pyenv.run | bash` (remember to add the output to :bash:`.bash_profile` and :bash:`.bashrc` as specified)
-    * [Optional] setup a local virtual environment in the folder: :bash:`pyenv virtualenv [virtualenv-name]`
-#. Install the required Python versions: :bash:`pyenv install 3.8 3.9 3.10 3.11`
-#. Set the Python versions so they can be found: :bash:`pyenv global 3.8 3.10 3.11` (replace :bash:`global` with :bash:`local` when using the virtualenv)
-#. Install the project, dependencies and extras: :bash:`poetry install --with test,doc -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system.
-    * Depending on the environment, it may be necessary or convenient to install underlying dependencies such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner.
-#. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.
-
-
-Steps without :bash:`sudo` access (e.g. on a cluster):
-
-#. Clone the git repository to the desired location
-#. Install Conda with `Mamba <https://mamba.readthedocs.io/en/latest/mamba-installation.html>`__ (for better performance) or `Miniconda <https://docs.conda.io/projects/conda/en/latest/user-guide/install>`__ (for traditional minimal Conda).
-    * [Optional] both Mamba and Miniconda can be automatically activated via :bash:`~/.bashrc`. Do not forget to add these (usually mentioned at the end of the installation).
-#. Setup a virtual environment: :bash:`conda create --name kerneltuner python=3.11` (or whatever Python version you prefer).
-#. Activate the virtual environment: :bash:`conda activate kerneltuner`.
-    * [Optional] to use the correct environment by default, execute :bash:`conda config --set auto_activate_base false`, and add `conda activate kerneltuner` to your :bash:`.bashrc`.
-#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`.
-    * If you run into keyring or other weird issues, this is a known issue with Poetry. Do: `pip install keyring`, `python3 -m keyring --disable`.
-#. Install the project, dependencies and extras: :bash:`poetry install --with test,doc -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system.
-    * Depending on the environment, it may be necessary or convenient to install underlying dependencies such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner.
-#. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.
-#. Set Nox to use the correct backend:
-    * If you used Mamba in step 2: :bash:`nox --default-venv-backend mamba`.
-    * If you used Miniconda or Anaconda in step 2: :bash:`nox --default-venv-backend conda`.
-
 Contributing Code
 -----------------
 For contributing code to Kernel Tuner please select an issue to work on or create a new issue to propose a change or addition. For significant changes, it is required to first create an issue and discuss the proposed changes. Then fork the repository, create a branch, one per change or addition, and create a pull request.
@@ -55,6 +22,7 @@ Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings fo
 
 Before creating a pull request please ensure the following:
 
+* You are working in an up-to-date development environment
 * You have written unit tests to test your additions and all unit tests pass (run :bash:`nox`). If you do not have the required hardware, you can run :bash:`nox -- skip-gpu`, or :bash:`skip-cuda`, :bash:`skip-hip`, :bash:`skip-opencl`.
 * The examples still work and produce the same (or better) results
 * An entry about the change or addition is created in :bash:`CHANGELOG.md`
@@ -64,21 +32,51 @@ If you are in doubt on where to put your additions to the Kernel Tuner, please
 have look at the `design documentation
 <https://kerneltuner.github.io/kernel_tuner/stable/design.html>`__, or discuss it in the issue regarding your additions.
 
-Development setup
------------------
-Afer cloning, you can install the packages required to run the tests using:
 
-.. code-block:: bash
+Development environment
+-----------------------
+The following steps help you set up a development environment.
+This is just a suggestion, and can be done in many other ways.
 
-    poetry install --no-root --with test,docs
-    pip install -e .
+Local setup
+^^^^^^^^^^^
+Steps with :bash:`sudo` access (e.g. on a local device):
 
-After this command you should be able to run the tests and build the documentation.
-See below on how to do that. The :bash:`-e` flag installs the package in *development mode*.
-This means files are not copied, but linked to, such that your installation tracks
-changes in the source files.
-Additionally you can install any of the optional runtime dependencies by appending e.g. :bash:`-E cuda`, `-E opencl` to the Poetry command.
-If you want to go all-out, use :bash:`--all-extras`.
+#. Clone the git repository to the desired location: :bash:`git clone https://github.com/KernelTuner/kernel_tuner.git`, and :bash:`cd` to it.
+#. Install `pyenv <https://github.com/pyenv/pyenv#installation>`__: :bash:`curl https://pyenv.run | bash` (remember to add the output to :bash:`.bash_profile` and :bash:`.bashrc` as specified).
+    * [Optional] setup a local virtual environment in the folder: :bash:`pyenv virtualenv kerneltuner` (or whatever environment name you prefer).
+#. Install the required Python versions: :bash:`pyenv install 3.8 3.9 3.10 3.11`.
+#. Set the Python versions so they can be found: :bash:`pyenv global 3.8 3.10 3.11` (replace :bash:`global` with :bash:`local` when using the virtualenv).
+#. Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in `Installation <https://kerneltuner.github.io/kernel_tuner/stable/install.html>`__.
+#. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`
+    * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
+    * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
+#. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.
+
+
+Cluster setup
+^^^^^^^^^^^^^
+Steps without :bash:`sudo` access (e.g. on a cluster):
+
+#. Clone the git repository to the desired location: :bash:`git clone https://github.com/KernelTuner/kernel_tuner.git`.
+#. Install Conda with `Mamba <https://mamba.readthedocs.io/en/latest/mamba-installation.html>`__ (for better performance) or `Miniconda <https://docs.conda.io/projects/conda/en/latest/user-guide/install>`__ (for traditional minimal Conda).
+    * [Optional] both Mamba and Miniconda can be automatically activated via :bash:`~/.bashrc`. Do not forget to add these (usually mentioned at the end of the installation).
+    * Exit the shell and re-enter to make sure Conda is available, :bash:`cd` to the kernel tuner directory.
+    * [Optional] update Conda if available before continuing: :bash:`conda update -n base -c conda-forge conda`.
+#. Setup a virtual environment: :bash:`conda create --name kerneltuner python=3.11` (or whatever Python version and environment name you prefer).
+#. Activate the virtual environment: :bash:`conda activate kerneltuner`.
+    * [Optional] to use the correct environment by default, execute :bash:`conda config --set auto_activate_base false`, and add `conda activate kerneltuner` to your :bash:`.bash_profile` or :bash:`.bashrc`.
+    * Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see `Installation <https://kerneltuner.github.io/kernel_tuner/stable/install.html>`__.
+    * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
+    * [Optional] the loading of modules and setting of paths is likely convenient to put in your :bash:`.bash_profile` or :bash:`.bashrc`.
+#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`.
+#. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`.
+    * If you run into "keyring" or other seemingly weird issues, this is a known issue with Poetry on some systems. Do: :bash:`pip install keyring`, :bash:`python3 -m keyring --disable`.
+    * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
+#. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if you're not on a GPU node, or one or more extras has been left out in the previous step, then these tests will skip gracefully.
+#. Set Nox to use the correct backend:
+    * If you used Mamba in step 2: :bash:`nox --default-venv-backend mamba`.
+    * If you used Miniconda or Anaconda in step 2: :bash:`nox --default-venv-backend conda`.
 
 
 Running tests

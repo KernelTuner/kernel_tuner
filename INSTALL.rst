@@ -5,13 +5,13 @@ The Kernel Tuner requires several packages to be installed. First of all, you ne
 working Python version, several Python packages, and optionally CUDA and/or OpenCL
 installations. All of this is explained in detail in this guide.
 
+For comprehensive step-by-step instructions on setting up a development environment, see `Contributing <https://kerneltuner.github.io/kernel_tuner/stable/contributing.html#development-environment>`__.
+
 
 Python
 ------
 
-You need a Python installation. I recommend using Python 3 and
-installing it with `Miniconda <https://conda.io/miniconda.html>`__.
-
+You need a Python installation. We recommend using Python 3 and installing it with `Miniconda <https://conda.io/miniconda.html>`__.
 Linux users could type the following to download and install Python 3 using Miniconda:
 
 .. code-block:: bash
@@ -19,8 +19,7 @@ Linux users could type the following to download and install Python 3 using Mini
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-You are of course also free to use your own Python installation, and the Kernel Tuner
-is developed to be fully compatible with Python 3.6 and newer.
+You are of course also free to use your own Python installation, and the Kernel Tuner is developed to be fully compatible with Python 3.8 and newer.
 
 Installing Python Packages
 --------------------------
@@ -159,21 +158,15 @@ The runtime dependencies are:
 - `hip`: install pyhip along with kernel_tuner
 - `tutorial`: install packages required to run the guides
 
-These can be installed by appending e.g. ``-E cuda -E opencl``.
+These can be installed by appending e.g. ``-E cuda -E opencl -E hip``.
 If you want to go all-out, use ``--all-extras``.
 
 For example, use:
-```
-pip install --with test,docs -E cuda -E opencl
-```
-To install Kernel Tuner along with all the packages required for development.
-
-You can also install Kernel Tuner in development mode by installing the packages and using a local, editable pip install:
-
 .. code-block:: bash
 
-    poetry install --no-root --with test,docs
-    pip install -e .
+    poetry install --with test,docs -E cuda -E opencl
+
+To install Kernel Tuner along with all the packages required for development.
 
 
 Dependencies for the guides
