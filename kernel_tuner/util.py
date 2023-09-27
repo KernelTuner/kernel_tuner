@@ -180,14 +180,14 @@ def check_stop_criterion(to):
         raise StopCriterionReached("time limit exceeded")
 
 
-def check_tune_params_list(tune_params, observers):
+def check_tune_params_list(tune_params, observers, simulation_mode=False):
     """Raise an exception if a tune parameter has a forbidden name."""
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
     if any("nvml_" in param for param in tune_params):
-        if not observers or not any(isinstance(obs, NVMLObserver) for obs in observers):
+        if not simulation_mode and (not observers or not any(isinstance(obs, NVMLObserver) for obs in observers)):
             raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
 
 
@@ -1065,6 +1065,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
             if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
                 raise ValueError(
                     f"All tunable parameters are present, but the order is wrong. \
+                    This is not possible because the order must be preserved to lookup the correct configuration in the cache. \
                     Cache has order: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
                 )
             raise ValueError(
