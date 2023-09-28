@@ -28,9 +28,14 @@ To tune OpenCL kernels:
 - First, make sure you have an OpenCL compiler for your intended OpenCL platform
 - Then type: ``pip install kernel_tuner[opencl]``
 
-Or both:
+To tune HIP kernels:
 
-- ``pip install kernel_tuner[cuda,opencl]``
+- First, make sure you have an HIP runtime and compiler installed
+- Then type: ``pip install kernel_tuner[hip]``
+
+Or all:
+
+- ``pip install kernel_tuner[cuda,opencl,hip]``
 
 More information about how to install Kernel Tuner and its
 dependencies can be found in the `installation guide 
