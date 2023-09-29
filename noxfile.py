@@ -33,6 +33,7 @@ def tests(session: Session) -> None:
     install_cuda = True
     install_hip = True
     install_opencl = True
+    install_additional_tests = False
     if session.posargs:
         for arg in session.posargs:
             if arg.lower() == "skip-gpu":
@@ -48,6 +49,9 @@ def tests(session: Session) -> None:
                 install_opencl = False
             else:
                 raise ValueError(f"Unrecognized argument {arg}")
+
+            if arg.lower() == "additional_tests":
+                install_additional_tests = True
 
     # check if there are optional dependencies that can not be installed
     if install_hip:
@@ -71,8 +75,7 @@ def tests(session: Session) -> None:
         # if we need to install the CUDA extras, first install pycuda seperately.
         #   since version 2022.2 it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry
         try:
-            pass
-            # session.install("pycuda")       # Attention: if changed, check `pycuda` in pyproject.toml as well
+            session.install("pycuda")       # Attention: if changed, check `pycuda` in pyproject.toml as well
         except Exception as error:
             print(error)
             session.warn(install_warning)
@@ -91,6 +94,28 @@ def tests(session: Session) -> None:
     except Exception as error:
         session.warn(install_warning)
         raise error
+
+    # if applicable, install the dependencies for additional tests
+    if install_additional_tests and install_cuda:
+        install_additional_warning = """Installation failed, this likely means that the required hardware or drivers are missing.
+                  Run without `-- additional_tests` to avoid this."""
+        try:
+            session.install("cuda-python")
+        except Exception as error:
+            print(error)
+            session.warn(install_additional_warning)
+        try:
+            cuda_version = session.run("nvcc", "--version", "|", "sed", "-n 's/^.*release \([0-9]\+\.[0-9]\+\).*$/\1/p'", silent=True)
+            print(f"CUDA version: {cuda_version}")
+            if cuda_version[:3] == "12.":
+                session.install("cupy-cuda12x")
+            elif cuda_version[:3] == "11.":
+                session.install("cupy-cuda11x")
+            else:
+                session.install("cupy")
+        except Exception as error:
+            print(error)
+            session.warn(install_additional_warning)
 
     # for the last Python version session if all optional dependencies are enabled:
     if session.python == python_versions_to_test[-1] and install_cuda and install_hip and install_opencl:
