@@ -108,14 +108,19 @@ def tests(session: Session) -> None:
             # use NVCC to get the CUDA version
             nvcc_version_output: str = session.run("nvcc", "--version", silent=True)
             nvcc_version_output_singleline = "".join(nvcc_version_output.splitlines())  # convert to single string for easier REGEX
-            cuda_version = re.match(r"^.*release ([0-9]+.[0-9]+).*$", nvcc_version_output_singleline, flags=re.IGNORECASE).group(1)
+            cuda_version = re.match(r"^.*release ([0-9]+.[0-9]+).*$", nvcc_version_output_singleline, flags=re.IGNORECASE).group(1).strip()
             session.warn(f"Detected CUDA version: {cuda_version}")
-            # based on the CUDA version, install the prebuilt cupy version
-            if cuda_version[:3] == "12.":
-                session.install("cupy-cuda12x")
-            elif cuda_version[:3] == "11.":
-                session.install("cupy-cuda11x")
-            else:
+            try:
+                try:
+                    # based on the CUDA version, try installing the exact prebuilt cupy version
+                    cuda_cupy_version = f"cupy-cuda{''.join(cuda_version.split('.'))}"
+                    session.install(cuda_cupy_version)
+                except Exception:
+                    # if the exact prebuilt is not available, try the more general prebuilt
+                    cuda_cupy_version_x = f"cupy-cuda{cuda_version.split('.')[0]}x"
+                    session.warn(f"CuPy exact prebuilt not available for {cuda_version}, trying {cuda_cupy_version_x}")
+                    session.install(cuda_cupy_version_x)
+            except Exception:
                 # if no compatible prebuilt wheel is found, try building CuPy ourselves
                 session.warn(f"No prebuilt CuPy found for CUDA {cuda_version}, building from source...")
                 session.install("cupy")
@@ -124,7 +129,7 @@ def tests(session: Session) -> None:
             session.warn(install_additional_warning)
 
     # for the last Python version session if all optional dependencies are enabled:
-    if session.python == python_versions_to_test[-1] and install_cuda and install_hip and install_opencl:
+    if session.python == python_versions_to_test[-1] and install_cuda and install_hip and install_opencl and install_additional_tests:
         # run pytest on the package to generate the correct coverage report
         session.run("pytest")
     else:
@@ -132,6 +137,10 @@ def tests(session: Session) -> None:
         # run pytest without coverage reporting
         session.run("pytest", "--no-cov")
 
-    # report if no coverage report
-    if not (install_cuda and install_hip and install_opencl):
-        session.warn("Tests ran successfully, but only a subset. Coverage file not generated.")
+    # warn if no coverage report
+    if not (install_cuda and install_hip and install_opencl and install_additional_tests):
+        session.warn("""
+                     Tests ran successfully, but only a subset.
+                     Coverage file not generated.
+                     Run with 'additional-tests' and without 'skip-gpu', 'skip-cuda' etc. to avoid this.
+                    """)
