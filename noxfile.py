@@ -47,11 +47,10 @@ def tests(session: Session) -> None:
                 install_hip = False
             elif arg.lower() == "skip-opencl":
                 install_opencl = False
+            elif arg.lower() == "additional-tests":
+                install_additional_tests = True
             else:
                 raise ValueError(f"Unrecognized argument {arg}")
-
-            if arg.lower() == "additional_tests":
-                install_additional_tests = True
 
     # check if there are optional dependencies that can not be installed
     if install_hip:
@@ -105,8 +104,9 @@ def tests(session: Session) -> None:
             print(error)
             session.warn(install_additional_warning)
         try:
+            session.warn("Installing cupy-cuda")
             cuda_version = session.run("nvcc", "--version", "|", "sed", "-n 's/^.*release \([0-9]\+\.[0-9]\+\).*$/\1/p'", silent=True)
-            print(f"CUDA version: {cuda_version}")
+            session.warning(f"CUDA version: {cuda_version}")
             if cuda_version[:3] == "12.":
                 session.install("cupy-cuda12x")
             elif cuda_version[:3] == "11.":
