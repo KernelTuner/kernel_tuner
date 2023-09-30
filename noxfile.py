@@ -97,21 +97,27 @@ def tests(session: Session) -> None:
     # if applicable, install the dependencies for additional tests
     if install_additional_tests and install_cuda:
         install_additional_warning = """Installation failed, this likely means that the required hardware or drivers are missing.
-                  Run without `-- additional_tests` to avoid this."""
+                  Run without `-- additional-tests` to avoid this."""
+        import re
         try:
             session.install("cuda-python")
         except Exception as error:
             print(error)
             session.warn(install_additional_warning)
         try:
-            session.warn("Installing cupy-cuda")
-            cuda_version = session.run("nvcc", "--version", "|", "sed", "-n 's/^.*release \([0-9]\+\.[0-9]\+\).*$/\1/p'", silent=True)
-            session.warning(f"CUDA version: {cuda_version}")
+            # use NVCC to get the CUDA version
+            nvcc_version_output: str = session.run("nvcc", "--version", silent=True)
+            nvcc_version_output_singleline = "".join(nvcc_version_output.splitlines())  # convert to single string for easier REGEX
+            cuda_version = re.match(r"^.*release ([0-9]+.[0-9]+).*$", nvcc_version_output_singleline, flags=re.IGNORECASE).group(1)
+            session.warn(f"Detected CUDA version: {cuda_version}")
+            # based on the CUDA version, install the prebuilt cupy version
             if cuda_version[:3] == "12.":
                 session.install("cupy-cuda12x")
             elif cuda_version[:3] == "11.":
                 session.install("cupy-cuda11x")
             else:
+                # if no compatible prebuilt wheel is found, try building CuPy ourselves
+                session.warn(f"No prebuilt CuPy found for CUDA {cuda_version}, building from source...")
                 session.install("cupy")
         except Exception as error:
             print(error)
