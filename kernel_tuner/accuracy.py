@@ -56,6 +56,28 @@ class Tunable(UserDict):
         return self.select_for_configuration(params)
 
 
+def _find_bfloat16_if_available():
+    # Try to get bfloat16 if available.
+    try:
+        from bfloat16 import bfloat16
+        return bfloat16
+    except ImportError:
+        pass
+
+    try:
+        from tensorflow import bfloat16
+        return bfloat16.as_numpy_dtype
+    except ImportError:
+        pass
+
+    logging.warning(
+        "could not find `bfloat16` data type for numpy, "
+        + "please install either the package `bfloat16` or `tensorflow`"
+    )
+
+    return None
+
+
 def _to_float_dtype(x: str) -> np.dtype:
     """Convert a string to a numpy data type (``dtype``). This function recognizes
     common names (such as ``f16`` or ``kfloat``), and uses ``np.dtype(x)`` as a
@@ -65,9 +87,10 @@ def _to_float_dtype(x: str) -> np.dtype:
         x = x.lower()
 
     if x in ("bfloat16", "bf16", "kbfloat16", "__nv_bfloat16"):
-        from bfloat16 import bfloat16
+        result = _find_bfloat16_if_available()
+        if result is not None:
+            return result
 
-        return bfloat16
     if x in ("half", "f16", "float16", "__half", "khalf", 16):
         return np.half
     if x in ("float", "single", "f32", "float32", "kfloat", 32):
@@ -108,21 +131,10 @@ class TunablePrecision(Tunable):
         if not dtypes:
             dtypes = dict(half=np.half, float=np.single, double=np.double)
 
-            # Try to get bfloat16 if available.
-            try:
-                from bfloat16 import bfloat16
-
+            bfloat16 = _find_bfloat16_if_available()
+            if bfloat16 is not None:
                 dtypes["bfloat16"] = bfloat16
-            except ImportError:
-                try:
-                    from tensorflow import bfloat16
 
-                    dtypes["bfloat16"] = bfloat16.as_numpy_dtype
-                except ImportError:
-                    logging.warning(
-                        "could not find `bfloat16` data type for numpy, "
-                        + "please install either the package `bfloat16` or `tensorflow`"
-                    )
 
         # If dtype is a list, convert it to a dictionary
         if isinstance(dtypes, (list, tuple)):
@@ -224,12 +236,12 @@ def error_metric_from_name(user_key, EPS=1e-8):
     elif key in ("male", "mean absolute logarithmic"):
 
         def metric(a, b):
-            return np.average(np.abs(np.log(a + EPS) - np.log(b + EPS)))
+            return np.average(np.abs(np.log10(a + EPS) - np.log10(b + EPS)))
 
     elif key in ("rmsle", "root mean squared logarithmic"):
 
         def metric(a, b):
-            return np.sqrt(np.average(np.square(np.log(a + EPS) - np.log(b + EPS))))
+            return np.sqrt(np.average(np.square(np.log10(a + EPS) - np.log10(b + EPS))))
 
     elif key in ("maximum absolute", "maximum"):
 

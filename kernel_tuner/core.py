@@ -438,18 +438,6 @@ class DeviceInterface(object):
         if not correct:
             raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
 
-    def preprocess_gpu_arguments(self, old_arguments, params):
-        """ Get a flat list of arguments based on the configuration given by `params` """
-        new_arguments = []
-
-        for argument in old_arguments:
-            if isinstance(argument, Tunable):
-                new_arguments.append(argument.select_for_configuration(params))
-            else:
-                new_arguments.append(argument)
-
-        return new_arguments
-
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
         # reset previous timers
         last_compilation_time = None
@@ -469,7 +457,7 @@ class DeviceInterface(object):
             result[to.objective] = util.InvalidConfig()
         else:
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
-            gpu_args = self.preprocess_gpu_arguments(gpu_args, params)
+            gpu_args = _preprocess_gpu_arguments(gpu_args, params)
 
             try:
                 # compile the kernel
@@ -586,7 +574,7 @@ class DeviceInterface(object):
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments
-        arguments = self.preprocess_gpu_arguments(kernel_options.arguments, params)
+        arguments = _preprocess_gpu_arguments(kernel_options.arguments, params)
 
         #collect everything we know about this instance and return it
         return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, arguments)
@@ -603,7 +591,7 @@ class DeviceInterface(object):
         """ready argument list to be passed to the kernel, allocates gpu mem if necessary"""
         flat_args = []
 
-        # Flatten all arguments into a single list. Required to deal with `MixedPrecisionArray`s
+        # Flatten all arguments into a single list. Required to deal with `Tunable`s
         for argument in arguments:
             if isinstance(argument, Tunable):
                 flat_args.extend(argument.values())
@@ -642,6 +630,19 @@ class DeviceInterface(object):
                 logging.debug('encountered unexpected runtime failure: ' + str(e))
                 raise e
         return True
+
+
+def _preprocess_gpu_arguments(old_arguments, params):
+    """ Get a flat list of arguments based on the configuration given by `params` """
+    new_arguments = []
+
+    for argument in old_arguments:
+        if isinstance(argument, Tunable):
+            new_arguments.append(argument.select_for_configuration(params))
+        else:
+            new_arguments.append(argument)
+
+    return new_arguments
 
 
 def _default_verify_function(instance, answer, result_host, atol, verbose):
