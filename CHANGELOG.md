@@ -12,6 +12,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Documentation now uses `pyproject.toml` metadata, minor fixes and changes to be compatible with updated dependencies
 - Set up Nox for testing on all supported Python versions in isolated environments
 - Added linting information, VS Code settings and recommendations
+- Discontinued use of `OrderedDict`, as all dictionaries in the Python versions used are already ordered
 - Dropped Python 3.7 support
 
 ## [0.4.5] - 2023-06-01

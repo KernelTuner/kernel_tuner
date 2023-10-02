@@ -84,16 +84,16 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
 
 Running tests
 -------------
-To run the tests you can use :bash:`pytest` (to run against the local Python version) and :bash:`nox` (to run against all supported Python versions) in the top-level directory.
+To run the tests you can use :bash:`nox` (to run against all supported Python versions in isolated environments) and :bash:`pytest` (to run against the local Python version) in the top-level directory.
+It's also possible to invoke PyTest from the 'Testing' tab in Visual Studio Code.
 
 Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
 are not installed/present. The same holds for tests that require PyOpenCL, Cupy, Nvidia CUDA.
 
-Contributions you make to the Kernel Tuner should not break any of the tests
-even if you cannot run them locally.
+Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally.
 
-The examples can be seen as *integration tests* for the Kernel Tuner. Note that
-these will also use the installed package.
+The examples can be seen as *integration tests* for the Kernel Tuner.
+Note that these will also use the installed package.
 
 Building documentation
 ----------------------
