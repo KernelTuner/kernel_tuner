@@ -6,7 +6,6 @@ import logging
 import re
 import numpy as np
 
-from kernel_tuner.accuracy import Tunable
 
 try:
     import cupy as cp
@@ -423,7 +422,7 @@ class DeviceInterface(object):
 
         # Call the output observers
         for obs in self.output_observers:
-            obs.process_kernel_output(answer, result_host)
+            obs.process_output(answer, result_host)
 
         # There are three scenarios:
         # - if there is a custom verify function, call that.

@@ -92,6 +92,7 @@ class SequentialRunner(Runner):
                     warmup_time = 1e3 * (perf_counter() - warmup_time)
 
                 result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
+
                 params.update(result)
 
                 if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):

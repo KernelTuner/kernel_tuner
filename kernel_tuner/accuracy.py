@@ -4,7 +4,7 @@ import numpy as np
 import logging
 import re
 
-from .observers import OutputObserver
+from kernel_tuner.observers import OutputObserver
 
 
 class Tunable(UserDict):
@@ -283,7 +283,7 @@ class AccuracyObserver(OutputObserver):
         self.metric = metric
         self.result = None
 
-    def process_kernel_output(self, answers, outputs):
+    def process_output(self, answers, outputs):
         errors = []
 
         for answer, output in zip(answers, outputs):

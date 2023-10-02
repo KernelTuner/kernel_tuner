@@ -51,7 +51,7 @@ class OutputObserver(BenchmarkObserver):
     """Observer that can verify or measure something about the output produced by a kernel."""
 
     @abstractmethod
-    def process_kernel_output(self, answer, output):
+    def process_output(self, answer, output):
         """method will be called once before benchmarking of a single kernel configuration. The arguments
         provided are the `answer` as passed `tune_kernel` and the `output` produced by the kernel
         """
