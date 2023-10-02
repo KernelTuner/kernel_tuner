@@ -1,15 +1,16 @@
 from collections import UserDict
 from typing import Dict
 import numpy as np
+import logging
 
 from kernel_tuner.observers import AccuracyObserver
 
 
 class Tunable(UserDict):
     def __init__(self, param_key: str, arrays: Dict):
-        """The ``Tunable`` object is used as an input argument when tuning
+        """The ``Tunable`` object can be used as an input argument when tuning
         kernels. It is a container that holds several arrays internally and
-        selects one array during benchmarking based on a tunable parameter.
+        selects one array during benchmarking based on the value of a tunable parameter.
 
         Example
         -------
@@ -19,13 +20,14 @@ class Tunable(UserDict):
 
         In this example, we create a Tunable object that selects either matrix
         or matrix.transpose() for benchmarking, depending on the value of the
-        tunable parameter "matrix_layout". The arrays argument is a dictionary
-        that maps the tunable parameter values "c" and "f" to the arrays matrix
-        and matrix.transpose(), respectively. During benchmarking, the Tunable
-        object selects the appropriate array based on the value of "matrix_layout".
+        tunable parameter "matrix_layout". The first argument is the name of the tunable
+        paramater. The second argument is a dictionary that maps the tunable parameter
+        values "c" and "f" to the arrays ``matrix`` and ``matrix.transpose()``, respectively.
+        During benchmarking, the Tunable object selects the array passed to the kernel based
+        on the value of "matrix_layout".
 
         :param param_key: : The tunable parameter used to select the array for benchmarking.
-        :param arrays: A dictionary that maps the parameter value to arrays.
+        :param arrays: A dictionary that maps the value of that tunable parameter to options.
         """
         if isinstance(arrays, (tuple, list)):
             arrays = dict(enumerate(arrays))
@@ -35,25 +37,25 @@ class Tunable(UserDict):
 
     def select_for_configuration(self, params):
         if callable(self.param_key):
-            key = self.param_key(params)
+            option = self.param_key(params)
         elif self.param_key in params:
-            key = params[self.param_key]
+            option = params[self.param_key]
         else:
-            key = eval(self.param_key, params, params)
+            option = eval(self.param_key, params, params)
 
-        if key not in self:
-            list = ", ".join(map(str, self.keys()))
+        if option not in self.data:
+            list = ", ".join(map(str, self.data.keys()))
             raise KeyError(
-                f"'{key}' is not a valid parameter value, should be one of: {list}"
+                f"'{option}' is not a valid parameter value, should be one of: {list}"
             )
 
-        return self[key]
+        return self.data[option]
 
     def __call__(self, params):
         return self.select_for_configuration(params)
 
 
-def _to_float_dtype(x):
+def _to_float_dtype(x: str) -> np.dtype:
     """Convert a string to a numpy data type (``dtype``). This function recognizes
     common names (such as ``f16`` or ``kfloat``), and uses ``np.dtype(x)`` as a
     fallback.
@@ -79,11 +81,11 @@ class TunablePrecision(Tunable):
     def __init__(
         self, param_key: str, array: np.ndarray, dtypes: Dict[str, np.dtype] = None
     ):
-        """The ``Tunable`` object is used as an input argument when tuning
+        """The ``Tunable`` object can be used as an input argument when tuning
         kernels. It is a container that internally holds several arrays
         containing the same data, but stored in using different levels of
-        precision. During benchamrking, one array is selected based on a
-        tunable parameter ``param_key``.
+        precision. During benchamrking, one array is selected based on the value
+        of the tunable parameter called ``param_key``.
 
         Example
         -------
@@ -110,9 +112,16 @@ class TunablePrecision(Tunable):
                 from bfloat16 import bfloat16
 
                 dtypes["bfloat16"] = bfloat16
-                pass
             except ImportError:
-                pass  # Ignore error if tensorflow is not available
+                try:
+                    from tensorflow import bfloat16
+
+                    dtypes["bfloat16"] = bfloat16.as_numpy_dtype
+                except ImportError:
+                    logging.warning(
+                        "could not find `bfloat16` data type for numpy, "
+                        + "please install either the package `bfloat16` or `tensorflow`"
+                    )
 
         # If dtype is a list, convert it to a dictionary
         if isinstance(dtypes, (list, tuple)):
@@ -131,8 +140,8 @@ class TunablePrecision(Tunable):
         super().__init__(param_key, arrays)
 
 
-class AccuracyObserver(BenchmarkObserver):
-    """Observer that can verify or measure the accuracy of the output produced by a kernel."""
+class OutputObserver(BenchmarkObserver):
+    """Observer that can verify or measure something about the output produced by a kernel."""
 
     @abstractmethod
     def process_kernel_output(self, answer, output):
@@ -168,43 +177,67 @@ def error_metric_from_name(key, EPS=1e-8):
     # lowercase the metric name
     key = key.lower().replace("_", " ").strip()
 
-    if key in ("mse", "smd", "mean square error"):
-        metric = lambda a, b: np.average(np.square(a - b))
-    elif key in ("rmse", "rmsd", "root mean square error"):
-        metric = lambda a, b: np.sqrt(np.average(np.square(a - b)))
-    elif key in ("nrmse", "nrmsd"):
-        metric = lambda a, b: np.sqrt(
-            np.average(np.square(a - b)) / np.average(np.square(a))
-        )
+    if key in ("mse", "mean square error"):
+
+        def metric(a, b):
+            return np.average(np.square(a - b))
+
+    elif key in ("rmse", "root mean square error"):
+
+        def metric(a, b):
+            return np.sqrt(np.average(np.square(a - b)))
+
+    elif key in ("nrmse", "normalized root mean square error"):
+
+        def metric(a, b):
+            return np.sqrt(np.average(np.square(a - b)) / np.average(np.square(a)))
+
     elif key in ("mae", "absolute error", "absolute", "mean absolute error", "abs"):
-        metric = lambda a, b: np.average(np.abs(a - b))
+
+        def metric(a, b):
+            return np.average(np.abs(a - b))
+
     elif key in ("mre", "relative error", "relative", "mean relative error", "rel"):
-        metric = lambda a, b: np.average(np.abs(a - b) / np.maximum(np.abs(a), EPS))
+
+        def metric(a, b):
+            return np.average(np.abs(a - b) / np.maximum(np.abs(a), EPS))
+
     elif key in ("rmsre", "root mean square relative error"):
-        metric = lambda a, b: np.sqrt(
-            np.average(np.square(a - b) / np.square(np.maximum(a, EPS)))
-        )
+
+        def metric(a, b):
+            return np.sqrt(np.average(np.square(a - b) / np.square(np.maximum(a, EPS))))
+
     elif key in ("male", "mean absolute log error"):
-        metric = lambda a, b: np.average(np.abs(np.log(a + EPS) - np.log(b + EPS)))
+
+        def metric(a, b):
+            return np.average(np.abs(np.log(a + EPS) - np.log(b + EPS)))
+
     elif key in ("rmsle", "root mean square log error"):
-        metric = lambda a, b: np.sqrt(
-            np.average(np.square(np.log(a + EPS) - np.log(b + EPS)))
-        )
+
+        def metric(a, b):
+            return np.sqrt(np.average(np.square(np.log(a + EPS) - np.log(b + EPS))))
+
     elif key in ("max", "max abs", "maximum", "maximum absolute"):
-        metric = lambda a, b: np.amax(np.abs(a - b))
+
+        def metric(a, b):
+            return np.amax(np.abs(a - b))
+
     elif key in ("max rel", "maximum relative"):
-        metric = lambda a, b: np.amax(np.abs(a - b) / np.maximum(np.abs(a), EPS))
+
+        def metric(a, b):
+            return np.amax(np.abs(a - b) / np.maximum(np.abs(a), EPS))
+
     else:
         raise ValueError(f"invalid error metric provided: {key}")
 
     # cast both arguments to f64 before passing them to the metric
-    return lambda a, b, metric=metric: metric(
+    return lambda a, b: metric(
         a.astype(np.float64, copy=False), b.astype(np.float64, copy=False)
     )
 
 
-class ErrorObserver(AccuracyObserver):
-    """``ErrorObserver`` measures the error of the output produced by a kernel
+class AccuracyObserver(OutputObserver):
+    """``AccuracyObserver`` measures the error of the output produced by a kernel
     by comparing it against a reference output.
 
     By default, it uses the root mean-squared error (RMSE) and uses the

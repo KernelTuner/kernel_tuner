@@ -13,8 +13,9 @@ try:
 except ImportError:
     cp = np
 
+from kernel_tuner.accuracy import Tunable
 from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver, AccuracyObserver
+from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
 from kernel_tuner.backends.cupy import CupyFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
@@ -250,7 +251,7 @@ class DeviceInterface(object):
         #look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
         self.continuous_observers = []
-        self.accuracy_observers = []
+        self.output_observers = []
         if observers:
             for obs in observers:
                 if isinstance(obs, NVMLObserver):
@@ -258,8 +259,8 @@ class DeviceInterface(object):
                     self.use_nvml = True
                 if hasattr(obs, "continuous_observer"):
                     self.continuous_observers.append(obs.continuous_observer)
-                if isinstance(obs, AccuracyObserver):
-                    self.accuracy_observers.append(obs)
+                if isinstance(obs, OutputObserver):
+                    self.output_observers.append(obs)
 
 
         self.iterations = iterations
@@ -420,17 +421,17 @@ class DeviceInterface(object):
             else:
                 result_host.append(None)
 
-        # Call the accuracy observers
-        for obs in self.accuracy_observers:
+        # Call the output observers
+        for obs in self.output_observers:
             obs.process_kernel_output(answer, result_host)
 
         # There are three scenarios:
         # - if there is a custom verify function, call that.
-        # - otherwise, if there are no accuracy observer, call the default verify function
+        # - otherwise, if there are no output observers, call the default verify function
         # - otherwise, the answer is correct (we assume the accuracy observers verified the output)
         if verify:
             correct = verify(answer, result_host, atol=atol)
-        elif not self.accuracy_observers:
+        elif not self.output_observers:
             correct = _default_verify_function(instance, answer, result_host, atol, verbose)
         else:
             correct = True
@@ -468,9 +469,9 @@ class DeviceInterface(object):
         if isinstance(instance, util.ErrorConfig):
             result[to.objective] = util.InvalidConfig()
         else:
-
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
             gpu_args = self.preprocess_gpu_arguments(gpu_args, params)
+
             try:
                 # compile the kernel
                 start_compilation = time.perf_counter()
@@ -492,7 +493,7 @@ class DeviceInterface(object):
                 last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
                 # test kernel for correctness
-                if func and (to.answer or to.verify or self.accuracy_observers):
+                if func and (to.answer or to.verify or self.output_observers):
                     start_verification = time.perf_counter()
                     self.check_kernel_output(func, gpu_args, instance, to.answer, to.atol, to.verify, verbose)
                     last_verification_time = 1000 * (time.perf_counter() - start_verification)
