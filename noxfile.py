@@ -7,15 +7,26 @@ Be careful that the general setup of tests is left to pyproject.toml.
 
 
 import platform
+from pathlib import Path
 
 import nox
-
-# from nox import Session, session
 from nox_poetry import Session, session
 
+# set the test parameters
 python_versions_to_test = ["3.8", "3.9", "3.10", "3.11"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
+
+# set the default environment from the 'noxenv' file, if it exists
+environment_file_path = Path("./noxenv.txt")
+if environment_file_path.exists():
+    env_values = ('none', 'virtualenv', 'conda', 'mamba', 'venv')  # from https://nox.thea.codes/en/stable/usage.html#changing-the-sessions-default-backend
+    environment = environment_file_path.read_text()
+    assert isinstance(environment, str), "File 'noxenv.txt' does not contain text"
+    environment = environment.strip()
+    assert environment in env_values, f"File 'noxenv.txt' contains {environment}, must be one of {','.join(env_values)}"
+    nox.options.default_venv_backend = environment
+
 
 # @nox.session
 # def lint(session: nox.Session) -> None:
@@ -57,6 +68,7 @@ def tests(session: Session) -> None:
         if platform.system().lower() != 'linux':
             session.warn("HIP is only available on Linux, disabling dependency and tests")
             install_hip = False
+    full_install = install_cuda and install_hip and install_opencl and install_additional_tests
 
     # set extra arguments based on optional dependencies
     extras_args = []
@@ -96,8 +108,9 @@ def tests(session: Session) -> None:
 
     # if applicable, install the dependencies for additional tests
     if install_additional_tests and install_cuda:
-        install_additional_warning = """Installation failed, this likely means that the required hardware or drivers are missing.
-                  Run without `-- additional-tests` to avoid this."""
+        install_additional_warning = """
+                Installation failed, this likely means that the required hardware or drivers are missing.
+                Run without `-- additional-tests` to avoid this."""
         import re
         try:
             session.install("cuda-python")
@@ -106,9 +119,9 @@ def tests(session: Session) -> None:
             session.warn(install_additional_warning)
         try:
             # use NVCC to get the CUDA version
-            nvcc_version_output: str = session.run("nvcc", "--version", silent=True)
-            nvcc_version_output_singleline = "".join(nvcc_version_output.splitlines())  # convert to single string for easier REGEX
-            cuda_version = re.match(r"^.*release ([0-9]+.[0-9]+).*$", nvcc_version_output_singleline, flags=re.IGNORECASE).group(1).strip()
+            nvcc_output: str = session.run("nvcc", "--version", silent=True)
+            nvcc_output = "".join(nvcc_output.splitlines())  # convert to single string for easier REGEX
+            cuda_version = re.match(r"^.*release ([0-9]+.[0-9]+).*$", nvcc_output, flags=re.IGNORECASE).group(1).strip()
             session.warn(f"Detected CUDA version: {cuda_version}")
             try:
                 try:
@@ -129,7 +142,7 @@ def tests(session: Session) -> None:
             session.warn(install_additional_warning)
 
     # for the last Python version session if all optional dependencies are enabled:
-    if session.python == python_versions_to_test[-1] and install_cuda and install_hip and install_opencl and install_additional_tests:
+    if session.python == python_versions_to_test[-1] and full_install:
         # run pytest on the package to generate the correct coverage report
         session.run("pytest")
     else:
@@ -138,7 +151,7 @@ def tests(session: Session) -> None:
         session.run("pytest", "--no-cov")
 
     # warn if no coverage report
-    if not (install_cuda and install_hip and install_opencl and install_additional_tests):
+    if not full_install:
         session.warn("""
                      Tests ran successfully, but only a subset.
                      Coverage file not generated.

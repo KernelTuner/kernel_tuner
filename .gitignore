@@ -1,3 +1,7 @@
+### Project ###
+noxenv.txt
+
+### Python ###
 *.pyc
 __pycache__
 doc/build/*
