@@ -4,7 +4,7 @@ import numpy as np
 import logging
 import re
 
-from kernel_tuner.observers import AccuracyObserver
+from .observers import OutputObserver
 
 
 class Tunable(UserDict):
@@ -139,17 +139,6 @@ class TunablePrecision(Tunable):
             arrays[precision] = array.astype(dtype)
 
         super().__init__(param_key, arrays)
-
-
-class OutputObserver(BenchmarkObserver):
-    """Observer that can verify or measure something about the output produced by a kernel."""
-
-    @abstractmethod
-    def process_kernel_output(self, answer, output):
-        """method will be called once before benchmarking of a single kernel configuration. The arguments
-        provided are the `answer` as passed `tune_kernel` and the `output` produced by the kernel
-        """
-        pass
 
 
 def error_metric_from_name(user_key, EPS=1e-8):
