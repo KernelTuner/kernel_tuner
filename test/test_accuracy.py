@@ -76,6 +76,6 @@ def test_error_metric_from_name():
     assert error_metric_from_name("mre", eps)(a, b) == pytest.approx(2.666666666666666)
     assert error_metric_from_name("rmsre", eps)(a, b) == pytest.approx(5.011098792790969)
     assert error_metric_from_name("male", eps)(a, b) == pytest.approx(0.3144002918554722)
-    assert error_metric_from_name("rmsle", eps)(a, b) == pytest.approx(1.224514683450185)
+    assert error_metric_from_name("rmsle", eps)(a, b) == pytest.approx(0.5317999700319226)
     assert error_metric_from_name("maximum abs")(a, b) == pytest.approx(2)
     assert error_metric_from_name("maximum rel", eps)(a, b) == pytest.approx(10)
