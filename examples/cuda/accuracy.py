@@ -3,19 +3,7 @@
 import numpy
 from pprint import pprint
 from kernel_tuner import tune_kernel
-from kernel_tuner.accuracy import TunablePrecision
-from kernel_tuner.observers import AccuracyObserver
-
-
-class MyObserver(AccuracyObserver):
-    def __init__(self):
-        self.error = None
-
-    def process_kernel_output(self, answer, outputs):
-        self.error = numpy.average((answer[-1] - outputs[-1].astype(numpy.float64))**2)
-
-    def get_results(self):
-        return dict(error=self.error)
+from kernel_tuner.accuracy import TunablePrecision, AccuracyObserver
 
 
 def tune():
@@ -50,10 +38,13 @@ def tune():
     answer = [None, None, None, a + b]
 
     tune_params = dict()
-    tune_params["block_size_x"] = [128+64*i for i in range(15)]
+    tune_params["block_size_x"] = [32, 64, 128, 256, 512, 1024]
     tune_params["float_type"] = ["float", "double", "half"]
 
-    observers = [MyObserver()]
+    observers = [
+        AccuracyObserver("RMSE", "error_rmse"),
+        AccuracyObserver("MRE", "error_relative"),
+    ]
 
     results, env = tune_kernel(
         "vector_add<float_type>",
@@ -63,7 +54,8 @@ def tune():
         tune_params,
         answer=answer,
         observers=observers,
-        lang="cupy")
+        lang="CUDA",
+    )
 
     pprint(results)
 
