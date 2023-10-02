@@ -142,7 +142,7 @@ class AccuracyObserver(BenchmarkObserver):
         pass
 
 
-def error_metric_from_name(key):
+def error_metric_from_name(key, EPS=1e-8):
     """Find the error metric function for the given name.
 
     Returns an function that takes two parameters (the ground-truth and the
@@ -160,10 +160,10 @@ def error_metric_from_name(key):
     * MRE (mean relative error)
     * MALE (mean absolute log error)
     * max (maximum absolute error)
-    """
 
-    # Small value to prevent division by zero in relative metrics
-    EPS = np.finfo(np.float64).eps
+    The value of `EPS` is used for relative errors to prevent division by zero.
+    ``
+    """
 
     # lowercase the metric name
     key = key.lower().replace("_", " ").strip()
@@ -173,14 +173,16 @@ def error_metric_from_name(key):
     elif key in ("rmse", "rmsd", "root mean square error"):
         metric = lambda a, b: np.sqrt(np.average(np.square(a - b)))
     elif key in ("nrmse", "nrmsd"):
-        metric = lambda a, b: np.sqrt(np.average(np.square(a - b))) / np.average(a)
+        metric = lambda a, b: np.sqrt(
+            np.average(np.square(a - b)) / np.average(np.square(a))
+        )
     elif key in ("mae", "absolute error", "absolute", "mean absolute error", "abs"):
         metric = lambda a, b: np.average(np.abs(a - b))
     elif key in ("mre", "relative error", "relative", "mean relative error", "rel"):
         metric = lambda a, b: np.average(np.abs(a - b) / np.maximum(np.abs(a), EPS))
     elif key in ("rmsre", "root mean square relative error"):
         metric = lambda a, b: np.sqrt(
-            np.average(np.square(a - b) / np.maximum(np.square(a), EPS**2))
+            np.average(np.square(a - b) / np.square(np.maximum(a, EPS)))
         )
     elif key in ("male", "mean absolute log error"):
         metric = lambda a, b: np.average(np.abs(np.log(a + EPS) - np.log(b + EPS)))
@@ -202,26 +204,32 @@ def error_metric_from_name(key):
 
 
 class ErrorObserver(AccuracyObserver):
-    """An ``AccuracyObserver`` that measure the error of the outputs produced
-    by a kernel by comparing it against reference outputs.
+    """``ErrorObserver`` measures the error of the output produced by a kernel
+    by comparing it against a reference output.
 
-    By default, it uses the root mean-squared error (RMSE) and appends this to
-    the results with a metric called ``error``.
+    By default, it uses the root mean-squared error (RMSE) and uses the
+    parameter key ``error``.
     """
 
-    def __init__(self, metric=None, key="error"):
+    def __init__(self, metric=None, key="error", *, atol=1e-8):
         """Create a new ``AccuracyObserver``.
 
-        :param metric: The error metric. Should be function that accepts two numpy
-                       arrays as arguments (the reference output and the kernel output)
+        :param metric: The error metric. This should be a string that is
+                       accepted by ``error_metric_from_name`` such as ``"absolute error"``
+                       or ``"relative error"``. Alternatively, it can be
+                       function that accepts two numpy arrays as arguments
+                       (the reference output and the kernel output)
         :param key: The name of this metric in the results.
+        :param atol: The absolute tolerance used in relative metrics to prevent
+                     division by zero.
         """
 
-        # The default metric is the mean squared error
-        if metric is None:
-            metric = error_metric_from_name("rmse")
-        elif isinstance(metric, str):
-            metric = error_metric_from_name(metric)
+        if not metric:
+            metric = "rmse"
+
+        # If it is a string, convert it to a function
+        if isinstance(metric, str):
+            metric = error_metric_from_name(metric, atol)
 
         self.key = key
         self.metric = metric
