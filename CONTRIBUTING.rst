@@ -36,7 +36,6 @@ have look at the `design documentation
 Development environment
 -----------------------
 The following steps help you set up a development environment.
-This is just a suggestion, and can be done in many other ways.
 
 Local setup
 ^^^^^^^^^^^
@@ -47,6 +46,7 @@ Steps with :bash:`sudo` access (e.g. on a local device):
     * [Optional] setup a local virtual environment in the folder: :bash:`pyenv virtualenv kerneltuner` (or whatever environment name you prefer).
 #. Install the required Python versions: :bash:`pyenv install 3.8 3.9 3.10 3.11`.
 #. Set the Python versions so they can be found: :bash:`pyenv global 3.8 3.10 3.11` (replace :bash:`global` with :bash:`local` when using the virtualenv).
+#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`.
 #. Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in `Installation <https://kerneltuner.github.io/kernel_tuner/stable/install.html>`__.
 #. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`
     * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
@@ -75,8 +75,11 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
     * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
 #. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if you're not on a GPU node, or one or more extras has been left out in the previous step, then these tests will skip gracefully.
 #. Set Nox to use the correct backend:
-    * If you used Mamba in step 2: :bash:`nox --default-venv-backend mamba`.
-    * If you used Miniconda or Anaconda in step 2: :bash:`nox --default-venv-backend conda`.
+    * If you used Mamba in step 2: :bash:`echo "mamba" > noxenv.txt`.
+    * If you used Miniconda or Anaconda in step 2: :bash:`echo "conda" > noxenv.txt`.
+    * If you alternatively set up with Venv: :bash:`echo "venv" > noxenv.txt`.
+    * If you set up with Virtualenv, do not create this file, as this is already the default.
+    * Be sure to adjust or remove this file when changing backends.
 
 
 Running tests

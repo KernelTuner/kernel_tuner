@@ -139,13 +139,15 @@ Then, navigate to the repository directory and run the following command to inst
 Installing the git version
 --------------------------
 
-You can also install from the git repository. This way you also get the
-examples.
+You can also install from the git repository. This way you also get the examples.
+Please note that this will install all required dependencies in the current environment.
+For step-by-step instructions on setting up a development environment, see `Contributing <https://kerneltuner.github.io/kernel_tuner/stable/contributing.html#development-environment>`__.
 
 .. code-block:: bash
 
     git clone https://github.com/benvanwerkhoven/kernel_tuner.git
     cd kernel_tuner
+    curl -sSL https://install.python-poetry.org | python3 -
     poetry install
 
 You can install Kernel Tuner with several optional dependencies.
