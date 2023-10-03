@@ -86,7 +86,7 @@ cuda_opencl = ["pycuda", "pyopencl"]
 hip = ["pyhip-interface"]
 tutorial = ["jupyter", "matplotlib"]
 
-# ATTENTION: if anything is changed here, run `poetry update`
+# ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt > doc/requirements.txt`
 # Please note that there is overlap with the `dev` group
 [tool.poetry.group.docs]
 optional = true

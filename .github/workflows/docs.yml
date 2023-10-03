@@ -21,12 +21,10 @@ jobs:
               run: |
                   sudo apt-get update;
                   sudo apt-get install pandoc
-                  python -m pip install --upgrade pip
-                  pip install poetry
-                  poetry install --with docs
             - name: Build and Commit
-              uses: sphinx-notes/pages@v2 # NOTE when switching to v3, export dependencies to requirements.txt in pyproject.toml: `poetry export --with docs --without-hashes --format=requirements.txt > docs/requirements.txt`
+              uses: sphinx-notes/pages@v2
               with:
+                  requirements_path: docs/requirements.txt
                   documentation_path: doc/source
                   target_path: latest
             - name: Push changes
