@@ -755,7 +755,7 @@ def run_kernel(
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = core.KernelSource(kernel_name, kernel_source, lang)
+    kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
@@ -766,6 +766,9 @@ def run_kernel(
 
     # detect language and create the right device function interface
     dev = core.DeviceInterface(kernelsource, iterations=1, **device_options)
+
+    # Preprocess GPU arguments. Require for handling `Tunable` arguments
+    arguments = dev.preprocess_gpu_arguments(arguments, params)
 
     # move data to the GPU
     gpu_args = dev.ready_argument_list(arguments)

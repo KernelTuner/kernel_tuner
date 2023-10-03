@@ -92,14 +92,12 @@ class SequentialRunner(Runner):
 
                 params.update(result)
 
-                # only compute metrics on configs that have not errored
                 if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
                     logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
-                elif tuning_options.metrics:
-                    params = process_metrics(params, tuning_options.metrics)
 
-                # print configuration to the console
-                print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+            # only compute metrics on configs that have not errored
+            if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
+                params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
             total_time = 1000 * (perf_counter() - self.start_time) - warmup_time
@@ -109,6 +107,10 @@ class SequentialRunner(Runner):
             self.start_time = perf_counter()
 
             if result:
+                # print configuration to the console
+                print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+
+                # add configuration to cache
                 store_cache(x_int, params, tuning_options)
 
             # all visited configurations are added to results to provide a trace for optimization strategies

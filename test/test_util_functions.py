@@ -624,12 +624,22 @@ def test_process_metrics():
     with pytest.raises(ValueError):
         params = process_metrics(params, list())
 
-    # test ValueError is raised when b already exists in params
-    params = {"x": 15, "b": 12}
+    # # test ValueError is raised when b already exists in params
+    # params = {"x": 15, "b": 12}
+    # metrics = dict()
+    # metrics["b"] = "x"
+    # params = process_metrics(params, metrics)
+    # assert params["b"] == 15
+
+    # test if a metric overrides any existing metrics
+    params = {
+        "x": 15,
+        "b": 12
+    }
     metrics = dict()
     metrics["b"] = "x"
-    with pytest.raises(ValueError):
-        params = process_metrics(params, metrics)
+    params = process_metrics(params, metrics)
+    assert params["b"] == 15
 
 
 def test_parse_restrictions():

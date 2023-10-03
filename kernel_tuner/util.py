@@ -31,6 +31,8 @@ from constraint import (
     SomeNotInSetConstraint,
 )
 
+from kernel_tuner.accuracy import Tunable
+
 try:
     import cupy as cp
 except ImportError:
@@ -138,6 +140,10 @@ def check_argument_list(kernel_name, kernel_string, args):
             continue
         for i, arg in enumerate(args):
             kernel_argument = arguments[i]
+
+            # Fix to deal with tunable arguments
+            if isinstance(arg, Tunable):
+                continue
 
             if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
                 raise TypeError(
@@ -562,10 +568,8 @@ def process_metrics(params, metrics):
             value = v(params)
         else:
             raise ValueError("metric dicts values should be strings or callable")
-        if k not in params:
-            params[k] = value
-        else:
-            raise ValueError("metric dicts keys should not already exist in params")
+        # We overwrite any existing values for the given key
+        params[k] = value
     return params
 
 
