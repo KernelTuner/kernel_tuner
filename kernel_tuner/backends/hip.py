@@ -1,20 +1,17 @@
-"""This module contains all HIP specific kernel_tuner functions"""
+"""This module contains all HIP specific kernel_tuner functions."""
 
-import numpy as np
 import ctypes
 import ctypes.util
-import sys
 import logging
+
+import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.hip import HipRuntimeObserver
 
-# embedded in try block to be able to generate documentation
-# and run tests without pyhip installed
 try:
     from pyhip import hip, hiprtc
 except ImportError:
-    print("Not able to import pyhip, check if PYTHONPATH includes PyHIP")
     hip = None
     hiprtc = None
 
@@ -35,10 +32,10 @@ dtype_map = {
 hipSuccess = 0
 
 class HipFunctions(GPUBackend):
-    """Class that groups the HIP functions on maintains state about the device"""
+    """Class that groups the HIP functions on maintains state about the device."""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
-        """instantiate HipFunctions object used for interacting with the HIP device
+        """Instantiate HipFunctions object used for interacting with the HIP device.
 
         Instantiating this object will inspect and store certain device properties at
         runtime, which are used during compilation and/or execution of kernels by the
@@ -51,8 +48,13 @@ class HipFunctions(GPUBackend):
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        if not hip or not hiprtc:
+            raise ImportError("Unable to import PyHIP, make sure PYTHONPATH includes PyHIP, or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-pyhip.")
+
+        # embedded in try block to be able to generate documentation
+        # and run tests without pyhip installed
         logging.debug("HipFunction instantiated")
-        
+
         self.hipProps = hip.hipGetDeviceProperties(device)
 
         self.name = self.hipProps._name.decode('utf-8')
@@ -85,13 +87,13 @@ class HipFunctions(GPUBackend):
 
 
     def ready_argument_list(self, arguments):
-        """ready argument list to be passed to the HIP function
+        """Ready argument list to be passed to the HIP function.
 
         :param arguments: List of arguments to be passed to the HIP function.
             The order should match the argument list on the HIP function.
             Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
         :type arguments: list(numpy objects)
-        
+
         :returns: Ctypes structure of arguments to be passed to the HIP function.
         :rtype: ctypes structure
         """
@@ -109,11 +111,11 @@ class HipFunctions(GPUBackend):
                     hip.hipMemcpy_htod(device_ptr, data_ctypes, arg.nbytes)
                     ctype_args.append(device_ptr)
                 else:
-                    raise TypeError("unknown dtype for ndarray")  
-            # Convert valid non-array arguments to ctypes      
+                    raise TypeError("unknown dtype for ndarray")
+            # Convert valid non-array arguments to ctypes
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
-                ctype_args.append(data_ctypes)  
+                ctype_args.append(data_ctypes)
 
         # Determine the types of the fields in the structure
         field_types = [type(x) for x in ctype_args]
@@ -122,17 +124,17 @@ class HipFunctions(GPUBackend):
             _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
             def __getitem__(self, key):
                 return getattr(self, self._fields_[key][0])
-        
+
         return ArgListStructure(*ctype_args)
-            
-    
+
+
     def compile(self, kernel_instance):
-        """call the HIP compiler to compile the kernel, return the function
-        
+        """Call the HIP compiler to compile the kernel, return the function.
+
         :param kernel_instance: An object representing the specific instance of the tunable kernel
             in the parameter space.
         :type kernel_instance: kernel_tuner.core.KernelInstance
-        
+
         :returns: An ctypes function that can be called directly.
         :rtype: ctypes._FuncPtr
         """
@@ -144,7 +146,7 @@ class HipFunctions(GPUBackend):
         if 'extern "C"' not in kernel_string:
             kernel_string = 'extern "C" {\n' + kernel_string + "\n}"
         kernel_ptr = hiprtc.hiprtcCreateProgram(kernel_string, kernel_name, [], [])
-        
+
         try:
             #Compile based on device (Not yet tested for non-AMD devices)
             plat = hip.hipGetPlatformName()
@@ -156,7 +158,7 @@ class HipFunctions(GPUBackend):
                 options_list = []
                 options_list.extend(self.compiler_options)
                 hiprtc.hiprtcCompileProgram(kernel_ptr, options_list)
-            
+
             #Get module and kernel from compiled kernel string
             code = hiprtc.hiprtcGetCode(kernel_ptr)
             module = hip.hipModuleLoadData(code)
@@ -167,36 +169,36 @@ class HipFunctions(GPUBackend):
             log = hiprtc.hiprtcGetProgramLog(kernel_ptr)
             print(log)
             raise e
-        
+
         return kernel
-    
+
     def start_event(self):
-        """Records the event that marks the start of a measurement"""
+        """Records the event that marks the start of a measurement."""
         logging.debug("HipFunction start_event called")
 
         hip.hipEventRecord(self.start, self.stream)
 
     def stop_event(self):
-        """Records the event that marks the end of a measurement"""
+        """Records the event that marks the end of a measurement."""
         logging.debug("HipFunction stop_event called")
 
         hip.hipEventRecord(self.end, self.stream)
 
     def kernel_finished(self):
-        """Returns True if the kernel has finished, False otherwise"""
+        """Returns True if the kernel has finished, False otherwise."""
         logging.debug("HipFunction kernel_finished called")
-        
+
         # Query the status of the event
         return hip.hipEventQuery(self.end)
 
     def synchronize(self):
-        """Halts execution until device has finished its tasks"""
+        """Halts execution until device has finished its tasks."""
         logging.debug("HipFunction synchronize called")
 
         hip.hipDeviceSynchronize()
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
-        """runs the HIP kernel passed as 'func'
+        """Runs the HIP kernel passed as 'func'.
 
         :param func: A HIP kernel compiled for this specific kernel configuration
         :type func: ctypes pionter
@@ -219,15 +221,15 @@ class HipFunctions(GPUBackend):
         if stream is None:
             stream = self.stream
 
-        hip.hipModuleLaunchKernel(func, 
-                                  grid[0], grid[1], grid[2], 
+        hip.hipModuleLaunchKernel(func,
+                                  grid[0], grid[1], grid[2],
                                   threads[0], threads[1], threads[2],
                                   self.smem_size,
                                   stream,
                                   gpu_args)
 
     def memset(self, allocation, value, size):
-        """set the memory in allocation to the value in value
+        """Set the memory in allocation to the value in value.
 
         :param allocation: A GPU memory allocation unit
         :type allocation: ctypes ptr
@@ -240,11 +242,11 @@ class HipFunctions(GPUBackend):
 
         """
         logging.debug("HipFunction memset called")
-        
+
         hip.hipMemset(allocation, value, size)
 
     def memcpy_dtoh(self, dest, src):
-        """perform a device to host memory copy
+        """Perform a device to host memory copy.
 
         :param dest: A numpy array in host memory to store the data
         :type dest: numpy.ndarray
@@ -260,7 +262,7 @@ class HipFunctions(GPUBackend):
         hip.hipMemcpy_dtoh(dest_c, src, dest.nbytes)
 
     def memcpy_htod(self, dest, src):
-        """perform a host to device memory copy
+        """Perform a host to device memory copy.
 
         :param dest: A GPU memory allocation unit
         :type dest: ctypes ptr
@@ -276,7 +278,7 @@ class HipFunctions(GPUBackend):
         hip.hipMemcpy_htod(dest, src_c, src.nbytes)
 
     def copy_constant_memory_args(self, cmem_args):
-        """adds constant memory arguments to the most recently compiled module
+        """Adds constant memory arguments to the most recently compiled module.
 
         :param cmem_args: A dictionary containing the data to be passed to the
             device constant memory. The format to be used is as follows: A
@@ -298,12 +300,13 @@ class HipFunctions(GPUBackend):
             hip.hipMemcpy_htod(symbol_ptr, v_c, v.nbytes)
 
     def copy_shared_memory_args(self, smem_args):
-        """add shared memory arguments to the kernel"""
+        """Add shared memory arguments to the kernel."""
         logging.debug("HipFunction copy_shared_memory_args called")
 
         self.smem_size = smem_args["size"]
 
     def copy_texture_memory_args(self, texmem_args):
+        """Copy texture memory arguments. Not yet implemented."""
         logging.debug("HipFunction copy_texture_memory_args called")
 
         raise NotImplementedError("HIP backend does not support texture memory")

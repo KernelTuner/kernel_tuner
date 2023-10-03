@@ -1,6 +1,6 @@
-"""This module contains all OpenCL specific kernel_tuner functions"""
+"""This module contains all OpenCL specific kernel_tuner functions."""
 from __future__ import print_function
-import time
+
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
@@ -14,12 +14,12 @@ except ImportError:
 
 
 class OpenCLFunctions(GPUBackend):
-    """Class that groups the OpenCL functions on maintains some state about the device"""
+    """Class that groups the OpenCL functions on maintains some state about the device."""
 
     def __init__(
         self, device=0, platform=0, iterations=7, compiler_options=None, observers=None
     ):
-        """Creates OpenCL device context and reads device properties
+        """Creates OpenCL device context and reads device properties.
 
         :param device: The ID of the OpenCL device to use for benchmarking
         :type device: int
@@ -29,7 +29,7 @@ class OpenCLFunctions(GPUBackend):
         """
         if not cl:
             raise ImportError(
-                "Error: pyopencl not installed, please install e.g. using 'pip install pyopencl'."
+                "pyopencl not installed, install using 'pip install pyopencl', or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#opencl-and-pyopencl."
             )
 
         self.iterations = iterations
@@ -69,7 +69,7 @@ class OpenCLFunctions(GPUBackend):
         self.name = dev.name
 
     def ready_argument_list(self, arguments):
-        """ready argument list to be passed to the kernel, allocates gpu mem
+        """Ready argument list to be passed to the kernel, allocates gpu mem.
 
         :param arguments: List of arguments to be passed to the kernel.
             The order should match the argument list on the OpenCL kernel.
@@ -96,7 +96,7 @@ class OpenCLFunctions(GPUBackend):
         return gpu_args
 
     def compile(self, kernel_instance):
-        """call the OpenCL compiler to compile the kernel, return the device function
+        """Call the OpenCL compiler to compile the kernel, return the device function.
 
         :param kernel_name: The name of the kernel to be compiled, used to lookup the
             function after compilation.
@@ -115,27 +115,29 @@ class OpenCLFunctions(GPUBackend):
         return func
 
     def start_event(self):
-        """Records the event that marks the start of a measurement
+        """Records the event that marks the start of a measurement.
 
-        In OpenCL the event is created when the kernel is launched"""
+        In OpenCL the event is created when the kernel is launched
+        """
         pass
 
     def stop_event(self):
-        """Records the event that marks the end of a measurement
+        """Records the event that marks the end of a measurement.
 
-        In OpenCL the event is created when the kernel is launched"""
+        In OpenCL the event is created when the kernel is launched
+        """
         pass
 
     def kernel_finished(self):
-        """Returns True if the kernel has finished, False otherwise"""
+        """Returns True if the kernel has finished, False otherwise."""
         return self.event.get_info(cl.event_info.COMMAND_EXECUTION_STATUS) == 0
 
     def synchronize(self):
-        """Halts execution until device has finished its tasks"""
+        """Halts execution until device has finished its tasks."""
         self.queue.finish()
 
     def run_kernel(self, func, gpu_args, threads, grid):
-        """runs the OpenCL kernel passed as 'func'
+        """Runs the OpenCL kernel passed as 'func'.
 
         :param func: An OpenCL Kernel
         :type func: pyopencl.Kernel
@@ -158,7 +160,7 @@ class OpenCLFunctions(GPUBackend):
         self.event = func(self.queue, global_size, local_size, *gpu_args)
 
     def memset(self, buffer, value, size):
-        """set the memory in allocation to the value in value
+        """Set the memory in allocation to the value in value.
 
         :param allocation: An OpenCL Buffer to fill
         :type allocation: pyopencl.Buffer
@@ -178,7 +180,7 @@ class OpenCLFunctions(GPUBackend):
                 cl.enqueue_copy(self.queue, buffer, src)
 
     def memcpy_dtoh(self, dest, src):
-        """perform a device to host memory copy
+        """Perform a device to host memory copy.
 
         :param dest: A numpy array in host memory to store the data
         :type dest: numpy.ndarray
@@ -190,7 +192,7 @@ class OpenCLFunctions(GPUBackend):
             cl.enqueue_copy(self.queue, dest, src)
 
     def memcpy_htod(self, dest, src):
-        """perform a host to device memory copy
+        """Perform a host to device memory copy.
 
         :param dest: An OpenCL Buffer to copy data from
         :type dest: pyopencl.Buffer

@@ -5,15 +5,17 @@ from kernel_tuner.observers.observer import BenchmarkObserver
 try:
     from pyhip import hip, hiprtc
 except ImportError:
-    print("Not able to import pyhip, check if PYTHONPATH includes PyHIP")
     hip = None
     hiprtc = None
 
 
 class HipRuntimeObserver(BenchmarkObserver):
-    """Observer that measures time using CUDA events during benchmarking"""
+    """Observer that measures time using CUDA events during benchmarking."""
 
     def __init__(self, dev):
+        if not hip or not hiprtc:
+            raise ImportError("Unable to import PyHIP, make sure PYTHONPATH includes PyHIP, or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-pyhip.")
+
         self.dev = dev
         self.stream = dev.stream
         self.start = dev.start
