@@ -6,6 +6,7 @@ import logging
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.observers.nvml import nvml  # noqa F401
 from kernel_tuner.observers.pycuda import PyCudaRuntimeObserver
 from kernel_tuner.util import SkippableFailure, TorchPlaceHolder
 
