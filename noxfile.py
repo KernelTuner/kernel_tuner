@@ -45,6 +45,7 @@ def tests(session: Session) -> None:
     install_hip = True
     install_opencl = True
     install_additional_tests = False
+    small_disk = False
     if session.posargs:
         for arg in session.posargs:
             if arg.lower() == "skip-gpu":
@@ -60,8 +61,22 @@ def tests(session: Session) -> None:
                 install_opencl = False
             elif arg.lower() == "additional-tests":
                 install_additional_tests = True
+            elif arg.lower() == "small-disk":
+                small_disk = True
             else:
                 raise ValueError(f"Unrecognized argument {arg}")
+
+    # if the user has a small disk, remove the other environment caches before each session is ran
+    if small_disk:
+        try:
+            session_folder_name = session.name.replace('.', '*').strip()
+            session.run("find", "./.nox", "-mindepth", "1", "-maxdepth", "1", "-type", "d", "-not", "-name", session_folder_name, "-delete")
+        except Exception as error:
+            session.warn("Could not delete Nox caching directories, reason:")
+            session.warn(error)
+
+    # remove temporary files leftover from the previous session
+    session.run("rm", "temp_*.c")
 
     # check if there are optional dependencies that can not be installed
     if install_hip:
