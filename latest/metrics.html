@@ -4,16 +4,16 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Metrics and Objectives &mdash; Kernel Tuner 0.4.5 documentation</title>
+  <title>Metrics and Objectives &mdash; python-constraint 1.0.0b1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=340bb9e5"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=5ec0006a"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -31,10 +31,10 @@
           
           
           <a href="contents.html" class="icon icon-home">
-            Kernel Tuner
+            python-constraint
           </a>
               <div class="version">
-                0.4.5
+                1.0.0b1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -86,7 +86,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">Kernel Tuner</a>
+          <a href="contents.html">python-constraint</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -105,10 +105,10 @@
            <div itemprop="articleBody">
              
   <section id="metrics-and-objectives">
-<h1>Metrics and Objectives<a class="headerlink" href="#metrics-and-objectives" title="Link to this heading">¶</a></h1>
+<h1>Metrics and Objectives<a class="headerlink" href="#metrics-and-objectives" title="Permalink to this heading">¶</a></h1>
 <p>Metrics and custom tuning objectives are two related features that are explained on this page.</p>
 <section id="metrics">
-<span id="id1"></span><h2>Metrics<a class="headerlink" href="#metrics" title="Link to this heading">¶</a></h2>
+<span id="id1"></span><h2>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">¶</a></h2>
 <p>User-defined metrics serve as an easy way for the user to define their own derived results based on the measurements reported
 by Kernel Tuner, and possibly any additional observers. This allows for example to implement performance metrics, such as
 performance in floating point operations per second (e.g. GFLOP/s), or other metrics that might be more specific to the
@@ -129,7 +129,7 @@ work performed by the first kernel depends on tunable parameters such as the thr
 number of thread blocks.</p>
 </section>
 <section id="tuning-objectives">
-<span id="objectives"></span><h2>Tuning Objectives<a class="headerlink" href="#tuning-objectives" title="Link to this heading">¶</a></h2>
+<span id="objectives"></span><h2>Tuning Objectives<a class="headerlink" href="#tuning-objectives" title="Permalink to this heading">¶</a></h2>
 <p>Users can specify tuning objectives other than the default optimization objective, which is kernel execution time. When using
 an optimization strategy other than exhaustive search (brute force), this objective is used to guide the optimization through
 the parameter space. The tuning objective is specified using the <code class="docutils literal notranslate"><span class="pre">objective=</span></code> optional parameter of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> and
@@ -152,7 +152,7 @@ of optimization. This is done by passing a boolean in the <code class="docutils 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

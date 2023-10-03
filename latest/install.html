@@ -4,16 +4,16 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; Kernel Tuner 0.4.5 documentation</title>
+  <title>Installation &mdash; python-constraint 1.0.0b1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=340bb9e5"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=5ec0006a"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -31,10 +31,10 @@
           
           
           <a href="contents.html" class="icon icon-home">
-            Kernel Tuner
+            python-constraint
           </a>
               <div class="version">
-                0.4.5
+                1.0.0b1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -91,7 +91,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">Kernel Tuner</a>
+          <a href="contents.html">python-constraint</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -112,24 +112,23 @@
   <div class="toctree-wrapper compound">
 </div>
 <section id="installation">
-<span id="install"></span><h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h1>
+<span id="install"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h1>
 <p>The Kernel Tuner requires several packages to be installed. First of all, you need a
 working Python version, several Python packages, and optionally CUDA and/or OpenCL
 installations. All of this is explained in detail in this guide.</p>
+<p>For comprehensive step-by-step instructions on setting up a development environment, see <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/stable/contributing.html#development-environment">Contributing</a>.</p>
 <section id="python">
-<h2>Python<a class="headerlink" href="#python" title="Link to this heading">¶</a></h2>
-<p>You need a Python installation. I recommend using Python 3 and
-installing it with <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a>.</p>
-<p>Linux users could type the following to download and install Python 3 using Miniconda:</p>
+<h2>Python<a class="headerlink" href="#python" title="Permalink to this heading">¶</a></h2>
+<p>You need a Python installation. We recommend using Python 3 and installing it with <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a>.
+Linux users could type the following to download and install Python 3 using Miniconda:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash<span class="w"> </span>Miniconda3-latest-Linux-x86_64.sh
 </pre></div>
 </div>
-<p>You are of course also free to use your own Python installation, and the Kernel Tuner
-is developed to be fully compatible with Python 3.6 and newer.</p>
+<p>You are of course also free to use your own Python installation, and the Kernel Tuner is developed to be fully compatible with Python 3.8 and newer.</p>
 </section>
 <section id="installing-python-packages">
-<h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Link to this heading">¶</a></h2>
+<h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Permalink to this heading">¶</a></h2>
 <p>Note that when you are using a native Python installation, the <cite>pip</cite> command used
 Kernel Tuner and its dependencies require <cite>sudo</cite> rights for system wide installation.</p>
 <p>Sudo rights are typically not required when using Miniconda or virtual environments.
@@ -144,7 +143,7 @@ this requires that your home directory is on your <cite>$PYTHONPATH</cite> envir
 <p>There are also optional dependencies, explained below.</p>
 </section>
 <section id="cuda-and-pycuda">
-<h2>CUDA and PyCUDA<a class="headerlink" href="#cuda-and-pycuda" title="Link to this heading">¶</a></h2>
+<h2>CUDA and PyCUDA<a class="headerlink" href="#cuda-and-pycuda" title="Permalink to this heading">¶</a></h2>
 <p>Installing CUDA and PyCUDA is optional, because you may want to only use Kernel
 Tuner for tuning OpenCL or C kernels.</p>
 <p>If you want to use the Kernel Tuner to tune
@@ -170,7 +169,7 @@ from an installation that is failing.</p>
 <p>If this fails, I recommend to see the PyCuda installation guide (<a class="reference external" href="https://wiki.tiker.net/PyCuda/Installation">https://wiki.tiker.net/PyCuda/Installation</a>)</p>
 </section>
 <section id="opencl-and-pyopencl">
-<h2>OpenCL and PyOpenCL<a class="headerlink" href="#opencl-and-pyopencl" title="Link to this heading">¶</a></h2>
+<h2>OpenCL and PyOpenCL<a class="headerlink" href="#opencl-and-pyopencl" title="Permalink to this heading">¶</a></h2>
 <p>Before we can install PyOpenCL you’ll need an OpenCL compiler. There are several
 OpenCL compilers available depending on the OpenCL platform you want to your
 code to run on.</p>
@@ -195,7 +194,7 @@ PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
 <p>If this fails, please see the PyOpenCL installation guide (<a class="reference external" href="https://wiki.tiker.net/PyOpenCL/Installation">https://wiki.tiker.net/PyOpenCL/Installation</a>)</p>
 </section>
 <section id="hip-and-pyhip">
-<h2>HIP and PyHIP<a class="headerlink" href="#hip-and-pyhip" title="Link to this heading">¶</a></h2>
+<h2>HIP and PyHIP<a class="headerlink" href="#hip-and-pyhip" title="Permalink to this heading">¶</a></h2>
 <p>Before we can install PyHIP, you’ll need to have the HIP runtime and compiler installed on your system.
 The HIP compiler is included as part of the ROCm software stack. Here is AMD’s installation guide:</p>
 <ul class="simple">
@@ -215,31 +214,37 @@ The HIP compiler is included as part of the ROCm software stack. Here is AMD’s
 </div>
 </section>
 <section id="installing-the-git-version">
-<h2>Installing the git version<a class="headerlink" href="#installing-the-git-version" title="Link to this heading">¶</a></h2>
-<p>You can also install from the git repository. This way you also get the
-examples.</p>
+<h2>Installing the git version<a class="headerlink" href="#installing-the-git-version" title="Permalink to this heading">¶</a></h2>
+<p>You can also install from the git repository. This way you also get the examples.
+Please note that this will install all required dependencies in the current environment.
+For step-by-step instructions on setting up a development environment, see <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/stable/contributing.html#development-environment">Contributing</a>.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/benvanwerkhoven/kernel_tuner.git
 <span class="nb">cd</span><span class="w"> </span>kernel_tuner
-pip<span class="w"> </span>install<span class="w"> </span>.
+curl<span class="w"> </span>-sSL<span class="w"> </span>https://install.python-poetry.org<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-
+poetry<span class="w"> </span>install
 </pre></div>
 </div>
-<p>You can install Kernel Tuner with several optional dependencies, the full list is:</p>
+<p>You can install Kernel Tuner with several optional dependencies.
+In this we differentiate between development and runtime dependencies.
+The development dependencies are <code class="docutils literal notranslate"><span class="pre">test</span></code> and <code class="docutils literal notranslate"><span class="pre">docs</span></code>, and can be installed by appending e.g. <code class="docutils literal notranslate"><span class="pre">--with</span> <span class="pre">test,docs</span></code>.
+The runtime dependencies are:</p>
 <ul class="simple">
 <li><p><cite>cuda</cite>: install pycuda along with kernel_tuner</p></li>
 <li><p><cite>opencl</cite>: install pycuda along with kernel_tuner</p></li>
 <li><p><cite>hip</cite>: install pyhip along with kernel_tuner</p></li>
-<li><p><cite>doc</cite>: installs packages required to build the documentation</p></li>
 <li><p><cite>tutorial</cite>: install packages required to run the guides</p></li>
-<li><p><cite>dev</cite>: install everything you need to start development on Kernel Tuner</p></li>
 </ul>
+<p>These can be installed by appending e.g. <code class="docutils literal notranslate"><span class="pre">-E</span> <span class="pre">cuda</span> <span class="pre">-E</span> <span class="pre">opencl</span> <span class="pre">-E</span> <span class="pre">hip</span></code>.
+If you want to go all-out, use <code class="docutils literal notranslate"><span class="pre">--all-extras</span></code>.</p>
 <p>For example, use:
-<code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.[dev,cuda,opencl]</span>
-<span class="pre">`</span></code>
-To install Kernel Tuner along with all the packages required for development.</p>
+.. code-block:: bash</p>
+<blockquote>
+<div><p>poetry install –with test,docs -E cuda -E opencl</p>
+</div></blockquote>
+<p>To install Kernel Tuner along with all the packages required for development.</p>
 </section>
 <section id="dependencies-for-the-guides">
-<h2>Dependencies for the guides<a class="headerlink" href="#dependencies-for-the-guides" title="Link to this heading">¶</a></h2>
+<h2>Dependencies for the guides<a class="headerlink" href="#dependencies-for-the-guides" title="Permalink to this heading">¶</a></h2>
 <p>Some addition Python packages are required to run the Jupyter notebook guides.
 These packages are commonly used and chances are that you already have these installed.</p>
 <p>However, to install Kernel Tuner along with the dependencies to run the guides,
@@ -265,7 +270,7 @@ you could use:</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

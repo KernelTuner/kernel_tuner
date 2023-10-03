@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Matrix multiplication &mdash; Kernel Tuner 0.4.5 documentation</title>
+  <title>Matrix multiplication &mdash; python-constraint 1.0.0b1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
@@ -12,9 +12,9 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=340bb9e5"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=5ec0006a"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -34,10 +34,10 @@
           
           
           <a href="contents.html" class="icon icon-home">
-            Kernel Tuner
+            python-constraint
           </a>
               <div class="version">
-                0.4.5
+                1.0.0b1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -91,7 +91,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">Kernel Tuner</a>
+          <a href="contents.html">python-constraint</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -110,7 +110,7 @@
            <div itemprop="articleBody">
              
   <section id="Matrix-multiplication">
-<h1>Matrix multiplication<a class="headerlink" href="#Matrix-multiplication" title="Link to this heading">¶</a></h1>
+<h1>Matrix multiplication<a class="headerlink" href="#Matrix-multiplication" title="Permalink to this heading">¶</a></h1>
 <p>This guide demonstrates how to use Kernel Tuner to test and tune kernels, using matrix multiplication as an example.</p>
 <p>Matrix multiplication is one of the most well-known and widely-used linear algebra operations, and is frequently used to demonstrate the high-performance computing capabilities of GPUs. As such, matrix multiplication presents a familiar starting point for many GPU programmers.</p>
 <div class="admonition note">
@@ -118,7 +118,7 @@
 </div>
 <p>Make sure to execute all the code cells you come across in this tutorial by selecting them and pressing <em>shift+enter</em>.</p>
 <section id="Naive-CUDA-kernel">
-<h2>Naive CUDA kernel<a class="headerlink" href="#Naive-CUDA-kernel" title="Link to this heading">¶</a></h2>
+<h2>Naive CUDA kernel<a class="headerlink" href="#Naive-CUDA-kernel" title="Permalink to this heading">¶</a></h2>
 <p>We’ll start with a very simple kernel for performing a matrix multiplication in CUDA. The idea is that this kernel is executed with one thread per element in the output matrix. As such, each thread <span class="math notranslate nohighlight">\((i,j)\)</span> iterates over the entire row <span class="math notranslate nohighlight">\(i\)</span> in matrix <span class="math notranslate nohighlight">\(A\)</span>, and column <span class="math notranslate nohighlight">\(j\)</span> in matrix <span class="math notranslate nohighlight">\(B\)</span>.</p>
 <p>To keep the code clean and simple, we’ll assume that we only work with square matrices. Execute the following cell to write our naive matrix multiplication kernel to a file name “matmul_naive.cu” by pressing <em>shift+enter</em>.</p>
 <div class="nbinput nblast docutils container">
@@ -149,7 +149,7 @@ Parameters in the code that have this property are called <em>tunable parameters
 <p>Because we can pick any value for these parameters, we can use auto-tuning to automatically find the best performing combination of parameters. That’s exactly what we’re going to do in this tutorial!</p>
 </section>
 <section id="Tuning-a-naive-kernel">
-<h2>Tuning a naive kernel<a class="headerlink" href="#Tuning-a-naive-kernel" title="Link to this heading">¶</a></h2>
+<h2>Tuning a naive kernel<a class="headerlink" href="#Tuning-a-naive-kernel" title="Permalink to this heading">¶</a></h2>
 <p>Now we will have a look at how to use Kernel Tuner to find the best performing combination of tunable parameters for our naive matrix multiplication kernel. We’ll go over the process of creating an auto-tuning script step-by-step.</p>
 <p>Because the tuner will need to execute the kernel, we start with creating some input data.</p>
 <div class="nbinput nblast docutils container">
@@ -206,10 +206,10 @@ Parameters in the code that have this property are called <em>tunable parameters
 <p>Before looking at the result, we’ll explain briefly how we called <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. The first argument is the name of the kernel that we want to tune. The second argument is a string that contains the filename of the kernel. It is also possible to directly pass a string that contains the code, or to pass a Python function that generates the kernel code. The tuner will figure out which language (CUDA or OpenCL) is being used in the kernel code. The third argument to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> is the problem
 size, which is used by the tuner to compute the grid dimensions for our kernel. To compute the grid dimensions the tuner needs to know the thread block dimensions, which we have specified using the tunable parameters (fifth argument). The fourth argument is the argument list that the tuner will need to actually call the kernel.</p>
 <p>As we can see the execution times printed by <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> already vary quite dramatically between the different values for <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>. However, even with the best thread block dimensions our kernel is still not very efficient.</p>
-<p>Therefore, we’ll have a look at the Nvidia Visual Profiler to find that the utilization of our kernel is actually pretty low: <img alt="image0" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul.png" /> There is however, a lot of opportunity for data reuse, which is realized by making the threads in a thread block collaborate.</p>
+<p>Therefore, we’ll have a look at the Nvidia Visual Profiler to find that the utilization of our kernel is actually pretty low: <img alt="matmul_naive" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul_naive.png" /> There is however, a lot of opportunity for data reuse, which is realized by making the threads in a thread block collaborate.</p>
 </section>
 <section id="Using-shared-memory">
-<h2>Using shared memory<a class="headerlink" href="#Using-shared-memory" title="Link to this heading">¶</a></h2>
+<h2>Using shared memory<a class="headerlink" href="#Using-shared-memory" title="Permalink to this heading">¶</a></h2>
 <p>We can increase the utilization of memory bandwidth with a technique called cache-blocking or loop-tiling. To this end, we define two square data structures in shared memory, which will be used for storing square parts of matrix <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span>. The threads in a thread block will collaboratively fill these two submatrices, and then proceed to perform all the computations that need this data, before moving to the next blocked iteration.</p>
 <p>The code required to do this is a little bit more complex:</p>
 <div class="nbinput nblast docutils container">
@@ -282,12 +282,12 @@ only uses data in shared memory. The <code class="docutils literal notranslate">
 </div>
 </div>
 <p>This kernel drastically reduces memory bandwidth consumption. Compared to our naive kernel, it is about three times faster now, which comes from the highly increased memory utilization:</p>
-<p><img alt="image0" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul.png" /></p>
+<p><img alt="matmul_shared" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul_shared.png" /></p>
 <p>The compute utilization has actually decreased slightly, which is due to the synchronization overhead, because <code class="docutils literal notranslate"><span class="pre">__syncthread()</span></code> is called frequently.</p>
 <p>The restriction we have introduced has limited the number of kernel configurations benchmarked by the tuner significantly. Because the thread block size needs to be a square, there only a handful of configurations we can try. Fortunately, we can add several more optimizations to the code that also open the parameter space for tuning.</p>
 </section>
 <section id="Increase-work-per-thread">
-<h2>Increase work per thread<a class="headerlink" href="#Increase-work-per-thread" title="Link to this heading">¶</a></h2>
+<h2>Increase work per thread<a class="headerlink" href="#Increase-work-per-thread" title="Permalink to this heading">¶</a></h2>
 <p>A commonly used code optimization in GPU programming is to increase the amount of work performed by each thread. This optimization has several benefits. It increases data reuse within the thread block and reduces the number of redundant instructions executed by distinct threads. This code optimization is typically called <em>1xN Tiling</em> or <em>thread-block-merge</em>. We will use two different forms of 1xN tiling in this example:</p>
 <p>First of all, in the x-direction we will use tiling in a way that is similar to the convolution example (used as part of the ‘Getting Started’ tutorial). The area of output data that is processed by a single thread block is increased by a factor of N, and as such shared memory usage also increases by a factor <span class="math notranslate nohighlight">\(N\)</span>. This means that the number of thread blocks needed to execute the kernel for this problem size is also reduced by a factor of <span class="math notranslate nohighlight">\(N\)</span>. While this may reduce occupancy due to
 increased shared memory and register usage, this optimization drastically reduces the number of redundant instructions that were previously distributed across multiple thread blocks.</p>
@@ -400,7 +400,7 @@ again.</p>
 </div>
 </div>
 <p>As we can see the number of kernel configurations evaluated by the tuner has increased again. Also the performance has increased quite dramatically with roughly another factor 3. If we look at the Nvidia Visual Profiler output of our kernel we see the following:</p>
-<p><img alt="image0" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul.png" /></p>
+<p><img alt="matmul" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul.png" /></p>
 <p>As expected, the compute utilization of our kernel has improved. There may even be some more room for improvement, but our tutorial on how to use Kernel Tuner ends here. In this tutorial, we have seen how you can use Kernel Tuner to tune kernels with a small number of tunable parameters, how to impose restrictions on the parameter space, and how to use grid divisor lists to specify how grid dimensions are computed.</p>
 </section>
 </section>
@@ -416,7 +416,7 @@ again.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
