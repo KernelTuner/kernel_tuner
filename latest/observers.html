@@ -73,6 +73,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.before_start"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.before_start()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.during"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.during()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.get_results"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.get_results()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.register_configuration"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.register_configuration()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.register_device"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.register_device()</span></code></a></li>
 </ul>
 </li>
@@ -173,6 +174,13 @@ function, the state of GPU memory, or any other information in the GPU runtime.<
 <dd><p>get_results should return a dict with results that adds to the benchmarking data</p>
 <p>get_results is called only once per benchmarking of a single kernel configuration and
 generally returns averaged values over multiple iterations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver.register_configuration">
+<span class="sig-name descname"><span class="pre">register_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver.register_configuration" title="Link to this definition">¶</a></dt>
+<dd><p>Called once before benchmarking of a single kernel configuration. The <cite>params</cite> argument is a <cite>dict</cite>
+that stores the configuration parameters.</p>
 </dd></dl>
 
 <dl class="py method">
