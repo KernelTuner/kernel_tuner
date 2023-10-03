@@ -52,7 +52,7 @@ class PowerSensorObserver(BenchmarkObserver):
             self.results["ps_energy"].append(ps_measured_e)
         if "ps_power" in self.observables:
             ps_measured_t = (
-                end_state.time_at_read - self.begin_state.time_at_read
+                    end_state.time_at_read - self.begin_state.time_at_read
             )  # seconds
             self.results["ps_power"].append(ps_measured_e / ps_measured_t)  # Watt
 

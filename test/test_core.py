@@ -178,6 +178,24 @@ def test_default_verify_function_scalar():
     assert core._default_verify_function(instance, answer, result_host, 0.1, False)
 
 
+def test_preprocess_gpu_arguments():
+    from kernel_tuner.accuracy import Tunable
+
+    arguments = [
+        Tunable("foo", dict(a=1, b=2)),
+        Tunable(lambda p: p["foo"] + p["bar"], dict(ax=3, bx=4)),
+    ]
+
+    params = dict(foo="a", bar="x")
+
+    expected = [
+        1,
+        3,
+    ]
+
+    assert core._preprocess_gpu_arguments(arguments, params) == expected
+
+
 def test_split_argument_list():
     test_string = "T *c, const T *__restrict__ a, T\n *\n b\n , int n"
     ans1, ans2 = core.split_argument_list([s.strip() for s in test_string.split(',')])
