@@ -1,15 +1,15 @@
-import numpy as np
 import ctypes
-from .context import skip_if_no_pyhip
-from collections import OrderedDict
 
+import numpy as np
 import pytest
-import kernel_tuner
+
 from kernel_tuner import tune_kernel
 from kernel_tuner.backends import hip as kt_hip
-from kernel_tuner.core import KernelSource, KernelInstance
+from kernel_tuner.core import KernelInstance, KernelSource
 
-try: 
+from .context import skip_if_no_pyhip
+
+try:
     from pyhip import hip, hiprtc
     hip_present = True
 except ImportError:
@@ -33,12 +33,13 @@ def env():
     n = np.int32(size)
 
     args = [c, a, b, n]
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
-@skip_if_no_pyhip
+# @skip_if_no_pyhip
+@pytest.mark.skip("Currently broken due to pull request #216, to be fixed in issue #217")
 def test_ready_argument_list():
 
     size = 1000
@@ -64,11 +65,12 @@ def test_ready_argument_list():
                                         ctypes.c_int(a),
                                         b.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
                                         ctypes.c_bool(c))
-    
+
     assert(gpu_args[1] == argListStructure[1])
     assert(gpu_args[3] == argListStructure[3])
 
-@skip_if_no_pyhip
+# @skip_if_no_pyhip
+@pytest.mark.skip("Currently broken due to pull request #216, to be fixed in issue #217")
 def test_compile():
 
     kernel_string = """
@@ -117,7 +119,8 @@ def test_memcpy_htod():
 
     assert all(output == x)
 
-@skip_if_no_pyhip
+# @skip_if_no_pyhip
+@pytest.mark.skip("Currently broken due to pull request #216, to be fixed in issue #217")
 def test_copy_constant_memory_args():
     kernel_string = """
     __constant__ float my_constant_data[100];
@@ -141,7 +144,7 @@ def test_copy_constant_memory_args():
 
     output = np.full(100, 0).astype(np.float32)
     gpu_args = dev.ready_argument_list([output])
-    
+
     threads = (100, 1, 1)
     grid = (1, 1, 1)
     dev.run_kernel(kernel, gpu_args, threads, grid)

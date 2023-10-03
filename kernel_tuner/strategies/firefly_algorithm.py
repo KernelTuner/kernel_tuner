@@ -1,15 +1,15 @@
-""" The strategy that uses the firefly algorithm for optimization"""
+"""The strategy that uses the firefly algorithm for optimization."""
 import sys
-from collections import OrderedDict
 
 import numpy as np
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import (CostFunc, scale_from_params)
+from kernel_tuner.strategies.common import CostFunc, scale_from_params
 from kernel_tuner.strategies.pso import Particle
 
-_options = OrderedDict(popsize=("Population size", 20),
+_options = dict(popsize=("Population size", 20),
                        maxiter=("Maximum number of iterations", 100),
                        B0=("Maximum attractiveness", 1.0),
                        gamma=("Light absorption coefficient", 1.0),
@@ -88,20 +88,20 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 tune.__doc__ = common.get_strategy_docstring("firefly algorithm", _options)
 
 class Firefly(Particle):
-    """Firefly object for use in the Firefly Algorithm"""
+    """Firefly object for use in the Firefly Algorithm."""
 
     def __init__(self, bounds):
-        """Create Firefly at random position within bounds"""
+        """Create Firefly at random position within bounds."""
         super().__init__(bounds)
         self.bounds = bounds
         self.intensity = 1 / self.score
 
     def distance_to(self, other):
-        """Return Euclidian distance between self and other Firefly"""
+        """Return Euclidian distance between self and other Firefly."""
         return np.linalg.norm(self.position-other.position)
 
     def compute_intensity(self, fun):
-        """Evaluate cost function and compute intensity at this position"""
+        """Evaluate cost function and compute intensity at this position."""
         self.evaluate(fun)
         if self.score == sys.float_info.max:
             self.intensity = -sys.float_info.max
@@ -109,7 +109,7 @@ class Firefly(Particle):
             self.intensity = 1 / self.score
 
     def move_towards(self, other, beta, alpha):
-        """Move firefly towards another given beta and alpha values"""
+        """Move firefly towards another given beta and alpha values."""
         self.position += beta * (other.position - self.position)
         self.position += alpha * (np.random.uniform(-0.5, 0.5, len(self.position)))
         self.position = np.minimum(self.position, [b[1] for b in self.bounds])
