@@ -117,15 +117,7 @@ class HipFunctions(GPUBackend):
                 data_ctypes = dtype_map[dtype_str](arg)
                 ctype_args.append(data_ctypes)
 
-        # Determine the types of the fields in the structure
-        field_types = [type(x) for x in ctype_args]
-        # Define a new ctypes structure with the inferred layout
-        class ArgListStructure(ctypes.Structure):
-            _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
-            def __getitem__(self, key):
-                return getattr(self, self._fields_[key][0])
-
-        return ArgListStructure(*ctype_args)
+        return ctype_args
 
 
     def compile(self, kernel_instance):
@@ -221,12 +213,23 @@ class HipFunctions(GPUBackend):
         if stream is None:
             stream = self.stream
 
+        # Determine the types of the fields in the structure
+        field_types = [type(x) for x in gpu_args]
+
+        # Define a new ctypes structure with the inferred layout
+        class ArgListStructure(ctypes.Structure):
+            _fields_ = [(f'field{i}', t) for i, t in enumerate(field_types)]
+            def __getitem__(self, key):
+                return getattr(self, self._fields_[key][0])
+
+        ctype_args = ArgListStructure(*gpu_args)
+
         hip.hipModuleLaunchKernel(func,
                                   grid[0], grid[1], grid[2],
                                   threads[0], threads[1], threads[2],
                                   self.smem_size,
                                   stream,
-                                  gpu_args)
+                                  ctype_args)
 
     def memset(self, allocation, value, size):
         """Set the memory in allocation to the value in value.
