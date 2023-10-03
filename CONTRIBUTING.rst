@@ -86,6 +86,7 @@ Running tests
 -------------
 To run the tests you can use :bash:`nox` (to run against all supported Python versions in isolated environments) and :bash:`pytest` (to run against the local Python version) in the top-level directory.
 It's also possible to invoke PyTest from the 'Testing' tab in Visual Studio Code.
+The isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run :bash:`nox` with the :bash:`small-disk` option. This removes the other environment caches before each session is ran.
 
 Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
 are not installed/present. The same holds for tests that require PyOpenCL, Cupy, Nvidia CUDA.

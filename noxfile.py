@@ -76,14 +76,21 @@ def tests(session: Session) -> None:
     # if the user has a small disk, remove the other environment caches before each session is ran
     if small_disk:
         try:
-            session_folder_name = session.name.replace('.', '*').strip()
-            session.run("find", "./.nox", "-mindepth", "1", "-maxdepth", "1", "-type", "d", "-not", "-name", session_folder_name, "-delete")
+            session_folder = session.name.replace('.', '*').strip()
+            folders_to_delete: str = session.run(
+                "find", "./.nox", "-mindepth", "1", "-maxdepth", "1", "-type", "d", "-not", "-name", session_folder,
+                silent=True, external=True)
+            folders_to_delete: list[str] = folders_to_delete.split('\n')
+            for folder_to_delete in folders_to_delete:
+                if len(folder_to_delete) > 0:
+                    session.warn(f"Removing environment cache {folder_to_delete} because of 'small-disk' argument")
+                    session.run("rm", "-rf", folder_to_delete, external=True)
         except Exception as error:
             session.warn("Could not delete Nox caching directories, reason:")
             session.warn(error)
 
     # remove temporary files leftover from the previous session
-    session.run("rm", "-f", "temp_*.c")
+    session.run("rm", "-f", "temp_*.c", external=True)
 
     # set extra arguments based on optional dependencies
     extras_args = []
