@@ -66,6 +66,13 @@ def tests(session: Session) -> None:
             else:
                 raise ValueError(f"Unrecognized argument {arg}")
 
+    # check if there are optional dependencies that can not be installed
+    if install_hip:
+        if platform.system().lower() != 'linux':
+            session.warn("HIP is only available on Linux, disabling dependency and tests")
+            install_hip = False
+    full_install = install_cuda and install_hip and install_opencl and install_additional_tests
+
     # if the user has a small disk, remove the other environment caches before each session is ran
     if small_disk:
         try:
@@ -76,14 +83,7 @@ def tests(session: Session) -> None:
             session.warn(error)
 
     # remove temporary files leftover from the previous session
-    session.run("rm", "temp_*.c")
-
-    # check if there are optional dependencies that can not be installed
-    if install_hip:
-        if platform.system().lower() != 'linux':
-            session.warn("HIP is only available on Linux, disabling dependency and tests")
-            install_hip = False
-    full_install = install_cuda and install_hip and install_opencl and install_additional_tests
+    session.run("rm", "-f", "temp_*.c")
 
     # set extra arguments based on optional dependencies
     extras_args = []
