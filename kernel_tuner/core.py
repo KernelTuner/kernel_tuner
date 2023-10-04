@@ -1,28 +1,27 @@
 """ Module for grouping the core functionality needed by most runners """
 
-import time
-from collections import namedtuple
 import logging
 import re
-import numpy as np
+import time
+from collections import namedtuple
 
+import numpy as np
 
 try:
     import cupy as cp
 except ImportError:
     cp = np
 
+import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
+from kernel_tuner.backends.c import CFunctions
 from kernel_tuner.backends.cupy import CupyFunctions
-from kernel_tuner.backends.pycuda import PyCudaFunctions
+from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.c import CFunctions
-from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.hip import HipFunctions
-import kernel_tuner.util as util
+from kernel_tuner.backends.pycuda import PyCudaFunctions
+from kernel_tuner.observers.nvml import NVMLObserver
+from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
 
 try:
     import torch
@@ -245,7 +244,7 @@ class DeviceInterface(object):
         elif lang.upper() == "HIP":
             dev = HipFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         else:
-            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
 
         #look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
