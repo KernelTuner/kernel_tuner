@@ -1,20 +1,18 @@
-""" The default runner for sequentially tuning the parameter space """
+"""The default runner for sequentially tuning the parameter space."""
 import logging
-from collections import OrderedDict
 from datetime import datetime, timezone
 from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
-from kernel_tuner.util import (ErrorConfig, print_config_output,
-                               process_metrics, store_cache)
 from kernel_tuner.runners.runner import Runner
+from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
 
 
 class SequentialRunner(Runner):
-    """ SequentialRunner is used for tuning with a single process/thread """
+    """SequentialRunner is used for tuning with a single process/thread."""
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
-        """ Instantiate the SequentialRunner
+        """Instantiate the SequentialRunner.
 
         :param kernel_source: The kernel source
         :type kernel_source: kernel_tuner.core.KernelSource
@@ -30,7 +28,6 @@ class SequentialRunner(Runner):
             each kernel instance.
         :type iterations: int
         """
-
         #detect language and create high-level device interface
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
 
@@ -51,7 +48,7 @@ class SequentialRunner(Runner):
         return self.dev.get_environment()
 
     def run(self, parameter_space, tuning_options):
-        """ Iterate through the entire parameter space using a single Python process
+        """Iterate through the entire parameter space using a single Python process.
 
         :param parameter_space: The parameter space as an iterable.
         :type parameter_space: iterable
@@ -71,7 +68,7 @@ class SequentialRunner(Runner):
 
         # iterate over parameter space
         for element in parameter_space:
-            params = OrderedDict(zip(tuning_options.tune_params.keys(), element))
+            params = dict(zip(tuning_options.tune_params.keys(), element))
 
             result = None
             warmup_time = 0
@@ -95,14 +92,12 @@ class SequentialRunner(Runner):
 
                 params.update(result)
 
-                # only compute metrics on configs that have not errored
                 if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
                     logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
-                elif tuning_options.metrics:
-                    params = process_metrics(params, tuning_options.metrics)
 
-                # print configuration to the console
-                print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+            # only compute metrics on configs that have not errored
+            if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
+                params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
             total_time = 1000 * (perf_counter() - self.start_time) - warmup_time
@@ -112,6 +107,10 @@ class SequentialRunner(Runner):
             self.start_time = perf_counter()
 
             if result:
+                # print configuration to the console
+                print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+
+                # add configuration to cache
                 store_cache(x_int, params, tuning_options)
 
             # all visited configurations are added to results to provide a trace for optimization strategies

@@ -1,4 +1,4 @@
-"""This module contains all NVIDIA cuda-python specific kernel_tuner functions"""
+"""This module contains all NVIDIA cuda-python specific kernel_tuner functions."""
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
@@ -14,10 +14,10 @@ except ImportError:
 
 
 class CudaFunctions(GPUBackend):
-    """Class that groups the Cuda functions on maintains state about the device"""
+    """Class that groups the Cuda functions on maintains state about the device."""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
-        """instantiate CudaFunctions object used for interacting with the CUDA device
+        """Instantiate CudaFunctions object used for interacting with the CUDA device.
 
         Instantiating this object will inspect and store certain device properties at
         runtime, which are used during compilation and/or execution of kernels by the
@@ -38,8 +38,7 @@ class CudaFunctions(GPUBackend):
         self.texrefs = []
         if not cuda:
             raise ImportError(
-                "Error: cuda-python not installed, please install e.g. "
-                + "using 'pip install cuda-python', please check https://github.com/NVIDIA/cuda-python."
+                "cuda-python not installed, install using 'pip install cuda-python', or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda."
             )
 
         # initialize and select device
@@ -113,7 +112,7 @@ class CudaFunctions(GPUBackend):
                 cuda_error_check(err)
 
     def ready_argument_list(self, arguments):
-        """ready argument list to be passed to the kernel, allocates gpu mem
+        """Ready argument list to be passed to the kernel, allocates gpu mem.
 
         :param arguments: List of arguments to be passed to the kernel.
             The order should match the argument list on the CUDA kernel.
@@ -138,7 +137,7 @@ class CudaFunctions(GPUBackend):
         return gpu_args
 
     def compile(self, kernel_instance):
-        """call the CUDA compiler to compile the kernel, return the device function
+        """Call the CUDA compiler to compile the kernel, return the device function.
 
         :param kernel_name: The name of the kernel to be compiled, used to lookup the
             function after compilation.
@@ -203,17 +202,17 @@ class CudaFunctions(GPUBackend):
         return self.func
 
     def start_event(self):
-        """Records the event that marks the start of a measurement"""
+        """Records the event that marks the start of a measurement."""
         err = cudart.cudaEventRecord(self.start, self.stream)
         cuda_error_check(err)
 
     def stop_event(self):
-        """Records the event that marks the end of a measurement"""
+        """Records the event that marks the end of a measurement."""
         err = cudart.cudaEventRecord(self.end, self.stream)
         cuda_error_check(err)
 
     def kernel_finished(self):
-        """Returns True if the kernel has finished, False otherwise"""
+        """Returns True if the kernel has finished, False otherwise."""
         err = cudart.cudaEventQuery(self.end)
         if err[0] == cudart.cudaError_t.cudaSuccess:
             return True
@@ -222,12 +221,12 @@ class CudaFunctions(GPUBackend):
 
     @staticmethod
     def synchronize():
-        """Halts execution until device has finished its tasks"""
+        """Halts execution until device has finished its tasks."""
         err = cudart.cudaDeviceSynchronize()
         cuda_error_check(err)
 
     def copy_constant_memory_args(self, cmem_args):
-        """adds constant memory arguments to the most recently compiled module
+        """Adds constant memory arguments to the most recently compiled module.
 
         :param cmem_args: A dictionary containing the data to be passed to the
             device constant memory. The format to be used is as follows: A
@@ -243,11 +242,11 @@ class CudaFunctions(GPUBackend):
             cuda_error_check(err)
 
     def copy_shared_memory_args(self, smem_args):
-        """add shared memory arguments to the kernel"""
+        """Add shared memory arguments to the kernel."""
         self.smem_size = smem_args["size"]
 
     def copy_texture_memory_args(self, texmem_args):
-        """adds texture memory arguments to the most recently compiled module
+        """Adds texture memory arguments to the most recently compiled module.
 
         :param texmem_args: A dictionary containing the data to be passed to the
             device texture memory. See tune_kernel().
@@ -256,7 +255,7 @@ class CudaFunctions(GPUBackend):
         raise NotImplementedError("NVIDIA CUDA backend does not support texture memory")
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
-        """runs the CUDA kernel passed as 'func'
+        """Runs the CUDA kernel passed as 'func'.
 
         :param func: A CUDA kernel compiled for this specific kernel configuration
         :type func: cuda.CUfunction
@@ -298,7 +297,7 @@ class CudaFunctions(GPUBackend):
 
     @staticmethod
     def memset(allocation, value, size):
-        """set the memory in allocation to the value in value
+        """Set the memory in allocation to the value in value.
 
         :param allocation: A GPU memory allocation unit
         :type allocation: cupy.ndarray
@@ -315,7 +314,7 @@ class CudaFunctions(GPUBackend):
 
     @staticmethod
     def memcpy_dtoh(dest, src):
-        """perform a device to host memory copy
+        """Perform a device to host memory copy.
 
         :param dest: A numpy array in host memory to store the data
         :type dest: numpy.ndarray
@@ -328,7 +327,7 @@ class CudaFunctions(GPUBackend):
 
     @staticmethod
     def memcpy_htod(dest, src):
-        """perform a host to device memory copy
+        """Perform a host to device memory copy.
 
         :param dest: A GPU memory allocation unit
         :type dest: cuda.CUdeviceptr

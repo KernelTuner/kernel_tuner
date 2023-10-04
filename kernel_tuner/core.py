@@ -1,9 +1,10 @@
 """ Module for grouping the core functionality needed by most runners """
 
-import time
-from collections import namedtuple
 import logging
 import re
+import time
+from collections import namedtuple
+
 import numpy as np
 
 try:
@@ -11,16 +12,18 @@ try:
 except ImportError:
     cp = np
 
-from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver
-from kernel_tuner.backends.cupy import CupyFunctions
+import kernel_tuner.util as util
+from kernel_tuner.accuracy import Tunable
 from kernel_tuner.backends.pycuda import PyCudaFunctions
+from kernel_tuner.backends.cupy import CupyFunctions
+from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.compiler import CompilerFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.hip import HipFunctions
-import kernel_tuner.util as util
+from kernel_tuner.observers.nvml import NVMLObserver
+from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
 
 try:
     import torch
@@ -310,13 +313,12 @@ class DeviceInterface(object):
                 observers=observers,
             )
         else:
-            raise ValueError(
-                "Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet"
-            )
+            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
 
         # look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
         self.continuous_observers = []
+        self.output_observers = []
         if observers:
             for obs in observers:
                 if isinstance(obs, NVMLObserver):
@@ -324,6 +326,9 @@ class DeviceInterface(object):
                     self.use_nvml = True
                 if hasattr(obs, "continuous_observer"):
                     self.continuous_observers.append(obs.continuous_observer)
+                if isinstance(obs, OutputObserver):
+                    self.output_observers.append(obs)
+
 
         self.iterations = iterations
 
@@ -404,6 +409,10 @@ class DeviceInterface(object):
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
 
+        # Call the observers to register the configuration to be benchmarked
+        for obs in self.dev.observers:
+            obs.register_configuration(instance.params)
+
         result = {}
         try:
             self.benchmark_default(
@@ -451,18 +460,19 @@ class DeviceInterface(object):
         """runs the kernel once and checks the result against answer"""
         logging.debug("check_kernel_output")
 
-        # if not using custom verify function, check if the length is the same
-        if not verify and len(instance.arguments) != len(answer):
-            raise TypeError(
-                "The length of argument list and provided results do not match."
-            )
+        #if not using custom verify function, check if the length is the same
+        if answer:
+            if len(instance.arguments) != len(answer):
+                raise TypeError("The length of argument list and provided results do not match.")
+
+            should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
+        else:
+            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)) for arg in instance.arguments]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
         for i, arg in enumerate(instance.arguments):
-            if (verify or answer[i] is not None) and isinstance(
-                arg, (np.ndarray, cp.ndarray, torch.Tensor)
-            ):
+            if should_sync[i]:
                 self.dev.memcpy_htod(gpu_args[i], arg)
 
         # run the kernel
@@ -473,28 +483,38 @@ class DeviceInterface(object):
         # retrieve gpu results to host memory
         result_host = []
         for i, arg in enumerate(instance.arguments):
-            if (verify or answer[i] is not None) and isinstance(
-                arg, (np.ndarray, cp.ndarray)
-            ):
-                result_host.append(np.zeros_like(arg))
-                self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
-            elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
-                if not answer[i].is_cuda:
-                    # if the answer is on the host, copy gpu output to host as well
-                    result_host.append(torch.zeros_like(answer[i]))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+            if should_sync[i]:
+                if isinstance(arg, (np.ndarray, cp.ndarray)):
+                    result_host.append(np.zeros_like(arg))
+                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+                elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
+                    if not answer[i].is_cuda:
+                        #if the answer is on the host, copy gpu output to host as well
+                        result_host.append(torch.zeros_like(answer[i]))
+                        self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+                    else:
+                        result_host.append(gpu_args[i].tensor)
                 else:
-                    result_host.append(gpu_args[i].tensor)
+                    # We should sync this argument, but we do not know how to transfer this type of argument
+                    # What do we do? Should we throw an error?
+                    result_host.append(None)
             else:
                 result_host.append(None)
 
-        # if the user has specified a custom verify function, then call it, else use default based on numpy allclose
+        # Call the output observers
+        for obs in self.output_observers:
+            obs.process_output(answer, result_host)
+
+        # There are three scenarios:
+        # - if there is a custom verify function, call that.
+        # - otherwise, if there are no output observers, call the default verify function
+        # - otherwise, the answer is correct (we assume the accuracy observers verified the output)
         if verify:
             correct = verify(answer, result_host, atol=atol)
+        elif not self.output_observers:
+            correct = _default_verify_function(instance, answer, result_host, atol, verbose)
         else:
-            correct = _default_verify_function(
-                instance, answer, result_host, atol, verbose
-            )
+            correct = True
 
         if not correct:
             raise RuntimeError(
@@ -502,28 +522,27 @@ class DeviceInterface(object):
                 + util.get_config_string(instance.params)
             )
 
-    def compile_and_benchmark(
-        self, kernel_source, gpu_args, params, kernel_options, to
-    ):
-        """Compile and benchmark a kernel instance based on kernel strings and parameters"""
-        instance_string = util.get_instance_string(params)
-
+    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
         # reset previous timers
         last_compilation_time = None
         last_verification_time = None
         last_benchmark_time = None
 
-        logging.debug("compile_and_benchmark " + instance_string)
-
         verbose = to.verbose
         result = {}
 
-        instance = self.create_kernel_instance(
-            kernel_source, kernel_options, params, verbose
-        )
+        # Compile and benchmark a kernel instance based on kernel strings and parameters
+        instance_string = util.get_instance_string(params)
+
+        logging.debug('compile_and_benchmark ' + instance_string)
+
+        instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
             result[to.objective] = util.InvalidConfig()
         else:
+            # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
+            gpu_args = _preprocess_gpu_arguments(gpu_args, params)
+
             try:
                 # compile the kernel
                 start_compilation = time.perf_counter()
@@ -547,7 +566,7 @@ class DeviceInterface(object):
                 last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
                 # test kernel for correctness
-                if func and (to.answer or to.verify):
+                if func and (to.answer or to.verify or self.output_observers):
                     start_verification = time.perf_counter()
                     self.check_kernel_output(
                         func, gpu_args, instance, to.answer, to.atol, to.verify, verbose
@@ -612,32 +631,22 @@ class DeviceInterface(object):
                 raise e
         return func
 
+    @staticmethod
+    def preprocess_gpu_arguments(old_arguments, params):
+        """ Get a flat list of arguments based on the configuration given by `params` """
+        return _preprocess_gpu_arguments(old_arguments, params)
+
     def copy_shared_memory_args(self, smem_args):
-        """adds shared memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_shared_memory_args(smem_args)
-        else:
-            raise RuntimeError(
-                "Error cannot copy shared memory arguments when language is not CUDA"
-            )
+        """adds shared memory arguments to the most recently compiled module"""
+        self.dev.copy_shared_memory_args(smem_args)
 
     def copy_constant_memory_args(self, cmem_args):
-        """adds constant memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_constant_memory_args(cmem_args)
-        else:
-            raise RuntimeError(
-                "Error cannot copy constant memory arguments when language is not CUDA"
-            )
+        """adds constant memory arguments to the most recently compiled module"""
+        self.dev.copy_constant_memory_args(cmem_args)
 
     def copy_texture_memory_args(self, texmem_args):
-        """adds texture memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_texture_memory_args(texmem_args)
-        else:
-            raise RuntimeError(
-                "Error cannot copy texture memory arguments when language is not CUDA"
-            )
+        """adds texture memory arguments to the most recently compiled module"""
+        self.dev.copy_texture_memory_args(texmem_args)
 
     def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
@@ -678,17 +687,11 @@ class DeviceInterface(object):
         if kernel_source.lang in ["CUDA", "NVCUDA"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
-        # collect everything we know about this instance and return it
-        return KernelInstance(
-            name,
-            kernel_source,
-            kernel_string,
-            temp_files,
-            threads,
-            grid,
-            params,
-            kernel_options.arguments,
-        )
+        # Preprocess GPU arguments. Require for handling `Tunable` arguments
+        arguments = _preprocess_gpu_arguments(kernel_options.arguments, params)
+
+        #collect everything we know about this instance and return it
+        return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, arguments)
 
     def get_environment(self):
         """Return dictionary with information about the environment"""
@@ -700,7 +703,30 @@ class DeviceInterface(object):
 
     def ready_argument_list(self, arguments):
         """ready argument list to be passed to the kernel, allocates gpu mem if necessary"""
-        return self.dev.ready_argument_list(arguments)
+        flat_args = []
+
+        # Flatten all arguments into a single list. Required to deal with `Tunable`s
+        for argument in arguments:
+            if isinstance(argument, Tunable):
+                flat_args.extend(argument.values())
+            else:
+                flat_args.append(argument)
+
+        flat_gpu_args = iter(self.dev.ready_argument_list(flat_args))
+
+        # Unflatten the arguments back into arrays.
+        gpu_args = []
+        for argument in arguments:
+            if isinstance(argument, Tunable):
+                arrays = dict()
+                for key in argument:
+                    arrays[key] = next(flat_gpu_args)
+
+                gpu_args.append(Tunable(argument.param_key, arrays))
+            else:
+                gpu_args.append(next(flat_gpu_args))
+
+        return gpu_args
 
     def run_kernel(self, func, gpu_args, instance):
         """Run a compiled kernel instance on a device"""
@@ -722,6 +748,19 @@ class DeviceInterface(object):
                 logging.debug("encountered unexpected runtime failure: " + str(e))
                 raise e
         return True
+
+
+def _preprocess_gpu_arguments(old_arguments, params):
+    """ Get a flat list of arguments based on the configuration given by `params` """
+    new_arguments = []
+
+    for argument in old_arguments:
+        if isinstance(argument, Tunable):
+            new_arguments.append(argument.select_for_configuration(params))
+        else:
+            new_arguments.append(argument)
+
+    return new_arguments
 
 
 def _default_verify_function(instance, answer, result_host, atol, verbose):

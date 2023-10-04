@@ -1,3 +1,7 @@
+### Project ###
+noxenv.txt
+
+### Python ###
 *.pyc
 __pycache__
 doc/build/*
@@ -17,6 +21,12 @@ examples/cuda/output
 deploy_key
 *.mod
 temp_*.*
+.python-version
+.nox
+
+### Visual Studio Code ###
+!.vscode/settings.json
+!.vscode/extensions.json
 
 ### macOS ###
 # General

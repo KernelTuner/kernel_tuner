@@ -1,21 +1,20 @@
 from __future__ import print_function
 
-from collections import OrderedDict
-import os
 import json
+import os
 import warnings
 
 import numpy as np
 import pytest
 
-from .context import skip_if_no_pycuda, skip_if_no_cuda, skip_if_no_opencl
-
-from kernel_tuner.interface import Options
-import kernel_tuner.core as core
-import kernel_tuner.backends.pycuda as pycuda
 import kernel_tuner.backends.nvcuda as nvcuda
 import kernel_tuner.backends.opencl as opencl
+import kernel_tuner.backends.pycuda as pycuda
+import kernel_tuner.core as core
+from kernel_tuner.interface import Options
 from kernel_tuner.util import *
+
+from .context import skip_if_no_cuda, skip_if_no_opencl, skip_if_no_pycuda
 
 block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
 
@@ -53,10 +52,7 @@ def test_get_grid_dimensions1():
     assert grid[2] == 1
 
     grid = get_grid_dimensions(
-        problem_size,
-        params,
-        (None, lambda p: p["block_x"], lambda p: p["block_y"] * p["block_x"]),
-        block_size_names,
+        problem_size, params, (None, lambda p: p["block_x"], lambda p: p["block_y"] * p["block_x"]), block_size_names
     )
 
     assert grid[0] == 1024
@@ -157,9 +153,7 @@ def test_prepare_kernel_string():
     params = dict()
     params["is"] = 8
 
-    _, output = prepare_kernel_string(
-        "this", kernel, params, grid, threads, block_size_names, "", None
-    )
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", None)
     expected = (
         "#define grid_size_x 3\n"
         "#define grid_size_y 7\n"
@@ -174,18 +168,10 @@ def test_prepare_kernel_string():
     assert output == expected
 
     # Check custom defines
-    defines = OrderedDict(foo=1, bar="custom", baz=lambda config: config["is"] * 5)
+    defines = dict(foo=1, bar="custom", baz=lambda config: config["is"] * 5)
 
-    _, output = prepare_kernel_string(
-        "this", kernel, params, grid, threads, block_size_names, "", defines
-    )
-    expected = (
-        "#define foo 1\n"
-        "#define bar custom\n"
-        "#define baz 40\n"
-        "#line 1\n"
-        "this is a weird kernel"
-    )
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", defines)
+    expected = "#define foo 1\n" "#define bar custom\n" "#define baz 40\n" "#line 1\n" "this is a weird kernel"
     assert output == expected
 
     # Throw exception on invalid name (for instance, a space in the name)
@@ -214,12 +200,9 @@ def test_prepare_kernel_string_partial_loop_unrolling():
     assert "constexpr int loop_unroll_factor_monkey = 8;" in output
 
     params["loop_unroll_factor_monkey"] = 0
-    _, output = prepare_kernel_string(
-        "this", kernel, params, grid, threads, block_size_names, "CUDA", None
-    )
-    assert not "constexpr int loop_unroll_factor_monkey" in output
-    assert not "#pragma unroll loop_unroll_factor_monkey" in output
-
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
+    assert "constexpr int loop_unroll_factor_monkey" not in output
+    assert "#pragma unroll loop_unroll_factor_monkey" not in output
 
 def test_replace_param_occurrences():
     kernel = "this is a weird kernel"
@@ -304,7 +287,7 @@ def test_get_device_interface3():
 def test_get_device_interface4():
     with pytest.raises(Exception):
         lang = "blabla"
-        dev = core.DeviceInterface(lang)
+        core.DeviceInterface(lang)
 
 
 def assert_user_warning(f, args, substring=None):
@@ -668,7 +651,7 @@ def test_process_cache():
 
 def test_process_metrics():
     params = {"x": 15, "b": 12}
-    metrics = OrderedDict()
+    metrics = dict()
     metrics["y"] = lambda p: p["x"]
 
     # test if lambda function is correctly evaluated
@@ -683,36 +666,71 @@ def test_process_metrics():
 
     # test if composability works correctly
     params = {"x": 15, "b": 12}
-    metrics = OrderedDict()
+    metrics = dict()
     metrics["y"] = "x"
     metrics["z"] = "y"
     params = process_metrics(params, metrics)
     assert params["z"] == params["x"]
 
-    # test ValueError is raised when metrics is not an OrderedDict
+    # test ValueError is raised when metrics is not a dictionary
     with pytest.raises(ValueError):
-        params = process_metrics(params, {})
+        params = process_metrics(params, list())
 
-    # test ValueError is raised when b already exists in params
-    params = {"x": 15, "b": 12}
-    metrics = OrderedDict()
+    # # test ValueError is raised when b already exists in params
+    # params = {"x": 15, "b": 12}
+    # metrics = dict()
+    # metrics["b"] = "x"
+    # params = process_metrics(params, metrics)
+    # assert params["b"] == 15
+
+    # test if a metric overrides any existing metrics
+    params = {
+        "x": 15,
+        "b": 12
+    }
+    metrics = dict()
     metrics["b"] = "x"
-    with pytest.raises(ValueError):
-        params = process_metrics(params, metrics)
+    params = process_metrics(params, metrics)
+    assert params["b"] == 15
 
 
 def test_parse_restrictions():
     tune_params = {"block_size_x": [50, 100], "use_padding": [0, 1]}
-
     restrict = ["block_size_x != 320"]
-    parsed = parse_restrictions(restrict, tune_params)
-    expected = '(params["block_size_x"] != 320)'
+    restrictions = ["block_size_x != 320", "use_padding == 0 or block_size_x % 32 != 0", "50 <= block_size_x * use_padding < 100"]
 
-    assert expected in parsed
+    # test the monolithic parsed function
+    parsed = parse_restrictions(restrict, tune_params, monolithic=True)[0]
+    expected = "params[params_index['block_size_x']] != 320"
+    assert expected in parsed[0]
 
-    # test again but with an 'or' in the expression
-    restrict.append("use_padding == 0 or block_size_x % 32 != 0")
-    parsed = parse_restrictions(restrict, tune_params)
-    expected = '(params["block_size_x"] != 320) and (params["use_padding"] == 0 or params["block_size_x"] % 32 != 0)'
+    # test the split parsed function
+    parsed_multi = parse_restrictions(restrictions, tune_params, try_to_constraint=False)
+    assert isinstance(parsed_multi, list) and isinstance(parsed_multi[0], tuple)
+    assert len(parsed_multi) == 3
+    parsed, params = parsed_multi[0]
+    assert restrictions[0] in parsed
+    assert params == ["block_size_x"]
+    parsed, params = parsed_multi[1]
+    assert restrictions[1] in parsed
+    assert all(param in tune_params for param in params)
+    parsed, params = parsed_multi[2]
+    assert restrictions[2] in parsed
+    assert all(param in tune_params for param in params)
 
-    assert expected in parsed
+    # test the conversion to constraints
+    parsed_multi_constraints = parse_restrictions(restrictions, tune_params, try_to_constraint=True)
+    assert isinstance(parsed_multi_constraints, list) and isinstance(parsed_multi_constraints[0], tuple)
+    assert len(parsed_multi_constraints) == 4
+    parsed, params = parsed_multi_constraints[0]
+    assert isinstance(parsed, str)
+    assert params == ["block_size_x"]
+    parsed, params = parsed_multi_constraints[1]
+    assert isinstance(parsed, str)
+    assert all(param in tune_params for param in params)
+    parsed, params = parsed_multi_constraints[2]
+    assert isinstance(parsed, MinProdConstraint)
+    assert all(param in tune_params for param in params)
+    parsed, params = parsed_multi_constraints[3]
+    assert isinstance(parsed, MaxProdConstraint)
+    assert all(param in tune_params for param in params)

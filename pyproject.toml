@@ -1,0 +1,140 @@
+[build-system]
+requires = ["poetry-core>=1.7.0", "setuptools>=67.7.2"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "kernel_tuner"
+packages = [{ include = "kernel_tuner", from = "." }]
+description = "An easy to use CUDA/OpenCL kernel tuner in Python"
+version = "1.0.0b1" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+license = "Apache-2.0"
+authors = [
+    "Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>",
+    "Alessio Sclocco",
+    "Stijn Heldens",
+    "Floris-Jan Willemsen <fjwillemsen97@gmail.com>",
+]
+readme = "README.rst"
+keywords = [
+    "auto-tuning",
+    "gpu",
+    "computing",
+    "pycuda",
+    "cuda",
+    "pyopencl",
+    "opencl",
+]
+classifiers = [
+    "Environment :: Console",
+    "Environment :: GPU",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development",
+    "Topic :: System :: Distributed Computing",
+]
+include = [
+    { path = "doc/source/*.ipynb" },
+] # this ensures that people won't have to clone the whole repo to include notebooks, they can just do `pip install kernel_tuner[tutorial,cuda]`
+homepage = "https://KernelTuner.github.io/kernel_tuner/"
+documentation = "https://KernelTuner.github.io/kernel_tuner/"
+repository = "https://github.com/KernelTuner/kernel_tuner"
+[tool.poetry.urls]
+"Tracker" = "https://github.com/KernelTuner/kernel_tuner/issues"
+[tool.poetry.build]
+generate-setup-file = false
+
+# ATTENTION: if anything is changed here, run `poetry update`
+[tool.poetry.dependencies]
+python = ">=3.8,<3.12"          # TODO if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
+numpy = "^1.22.2"               # set to 1.22.2 instead of 1.22.4 to match oldest-supported-numpy required by pycuda
+scipy = "^1.10.1"               # held back by Python 3.8 support (dropped from ^1.11)
+jsonschema = "*"
+python-constraint2 = "^2.0.0b3"
+xmltodict = "*"
+pandas = "^1.4.3"
+scikit-learn = "^1.0.2"
+# TODO torch is used in some places, consider adding it as an (optional) dependency
+
+# List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
+# Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
+# CUDA
+pycuda = { version = "^2022.1", optional = true } # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
+nvidia-ml-py = { version = "*", optional = true }
+pynvml = { version = "^11.4.1", optional = true }
+# cupy-cuda11x = { version = "*", optional = true }    # Note: these are completely optional dependencies as described in CONTRIBUTING.rst
+# cupy-cuda12x = { version = "*", optional = true }
+# cuda-python = { version = "*", optional = true }
+# OpenCL
+pyopencl = { version = "*", optional = true } # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
+# HIP
+pyhip-interface = { version = "*", optional = true }
+# Tutorial
+jupyter = { version = "^1.0.0", optional = true }
+matplotlib = { version = "^1.5.3", optional = true }
+
+[tool.poetry.extras]
+cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
+opencl = ["pyopencl"]
+cuda_opencl = ["pycuda", "pyopencl"]
+hip = ["pyhip-interface"]
+tutorial = ["jupyter", "matplotlib"]
+
+# ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt > doc/requirements.txt`
+# Please note that there is overlap with the `dev` group
+[tool.poetry.group.docs]
+optional = true
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.1.2"           # held back by Python 3.8 support (dropped from ^7.2)
+sphinx_rtd_theme = "^1.3.0" # updated from "^0.1.9"
+sphinx-pyproject = "^0.3"
+nbsphinx = "^0.9"
+ipython = "*"
+pytest = "^7.4.0"           # TODO why do we need pytest here?
+markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
+# sphinx-autodoc-typehints = "^1.24.0"
+
+# ATTENTION: if anything is changed here, run `poetry update`
+[tool.poetry.group.test]
+optional = true
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+mock = "^2.0.0"
+nox = "^2023.4.22"
+nox-poetry = "^1.0.3"
+ruff = "^0.0.286"
+pep440 = "^0.1.2"
+tomli = "^2.0.1"      # can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11
+
+# development dependencies are unused for now, as this is already covered by test and docs
+# # ATTENTION: if anything is changed here, run `poetry update`
+# [tool.poetry.group.dev.dependencies]
+
+[tool.pytest.ini_options]
+minversion = "7.4"
+pythonpath = [
+    "kernel_tuner",
+] # necessary to get coverage reports without installing with `-e`
+addopts = "--cov --cov-config=.coveragerc --cov-report html --cov-report term-missing --cov-fail-under 60"
+testpaths = ["test"]
+
+[tool.black]
+line-length = 120
+[tool.ruff]
+line-length = 120
+respect-gitignore = true
+exclude = ["doc", "examples"]
+select = [
+    "E", # pycodestyle
+    "F", # pyflakes,
+    "D", # pydocstyle,
+]
+[tool.ruff.pydocstyle]
+convention = "google"
