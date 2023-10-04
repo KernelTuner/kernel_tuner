@@ -528,7 +528,7 @@ class DeviceInterface(object):
                 raise e
         return func
 
-    def preprocess_gpu_arguments(old_arguments, params):
+    def preprocess_gpu_arguments(self, old_arguments, params):
         """ Get a flat list of arguments based on the configuration given by `params` """
         return _preprocess_gpu_arguments(old_arguments, params)
 
