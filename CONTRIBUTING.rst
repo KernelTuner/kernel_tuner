@@ -1,3 +1,5 @@
+.. _contributing:
+
 Contribution guide
 ==================
 Thank you for considering to contribute to Kernel Tuner!
@@ -29,9 +31,9 @@ Before creating a pull request please ensure the following:
 * Any matching entries in the roadmap.md are updated/removed
 
 If you are in doubt on where to put your additions to the Kernel Tuner, please
-have look at the `design documentation
-<https://kerneltuner.github.io/kernel_tuner/stable/design.html>`__, or discuss it in the issue regarding your additions.
+have look at the :ref:`design documentation <design documentation>`, or discuss it in the issue regarding your additions.
 
+.. _development environment:
 
 Development environment
 -----------------------
@@ -47,7 +49,7 @@ Steps with :bash:`sudo` access (e.g. on a local device):
 #. Install the required Python versions: :bash:`pyenv install 3.8 3.9 3.10 3.11`.
 #. Set the Python versions so they can be found: :bash:`pyenv global 3.8 3.10 3.11` (replace :bash:`global` with :bash:`local` when using the virtualenv).
 #. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`.
-#. Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in `Installation <https://kerneltuner.github.io/kernel_tuner/stable/install.html>`__.
+#. Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in :ref:`Installation <installation>`.
 #. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`
     * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
     * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
@@ -66,7 +68,7 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
 #. Setup a virtual environment: :bash:`conda create --name kerneltuner python=3.11` (or whatever Python version and environment name you prefer).
 #. Activate the virtual environment: :bash:`conda activate kerneltuner`.
     * [Optional] to use the correct environment by default, execute :bash:`conda config --set auto_activate_base false`, and add `conda activate kerneltuner` to your :bash:`.bash_profile` or :bash:`.bashrc`.
-    * Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see `Installation <https://kerneltuner.github.io/kernel_tuner/stable/install.html>`__.
+    * Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see :ref:`Installation <installation>`.
     * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
     * [Optional] the loading of modules and setting of paths is likely convenient to put in your :bash:`.bash_profile` or :bash:`.bashrc`.
 #. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`.

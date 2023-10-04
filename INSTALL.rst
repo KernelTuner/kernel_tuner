@@ -1,3 +1,5 @@
+.. _installation:
+
 Installation
 ============
 
@@ -5,7 +7,7 @@ The Kernel Tuner requires several packages to be installed. First of all, you ne
 working Python version, several Python packages, and optionally CUDA and/or OpenCL
 installations. All of this is explained in detail in this guide.
 
-For comprehensive step-by-step instructions on setting up a development environment, see `Contributing <https://kerneltuner.github.io/kernel_tuner/stable/contributing.html#development-environment>`__.
+For comprehensive step-by-step instructions on setting up a development environment, see :ref:`Development Environment <development environment>`.
 
 
 Python
@@ -40,6 +42,9 @@ The following command will install Kernel Tuner together with the required depen
     pip install kernel_tuner
 
 There are also optional dependencies, explained below.
+
+
+.. _installing cuda:
 
 CUDA and PyCUDA
 ---------------
@@ -141,7 +146,7 @@ Installing the git version
 
 You can also install from the git repository. This way you also get the examples.
 Please note that this will install all required dependencies in the current environment.
-For step-by-step instructions on setting up a development environment, see `Contributing <https://kerneltuner.github.io/kernel_tuner/stable/contributing.html#development-environment>`__.
+For step-by-step instructions on setting up a development environment, see :ref:`Development Environment <development environment>`.
 
 .. code-block:: bash
 
