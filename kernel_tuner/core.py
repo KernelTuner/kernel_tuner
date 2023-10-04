@@ -1,28 +1,27 @@
 """ Module for grouping the core functionality needed by most runners """
 
-import time
-from collections import namedtuple
 import logging
 import re
-import numpy as np
+import time
+from collections import namedtuple
 
+import numpy as np
 
 try:
     import cupy as cp
 except ImportError:
     cp = np
 
+import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
+from kernel_tuner.backends.c import CFunctions
 from kernel_tuner.backends.cupy import CupyFunctions
-from kernel_tuner.backends.pycuda import PyCudaFunctions
+from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.c import CFunctions
-from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.hip import HipFunctions
-import kernel_tuner.util as util
+from kernel_tuner.backends.pycuda import PyCudaFunctions
+from kernel_tuner.observers.nvml import NVMLObserver
+from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
 
 try:
     import torch
@@ -245,7 +244,7 @@ class DeviceInterface(object):
         elif lang.upper() == "HIP":
             dev = HipFunctions(device, compiler_options=compiler_options, iterations=iterations, observers=observers)
         else:
-            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, or C is not implemented yet")
+            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
 
         #look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
@@ -529,26 +528,22 @@ class DeviceInterface(object):
                 raise e
         return func
 
+    @staticmethod
+    def preprocess_gpu_arguments(old_arguments, params):
+        """ Get a flat list of arguments based on the configuration given by `params` """
+        return _preprocess_gpu_arguments(old_arguments, params)
+
     def copy_shared_memory_args(self, smem_args):
-        """adds shared memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_shared_memory_args(smem_args)
-        else:
-            raise RuntimeError("Error cannot copy shared memory arguments when language is not CUDA")
+        """adds shared memory arguments to the most recently compiled module"""
+        self.dev.copy_shared_memory_args(smem_args)
 
     def copy_constant_memory_args(self, cmem_args):
-        """adds constant memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_constant_memory_args(cmem_args)
-        else:
-            raise RuntimeError("Error cannot copy constant memory arguments when language is not CUDA")
+        """adds constant memory arguments to the most recently compiled module"""
+        self.dev.copy_constant_memory_args(cmem_args)
 
     def copy_texture_memory_args(self, texmem_args):
-        """adds texture memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_texture_memory_args(texmem_args)
-        else:
-            raise RuntimeError("Error cannot copy texture memory arguments when language is not CUDA")
+        """adds texture memory arguments to the most recently compiled module"""
+        self.dev.copy_texture_memory_args(texmem_args)
 
     def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
