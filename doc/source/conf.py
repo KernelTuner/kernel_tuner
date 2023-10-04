@@ -34,18 +34,13 @@ config = SphinxConfig(
 year = time.strftime("%Y")
 startyear = "2016"
 
-project = "python-constraint"
-# author = config.author    # this is a list of all authors
-author = "Ben van Werkhoven"
+project = "Kernel Tuner"
+# author = "Ben van Werkhoven"
+author = config.author    # this is a list of all authors
 copyright = f"{startyear}-{year}, {author}"
 version = config.version  # short version (e.g. 2.6)
 release = config.version  # full version, including alpha/beta/rc tags. (e.g. 2.6rc1)
 
-# The version info for the project you're documenting, acts as replacement for
-# |version| and |release|, also used in various other places throughout the
-# built documents.
-version = config.version  # short version (e.g. 2.6)
-release = config.version  # full version, including alpha/beta/rc tags. (e.g. 2.6rc1)
 
 # -- General configuration ------------------------------------------------
 

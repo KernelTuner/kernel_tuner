@@ -10,10 +10,14 @@ version = "1.0.0b1" # adhere to PEP440 versioning: https://packaging.python.org/
 license = "Apache-2.0"
 authors = [
     "Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>",
-    "Alessio Sclocco",
-    "Stijn Heldens",
-    "Floris-Jan Willemsen <fjwillemsen97@gmail.com>",
+    "Alessio Sclocco <a.sclocco@esciencecenter.nl>",
+    "Stijn Heldens <s.heldens@esciencecenter.nl>",
+    "Floris-Jan Willemsen <f.j.Willemsen@esciencecenter.nl>",
+    "Willem-Jan Palenstijn <w.j.palenstijn@liacs.leidenuniv.nl>",
+    "Bram Veenboer <veenboer@astron.nl>",
+    "Richard Schoonhoven <Richard.Schoonhoven@cwi.nl>",
 ]
+
 readme = "README.rst"
 keywords = [
     "auto-tuning",
