@@ -538,7 +538,7 @@ class DeviceInterface(object):
 
     def copy_constant_memory_args(self, cmem_args):
         self.dev.copy_constant_memory_args(cmem_args)
-        
+
     def copy_texture_memory_args(self, texmem_args):
         self.dev.copy_texture_memory_args(texmem_args)
 
