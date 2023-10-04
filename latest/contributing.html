@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contribution guide &mdash; python-constraint 1.0.0b1 documentation</title>
+  <title>Contribution guide &mdash; Kernel Tuner 1.0.0b1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -30,7 +30,7 @@
           
           
           <a href="contents.html" class="icon icon-home">
-            python-constraint
+            Kernel Tuner
           </a>
               <div class="version">
                 1.0.0b1
@@ -92,7 +92,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">python-constraint</a>
+          <a href="contents.html">Kernel Tuner</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -138,10 +138,10 @@
 <li><p>Any matching entries in the roadmap.md are updated/removed</p></li>
 </ul>
 <p>If you are in doubt on where to put your additions to the Kernel Tuner, please
-have look at the <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/stable/design.html">design documentation</a>, or discuss it in the issue regarding your additions.</p>
+have look at the <a class="reference internal" href="design.html#design-documentation"><span class="std std-ref">design documentation</span></a>, or discuss it in the issue regarding your additions.</p>
 </section>
 <section id="development-environment">
-<h2>Development environment<a class="headerlink" href="#development-environment" title="Permalink to this heading">¶</a></h2>
+<span id="id1"></span><h2>Development environment<a class="headerlink" href="#development-environment" title="Permalink to this heading">¶</a></h2>
 <p>The following steps help you set up a development environment.</p>
 <section id="local-setup">
 <h3>Local setup<a class="headerlink" href="#local-setup" title="Permalink to this heading">¶</a></h3>
@@ -158,7 +158,7 @@ have look at the <a class="reference external" href="https://kerneltuner.github.
 <li><p>Install the required Python versions: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.8<span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11</code>.</p></li>
 <li><p>Set the Python versions so they can be found: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>global<span class="w"> </span><span class="m">3</span>.8<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11</code> (replace <code class="code highlight bash docutils literal highlight-bash">global</code> with <code class="code highlight bash docutils literal highlight-bash"><span class="nb">local</span></code> when using the virtualenv).</p></li>
 <li><p><a class="reference external" href="https://python-poetry.org/docs/#installing-with-the-official-installer">Install Poetry</a>: <code class="code highlight bash docutils literal highlight-bash">curl<span class="w"> </span>-sSL<span class="w"> </span>https://install.python-poetry.org<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-</code>.</p></li>
-<li><p>Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/stable/install.html">Installation</a>.</p></li>
+<li><p>Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in <a class="reference internal" href="install.html#installation"><span class="std std-ref">Installation</span></a>.</p></li>
 <li><dl class="simple">
 <dt>Install the project, dependencies and extras: <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--with<span class="w"> </span>test,docs<span class="w"> </span>-E<span class="w"> </span>cuda<span class="w"> </span>-E<span class="w"> </span>opencl<span class="w"> </span>-E<span class="w"> </span>hip</code>, leaving out <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>cuda</code>, <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>opencl</code> or <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>hip</code> if this does not apply on your system. To go all-out, use <code class="code highlight bash docutils literal highlight-bash">--all-extras</code></dt><dd><ul class="simple">
 <li><p>Depending on the environment, it may be necessary or convenient to install extra packages such as <code class="code highlight bash docutils literal highlight-bash">cupy-cuda11x</code> / <code class="code highlight bash docutils literal highlight-bash">cupy-cuda12x</code>, and <code class="code highlight bash docutils literal highlight-bash">cuda-python</code>. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.</p></li>
@@ -188,7 +188,7 @@ have look at the <a class="reference external" href="https://kerneltuner.github.
 <li><dl class="simple">
 <dt>Activate the virtual environment: <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>activate<span class="w"> </span>kerneltuner</code>.</dt><dd><ul class="simple">
 <li><p>[Optional] to use the correct environment by default, execute <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>config<span class="w"> </span>--set<span class="w"> </span>auto_activate_base<span class="w"> </span><span class="nb">false</span></code>, and add <cite>conda activate kerneltuner</cite> to your <code class="code highlight bash docutils literal highlight-bash">.bash_profile</code> or <code class="code highlight bash docutils literal highlight-bash">.bashrc</code>.</p></li>
-<li><p>Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/stable/install.html">Installation</a>.</p></li>
+<li><p>Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see <a class="reference internal" href="install.html#installation"><span class="std std-ref">Installation</span></a>.</p></li>
 <li><p>Do not forget to make sure the paths are set correctly. If you’re using CUDA, the desired CUDA version should be in <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$PATH</span></code>, <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$LD_LIBARY_PATH</span></code> and <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$CPATH</span></code>.</p></li>
 <li><p>[Optional] the loading of modules and setting of paths is likely convenient to put in your <code class="code highlight bash docutils literal highlight-bash">.bash_profile</code> or <code class="code highlight bash docutils literal highlight-bash">.bashrc</code>.</p></li>
 </ul>
@@ -260,7 +260,7 @@ release. This process is again fully automated using GitHub actions.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2023, Ben van Werkhoven.</p>
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

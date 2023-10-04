@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; python-constraint 1.0.0b1 documentation</title>
+  <title>Installation &mdash; Kernel Tuner 1.0.0b1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -31,7 +31,7 @@
           
           
           <a href="contents.html" class="icon icon-home">
-            python-constraint
+            Kernel Tuner
           </a>
               <div class="version">
                 1.0.0b1
@@ -91,7 +91,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="contents.html">python-constraint</a>
+          <a href="contents.html">Kernel Tuner</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -112,11 +112,11 @@
   <div class="toctree-wrapper compound">
 </div>
 <section id="installation">
-<span id="install"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h1>
+<span id="install"></span><span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h1>
 <p>The Kernel Tuner requires several packages to be installed. First of all, you need a
 working Python version, several Python packages, and optionally CUDA and/or OpenCL
 installations. All of this is explained in detail in this guide.</p>
-<p>For comprehensive step-by-step instructions on setting up a development environment, see <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/stable/contributing.html#development-environment">Contributing</a>.</p>
+<p>For comprehensive step-by-step instructions on setting up a development environment, see <a class="reference internal" href="contributing.html#development-environment"><span class="std std-ref">Development Environment</span></a>.</p>
 <section id="python">
 <h2>Python<a class="headerlink" href="#python" title="Permalink to this heading">¶</a></h2>
 <p>You need a Python installation. We recommend using Python 3 and installing it with <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a>.
@@ -143,7 +143,7 @@ this requires that your home directory is on your <cite>$PYTHONPATH</cite> envir
 <p>There are also optional dependencies, explained below.</p>
 </section>
 <section id="cuda-and-pycuda">
-<h2>CUDA and PyCUDA<a class="headerlink" href="#cuda-and-pycuda" title="Permalink to this heading">¶</a></h2>
+<span id="installing-cuda"></span><h2>CUDA and PyCUDA<a class="headerlink" href="#cuda-and-pycuda" title="Permalink to this heading">¶</a></h2>
 <p>Installing CUDA and PyCUDA is optional, because you may want to only use Kernel
 Tuner for tuning OpenCL or C kernels.</p>
 <p>If you want to use the Kernel Tuner to tune
@@ -217,7 +217,7 @@ The HIP compiler is included as part of the ROCm software stack. Here is AMD’s
 <h2>Installing the git version<a class="headerlink" href="#installing-the-git-version" title="Permalink to this heading">¶</a></h2>
 <p>You can also install from the git repository. This way you also get the examples.
 Please note that this will install all required dependencies in the current environment.
-For step-by-step instructions on setting up a development environment, see <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/stable/contributing.html#development-environment">Contributing</a>.</p>
+For step-by-step instructions on setting up a development environment, see <a class="reference internal" href="contributing.html#development-environment"><span class="std std-ref">Development Environment</span></a>.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/benvanwerkhoven/kernel_tuner.git
 <span class="nb">cd</span><span class="w"> </span>kernel_tuner
 curl<span class="w"> </span>-sSL<span class="w"> </span>https://install.python-poetry.org<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-
@@ -270,7 +270,7 @@ you could use:</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2023, Ben van Werkhoven.</p>
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
