@@ -477,19 +477,19 @@ Currently supported: “CUDA”, “OpenCL”, “HIP” or “C”</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.copy_constant_memory_args">
 <span class="sig-name descname"><span class="pre">copy_constant_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.copy_constant_memory_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>adds constant memory arguments to the most recently compiled module, if using CUDA</p>
+<dd><p>adds constant memory arguments to the most recently compiled module</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.copy_shared_memory_args">
 <span class="sig-name descname"><span class="pre">copy_shared_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">smem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.copy_shared_memory_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>adds shared memory arguments to the most recently compiled module, if using CUDA</p>
+<dd><p>adds shared memory arguments to the most recently compiled module</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.copy_texture_memory_args">
 <span class="sig-name descname"><span class="pre">copy_texture_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.copy_texture_memory_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>adds texture memory arguments to the most recently compiled module, if using CUDA</p>
+<dd><p>adds texture memory arguments to the most recently compiled module</p>
 </dd></dl>
 
 <dl class="py method">
@@ -508,6 +508,12 @@ Currently supported: “CUDA”, “OpenCL”, “HIP” or “C”</p></li>
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.memcpy_dtoh">
 <span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.memcpy_dtoh" title="Permalink to this definition">¶</a></dt>
 <dd><p>perform a device to host memory copy</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.preprocess_gpu_arguments">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">preprocess_gpu_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.preprocess_gpu_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a flat list of arguments based on the configuration given by <cite>params</cite></p>
 </dd></dl>
 
 <dl class="py method">
