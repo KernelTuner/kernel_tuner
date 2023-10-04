@@ -98,7 +98,14 @@ try:
 except ImportError:
     torch = TorchPlaceHolder()
 
-default_block_size_names = ["block_size_x", "block_size_y", "block_size_z"]
+default_block_size_names = [
+    "block_size_x",
+    "block_size_y",
+    "block_size_z",
+    "ngangs",
+    "nworkers",
+    "vlength",
+]
 
 
 def check_argument_type(dtype, kernel_argument):
@@ -136,7 +143,9 @@ def check_argument_list(kernel_name, kernel_string, args):
     for arguments_set, arguments in enumerate(kernel_arguments):
         collected_errors.append(list())
         if len(arguments) != len(args):
-            collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
+            collected_errors[arguments_set].append(
+                "Kernel and host argument lists do not match in size."
+            )
             continue
         for i, arg in enumerate(args):
             kernel_argument = arguments[i]
@@ -182,7 +191,10 @@ def check_stop_criterion(to):
     """Checks if max_fevals is reached or time limit is exceeded."""
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
         raise StopCriterionReached("max_fevals reached")
-    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
+    if "time_limit" in to and (
+        ((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3))
+        > to.time_limit
+    ):
         raise StopCriterionReached("time limit exceeded")
 
 
@@ -191,7 +203,13 @@ def check_tune_params_list(tune_params, observers, simulation_mode=False):
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
-            raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
+            raise ValueError(
+                "Tune parameter "
+                + name
+                + " with value "
+                + str(param)
+                + " has a forbidden name!"
+            )
     if any("nvml_" in param for param in tune_params):
         if not simulation_mode and (not observers or not any(isinstance(obs, NVMLObserver) for obs in observers)):
             raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
@@ -225,7 +243,10 @@ def check_block_size_params_names_list(block_size_names, tune_params):
                 )
     else:  # if default block size names are used
         if not any([k in default_block_size_names for k in tune_params.keys()]):
-            warnings.warn("None of the tunable parameters specify thread block dimensions!", UserWarning)
+            warnings.warn(
+                "None of the tunable parameters specify thread block dimensions!",
+                UserWarning,
+            )
 
 
 def check_restrictions(restrictions, params: dict, verbose: bool):
@@ -253,7 +274,11 @@ def check_restrictions(restrictions, params: dict, verbose: bool):
             except ZeroDivisionError:
                 pass
     if not valid and verbose:
-        print("skipping config", get_instance_string(params), "reason: config fails restriction")
+        print(
+            "skipping config",
+            get_instance_string(params),
+            "reason: config fails restriction",
+        )
     return valid
 
 
@@ -304,7 +329,9 @@ def config_valid(config, tuning_options, max_threads):
         if not legal:
             return False
     block_size_names = tuning_options.get("block_size_names", None)
-    valid_thread_block_dimensions = check_thread_block_dimensions(params, max_threads, block_size_names)
+    valid_thread_block_dimensions = check_thread_block_dimensions(
+        params, max_threads, block_size_names
+    )
     return valid_thread_block_dimensions
 
 
@@ -331,8 +358,13 @@ def detect_language(kernel_string):
 def get_best_config(results, objective, objective_higher_is_better=False):
     """Returns the best configuration from a list of results according to some objective."""
     func = max if objective_higher_is_better else min
-    ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
-    best_config = func(results, key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val)
+    ignore_val = (
+        sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
+    )
+    best_config = func(
+        results,
+        key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val,
+    )
     return best_config
 
 
@@ -373,10 +405,18 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
         if callable(divisor_list):
             return divisor_list(params)
         else:
-            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+            return np.prod(
+                [int(eval(replace_param_occurrences(s, params))) for s in divisor_list]
+            )
 
-    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
-    return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
+    divisors = [
+        get_dimension_divisor(d, block_size_names[i], params)
+        for i, d in enumerate(grid_div)
+    ]
+    return tuple(
+        int(np.ceil(float(current_problem_size[i]) / float(d)))
+        for i, d in enumerate(divisors)
+    )
 
 
 def get_instance_string(params):
@@ -438,7 +478,9 @@ def get_problem_size(problem_size, params):
         elif isinstance(s, (int, np.integer)):
             current_problem_size[i] = s
         else:
-            raise TypeError("Error: problem_size should only contain strings or integers")
+            raise TypeError(
+                "Error: problem_size should only contain strings or integers"
+            )
     return current_problem_size
 
 
@@ -1022,12 +1064,18 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     # if file does not exist, create new cache
     if not os.path.isfile(cache):
         if tuning_options.simulation_mode:
-            raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
+            raise ValueError(
+                f"Simulation mode requires an existing cachefile: file {cache} does not exist"
+            )
 
         c = dict()
         c["device_name"] = runner.dev.name
         c["kernel_name"] = kernel_options.kernel_name
-        c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"
+        c["problem_size"] = (
+            kernel_options.problem_size
+            if not callable(kernel_options.problem_size)
+            else "callable"
+        )
         c["tune_params_keys"] = list(tuning_options.tune_params.keys())
         c["tune_params"] = tuning_options.tune_params
         c["objective"] = tuning_options.objective
@@ -1052,19 +1100,34 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != runner.dev.name:
-            raise ValueError("Cannot load cache which contains results for different device")
+            raise ValueError(
+                "Cannot load cache which contains results for different device"
+            )
         if cached_data["kernel_name"] != kernel_options.kernel_name:
-            raise ValueError("Cannot load cache which contains results for different kernel")
+            raise ValueError(
+                "Cannot load cache which contains results for different kernel"
+            )
         if "problem_size" in cached_data and not callable(kernel_options.problem_size):
             # if problem_size is not iterable, compare directly
             if not hasattr(kernel_options.problem_size, "__iter__"):
                 if cached_data["problem_size"] != kernel_options.problem_size:
-                    raise ValueError("Cannot load cache which contains results for different problem_size")
+                    raise ValueError(
+                        "Cannot load cache which contains results for different problem_size"
+                    )
             # else (problem_size is iterable)
             # cache returns list, problem_size is likely a tuple. Therefore, the next check
             # checks the equality of all items in the list/tuples individually
-            elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
-                raise ValueError("Cannot load cache which contains results for different problem_size")
+            elif not all(
+                [
+                    i == j
+                    for i, j in zip(
+                        cached_data["problem_size"], kernel_options.problem_size
+                    )
+                ]
+            ):
+                raise ValueError(
+                    "Cannot load cache which contains results for different problem_size"
+                )
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
             if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
                 raise ValueError(
