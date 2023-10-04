@@ -50,7 +50,7 @@ class CompilerFunctions(CompilerBackend):
         :type iterations: int
         """
         self.observers = observers or []
-        self.observers.append(CRuntimeObserver(self))
+        self.observers.append(CompilerRuntimeObserver(self))
 
         self.iterations = iterations
         self.max_threads = 1024
