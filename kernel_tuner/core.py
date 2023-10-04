@@ -534,25 +534,13 @@ class DeviceInterface(object):
         return _preprocess_gpu_arguments(old_arguments, params)
 
     def copy_shared_memory_args(self, smem_args):
-        """adds shared memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_shared_memory_args(smem_args)
-        else:
-            raise RuntimeError("Error cannot copy shared memory arguments when language is not CUDA")
+        self.dev.copy_shared_memory_args(smem_args)
 
     def copy_constant_memory_args(self, cmem_args):
-        """adds constant memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_constant_memory_args(cmem_args)
-        else:
-            raise RuntimeError("Error cannot copy constant memory arguments when language is not CUDA")
-
+        self.dev.copy_constant_memory_args(cmem_args)
+        
     def copy_texture_memory_args(self, texmem_args):
-        """adds texture memory arguments to the most recently compiled module, if using CUDA"""
-        if self.lang == "CUDA":
-            self.dev.copy_texture_memory_args(texmem_args)
-        else:
-            raise RuntimeError("Error cannot copy texture memory arguments when language is not CUDA")
+        self.dev.copy_texture_memory_args(texmem_args)
 
     def create_kernel_instance(self, kernel_source, kernel_options, params, verbose):
         """create kernel instance from kernel source, parameters, problem size, grid divisors, and so on"""
