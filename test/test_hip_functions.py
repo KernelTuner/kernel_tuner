@@ -38,8 +38,7 @@ def env():
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
-# @skip_if_no_pyhip
-@pytest.mark.skip("Currently broken due to pull request #216, to be fixed in issue #217")
+@skip_if_no_pyhip
 def test_ready_argument_list():
 
     size = 1000
@@ -50,27 +49,16 @@ def test_ready_argument_list():
 
     arguments = [d, a, b, c]
 
-    class ArgListStructure(ctypes.Structure):
-        _fields_ = [("field0", ctypes.POINTER(ctypes.c_float)),
-                    ("field1", ctypes.c_int),
-                    ("field2", ctypes.POINTER(ctypes.c_float)),
-                    ("field3", ctypes.c_bool)]
-        def __getitem__(self, key):
-                return getattr(self, self._fields_[key][0])
-
     dev = kt_hip.HipFunctions(0)
     gpu_args = dev.ready_argument_list(arguments)
 
-    argListStructure = ArgListStructure(d.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                                        ctypes.c_int(a),
-                                        b.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                                        ctypes.c_bool(c))
+    # ctypes have no equality defined, so indirect comparison for type and value
+    assert(isinstance(gpu_args[1], ctypes.c_int))
+    assert(isinstance(gpu_args[3], ctypes.c_bool))
+    assert(gpu_args[1] == a)
+    assert(gpu_args[3] == c)
 
-    assert(gpu_args[1] == argListStructure[1])
-    assert(gpu_args[3] == argListStructure[3])
-
-# @skip_if_no_pyhip
-@pytest.mark.skip("Currently broken due to pull request #216, to be fixed in issue #217")
+@skip_if_no_pyhip
 def test_compile():
 
     kernel_string = """
@@ -119,8 +107,7 @@ def test_memcpy_htod():
 
     assert all(output == x)
 
-# @skip_if_no_pyhip
-@pytest.mark.skip("Currently broken due to pull request #216, to be fixed in issue #217")
+@skip_if_no_pyhip
 def test_copy_constant_memory_args():
     kernel_string = """
     __constant__ float my_constant_data[100];
@@ -149,7 +136,7 @@ def test_copy_constant_memory_args():
     grid = (1, 1, 1)
     dev.run_kernel(kernel, gpu_args, threads, grid)
 
-    dev.memcpy_dtoh(output, gpu_args.field0)
+    dev.memcpy_dtoh(output, gpu_args[0])
 
     assert(my_constant_data == output).all()
 
