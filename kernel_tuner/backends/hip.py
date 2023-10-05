@@ -109,6 +109,7 @@ class HipFunctions(GPUBackend):
                     device_ptr = hip.hipMalloc(arg.nbytes)
                     data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
                     hip.hipMemcpy_htod(device_ptr, data_ctypes, arg.nbytes)
+                    # may be part of run_kernel, return allocations here instead
                     ctype_args.append(device_ptr)
                 else:
                     raise TypeError("unknown dtype for ndarray")
@@ -116,6 +117,8 @@ class HipFunctions(GPUBackend):
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
                 ctype_args.append(data_ctypes)
+            else:
+                raise ValueError(f"Invalid argument type {type(arg)}, {arg}")
 
         return ctype_args
 
