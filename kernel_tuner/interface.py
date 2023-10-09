@@ -677,14 +677,16 @@ def tune_kernel(
     env = runner.get_environment(tuning_options)
 
     # finished iterating over search space
-    if not device_options.quiet:
-        if results:  # checks if results is not empty
-            best_config = util.get_best_config(results, objective, objective_higher_is_better)
+    if results:  # checks if results is not empty
+        best_config = util.get_best_config(results, objective, objective_higher_is_better)
+        # add the best configuration to env
+        env['best_config'] = best_config
+        if not device_options.quiet:
             units = getattr(runner, "units", None)
             print("best performing configuration:")
             util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
-        else:
-            print("no results to report")
+    elif not device_options.quiet:
+        print("no results to report")
 
     if cache:
         util.close_cache(cache)
