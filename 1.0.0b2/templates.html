@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Templated kernels &mdash; Kernel Tuner 1.0.0b2 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=69388a00"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Optimization strategies" href="optimization.html" />
+    <link rel="prev" title="Using structs" href="structs.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.0.0b2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Templated kernels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#selecting-a-backend">Selecting a backend</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Templated kernels</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/templates.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="templated-kernels">
+<h1>Templated kernels<a class="headerlink" href="#templated-kernels" title="Permalink to this heading">¶</a></h1>
+<p>It is quite common in CUDA programming to write kernels that use C++ templates. This can be very useful when writing code that can work for several types, for example floats and doubles. However, the use of C++ templates makes it slightly more difficult to directly
+integrate the CUDA kernel into applications that are not written in C++, for example Matlab, Fortran, or Python. And since Kernel Tuner is written in Python, we needed to take a few extra steps to provide support for templated CUDA kernels. Let’s first look at an
+example of what it’s like to tune a templated kernel with Kernel Tuner.</p>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
+<p>Say we have a templated CUDA kernel in a file called vector_add.cu:</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="n">template</span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="linenos">2</span><span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">vector_add</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="o">*</span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">*</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">*</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos">3</span><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block_size_x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+<span class="linenos">4</span><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="o">&lt;</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos">5</span><span class="w">        </span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+<span class="linenos">6</span><span class="w">    </span><span class="p">}</span>
+<span class="linenos">7</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Then the Python script to tune this kernel would be as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="linenos"> 2</span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">tune_kernel</span>
+<span class="linenos"> 3</span>
+<span class="linenos"> 4</span><span class="n">size</span> <span class="o">=</span> <span class="mi">1000000</span>
+<span class="linenos"> 5</span>
+<span class="linenos"> 6</span><span class="n">a</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="linenos"> 7</span><span class="n">b</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="linenos"> 8</span><span class="n">c</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="linenos"> 9</span><span class="n">n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="linenos">10</span>
+<span class="linenos">11</span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
+<span class="linenos">12</span>
+<span class="linenos">13</span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="linenos">14</span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">128</span><span class="o">+</span><span class="mi">64</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">)]</span>
+<span class="linenos">15</span>
+<span class="linenos">16</span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&lt;float&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;vector_add.cu&quot;</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>What you can see is that in the Python code we specify the template instantiation to use. Kernel Tuner will detect the use of templated kernels when the kernel_name positional argument to tune_kernel contains a template argument.</p>
+<p>This feature also allows use to auto-tune template parameters to the kernel. We could for example define a tunable parameter:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;my_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="s2">&quot;double&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>and call tune_kernel using a tunable parameter inside the template arguments:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;vector_add&lt;my_type&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;vector_add.cu&quot;</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="selecting-a-backend">
+<h2>Selecting a backend<a class="headerlink" href="#selecting-a-backend" title="Permalink to this heading">¶</a></h2>
+<p>Kernel Tuner supports multiple backends, for CUDA these are based on PyCUDA and Cupy. The following explains how to enable tuning of templated kernels with either backend.</p>
+<p>The PyCuda backend is the default backend in Kernel Tuner and is selected if the user does not supply the ‘lang’ option and CUDA code is detected in the kernel source, or when lang is set to “CUDA” by the user. PyCuda requires CUDA kernels to have extern C linkage,
+which means that C++ templated kernels are not supported. To support templated kernels regardless of this limitation Kernel Tuner attempts to wrap the templated CUDA kernel by inserting a compile-time template instantiation statement and a wrapper kernel that calls
+the templated CUDA kernel, which is actually demoted to a __device__ function in the process. These automatic code rewrites have a real risk of breaking the code. To minimize the chance of errors due to Kernel Tuner’s automatic code rewrites, it’s best to isolate the
+templated kernel in a single source file and include it where needed in the larger application.</p>
+<p>The Cupy backend provides much more advanced support for C++ templated kernels, because it internally uses NVRTC, the Nvidia runtime compiler. NVRTC does come with some restrictions however, for example NVRTC does not allow any host code to be inside code that
+is passed. So, like with the PyCuda backend it helps to separate the source code of device and host functions into seperate files. You can force Kernel Tuner to use the Cupy backend by passing the lang=”cupy” option to tune_kernel.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="structs.html" class="btn btn-neutral float-left" title="Using structs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="optimization.html" class="btn btn-neutral float-right" title="Optimization strategies" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
