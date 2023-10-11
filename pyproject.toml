@@ -56,15 +56,15 @@ generate-setup-file = false
 
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"          # TODO if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
+python = ">=3.8,<3.12"          # NOTE if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
 numpy = "^1.22.2"               # set to 1.22.2 instead of 1.22.4 to match oldest-supported-numpy required by pycuda
 scipy = "^1.10.1"               # held back by Python 3.8 support (dropped from ^1.11)
 jsonschema = "*"
 python-constraint2 = "^2.0.0b3"
 xmltodict = "*"
-pandas = "^1.4.3"
+pandas = "^2.0.0"
 scikit-learn = "^1.0.2"
-# TODO torch is used in some places, consider adding it as an (optional) dependency
+# Torch can be used with Kernel Tuner, but is not a dependency, should be up to the user to use it
 
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
 # Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
@@ -79,9 +79,9 @@ pynvml = { version = "^11.4.1", optional = true }
 pyopencl = { version = "*", optional = true } # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 # HIP
 pyhip-interface = { version = "*", optional = true }
-# Tutorial
+# Tutorial (for the notebooks used in the examples)
 jupyter = { version = "^1.0.0", optional = true }
-matplotlib = { version = "^1.5.3", optional = true }
+matplotlib = { version = "^3.5.0", optional = true }
 
 [tool.poetry.extras]
 cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
@@ -110,10 +110,10 @@ optional = true
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.0"
 pytest-cov = "^4.1.0"
-mock = "^2.0.0"
+mock = "^5.0.0"
 nox = "^2023.4.22"
 nox-poetry = "^1.0.3"
-ruff = "^0.0.286"
+ruff = "^0.0.292"
 pep440 = "^0.1.2"
 tomli = "^2.0.1"      # can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11
 

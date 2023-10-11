@@ -106,7 +106,7 @@ COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Al
 Optimization, the Firefly Algorithm, Simulated Annealing, Dual Annealing, Iterative Local Search,
 Multi-start Local Search, and Bayesian Optimization.
 
-.. image:: doc/gemm-amd-summary.png
+.. image:: https://github.com/KernelTuner/kernel_tuner/blob/master/doc/gemm-amd-summary.png?raw=true
     :width: 100%
     :align: center
 
@@ -193,8 +193,8 @@ If you use Kernel Tuner in research or research software, please cite the most r
     }
 
 
-.. |Build Status| image:: https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml/badge.svg
-   :target: https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml
+.. |Build Status| image:: https://github.com/KernelTuner/kernel_tuner/actions/workflows/build-test-python-package.yml/badge.svg
+   :target: https://github.com/KernelTuner/kernel_tuner/actions/workflows/build-test-python-package.yml
 .. |CodeCov Badge| image:: https://codecov.io/gh/KernelTuner/kernel_tuner/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/KernelTuner/kernel_tuner
 .. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue

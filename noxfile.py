@@ -112,7 +112,7 @@ def tests(session: Session) -> None:
         except Exception as error:
             print(error)
             session.warn(install_warning)
-    if install_opencl and (session.python == "3.7" or session.python == "3.8"):
+    if install_opencl and session.python == "3.8":
         # if we need to install the OpenCL extras, first install pyopencl seperately.
         # it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry, but only for Python<3.9
         try:

@@ -62,13 +62,18 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
 
 #. Clone the git repository to the desired location: :bash:`git clone https://github.com/KernelTuner/kernel_tuner.git`.
 #. Install Conda with `Mamba <https://mamba.readthedocs.io/en/latest/mamba-installation.html>`__ (for better performance) or `Miniconda <https://docs.conda.io/projects/conda/en/latest/user-guide/install>`__ (for traditional minimal Conda).
-    * [Optional] both Mamba and Miniconda can be automatically activated via :bash:`~/.bashrc`. Do not forget to add these (usually mentioned at the end of the installation).
-    * Exit the shell and re-enter to make sure Conda is available, :bash:`cd` to the kernel tuner directory.
+    * [Optional] if you are under quotas or are otherwise restricted by disk space, you can instruct Conda to use a different directory for saving environments by adding the following to your :bash:`.condarc` file:
+        .. code-block:: bash
+
+            envs_dirs:
+             - /path/to/directory
+    * [Optional] both Mamba and Miniconda can be automatically activated via :bash:`~/.bashrc`. Do not forget to add these (usually provided at the end of the installation).
+    * Exit the shell and re-enter to make sure Conda is available. :bash:`cd` to the kernel tuner directory.
     * [Optional] update Conda if available before continuing: :bash:`conda update -n base -c conda-forge conda`.
 #. Setup a virtual environment: :bash:`conda create --name kerneltuner python=3.11` (or whatever Python version and environment name you prefer).
 #. Activate the virtual environment: :bash:`conda activate kerneltuner`.
     * [Optional] to use the correct environment by default, execute :bash:`conda config --set auto_activate_base false`, and add `conda activate kerneltuner` to your :bash:`.bash_profile` or :bash:`.bashrc`.
-    * Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see :ref:`Installation <installation>`.
+#. Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see :ref:`Installation <installation>`.
     * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
     * [Optional] the loading of modules and setting of paths is likely convenient to put in your :bash:`.bash_profile` or :bash:`.bashrc`.
 #. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`.
@@ -82,13 +87,15 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
     * If you alternatively set up with Venv: :bash:`echo "venv" > noxenv.txt`.
     * If you set up with Virtualenv, do not create this file, as this is already the default.
     * Be sure to adjust or remove this file when changing backends.
+#. [Optional] Run the tests on Nox as described below.
 
 
 Running tests
 -------------
 To run the tests you can use :bash:`nox` (to run against all supported Python versions in isolated environments) and :bash:`pytest` (to run against the local Python version) in the top-level directory.
+For full coverage, make Nox install and use the additional tests (such as cupy and cuda-python) with :bash:`nox -- additional-tests`.
 It's also possible to invoke PyTest from the 'Testing' tab in Visual Studio Code.
-The isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run :bash:`nox` with the :bash:`small-disk` option. This removes the other environment caches before each session is ran.
+The isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run :bash:`nox` with the :bash:`small-disk` option. This removes the other environment caches before each session is ran (note that this will take longer to run).
 
 Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
 are not installed/present. The same holds for tests that require PyOpenCL, Cupy, Nvidia CUDA.
