@@ -396,11 +396,13 @@ class BayesianOptimization:
         return self.unvisited_cache.index(param_config)
 
     def normalize_param_config(self, param_config: tuple) -> tuple:
-        """Normalizes a parameter configuration."""
-        normalized = tuple(
-            self.normalized_dict[self.param_names[index]][param_value] for index, param_value in enumerate(param_config)
-        )
-        return normalized
+        """Normalizes a parameter configuration. Skips over pruned values."""
+        param_config = self.unprune_param_config(param_config)
+        normalized = list()
+        for index, param_value in enumerate(param_config):
+            if self.removed_tune_params[index] is None:
+                normalized.append(self.normalized_dict[self.param_names[index]][param_value])
+        return tuple(normalized)
 
     def denormalize_param_config(self, param_config: tuple) -> tuple:
         """Denormalizes a parameter configuration."""

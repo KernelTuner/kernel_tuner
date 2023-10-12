@@ -51,15 +51,30 @@ def test_strategies(vector_add, strategy):
 
     assert len(results) > 0
 
+    # check if the number of valid unique configurations is less than or equal to max_fevals
     if not strategy == "brute_force":
-        # check if the number of valid unique configurations is less then max_fevals
-
         tune_params = vector_add[-1]
         unique_results = {}
-
         for result in results:
             x_int = ",".join([str(v) for k, v in result.items() if k in tune_params])
             if not isinstance(result["time"], util.InvalidConfig):
                 unique_results[x_int] = result["time"]
-
         assert len(unique_results) <= filter_options["max_fevals"]
+
+    # check whether the returned dictionaries contain exactly the expected keys and the appropriate type
+    expected_items = {
+        'block_size_x': int,
+        'time': (float, int),
+        'times': list,
+        'compile_time': (float, int),
+        'verification_time': (float, int),
+        'benchmark_time': (float, int),
+        'strategy_time': (float, int),
+        'framework_time': (float, int),
+        'timestamp': str
+    }
+    for res in results:
+        assert len(res) == len(expected_items)
+        for expected_key, expected_type in expected_items.items():
+            assert expected_key in res
+            assert isinstance(res[expected_key], expected_type)
