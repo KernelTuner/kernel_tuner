@@ -203,8 +203,14 @@ def snap_to_nearest_config(x, tune_params):
     """Helper func that for each param selects the closest actual value."""
     params = []
     for i, k in enumerate(tune_params.keys()):
-        values = np.array(tune_params[k])
-        idx = np.abs(values - x[i]).argmin()
+        values = tune_params[k]
+
+        # if `x[i]` is in `values`, use that value, otherwise find the closest match
+        if x[i] in values:
+            idx = values.index(x[i])
+        else:
+            idx = np.argmin([abs(v - x[i]) for v in values])
+
         params.append(values[idx])
     return params
 

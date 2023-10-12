@@ -50,9 +50,10 @@ def test_snap_to_nearest_config():
     tune_params['x'] = [0, 1, 2, 3, 4, 5]
     tune_params['y'] = [0, 1, 2, 3, 4, 5]
     tune_params['z'] = [0, 1, 2, 3, 4, 5]
+    tune_params['w'] = ['a', 'b', 'c']
 
-    x = [-5.7, 3.14, 1e6]
-    expected = [0, 3, 5]
+    x = [-5.7, 3.14, 1e6, 'b']
+    expected = [0, 3, 5, 'b']
 
     answer = common.snap_to_nearest_config(x, tune_params)
     assert answer == expected
