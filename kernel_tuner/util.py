@@ -271,6 +271,20 @@ def check_restrictions(restrictions, params: dict, verbose: bool):
                 elif callable(restrict) and not restrict(params):
                     valid = False
                     break
+                # if it's a tuple, use only the parameters in the second argument to call the restriction
+                elif (isinstance(restrict, tuple) and len(restrict) == 2
+                    and callable(restrict[0]) and isinstance(restrict[1], (list, tuple))):
+                    # unpack the tuple
+                    restrict, selected_params = restrict
+                    # look up the selected parameters and their value
+                    selected_params = dict((key, params[key]) for key in selected_params)
+                    # call the restriction
+                    if not restrict(**selected_params):
+                        valid = False
+                        break
+                # otherwise, raise an error
+                else:
+                    raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")
             except ZeroDivisionError:
                 pass
     if not valid and verbose:
