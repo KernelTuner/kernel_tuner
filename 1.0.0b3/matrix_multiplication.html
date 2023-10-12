@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matrix multiplication &mdash; Kernel Tuner 1.0.0b3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=cd400e19"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Kernel Tuner Examples" href="examples.html" />
+    <link rel="prev" title="Diffusion" href="diffusion.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.0.0b3
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Matrix multiplication</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Naive-CUDA-kernel">Naive CUDA kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Tuning-a-naive-kernel">Tuning a naive kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Using-shared-memory">Using shared memory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Increase-work-per-thread">Increase work per thread</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Matrix multiplication</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/matrix_multiplication.ipynb" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Matrix-multiplication">
+<h1>Matrix multiplication<a class="headerlink" href="#Matrix-multiplication" title="Permalink to this heading">¶</a></h1>
+<p>This guide demonstrates how to use Kernel Tuner to test and tune kernels, using matrix multiplication as an example.</p>
+<p>Matrix multiplication is one of the most well-known and widely-used linear algebra operations, and is frequently used to demonstrate the high-performance computing capabilities of GPUs. As such, matrix multiplication presents a familiar starting point for many GPU programmers.</p>
+<div class="admonition note">
+<p><strong>Note:</strong> If you are reading this guide on the Kernel Tuner’s documentation pages, note that you can actually run this guide as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/kerneltuner/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the notebook by typing “jupyter notebook” in the “kernel_tuner/doc/source” directory.</p>
+</div>
+<p>Make sure to execute all the code cells you come across in this tutorial by selecting them and pressing <em>shift+enter</em>.</p>
+<section id="Naive-CUDA-kernel">
+<h2>Naive CUDA kernel<a class="headerlink" href="#Naive-CUDA-kernel" title="Permalink to this heading">¶</a></h2>
+<p>We’ll start with a very simple kernel for performing a matrix multiplication in CUDA. The idea is that this kernel is executed with one thread per element in the output matrix. As such, each thread <span class="math notranslate nohighlight">\((i,j)\)</span> iterates over the entire row <span class="math notranslate nohighlight">\(i\)</span> in matrix <span class="math notranslate nohighlight">\(A\)</span>, and column <span class="math notranslate nohighlight">\(j\)</span> in matrix <span class="math notranslate nohighlight">\(B\)</span>.</p>
+<p>To keep the code clean and simple, we’ll assume that we only work with square matrices. Execute the following cell to write our naive matrix multiplication kernel to a file name “matmul_naive.cu” by pressing <em>shift+enter</em>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%writefile</span> matmul_naive.cu
+
+<span class="c1">#define WIDTH 4096</span>
+
+<span class="n">__global__</span> <span class="n">void</span> <span class="n">matmul_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nb">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="nb">float</span> <span class="nb">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">k</span><span class="o">&lt;</span><span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nb">sum</span> <span class="o">+=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">B</span><span class="p">[</span><span class="n">k</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">];</span>
+    <span class="p">}</span>
+
+    <span class="n">C</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>This kernel assumes that the width and height of the matrices A, B, and C is equal to <code class="docutils literal notranslate"><span class="pre">WIDTH</span></code>, which is known at compile time. Of course, you’ll want a more flexible solution in reality, but this is just an example kernel to demonstrate how to use Kernel Tuner.</p>
+<p>There are two more contants in the code that are currently undefined. These are <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>, these are the names that Kernel Tuner uses by default for denoting the thread block dimensions in x and y. The actual values used for these constants at compile time can be any sensible value for thread block dimensions. As long as we create enough threads to compute all elements in <span class="math notranslate nohighlight">\(C\)</span>, the output will not be affected by the value of <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>.
+Parameters in the code that have this property are called <em>tunable parameters</em>.</p>
+<p>Because we can pick any value for these parameters, we can use auto-tuning to automatically find the best performing combination of parameters. That’s exactly what we’re going to do in this tutorial!</p>
+</section>
+<section id="Tuning-a-naive-kernel">
+<h2>Tuning a naive kernel<a class="headerlink" href="#Tuning-a-naive-kernel" title="Permalink to this heading">¶</a></h2>
+<p>Now we will have a look at how to use Kernel Tuner to find the best performing combination of tunable parameters for our naive matrix multiplication kernel. We’ll go over the process of creating an auto-tuning script step-by-step.</p>
+<p>Because the tuner will need to execute the kernel, we start with creating some input data.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
+
+<span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">problem_size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">problem_size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">C</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>In the above Python code, we’ve specified the size of matrices and generated some random data for matrix <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span>, and a zeroed matrix <span class="math notranslate nohighlight">\(C\)</span>. We’ve also created a list named <code class="docutils literal notranslate"><span class="pre">args</span></code> that contains the matrices C, A, and B, which will be used as the argument list by the tuner to call the kernel and measure its performance.</p>
+<p>The next step is specifying to the tuner what values can be used for the thread block dimensions in x and y. In other words, we specify the tunable parameters and the possible values they can take.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="n">tune_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>We are creating a dictionary to hold the tunable parameters. The name of the parameter is used the key, and the list of possible values for this parameter is the value for this key in the dictionary. We are using a small set of possible values here, but you are free to specify any values that you like. In general, we try to keep the total number of threads in a thread block as a multiple of the warpsize (32) on the GPU.</p>
+<p>Also, to keep our kernel clean and simple, we did not include any bounds checking in the kernel code. This means that, for the kernel to run correctly, we need to make sure that the number of threads used in a particular dimension divides the size of the matrix in that dimension. By using 4096 as the width and height of our matrix and using only powers of two for our thread block dimensions we can avoid memory errors.</p>
+<p>Before we start tuning, we will also tell Kernel Tuner how to compute a metric that we commonly use to express the compute performance of GPU kernels, namelijk GFLOP/s, which stands for giga floating-point operations per second. User-defined metrics are specified using the metrics option and should be supplied using an ordered dictionary, because metrics are composable.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;GFLOP/s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span> <span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">problem_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">3</span><span class="o">/</span><span class="mf">1e9</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Now that we’ve specified the input, the tunable parameters, and a user-defined metric, we are ready to call Kernel Tuner’s <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> method to start auto-tuning our kernel.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">tune_kernel</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul_naive.cu&quot;</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Before looking at the result, we’ll explain briefly how we called <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. The first argument is the name of the kernel that we want to tune. The second argument is a string that contains the filename of the kernel. It is also possible to directly pass a string that contains the code, or to pass a Python function that generates the kernel code. The tuner will figure out which language (CUDA or OpenCL) is being used in the kernel code. The third argument to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> is the problem
+size, which is used by the tuner to compute the grid dimensions for our kernel. To compute the grid dimensions the tuner needs to know the thread block dimensions, which we have specified using the tunable parameters (fifth argument). The fourth argument is the argument list that the tuner will need to actually call the kernel.</p>
+<p>As we can see the execution times printed by <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> already vary quite dramatically between the different values for <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code>. However, even with the best thread block dimensions our kernel is still not very efficient.</p>
+<p>Therefore, we’ll have a look at the Nvidia Visual Profiler to find that the utilization of our kernel is actually pretty low: <img alt="matmul_naive" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul_naive.png" /> There is however, a lot of opportunity for data reuse, which is realized by making the threads in a thread block collaborate.</p>
+</section>
+<section id="Using-shared-memory">
+<h2>Using shared memory<a class="headerlink" href="#Using-shared-memory" title="Permalink to this heading">¶</a></h2>
+<p>We can increase the utilization of memory bandwidth with a technique called cache-blocking or loop-tiling. To this end, we define two square data structures in shared memory, which will be used for storing square parts of matrix <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span>. The threads in a thread block will collaboratively fill these two submatrices, and then proceed to perform all the computations that need this data, before moving to the next blocked iteration.</p>
+<p>The code required to do this is a little bit more complex:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%writefile</span> matmul_shared.cu
+
+<span class="c1">#define WIDTH 4096</span>
+
+<span class="n">__global__</span> <span class="n">void</span> <span class="n">matmul_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">__shared__</span> <span class="nb">float</span> <span class="n">sA</span><span class="p">[</span><span class="n">block_size_y</span><span class="p">][</span><span class="n">block_size_x</span><span class="p">];</span>
+    <span class="n">__shared__</span> <span class="nb">float</span> <span class="n">sB</span><span class="p">[</span><span class="n">block_size_y</span><span class="p">][</span><span class="n">block_size_x</span><span class="p">];</span>
+
+    <span class="nb">int</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">+</span> <span class="n">tx</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">+</span> <span class="n">ty</span><span class="p">;</span>
+
+    <span class="nb">float</span> <span class="nb">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">k</span><span class="p">,</span><span class="n">kb</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">k</span><span class="o">&lt;</span><span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span><span class="o">+=</span><span class="n">block_size_x</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">__syncthreads</span><span class="p">();</span>
+        <span class="n">sA</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">k</span><span class="o">+</span><span class="n">tx</span><span class="p">];</span>
+        <span class="n">sB</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">B</span><span class="p">[(</span><span class="n">k</span><span class="o">+</span><span class="n">ty</span><span class="p">)</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">];</span>
+        <span class="n">__syncthreads</span><span class="p">();</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">kb</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">kb</span><span class="o">&lt;</span><span class="n">block_size_x</span><span class="p">;</span> <span class="n">kb</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nb">sum</span> <span class="o">+=</span> <span class="n">sA</span><span class="p">[</span><span class="n">ty</span><span class="p">][</span><span class="n">kb</span><span class="p">]</span> <span class="o">*</span> <span class="n">sB</span><span class="p">[</span><span class="n">kb</span><span class="p">][</span><span class="n">tx</span><span class="p">];</span>
+        <span class="p">}</span>
+
+    <span class="p">}</span>
+
+    <span class="n">C</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">WIDTH</span><span class="o">+</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>As you can see the simple for loop inside our kernel has been replaced with a blocked version. The blocked loop consists of two for-loop constructs. The outer loop iterates with steps of size <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> over the <code class="docutils literal notranslate"><span class="pre">WIDTH</span></code> of the matrix. Within each iteration of the outer loop two things happen. First the threads within this thread block fill shared memory with the submatrices needed for all the computations performed by the thread block. The actual computation happens in the inner loop and
+only uses data in shared memory. The <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> statements are needed to avoid race conditions on data in shared memory.</p>
+<p>The above kernel does come with one restriction, it can only be executed correctly when the area operated on by the thread block as a whole is a square. This means that the number of threads we use in the x and y dimensions will have to be equal. We can specify this restriction to the tuner using the <code class="docutils literal notranslate"><span class="pre">restrictions=</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
+<p>There are multiple ways to define restrictions in Kernel Tuner. You can specify a list of conditions that need to evaluate to <code class="docutils literal notranslate"><span class="pre">True</span></code> before a kernel configurations is considered to be part of the parameter space of our kernel. In the code below we create such a restrictions list and call the tuner again for our kernel that uses shared memory.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">restrict</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x==block_size_y&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Since we have only one restriction, our list only contains a single expression. The tunable parameter values will be inserted in this expression before it is evaluated. Another way to specify restrictions is with a function. This function takes a dictionary with the tunable parameter values of the kernel configuration and should return <code class="docutils literal notranslate"><span class="pre">True</span></code> if the configuration is part of the search space.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">restrict</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span><span class="o">==</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul_shared.cu&quot;</span><span class="p">,</span>
+                      <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
+                      <span class="n">restrictions</span><span class="o">=</span><span class="n">restrict</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>This kernel drastically reduces memory bandwidth consumption. Compared to our naive kernel, it is about three times faster now, which comes from the highly increased memory utilization:</p>
+<p><img alt="matmul_shared" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul_shared.png" /></p>
+<p>The compute utilization has actually decreased slightly, which is due to the synchronization overhead, because <code class="docutils literal notranslate"><span class="pre">__syncthread()</span></code> is called frequently.</p>
+<p>The restriction we have introduced has limited the number of kernel configurations benchmarked by the tuner significantly. Because the thread block size needs to be a square, there only a handful of configurations we can try. Fortunately, we can add several more optimizations to the code that also open the parameter space for tuning.</p>
+</section>
+<section id="Increase-work-per-thread">
+<h2>Increase work per thread<a class="headerlink" href="#Increase-work-per-thread" title="Permalink to this heading">¶</a></h2>
+<p>A commonly used code optimization in GPU programming is to increase the amount of work performed by each thread. This optimization has several benefits. It increases data reuse within the thread block and reduces the number of redundant instructions executed by distinct threads. This code optimization is typically called <em>1xN Tiling</em> or <em>thread-block-merge</em>. We will use two different forms of 1xN tiling in this example:</p>
+<p>First of all, in the x-direction we will use tiling in a way that is similar to the convolution example (used as part of the ‘Getting Started’ tutorial). The area of output data that is processed by a single thread block is increased by a factor of N, and as such shared memory usage also increases by a factor <span class="math notranslate nohighlight">\(N\)</span>. This means that the number of thread blocks needed to execute the kernel for this problem size is also reduced by a factor of <span class="math notranslate nohighlight">\(N\)</span>. While this may reduce occupancy due to
+increased shared memory and register usage, this optimization drastically reduces the number of redundant instructions that were previously distributed across multiple thread blocks.</p>
+<p>Secondly, in the y-direction we will use a different form of 1xN tiling, where we tile within the thread block. This too means that threads will compute multiple elements, but in this case, not the total number of thread blocks is reduced, but instead the number of threads per block goes down.</p>
+<p>Note that these two different forms of tiling could have combined in different or even multiple ways to increase the tuning parameter space even further. However, for the purposes of this tutorial, the resulting kernel is already complex enough:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%writefile</span> matmul.cu
+
+<span class="c1">#define WIDTH 4096</span>
+
+<span class="n">__global__</span> <span class="n">void</span> <span class="n">matmul_kernel</span><span class="p">(</span><span class="nb">float</span> <span class="o">*</span><span class="n">C</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="nb">float</span> <span class="o">*</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">__shared__</span> <span class="nb">float</span> <span class="n">sA</span><span class="p">[</span><span class="n">block_size_y</span><span class="o">*</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">block_size_x</span><span class="p">];</span>
+    <span class="n">__shared__</span> <span class="nb">float</span> <span class="n">sB</span><span class="p">[</span><span class="n">block_size_y</span><span class="o">*</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">block_size_x</span> <span class="o">*</span> <span class="n">tile_size_x</span><span class="p">];</span>
+
+    <span class="nb">int</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">block_size_x</span> <span class="o">*</span> <span class="n">tile_size_x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">tile_size_y</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">y</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">k</span><span class="p">,</span> <span class="n">kb</span><span class="p">;</span>
+
+    <span class="nb">float</span> <span class="nb">sum</span><span class="p">[</span><span class="n">tile_size_y</span><span class="p">][</span><span class="n">tile_size_x</span><span class="p">];</span>
+    <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nb">sum</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">k</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">WIDTH</span><span class="p">;</span> <span class="n">k</span> <span class="o">+=</span> <span class="n">block_size_x</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">__syncthreads</span> <span class="p">();</span>
+        <span class="c1">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">sA</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">k</span> <span class="o">+</span> <span class="n">tx</span><span class="p">];</span>
+
+            <span class="c1">#pragma unroll</span>
+            <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">sB</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">tx</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">]</span> <span class="o">=</span>
+                                    <span class="n">B</span><span class="p">[(</span><span class="n">k</span> <span class="o">+</span> <span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">];</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">__syncthreads</span> <span class="p">();</span>
+
+        <span class="o">//</span><span class="n">compute</span>
+        <span class="c1">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">kb</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">kb</span> <span class="o">&lt;</span> <span class="n">block_size_x</span><span class="p">;</span> <span class="n">kb</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+
+            <span class="c1">#pragma unroll</span>
+            <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">#pragma unroll</span>
+                <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nb">sum</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">sA</span><span class="p">[</span><span class="n">ty</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span><span class="p">][</span><span class="n">kb</span><span class="p">]</span> <span class="o">*</span> <span class="n">sB</span><span class="p">[</span><span class="n">kb</span><span class="p">][</span><span class="n">tx</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">];</span>
+                    <span class="p">}</span>
+            <span class="p">}</span>
+
+        <span class="p">}</span>
+
+    <span class="p">}</span>
+
+    <span class="o">//</span><span class="n">store</span> <span class="n">result</span>
+    <span class="c1">#pragma unroll</span>
+    <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tile_size_y</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">#pragma unroll</span>
+        <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">tile_size_x</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">C</span><span class="p">[</span><span class="n">y</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">x</span> <span class="o">+</span> <span class="n">block_size_y</span> <span class="o">*</span> <span class="n">i</span> <span class="o">*</span> <span class="n">WIDTH</span> <span class="o">+</span> <span class="n">j</span> <span class="o">*</span> <span class="n">block_size_x</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">];</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>First of all we’ll need to expand our tune_params dictionary to include our newly introduced tunable parameters. We’ll choose a couple of small values for the tiling factors in both the x and y-dimension, to keep the search space manageable.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>As explained in the text above, the tiling factors will reduce the number of thread blocks needed in their respective dimensions with a factor of N, where N is the tiling factor in that dimension. This is something that we will need to tell the tuner, otherwise it may execute the kernel with too many thread blocks.</p>
+<p>We can tell the tuner how the grid dimensions need to be computed. So far, we’ve only used the default behavior of computing the grid dimensions by dividing the problem size with the thread block size in each dimension. However, the tuner now also needs to take the tiling factor into account. We specify this by setting up grid divisor lists, that will contain the names of all the tunable parameters that divide the grid in a particular dimension. These grid divisor lists will be passed as
+optional arguments when we call <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>Remember that the area operated on by the thread block should be a square. In this kernel however, we allow <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code> to vary independently, while <code class="docutils literal notranslate"><span class="pre">tile_size_y</span></code> increases the amount of work per thread in the y-direction within the thread block. This yields a discontinuous search space in which only part of the configurations are actually valid. Therefore, we again use the <code class="docutils literal notranslate"><span class="pre">restrictions=</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>. After this, we are ready to call <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>
+again.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">restrict</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x==block_size_y*tile_size_y&quot;</span><span class="p">]</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;matmul_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul/matmul.cu&quot;</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
+                      <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
+                      <span class="n">restrictions</span><span class="o">=</span><span class="n">restrict</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>As we can see the number of kernel configurations evaluated by the tuner has increased again. Also the performance has increased quite dramatically with roughly another factor 3. If we look at the Nvidia Visual Profiler output of our kernel we see the following:</p>
+<p><img alt="matmul" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul.png" /></p>
+<p>As expected, the compute utilization of our kernel has improved. There may even be some more room for improvement, but our tutorial on how to use Kernel Tuner ends here. In this tutorial, we have seen how you can use Kernel Tuner to tune kernels with a small number of tunable parameters, how to impose restrictions on the parameter space, and how to use grid divisor lists to specify how grid dimensions are computed.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="diffusion.html" class="btn btn-neutral float-left" title="Diffusion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Kernel Tuner Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
