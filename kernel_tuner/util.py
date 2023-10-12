@@ -249,7 +249,7 @@ def check_block_size_params_names_list(block_size_names, tune_params):
             )
 
 
-def check_restrictions(restrictions, params: dict, verbose: bool):
+def check_restrictions(restrictions, params: dict, verbose: bool) -> bool:
     """Check whether a specific instance meets the search space restrictions."""
     valid = True
     if callable(restrictions):
@@ -263,14 +263,19 @@ def check_restrictions(restrictions, params: dict, verbose: bool):
                     if not restrict(params.values()):
                         valid = False
                         break
+                    continue
                 # if it's a string, fill in the parameters and evaluate
-                elif isinstance(restrict, str) and not eval(replace_param_occurrences(restrict, params)):
-                    valid = False
-                    break
+                elif isinstance(restrict, str):
+                    if not eval(replace_param_occurrences(restrict, params)):
+                        valid = False
+                        break
+                    continue
                 # if it's a function, call it
-                elif callable(restrict) and not restrict(params):
-                    valid = False
-                    break
+                elif callable(restrict):
+                    if not restrict(**params):
+                        valid = False
+                        break
+                    continue
                 # if it's a tuple, use only the parameters in the second argument to call the restriction
                 elif (isinstance(restrict, tuple) and len(restrict) == 2
                     and callable(restrict[0]) and isinstance(restrict[1], (list, tuple))):
@@ -282,6 +287,7 @@ def check_restrictions(restrictions, params: dict, verbose: bool):
                     if not restrict(**selected_params):
                         valid = False
                         break
+                    continue
                 # otherwise, raise an error
                 else:
                     raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")

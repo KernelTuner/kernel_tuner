@@ -9,7 +9,7 @@ except ImportError:
     from unittest.mock import patch
 
 import numpy as np
-from constraint import ExactSumConstraint, FunctionConstraint
+from constraint import ExactSumConstraint
 
 from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
@@ -37,13 +37,13 @@ tune_params["gpu4"] = list(range(num_layers))
 
 # each GPU must have at least one layer and the sum of all layers must not exceed the total number of layers
 
-
 def _min_func(gpu1, gpu2, gpu3, gpu4):
     return min([gpu1, gpu2, gpu3, gpu4]) >= 1
 
 
-# test three different types of restrictions: python-constraint, a function and a string
-restrict = [ExactSumConstraint(num_layers), FunctionConstraint(_min_func)]
+# test two different types of restrictions: a constraint and a callable
+assert callable(_min_func)
+restrict = [ExactSumConstraint(num_layers), _min_func]
 
 # create the searchspace object
 searchspace = Searchspace(tune_params, restrict, max_threads)
@@ -78,6 +78,17 @@ def test_internal_representation():
 
     for index, dict_config in enumerate(searchspace.get_list_dict().keys()):
         assert dict_config == searchspace.list[index]
+
+def test_check_restrictions():
+    """Test whether the outcome of restrictions is as expected when using check_restrictions."""
+    from kernel_tuner.util import check_restrictions
+
+    param_config_false = {'x': 1, 'y': 4, 'z': "string_1" }
+    param_config_true = {'x': 3, 'y': 4, 'z': "string_1" }
+
+    assert check_restrictions(simple_searchspace.restrictions, param_config_false, verbose=False) is False
+    assert check_restrictions(simple_searchspace.restrictions, param_config_true, verbose=False) is True
+
 
 def test_against_bruteforce():
     """Tests the default Searchspace framework against bruteforcing the searchspace."""

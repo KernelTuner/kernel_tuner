@@ -226,8 +226,6 @@ def test_replace_param_occurrences():
 
 def test_check_restrictions():
     params = {"a": 7, "b": 4, "c": 3}
-    print(params.values())
-    print(params.keys())
     restrictions = [
         ["a==b+c"],
         ["a==b+c", "b==b", "a-b==c"],
@@ -238,7 +236,6 @@ def test_check_restrictions():
     # test the call returns expected
     for r, e in zip(restrictions, expected):
         answer = check_restrictions(r, dict(zip(params.keys(), params.values())), False)
-        print(answer)
         assert answer == e
 
 
