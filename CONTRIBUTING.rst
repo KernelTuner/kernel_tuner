@@ -44,16 +44,23 @@ Local setup
 Steps with :bash:`sudo` access (e.g. on a local device):
 
 #. Clone the git repository to the desired location: :bash:`git clone https://github.com/KernelTuner/kernel_tuner.git`, and :bash:`cd` to it.
-#. Install `pyenv <https://github.com/pyenv/pyenv#installation>`__: :bash:`curl https://pyenv.run | bash` (remember to add the output to :bash:`.bash_profile` and :bash:`.bashrc` as specified).
-    * [Optional] setup a local virtual environment in the folder: :bash:`pyenv virtualenv kerneltuner` (or whatever environment name you prefer).
-#. Install the required Python versions: :bash:`pyenv install 3.8 3.9 3.10 3.11`.
-#. Set the Python versions so they can be found: :bash:`pyenv global 3.8 3.10 3.11` (replace :bash:`global` with :bash:`local` when using the virtualenv).
-#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`.
+#. Prepare your system for building Python versions.
+    * On Ubuntu, run :bash:`sudo apt update && apt upgrade`, and :bash:`sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl git`.
+#. Install `pyenv <https://github.com/pyenv/pyenv#installation>`__:
+    * On Linux, run :bash:`curl https://pyenv.run | bash` (remember to add the output to :bash:`.bash_profile` and :bash:`.bashrc` as specified).
+    * on macOS, run :bash:`brew update && brew install pyenv`.
+#. Install the required Python versions: :bash:`pyenv install 3.8 3.9 3.10 3.11`. On some systems, additional packages may be needed to build Python versions.
+    * For example on Ubuntu: :bash:`sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev liblzma-dev lzma`.
+#. Setup a local virtual environment in the folder: :bash:`pyenv virtualenv kerneltuner` (or whatever environment name you prefer).
+#. Set the Python versions so they can be found: :bash:`pyenv local 3.8 3.9 3.10 3.11` (replace :bash:`local` with :bash:`global` when not using the virtualenv).
+#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`. Make sure to add it to :bash:`PATH` as instructed at the end of the installation.
 #. Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in :ref:`Installation <installation>`.
+#. Re-open the shell for changes to take effect. Activate the environment with :bash:`pyenv activate kerneltuner`.
 #. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`
     * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
     * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
-#. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.
+    * Re-open the shell for changes to take effect.
+#. Check if the environment is setup correctly by running :bash:`pytest` and :bash:`nox`. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.
 
 
 Cluster setup
