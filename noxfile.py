@@ -32,7 +32,7 @@ if environment_file_path.exists():
 # def lint(session: nox.Session) -> None:
 #     """Ensure the code is formatted as expected."""
 #     session.install("ruff")
-#     session.run("ruff", "--format=github", "--config=pyproject.toml", ".")
+#     session.run("ruff", "--output-format=github", "--config=pyproject.toml", ".")
 
 
 # @session  # uncomment this line to only run on the current python interpreter
