@@ -144,7 +144,7 @@ class nvml:
         if mem_clock not in self.supported_mem_clocks:
             raise ValueError("Illegal value for memory clock")
         if gr_clock not in self.supported_gr_clocks[mem_clock]:
-            raise ValueError("Graphics clock incompatible with memory clock")
+            raise ValueError(f"Graphics clock incompatible with memory clock ({mem_clock}), compatible graphics clocks: {self.supported_gr_clocks[mem_clock]}")
         if self.use_locked_clocks:
             try:
                 pynvml.nvmlDeviceSetGpuLockedClocks(self.dev, gr_clock, gr_clock)
