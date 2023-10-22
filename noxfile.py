@@ -56,7 +56,6 @@ def check_development_environment(session: Session) -> None:
             Update with 'poetry install --sync', using '--with' and '-E' for optional dependencies, extras respectively.
             Note: {removals} packages are not in the specification (i.e. installed manually) and may be removed.
             To preview changes, run 'poetry install --sync --dry-run' (with optional dependencies and extras).""")
-    assert False
 
 @session(python=python_versions_to_test)  # missing versions can be installed with `pyenv install ...`
 # do not forget check / set the versions with `pyenv global`, or `pyenv local` in case of virtual environment
