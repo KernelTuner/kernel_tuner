@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Observers &mdash; Kernel Tuner 1.0.0b4 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=06c99ed4"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Documentation" href="user-api.html" />
+    <link rel="prev" title="Metrics and Objectives" href="metrics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.0.0b4
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Observers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.after_finish"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.after_finish()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.after_start"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.after_start()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.before_start"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.before_start()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.during"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.during()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.get_results"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.get_results()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.register_configuration"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.register_configuration()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.BenchmarkObserver.register_device"><code class="docutils literal notranslate"><span class="pre">BenchmarkObserver.register_device()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#powersensorobserver">PowerSensorObserver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.powersensor.PowerSensorObserver"><code class="docutils literal notranslate"><span class="pre">PowerSensorObserver</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#nvmlobserver">NVMLObserver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.nvml.NVMLObserver"><code class="docutils literal notranslate"><span class="pre">NVMLObserver</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tuning-execution-parameters-with-nvml">Tuning execution parameters with NVML</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pmtobserver">PMTObserver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.pmt.PMTObserver"><code class="docutils literal notranslate"><span class="pre">PMTObserver</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Observers</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/observers.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="observers">
+<span id="id1"></span><h1>Observers<a class="headerlink" href="#observers" title="Permalink to this heading">¶</a></h1>
+<p>To facilitate measurements of quantities other than kernel execution time, and to make it easy
+for the user to control exactly what is being measured by Kernel Tuner, we have introduced the Observers
+feature. In the layered software architecture of Kernel Tuner, observers act as programmable hooks to allow the
+user to change or expand Kernel Tuner’s benchmarking behavior at any of the lower levels. Following the observer
+design pattern, observers can be used to subscribe to certain types of events and the methods implemented by the
+observer will be called when the event takes place.</p>
+<p>Kernel Tuner implements an abstract BenchmarkObserver with methods that may be overwritten by classes extending
+the BenchmarkObserver class, shown below. The only mandatory method to implement
+is <code class="docutils literal notranslate"><span class="pre">get_results</span></code>, which is used to return the resulting observations at the end of benchmarking a
+particular kernel configuration and usually returns aggregated results over multiple iterations of kernel
+execution. Before tuning starts, each observer is given a reference to the lower-level backend that is used for
+compiling and benchmarking the kernel configurations. In this way, the observer can inspect the compiled module,
+function, the state of GPU memory, or any other information in the GPU runtime.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.</span></span><span class="sig-name descname"><span class="pre">BenchmarkObserver</span></span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for Benchmark Observers</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver.after_finish">
+<span class="sig-name descname"><span class="pre">after_finish</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver.after_finish" title="Permalink to this definition">¶</a></dt>
+<dd><p>after finish is called once every iteration after the kernel has finished execution</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver.after_start">
+<span class="sig-name descname"><span class="pre">after_start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver.after_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>after start is called every iteration directly after the kernel was launched</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver.before_start">
+<span class="sig-name descname"><span class="pre">before_start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver.before_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>before start is called every iteration before the kernel starts</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver.during">
+<span class="sig-name descname"><span class="pre">during</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver.during" title="Permalink to this definition">¶</a></dt>
+<dd><p>during is called as often as possible while the kernel is running</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver.get_results">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_results</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver.get_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>get_results should return a dict with results that adds to the benchmarking data</p>
+<p>get_results is called only once per benchmarking of a single kernel configuration and
+generally returns averaged values over multiple iterations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver.register_configuration">
+<span class="sig-name descname"><span class="pre">register_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver.register_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called once before benchmarking of a single kernel configuration. The <cite>params</cite> argument is a <cite>dict</cite>
+that stores the configuration parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.observers.BenchmarkObserver.register_device">
+<span class="sig-name descname"><span class="pre">register_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dev</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.BenchmarkObserver.register_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets self.dev, for inspection by the observer at various points during benchmarking</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>The PyOpenCL, PyCUDA, Cupy, and cuda-python backends support observers. Each backend also implements their own observer to
+measure the runtime of kernel configurations during benchmarking. The user specifies a list of observers to use when calling Kernel
+Tuner. This feature makes it easy to extend Kernel Tuner with observers for quantities other than time and the
+user can easily define their own observers, without the need to modify Kernel Tuner’s source code.
+See for example a RegisterObserver that observes the number of
+registers per thread used by the compiled kernel configuration shown below.
+There are many more possible observers that could be implemented, for example an observer could be created to
+track performance counters during auto-tuning..</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">RegisterObserver</span><span class="p">(</span><span class="n">BenchmarkObserver</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;num_regs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dev</span><span class="o">.</span><span class="n">current_module</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">num_regs</span><span class="p">}</span>
+</pre></div>
+</div>
+<section id="powersensorobserver">
+<h2>PowerSensorObserver<a class="headerlink" href="#powersensorobserver" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="https://www.astron.nl/~romein/papers/ISPASS-18/paper.pdf">PowerSensor2</a> is a custom-built power measurement device for PCIe devices that
+intercepts the device power with current sensors and transmits the data to the host over a USB connection. The
+main advantage of using PowerSensor2 over the GPU’s built-in power sensor is that PowerSensor2 reports
+instantaneous power consumption with a very high frequency (about 2.8 KHz). PowerSensor2 comes with an
+easy-to-use software library that supports various forms of power measurement. We have created a simple
+interface using <a class="reference external" href="https://pybind11.readthedocs.io/en/stable/">PyBind11</a> to the PowerSensor library to make
+it possible to use it from Python.</p>
+<p>Kernel Tuner implements a PowerSensorObserver specifically for use with PowerSensor2, that can be selected by
+the user to record power and/or energy consumption of kernel configurations during auto-tuning. This allows
+Kernel Tuner to accurately determine the power and energy consumption of all kernel configurations it benchmarks
+during auto-tuning.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.observers.powersensor.PowerSensorObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.powersensor.</span></span><span class="sig-name descname"><span class="pre">PowerSensorObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.powersensor.PowerSensorObserver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observer that an external PowerSensor2 device to accurately measure power</p>
+<p>Requires PowerSensor2 hardware and powersensor Python bindings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>observables</strong> (<em>list</em>) – A list of string, containing any of “ps_energy” or “ps_power”.
+To measure energy in Joules or power consumption in Watt.
+If not passed “ps_energy” is used to report energy consumption of kernels in Joules.</p></li>
+<li><p><strong>device</strong> (<em>string</em>) – A string with the path to the PowerSensor2 device, default “/dev/ttyACM0”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="nvmlobserver">
+<h2>NVMLObserver<a class="headerlink" href="#nvmlobserver" title="Permalink to this heading">¶</a></h2>
+<p>Kernel Tuner also implements an NVMLObserver, which allows the user to observe the power usage, energy
+consumption, core and memory frequencies, core voltage and temperature for all kernel configurations during
+benchmarking as reported by the NVIDIA Management Library (NVML). To facilitate the interaction with
+NVML, Kernel Tuner implements a thin wrapper that abstracts some of the intricacies of NVML into a more user
+friendly and Pythonic interface. The NVMLObserver is implemented on top of this interface.</p>
+<p>To ensure that the power measurements in Kernel Tuner obtained using NVML accurately reflect the power
+consumption of the kernel, we have introduced a continuous benchmarking mode that takes place after the regular
+iterative benchmarking process. During continuous benchmarking, the kernel is executed repeatedly for a
+user-specified duration, 1 second by default. The NVMLObserver uses the continuous benchmarking mode when power or energy
+measurements are requested by the user. The downside of this approach is that it significantly increases that
+time it takes to benchmark different kernel configurations. However, NVML can be used for power measurements on
+almost all Nvidia GPUs, so this method is much more accessible to end-users compared to solutions that require
+custom hardware, such as PowerSensor2.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.observers.nvml.NVMLObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.nvml.</span></span><span class="sig-name descname"><span class="pre">NVMLObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nvidia_smi_fallback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_locked_clocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continous_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.nvml.NVMLObserver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observer that uses NVML to monitor power, energy, clock frequencies, voltages and temperature.</p>
+<p>The NVMLObserver can also be used to tune application-specific clock frequencies or power limits
+in combination with other parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>observables</strong> (<em>list</em><em> of </em><em>strings</em>) – List of quantities that should be observed during tuning, supported are: “power_readings”,
+“nvml_power”, “nvml_energy”, “core_freq”, “mem_freq”, “temperature”, “gr_voltage”. If you want to measure the average power
+consumption of a GPU kernel executing on the GPU use “nvml_power”. The “power_readings” are the individual power readings
+as reported by NVML and will return a lot of data if you are benchmarking many different kernel configurations.</p></li>
+<li><p><strong>device</strong> (<em>integer</em>) – Device ordinal used by Nvidia to identify your device, same as reported by nvidia-smi.</p></li>
+<li><p><strong>save_all</strong> (<em>boolean</em>) – If set to True, all data collected by the NVMLObserver for every iteration during benchmarking will be returned.
+If set to False, data will be aggregated over multiple iterations during benchmarking. False by default.</p></li>
+<li><p><strong>nvidia_smi_fallback</strong> (<em>string</em>) – String with the location of your nvidia-smi executable to use when Python cannot execute with root privileges, default None.</p></li>
+<li><p><strong>use_locked_clocks</strong> (<em>boolean</em>) – Boolean to opt in to using the locked clocks feature on Ampere or newer GPUs.
+Note, this setting is only relevant when you are tuning with application-specific clocks.
+If set to True, using locked clocks will be preferred over application clocks. If set to False, the Observer
+will set the GPU clocks using the application clocks feature.
+Default is False.</p></li>
+<li><p><strong>continuous_duration</strong> (<em>float</em>) – Duration to use for energy/power measurements in seconds, default 1 second.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="tuning-execution-parameters-with-nvml">
+<h3>Tuning execution parameters with NVML<a class="headerlink" href="#tuning-execution-parameters-with-nvml" title="Permalink to this heading">¶</a></h3>
+<p>When you are using the NVMLObserver, Kernel Tuner can use its interface to NVML to enable tuning of
+execution parameters, such as power limits or memory and core clock frequencies.
+Using application-specific clock frequencies is one of the most common approaches to tuning energy efficiency on
+GPU systems. Recently, power-capping, setting application-specific power limits, is also becoming more popular
+approach to optimize energy consumption of applications. To enable energy tuning of GPU applications,
+Kernel Tuner supports tuning applications for different clock frequencies and power limits in combination with
+other with all tunable parameters.</p>
+<p>We have implemented support in Kernel Tuner for NVML-specific tunable parameters, such as nvml_gr_clock,
+nvml_mem_clock, and nvml_pwr_limit. These parameters can be used to describe all the different graphics
+clocks, memory clocks, and power limits to be tested, respectively.
+For a full list of special parameter names, please see the <a class="reference internal" href="vocabulary.html#parameter-vocabulary"><span class="std std-ref">Parameter Vocabulary</span></a>.
+We are currently implementing a number
+of helper functions to easily setup tunable parameter values for these parameters, these are expected Kernel Tuner version 0.4.4.</p>
+<p>Note that changing these settings requires root privileges on most systems. It may be possible to allow any user to change the clock frequencies without privileges, but enabling this
+setting does require root privileges. As such, these features may not be available to all users on all systems. The optional argument <code class="docutils literal notranslate"><span class="pre">nvidia_smi_fallback</span></code> to NVMLObserver may be set to
+the path where you are allowed to run nvidia-smi with privileges. This allows your Kernel Tuner application to run without privileges, and configurating the clock frequencies or power
+limits will be done through nvidia-smi.</p>
+</section>
+</section>
+<section id="pmtobserver">
+<h2>PMTObserver<a class="headerlink" href="#pmtobserver" title="Permalink to this heading">¶</a></h2>
+<p>The PMTObserver can be used to measure power and energy on various platforms including Nvidia Jetson, Nvidia NVML,
+the RAPL interface, AMD ROCM, and Xilinx. It requires PMT to be installed, as well as the PMT’s Python interface.
+More information about PMT can be found here: <a class="reference external" href="https://git.astron.nl/RD/pmt/">https://git.astron.nl/RD/pmt/</a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.observers.pmt.PMTObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.pmt.</span></span><span class="sig-name descname"><span class="pre">PMTObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.pmt.PMTObserver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observer that uses the PMT library to measure power</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>observables</strong> (<em>string</em><em>,</em><em>list/dictionary</em>) – <p>One of:</p>
+<ul class="simple">
+<li><p>A string specifying a single power meter to use</p></li>
+<li><p>A list of string, specifying one or more power meters to use</p></li>
+<li><p>A dictionary, specifying one or more power meters to use,
+including the device identifier. For arduino this should be for
+instance “/dev/ttyACM0”. For nvml, it should correspond to the GPU
+id (e.g. ‘0’, or ‘1’). For some sensors (such as rapl) the device
+id is not used, it should be ‘None’ in those cases.</p></li>
+</ul>
+<p>This observer will report “&lt;platform&gt;_energy&gt;” and “&lt;platform&gt;_power” for
+all specified platforms.</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="metrics.html" class="btn btn-neutral float-left" title="Metrics and Objectives" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="user-api.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
