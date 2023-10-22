@@ -28,11 +28,16 @@ if environment_file_path.exists():
     nox.options.default_venv_backend = environment
 
 
-# @nox.session
-# def lint(session: nox.Session) -> None:
+# @session
+# def lint(session: Session) -> None:
 #     """Ensure the code is formatted as expected."""
 #     session.install("ruff")
 #     session.run("ruff", "--output-format=github", "--config=pyproject.toml", ".")
+
+@session
+def check_poetry(session: Session) -> None:
+    """Check whether Poetry is correctly configured."""
+    session.run("poetry", "check", "--no-interaction", external=True)
 
 
 # @session  # uncomment this line to only run on the current python interpreter
