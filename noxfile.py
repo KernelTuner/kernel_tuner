@@ -7,6 +7,7 @@ Be careful that the general setup of tests is left to pyproject.toml.
 
 
 import platform
+import re
 from pathlib import Path
 
 import nox
@@ -39,8 +40,24 @@ def check_poetry(session: Session) -> None:
     """Check whether Poetry is correctly configured."""
     session.run("poetry", "check", "--no-interaction", external=True)
 
+@session    # to only run on the current python interpreter
+def check_development_environment(session: Session) -> None:
+    """Check whether the development environment is up to date with the dependencies, and try to update if necessary."""
+    output: str = session.run("poetry", "install", "--sync", "--dry-run", "--with", "test", silent=True, external=True)
+    match = re.search(r"Package operations: (\d+) installs, (\d+) updates, (\d+) removals, \d+ skipped", output)
+    assert match is not None
+    groups = match.groups()
+    installs, updates, removals = int(groups[0]), int(groups[1]), int(groups[2])
+    if installs > 0 or updates > 0:
+        # packages = re.findall(r"• Installing .* | • Updating .*", output, flags=re.MULTILINE)
+        # assert packages is not None
+        session.warn(f"""
+            Your development environment is out of date ({installs} installs, {updates} updates). 
+            Update with 'poetry install --sync', using '--with' and '-E' for optional dependencies, extras respectively.
+            Note: {removals} packages are not in the specification (i.e. installed manually) and may be removed.
+            To preview changes, run 'poetry install --sync --dry-run' (with optional dependencies and extras).""")
+    assert False
 
-# @session  # uncomment this line to only run on the current python interpreter
 @session(python=python_versions_to_test)  # missing versions can be installed with `pyenv install ...`
 # do not forget check / set the versions with `pyenv global`, or `pyenv local` in case of virtual environment
 def tests(session: Session) -> None:
