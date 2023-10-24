@@ -184,7 +184,13 @@ have look at the <a class="reference internal" href="design.html#design-document
 </dd>
 </dl>
 </li>
-<li><p>Check if the environment is setup correctly by running <code class="code highlight bash docutils literal highlight-bash">pytest</code> and <code class="code highlight bash docutils literal highlight-bash">nox</code>. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.</p></li>
+<li><dl class="simple">
+<dt>Check if the environment is setup correctly by running <code class="code highlight bash docutils literal highlight-bash">pytest</code> and <code class="code highlight bash docutils literal highlight-bash">nox</code>. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.</dt><dd><ul class="simple">
+<li><p>[Note]: sometimes, changing the NVIDIA driver privileges is required to read program counters and energy measurements. Check if <code class="code highlight bash docutils literal highlight-bash">cat<span class="w"> </span>/proc/driver/nvidia/params<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>RmProfilingAdminOnly</code> is set to 1. If so, <a class="reference external" href="https://developer.nvidia.com/nvidia-development-tools-solutions-err_nvgpuctrperm-permission-issue-performance-counters">follow these steps</a></p></li>
+</ul>
+</dd>
+</dl>
+</li>
 </ol>
 </section>
 <section id="cluster-setup">
