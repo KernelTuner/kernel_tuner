@@ -250,55 +250,50 @@ def check_block_size_params_names_list(block_size_names, tune_params):
 
 
 def check_restrictions(restrictions, params: dict, verbose: bool) -> bool:
-    """Check whether a specific instance meets the search space restrictions."""
-    valid = True
+    """Check whether a specific configuration meets the search space restrictions."""
     if callable(restrictions):
         valid = restrictions(params)
-    else:
-        for restrict in restrictions:
-            try:
-                # if it's a python-constraint, convert to function and execute
-                if isinstance(restrict, Constraint):
-                    restrict = convert_constraint_restriction(restrict)
-                    if not restrict(params.values()):
-                        valid = False
-                        break
-                    continue
-                # if it's a string, fill in the parameters and evaluate
-                elif isinstance(restrict, str):
-                    if not eval(replace_param_occurrences(restrict, params)):
-                        valid = False
-                        break
-                    continue
-                # if it's a function, call it
-                elif callable(restrict):
-                    if not restrict(**params):
-                        valid = False
-                        break
-                    continue
-                # if it's a tuple, use only the parameters in the second argument to call the restriction
-                elif (isinstance(restrict, tuple) and len(restrict) == 2
-                    and callable(restrict[0]) and isinstance(restrict[1], (list, tuple))):
-                    # unpack the tuple
-                    restrict, selected_params = restrict
-                    # look up the selected parameters and their value
-                    selected_params = dict((key, params[key]) for key in selected_params)
-                    # call the restriction
-                    if not restrict(**selected_params):
-                        valid = False
-                        break
-                    continue
-                # otherwise, raise an error
-                else:
-                    raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")
-            except ZeroDivisionError:
-                pass
-    if not valid and verbose:
-        print(
-            "skipping config",
-            get_instance_string(params),
-            "reason: config fails restriction",
-        )
+        if not valid and verbose is True:
+            print(f"skipping config {get_instance_string(params)}, reason: config fails restriction")
+        return valid
+    valid = True
+    for restrict in restrictions:
+        # Check the type of each restriction and validate accordingly. Re-implement as a switch when Python >= 3.10.
+        try:
+            # if it's a python-constraint, convert to function and execute
+            if isinstance(restrict, Constraint):
+                restrict = convert_constraint_restriction(restrict)
+                if not restrict(params.values()):
+                    valid = False
+                    break
+            # if it's a string, fill in the parameters and evaluate
+            elif isinstance(restrict, str):
+                if not eval(replace_param_occurrences(restrict, params)):
+                    valid = False
+                    break
+            # if it's a function, call it
+            elif callable(restrict):
+                if not restrict(**params):
+                    valid = False
+                    break
+            # if it's a tuple, use only the parameters in the second argument to call the restriction
+            elif (isinstance(restrict, tuple) and len(restrict) == 2
+                and callable(restrict[0]) and isinstance(restrict[1], (list, tuple))):
+                # unpack the tuple
+                restrict, selected_params = restrict
+                # look up the selected parameters and their value
+                selected_params = dict((key, params[key]) for key in selected_params)
+                # call the restriction
+                if not restrict(**selected_params):
+                    valid = False
+                    break
+            # otherwise, raise an error
+            else:
+                raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")
+        except ZeroDivisionError:
+            logging.debug(f"Restriction {restrict} with configuration {get_instance_string(params)} divides by zero.")
+    if not valid and verbose is True:
+        print(f"skipping config {get_instance_string(params)}, reason: config fails restriction")
     return valid
 
 

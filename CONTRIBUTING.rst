@@ -61,6 +61,7 @@ Steps with :bash:`sudo` access (e.g. on a local device):
     * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
     * Re-open the shell for changes to take effect.
 #. Check if the environment is setup correctly by running :bash:`pytest` and :bash:`nox`. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.
+    * [Note]: sometimes, changing the NVIDIA driver privileges is required to read program counters and energy measurements. Check if :bash:`cat /proc/driver/nvidia/params | grep RmProfilingAdminOnly` is set to 1. If so, `follow these steps <https://developer.nvidia.com/nvidia-development-tools-solutions-err_nvgpuctrperm-permission-issue-performance-counters>`__
 
 
 Cluster setup
