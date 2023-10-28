@@ -51,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#python">Python</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installing-python-packages">Installing Python Packages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cuda-and-pycuda">CUDA and PyCUDA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#other-cuda-backends">Other CUDA Backends</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#opencl-and-pyopencl">OpenCL and PyOpenCL</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#hip-and-pyhip">HIP and PyHIP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installing-the-git-version">Installing the git version</a></li>
@@ -68,6 +69,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Features</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="backends.html">Backends</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
@@ -130,7 +132,8 @@ bash<span class="w"> </span>Miniconda3-latest-Linux-x86_64.sh
 <section id="installing-python-packages">
 <h2>Installing Python Packages<a class="headerlink" href="#installing-python-packages" title="Permalink to this heading">¶</a></h2>
 <p>Note that when you are using a native Python installation, the <cite>pip</cite> command used
-Kernel Tuner and its dependencies require <cite>sudo</cite> rights for system wide installation.</p>
+to install
+Kernel Tuner and its dependencies requires <cite>sudo</cite> rights for system wide installation.</p>
 <p>Sudo rights are typically not required when using Miniconda or virtual environments.
 You could also use e.g. the <cite>–user</cite> or <cite>–prefix</cite> option of <cite>pip</cite> to install into
 your home directory,
@@ -167,6 +170,11 @@ Also make sure that the Python package Numpy is already installed, e.g. using <c
 <code class="docutils literal notranslate"><span class="pre">--no-cache-dir</span></code> option to ensure the pycuda installation really starts over and not continues
 from an installation that is failing.</p>
 <p>If this fails, I recommend to see the PyCuda installation guide (<a class="reference external" href="https://wiki.tiker.net/PyCuda/Installation">https://wiki.tiker.net/PyCuda/Installation</a>)</p>
+</section>
+<section id="other-cuda-backends">
+<h2>Other CUDA Backends<a class="headerlink" href="#other-cuda-backends" title="Permalink to this heading">¶</a></h2>
+<p>Kernel Tuner can also be used with CuPy (<a class="reference external" href="https://cupy.dev/">https://cupy.dev/</a>) or Nvidia’s CUDA Python bindings (<a class="reference external" href="https://nvidia.github.io/cuda-python/">https://nvidia.github.io/cuda-python/</a>). Please see the installation instructions of those projects for how the required Python packages.</p>
+<p>Please refer to the documentation on <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/stable/backends.html">backends</a> on how to use and select these backends.</p>
 </section>
 <section id="opencl-and-pyopencl">
 <h2>OpenCL and PyOpenCL<a class="headerlink" href="#opencl-and-pyopencl" title="Permalink to this heading">¶</a></h2>
