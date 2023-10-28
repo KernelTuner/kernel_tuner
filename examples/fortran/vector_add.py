@@ -7,7 +7,6 @@ from kernel_tuner import tune_kernel
 
 
 def tune():
-
     size = int(80e6)
 
     a = np.random.randn(size).astype(np.float32)
@@ -23,9 +22,14 @@ def tune():
 
     print("compile with gfortran")
     result, _ = tune_kernel(
-            "time_vector_add", "vector_add.F90", size,
-            args, tune_params, lang="C", compiler="gfortran"
-            )
+        "time_vector_add",
+        "vector_add.F90",
+        size,
+        args,
+        tune_params,
+        lang="C",
+        compiler="gfortran",
+    )
 
     return result
 

@@ -1,8 +1,8 @@
+import re
 import subprocess
 import time
-import re
+
 import numpy as np
-from collections import OrderedDict
 
 from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver
 
@@ -13,13 +13,12 @@ except ImportError:
 
 
 class nvml:
-    """Class that gathers the NVML functionality for one device"""
+    """Class that gathers the NVML functionality for one device."""
 
     def __init__(
         self, device_id=0, nvidia_smi_fallback="nvidia-smi", use_locked_clocks=False
     ):
-        """Create object to control device using NVML"""
-
+        """Create object to control device using NVML."""
         pynvml.nvmlInit()
         self.dev = pynvml.nvmlDeviceGetHandleByIndex(device_id)
         self.id = device_id
@@ -94,12 +93,12 @@ class nvml:
 
     @property
     def pwr_state(self):
-        """Get the Device current Power State"""
+        """Get the Device current Power State."""
         return pynvml.nvmlDeviceGetPowerState(self.dev)
 
     @property
     def pwr_limit(self):
-        """Control the power limit (may require permission), check pwr_constraints for the allowed range"""
+        """Control the power limit (may require permission), check pwr_constraints for the allowed range."""
         return pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
 
     @pwr_limit.setter
@@ -127,12 +126,12 @@ class nvml:
 
     @property
     def persistence_mode(self):
-        """Control persistence mode (may require permission), 0 for disabled, 1 for enabled"""
+        """Control persistence mode (may require permission), 0 for disabled, 1 for enabled."""
         return self._persistence_mode
 
     @persistence_mode.setter
     def persistence_mode(self, new_mode):
-        if not new_mode in [0, 1]:
+        if new_mode not in [0, 1]:
             raise ValueError(
                 "Illegal value for persistence mode, should be either 0 or 1"
             )
@@ -140,12 +139,12 @@ class nvml:
         self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
 
     def set_clocks(self, mem_clock, gr_clock):
-        """Set the memory and graphics clock for this device (may require permission)"""
+        """Set the memory and graphics clock for this device (may require permission)."""
         self.modified_clocks = True
-        if not mem_clock in self.supported_mem_clocks:
+        if mem_clock not in self.supported_mem_clocks:
             raise ValueError("Illegal value for memory clock")
-        if not gr_clock in self.supported_gr_clocks[mem_clock]:
-            raise ValueError("Graphics clock incompatible with memory clock")
+        if gr_clock not in self.supported_gr_clocks[mem_clock]:
+            raise ValueError(f"Graphics clock incompatible with memory clock ({mem_clock}), compatible graphics clocks: {self.supported_gr_clocks[mem_clock]}")
         if self.use_locked_clocks:
             try:
                 pynvml.nvmlDeviceSetGpuLockedClocks(self.dev, gr_clock, gr_clock)
@@ -183,7 +182,7 @@ class nvml:
                     subprocess.run(args, check=True)
 
     def reset_clocks(self):
-        """Reset the clocks to the default clock if the device uses a non default clock"""
+        """Reset the clocks to the default clock if the device uses a non default clock."""
         if self.use_locked_clocks:
             try:
                 pynvml.nvmlDeviceResetGpuLockedClocks(self.dev)
@@ -222,7 +221,7 @@ class nvml:
 
     @property
     def gr_clock(self):
-        """Control the graphics clock (may require permission), only values compatible with the memory clock can be set directly"""
+        """Control the graphics clock (may require permission), only values compatible with the memory clock can be set directly."""
         return pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
 
     @gr_clock.setter
@@ -239,7 +238,7 @@ class nvml:
 
     @property
     def mem_clock(self):
-        """Control the memory clock (may require permission), only values compatible with the graphics clock can be set directly"""
+        """Control the memory clock (may require permission), only values compatible with the graphics clock can be set directly."""
         if self.use_locked_clocks:
             # nvmlDeviceGetClock returns slightly different values than nvmlDeviceGetSupportedMemoryClocks,
             # therefore set mem_clock to the closest supported value
@@ -262,18 +261,18 @@ class nvml:
 
     @property
     def temperature(self):
-        """Get the GPU temperature"""
+        """Get the GPU temperature."""
         return pynvml.nvmlDeviceGetTemperature(self.dev, pynvml.NVML_TEMPERATURE_GPU)
 
     @property
     def auto_boost(self):
-        """Control the auto boost setting (may require permission), 0 for disable, 1 for enabled"""
+        """Control the auto boost setting (may require permission), 0 for disable, 1 for enabled."""
         return self._auto_boost
 
     @auto_boost.setter
     def auto_boost(self, setting):
         # might need to use pynvml.NVML_FEATURE_DISABLED or pynvml.NVML_FEATURE_ENABLED instead of 0 or 1
-        if not setting in [0, 1]:
+        if setting not in [0, 1]:
             raise ValueError(
                 "Illegal value for auto boost enabled, should be either 0 or 1"
             )
@@ -281,11 +280,11 @@ class nvml:
         self._auto_boost = pynvml.nvmlDeviceGetAutoBoostedClocksEnabled(self.dev)[0]
 
     def pwr_usage(self):
-        """Return current power usage in milliwatts"""
+        """Return current power usage in milliwatts."""
         return pynvml.nvmlDeviceGetPowerUsage(self.dev)
 
     def gr_voltage(self):
-        """Return current graphics voltage in millivolts"""
+        """Return current graphics voltage in millivolts."""
         args = ["nvidia-smi", "-i", str(self.id), "-q", "-d", "VOLTAGE"]
         try:
             result = subprocess.run(args, check=True, capture_output=True)
@@ -296,7 +295,7 @@ class nvml:
 
 
 class NVMLObserver(BenchmarkObserver):
-    """Observer that uses NVML to monitor power, energy, clock frequencies, voltages and temperature
+    """Observer that uses NVML to monitor power, energy, clock frequencies, voltages and temperature.
 
     The NVMLObserver can also be used to tune application-specific clock frequencies or power limits
     in combination with other parameters.
@@ -338,12 +337,7 @@ class NVMLObserver(BenchmarkObserver):
         use_locked_clocks=False,
         continous_duration=1,
     ):
-        """
-
-        Create an NVMLObserver.
-
-
-        """
+        """Create an NVMLObserver."""
         if nvidia_smi_fallback:
             self.nvml = nvml(
                 device,
@@ -364,7 +358,7 @@ class NVMLObserver(BenchmarkObserver):
             "gr_voltage",
         ]
         for obs in observables:
-            if not obs in supported:
+            if obs not in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
         self.observables = observables
 
@@ -461,7 +455,7 @@ class NVMLObserver(BenchmarkObserver):
 
 
 class NVMLPowerObserver(ContinuousObserver):
-    """Observer that measures power using NVML and continuous benchmarking"""
+    """Observer that measures power using NVML and continuous benchmarking."""
 
     def __init__(self, observables, parent, nvml_instance, continous_duration=1):
         self.parent = parent
@@ -534,8 +528,7 @@ class NVMLPowerObserver(ContinuousObserver):
 
 
 def get_nvml_pwr_limits(device, n=None, quiet=False):
-    """Get tunable parameter for NVML power limits, n is desired number of values"""
-
+    """Get tunable parameter for NVML power limits, n is desired number of values."""
     d = nvml(device)
     power_limits = d.pwr_constraints
     power_limit_min = power_limits[0]
@@ -544,8 +537,8 @@ def get_nvml_pwr_limits(device, n=None, quiet=False):
     power_limit_min *= 1e-3
     power_limit_max *= 1e-3
     power_limit_round = 5
-    tune_params = OrderedDict()
-    if n == None:
+    tune_params = dict()
+    if n is None:
         n = int((power_limit_max - power_limit_min) / power_limit_round) + 1
 
     # Rounded power limit values
@@ -561,8 +554,7 @@ def get_nvml_pwr_limits(device, n=None, quiet=False):
 
 
 def get_nvml_gr_clocks(device, n=None, quiet=False):
-    """Get tunable parameter for NVML graphics clock, n is desired number of values"""
-
+    """Get tunable parameter for NVML graphics clock, n is desired number of values."""
     d = nvml(device)
     mem_clock = max(d.supported_mem_clocks)
     gr_clocks = d.supported_gr_clocks[mem_clock]
@@ -571,7 +563,7 @@ def get_nvml_gr_clocks(device, n=None, quiet=False):
         indices = np.array(np.ceil(np.linspace(0, len(gr_clocks) - 1, n)), dtype=int)
         gr_clocks = np.array(gr_clocks)[indices]
 
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params["nvml_gr_clock"] = list(gr_clocks)
 
     if not quiet:
@@ -580,15 +572,14 @@ def get_nvml_gr_clocks(device, n=None, quiet=False):
 
 
 def get_nvml_mem_clocks(device, n=None, quiet=False):
-    """Get tunable parameter for NVML memory clock, n is desired number of values"""
-
+    """Get tunable parameter for NVML memory clock, n is desired number of values."""
     d = nvml(device)
     mem_clocks = d.supported_mem_clocks
 
     if n and len(mem_clocks) > n:
         mem_clocks = mem_clocks[:: int(len(mem_clocks) / n)]
 
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params["nvml_mem_clock"] = mem_clocks
 
     if not quiet:
@@ -597,7 +588,7 @@ def get_nvml_mem_clocks(device, n=None, quiet=False):
 
 
 def get_idle_power(device, n=5, sleep_s=0.1):
-    """Use NVML to measure device idle power consumption"""
+    """Use NVML to measure device idle power consumption."""
     d = nvml(device)
     readings = []
     for _ in range(n):

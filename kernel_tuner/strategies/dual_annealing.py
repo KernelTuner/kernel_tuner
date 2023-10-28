@@ -1,17 +1,14 @@
-""" The strategy that uses the dual annealing optimization method """
-from collections import OrderedDict
-
+"""The strategy that uses the dual annealing optimization method."""
 import scipy.optimize
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import (CostFunc,
-                                            setup_method_arguments,
-                                            setup_method_options)
+from kernel_tuner.strategies.common import CostFunc, setup_method_arguments, setup_method_options
 
 supported_methods = ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr']
 
-_options = OrderedDict(method=(f"Local optimization method to use, choose any from {supported_methods}", "Powell"))
+_options = dict(method=(f"Local optimization method to use, choose any from {supported_methods}", "Powell"))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 

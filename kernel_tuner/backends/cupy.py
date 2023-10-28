@@ -1,14 +1,10 @@
-"""This module contains all Cupy specific kernel_tuner functions"""
+"""This module contains all Cupy specific kernel_tuner functions."""
 from __future__ import print_function
 
-
-import logging
-import time
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.cupy import CupyRuntimeObserver
-
 
 # embedded in try block to be able to generate documentation
 # and run tests without cupy installed
@@ -19,10 +15,10 @@ except ImportError:
 
 
 class CupyFunctions(GPUBackend):
-    """Class that groups the Cupy functions on maintains state about the device"""
+    """Class that groups the Cupy functions on maintains state about the device."""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
-        """instantiate CupyFunctions object used for interacting with the CUDA device
+        """Instantiate CupyFunctions object used for interacting with the CUDA device.
 
         Instantiating this object will inspect and store certain device properties at
         runtime, which are used during compilation and/or execution of kernels by the
@@ -39,8 +35,7 @@ class CupyFunctions(GPUBackend):
         self.texrefs = []
         if not cp:
             raise ImportError(
-                "Error: cupy not installed, please install e.g. "
-                + "using 'pip install cupy', please check https://github.com/cupy/cupy."
+                "cupy not installed, install using 'pip install cupy', or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda."
             )
 
         # select device
@@ -88,7 +83,7 @@ class CupyFunctions(GPUBackend):
         self.name = env["device_name"]
 
     def ready_argument_list(self, arguments):
-        """ready argument list to be passed to the kernel, allocates gpu mem
+        """Ready argument list to be passed to the kernel, allocates gpu mem.
 
         :param arguments: List of arguments to be passed to the kernel.
             The order should match the argument list on the CUDA kernel.
@@ -111,7 +106,7 @@ class CupyFunctions(GPUBackend):
         return gpu_args
 
     def compile(self, kernel_instance):
-        """call the CUDA compiler to compile the kernel, return the device function
+        """Call the CUDA compiler to compile the kernel, return the device function.
 
         :param kernel_name: The name of the kernel to be compiled, used to lookup the
             function after compilation.
@@ -140,23 +135,23 @@ class CupyFunctions(GPUBackend):
         return self.func
 
     def start_event(self):
-        """Records the event that marks the start of a measurement"""
+        """Records the event that marks the start of a measurement."""
         self.start.record(stream=self.stream)
 
     def stop_event(self):
-        """Records the event that marks the end of a measurement"""
+        """Records the event that marks the end of a measurement."""
         self.end.record(stream=self.stream)
 
     def kernel_finished(self):
-        """Returns True if the kernel has finished, False otherwise"""
+        """Returns True if the kernel has finished, False otherwise."""
         return self.end.done
 
     def synchronize(self):
-        """Halts execution until device has finished its tasks"""
+        """Halts execution until device has finished its tasks."""
         self.dev.synchronize()
 
     def copy_constant_memory_args(self, cmem_args):
-        """adds constant memory arguments to the most recently compiled module
+        """Adds constant memory arguments to the most recently compiled module.
 
         :param cmem_args: A dictionary containing the data to be passed to the
             device constant memory. The format to be used is as follows: A
@@ -171,11 +166,11 @@ class CupyFunctions(GPUBackend):
             constant_mem[:] = cp.asarray(v)
 
     def copy_shared_memory_args(self, smem_args):
-        """add shared memory arguments to the kernel"""
+        """Add shared memory arguments to the kernel."""
         self.smem_size = smem_args["size"]
 
     def copy_texture_memory_args(self, texmem_args):
-        """adds texture memory arguments to the most recently compiled module
+        """Adds texture memory arguments to the most recently compiled module.
 
         :param texmem_args: A dictionary containing the data to be passed to the
             device texture memory. See tune_kernel().
@@ -184,7 +179,7 @@ class CupyFunctions(GPUBackend):
         raise NotImplementedError("CuPy backend does not support texture memory")
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
-        """runs the CUDA kernel passed as 'func'
+        """Runs the CUDA kernel passed as 'func'.
 
         :param func: A cupy kernel compiled for this specific kernel configuration
         :type func: cupy.RawKernel
@@ -205,7 +200,7 @@ class CupyFunctions(GPUBackend):
         func(grid, threads, gpu_args, stream=stream, shared_mem=self.smem_size)
 
     def memset(self, allocation, value, size):
-        """set the memory in allocation to the value in value
+        """Set the memory in allocation to the value in value.
 
         :param allocation: A GPU memory allocation unit
         :type allocation: cupy.ndarray
@@ -220,7 +215,7 @@ class CupyFunctions(GPUBackend):
         allocation[:] = value
 
     def memcpy_dtoh(self, dest, src):
-        """perform a device to host memory copy
+        """Perform a device to host memory copy.
 
         :param dest: A numpy array in host memory to store the data
         :type dest: numpy.ndarray
@@ -237,7 +232,7 @@ class CupyFunctions(GPUBackend):
             raise ValueError("dest type not supported")
 
     def memcpy_htod(self, dest, src):
-        """perform a host to device memory copy
+        """Perform a host to device memory copy.
 
         :param dest: A GPU memory allocation unit
         :type dest: cupy.ndarray

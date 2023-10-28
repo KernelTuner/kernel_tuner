@@ -1,12 +1,11 @@
 
-import pytest
 
 import kernel_tuner
 from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import BenchmarkObserver
 
 from .context import skip_if_no_pycuda, skip_if_no_pynvml
-from .test_runners import env
+from .test_runners import env  # noqa: F401
 
 
 @skip_if_no_pycuda

@@ -1,14 +1,14 @@
-""" A simple genetic algorithm for parameter search """
+"""A simple genetic algorithm for parameter search."""
 import random
-from collections import OrderedDict
 
 import numpy as np
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
-_options = OrderedDict(
+_options = dict(
     popsize=("population size", 20),
     maxiter=("maximum number of generations", 100),
     method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
@@ -77,7 +77,7 @@ tune.__doc__ = common.get_strategy_docstring("Genetic Algorithm", _options)
 
 
 def weighted_choice(population, n):
-    """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected"""
+    """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected."""
 
     def random_index_betavariate(pop_size):
         # has a higher probability of returning index of item at the head of the list
@@ -86,7 +86,7 @@ def weighted_choice(population, n):
         return int(random.betavariate(alpha, beta) * pop_size)
 
     def random_index_weighted(pop_size):
-        """use weights to increase probability of selection"""
+        """Use weights to increase probability of selection."""
         weights = [w for _, w in population]
         # invert because lower is better
         inverted_weights = [1.0 / w for w in weights]
@@ -109,8 +109,7 @@ def weighted_choice(population, n):
 
 
 def mutate(dna, mutation_chance, searchspace: Searchspace, cache=True):
-    """Mutate DNA with 1/mutation_chance chance"""
-
+    """Mutate DNA with 1/mutation_chance chance."""
     # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
     if int(random.random() * mutation_chance) == 0:
         if cache:
@@ -123,14 +122,14 @@ def mutate(dna, mutation_chance, searchspace: Searchspace, cache=True):
 
 
 def single_point_crossover(dna1, dna2):
-    """crossover dna1 and dna2 at a random index"""
+    """Crossover dna1 and dna2 at a random index."""
     # check if you can do the crossovers using the neighbor index: check which valid parameter configuration is closest to the crossover, probably best to use "adjacent" as it is least strict?
     pos = int(random.random() * (len(dna1)))
     return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
 
 
 def two_point_crossover(dna1, dna2):
-    """crossover dna1 and dna2 at 2 random indices"""
+    """Crossover dna1 and dna2 at 2 random indices."""
     if len(dna1) < 5:
         start, end = 0, len(dna1)
     else:
@@ -142,7 +141,7 @@ def two_point_crossover(dna1, dna2):
 
 
 def uniform_crossover(dna1, dna2):
-    """randomly crossover genes between dna1 and dna2"""
+    """Randomly crossover genes between dna1 and dna2."""
     ind = np.random.random(len(dna1)) > 0.5
     child1 = [dna1[i] if ind[i] else dna2[i] for i in range(len(ind))]
     child2 = [dna2[i] if ind[i] else dna1[i] for i in range(len(ind))]
@@ -150,7 +149,7 @@ def uniform_crossover(dna1, dna2):
 
 
 def disruptive_uniform_crossover(dna1, dna2):
-    """disruptive uniform crossover
+    """Disruptive uniform crossover.
 
     uniformly crossover genes between dna1 and dna2,
     with children guaranteed to be different from parents,

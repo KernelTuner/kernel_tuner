@@ -1,15 +1,15 @@
-""" The strategy that uses particle swarm optimization"""
+"""The strategy that uses particle swarm optimization."""
 import random
 import sys
-from collections import OrderedDict
 
 import numpy as np
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
-_options = OrderedDict(T=("Starting temperature", 1.0),
+_options = dict(T=("Starting temperature", 1.0),
                        T_min=("End temperature", 0.001),
                        alpha=("Alpha parameter", 0.995),
                        maxiter=("Number of iterations within each annealing step", 1))
@@ -86,7 +86,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 tune.__doc__ = common.get_strategy_docstring("Simulated Annealing", _options)
 
 def acceptance_prob(old_cost, new_cost, T, tuning_options):
-    """annealing equation, with modifications to work towards a lower value"""
+    """Annealing equation, with modifications to work towards a lower value."""
     error_val = sys.float_info.max if not tuning_options.objective_higher_is_better else -sys.float_info.max
     # if start pos is not valid, always move
     if old_cost == error_val:
@@ -104,7 +104,7 @@ def acceptance_prob(old_cost, new_cost, T, tuning_options):
 
 
 def neighbor(pos, searchspace: Searchspace):
-    """return a random neighbor of pos"""
+    """Return a random neighbor of pos."""
     # Note: this is not the same as the previous implementation, because it is possible that non-edge parameters remain the same, but suggested configurations will all be within restrictions
     neighbors = searchspace.get_neighbors(tuple(pos), neighbor_method='Hamming') if random.random() < 0.2 else searchspace.get_neighbors(tuple(pos), neighbor_method='strictly-adjacent')
     if len(neighbors) > 0:

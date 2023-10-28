@@ -1,4 +1,4 @@
-""" The simulation runner for sequentially tuning the parameter space based on cached data """
+"""The simulation runner for sequentially tuning the parameter space based on cached data."""
 import logging
 from collections import namedtuple
 from time import perf_counter
@@ -10,7 +10,7 @@ _SimulationDevice = namedtuple("_SimulationDevice", ["max_threads", "env", "quie
 
 
 class SimulationDevice(_SimulationDevice):
-    """ Simulated device used by simulation runner """
+    """Simulated device used by simulation runner."""
 
     @property
     def name(self):
@@ -27,10 +27,10 @@ class SimulationDevice(_SimulationDevice):
 
 
 class SimulationRunner(Runner):
-    """ SimulationRunner is used for tuning with a single process/thread """
+    """SimulationRunner is used for tuning with a single process/thread."""
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
-        """ Instantiate the SimulationRunner
+        """Instantiate the SimulationRunner.
 
         :param kernel_source: The kernel source
         :type kernel_source: kernel_tuner.core.KernelSource
@@ -46,7 +46,6 @@ class SimulationRunner(Runner):
             each kernel instance.
         :type iterations: int
         """
-
         self.quiet = device_options.quiet
         self.dev = SimulationDevice(1024, dict(device_name="Simulation"), self.quiet)
 
@@ -66,7 +65,7 @@ class SimulationRunner(Runner):
         return env
 
     def run(self, parameter_space, tuning_options):
-        """ Iterate through the entire parameter space using a single Python process
+        """Iterate through the entire parameter space using a single Python process.
 
         :param parameter_space: The parameter space as an iterable.
         :type parameter_space: iterable
@@ -78,7 +77,6 @@ class SimulationRunner(Runner):
         :returns: A list of dictionaries for executed kernel configurations and their
             execution times.
         :rtype: dict()
-
         """
         logging.debug('simulation runner started for ' + self.kernel_options.kernel_name)
 

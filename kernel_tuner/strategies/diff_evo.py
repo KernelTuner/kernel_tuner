@@ -1,22 +1,20 @@
-""" The differential evolution strategy that optimizes the search through the parameter space """
-from collections import OrderedDict
+"""The differential evolution strategy that optimizes the search through the parameter space."""
+from scipy.optimize import differential_evolution
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
-from scipy.optimize import differential_evolution
 
 supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
 
-_options = OrderedDict(method=(f"Creation method for new population, any of {supported_methods}", "best1bin"),
+_options = dict(method=(f"Creation method for new population, any of {supported_methods}", "best1bin"),
                        popsize=("Population size", 20),
                        maxiter=("Number of generations", 100))
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
-    results = []
 
     method, popsize, maxiter = common.get_options(tuning_options.strategy_options, _options)
 

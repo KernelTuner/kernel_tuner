@@ -3,32 +3,33 @@ Kernel Tuner
 
 |Build Status| |CodeCov Badge| |PyPi Badge| |Zenodo Badge| |SonarCloud Badge| |OpenSSF Badge| |FairSoftware Badge|
 
-Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels. This also means no extensive changes and no new dependencies are required in the kernel code. The kernels can still be compiled and used as normal from any host programming language.
+Kernel Tuner simplifies the software development of optimized and auto-tuned GPU programs, by enabling Python-based unit testing of GPU code and making it easy to develop scripts for auto-tuning GPU kernels.
+This also means no extensive changes and no new dependencies are required in the kernel code.
+The kernels can still be compiled and used as normal from any host programming language.
 
 Kernel Tuner provides a comprehensive solution for auto-tuning GPU programs, supporting auto-tuning of user-defined parameters in both host and device code, supporting output verification of all benchmarked kernels during tuning, as well as many optimization strategies to speed up the tuning process.
 
 Documentation
 -------------
 
-The full documentation is available
-`here <https://kerneltuner.github.io/kernel_tuner/stable/index.html>`__.
+The full documentation is available `here <https://kerneltuner.github.io/kernel_tuner/stable/index.html>`__.
 
 Installation
 ------------
 
 The easiest way to install the Kernel Tuner is using pip:
 
-To tune CUDA kernels:
+To tune CUDA kernels (`detailed instructions <https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda>`__):
 
 - First, make sure you have the `CUDA Toolkit <https://developer.nvidia.com/cuda-toolkit>`_ installed
 - Then type: ``pip install kernel_tuner[cuda]``
 
-To tune OpenCL kernels:
+To tune OpenCL kernels (`detailed instructions <https://kerneltuner.github.io/kernel_tuner/stable/install.html#opencl-and-pyopencl>`__):
 
 - First, make sure you have an OpenCL compiler for your intended OpenCL platform
 - Then type: ``pip install kernel_tuner[opencl]``
 
-To tune HIP kernels:
+To tune HIP kernels (`detailed instructions <https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-pyhipl>`__):
 
 - First, make sure you have an HIP runtime and compiler installed
 - Then type: ``pip install kernel_tuner[hip]``
@@ -38,7 +39,7 @@ Or all:
 - ``pip install kernel_tuner[cuda,opencl,hip]``
 
 More information about how to install Kernel Tuner and its
-dependencies can be found in the `installation guide 
+dependencies can be found in the `installation guide
 <http://kerneltuner.github.io/kernel_tuner/stable/install.html>`__.
 
 Example usage
@@ -83,12 +84,12 @@ The exact same Python code can be used to tune an OpenCL kernel:
     }
     """
 
-The Kernel Tuner will detect the kernel language and select the right compiler and 
-runtime. For every kernel in the parameter space, the Kernel Tuner will insert C 
-preprocessor defines for the tunable parameters, compile, and benchmark the kernel. The 
-timing results will be printed to the console, but are also returned by tune_kernel to 
-allow further analysis. Note that this is just the default behavior, what and how 
-tune_kernel does exactly is controlled through its many `optional arguments 
+The Kernel Tuner will detect the kernel language and select the right compiler and
+runtime. For every kernel in the parameter space, the Kernel Tuner will insert C
+preprocessor defines for the tunable parameters, compile, and benchmark the kernel. The
+timing results will be printed to the console, but are also returned by tune_kernel to
+allow further analysis. Note that this is just the default behavior, what and how
+tune_kernel does exactly is controlled through its many `optional arguments
 <http://kerneltuner.github.io/kernel_tuner/stable/user-api.html#kernel_tuner.tune_kernel>`__.
 
 You can find many - more extensive - example codes, in the
@@ -99,19 +100,19 @@ documentation pages <http://kerneltuner.github.io/kernel_tuner/stable/index.html
 Search strategies for tuning
 ----------------------------
 
-Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process. Currently 
-implemented search algorithms are: Brute Force (default), Nelder-Mead, Powell, CG, BFGS, L-BFGS-B, TNC, 
-COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Algorithm, Particle Swarm 
+Kernel Tuner supports many optimization algorithms to accelerate the auto-tuning process. Currently
+implemented search algorithms are: Brute Force (default), Nelder-Mead, Powell, CG, BFGS, L-BFGS-B, TNC,
+COBYLA, SLSQP, Random Search, Basinhopping, Differential Evolution, a Genetic Algorithm, Particle Swarm
 Optimization, the Firefly Algorithm, Simulated Annealing, Dual Annealing, Iterative Local Search,
 Multi-start Local Search, and Bayesian Optimization.
 
-.. image:: doc/gemm-amd-summary.png
+.. image:: https://github.com/KernelTuner/kernel_tuner/blob/master/doc/gemm-amd-summary.png?raw=true
     :width: 100%
     :align: center
 
-Using a search strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method 
-you would like to use, for example ``strategy="genetic_algorithm"`` or ``strategy="basinhopping"``. 
-For a full overview of the supported search strategies and methods please see the 
+Using a search strategy is easy, you only need to specify to ``tune_kernel`` which strategy and method
+you would like to use, for example ``strategy="genetic_algorithm"`` or ``strategy="basinhopping"``.
+For a full overview of the supported search strategies and methods please see the
 Kernel Tuner documentation on `Optimization Strategies <https://kerneltuner.github.io/kernel_tuner/stable/optimization.html>`__.
 
 Tuning host and kernel code
@@ -172,7 +173,7 @@ If you use Kernel Tuner in research or research software, please cite the most r
       year = {2021},
       url = {https://arxiv.org/abs/2111.14991}
     }
-    
+
     @article{schoonhoven2022benchmarking,
       title={Benchmarking optimization algorithms for auto-tuning GPU kernels},
       author={Schoonhoven, Richard and van Werkhoven, Ben and Batenburg, K Joost},
@@ -192,11 +193,11 @@ If you use Kernel Tuner in research or research software, please cite the most r
     }
 
 
-.. |Build Status| image:: https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml/badge.svg
-   :target: https://github.com/KernelTuner/kernel_tuner/actions/workflows/python-app.yml
+.. |Build Status| image:: https://github.com/KernelTuner/kernel_tuner/actions/workflows/build-test-python-package.yml/badge.svg
+   :target: https://github.com/KernelTuner/kernel_tuner/actions/workflows/build-test-python-package.yml
 .. |CodeCov Badge| image:: https://codecov.io/gh/KernelTuner/kernel_tuner/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/KernelTuner/kernel_tuner
-.. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue 
+.. |PyPi Badge| image:: https://img.shields.io/pypi/v/kernel_tuner.svg?colorB=blue
    :target: https://pypi.python.org/pypi/kernel_tuner/
 .. |Zenodo Badge| image:: https://zenodo.org/badge/54894320.svg
    :target: https://zenodo.org/badge/latestdoi/54894320

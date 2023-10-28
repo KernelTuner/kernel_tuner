@@ -1,15 +1,15 @@
-import numpy as np
 import ctypes
-from .context import skip_if_no_pyhip
-from collections import OrderedDict
 
+import numpy as np
 import pytest
-import kernel_tuner
+
 from kernel_tuner import tune_kernel
 from kernel_tuner.backends import hip as kt_hip
-from kernel_tuner.core import KernelSource, KernelInstance
+from kernel_tuner.core import KernelInstance, KernelSource
 
-try: 
+from .context import skip_if_no_pyhip
+
+try:
     from pyhip import hip, hiprtc
     hip_present = True
 except ImportError:
@@ -33,7 +33,7 @@ def env():
     n = np.int32(size)
 
     args = [c, a, b, n]
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
 
     return ["vector_add", kernel_string, size, args, tune_params]
@@ -49,24 +49,14 @@ def test_ready_argument_list():
 
     arguments = [d, a, b, c]
 
-    class ArgListStructure(ctypes.Structure):
-        _fields_ = [("field0", ctypes.POINTER(ctypes.c_float)),
-                    ("field1", ctypes.c_int),
-                    ("field2", ctypes.POINTER(ctypes.c_float)),
-                    ("field3", ctypes.c_bool)]
-        def __getitem__(self, key):
-                return getattr(self, self._fields_[key][0])
-
     dev = kt_hip.HipFunctions(0)
     gpu_args = dev.ready_argument_list(arguments)
 
-    argListStructure = ArgListStructure(d.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                                        ctypes.c_int(a),
-                                        b.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                                        ctypes.c_bool(c))
-    
-    assert(gpu_args[1] == argListStructure[1])
-    assert(gpu_args[3] == argListStructure[3])
+    # ctypes have no equality defined, so indirect comparison for type and value
+    assert(isinstance(gpu_args[1], ctypes.c_int))
+    assert(isinstance(gpu_args[3], ctypes.c_bool))
+    assert(gpu_args[1] == a)
+    assert(gpu_args[3] == c)
 
 @skip_if_no_pyhip
 def test_compile():
@@ -141,12 +131,12 @@ def test_copy_constant_memory_args():
 
     output = np.full(100, 0).astype(np.float32)
     gpu_args = dev.ready_argument_list([output])
-    
+
     threads = (100, 1, 1)
     grid = (1, 1, 1)
     dev.run_kernel(kernel, gpu_args, threads, grid)
 
-    dev.memcpy_dtoh(output, gpu_args.field0)
+    dev.memcpy_dtoh(output, gpu_args[0])
 
     assert(my_constant_data == output).all()
 

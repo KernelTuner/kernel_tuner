@@ -1,15 +1,14 @@
-from collections import OrderedDict
-
 import random
+
 import numpy as np
 
-from kernel_tuner.interface import Options
 import kernel_tuner.strategies.common as common
+from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
 
 
 def test_get_bounds_x0_eps():
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params['x'] = [0, 1, 2, 3, 4]
     searchspace = Searchspace(tune_params, [], 1024)
 
@@ -30,7 +29,7 @@ def test_get_bounds_x0_eps():
 
 def test_get_bounds():
 
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params['x'] = [0, 1, 2, 3, 4]
     tune_params['y'] = [i for i in range(0, 10000, 100)]
     tune_params['z'] = [-11.2, 55.67, 123.27]
@@ -47,13 +46,14 @@ def test_get_bounds():
 
 def test_snap_to_nearest_config():
 
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params['x'] = [0, 1, 2, 3, 4, 5]
     tune_params['y'] = [0, 1, 2, 3, 4, 5]
     tune_params['z'] = [0, 1, 2, 3, 4, 5]
+    tune_params['w'] = ['a', 'b', 'c']
 
-    x = [-5.7, 3.14, 1e6]
-    expected = [0, 3, 5]
+    x = [-5.7, 3.14, 1e6, 'b']
+    expected = [0, 3, 5, 'b']
 
     answer = common.snap_to_nearest_config(x, tune_params)
     assert answer == expected
@@ -61,7 +61,7 @@ def test_snap_to_nearest_config():
 
 def test_unscale():
 
-    params = OrderedDict()
+    params = dict()
     params['x'] = [2**i for i in range(4, 9)]
     eps = 1.0 / len(params['x'])
 

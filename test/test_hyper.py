@@ -1,13 +1,11 @@
-from collections import OrderedDict
-
 from kernel_tuner.hyper import tune_hyper_params
 
-from .test_runners import env, cache_filename
+from .test_runners import cache_filename, env  # noqa: F401
 
 
 def test_hyper(env):
 
-    hyper_params = OrderedDict()
+    hyper_params = dict()
     hyper_params["popsize"] = [5]
     hyper_params["maxiter"] = [5, 10]
     hyper_params["method"] = ["uniform"]

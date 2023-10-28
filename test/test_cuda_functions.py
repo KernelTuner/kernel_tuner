@@ -1,13 +1,12 @@
 import numpy as np
-
-import kernel_tuner
-from .context import skip_if_no_cuda
-from .test_runners import env
-
 import pytest
+
 from kernel_tuner import tune_kernel
 from kernel_tuner.backends import nvcuda
-from kernel_tuner.core import KernelSource, KernelInstance
+from kernel_tuner.core import KernelInstance, KernelSource
+
+from .context import skip_if_no_cuda
+from .test_runners import env  # noqa: F401
 
 try:
     from cuda import cuda
