@@ -897,11 +897,19 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
         number_is_int = isinstance(number, int)
         if number_is_int:
             if comparator == '<':
-                # (2 < x) == (2+1 <= x)
-                number += 1
+                if variables_on_left:
+                    # (x < 2) == (x <= 2-1)
+                    number -= 1
+                else:
+                    # (2 < x) == (2+1 <= x)
+                    number += 1
             elif comparator == '>':
-                # (2 > x) == (2-1 >= x)
-                number -= 1
+                if variables_on_left:
+                    # (x > 2) == (x >= 2+1)
+                    number += 1
+                else:
+                    # (2 > x) == (2-1 >= x)
+                    number -= 1
 
         # check if an operator is applied on the variables, if not return
         operators = [r'\*\*', r'\*', r'\+']

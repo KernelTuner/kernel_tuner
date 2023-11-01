@@ -731,3 +731,16 @@ def test_parse_restrictions():
     parsed, params = parsed_multi_constraints[3]
     assert isinstance(parsed, MaxProdConstraint)
     assert all(param in tune_params for param in params)
+
+    # test the conversion to constraints with a real-world edge-case
+    rw_tune_params = dict()
+    rw_tune_params["tile_size_x"] = [1, 2, 3, 4, 5, 6, 7, 8]
+    rw_tune_params["tile_size_y"] = [1, 2, 3, 4, 5, 6, 7, 8]
+    parsed_constraint, params_constraint = parse_restrictions(["tile_size_x*tile_size_y<30"], rw_tune_params, try_to_constraint=True)[0]
+    assert all(param in rw_tune_params for param in params_constraint)
+    assert isinstance(parsed_constraint, MaxProdConstraint)
+    assert parsed_constraint._maxprod == 29
+    parsed_constraint, params_constraint = parse_restrictions(["30<tile_size_x*tile_size_y"], rw_tune_params, try_to_constraint=True)[0]
+    assert all(param in rw_tune_params for param in params_constraint)
+    assert isinstance(parsed_constraint, MinProdConstraint)
+    assert parsed_constraint._minprod == 31
