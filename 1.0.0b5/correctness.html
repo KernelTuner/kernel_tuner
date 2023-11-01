@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Correctness Verification &mdash; Kernel Tuner 1.0.0b5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=a2b11acd"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tuning Host Code" href="hostcode.html" />
+    <link rel="prev" title="Cache files" href="cache_files.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.0.0b5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="backends.html">Backends</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Correctness Verification</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/correctness.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="correctness-verification">
+<h1>Correctness Verification<a class="headerlink" href="#correctness-verification" title="Permalink to this heading">¶</a></h1>
+<p>Whenever you optimize a program for performance it is very important to
+ensure that the program is still producing the correct output. What good
+is a program that is fast but not correct?</p>
+<p>Therefore an important feature of the kernel tuner is to verify the output
+of every kernel instance in the parameter space. To use the kernel tuner
+with correctness checking you need to pass the <code class="docutils literal notranslate"><span class="pre">answer</span></code> option to
+<code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>. Answer is a list that should match the order and types of
+the kernel arguments. However, if an argument to the kernel is input-only
+you may insert <code class="docutils literal notranslate"><span class="pre">None</span></code> at that location in the list.</p>
+<p>After kernel compilation, but before benchmarking the kernel, the kernel
+tuner runs the kernel once to verify the output it produces. For each
+argument in the <code class="docutils literal notranslate"><span class="pre">answer</span></code> list that is not None, it will check the results
+produced by the current kernel against the expected result specified in
+<code class="docutils literal notranslate"><span class="pre">answer</span></code>. The comparison is currently implemented using numpy.allclose()
+with an maximum allowed absolute error of 1e-6. If you want to use a
+difference tolerance value, use the optional argument <code class="docutils literal notranslate"><span class="pre">atol</span></code>.</p>
+<p>The example in <code class="docutils literal notranslate"><span class="pre">examples/cuda/convolution_correct.py</span></code> demonstrates how
+to use the <code class="docutils literal notranslate"><span class="pre">answer</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="linenos"> 2</span><span class="kn">import</span> <span class="nn">kernel_tuner</span>
+<span class="linenos"> 3</span>
+<span class="linenos"> 4</span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="linenos"> 5</span>    <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="linenos"> 6</span>
+<span class="linenos"> 7</span><span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
+<span class="linenos"> 8</span><span class="n">size</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">problem_size</span><span class="p">)</span>
+<span class="linenos"> 9</span><span class="n">input_size</span> <span class="o">=</span> <span class="p">((</span><span class="n">problem_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">16</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">problem_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">16</span><span class="p">))</span>
+<span class="linenos">10</span>
+<span class="linenos">11</span><span class="n">output</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="linenos">12</span><span class="nb">input</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">input_size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="linenos">13</span>
+<span class="linenos">14</span><span class="nb">filter</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">17</span><span class="o">*</span><span class="mi">17</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="linenos">15</span><span class="n">cmem_args</span><span class="o">=</span> <span class="p">{</span><span class="s1">&#39;d_filter&#39;</span><span class="p">:</span> <span class="nb">filter</span> <span class="p">}</span>
+<span class="linenos">16</span>
+<span class="linenos">17</span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="nb">filter</span><span class="p">]</span>
+<span class="linenos">18</span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="linenos">19</span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">9</span><span class="p">)]</span>
+<span class="linenos">20</span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)]</span>
+<span class="linenos">21</span>
+<span class="linenos">22</span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="linenos">23</span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="linenos">24</span>
+<span class="linenos">25</span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
+<span class="linenos">26</span><span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
+<span class="linenos">27</span>
+<span class="linenos">28</span><span class="c1">#compute the answer using a naive kernel</span>
+<span class="linenos">29</span><span class="n">params</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;block_size_x&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span> <span class="s2">&quot;block_size_y&quot;</span><span class="p">:</span> <span class="mi">16</span> <span class="p">}</span>
+<span class="linenos">30</span><span class="n">results</span> <span class="o">=</span> <span class="n">kernel_tuner</span><span class="o">.</span><span class="n">run_kernel</span><span class="p">(</span><span class="s2">&quot;convolution_naive&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span>
+<span class="linenos">31</span>    <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span>
+<span class="linenos">32</span>    <span class="n">grid_div_y</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">],</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">])</span>
+<span class="linenos">33</span>
+<span class="linenos">34</span><span class="c1">#set non-output fields to None</span>
+<span class="linenos">35</span><span class="n">answer</span> <span class="o">=</span> <span class="p">[</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="linenos">36</span>
+<span class="linenos">37</span><span class="c1">#start kernel tuning with correctness verification</span>
+<span class="linenos">38</span><span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;convolution_kernel&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span>
+<span class="linenos">39</span>    <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span>
+<span class="linenos">40</span>    <span class="n">grid_div_y</span><span class="o">=</span><span class="n">grid_div_y</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="n">grid_div_x</span><span class="p">,</span>
+<span class="linenos">41</span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cmem_args</span><span class="o">=</span><span class="n">cmem_args</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This example uses the <code class="docutils literal notranslate"><span class="pre">run_kernel()</span></code> function of the kernel tuner
+to run a single kernel and return its results, with almost the same
+interface as <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>. In this example we run a naive CUDA
+kernel whose results are trusted to be correct.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">answer</span></code> list is constructed out of the results from the naive
+kernel, but only includes the kernel arguments that are actually outputs.
+The arguments that are input are replaced by a <code class="docutils literal notranslate"><span class="pre">None</span></code> value in the
+<code class="docutils literal notranslate"><span class="pre">answer</span></code> list before the list is passed to <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
+<p>There are cases, however, where simply comparing the results computed on the device to precomputed values is not enough,
+and more flexibility is necessary.
+In this case, it is possible to use the <code class="docutils literal notranslate"><span class="pre">verify</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> and specify a <code class="docutils literal notranslate"><span class="pre">callable</span></code> object that
+implements a user-defined correctness check.
+This function should accept three parameters: <code class="docutils literal notranslate"><span class="pre">cpu_result</span></code>, <code class="docutils literal notranslate"><span class="pre">gpu_result</span></code>, and <code class="docutils literal notranslate"><span class="pre">atol</span></code>.
+Although the name of the parameters can be different, their semantic is position dependent and reflected in the names
+used in the documentation.</p>
+<p>The example in <code class="docutils literal notranslate"><span class="pre">examples/cuda/reduction.py</span></code> demonstrates how to use the <code class="docutils literal notranslate"><span class="pre">verify</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>;
+what follows is a snippet from the example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="c1"># gpu_result</span>
+<span class="linenos"> 2</span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">sum_x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
+<span class="linenos"> 3</span><span class="c1"># cpu_result</span>
+<span class="linenos"> 4</span><span class="n">reference</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="linenos"> 5</span><span class="c1"># custom verify function</span>
+<span class="linenos"> 6</span><span class="k">def</span> <span class="nf">verify_partial_reduce</span><span class="p">(</span><span class="n">cpu_result</span><span class="p">,</span> <span class="n">gpu_result</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="linenos"> 7</span>    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">cpu_result</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gpu_result</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">)</span>
+<span class="linenos"> 8</span><span class="c1"># call to tune_kernel()</span>
+<span class="linenos"> 9</span><span class="n">first_kernel</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;sum_floats&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span>
+<span class="linenos">10</span>    <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">,</span> <span class="n">grid_div_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">answer</span><span class="o">=</span><span class="n">reference</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="n">verify_partial_reduce</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The first argument, <code class="docutils literal notranslate"><span class="pre">cpu_result</span></code>, is mapped to the NumPy array provided to the <code class="docutils literal notranslate"><span class="pre">answer</span></code> option; in this example it
+is mapped to <code class="docutils literal notranslate"><span class="pre">reference</span></code>.
+The second argument, <code class="docutils literal notranslate"><span class="pre">gpu_result</span></code>, is mapped to the NumPy array provided to the <code class="docutils literal notranslate"><span class="pre">arguments</span></code> option of
+<code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>; in this example it is mapped to <code class="docutils literal notranslate"><span class="pre">args</span></code>.
+The third argument, <code class="docutils literal notranslate"><span class="pre">atol</span></code>, is set to <code class="docutils literal notranslate"><span class="pre">None</span></code>; the default maximum allowed absolute error of 1e-6 is then used.</p>
+<p>In the example, the user-defined <code class="docutils literal notranslate"><span class="pre">verify</span></code> function is used to compare the partial results, computed on the GPU,
+to the final result, computed on the CPU.
+The same could not be achieved just by using the <code class="docutils literal notranslate"><span class="pre">answer</span></code> option, because the number of elements in <code class="docutils literal notranslate"><span class="pre">args[0]</span></code> does
+not necessarily match the number of elements in <code class="docutils literal notranslate"><span class="pre">reference[0]</span></code> in this example.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cache_files.html" class="btn btn-neutral float-left" title="Cache files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hostcode.html" class="btn btn-neutral float-right" title="Tuning Host Code" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2023, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
