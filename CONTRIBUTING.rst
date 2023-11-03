@@ -45,12 +45,13 @@ Steps with :bash:`sudo` access (e.g. on a local device):
 
 #. Clone the git repository to the desired location: :bash:`git clone https://github.com/KernelTuner/kernel_tuner.git`, and :bash:`cd` to it.
 #. Prepare your system for building Python versions.
-    * On Ubuntu, run :bash:`sudo apt update && apt upgrade`, and :bash:`sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl git`.
+    * On Ubuntu, run :bash:`sudo apt update && sudo apt upgrade`, and :bash:`sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl git`.
 #. Install `pyenv <https://github.com/pyenv/pyenv#installation>`__:
     * On Linux, run :bash:`curl https://pyenv.run | bash` (remember to add the output to :bash:`.bash_profile` and :bash:`.bashrc` as specified).
     * on macOS, run :bash:`brew update && brew install pyenv`.
-#. Install the required Python versions: :bash:`pyenv install 3.8 3.9 3.10 3.11`. On some systems, additional packages may be needed to build Python versions.
-    * For example on Ubuntu: :bash:`sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev liblzma-dev lzma`.
+#. Install the required Python versions: 
+    * On some systems, additional packages may be needed to build Python versions. For example on Ubuntu: :bash:`sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev liblzma-dev lzma`.
+    * Install the Python versions with: :bash:`pyenv install 3.8 3.9 3.10 3.11`
 #. Setup a local virtual environment in the folder: :bash:`pyenv virtualenv kerneltuner` (or whatever environment name you prefer).
 #. Set the Python versions so they can be found: :bash:`pyenv local 3.8 3.9 3.10 3.11` (replace :bash:`local` with :bash:`global` when not using the virtualenv).
 #. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`. Make sure to add it to :bash:`PATH` as instructed at the end of the installation.
@@ -100,15 +101,21 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
 
 Running tests
 -------------
-To run the tests you can use :bash:`nox` (to run against all supported Python versions in isolated environments) and :bash:`pytest` (to run against the local Python version) in the top-level directory.
-For full coverage, make Nox install and use the additional tests (such as cupy and cuda-python) with :bash:`nox -- additional-tests`.
-It's also possible to invoke PyTest from the 'Testing' tab in Visual Studio Code.
-The isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run :bash:`nox` with the :bash:`small-disk` option. This removes the other environment caches before each session is ran (note that this will take longer to run).
+To run the tests you can use :bash:`nox` (to run against all supported Python versions in isolated environments) and :bash:`pytest` (to run against the local Python version, see below) in the top-level directory.
+For full coverage, make Nox use the additional tests (such as cupy and cuda-python) with :bash:`nox -- additional-tests`.
+The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run :bash:`nox` with the :bash:`small-disk` option. This removes the other environment caches before each session is ran (note that this will take longer to run).
+Please note that the command-line options can be combined, e.g. :bash:`nox -- additional-tests skip-hip small-disk`. 
+If you do not have fully compatible hardware or environment, you can use the following options:
+* :bash:`nox -- skip-cuda` to skip tests involving CUDA.
+* :bash:`nox -- skip-hip` to skip tests involving HIP.
+* :bash:`nox -- skip-opencl` to skip tests involving OpenCL.
+* :bash:`nox -- skip-gpu` to skip all tests on the GPU (the same as :bash:`nox -- skip-cuda skip-hip skip-opencl`), especially helpful if you don't have a GPU locally. 
+Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally!
 
-Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
-are not installed/present. The same holds for tests that require PyOpenCL, Cupy, Nvidia CUDA.
-
-Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally.
+Running with :bash:`pytest` will test against your local Python version and PIP packages. 
+In this case, tests that require PyCuda and/or a CUDA capable GPU will be skipped automatically if these are not installed/present. 
+The same holds for tests that require PyOpenCL, Cupy, and CUDA.
+It is also possible to invoke PyTest from the 'Testing' tab in Visual Studio Code to visualize the testing in your IDE.
 
 The examples can be seen as *integration tests* for the Kernel Tuner.
 Note that these will also use the installed package.
