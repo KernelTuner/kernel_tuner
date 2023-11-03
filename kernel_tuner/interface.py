@@ -621,7 +621,7 @@ def tune_kernel(
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
         else:
-            raise ValueError("Strategy %s not recognized" % strategy)
+            raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
 
         # make strategy_options into an Options object
         if tuning_options.strategy_options:
