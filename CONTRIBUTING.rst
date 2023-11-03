@@ -48,7 +48,8 @@ Steps with :bash:`sudo` access (e.g. on a local device):
     * On Ubuntu, run :bash:`sudo apt update && sudo apt upgrade`, and :bash:`sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl git`.
 #. Install `pyenv <https://github.com/pyenv/pyenv#installation>`__:
     * On Linux, run :bash:`curl https://pyenv.run | bash` (remember to add the output to :bash:`.bash_profile` and :bash:`.bashrc` as specified).
-    * on macOS, run :bash:`brew update && brew install pyenv`.
+    * On macOS, run :bash:`brew update && brew install pyenv`.
+    * After installation, restart your shell. 
 #. Install the required Python versions: 
     * On some systems, additional packages may be needed to build Python versions. For example on Ubuntu: :bash:`sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev liblzma-dev lzma`.
     * Install the Python versions with: :bash:`pyenv install 3.8 3.9 3.10 3.11`
