@@ -32,7 +32,7 @@ jobs:
             - name: Run tests with Nox
               run: |
                   pip install nox-poetry
-                  nox -- skip-gpu
+                  nox -- skip-gpu github-action
             # - name: Upload Coverage report to CodeCov
             #   uses: codecov/codecov-action@v3
             #   with:

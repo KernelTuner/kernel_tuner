@@ -43,6 +43,10 @@ def check_poetry(session: Session) -> None:
 @session    # to only run on the current python interpreter
 def check_development_environment(session: Session) -> None:
     """Check whether the development environment is up to date with the dependencies, and try to update if necessary."""
+    if session.posargs:
+        if 'github-action' in session.posargs:
+            session.log("Skipping development environment check on the GitHub Actions runner, as this is always up to date.")
+            return None
     output: str = session.run("poetry", "install", "--sync", "--dry-run", "--with", "test", silent=True, external=True)
     match = re.search(r"Package operations: (\d+) installs, (\d+) updates, (\d+) removals, \d+ skipped", output)
     assert match is not None
@@ -131,7 +135,7 @@ def tests(session: Session) -> None:
         try:
             session.install("pycuda")       # Attention: if changed, check `pycuda` in pyproject.toml as well
         except Exception as error:
-            print(error)
+            session.log(error)
             session.warn(install_warning)
     if install_opencl and session.python == "3.8":
         # if we need to install the OpenCL extras, first install pyopencl seperately.
@@ -139,7 +143,7 @@ def tests(session: Session) -> None:
         try:
             session.install("pyopencl")       # Attention: if changed, check `pyopencl` in pyproject.toml as well
         except Exception as error:
-            print(error)
+            session.log(error)
             session.warn(install_warning)
 
     # finally, install the dependencies, optional dependencies and the package itself
@@ -158,7 +162,7 @@ def tests(session: Session) -> None:
         try:
             session.install("cuda-python")
         except Exception as error:
-            print(error)
+            session.log(error)
             session.warn(install_additional_warning)
         try:
             # use NVCC to get the CUDA version
@@ -181,7 +185,7 @@ def tests(session: Session) -> None:
                 session.warn(f"No prebuilt CuPy found for CUDA {cuda_version}, building from source...")
                 session.install("cupy")
         except Exception as error:
-            print(error)
+            session.log(error)
             session.warn(install_additional_warning)
 
     # for the last Python version session if all optional dependencies are enabled:
