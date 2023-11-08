@@ -15,6 +15,8 @@ There are few differences with tuning just a single CUDA or OpenCL kernel, to li
  * You have to specify the lang="C" option
  * The C function should return a ``float``
  * You have to do your own timing and error handling in C
+ * Data is not automatically copied to and from device memory. To use an array in host memory, pass in a :mod:`numpy` array. To use an array
+   in device memory, pass in a :mod:`cupy` array.
 
 You have to specify the language as "C" because the Kernel Tuner will be calling a host function. This means that the Kernel
 Tuner will have to interface with C and in fact uses a different backend. This also means you can use this way of tuning
@@ -94,7 +96,7 @@ compiled C code. This way, you don't have to compute the grid size in C, you can
 
 The filter is not passed separately as a constant memory argument, because the CudaMemcpyToSymbol operation is now performed by the C host function. Also, 
 because the code is compiled differently, we have no direct reference to the compiled module that is uploaded to the device and therefore we can not perform this 
-operation directly from Python. If you are tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code, 
+operation directly from Python. If you are tuning host code, you have the option to perform all memory allocations, frees, and memcpy operations inside the C host code, 
 that's the purpose of host code after all. That is also why you have to do the timing yourself in C, as you may not want to include the time spent on memory 
 allocations and other setup into your time measurements.
 
