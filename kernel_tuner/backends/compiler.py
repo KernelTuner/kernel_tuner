@@ -358,7 +358,7 @@ class CompilerFunctions(CompilerBackend):
         :param src: An Argument for some memory allocation
         :type src: Argument
         """
-        if isinstance(dest, np.ndarray) and isinstance(src.numpy, cp.ndarray):
+        if isinstance(dest, np.ndarray) and is_cupy_array(src.numpy):
             # Implicit conversion to a NumPy array is not allowed.
             value = src.numpy.get()
         else:
@@ -375,7 +375,7 @@ class CompilerFunctions(CompilerBackend):
         :param src: A numpy array containing the source data
         :type src: np.ndarray
         """
-        if isinstance(dest.numpy, np.ndarray) and isinstance(src, cp.ndarray):
+        if isinstance(dest.numpy, np.ndarray) and is_cupy_array(src):
             # Implicit conversion to a NumPy array is not allowed.
             value = src.get()
         else:
