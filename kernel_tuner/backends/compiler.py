@@ -21,6 +21,22 @@ from kernel_tuner.util import (
     SkippableFailure,
 )
 
+try:
+    import cupy as cp
+except ImportError:
+    cp = None
+
+
+def is_cupy_array(array):
+    """Check if something is a cupy array."""
+    return cp is not None and isinstance(array, cp.ndarray)
+
+
+def get_array_module(*args):
+    """Return the array module for arguments."""
+    return np if cp is None else cp.get_array_module(*args)
+
+
 dtype_map = {
     "int8": C.c_int8,
     "int16": C.c_int16,
@@ -112,9 +128,9 @@ class CompilerFunctions(CompilerBackend):
         ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not isinstance(arg, (np.ndarray, np.number)):
+            if not (isinstance(arg, (np.ndarray, np.number)) or is_cupy_array(arg)):
                 raise TypeError(
-                    "Argument is not numpy ndarray or numpy scalar %s" % type(arg)
+                    f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}"
                 )
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
@@ -129,6 +145,8 @@ class CompilerFunctions(CompilerBackend):
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
+            elif is_cupy_array(arg):
+                data_ctypes = C.c_void_p(arg.data.ptr)
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
         return ctype_args
 
@@ -326,7 +344,10 @@ class CompilerFunctions(CompilerBackend):
         :param size: The size of to the allocation unit in bytes
         :type size: int
         """
-        C.memset(allocation.ctypes, value, size)
+        if is_cupy_array(allocation.numpy):
+            cp.cuda.runtime.memset(allocation.numpy.data.ptr, value, size)
+        else:
+            C.memset(allocation.ctypes, value, size)
 
     def memcpy_dtoh(self, dest, src):
         """a simple memcpy copying from an Argument to a numpy array
@@ -337,18 +358,30 @@ class CompilerFunctions(CompilerBackend):
         :param src: An Argument for some memory allocation
         :type src: Argument
         """
-        dest[:] = src.numpy
+        if isinstance(dest, np.ndarray) and isinstance(src.numpy, cp.ndarray):
+            # Implicit conversion to a NumPy array is not allowed.
+            value = src.numpy.get()
+        else:
+            value = src.numpy
+        xp = get_array_module(dest)
+        dest[:] = xp.asarray(value)
 
     def memcpy_htod(self, dest, src):
         """a simple memcpy copying from a numpy array to an Argument
 
         :param dest: An Argument for some memory allocation
-        :type dst: Argument
+        :type dest: Argument
 
         :param src: A numpy array containing the source data
         :type src: np.ndarray
         """
-        dest.numpy[:] = src
+        if isinstance(dest.numpy, np.ndarray) and isinstance(src, cp.ndarray):
+            # Implicit conversion to a NumPy array is not allowed.
+            value = src.get()
+        else:
+            value = src
+        xp = get_array_module(dest.numpy)
+        dest.numpy[:] = xp.asarray(value)
 
     def cleanup_lib(self):
         """unload the previously loaded shared library"""
