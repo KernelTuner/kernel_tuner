@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 name = "kernel_tuner"
 packages = [{ include = "kernel_tuner", from = "." }]
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.0.0b5" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.0.0b6" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 license = "Apache-2.0"
 authors = [
     "Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>",
@@ -44,7 +44,7 @@ classifiers = [
     "Topic :: System :: Distributed Computing",
 ]
 include = [
-    { path = "doc/source/*.ipynb" },
+    { path = "test" },
 ] # this ensures that people won't have to clone the whole repo to include notebooks, they can just do `pip install kernel_tuner[tutorial,cuda]`
 homepage = "https://KernelTuner.github.io/kernel_tuner/"
 documentation = "https://KernelTuner.github.io/kernel_tuner/"
