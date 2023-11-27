@@ -68,6 +68,8 @@ Citation
 --------
 If you use Kernel Tuner in research or research software, please cite the most relevant among the following publications:
 
+The first paper on Kernel Tuner, please note that the capabilities of Kernel Tuner have significantly expanded since the first publication:
+
 .. code:: latex
 
     @article{kerneltuner,
@@ -81,6 +83,10 @@ If you use Kernel Tuner in research or research software, please cite the most r
       doi = {https://doi.org/10.1016/j.future.2018.08.004}
     }
 
+For referencing to Kernel Tuner's Bayesian Optimization strategy, please cite the following:
+
+.. code:: latex
+
     @article{willemsen2021bayesian,
       author = {Willemsen, Floris-Jan and Van Nieuwpoort, Rob and Van Werkhoven, Ben},
       title = {Bayesian Optimization for auto-tuning GPU kernels},
@@ -89,7 +95,12 @@ If you use Kernel Tuner in research or research software, please cite the most r
       year = {2021},
       url = {https://arxiv.org/abs/2111.14991}
     }
+
+
+For a performance comparison of different optimization algorithms for auto-tuning and an analysis of tuning difficulty for different GPUs:
     
+.. code:: latex
+
     @article{schoonhoven2022benchmarking,
       title={Benchmarking optimization algorithms for auto-tuning GPU kernels},
       author={Schoonhoven, Richard and van Werkhoven, Ben and Batenburg, K Joost},
@@ -97,6 +108,11 @@ If you use Kernel Tuner in research or research software, please cite the most r
       year={2022},
       publisher={IEEE}
     }
+
+
+For referencing to Kernel Tuner's capabilities in measuring and optimizing energy consumption of GPU kernels, please cite the following:
+
+.. code:: latex
 
     @article{schoonhoven2022going,
       author = {Schoonhoven, Richard and Veenboer, Bram, and van Werkhoven, Ben and Batenburg, K Joost},
