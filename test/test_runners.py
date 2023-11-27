@@ -1,12 +1,11 @@
 import os
 import time
-from collections import OrderedDict
 
 import numpy as np
 import pytest
 
-from kernel_tuner import util, tune_kernel, core
-from kernel_tuner.interface import Options, _kernel_options, _device_options, _tuning_options
+from kernel_tuner import core, tune_kernel, util
+from kernel_tuner.interface import Options, _device_options, _kernel_options, _tuning_options
 from kernel_tuner.runners.sequential import SequentialRunner
 
 from .context import skip_if_no_pycuda
@@ -33,7 +32,7 @@ def env():
     n = np.int32(size)
 
     args = [c, a, b, n]
-    tune_params = OrderedDict()
+    tune_params = dict()
     tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
 
     return ["vector_add", kernel_string, size, args, tune_params]
@@ -67,7 +66,7 @@ def test_sequential_runner_alt_block_size_names(env):
     result, _ = tune_kernel(*env,
                             grid_div_x=["block_dim_x"],
                             answer=answer,
-                            block_size_names=block_size_names)
+                            block_size_names=block_size_names, objective='time', objective_higher_is_better=False)
 
     assert len(result) == len(tune_params["block_dim_x"])
 
@@ -262,7 +261,7 @@ def test_runner(env):
     iterations = 7
     verbose = False
     objective = "GFLOP/s"
-    metrics = OrderedDict({objective: lambda p: 1})
+    metrics = dict({objective: lambda p: 1})
     opts = locals()
     kernel_options = Options([(k, opts.get(k, None))
                               for k in _kernel_options.keys()])

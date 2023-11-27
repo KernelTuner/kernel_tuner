@@ -2,7 +2,28 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## [1.0.0] - Unreleased
+- Major speedup due to new parser and using revamped python-constraint for searchspace building
+- Implemented ability to use `PySMT` and `ATF` for searchspace building
+- Added Poetry for dependency and build management
+- Switched from `setup.py` and `setup.cfg` to `pyproject.toml` for centralized metadata, added relevant tests
+- Updated GitHub Action workflows to use Poetry
+- Updated dependencies, most notably NumPy is no longer version-locked as scikit-opt is no longer a dependency
+- Documentation now uses `pyproject.toml` metadata, minor fixes and changes to be compatible with updated dependencies
+- Set up Nox for testing on all supported Python versions in isolated environments
+- Added linting information, VS Code settings and recommendations
+- Discontinued use of `OrderedDict`, as all dictionaries in the Python versions used are already ordered
+- Dropped Python 3.7 support
+
+## [0.4.5] - 2023-06-01
+### Added
+- PMTObserver to measure power and energy on various platforms
+
+### Changed
+- Improved functionality for storing output and metadata files
+- Updated PowerSensorObserver to support PowerSensor3
+- Refactored interal interfaces of runners and backends
+- Bugfix in interface to set objective and optimization direction
 
 ## [0.4.4] - 2023-03-09
 ### Added

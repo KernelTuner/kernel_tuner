@@ -3,7 +3,7 @@ import numpy as np
 from kernel_tuner.observers.observer import BenchmarkObserver
 
 
-class CRuntimeObserver(BenchmarkObserver):
+class CompilerRuntimeObserver(BenchmarkObserver):
     """Observer that collects results returned by benchmarking function in the C backend"""
 
     def __init__(self, dev):

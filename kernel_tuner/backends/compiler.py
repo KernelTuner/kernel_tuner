@@ -13,13 +13,46 @@ import numpy as np
 import numpy.ctypeslib
 
 from kernel_tuner.backends.backend import CompilerBackend
-from kernel_tuner.observers.c import CRuntimeObserver
+from kernel_tuner.observers.compiler import CompilerRuntimeObserver
 from kernel_tuner.util import (
     get_temp_filename,
     delete_temp_file,
     write_file,
     SkippableFailure,
 )
+
+try:
+    import cupy as cp
+except ImportError:
+    cp = None
+
+
+def is_cupy_array(array):
+    """Check if something is a cupy array.
+
+    :param array: A Python object.
+    :type array: typing.Any
+
+    :returns: True if cupy can be imported and the object is a cupy.ndarray.
+    :rtype: bool
+    """
+    return cp is not None and isinstance(array, cp.ndarray)
+
+
+def get_array_module(*args):
+    """Return the array module for arguments.
+
+    This function is used to implement CPU/GPU generic code. If the cupy module can be imported
+    and at least one of the arguments is a cupy.ndarray object, the cupy module is returned.
+
+    :param args: Values to determine whether NumPy or CuPy should be used.
+    :type args: numpy.ndarray or cupy.ndarray
+
+    :returns: cupy or numpy is returned based on the types of the arguments.
+    :rtype: types.ModuleType
+    """
+    return np if cp is None else cp.get_array_module(*args)
+
 
 dtype_map = {
     "int8": C.c_int8,
@@ -40,15 +73,18 @@ dtype_map = {
 Argument = namedtuple("Argument", ["numpy", "ctypes"])
 
 
-class CFunctions(CompilerBackend):
+class CompilerFunctions(CompilerBackend):
     """Class that groups the code for running and compiling C functions"""
 
-    def __init__(self, iterations=7, compiler_options=None, compiler=None):
+    def __init__(self, iterations=7, compiler_options=None, compiler=None, observers=None):
         """instantiate CFunctions object used for interacting with C code
 
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        self.observers = observers or []
+        self.observers.append(CompilerRuntimeObserver(self))
+
         self.iterations = iterations
         self.max_threads = 1024
         self.compiler_options = compiler_options
@@ -56,14 +92,24 @@ class CFunctions(CompilerBackend):
         self.compiler = compiler or "g++"
         self.lib = None
         self.using_openmp = False
-        self.observers = [CRuntimeObserver(self)]
+        self.using_openacc = False
+        self.observers = [CompilerRuntimeObserver(self)]
         self.last_result = None
 
-        try:
-            cc_version = str(subprocess.check_output([self.compiler, "--version"]))
-            cc_version = cc_version.splitlines()[0].split(" ")[-1]
-        except OSError as e:
-            raise e
+        if self.compiler == "g++":
+            try:
+                cc_version = str(subprocess.check_output([self.compiler, "--version"]))
+                cc_version = cc_version.split("\\n")[0].split(" ")[2]
+            except OSError as e:
+                raise e
+        elif self.compiler in ["nvc", "nvc++", "nvfortran"]:
+            try:
+                cc_version = str(subprocess.check_output([self.compiler, "--version"]))
+                cc_version = cc_version.split(" ")[1]
+            except OSError as e:
+                raise e
+        else:
+            cc_version = None
 
         # check if nvcc is available
         self.nvcc_available = False
@@ -90,8 +136,8 @@ class CFunctions(CompilerBackend):
 
         :param arguments: List of arguments to be passed to the C function.
             The order should match the argument list on the C function.
-            Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
-        :type arguments: list(numpy objects)
+            Allowed values are np.ndarray, cupy.ndarray, and/or np.int32, np.float32, and so on.
+        :type arguments: list(numpy or cupy objects)
 
         :returns: A list of arguments that can be passed to the C function.
         :rtype: list(Argument)
@@ -99,9 +145,9 @@ class CFunctions(CompilerBackend):
         ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not isinstance(arg, (np.ndarray, np.number)):
+            if not (isinstance(arg, (np.ndarray, np.number)) or is_cupy_array(arg)):
                 raise TypeError(
-                    "Argument is not numpy ndarray or numpy scalar %s" % type(arg)
+                    f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}"
                 )
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
@@ -116,6 +162,8 @@ class CFunctions(CompilerBackend):
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
+            elif is_cupy_array(arg):
+                data_ctypes = C.c_void_p(arg.data.ptr)
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
         return ctype_args
 
@@ -143,13 +191,14 @@ class CFunctions(CompilerBackend):
         if "#include <omp.h>" in kernel_string or "use omp_lib" in kernel_string:
             logging.debug("set using_openmp to true")
             self.using_openmp = True
-            if self.compiler == "pgfortran":
+            if self.compiler in ["nvc", "nvc++", "nvfortran"]:
                 compiler_options.append("-mp")
             else:
-                if "#pragma acc" in kernel_string or "!$acc" in kernel_string:
-                    compiler_options.append("-fopenacc")
-                else:
-                    compiler_options.append("-fopenmp")
+                compiler_options.append("-fopenmp")
+
+        # detect openacc
+        if "#pragma acc" in kernel_string or "!$acc" in kernel_string:
+            self.using_openacc = True
 
         # if filename is known, use that one
         suffix = kernel_instance.kernel_source.get_user_suffix()
@@ -175,7 +224,7 @@ class CFunctions(CompilerBackend):
             # select right suffix based on compiler
             suffix = ".cc"
 
-            if self.compiler in ["gfortran", "pgfortran", "ftn", "ifort"]:
+            if self.compiler in ["gfortran", "nvfortran", "ftn", "ifort"]:
                 suffix = ".F90"
 
         if self.compiler == "nvcc":
@@ -208,11 +257,11 @@ class CFunctions(CompilerBackend):
                 kernel_name = "__" + match.group(1) + "_MOD_" + kernel_name
             elif self.compiler in ["ftn", "ifort"]:
                 kernel_name = match.group(1) + "_mp_" + kernel_name + "_"
-            elif self.compiler == "pgfortran":
+            elif self.compiler == "nvfortran":
                 kernel_name = match.group(1) + "_" + kernel_name + "_"
         else:
             # for functions outside of modules
-            if self.compiler in ["gfortran", "ftn", "ifort", "pgfortran"]:
+            if self.compiler in ["gfortran", "ftn", "ifort", "nvfortran"]:
                 kernel_name = kernel_name + "_"
 
         try:
@@ -312,33 +361,48 @@ class CFunctions(CompilerBackend):
         :param size: The size of to the allocation unit in bytes
         :type size: int
         """
-        C.memset(allocation.ctypes, value, size)
+        if is_cupy_array(allocation.numpy):
+            cp.cuda.runtime.memset(allocation.numpy.data.ptr, value, size)
+        else:
+            C.memset(allocation.ctypes, value, size)
 
     def memcpy_dtoh(self, dest, src):
         """a simple memcpy copying from an Argument to a numpy array
 
-        :param dest: A numpy array to store the data
-        :type dest: np.ndarray
+        :param dest: A numpy or cupy array to store the data
+        :type dest: np.ndarray or cupy.ndarray
 
         :param src: An Argument for some memory allocation
         :type src: Argument
         """
-        dest[:] = src.numpy
+        if isinstance(dest, np.ndarray) and is_cupy_array(src.numpy):
+            # Implicit conversion to a NumPy array is not allowed.
+            value = src.numpy.get()
+        else:
+            value = src.numpy
+        xp = get_array_module(dest)
+        dest[:] = xp.asarray(value)
 
     def memcpy_htod(self, dest, src):
         """a simple memcpy copying from a numpy array to an Argument
 
         :param dest: An Argument for some memory allocation
-        :type dst: Argument
+        :type dest: Argument
 
-        :param src: A numpy array containing the source data
-        :type src: np.ndarray
+        :param src: A numpy or cupy array containing the source data
+        :type src: np.ndarray or cupy.ndarray
         """
-        dest.numpy[:] = src
+        if isinstance(dest.numpy, np.ndarray) and is_cupy_array(src):
+            # Implicit conversion to a NumPy array is not allowed.
+            value = src.get()
+        else:
+            value = src
+        xp = get_array_module(dest.numpy)
+        dest.numpy[:] = xp.asarray(value)
 
     def cleanup_lib(self):
         """unload the previously loaded shared library"""
-        if not self.using_openmp:
+        if not self.using_openmp and not self.using_openacc:
             # this if statement is necessary because shared libraries that use
             # OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
             logging.debug("unloading shared library")

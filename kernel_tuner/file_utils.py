@@ -1,13 +1,13 @@
-""" This module contains utility functions for operations on files, mostly JSON cache files """
+"""This module contains utility functions for operations on files, mostly JSON cache files."""
 
-import os
 import json
+import os
 import subprocess
-import xmltodict
-from sys import platform
+from importlib.metadata import PackageNotFoundError, requires, version
 from pathlib import Path
+from sys import platform
 
-from importlib.metadata import requires, version, PackageNotFoundError
+import xmltodict
 from packaging.requirements import Requirement
 
 from kernel_tuner import util
@@ -16,7 +16,7 @@ schema_dir = os.path.dirname(os.path.realpath(__file__)) + "/schema"
 
 
 def output_file_schema(target):
-    """Get the requested JSON schema and the version number
+    """Get the requested JSON schema and the version number.
 
     :param target: Name of the T4 schema to return, should be any of ['output', 'metadata']
     :type target: string
@@ -33,7 +33,7 @@ def output_file_schema(target):
 
 
 def get_configuration_validity(objective) -> str:
-    """Convert internal Kernel Tuner error to string"""
+    """Convert internal Kernel Tuner error to string."""
     errorstring: str
     if not isinstance(objective, util.ErrorConfig):
         errorstring = "correct"
@@ -50,21 +50,21 @@ def get_configuration_validity(objective) -> str:
 
 
 def filename_ensure_json_extension(filename: str) -> str:
-    """Check if the filename has a .json extension, if not, add it"""
+    """Check if the filename has a .json extension, if not, add it."""
     if filename[-5:] != ".json":
         filename += ".json"
     return filename
 
 
 def make_filenamepath(filenamepath: Path):
-    """Create the given path to a filename if the path does not yet exist"""
+    """Create the given path to a filename if the path does not yet exist."""
     filepath = filenamepath.parents[0]
     if not filepath.exists():
         filepath.mkdir()
 
 
 def store_output_file(output_filename: str, results, tune_params, objective="time"):
-    """Store the obtained auto-tuning results in a JSON output file
+    """Store the obtained auto-tuning results in a JSON output file.
 
     This function produces a JSON file that adheres to the T4 auto-tuning output JSON schema.
 
@@ -75,7 +75,7 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
     :type results: list of dicts
 
     :param tune_params: Tunable parameters as passed to tune_kernel
-    :type tune_params: OrderedDict
+    :type tune_params: dict
 
     :param objective: The objective used during auto-tuning, default is 'time'.
     :type objective: string
@@ -105,6 +105,8 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
         timings["validation"] = result["verification_time"]
         if "times" in result:
             timings["runtimes"] = result["times"]
+        else:
+            timings["runtimes"] = []
         out["times"] = timings
 
         # encode the validity of the configuration
@@ -138,7 +140,7 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
 
 
 def get_dependencies(package="kernel_tuner"):
-    """Get the Python dependencies of Kernel Tuner currently installed and their version numbers"""
+    """Get the Python dependencies of Kernel Tuner currently installed and their version numbers."""
     requirements = requires(package)
     deps = [Requirement(req).name for req in requirements]
     depends = []
@@ -153,7 +155,7 @@ def get_dependencies(package="kernel_tuner"):
 
 
 def get_device_query(target):
-    """Get the information about GPUs in the current system, target is any of ['nvidia', 'amd']"""
+    """Get the information about GPUs in the current system, target is any of ['nvidia', 'amd']."""
     if target == "nvidia":
         nvidia_smi_out = subprocess.run(["nvidia-smi", "--query", "-x"], capture_output=True)
         nvidia_smi = xmltodict.parse(nvidia_smi_out.stdout)
@@ -174,7 +176,7 @@ def get_device_query(target):
 
 
 def store_metadata_file(metadata_filename: str):
-    """Store the metadata about the current hardware and software environment in a JSON output file
+    """Store the metadata about the current hardware and software environment in a JSON output file.
 
     This function produces a JSON file that adheres to the T4 auto-tuning metadata JSON schema.
 
@@ -225,7 +227,7 @@ def store_metadata_file(metadata_filename: str):
             hardware_description_string = "[" + hardware_description_string + "]"
         metadata["operating_system"] = os_string
     except:
-        hardware_description_string = "[error retrieving hardware description]"
+        hardware_description_string = '["error retrieving hardware description"]'
         metadata["operating_system"] = "unidentified OS"
     metadata["hardware"] = dict(hardware_description=json.loads(hardware_description_string))
 
@@ -233,14 +235,14 @@ def store_metadata_file(metadata_filename: str):
     device_query = {}
     try:
         device_query["nvidia-smi"] = get_device_query("nvidia")
-    except FileNotFoundError:
-        # ignore if nvidia-smi is not found
+    except Exception:
+        # ignore if nvidia-smi is not found, or parse error occurs
         pass
 
     try:
         device_query["rocm-smi"] = get_device_query("amd")
-    except FileNotFoundError:
-        # ignore if rocm-smi is not found
+    except Exception:
+        # ignore if rocm-smi is not found, or parse error occurs
         pass
 
     metadata["environment"] = dict(device_query=device_query, requirements=get_dependencies())

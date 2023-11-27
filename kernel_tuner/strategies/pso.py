@@ -1,16 +1,15 @@
-""" The strategy that uses particle swarm optimization"""
+"""The strategy that uses particle swarm optimization."""
 import random
 import sys
-from collections import OrderedDict
 
 import numpy as np
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import (CostFunc,
-                                            scale_from_params)
+from kernel_tuner.strategies.common import CostFunc, scale_from_params
 
-_options = OrderedDict(popsize=("Population size", 20),
+_options = dict(popsize=("Population size", 20),
                        maxiter=("Maximum number of iterations", 100),
                        w=("Inertia weight constant", 0.5),
                        c1=("Cognitive constant", 2.0),

@@ -1,14 +1,14 @@
-"""This module contains all CUDA specific kernel_tuner functions"""
+"""This module contains all CUDA specific kernel_tuner functions."""
 from __future__ import print_function
 
 import logging
-import time
+
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.observers.nvml import nvml  # noqa F401
 from kernel_tuner.observers.pycuda import PyCudaRuntimeObserver
-from kernel_tuner.observers.nvml import nvml
-from kernel_tuner.util import TorchPlaceHolder, SkippableFailure
+from kernel_tuner.util import SkippableFailure, TorchPlaceHolder
 
 # embedded in try block to be able to generate documentation
 # and run tests without pycuda installed
@@ -41,7 +41,7 @@ except ImportError:
 
 
 class Holder(drv.PointerHolderBase):
-    """class to interoperate torch device memory allocations with PyCUDA"""
+    """class to interoperate torch device memory allocations with PyCUDA."""
 
     def __init__(self, tensor):
         super(Holder, self).__init__()
@@ -53,10 +53,10 @@ class Holder(drv.PointerHolderBase):
 
 
 class PyCudaFunctions(GPUBackend):
-    """Class that groups the CUDA functions on maintains state about the device"""
+    """Class that groups the CUDA functions on maintains state about the device."""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
-        """instantiate PyCudaFunctions object used for interacting with the CUDA device
+        """Instantiate PyCudaFunctions object used for interacting with the CUDA device.
 
         Instantiating this object will inspect and store certain device properties at
         runtime, which are used during compilation and/or execution of kernels by the
@@ -74,7 +74,7 @@ class PyCudaFunctions(GPUBackend):
         # if not PyCuda available, check if mocking before raising exception
         if not pycuda_available and isinstance(drv, PyCudaPlaceHolder):
             raise ImportError(
-                "Error: pycuda not installed, please install e.g. using 'pip install pycuda'."
+                "pycuda not installed, install using 'pip install pycuda', or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda."
             )
 
         drv.init()
@@ -154,7 +154,7 @@ class PyCudaFunctions(GPUBackend):
                 gpu_mem.free()
 
     def ready_argument_list(self, arguments):
-        """ready argument list to be passed to the kernel, allocates gpu mem
+        """Ready argument list to be passed to the kernel, allocates gpu mem.
 
         :param arguments: List of arguments to be passed to the kernel.
             The order should match the argument list on the CUDA kernel.
@@ -186,7 +186,7 @@ class PyCudaFunctions(GPUBackend):
         return gpu_args
 
     def compile(self, kernel_instance):
-        """call the CUDA compiler to compile the kernel, return the device function
+        """Call the CUDA compiler to compile the kernel, return the device function.
 
         :param kernel_name: The name of the kernel to be compiled, used to lookup the
             function after compilation.
@@ -226,23 +226,23 @@ class PyCudaFunctions(GPUBackend):
                 raise e
 
     def start_event(self):
-        """Records the event that marks the start of a measurement"""
+        """Records the event that marks the start of a measurement."""
         self.start.record(stream=self.stream)
 
     def stop_event(self):
-        """Records the event that marks the end of a measurement"""
+        """Records the event that marks the end of a measurement."""
         self.end.record(stream=self.stream)
 
     def kernel_finished(self):
-        """Returns True if the kernel has finished, False otherwise"""
+        """Returns True if the kernel has finished, False otherwise."""
         return self.end.query()
 
     def synchronize(self):
-        """Halts execution until device has finished its tasks"""
+        """Halts execution until device has finished its tasks."""
         self.context.synchronize()
 
     def copy_constant_memory_args(self, cmem_args):
-        """adds constant memory arguments to the most recently compiled module
+        """Adds constant memory arguments to the most recently compiled module.
 
         :param cmem_args: A dictionary containing the data to be passed to the
             device constant memory. The format to be used is as follows: A
@@ -263,17 +263,16 @@ class PyCudaFunctions(GPUBackend):
             drv.memcpy_htod(symbol, v)
 
     def copy_shared_memory_args(self, smem_args):
-        """add shared memory arguments to the kernel"""
+        """Add shared memory arguments to the kernel."""
         self.smem_size = smem_args["size"]
 
     def copy_texture_memory_args(self, texmem_args):
-        """adds texture memory arguments to the most recently compiled module
+        """Adds texture memory arguments to the most recently compiled module.
 
         :param texmem_args: A dictionary containing the data to be passed to the
             device texture memory. See tune_kernel().
         :type texmem_args: dict
         """
-
         filter_mode_map = {
             "point": drv.filter_mode.POINT,
             "linear": drv.filter_mode.LINEAR,
@@ -326,7 +325,7 @@ class PyCudaFunctions(GPUBackend):
                     tex.set_flags(tex.get_flags() | drv.TRSF_NORMALIZED_COORDINATES)
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
-        """runs the CUDA kernel passed as 'func'
+        """Runs the CUDA kernel passed as 'func'.
 
         :param func: A PyCuda kernel compiled for this specific kernel configuration
         :type func: pycuda.driver.Function
@@ -356,7 +355,7 @@ class PyCudaFunctions(GPUBackend):
         )
 
     def memset(self, allocation, value, size):
-        """set the memory in allocation to the value in value
+        """Set the memory in allocation to the value in value.
 
         :param allocation: A GPU memory allocation unit
         :type allocation: pycuda.driver.DeviceAllocation
@@ -371,7 +370,7 @@ class PyCudaFunctions(GPUBackend):
         drv.memset_d8(allocation, value, size)
 
     def memcpy_dtoh(self, dest, src):
-        """perform a device to host memory copy
+        """Perform a device to host memory copy.
 
         :param dest: A numpy array in host memory to store the data
         :type dest: numpy.ndarray
@@ -385,7 +384,7 @@ class PyCudaFunctions(GPUBackend):
             dest[:] = src
 
     def memcpy_htod(self, dest, src):
-        """perform a host to device memory copy
+        """Perform a host to device memory copy.
 
         :param dest: A GPU memory allocation unit
         :type dest: pycuda.driver.DeviceAllocation

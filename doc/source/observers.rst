@@ -12,7 +12,7 @@ observer will be called when the event takes place.
 
 Kernel Tuner implements an abstract BenchmarkObserver with methods that may be overwritten by classes extending
 the BenchmarkObserver class, shown below. The only mandatory method to implement
-is ``get\_results``, which is used to return the resulting observations at the end of benchmarking a
+is ``get_results``, which is used to return the resulting observations at the end of benchmarking a
 particular kernel configuration and usually returns aggregated results over multiple iterations of kernel
 execution. Before tuning starts, each observer is given a reference to the lower-level backend that is used for
 compiling and benchmarking the kernel configurations. In this way, the observer can inspect the compiled module,
@@ -53,7 +53,7 @@ the user to record power and/or energy consumption of kernel configurations duri
 Kernel Tuner to accurately determine the power and energy consumption of all kernel configurations it benchmarks
 during auto-tuning.
 
-.. autoclass:: kernel_tuner.observers.PowerSensorObserver
+.. autoclass:: kernel_tuner.observers.powersensor.PowerSensorObserver
 
 
 NVMLObserver
@@ -74,7 +74,7 @@ time it takes to benchmark different kernel configurations. However, NVML can be
 almost all Nvidia GPUs, so this method is much more accessible to end-users compared to solutions that require
 custom hardware, such as PowerSensor2.
 
-.. autoclass:: kernel_tuner.nvml.NVMLObserver
+.. autoclass:: kernel_tuner.observers.nvml.NVMLObserver
 
 
 Tuning execution parameters with NVML
@@ -101,7 +101,14 @@ the path where you are allowed to run nvidia-smi with privileges. This allows yo
 limits will be done through nvidia-smi.
 
 
+PMTObserver
+~~~~~~~~~~~
 
+The PMTObserver can be used to measure power and energy on various platforms including Nvidia Jetson, Nvidia NVML,
+the RAPL interface, AMD ROCM, and Xilinx. It requires PMT to be installed, as well as the PMT's Python interface. 
+More information about PMT can be found here: https://git.astron.nl/RD/pmt/
+
+.. autoclass:: kernel_tuner.observers.pmt.PMTObserver
 
 
 
