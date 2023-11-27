@@ -11,11 +11,12 @@ except ImportError:
     from unittest.mock import patch, Mock
 
 import kernel_tuner
-from kernel_tuner.backends.compiler import CompilerFunctions, Argument
+from kernel_tuner.backends.compiler import CompilerFunctions, Argument, is_cupy_array, get_array_module
 from kernel_tuner.core import KernelSource, KernelInstance
 from kernel_tuner import util
 
-from .context import skip_if_no_gfortran, skip_if_no_gcc, skip_if_no_openmp
+from .context import skip_if_no_gfortran, skip_if_no_gcc, skip_if_no_openmp, skip_if_no_cupy
+from .test_runners import env as cuda_env  # noqa: F401
 
 
 @skip_if_no_gcc
@@ -106,6 +107,29 @@ def test_ready_argument_list5():
     # test that a copy has not been made
     arg1[0] = arg1[0] + 1
     assert all(output[0].numpy == arg1)
+
+
+@skip_if_no_cupy
+def test_ready_argument_list6():
+    import cupy as cp
+
+    arg = cp.array([1, 2, 3], dtype=np.float32)
+    arguments = [arg]
+
+    cfunc = CompilerFunctions()
+    output = cfunc.ready_argument_list(arguments)
+    print(output)
+
+    assert len(output) == 1
+    assert output[0].numpy is arg
+    mem = cp.cuda.UnownedMemory(
+        ptr=output[0].ctypes.value,
+        size=int(arg.nbytes / arg.dtype.itemsize),
+        owner=None,
+    )
+    ptr = cp.cuda.MemoryPointer(mem, 0)
+    output_arg = cp.ndarray(shape=arg.shape, dtype=arg.dtype, memptr=ptr)
+    assert cp.all(output_arg == arg)
 
 
 @skip_if_no_gcc
@@ -206,8 +230,29 @@ def test_memset():
     assert all(x == np.zeros(4))
 
 
-@skip_if_no_gcc
+@skip_if_no_cupy
 def test_memcpy_dtoh():
+    import cupy as cp
+
+    a = [1, 2, 3, 4]
+    x = cp.asarray(a, dtype=np.float32)
+    x_c = C.c_void_p(x.data.ptr)
+    arg = Argument(numpy=x, ctypes=x_c)
+    output = np.zeros(len(x), dtype=x.dtype)
+
+    cfunc = CompilerFunctions()
+    cfunc.memcpy_dtoh(output, arg)
+
+    print(f"{type(x)=} {x=}")
+    print(f"{type(a)=} {a=}")
+    print(f"{type(output)=} {output=}")
+
+    assert all(output == a)
+    assert all(x.get() == a)
+
+
+@skip_if_no_gcc
+def test_memcpy_host_dtoh():
     a = [1, 2, 3, 4]
     x = np.array(a).astype(np.float32)
     x_c = x.ctypes.data_as(C.POINTER(C.c_float))
@@ -224,8 +269,44 @@ def test_memcpy_dtoh():
     assert all(x == a)
 
 
-@skip_if_no_gcc
+@skip_if_no_cupy
+def test_memcpy_device_dtoh():
+    import cupy as cp
+
+    a = [1, 2, 3, 4]
+    x = cp.asarray(a, dtype=np.float32)
+    x_c = C.c_void_p(x.data.ptr)
+    arg = Argument(numpy=x, ctypes=x_c)
+    output = cp.zeros_like(x)
+
+    cfunc = CompilerFunctions()
+    cfunc.memcpy_dtoh(output, arg)
+
+    print(f"{type(x)=} {x=}")
+    print(f"{type(a)=} {a=}")
+    print(f"{type(output)=} {output=}")
+
+    assert all(output.get() == a)
+    assert all(x.get() == a)
+
+
+@skip_if_no_cupy
 def test_memcpy_htod():
+    import cupy as cp
+
+    a = [1, 2, 3, 4]
+    src = np.array(a, dtype=np.float32)
+    x = cp.zeros(len(src), dtype=src.dtype)
+    x_c = C.c_void_p(x.data.ptr)
+    arg = Argument(numpy=x, ctypes=x_c)
+
+    cfunc = CompilerFunctions()
+    cfunc.memcpy_htod(arg, src)
+
+    assert all(arg.numpy.get() == a)
+
+
+def test_memcpy_host_htod():
     a = [1, 2, 3, 4]
     src = np.array(a).astype(np.float32)
     x = np.zeros_like(src)
@@ -236,6 +317,22 @@ def test_memcpy_htod():
     cfunc.memcpy_htod(arg, src)
 
     assert all(arg.numpy == a)
+
+
+@skip_if_no_cupy
+def test_memcpy_device_htod():
+    import cupy as cp
+
+    a = [1, 2, 3, 4]
+    src = cp.array(a, dtype=np.float32)
+    x = cp.zeros(len(src), dtype=src.dtype)
+    x_c = C.c_void_p(x.data.ptr)
+    arg = Argument(numpy=x, ctypes=x_c)
+
+    cfunc = CompilerFunctions()
+    cfunc.memcpy_htod(arg, src)
+
+    assert all(arg.numpy.get() == a)
 
 
 @skip_if_no_gfortran
@@ -335,3 +432,58 @@ def test_benchmark(env):
     assert all(["nthreads" in result for result in results])
     assert all(["time" in result for result in results])
     assert all([result["time"] > 0.0 for result in results])
+
+
+@skip_if_no_cupy
+def test_is_cupy_array():
+    import cupy as cp
+
+    assert is_cupy_array(cp.array([1.0]))
+    assert not is_cupy_array(np.array([1.0]))
+
+
+def test_is_cupy_array_no_cupy():
+    assert not is_cupy_array(np.array([1.0]))
+
+
+@skip_if_no_cupy
+def test_get_array_module():
+    import cupy as cp
+
+    assert get_array_module(cp.array([1.0])) == cp
+    assert get_array_module(np.array([1.0])) == np
+
+
+@skip_if_no_cupy
+@skip_if_no_gcc
+def test_run_kernel():
+    import cupy as cp
+
+    kernel_string = """
+    __global__ void vector_add_kernel(float *c, const float *a, const float *b, int n) {
+        int i = blockIdx.x * block_size_x + threadIdx.x;
+        if (i<n) {
+            c[i] = a[i] + b[i];
+        }
+    }
+
+    extern "C" void vector_add(float *c, const float *a, const float *b, int n) {
+        dim3 dimGrid(n);
+        dim3 dimBlock(block_size_x);
+        vector_add_kernel<<<dimGrid, dimBlock>>>(c, a, b, n);
+    }
+    """
+    a = cp.asarray([1, 2.0], dtype=np.float32)
+    b = cp.asarray([3, 4.0], dtype=np.float32)
+    c = cp.zeros_like(b)
+    n = np.int32(len(c))
+
+    result = kernel_tuner.run_kernel(
+        kernel_name="vector_add",
+        kernel_source=kernel_string,
+        problem_size=n,
+        arguments=[c, a, b, n],
+        params={"block_size_x": 1},
+        lang="C",
+    )
+    assert cp.all((a + b) == c)

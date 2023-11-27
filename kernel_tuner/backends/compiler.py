@@ -21,6 +21,39 @@ from kernel_tuner.util import (
     SkippableFailure,
 )
 
+try:
+    import cupy as cp
+except ImportError:
+    cp = None
+
+
+def is_cupy_array(array):
+    """Check if something is a cupy array.
+
+    :param array: A Python object.
+    :type array: typing.Any
+
+    :returns: True if cupy can be imported and the object is a cupy.ndarray.
+    :rtype: bool
+    """
+    return cp is not None and isinstance(array, cp.ndarray)
+
+
+def get_array_module(*args):
+    """Return the array module for arguments.
+
+    This function is used to implement CPU/GPU generic code. If the cupy module can be imported
+    and at least one of the arguments is a cupy.ndarray object, the cupy module is returned.
+
+    :param args: Values to determine whether NumPy or CuPy should be used.
+    :type args: numpy.ndarray or cupy.ndarray
+
+    :returns: cupy or numpy is returned based on the types of the arguments.
+    :rtype: types.ModuleType
+    """
+    return np if cp is None else cp.get_array_module(*args)
+
+
 dtype_map = {
     "int8": C.c_int8,
     "int16": C.c_int16,
@@ -103,8 +136,8 @@ class CompilerFunctions(CompilerBackend):
 
         :param arguments: List of arguments to be passed to the C function.
             The order should match the argument list on the C function.
-            Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
-        :type arguments: list(numpy objects)
+            Allowed values are np.ndarray, cupy.ndarray, and/or np.int32, np.float32, and so on.
+        :type arguments: list(numpy or cupy objects)
 
         :returns: A list of arguments that can be passed to the C function.
         :rtype: list(Argument)
@@ -112,9 +145,9 @@ class CompilerFunctions(CompilerBackend):
         ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not isinstance(arg, (np.ndarray, np.number)):
+            if not (isinstance(arg, (np.ndarray, np.number)) or is_cupy_array(arg)):
                 raise TypeError(
-                    "Argument is not numpy ndarray or numpy scalar %s" % type(arg)
+                    f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}"
                 )
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
@@ -129,6 +162,8 @@ class CompilerFunctions(CompilerBackend):
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
+            elif is_cupy_array(arg):
+                data_ctypes = C.c_void_p(arg.data.ptr)
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
         return ctype_args
 
@@ -326,29 +361,44 @@ class CompilerFunctions(CompilerBackend):
         :param size: The size of to the allocation unit in bytes
         :type size: int
         """
-        C.memset(allocation.ctypes, value, size)
+        if is_cupy_array(allocation.numpy):
+            cp.cuda.runtime.memset(allocation.numpy.data.ptr, value, size)
+        else:
+            C.memset(allocation.ctypes, value, size)
 
     def memcpy_dtoh(self, dest, src):
         """a simple memcpy copying from an Argument to a numpy array
 
-        :param dest: A numpy array to store the data
-        :type dest: np.ndarray
+        :param dest: A numpy or cupy array to store the data
+        :type dest: np.ndarray or cupy.ndarray
 
         :param src: An Argument for some memory allocation
         :type src: Argument
         """
-        dest[:] = src.numpy
+        if isinstance(dest, np.ndarray) and is_cupy_array(src.numpy):
+            # Implicit conversion to a NumPy array is not allowed.
+            value = src.numpy.get()
+        else:
+            value = src.numpy
+        xp = get_array_module(dest)
+        dest[:] = xp.asarray(value)
 
     def memcpy_htod(self, dest, src):
         """a simple memcpy copying from a numpy array to an Argument
 
         :param dest: An Argument for some memory allocation
-        :type dst: Argument
+        :type dest: Argument
 
-        :param src: A numpy array containing the source data
-        :type src: np.ndarray
+        :param src: A numpy or cupy array containing the source data
+        :type src: np.ndarray or cupy.ndarray
         """
-        dest.numpy[:] = src
+        if isinstance(dest.numpy, np.ndarray) and is_cupy_array(src):
+            # Implicit conversion to a NumPy array is not allowed.
+            value = src.get()
+        else:
+            value = src
+        xp = get_array_module(dest.numpy)
+        dest.numpy[:] = xp.asarray(value)
 
     def cleanup_lib(self):
         """unload the previously loaded shared library"""
