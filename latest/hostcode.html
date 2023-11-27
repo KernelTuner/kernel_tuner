@@ -115,6 +115,8 @@ host and device into your tuning setup, or tune for different methods of moving 
 <li><p>You have to specify the lang=”C” option</p></li>
 <li><p>The C function should return a <code class="docutils literal notranslate"><span class="pre">float</span></code></p></li>
 <li><p>You have to do your own timing and error handling in C</p></li>
+<li><p>Data is not automatically copied to and from device memory. To use an array in host memory, pass in a <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array. To use an array
+in device memory, pass in a <code class="xref py py-mod docutils literal notranslate"><span class="pre">cupy</span></code> array.</p></li>
 </ul>
 </dd>
 </dl>
@@ -188,7 +190,7 @@ and grid_div_x at this point is matter of choice. To support this convenience, t
 compiled C code. This way, you don’t have to compute the grid size in C, you can just use the grid dimensions as computed by the Kernel Tuner.</p>
 <p>The filter is not passed separately as a constant memory argument, because the CudaMemcpyToSymbol operation is now performed by the C host function. Also,
 because the code is compiled differently, we have no direct reference to the compiled module that is uploaded to the device and therefore we can not perform this
-operation directly from Python. If you are tuning host code, you have to perform all memory allocations, frees, and memcpy operations inside the C host code,
+operation directly from Python. If you are tuning host code, you have the option to perform all memory allocations, frees, and memcpy operations inside the C host code,
 that’s the purpose of host code after all. That is also why you have to do the timing yourself in C, as you may not want to include the time spent on memory
 allocations and other setup into your time measurements.</p>
 </section>
