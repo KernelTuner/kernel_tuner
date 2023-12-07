@@ -50,8 +50,7 @@ The observers are explained in :ref:`observers`.
 
 At the bottom, the backends are shown.
 PyCUDA, CuPy, cuda-python, PyOpenCL and PyHIP are for tuning either CUDA, OpenCL, or HIP kernels.
-The C
-Functions implementation can actually call any compiler, typically NVCC
+The CompilerFunctions implementation can call any compiler, typically NVCC
 or GCC is used. There is limited support for tuning Fortran kernels.
 This backend was created not just to be able to tune C
 functions, but in particular to tune C functions that in turn launch GPU kernels.
@@ -123,9 +122,9 @@ kernel_tuner.backends.opencl.OpenCLFunctions
     :special-members: __init__
     :members:
 
-kernel_tuner.backends.c.CFunctions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.backends.c.CFunctions
+kernel_tuner.backends.compiler.CompilerFunctions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.backends.compiler.CompilerFunctions
     :special-members: __init__
     :members:
 
