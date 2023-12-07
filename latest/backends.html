@@ -126,7 +126,7 @@ support C++ signatures for the kernels. With the other backends, it is required 
 extern “C” linkage. If not, the entire code is wrapped in an extern “C” block, which may cause issues
 if the code also contains C++ code that cannot have extern “C” linkage, including code that may be
 present in header files.</p>
-<p>As detailed further <span class="xref std std-ref">templates</span>, templated kernels are fully supported by the CuPy backend and
+<p>As detailed further in <a class="reference internal" href="templates.html#templates"><span class="std std-ref">Templated kernels</span></a>, templated kernels are fully supported by the CuPy backend and
 limited support is implemented by Kernel Tuner to support templated kernels for the PyCUDA and
 CUDA-Python backends.</p>
 <table class="docutils align-default" id="id1">

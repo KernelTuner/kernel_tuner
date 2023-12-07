@@ -1,7 +1,7 @@
 .. highlight:: python
     :linenothreshold: 5
 
-
+.. _templates:
 
 Templated kernels
 -----------------
