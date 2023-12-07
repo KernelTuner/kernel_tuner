@@ -30,7 +30,7 @@ extern "C" linkage. If not, the entire code is wrapped in an extern "C" block, w
 if the code also contains C++ code that cannot have extern "C" linkage, including code that may be 
 present in header files.
 
-As detailed further :ref:`templates`, templated kernels are fully supported by the CuPy backend and 
+As detailed further in :ref:`templates`, templated kernels are fully supported by the CuPy backend and 
 limited support is implemented by Kernel Tuner to support templated kernels for the PyCUDA and 
 CUDA-Python backends.
 
