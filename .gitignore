@@ -1,5 +1,6 @@
 ### Project ###
 noxenv.txt
+noxsettings.toml
 
 ### Python ###
 *.pyc

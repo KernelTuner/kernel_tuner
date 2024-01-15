@@ -17,25 +17,57 @@ from nox_poetry import Session, session
 python_versions_to_test = ["3.8", "3.9", "3.10", "3.11"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
+nox.options.default_venv_backend = 'virtualenv'
 
-# set the default environment from the 'noxenv' file, if it exists
-environment_file_path = Path("./noxenv.txt")
-if environment_file_path.exists():
-    env_values = ('none', 'virtualenv', 'conda', 'mamba', 'venv')  # from https://nox.thea.codes/en/stable/usage.html#changing-the-sessions-default-backend
-    environment = environment_file_path.read_text()
-    assert isinstance(environment, str), "File 'noxenv.txt' does not contain text"
-    environment = environment.strip()
-    assert environment in env_values, f"File 'noxenv.txt' contains {environment}, must be one of {','.join(env_values)}"
-    nox.options.default_venv_backend = environment
+# workspace level settings
+settings_file_path = Path("./noxsettings.toml")
+venvbackend_values = ('none', 'virtualenv', 'conda', 'mamba', 'venv')  # from https://nox.thea.codes/en/stable/usage.html#changing-the-sessions-default-backend
 
+@session    # to only run on the current python interpreter
+def create_settings(session: Session) -> None:
+    """One-time creation of noxsettings.toml."""
+    if session.posargs:
+        # check if the trigger argument was used
+        arg_trigger = any(arg.lower() == "create-settings-file" for arg in session.posargs)
+    # create settings file if the trigger is used or old settings exist
+    noxenv_file_path = Path("./noxenv.txt")
+    if arg_trigger or (noxenv_file_path.exists() and not settings_file_path.exists()):
+        # default values
+        venvbackend = nox.options.default_venv_backend
+        envdir = ""
+        # conversion from old notenv.txt
+        if noxenv_file_path.exists(): 
+            venvbackend = noxenv_file_path.read_text().strip()
+            noxenv_file_path.unlink()
+        # write the settings
+        assert venvbackend in venvbackend_values, f"{venvbackend=}, must be one of {','.join(venvbackend_values)}"
+        settings = (f'venvbackend = "{venvbackend}"\n'
+                    f'envdir = "{envdir}"\n')
+        settings_file_path.write_text(settings)
+        # exit to make sure the user checks the settings are correct
+        if arg_trigger:
+            session.warn(f"Settings file '{settings_file_path}' created, exiting. Please check settings are correct before running Nox again.")
+            exit(1)
 
-# @session
+# obtain workspace level settings from the 'noxsettings.toml' file
+if settings_file_path.exists():
+    with settings_file_path.open(mode="rb") as fp:
+        import tomli
+        nox_settings = tomli.load(fp)
+        venvbackend = nox_settings['venvbackend']
+        envdir = nox_settings['envdir']
+        assert venvbackend in venvbackend_values, f"File '{settings_file_path}' has {venvbackend=}, must be one of {','.join(venvbackend_values)}"
+        nox.options.default_venv_backend = venvbackend
+        if envdir is not None and len(envdir) > 0:
+            nox.options.envdir = envdir
+
+# @session    # to only run on the current python interpreter
 # def lint(session: Session) -> None:
 #     """Ensure the code is formatted as expected."""
 #     session.install("ruff")
 #     session.run("ruff", "--output-format=github", "--config=pyproject.toml", ".")
 
-@session
+@session    # to only run on the current python interpreter
 def check_poetry(session: Session) -> None:
     """Check whether Poetry is correctly configured."""
     session.run("poetry", "check", "--no-interaction", external=True)

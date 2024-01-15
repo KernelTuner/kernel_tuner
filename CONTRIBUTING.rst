@@ -90,13 +90,17 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
 #. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`.
     * If you run into "keyring" or other seemingly weird issues, this is a known issue with Poetry on some systems. Do: :bash:`pip install keyring`, :bash:`python3 -m keyring --disable`.
     * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
+    * Verify that your development environment has no missing installs or updates with :bash:`poetry install --sync --dry-run --with test`. 
 #. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if you're not on a GPU node, or one or more extras has been left out in the previous step, then these tests will skip gracefully.
-#. Set Nox to use the correct backend:
-    * If you used Mamba in step 2: :bash:`echo "mamba" > noxenv.txt`.
-    * If you used Miniconda or Anaconda in step 2: :bash:`echo "conda" > noxenv.txt`.
-    * If you alternatively set up with Venv: :bash:`echo "venv" > noxenv.txt`.
-    * If you set up with Virtualenv, do not create this file, as this is already the default.
-    * Be sure to adjust or remove this file when changing backends.
+#. Set Nox to use the correct backend and location:
+    * Run :bash:`conda -- create-settings-file` to automatically create a settings file. 
+    * In this settings file :bash:`noxsettings.toml`, change the :bash:`venvbackend`:
+        * If you used Mamba in step 2, to :bash:`mamba`.
+        * If you used Miniconda or Anaconda in step 2, to :bash:`conda`.
+        * If you used Venv in step 2, to :bash:`venv`.
+        * If you used Virtualenv in step 2, this is already the default.
+    * Be sure to adjust this when changing backends.
+    * The settings file also has :bash:`envdir`, which allows you to `change the directory Nox caches environments in<https://nox.thea.codes/en/stable/usage.html#opt-envdir>`_, particularly helpful if you have a diskquota on your user directory. 
 #. [Optional] Run the tests on Nox as described below.
 
 
@@ -104,7 +108,7 @@ Running tests
 -------------
 To run the tests you can use :bash:`nox` (to run against all supported Python versions in isolated environments) and :bash:`pytest` (to run against the local Python version, see below) in the top-level directory.
 For full coverage, make Nox use the additional tests (such as cupy and cuda-python) with :bash:`nox -- additional-tests`.
-The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run :bash:`nox` with the :bash:`small-disk` option. This removes the other environment caches before each session is ran (note that this will take longer to run).
+The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run :bash:`nox` with the :bash:`small-disk` option. This removes the other environment caches before each session is ran (note that this will take longer to run). A better option would be to change the location environments are stored in with :bash:`envdir` in the :bash:`noxsettings.toml` file. 
 Please note that the command-line options can be combined, e.g. :bash:`nox -- additional-tests skip-hip small-disk`. 
 If you do not have fully compatible hardware or environment, you can use the following options:
 * :bash:`nox -- skip-cuda` to skip tests involving CUDA.
