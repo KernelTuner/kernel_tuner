@@ -259,7 +259,7 @@ have look at the <a class="reference internal" href="design.html#design-document
 </dl>
 </li>
 <li><p>Be sure to adjust this when changing backends.</p></li>
-<li><p>The settings file also has <code class="code highlight bash docutils literal highlight-bash">envdir</code>, which allows you to <a href="#id2"><span class="problematic" id="id3">`change the directory Nox caches environments in&lt;https://nox.thea.codes/en/stable/usage.html#opt-envdir&gt;`_</span></a>, particularly helpful if you have a diskquota on your user directory.</p></li>
+<li><p>The settings file also has <code class="code highlight bash docutils literal highlight-bash">envdir</code>, which allows you to <a class="reference external" href="https://nox.thea.codes/en/stable/usage.html#opt-envdir">change the directory Nox caches environments in</a>, particularly helpful if you have a diskquota on your user directory.</p></li>
 </ul>
 </dd>
 </dl>
@@ -271,15 +271,17 @@ have look at the <a class="reference internal" href="design.html#design-document
 <section id="running-tests">
 <h2>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this heading">¶</a></h2>
 <p>To run the tests you can use <code class="code highlight bash docutils literal highlight-bash">nox</code> (to run against all supported Python versions in isolated environments) and <code class="code highlight bash docutils literal highlight-bash">pytest</code> (to run against the local Python version, see below) in the top-level directory.
-For full coverage, make Nox use the additional tests (such as cupy and cuda-python) with <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests</code>.
-The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run <code class="code highlight bash docutils literal highlight-bash">nox</code> with the <code class="code highlight bash docutils literal highlight-bash">small-disk</code> option. This removes the other environment caches before each session is ran (note that this will take longer to run). A better option would be to change the location environments are stored in with <code class="code highlight bash docutils literal highlight-bash">envdir</code> in the <code class="code highlight bash docutils literal highlight-bash">noxsettings.toml</code> file.
-Please note that the command-line options can be combined, e.g. <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests<span class="w"> </span>skip-hip<span class="w"> </span>small-disk</code>.
-If you do not have fully compatible hardware or environment, you can use the following options:
-* <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda</code> to skip tests involving CUDA.
-* <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-hip</code> to skip tests involving HIP.
-* <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-opencl</code> to skip tests involving OpenCL.
-* <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-gpu</code> to skip all tests on the GPU (the same as <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda<span class="w"> </span>skip-hip<span class="w"> </span>skip-opencl</code>), especially helpful if you don’t have a GPU locally.
-Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally!</p>
+For full coverage, make Nox use the additional tests (such as cupy and cuda-python) with <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests</code>.</p>
+<p>The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run <code class="code highlight bash docutils literal highlight-bash">nox</code> with the <code class="code highlight bash docutils literal highlight-bash">small-disk</code> option. This removes the other environment caches before each session is ran (note that this will take longer to run). A better option would be to change the location environments are stored in with <code class="code highlight bash docutils literal highlight-bash">envdir</code> in the <code class="code highlight bash docutils literal highlight-bash">noxsettings.toml</code> file.</p>
+<p>Please note that the command-line options can be combined, e.g. <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests<span class="w"> </span>skip-hip<span class="w"> </span>small-disk</code>.
+If you do not have fully compatible hardware or environment, you can use the following options:</p>
+<ul class="simple">
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda</code> to skip tests involving CUDA.</p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-hip</code> to skip tests involving HIP.</p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-opencl</code> to skip tests involving OpenCL.</p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-gpu</code> to skip all tests on the GPU (the same as <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda<span class="w"> </span>skip-hip<span class="w"> </span>skip-opencl</code>), especially helpful if you don’t have a GPU locally.</p></li>
+</ul>
+<p>Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally!</p>
 <p>Running with <code class="code highlight bash docutils literal highlight-bash">pytest</code> will test against your local Python version and PIP packages.
 In this case, tests that require PyCuda and/or a CUDA capable GPU will be skipped automatically if these are not installed/present.
 The same holds for tests that require PyOpenCL, Cupy, and CUDA.
