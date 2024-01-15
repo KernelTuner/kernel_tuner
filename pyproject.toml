@@ -60,7 +60,7 @@ python = ">=3.8,<3.12"          # NOTE if we drop 3.8 support, remove "from __fu
 numpy = "^1.22.2"               # set to 1.22.2 instead of 1.22.4 to match oldest-supported-numpy required by pycuda
 scipy = "^1.10.1"               # held back by Python 3.8 support (dropped from ^1.11)
 jsonschema = "*"
-python-constraint2 = "^2.0.0b3"
+python-constraint2 = "^2.0.0b5"
 xmltodict = "*"
 pandas = "^2.0.0"
 scikit-learn = "^1.0.2"
@@ -115,7 +115,7 @@ nox = "^2023.4.22"
 nox-poetry = "^1.0.3"
 ruff = "^0.0.292"
 pep440 = "^0.1.2"
-tomli = "^2.0.1"      # can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11
+tomli = "^2.0.1"      # can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
 
 # development dependencies are unused for now, as this is already covered by test and docs
 # # ATTENTION: if anything is changed here, run `poetry update`

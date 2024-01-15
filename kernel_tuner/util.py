@@ -1173,11 +1173,12 @@ def read_cache(cache, open_cache=True):
         filestr = cachefile.read().strip()
 
     # if file was not properly closed, pretend it was properly closed
-    if not filestr[-3:] == "}\n}":
+    if len(filestr) > 0 and not filestr[-3:] == "}\n}":
         # remove the trailing comma if any, and append closing brackets
         if filestr[-1] == ",":
             filestr = filestr[:-1]
-        filestr = filestr + "}\n}"
+        if len(filestr) > 0:
+            filestr = filestr + "}\n}"
     else:
         if open_cache:
             # if it was properly closed, open it for appending new entries
