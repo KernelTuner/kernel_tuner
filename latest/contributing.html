@@ -239,18 +239,27 @@ have look at the <a class="reference internal" href="design.html#design-document
 <dt>Install the project, dependencies and extras: <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--with<span class="w"> </span>test,docs<span class="w"> </span>-E<span class="w"> </span>cuda<span class="w"> </span>-E<span class="w"> </span>opencl<span class="w"> </span>-E<span class="w"> </span>hip</code>, leaving out <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>cuda</code>, <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>opencl</code> or <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>hip</code> if this does not apply on your system. To go all-out, use <code class="code highlight bash docutils literal highlight-bash">--all-extras</code>.</dt><dd><ul class="simple">
 <li><p>If you run into “keyring” or other seemingly weird issues, this is a known issue with Poetry on some systems. Do: <code class="code highlight bash docutils literal highlight-bash">pip<span class="w"> </span>install<span class="w"> </span>keyring</code>, <code class="code highlight bash docutils literal highlight-bash">python3<span class="w"> </span>-m<span class="w"> </span>keyring<span class="w"> </span>--disable</code>.</p></li>
 <li><p>Depending on the environment, it may be necessary or convenient to install extra packages such as <code class="code highlight bash docutils literal highlight-bash">cupy-cuda11x</code> / <code class="code highlight bash docutils literal highlight-bash">cupy-cuda12x</code>, and <code class="code highlight bash docutils literal highlight-bash">cuda-python</code>. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.</p></li>
+<li><p>Verify that your development environment has no missing installs or updates with <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--sync<span class="w"> </span>--dry-run<span class="w"> </span>--with<span class="w"> </span><span class="nb">test</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
 </li>
 <li><p>Check if the environment is setup correctly by running <code class="code highlight bash docutils literal highlight-bash">pytest</code>. All tests should pass, except if you’re not on a GPU node, or one or more extras has been left out in the previous step, then these tests will skip gracefully.</p></li>
 <li><dl class="simple">
-<dt>Set Nox to use the correct backend:</dt><dd><ul class="simple">
-<li><p>If you used Mamba in step 2: <code class="code highlight bash docutils literal highlight-bash"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;mamba&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>noxenv.txt</code>.</p></li>
-<li><p>If you used Miniconda or Anaconda in step 2: <code class="code highlight bash docutils literal highlight-bash"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;conda&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>noxenv.txt</code>.</p></li>
-<li><p>If you alternatively set up with Venv: <code class="code highlight bash docutils literal highlight-bash"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;venv&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>noxenv.txt</code>.</p></li>
-<li><p>If you set up with Virtualenv, do not create this file, as this is already the default.</p></li>
-<li><p>Be sure to adjust or remove this file when changing backends.</p></li>
+<dt>Set Nox to use the correct backend and location:</dt><dd><ul class="simple">
+<li><p>Run <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>--<span class="w"> </span>create-settings-file</code> to automatically create a settings file.</p></li>
+<li><dl class="simple">
+<dt>In this settings file <code class="code highlight bash docutils literal highlight-bash">noxsettings.toml</code>, change the <code class="code highlight bash docutils literal highlight-bash">venvbackend</code>:</dt><dd><ul>
+<li><p>If you used Mamba in step 2, to <code class="code highlight bash docutils literal highlight-bash">mamba</code>.</p></li>
+<li><p>If you used Miniconda or Anaconda in step 2, to <code class="code highlight bash docutils literal highlight-bash">conda</code>.</p></li>
+<li><p>If you used Venv in step 2, to <code class="code highlight bash docutils literal highlight-bash">venv</code>.</p></li>
+<li><p>If you used Virtualenv in step 2, this is already the default.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Be sure to adjust this when changing backends.</p></li>
+<li><p>The settings file also has <code class="code highlight bash docutils literal highlight-bash">envdir</code>, which allows you to <a href="#id2"><span class="problematic" id="id3">`change the directory Nox caches environments in&lt;https://nox.thea.codes/en/stable/usage.html#opt-envdir&gt;`_</span></a>, particularly helpful if you have a diskquota on your user directory.</p></li>
 </ul>
 </dd>
 </dl>
@@ -263,7 +272,7 @@ have look at the <a class="reference internal" href="design.html#design-document
 <h2>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this heading">¶</a></h2>
 <p>To run the tests you can use <code class="code highlight bash docutils literal highlight-bash">nox</code> (to run against all supported Python versions in isolated environments) and <code class="code highlight bash docutils literal highlight-bash">pytest</code> (to run against the local Python version, see below) in the top-level directory.
 For full coverage, make Nox use the additional tests (such as cupy and cuda-python) with <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests</code>.
-The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run <code class="code highlight bash docutils literal highlight-bash">nox</code> with the <code class="code highlight bash docutils literal highlight-bash">small-disk</code> option. This removes the other environment caches before each session is ran (note that this will take longer to run).
+The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run <code class="code highlight bash docutils literal highlight-bash">nox</code> with the <code class="code highlight bash docutils literal highlight-bash">small-disk</code> option. This removes the other environment caches before each session is ran (note that this will take longer to run). A better option would be to change the location environments are stored in with <code class="code highlight bash docutils literal highlight-bash">envdir</code> in the <code class="code highlight bash docutils literal highlight-bash">noxsettings.toml</code> file.
 Please note that the command-line options can be combined, e.g. <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests<span class="w"> </span>skip-hip<span class="w"> </span>small-disk</code>.
 If you do not have fully compatible hardware or environment, you can use the following options:
 * <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda</code> to skip tests involving CUDA.
@@ -308,7 +317,7 @@ release. This process is again fully automated using GitHub actions.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2023, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+    <p>&#169; Copyright 2016-2024, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
