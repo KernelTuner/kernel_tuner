@@ -100,7 +100,7 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
         * If you used Venv in step 2, to :bash:`venv`.
         * If you used Virtualenv in step 2, this is already the default.
     * Be sure to adjust this when changing backends.
-    * The settings file also has :bash:`envdir`, which allows you to `change the directory Nox caches environments in<https://nox.thea.codes/en/stable/usage.html#opt-envdir>`_, particularly helpful if you have a diskquota on your user directory. 
+    * The settings file also has :bash:`envdir`, which allows you to `change the directory Nox caches environments in <https://nox.thea.codes/en/stable/usage.html#opt-envdir>`_, particularly helpful if you have a diskquota on your user directory. 
 #. [Optional] Run the tests on Nox as described below.
 
 
@@ -108,13 +108,17 @@ Running tests
 -------------
 To run the tests you can use :bash:`nox` (to run against all supported Python versions in isolated environments) and :bash:`pytest` (to run against the local Python version, see below) in the top-level directory.
 For full coverage, make Nox use the additional tests (such as cupy and cuda-python) with :bash:`nox -- additional-tests`.
+
 The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run :bash:`nox` with the :bash:`small-disk` option. This removes the other environment caches before each session is ran (note that this will take longer to run). A better option would be to change the location environments are stored in with :bash:`envdir` in the :bash:`noxsettings.toml` file. 
+
 Please note that the command-line options can be combined, e.g. :bash:`nox -- additional-tests skip-hip small-disk`. 
 If you do not have fully compatible hardware or environment, you can use the following options:
+
 * :bash:`nox -- skip-cuda` to skip tests involving CUDA.
 * :bash:`nox -- skip-hip` to skip tests involving HIP.
 * :bash:`nox -- skip-opencl` to skip tests involving OpenCL.
 * :bash:`nox -- skip-gpu` to skip all tests on the GPU (the same as :bash:`nox -- skip-cuda skip-hip skip-opencl`), especially helpful if you don't have a GPU locally. 
+
 Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally!
 
 Running with :bash:`pytest` will test against your local Python version and PIP packages. 
