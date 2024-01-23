@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 from time import perf_counter
 import ray
+from ray.util.actor_pool import ActorPool
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
@@ -39,18 +40,16 @@ class RemoteRunner(Runner):
                                           device_options, 
                                           iterations, 
                                           observers) for _ in range(self.num_gpus)]
+        # Create a pool of RemoteActor actors
+        self.actor_pool = ActorPool(self.actors)
 
     def get_environment(self, tuning_options):
         return self.dev.get_environment()
 
     
     def run(self, parameter_space, tuning_options):
-        future_results = []
+        
+        results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(v, tuning_options), parameter_space))
 
-        # Iterate over parameter space and distribute work to actors
-        for element in parameter_space:
-            future = [actor.execute.remote(element, tuning_options) for actor in self.actors]
-            future_results.extend(future)
-
-        return ray.get(future_results)
+        return results
     
