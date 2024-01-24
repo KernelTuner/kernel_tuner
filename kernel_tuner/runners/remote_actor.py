@@ -26,11 +26,11 @@ class RemoteActor:
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
         self.kernel_options = kernel_options
-
-    def execute(self, element, tuning_options):
-        #move data to the GPU NOT SURE IF TO PUT HERE, IN SEQUENTIAL IS IN INIT
+        #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(self.kernel_options.arguments)
 
+    def execute(self, element, tuning_options):
+        
         params = dict(zip(tuning_options.tune_params.keys(), element))
 
         result = None
