@@ -148,6 +148,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.compile_restrictions"><code class="docutils literal notranslate"><span class="pre">compile_restrictions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.config_valid"><code class="docutils literal notranslate"><span class="pre">config_valid()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.convert_constraint_restriction"><code class="docutils literal notranslate"><span class="pre">convert_constraint_restriction()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.correct_open_cache"><code class="docutils literal notranslate"><span class="pre">correct_open_cache()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.cuda_error_check"><code class="docutils literal notranslate"><span class="pre">cuda_error_check()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.delete_temp_file"><code class="docutils literal notranslate"><span class="pre">delete_temp_file()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.detect_language"><code class="docutils literal notranslate"><span class="pre">detect_language()</span></code></a></li>
@@ -1719,6 +1720,12 @@ implement default like this:</p>
 <dt class="sig sig-object py" id="kernel_tuner.util.convert_constraint_restriction">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">convert_constraint_restriction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Constraint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.convert_constraint_restriction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert the python-constraint to a function for backwards compatibility.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.correct_open_cache">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">correct_open_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.correct_open_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>if cache file was not properly closed, pretend it was properly closed</p>
 </dd></dl>
 
 <dl class="py function">
