@@ -71,7 +71,7 @@ More [examples here](https://kerneltuner.github.io/kernel_tuner/stable/examples.
 ## Resources
 
 - [Full documentation](https://kerneltuner.github.io/kernel_tuner/stable/)
-- [Guides](https://kerneltuner.github.io/kernel_tuner/stable/quickstart.html)
+- Guides:
   - [Getting Started](https://kerneltuner.github.io/kernel_tuner/stable/quickstart.html)
   - [Convolution](https://kerneltuner.github.io/kernel_tuner/stable/convolution.html)
   - [Diffusion](https://kerneltuner.github.io/kernel_tuner/stable/diffusion.html)
