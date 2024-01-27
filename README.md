@@ -98,8 +98,11 @@ More [examples here](https://kerneltuner.github.io/kernel_tuner/stable/examples.
 
 ## Kernel Tuner ecosystem
 
-| <img width="250px" src="doc/images/kernel_launcher.png"/><br />C++ magic to integrate auto-tuned kernels into C++ applications | <img width="250px" src="doc/images/kernel_float.png"/><br />C++ data types for mixed-precision CUDA kernel programming | <img width="275px" src="doc/images/kernel_dashboard.png"/><br />Dashboard to monitor, analyze, and visualize auto-tuning runs |
-|     :---:      |     :---:      |     :---:      | 
+<img width="250px" src="doc/images/kernel_launcher.png"/><br />C++ magic to integrate auto-tuned kernels into C++ applications 
+
+<img width="250px" src="doc/images/kernel_float.png"/><br />C++ data types for mixed-precision CUDA kernel programming
+
+<img width="275px" src="doc/images/kernel_dashboard.png"/><br />Monitor, analyze, and visualize auto-tuning runs
 
 
 ## Communication & Contribution
