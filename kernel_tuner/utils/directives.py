@@ -1,14 +1,31 @@
 import numpy as np
 
+openacc = "openacc"
+openmp = "openmp"
+
 
 def correct_kernel(kernel_name: str, line: str) -> bool:
-    return f" {kernel_name} " in line or (
-        kernel_name in line and len(line.partition(kernel_name)[2]) == 0
-    )
+    return f" {kernel_name} " in line or (kernel_name in line and len(line.partition(kernel_name)[2]) == 0)
 
 
-def cpp_or_f90(code: str) -> tuple:
-    return "#pragma acc" in code, "!$acc" in code
+def cpp(code: str, lang: str) -> bool:
+    if str.lower(lang) == openacc:
+        return "#pragma acc" in code
+    return False
+
+
+def f90(code: str, lang: str) -> bool:
+    if str.lower(lang) == openacc:
+        return "!$acc" in code
+    return False
+
+
+def cpp_or_f90(code: str, lang: str = None) -> tuple:
+    if lang is not None:
+        return cpp(code, lang), f90(code, lang)
+    else:
+        # the current default language is OpenACC
+        return cpp(code, openacc), f90(code, openacc)
 
 
 def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> dict:
@@ -114,9 +131,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                 if cpp:
                     signatures[name] = f"float {name}({', '.join(params)})"
                 elif f90:
-                    signatures[
-                        name
-                    ] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\n"
+                    signatures[name] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\n"
                     params = list()
                     for param in tmp_string:
                         if len(param) == 0:
@@ -127,17 +142,11 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                         p_size = p_type.split(":")[1]
                         p_type = p_type.split(":")[0]
                         if "float*" in p_type:
-                            params.append(
-                                f"real (c_float), dimension({p_size}) :: {p_name}"
-                            )
+                            params.append(f"real (c_float), dimension({p_size}) :: {p_name}")
                         elif "double*" in p_type:
-                            params.append(
-                                f"real (c_double), dimension({p_size}) :: {p_name}"
-                            )
+                            params.append(f"real (c_double), dimension({p_size}) :: {p_name}")
                         elif "int*" in p_type:
-                            params.append(
-                                f"integer (c_int), dimension({p_size}) :: {p_name}"
-                            )
+                            params.append(f"integer (c_int), dimension({p_size}) :: {p_name}")
                         elif "float" in p_type:
                             params.append(f"real (c_float), value :: {p_name}")
                         elif "double" in p_type:
@@ -214,9 +223,7 @@ def wrap_timing(code: str) -> str:
     return "\n".join([start, code, end, timing, ret])
 
 
-def generate_directive_function(
-    preprocessor: str, signature: str, body: str, initialization: str = ""
-) -> str:
+def generate_directive_function(preprocessor: str, signature: str, body: str, initialization: str = "") -> str:
     """Generate tunable function for one directive"""
     cpp, f90 = cpp_or_f90(body)
 
@@ -240,7 +247,7 @@ def generate_directive_function(
     return code
 
 
-def allocate_signature_memory(data: dict, preprocessor: list = None) -> list:
+def allocate_signature_memory(data: dict, preprocessor: list = None, dimensions: dict = None) -> list:
     """Allocates the data needed by a kernel and returns the arguments array"""
     args = []
     max_int = 1024
@@ -254,13 +261,17 @@ def allocate_signature_memory(data: dict, preprocessor: list = None) -> list:
                 size = int(size)
             except ValueError:
                 # If size cannot be natively converted to string, we try to derive it from the preprocessor
-                for line in preprocessor:
-                    if f"#define {size}" in line:
-                        try:
-                            size = int(line.split(" ")[2])
-                            break
-                        except ValueError:
-                            continue
+                if preprocessor is not None:
+                    for line in preprocessor:
+                        if f"#define {size}" in line:
+                            try:
+                                size = int(line.split(" ")[2])
+                                break
+                            except ValueError:
+                                continue
+                # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
+                if dimensions is not None:
+                    size = int(dimensions[size])
         if "*" in p_type:
             # The parameter is an array
             if p_type == "float*":

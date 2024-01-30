@@ -1,4 +1,31 @@
+from pytest import raises
+
 from kernel_tuner.utils.directives import *
+
+
+def test_cpp():
+    cpp_code = "int main(void) {\n#pragma acc parallel}"
+    assert cpp(cpp_code, "openacc")
+    assert cpp(cpp_code, "OpenACC")
+    assert not cpp(cpp_code, "open acc")
+
+
+def test_f90():
+    f90_code = "!$acc parallel"
+    assert f90(f90_code, "openacc")
+    assert f90(f90_code, "OpenACC")
+    assert not f90(f90_code, "open acc")
+
+
+def test_cpp_or_f90():
+    cpp_code = "int main(void) {\n#pragma acc parallel}"
+    f90_code = "!$acc parallel"
+    one, two = cpp_or_f90(cpp_code)
+    assert one
+    assert not two
+    one, two = cpp_or_f90(f90_code)
+    assert not one
+    assert two
 
 
 def test_extract_directive_code():
@@ -162,3 +189,24 @@ def test_extract_directive_data():
     assert "float*" in data["vector_add"]["B"]
     assert "int" not in data["vector_add"]["C"]
     assert "VECTOR_SIZE" in data["vector_add"]["n"]
+
+
+def test_allocate_signature_memory():
+    code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)\n#pragma acc"
+    data = extract_directive_data(code)
+    with raises(TypeError):
+        _ = allocate_signature_memory(data["vector_add"])
+    preprocessor = ["#define VECTOR_SIZE 1024\n"]
+    args = allocate_signature_memory(data["vector_add"], preprocessor)
+    assert type(args[0]) == np.ndarray
+    assert type(args[1]) != np.float64
+    assert args[2].dtype == np.float32
+    assert type(args[3]) == np.int32
+    assert args[3] == 1024
+    user_values = dict()
+    user_values["VECTOR_SIZE"] = 1024
+    args = allocate_signature_memory(data["vector_add"], dimensions=user_values)
+    assert type(args[0]) == np.ndarray
+    assert type(args[1]) != np.float64
+    assert args[2].dtype == np.float32
+    assert type(args[3]) == np.int32
