@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import logging
 
 from kernel_tuner import tune_kernel
 from kernel_tuner.backends import nvcuda

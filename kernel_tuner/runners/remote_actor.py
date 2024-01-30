@@ -2,22 +2,25 @@ import logging
 from datetime import datetime, timezone
 from time import perf_counter
 import ray
+import sys
+
 from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
 from kernel_tuner.core import DeviceInterface
 
 @ray.remote(num_gpus=1)
 class RemoteActor:
     def __init__(self, 
-                 units,
                  quiet,
                  kernel_source,
                  kernel_options, 
                  device_options,
                  iterations,
-                 observers):
+                 observers,
+                 gpu_id):
         
+        self.gpu_id = gpu_id
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
-        self.units = units
+        self.units = self.dev.units
         self.quiet = quiet
         self.kernel_source = kernel_source
         self.warmed_up = False
@@ -30,7 +33,7 @@ class RemoteActor:
         self.gpu_args = self.dev.ready_argument_list(self.kernel_options.arguments)
 
     def execute(self, element, tuning_options):
-        
+        #print(f"GPU {self.gpu_id} started execution", file=sys. stderr)
         params = dict(zip(tuning_options.tune_params.keys(), element))
 
         result = None
