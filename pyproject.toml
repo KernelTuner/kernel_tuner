@@ -18,7 +18,7 @@ authors = [
     "Richard Schoonhoven <Richard.Schoonhoven@cwi.nl>",
 ]
 
-readme = "README.rst"
+readme = "README.md"
 keywords = [
     "auto-tuning",
     "gpu",
