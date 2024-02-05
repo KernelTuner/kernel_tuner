@@ -14,6 +14,7 @@ import nox
 from nox_poetry import Session, session
 
 # set the test parameters
+verbose = False
 python_versions_to_test = ["3.8", "3.9", "3.10", "3.11"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
@@ -23,6 +24,7 @@ nox.options.default_venv_backend = 'virtualenv'
 settings_file_path = Path("./noxsettings.toml")
 venvbackend_values = ('none', 'virtualenv', 'conda', 'mamba', 'venv')  # from https://nox.thea.codes/en/stable/usage.html#changing-the-sessions-default-backend
 
+# TODO remove this from a session function, session is only needed to receive trigger argument
 @session    # to only run on the current python interpreter
 def create_settings(session: Session) -> None:
     """One-time creation of noxsettings.toml."""
@@ -58,6 +60,7 @@ if settings_file_path.exists():
         envdir = nox_settings['envdir']
         assert venvbackend in venvbackend_values, f"File '{settings_file_path}' has {venvbackend=}, must be one of {','.join(venvbackend_values)}"
         nox.options.default_venv_backend = venvbackend
+        nox.options.venvbackend = venvbackend
         if envdir is not None and len(envdir) > 0:
             nox.options.envdir = envdir
 
@@ -97,6 +100,7 @@ def check_development_environment(session: Session) -> None:
 # do not forget check / set the versions with `pyenv global`, or `pyenv local` in case of virtual environment
 def tests(session: Session) -> None:
     """Run the tests for the specified Python versions."""
+    session.log(f"Testing on Python {session.python}")
     # check if optional dependencies have been disabled by user arguments (e.g. `nox -- skip-gpu`, `nox -- skip-cuda`)
     install_cuda = True
     install_hip = True
@@ -162,16 +166,38 @@ def tests(session: Session) -> None:
     install_warning = """Installation failed, this likely means that the required hardware or drivers are missing.
                   Run with `-- skip-gpu` or one of the more specific options (e.g. `-- skip-cuda`) to avoid this."""
     if install_cuda:
-        # if we need to install the CUDA extras, first install pycuda seperately.
+        # use NVCC to get the CUDA version
+        import re
+        nvcc_output: str = session.run("nvcc", "--version", silent=True, external=True)
+        nvcc_output = "".join(nvcc_output.splitlines())  # convert to single string for easier REGEX
+        cuda_version = re.match(r"^.*release ([0-9]+.[0-9]+).*$", nvcc_output, flags=re.IGNORECASE).group(1).strip()
+        session.warn(f"Detected CUDA version: {cuda_version}")
+        # if we need to install the CUDA extras, first install pycuda seperately, reason:
         #   since version 2022.2 it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry
-        try:
-            session.install("pycuda")       # Attention: if changed, check `pycuda` in pyproject.toml as well
-        except Exception as error:
-            session.log(error)
-            session.warn(install_warning)
+        if " not found: " in session.run("pip", "show", "pycuda", external=True, silent=True, success_codes=[0,1]):
+            # if PyCUDA is not installed, install it
+            session.warn("PyCUDA not installed")
+            try:
+                session.install("pycuda", "--no-cache-dir", "--force-reinstall") # Attention: if changed, check `pycuda` in pyproject.toml as well
+            except Exception as error:
+                session.log(error)
+                session.warn(install_warning)
+        else:
+            session.warn("PyCUDA installed")
+            # if PyCUDA is already installed, check whether the CUDA version PyCUDA was installed with matches the current CUDA version
+            session.install("numpy")    # required by pycuda.driver
+            pycuda_version = session.run("python", "-c", "import pycuda.driver as drv; drv.init(); print('.'.join(list(str(d) for d in drv.get_version())))", silent=True)
+            shortest_string, longest_string = (pycuda_version, cuda_version) if len(pycuda_version) < len(cuda_version) else (cuda_version, pycuda_version)
+            if longest_string[:len(shortest_string)] != shortest_string:
+                session.warn(f"PyCUDA was compiled with a version of CUDA ({pycuda_version}) that does not match the current version ({cuda_version}). Re-installing.")
+                try:
+                    session.install("pycuda", "--no-cache-dir", "--force-reinstall")  # Attention: if changed, check `pycuda` in pyproject.toml as well
+                except Exception as error:
+                    session.log(error)
+                    session.warn(install_warning)
     if install_opencl and session.python == "3.8":
-        # if we need to install the OpenCL extras, first install pyopencl seperately.
-        # it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry, but only for Python<3.9
+        # if we need to install the OpenCL extras, first install pyopencl seperately, reason:
+        #   it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry, but only for Python<3.9
         try:
             session.install("pyopencl")       # Attention: if changed, check `pyopencl` in pyproject.toml as well
         except Exception as error:
@@ -180,7 +206,7 @@ def tests(session: Session) -> None:
 
     # finally, install the dependencies, optional dependencies and the package itself
     try:
-        session.run_always("poetry", "install", "--with", "test", *extras_args, external=True)
+        session.run_always("poetry", "install", "--with", "test", *extras_args, external=True, silent=False)
     except Exception as error:
         session.warn(install_warning)
         raise error
@@ -190,18 +216,11 @@ def tests(session: Session) -> None:
         install_additional_warning = """
                 Installation failed, this likely means that the required hardware or drivers are missing.
                 Run without `-- additional-tests` to avoid this."""
-        import re
         try:
             session.install("cuda-python")
         except Exception as error:
             session.log(error)
             session.warn(install_additional_warning)
-        try:
-            # use NVCC to get the CUDA version
-            nvcc_output: str = session.run("nvcc", "--version", silent=True)
-            nvcc_output = "".join(nvcc_output.splitlines())  # convert to single string for easier REGEX
-            cuda_version = re.match(r"^.*release ([0-9]+.[0-9]+).*$", nvcc_output, flags=re.IGNORECASE).group(1).strip()
-            session.warn(f"Detected CUDA version: {cuda_version}")
             try:
                 try:
                     # based on the CUDA version, try installing the exact prebuilt cupy version
@@ -216,18 +235,15 @@ def tests(session: Session) -> None:
                 # if no compatible prebuilt wheel is found, try building CuPy ourselves
                 session.warn(f"No prebuilt CuPy found for CUDA {cuda_version}, building from source...")
                 session.install("cupy")
-        except Exception as error:
-            session.log(error)
-            session.warn(install_additional_warning)
 
     # for the last Python version session if all optional dependencies are enabled:
     if session.python == python_versions_to_test[-1] and full_install:
         # run pytest on the package to generate the correct coverage report
-        session.run("pytest")
+        session.run("pytest", external=False)
     else:
         # for the other Python version sessions:
         # run pytest without coverage reporting
-        session.run("pytest", "--no-cov")
+        session.run("pytest", "--no-cov", external=False)
 
     # warn if no coverage report
     if not full_install:

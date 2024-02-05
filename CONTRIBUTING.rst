@@ -55,7 +55,10 @@ Steps with :bash:`sudo` access (e.g. on a local device):
     * Install the Python versions with: :bash:`pyenv install 3.8 3.9 3.10 3.11`
 #. Setup a local virtual environment in the folder: :bash:`pyenv virtualenv kerneltuner` (or whatever environment name you prefer).
 #. Set the Python versions so they can be found: :bash:`pyenv local 3.8 3.9 3.10 3.11` (replace :bash:`local` with :bash:`global` when not using the virtualenv).
-#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`. Make sure to add it to :bash:`PATH` as instructed at the end of the installation.
+#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__. 
+    * Use :bash:`curl -sSL https://install.python-poetry.org | python3 -` to install Poetry.
+    * Make sure to add Poetry to :bash:`PATH` as instructed at the end of the installation.
+    * Add the poetry export plugin with :bash:`poetry self add poetry-plugin-export`. 
 #. Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in :ref:`Installation <installation>`.
 #. Re-open the shell for changes to take effect. Activate the environment with :bash:`pyenv activate kerneltuner`.
 #. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`
@@ -87,7 +90,9 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
 #. Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see :ref:`Installation <installation>`.
     * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
     * [Optional] the loading of modules and setting of paths is likely convenient to put in your :bash:`.bash_profile` or :bash:`.bashrc`.
-#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__: :bash:`curl -sSL https://install.python-poetry.org | python3 -`.
+#. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__. 
+    * Use :bash:`curl -sSL https://install.python-poetry.org | python3 -` to install Poetry.
+    * Add the poetry export plugin with :bash:`poetry self add poetry-plugin-export`. 
 #. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`.
     * If you run into "keyring" or other seemingly weird issues, this is a known issue with Poetry on some systems. Do: :bash:`pip install keyring`, :bash:`python3 -m keyring --disable`.
     * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
