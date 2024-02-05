@@ -205,11 +205,30 @@ def tests(session: Session) -> None:
             session.warn(install_warning)
 
     # finally, install the dependencies, optional dependencies and the package itself
-    try:
-        session.run_always("poetry", "install", "--with", "test", *extras_args, external=True, silent=False)
-    except Exception as error:
-        session.warn(install_warning)
-        raise error
+    poetry_env = Path(session.run_always("poetry", "env", "info", "--executable", silent=not verbose, external=True).splitlines()[-1].strip()).resolve()
+    session_env = Path(session.bin, "python/").resolve()
+    assert poetry_env.exists(), f"{poetry_env=} does not exist"
+    assert session_env.exists(), f"{session_env=} does not exist"
+    # if the poetry virtualenv is not set to the session env, use requirements file export instead of Poetry install
+    if poetry_env != session_env:
+        session.warn(f"Poetry env ({str(poetry_env)}) is not session env ({str(session_env)}), falling back to install via requirements export")
+        requirements_file = Path(f"tmp_test_requirements_{session.name}.txt")
+        if requirements_file.exists():
+            requirements_file.unlink()
+        if verbose:
+            print(session.run_always('conda', 'list'))
+        session.run_always('poetry', 'export', '-f', 'requirements.txt', '-o', requirements_file.name, '--with=test', '--without-hashes', *extras_args, external=True, silent=not verbose)
+        session.install('-r', requirements_file.name)
+        session.install('.')
+        requirements_file.unlink()
+        if verbose:
+            print(session.run_always('conda', 'list'))
+    else:
+        try:
+            session.run_always("poetry", "install", "--with", "test", *extras_args, external=True, silent=False)
+        except Exception as error:
+            session.warn(install_warning)
+            raise error
 
     # if applicable, install the dependencies for additional tests
     if install_additional_tests and install_cuda:
