@@ -189,6 +189,12 @@ def test_extract_directive_data():
     assert "float*" in data["vector_add"]["B"]
     assert "int" not in data["vector_add"]["C"]
     assert "VECTOR_SIZE" in data["vector_add"]["n"]
+    code = "!$tuner start matrix_add A(float*:N_ROWS, N_COLS) B(float*:N_ROWS, N_COLS) nr(int:N_ROWS) nc(int:N_COLS)\n!$acc"
+    data = extract_directive_data(code)
+    assert len(data) == 1
+    assert len(data["vector_add"]) == 4
+    assert "float*" in data["vector_add"]["A"]
+    assert "N_ROWS, N_COLS" in data["vector_add"]["B"]
 
 
 def test_allocate_signature_memory():
