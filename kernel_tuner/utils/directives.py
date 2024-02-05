@@ -63,24 +63,33 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
 
 
 def parse_size(size: object, preprocessor: list = None, dimensions: dict = None) -> int:
+    ret_size = None
     if type(size) is not int:
         try:
             # Try to convert the size to an integer
-            size = int(size)
+            ret_size = int(size)
         except ValueError:
             # If size cannot be natively converted to string, we try to derive it from the preprocessor
             if preprocessor is not None:
                 for line in preprocessor:
                     if f"#define {size}" in line:
                         try:
-                            size = int(line.split(" ")[2])
+                            ret_size = int(line.split(" ")[2])
                             break
                         except ValueError:
                             continue
             # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
             if dimensions is not None:
-                size = int(dimensions[size])
-    return size
+                if "," in dimensions[size]:
+                    ret_size = 1
+                    for dimension in dimensions[size].split(","):
+                        ret_size *= int(dimension)
+                else:
+                    ret_size = int(dimensions[size])
+    else:
+        ret_size = size
+
+    return ret_size
 
 
 def extract_directive_code(code: str, kernel_name: str = None) -> dict:
