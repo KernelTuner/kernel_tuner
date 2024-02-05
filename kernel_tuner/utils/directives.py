@@ -8,24 +8,24 @@ def correct_kernel(kernel_name: str, line: str) -> bool:
     return f" {kernel_name} " in line or (kernel_name in line and len(line.partition(kernel_name)[2]) == 0)
 
 
-def cpp(code: str, lang: str) -> bool:
+def is_cpp(code: str, lang: str) -> bool:
     if str.lower(lang) == openacc:
         return "#pragma acc" in code
     return False
 
 
-def f90(code: str, lang: str) -> bool:
+def is_f90(code: str, lang: str) -> bool:
     if str.lower(lang) == openacc:
         return "!$acc" in code
     return False
 
 
-def cpp_or_f90(code: str, lang: str = None) -> tuple:
+def is_cpp_or_f90(code: str, lang: str = None) -> tuple:
     if lang is not None:
-        return cpp(code, lang), f90(code, lang)
+        return is_cpp(code, lang), is_f90(code, lang)
     else:
         # the current default language is OpenACC
-        return cpp(code, openacc), f90(code, openacc)
+        return is_cpp(code, openacc), is_f90(code, openacc)
 
 
 def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> dict:
@@ -35,7 +35,7 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
     tmp_string = list()
     name = ""
     init_found = 0
-    cpp, f90 = cpp_or_f90(code)
+    cpp, f90 = is_cpp_or_f90(code)
 
     for line in code.replace("\\\n", "").split("\n"):
         if found_section:
@@ -62,9 +62,30 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
     return sections
 
 
+def parse_size(size: object, preprocessor: list = None, dimensions: dict = None) -> int:
+    if type(size) is not int:
+        try:
+            # Try to convert the size to an integer
+            size = int(size)
+        except ValueError:
+            # If size cannot be natively converted to string, we try to derive it from the preprocessor
+            if preprocessor is not None:
+                for line in preprocessor:
+                    if f"#define {size}" in line:
+                        try:
+                            size = int(line.split(" ")[2])
+                            break
+                        except ValueError:
+                            continue
+            # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
+            if dimensions is not None:
+                size = int(dimensions[size])
+    return size
+
+
 def extract_directive_code(code: str, kernel_name: str = None) -> dict:
     """Extract explicitly marked directive sections from code"""
-    cpp, f90 = cpp_or_f90(code)
+    cpp, f90 = is_cpp_or_f90(code)
 
     if cpp:
         start_string = "#pragma tuner start"
@@ -78,7 +99,7 @@ def extract_directive_code(code: str, kernel_name: str = None) -> dict:
 
 def extract_initialization_code(code: str) -> str:
     """Extract the initialization section from code"""
-    cpp, f90 = cpp_or_f90(code)
+    cpp, f90 = is_cpp_or_f90(code)
 
     if cpp:
         start_string = "#pragma tuner initialize"
@@ -96,7 +117,7 @@ def extract_initialization_code(code: str) -> str:
 
 def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
     """Extract the user defined signature for directive sections"""
-    cpp, f90 = cpp_or_f90(code)
+    cpp, f90 = is_cpp_or_f90(code)
 
     if cpp:
         start_string = "#pragma tuner start"
@@ -160,7 +181,7 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
 
 def extract_directive_data(code: str, kernel_name: str = None) -> dict:
     """Extract the data used in the directive section"""
-    cpp, f90 = cpp_or_f90(code)
+    cpp, f90 = is_cpp_or_f90(code)
 
     if cpp:
         start_string = "#pragma tuner start"
@@ -207,7 +228,7 @@ def extract_preprocessor(code: str) -> list:
 
 def wrap_timing(code: str) -> str:
     """Wrap timing code around the provided code"""
-    cpp, f90 = cpp_or_f90(code)
+    cpp, f90 = is_cpp_or_f90(code)
 
     if cpp:
         start = "auto kt_timing_start = std::chrono::steady_clock::now();"
@@ -223,11 +244,17 @@ def wrap_timing(code: str) -> str:
     return "\n".join([start, code, end, timing, ret])
 
 
-def generate_directive_function(preprocessor: str, signature: str, body: str, initialization: str = "") -> str:
+def generate_directive_function(
+    preprocessor: str, signature: str, body: str, initialization: str = "", user_dimensions: dict = None
+) -> str:
     """Generate tunable function for one directive"""
-    cpp, f90 = cpp_or_f90(body)
+    cpp, f90 = is_cpp_or_f90(body)
 
     code = "\n".join(preprocessor)
+    if user_dimensions is not None:
+        # add user dimensions to preprocessor
+        for key, value in user_dimensions.items():
+            code += f"#define {key} {value}\n"
     if cpp and "#include <chrono>" not in preprocessor:
         code += "\n#include <chrono>\n"
     if cpp:
@@ -247,31 +274,14 @@ def generate_directive_function(preprocessor: str, signature: str, body: str, in
     return code
 
 
-def allocate_signature_memory(data: dict, preprocessor: list = None, dimensions: dict = None) -> list:
+def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimensions: dict = None) -> list:
     """Allocates the data needed by a kernel and returns the arguments array"""
     args = []
     max_int = 1024
 
     for parameter in data.keys():
         p_type = data[parameter][0]
-        size = data[parameter][1]
-        if type(size) is not int:
-            try:
-                # Try to convert the size to an integer
-                size = int(size)
-            except ValueError:
-                # If size cannot be natively converted to string, we try to derive it from the preprocessor
-                if preprocessor is not None:
-                    for line in preprocessor:
-                        if f"#define {size}" in line:
-                            try:
-                                size = int(line.split(" ")[2])
-                                break
-                            except ValueError:
-                                continue
-                # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
-                if dimensions is not None:
-                    size = int(dimensions[size])
+        size = parse_size(data[parameter][1], preprocessor, user_dimensions)
         if "*" in p_type:
             # The parameter is an array
             if p_type == "float*":
