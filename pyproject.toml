@@ -69,7 +69,7 @@ scikit-learn = "^1.0.2"
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
 # Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
 # CUDA
-pycuda = { version = "^2022.1", optional = true }           # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
+pycuda = { version = "^2024.1", optional = true }           # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 nvidia-ml-py = { version = "^12.535.108", optional = true }
 pynvml = { version = "^11.4.1", optional = true }
 # cupy-cuda11x = { version = "*", optional = true }    # Note: these are completely optional dependencies as described in CONTRIBUTING.rst
@@ -126,7 +126,7 @@ minversion = "7.4"
 pythonpath = [
     "kernel_tuner",
 ] # necessary to get coverage reports without installing with `-e`
-addopts = "--cov --cov-config=.coveragerc --cov-report html --cov-report term-missing --cov-fail-under 60"
+addopts = "--cov --cov-config=.coveragerc --cov-report=html --cov-report=term-missing --cov-fail-under=60"
 testpaths = ["test"]
 
 [tool.black]
