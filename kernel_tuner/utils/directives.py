@@ -69,15 +69,25 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
             # Try to convert the size to an integer
             ret_size = int(size)
         except ValueError:
-            # If size cannot be natively converted to string, we try to derive it from the preprocessor
+            # If size cannot be natively converted to an int, we try to derive it from the preprocessor
             if preprocessor is not None:
-                for line in preprocessor:
-                    if f"#define {size}" in line:
-                        try:
-                            ret_size = int(line.split(" ")[2])
-                            break
-                        except ValueError:
-                            continue
+                if "," in size:
+                    for dimension in size.split(","):
+                        for line in preprocessor:
+                            if f"#define {dimension}" in line:
+                                try:
+                                    ret_size *= int(line.split(" ")[2])
+                                    break
+                                except ValueError:
+                                    continue
+                else:
+                    for line in preprocessor:
+                        if f"#define {size}" in line:
+                            try:
+                                ret_size = int(line.split(" ")[2])
+                                break
+                            except ValueError:
+                                continue
             # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
             if dimensions is not None and size in dimensions.keys():
                 if type(dimensions[size]) is int:
@@ -90,6 +100,7 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
                     else:
                         ret_size = int(dimensions[size])
     else:
+        # size is already an int
         ret_size = size
 
     return ret_size
