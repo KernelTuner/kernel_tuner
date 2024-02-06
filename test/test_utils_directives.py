@@ -29,7 +29,14 @@ def test_cpp_or_f90():
 
 
 def test_parse_size():
-    pass
+    assert parse_size(128) == 128
+    assert parse_size("16") == 16
+    assert parse_size("test") is None
+    assert parse_size("n", ["#define n 1024\n"]) == 1024
+    assert parse_size("n,m", ["#define n 16\n", "#define m 32\n"]) == 512
+    assert parse_size("n", ["#define size 512\n"], {"n": 32}) == 32
+    assert parse_size("m", ["#define size 512\n"], {"n": 32}) is None
+    assert parse_size("rows,cols", dimensions={"rows": 16, "cols": 8}) == 128
 
 
 def test_extract_directive_code():
