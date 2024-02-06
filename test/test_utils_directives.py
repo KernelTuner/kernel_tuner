@@ -212,7 +212,7 @@ def test_allocate_signature_memory():
     args = allocate_signature_memory(data["vector_add"], preprocessor)
     assert type(args[0]) is np.ndarray
     assert type(args[1]) is not np.float64
-    assert args[2].dtype is np.float32
+    assert args[2].dtype == "float32"
     assert type(args[3]) is np.int32
     assert args[3] == 1024
     user_values = dict()
@@ -220,5 +220,5 @@ def test_allocate_signature_memory():
     args = allocate_signature_memory(data["vector_add"], user_dimensions=user_values)
     assert type(args[0]) is np.ndarray
     assert type(args[1]) is not np.float64
-    assert args[2].dtype is np.float32
+    assert args[2].dtype == "float32"
     assert type(args[3]) is np.int32
