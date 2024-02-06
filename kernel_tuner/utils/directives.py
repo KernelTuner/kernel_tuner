@@ -79,13 +79,16 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
                         except ValueError:
                             continue
             # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
-            if dimensions is not None:
-                if "," in dimensions[size]:
-                    ret_size = 1
-                    for dimension in dimensions[size].split(","):
-                        ret_size *= int(dimension)
+            if dimensions is not None and size in dimensions.keys():
+                if type(dimensions[size]) is int:
+                    ret_size = dimensions[size]
                 else:
-                    ret_size = int(dimensions[size])
+                    if "," in dimensions[size]:
+                        ret_size = 1
+                        for dimension in dimensions[size].split(","):
+                            ret_size *= int(dimension)
+                    else:
+                        ret_size = int(dimensions[size])
     else:
         ret_size = size
 

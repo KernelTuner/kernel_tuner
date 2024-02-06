@@ -28,6 +28,10 @@ def test_cpp_or_f90():
     assert two
 
 
+def test_parse_size():
+    pass
+
+
 def test_extract_directive_code():
     code = """
         #include <stdlib.h>
@@ -189,7 +193,9 @@ def test_extract_directive_data():
     assert "float*" in data["vector_add"]["B"]
     assert "int" not in data["vector_add"]["C"]
     assert "VECTOR_SIZE" in data["vector_add"]["n"]
-    code = "!$tuner start matrix_add A(float*:N_ROWS,N_COLS) B(float*:N_ROWS,N_COLS) nr(int:N_ROWS) nc(int:N_COLS)\n!$acc"
+    code = (
+        "!$tuner start matrix_add A(float*:N_ROWS,N_COLS) B(float*:N_ROWS,N_COLS) nr(int:N_ROWS) nc(int:N_COLS)\n!$acc"
+    )
     data = extract_directive_data(code)
     assert len(data) == 1
     assert len(data["matrix_add"]) == 4
@@ -204,15 +210,15 @@ def test_allocate_signature_memory():
         _ = allocate_signature_memory(data["vector_add"])
     preprocessor = ["#define VECTOR_SIZE 1024\n"]
     args = allocate_signature_memory(data["vector_add"], preprocessor)
-    assert type(args[0]) == np.ndarray
-    assert type(args[1]) != np.float64
-    assert args[2].dtype == np.float32
-    assert type(args[3]) == np.int32
+    assert type(args[0]) is np.ndarray
+    assert type(args[1]) is not np.float64
+    assert args[2].dtype is np.float32
+    assert type(args[3]) is np.int32
     assert args[3] == 1024
     user_values = dict()
     user_values["VECTOR_SIZE"] = 1024
     args = allocate_signature_memory(data["vector_add"], user_dimensions=user_values)
-    assert type(args[0]) == np.ndarray
-    assert type(args[1]) != np.float64
-    assert args[2].dtype == np.float32
-    assert type(args[3]) == np.int32
+    assert type(args[0]) is np.ndarray
+    assert type(args[1]) is not np.float64
+    assert args[2].dtype is np.float32
+    assert type(args[3]) is np.int32
