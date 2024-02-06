@@ -222,3 +222,17 @@ def test_allocate_signature_memory():
     assert type(args[1]) is not np.float64
     assert args[2].dtype == "float32"
     assert type(args[3]) is np.int32
+    code = (
+        "!$tuner start matrix_add A(float*:N_ROWS,N_COLS) B(float*:N_ROWS,N_COLS) nr(int:N_ROWS) nc(int:N_COLS)\n!$acc"
+    )
+    data = extract_directive_data(code)
+    preprocessor = ["#define N_ROWS 128\n#define N_COLS 512\n"]
+    args = allocate_signature_memory(data["matrix_add"], preprocessor)
+    assert args[2] == 128
+    assert len(args[0]) == (128 * 512)
+    user_values = dict()
+    user_values["N_ROWS"] = 32
+    user_values["N_COLS"] = 16
+    args = allocate_signature_memory(data["matrix_add"], user_dimensions=user_values)
+    assert args[3] == 16
+    assert len(args[1]) == 512
