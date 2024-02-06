@@ -72,6 +72,7 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
             # If size cannot be natively converted to an int, we try to derive it from the preprocessor
             if preprocessor is not None:
                 if "," in size:
+                    ret_size = 1
                     for dimension in size.split(","):
                         for line in preprocessor:
                             if f"#define {dimension}" in line:
