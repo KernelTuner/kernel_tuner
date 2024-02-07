@@ -112,6 +112,17 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
     return ret_size
 
 
+def create_data_directive(name: str, cpp: bool, f90: bool) -> str:
+    data_directive = str()
+
+    if cpp:
+        data_directive += f"#pragma acc enter data create {name}\n#pragma acc update device({name})\n"
+    elif f90:
+        data_directive += f"!$acc enter data create {name}\n!$acc update device({name})\n"
+
+    return data_directive
+
+
 def extract_directive_code(code: str, kernel_name: str = None) -> dict:
     """Extract explicitly marked directive sections from code"""
     cpp, f90 = is_cpp_or_f90(code)
@@ -274,7 +285,12 @@ def wrap_timing(code: str) -> str:
 
 
 def generate_directive_function(
-    preprocessor: str, signature: str, body: str, initialization: str = "", user_dimensions: dict = None
+    preprocessor: str,
+    signature: str,
+    body: str,
+    data: dict = None,
+    initialization: str = "",
+    user_dimensions: dict = None,
 ) -> str:
     """Generate tunable function for one directive"""
     cpp, f90 = is_cpp_or_f90(body)
@@ -293,6 +309,10 @@ def generate_directive_function(
         code += "\n" + signature
     if len(initialization) > 1:
         code += initialization + "\n"
+    # Allocate and transfer all data structures
+    if data is not None:
+        for name in data.keys():
+            code += create_data_directive(name, cpp, f90)
     code += wrap_timing(body)
     if cpp:
         code += "\n}"

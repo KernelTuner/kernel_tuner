@@ -39,6 +39,16 @@ def test_parse_size():
     assert parse_size("rows,cols", dimensions={"rows": 16, "cols": 8}) == 128
 
 
+def test_create_data_directive():
+    assert (
+        create_data_directive("array", True, False)
+        == "#pragma acc enter data create array\n#pragma acc update device(array)\n"
+    )
+    assert (
+        create_data_directive("matrix", False, True) == "!$acc enter data create matrix\n!$acc update device(matrix)\n"
+    )
+
+
 def test_extract_directive_code():
     code = """
         #include <stdlib.h>
