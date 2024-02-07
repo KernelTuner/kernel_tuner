@@ -312,7 +312,8 @@ def generate_directive_function(
     # Allocate and transfer all data structures
     if data is not None:
         for name in data.keys():
-            code += create_data_directive(name, cpp, f90)
+            if "*" in data[name][0]:
+                code += create_data_directive(name, cpp, f90)
     code += wrap_timing(body)
     if cpp:
         code += "\n}"
