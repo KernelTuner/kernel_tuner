@@ -116,9 +116,9 @@ def create_data_directive(name: str, cpp: bool, f90: bool) -> str:
     data_directive = str()
 
     if cpp:
-        data_directive += f"#pragma acc enter data create {name}\n#pragma acc update device({name})\n"
+        data_directive += f"#pragma acc enter data create({name})\n#pragma acc update device({name})\n"
     elif f90:
-        data_directive += f"!$acc enter data create {name}\n!$acc update device({name})\n"
+        data_directive += f"!$acc enter data create({name})\n!$acc update device({name})\n"
 
     return data_directive
 
