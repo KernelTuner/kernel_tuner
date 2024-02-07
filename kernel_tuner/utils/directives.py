@@ -192,7 +192,9 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                 if cpp:
                     signatures[name] = f"float {name}({', '.join(params)})"
                 elif f90:
-                    signatures[name] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\nimplicit none\n"
+                    signatures[
+                        name
+                    ] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\nimplicit none\n"
                     params = list()
                     for param in tmp_string:
                         if len(param) == 0:
@@ -215,6 +217,9 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                         elif "int" in p_type:
                             params.append(f"integer (c_int), value :: {p_name}")
                     signatures[name] += "\n".join(params) + "\n"
+                    signatures[
+                        name
+                    ] += "integer(c_int):: kt_timing_start\nreal(c_float):: kt_rate\ninteger(c_int):: kt_timing_end\nreal(c_float):: timing\n"
 
     return signatures
 
@@ -276,7 +281,7 @@ def wrap_timing(code: str) -> str:
         timing = "std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;"
         ret = "return elapsed_time.count();"
     elif f90:
-        start = "integer (c_int) :: kt_timing_start\nreal (c_float) :: kt_rate\ninteger (c_int) :: kt_timing_end\nreal (c_float) :: timing\ncall system_clock(kt_timing_start, kt_rate)"
+        start = "call system_clock(kt_timing_start, kt_rate)"
         end = "call system_clock(kt_timing_end)"
         timing = "timing = (real(kt_timing_end - kt_timing_start) / real(kt_rate)) * 1e3"
         ret = ""
