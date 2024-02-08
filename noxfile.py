@@ -235,25 +235,27 @@ def tests(session: Session) -> None:
         install_additional_warning = """
                 Installation failed, this likely means that the required hardware or drivers are missing.
                 Run without `-- additional-tests` to avoid this."""
+        # install cuda-python
         try:
             session.install("cuda-python")
         except Exception as error:
             session.log(error)
             session.warn(install_additional_warning)
+        # install cupy
+        try:
             try:
-                try:
-                    # based on the CUDA version, try installing the exact prebuilt cupy version
-                    cuda_cupy_version = f"cupy-cuda{''.join(cuda_version.split('.'))}"
-                    session.install(cuda_cupy_version)
-                except Exception:
-                    # if the exact prebuilt is not available, try the more general prebuilt
-                    cuda_cupy_version_x = f"cupy-cuda{cuda_version.split('.')[0]}x"
-                    session.warn(f"CuPy exact prebuilt not available for {cuda_version}, trying {cuda_cupy_version_x}")
-                    session.install(cuda_cupy_version_x)
+                # based on the CUDA version, try installing the exact prebuilt cupy version
+                cuda_cupy_version = f"cupy-cuda{''.join(cuda_version.split('.'))}"
+                session.install(cuda_cupy_version)
             except Exception:
-                # if no compatible prebuilt wheel is found, try building CuPy ourselves
-                session.warn(f"No prebuilt CuPy found for CUDA {cuda_version}, building from source...")
-                session.install("cupy")
+                # if the exact prebuilt is not available, try the more general prebuilt
+                cuda_cupy_version_x = f"cupy-cuda{cuda_version.split('.')[0]}x"
+                session.warn(f"CuPy exact prebuilt not available for {cuda_version}, trying {cuda_cupy_version_x}")
+                session.install(cuda_cupy_version_x)
+        except Exception:
+            # if no compatible prebuilt wheel is found, try building CuPy ourselves
+            session.warn(f"No prebuilt CuPy found for CUDA {cuda_version}, building from source...")
+            session.install("cupy")
 
     # for the last Python version session if all optional dependencies are enabled:
     if session.python == python_versions_to_test[-1] and full_install:
