@@ -218,6 +218,7 @@ class PyCudaFunctions(GPUBackend):
             )
 
             self.func = self.current_module.get_function(kernel_name)
+            self.num_regs = self.func.num_regs
             return self.func
         except drv.CompileError as e:
             if "uses too much shared data" in e.stderr:

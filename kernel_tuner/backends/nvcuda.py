@@ -192,6 +192,11 @@ class CudaFunctions(GPUBackend):
             )
             cuda_error_check(err)
 
+            # get the number of registers per thread used in this kernel
+            num_regs = cuda.cuFuncGetAttribute(cuda.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
+            assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
+            self.num_regs = num_regs[1]
+
         except RuntimeError as re:
             _, n = nvrtc.nvrtcGetProgramLogSize(program)
             log = b" " * n
