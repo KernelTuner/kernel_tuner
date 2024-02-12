@@ -34,6 +34,7 @@ import kernel_tuner.util as util
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
+from kernel_tuner.runners.remote import RemoteRunner # ADDED HERE
 from kernel_tuner.searchspace import Searchspace
 
 try:
@@ -574,6 +575,7 @@ def tune_kernel(
     cache=None,
     metrics=None,
     simulation_mode=False,
+    remote_mode=False, # ADDED HERE
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -650,7 +652,7 @@ def tune_kernel(
         strategy = brute_force
 
     # select the runner for this job based on input
-    selected_runner = SimulationRunner if simulation_mode else SequentialRunner
+    selected_runner = SimulationRunner if simulation_mode else (RemoteRunner if remote_mode else SequentialRunner) # ADDED HERE
     tuning_options.simulated_time = 0
     runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
 
