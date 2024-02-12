@@ -85,7 +85,7 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
              - /path/to/directory
     * [Optional] both Mamba and Miniconda can be automatically activated via :bash:`~/.bashrc`. Do not forget to add these (usually provided at the end of the installation).
     * Exit the shell and re-enter to make sure Conda is available. :bash:`cd` to the kernel tuner directory.
-    * [Optional] if you have limited user folder space, the Pip cache can be pointed elsewhere with the environment variable :bash:`PIP_CACHE_DIR`. The cache location can be checked with :bash:`pip cache dir`.
+    * [Optional] if you have limited user folder space, the Pip cache can be pointed elsewhere with the environment variable :bash:`PIP_CACHE_DIR`. The cache location can be checked with :bash:`pip cache dir`. On Linu, to point the entire :bash:`~/.cache` default elsewhere, use the :bash:`XDG_CACHE_HOME` environment variable. 
     * [Optional] update Conda if available before continuing: :bash:`conda update -n base -c conda-forge conda`.
 #. Setup a virtual environment: :bash:`conda create --name kerneltuner python=3.11` (or whatever Python version and environment name you prefer).
 #. Activate the virtual environment: :bash:`conda activate kerneltuner`.
