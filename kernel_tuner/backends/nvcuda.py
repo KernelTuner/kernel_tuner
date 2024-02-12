@@ -278,6 +278,8 @@ class CudaFunctions(GPUBackend):
             of the grid
         :type grid: tuple(int, int)
         """
+        if stream is None:
+            stream = self.stream
         arg_types = list()
         for arg in gpu_args:
             if isinstance(arg, cuda.CUdeviceptr):

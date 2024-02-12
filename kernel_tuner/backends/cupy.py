@@ -198,6 +198,8 @@ class CupyFunctions(GPUBackend):
             of the grid
         :type grid: tuple(int, int)
         """
+        if stream is None:
+            stream = self.stream
         func(grid, threads, gpu_args, stream=stream, shared_mem=self.smem_size)
 
     def memset(self, allocation, value, size):
