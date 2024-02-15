@@ -135,6 +135,8 @@ class nvml:
             raise ValueError(
                 "Illegal value for persistence mode, should be either 0 or 1"
             )
+        if self.persistence_mode == new_mode:
+            return
         try:
             pynvml.nvmlDeviceSetPersistenceMode(self.dev, new_mode)
             self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
@@ -168,21 +170,15 @@ class nvml:
                         self.nvidia_smi,
                         "-i",
                         str(self.id),
-                        "--lock-gpu-clocks=" + str(gr_clock) + "," + str(gr_clock),
                     ]
-                    subprocess.run(args, check=True)
-                    args = [
-                        "sudo",
-                        self.nvidia_smi,
-                        "-i",
-                        str(self.id),
-                        "--lock-memory-clocks=" + str(mem_clock) + "," + str(mem_clock),
-                    ]
-                    subprocess.run(args, check=True)
+                    command_set_mem_clocks = f"--lock-memory-clocks={str(mem_clock)},{str(mem_clock)}"
+                    command_set_gpu_clocks = f"--lock-gpu-clocks={str(gr_clock)},{str(gr_clock)}"
+                    subprocess.run(args + [command_set_gpu_clocks], check=True)
+                    subprocess.run(args + [command_set_mem_clocks], check=True)
         else:
             try:
-                if self.persistence_mode != 0:
-                    self.persistence_mode = 0
+                if self.persistence_mode != 1:
+                    self.persistence_mode = 1
             except Exception:
                 pass
             try:
@@ -233,24 +229,20 @@ class nvml:
             if (
                 gr_app_clock != self.gr_clock_default
                 or mem_app_clock != self.mem_clock_default
-            ):
+            ):  
                 self.set_clocks(self.mem_clock_default, self.gr_clock_default)
 
     @property
     def gr_clock(self):
         """Control the graphics clock (may require permission), only values compatible with the memory clock can be set directly."""
-        return pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
+        if self.use_locked_clocks:
+            return pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
+        else:
+            return pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
 
     @gr_clock.setter
     def gr_clock(self, new_clock):
-        cur_clock = (
-            pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
-            if self.use_locked_clocks
-            else pynvml.nvmlDeviceGetApplicationsClock(
-                self.dev, pynvml.NVML_CLOCK_GRAPHICS
-            )
-        )
-        if new_clock != cur_clock:
+        if new_clock != self.gr_clock:
             self.set_clocks(self.mem_clock, new_clock)
 
     @property
@@ -268,12 +260,8 @@ class nvml:
 
     @mem_clock.setter
     def mem_clock(self, new_clock):
-        cur_clock = (
-            pynvml.nvmlDeviceGetClockInfo(self.dev, pynvml.NVML_CLOCK_MEM)
-            if self.use_locked_clocks
-            else pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
-        )
-        if new_clock != cur_clock:
+        if new_clock != self.mem_clock:
+            print(f"mem_clock setter calls set_clocks because {new_clock=} != {cur_clock=}")
             self.set_clocks(new_clock, self.gr_clock)
 
     @property
