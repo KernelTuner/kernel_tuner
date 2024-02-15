@@ -261,7 +261,6 @@ class nvml:
     @mem_clock.setter
     def mem_clock(self, new_clock):
         if new_clock != self.mem_clock:
-            print(f"mem_clock setter calls set_clocks because {new_clock=} != {cur_clock=}")
             self.set_clocks(new_clock, self.gr_clock)
 
     @property
