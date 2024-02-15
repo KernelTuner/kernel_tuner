@@ -590,7 +590,6 @@ class DeviceInterface(object):
                         self.benchmark(func, gpu_args, instance, verbose, to.objective, skip_nvml_setting=False)
                     )
                     last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
-                    print(f"Benchmark time: {last_benchmark_time}")
 
             except Exception as e:
                 # dump kernel sources to temp file
