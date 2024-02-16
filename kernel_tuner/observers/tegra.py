@@ -187,7 +187,7 @@ class TegraObserver(BenchmarkObserver):
 # High-level Helper functions
 
 
-def get_tegra_gr_clocks(device=0, n=None, quiet=False):
+def get_tegra_gr_clocks(n=None, quiet=False):
     """Get tunable parameter for Tegra graphics clock, n is desired number of values."""
     d = tegra()
     gr_clocks = d.supported_gr_clocks
