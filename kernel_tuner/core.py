@@ -20,9 +20,8 @@ from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.compiler import CompilerFunctions
-from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.observers.nvml import NVMLObserver
+from kernel_tuner.observers.tegra import TegraObserver
 from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
 
 try:
@@ -315,8 +314,9 @@ class DeviceInterface(object):
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
 
-        # look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
+        # look for NVMLObserver and TegraObserver in observers, if present, enable special tunable parameters through nvml/tegra
         self.use_nvml = False
+        self.use_tegra = False
         self.continuous_observers = []
         self.output_observers = []
         if observers:
@@ -324,6 +324,9 @@ class DeviceInterface(object):
                 if isinstance(obs, NVMLObserver):
                     self.nvml = obs.nvml
                     self.use_nvml = True
+                if isinstance(obs, TegraObserver):
+                    self.tegra = obs.tegra
+                    self.use_tegra = True
                 if hasattr(obs, "continuous_observer"):
                     self.continuous_observers.append(obs.continuous_observer)
                 if isinstance(obs, OutputObserver):
@@ -408,6 +411,10 @@ class DeviceInterface(object):
                 self.nvml.gr_clock = instance.params["nvml_gr_clock"]
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
+
+        if self.use_tegra:
+            if "tegra_gr_clock" in instance.params:
+                self.tegra.gr_clock = instance.params["tegra_gr_clock"]
 
         # Call the observers to register the configuration to be benchmarked
         for obs in self.dev.observers:
