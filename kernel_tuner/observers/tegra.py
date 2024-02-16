@@ -117,9 +117,6 @@ class TegraObserver(BenchmarkObserver):
     :param observables: List of quantities should be observed during tuning, supported is: "core_freq"
     :type observables: list of strings
 
-    :param device: Device ordinal used to identify your device, typically 0
-    :type device: integer
-
     :param save_all: If set to True, all data collected by the TegraObserver for every iteration during benchmarking will be returned.
     If set to False, data will be aggregated over multiple iterations during benchmarking. False by default.
     :type save_all: boolean
@@ -129,7 +126,6 @@ class TegraObserver(BenchmarkObserver):
     def __init__(
         self,
         observables,
-        device=0,
         save_all=False
     ):
         """Create a TegraObserver"""
