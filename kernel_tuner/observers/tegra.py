@@ -37,7 +37,6 @@ class tegra:
         """Set railgate status"""
         if value not in (0, 1):
             raise ValueError(f"Illegal governor value {value}, must be 0 or 1")
-        print(f"Writing {value} to railgate file")
         full_path = self.dev_path / Path("device/railgate_enable")
         args = [
             "sudo",
