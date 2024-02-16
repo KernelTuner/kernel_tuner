@@ -127,7 +127,7 @@ class TegraObserver(BenchmarkObserver):
         save_all=False
     ):
         """Create a TegraObserver"""
-        self.tegra = tegra(device)
+        self.tegra = tegra()
         self.save_all = save_all
 
         supported = ["core_freq"]
@@ -187,7 +187,7 @@ class TegraObserver(BenchmarkObserver):
 
 def get_tegra_gr_clocks(device=0, n=None, quiet=False):
     """Get tunable parameter for Tegra graphics clock, n is desired number of values."""
-    d = tegra(device)
+    d = tegra()
     gr_clocks = d.supported_gr_clocks
 
     if n and (len(gr_clocks) > n):
