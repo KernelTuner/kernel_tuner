@@ -23,9 +23,16 @@ class tegra:
     @staticmethod
     def get_dev_path():
         """Get the path to device core clock control in /sys"""
-        root_path = Path("/sys/devices/gpu.0")
-        gpu_id = root_path.readlink()
-        return root_path / Path("devfreq") / gpu_id
+        # loop to find GPU device name based on jetson_clocks
+        for dev in Path("/sys/class/devfreq").iterdir():
+            with open(dev / Path("device/of_node/name")) as fp:
+                name = fp.read().strip().rstrip("\x00")
+            if name in ("gv11b", "gp10b", "ga10b", "gpu"):
+                root_path = dev
+                break
+        else:
+            raise FileNotFoundError("No internal tegra GPU found")
+        return root_path
 
     def _read_railgate_file(self):
         """Read railgate status"""
