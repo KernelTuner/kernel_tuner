@@ -21,7 +21,7 @@ class tegra:
         self.default_railgate_status = self._read_railgate_file()
 
     @staticmethod
-    def get_dev_path(device_id):
+    def get_dev_path():
         """Get the path to device core clock control in /sys"""
         root_path = Path("/sys/devices/gpu.0")
         gpu_id = root_path.readlink()
