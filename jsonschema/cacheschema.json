@@ -44,7 +44,7 @@
             "framework_time": {"type": "number"},
             "timestamp": {"type": "string"}
           },
-          "required": ["time", "compile_time", "verification_time", "benchmark_time", "GFLOP/s", "strategy_time", "framework_time", "timestamp"],
+          "required": ["time", "compile_time", "verification_time", "benchmark_time", "strategy_time", "framework_time", "timestamp"],
           "additionalProperties": true
         }
       },
