@@ -2,38 +2,31 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "TODO",
   "type": "object",
-
   "properties": {
     "device_name": {
       "type": "string",
       "description": "The name of the device the kernel tuner analysis is run on."
     },
-
     "kernel_name": {
       "type": "string",
       "description": "The name of the kernel."
     },
-
     "problem_size": {
       "type": "array",
       "description": "The size of the problem."
     },
-
     "tune_params_keys": {
       "type": "array",
       "description": "The keys (names) of all the parameters being tuned."
     },
-
     "tune_params": {
       "type": "object",
       "description": "The nested JSON object containing for each parameter the array of tuning values."
     },
-
     "objective": {
       "type": "string",
       "description": "The objective with kernel."
     },
-
     "cache": {
       "type": "object",
       "description": "The actual data; the data of the instances cached.",
@@ -53,8 +46,10 @@
           },
           "additionalProperties": true
         }
+      },
+      "propertyNames": {
+        "pattern": "/^\\d+(,\\d+)*$/"
       }
-
     }
   }
 }
