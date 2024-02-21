@@ -51,7 +51,7 @@
       "propertyNames": {
         "pattern": "^\\d+(,\\d+)*$"
       }
-    },
-    "required": ["device_name", "kernel_name", "problem_size", "tune_params_keys", "tune_params", "objective", "cache"]
-  }
+    }
+  },
+  "required": ["device_name", "kernel_name", "problem_size", "tune_params_keys", "tune_params", "objective", "cache"]
 }
