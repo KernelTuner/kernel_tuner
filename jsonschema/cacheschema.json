@@ -34,7 +34,7 @@
         "^\\d+(,\\d+)*$": {
           "type": "object",
           "properties": {
-            "time": {"type": "number"},
+            "time": {},
             "times": {"type": "array"},
             "compile_time": {"type": "number"},
             "verification_time": {"type": "integer"},
@@ -44,12 +44,14 @@
             "framework_time": {"type": "number"},
             "timestamp": {"type": "string"}
           },
+          "required": ["time", "compile_time", "verification_time", "benchmark_time", "GFLOP/s", "strategy_time", "framework_time", "timestamp"],
           "additionalProperties": true
         }
       },
       "propertyNames": {
         "pattern": "^\\d+(,\\d+)*$"
       }
-    }
+    },
+    "required": ["device_name", "kernel_name", "problem_size", "tune_params_keys", "tune_params", "objective", "cache"]
   }
 }
