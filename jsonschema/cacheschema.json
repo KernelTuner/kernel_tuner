@@ -31,7 +31,7 @@
       "type": "object",
       "description": "The actual data; the data of the instances cached.",
       "patternProperties": {
-        "/^\\d+(,\\d+)*$/": {
+        "^\\d+(,\\d+)*$": {
           "type": "object",
           "properties": {
             "time": {"type": "number"},
@@ -48,7 +48,7 @@
         }
       },
       "propertyNames": {
-        "pattern": "/^\\d+(,\\d+)*$/"
+        "pattern": "^\\d+(,\\d+)*$"
       }
     }
   }
