@@ -22,7 +22,7 @@ with open(dfName) as f:
     dataFile = json.load(f)
 
 # Do the same for the schema
-with open("cacheschema.json") as f:
+with open(sfName) as f:
     dataSchema = json.load(f)
 
 
