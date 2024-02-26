@@ -14,13 +14,13 @@ TEST_CACHE_PATH = PROJECT_DIR / "test/test_cache_files"
 
 def get_cache_name(path: str):
     path = PurePath(path)
-    return str(path.relative_to(path.parents[1]))
+    return str(path.relative_to(TEST_CACHE_PATH))
 
 
-VALID_CACHE_PATHS = glob.glob(str(TEST_CACHE_PATH / "**/valid_*.json"))
+VALID_CACHE_PATHS = glob.glob(str(TEST_CACHE_PATH / "valid_*.json"))
 VALID_CACHE_NAMES = [get_cache_name(p) for p in VALID_CACHE_PATHS]
 
-INVALID_CACHE_PATHS = glob.glob(str(TEST_CACHE_PATH / "**/invalid_*.json"))
+INVALID_CACHE_PATHS = glob.glob(str(TEST_CACHE_PATH / "invalid_*.json"))
 INVALID_CACHE_NAMES = [get_cache_name(p) for p in INVALID_CACHE_PATHS]
 
 
