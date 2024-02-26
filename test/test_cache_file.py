@@ -9,7 +9,7 @@ import jsonschema
 PROJECT_DIR = Path(__file__).parents[1]
 
 SCHEMA_PATH = PROJECT_DIR / "kernel_tuner/schema/cache/1.0.0/schema.json"
-TEST_CACHE_PATH = PROJECT_DIR / "test/test_cache_files/"
+TEST_CACHE_PATH = PROJECT_DIR / "test/test_cache_files"
 
 
 def get_cache_name(path: str):
@@ -17,10 +17,10 @@ def get_cache_name(path: str):
     return str(path.relative_to(path.parents[1]))
 
 
-VALID_CACHE_PATHS = glob.glob(str(TEST_CACHE_PATH / "*/valid_*.json"))
+VALID_CACHE_PATHS = glob.glob(str(TEST_CACHE_PATH / "**/valid_*.json"))
 VALID_CACHE_NAMES = [get_cache_name(p) for p in VALID_CACHE_PATHS]
 
-INVALID_CACHE_PATHS = glob.glob(str(TEST_CACHE_PATH / "*/invalid_*.json"))
+INVALID_CACHE_PATHS = glob.glob(str(TEST_CACHE_PATH / "**/invalid_*.json"))
 INVALID_CACHE_NAMES = [get_cache_name(p) for p in INVALID_CACHE_PATHS]
 
 
