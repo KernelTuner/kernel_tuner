@@ -7,12 +7,12 @@ import pytest
 import jsonschema
 
 
-def _get_cache_name(path: os.PathLike):
+def get_cache_name(path: os.PathLike):
     path = PurePath(path)
     return str(path.relative_to(TEST_CACHE_PATH))
 
 
-def _recursive_glob(path: os.PathLike):
+def recursive_glob(path: os.PathLike):
     return glob.glob(path.__fspath__(), recursive=True)
 
 
@@ -21,11 +21,11 @@ PROJECT_DIR = Path(__file__).parents[1]
 SCHEMA_PATH = PROJECT_DIR / "kernel_tuner/schema/cache/1.0.0/schema.json"
 TEST_CACHE_PATH = PROJECT_DIR / "test/test_cache_files"
 
-VALID_CACHE_PATHS = _recursive_glob(TEST_CACHE_PATH / "**/valid_*.json")
-VALID_CACHE_NAMES = [_get_cache_name(p) for p in VALID_CACHE_PATHS]
+VALID_CACHE_PATHS = recursive_glob(TEST_CACHE_PATH / "**/valid_*.json")
+VALID_CACHE_NAMES = [get_cache_name(p) for p in VALID_CACHE_PATHS]
 
-INVALID_CACHE_PATHS = _recursive_glob(TEST_CACHE_PATH / "**/invalid_*.json")
-INVALID_CACHE_NAMES = [_get_cache_name(p) for p in INVALID_CACHE_PATHS]
+INVALID_CACHE_PATHS = recursive_glob(TEST_CACHE_PATH / "**/invalid_*.json")
+INVALID_CACHE_NAMES = [get_cache_name(p) for p in INVALID_CACHE_PATHS]
 
 
 @pytest.fixture(scope="session")
