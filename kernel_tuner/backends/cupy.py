@@ -125,6 +125,10 @@ class CupyFunctions(GPUBackend):
         compiler_options = self.compiler_options
         if not any(["-std=" in opt for opt in self.compiler_options]):
             compiler_options = ["--std=c++11"] + self.compiler_options
+        if not any([b"--gpu-architecture=" in opt for opt in compiler_options]):
+            compiler_options.append(
+                f"--gpu-architecture=compute_{self.cc}".encode("UTF-8")
+            )
 
         options = tuple(compiler_options)
 
