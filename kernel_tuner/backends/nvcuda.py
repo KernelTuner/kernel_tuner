@@ -66,6 +66,10 @@ class CudaFunctions(GPUBackend):
             cudart.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device
         )
         cuda_error_check(err)
+        err, self.cache_size_L2 = cudart.cudaDeviceGetAttribute(
+            cudart.cudaDeviceAttr.cudaDevAttrL2CacheSize, device
+        )
+        cuda_error_check(err)
         self.cc = f"{major}{minor}"
         self.iterations = iterations
         self.current_module = None

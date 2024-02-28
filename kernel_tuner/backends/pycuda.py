@@ -101,6 +101,7 @@ class PyCudaFunctions(GPUBackend):
             str(k): v for (k, v) in self.context.get_device().get_attributes().items()
         }
         self.max_threads = devprops["MAX_THREADS_PER_BLOCK"]
+        self.cache_size_L2 = devprops["L2_CACHE_SIZE"]
         cc = str(devprops.get("COMPUTE_CAPABILITY_MAJOR", "0")) + str(
             devprops.get("COMPUTE_CAPABILITY_MINOR", "0")
         )
