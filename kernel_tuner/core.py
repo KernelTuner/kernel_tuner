@@ -1056,4 +1056,3 @@ def wrap_templated_kernel(kernel_string, kernel_name):
     new_kernel_string += wrapper_function
 
     return new_kernel_string, name + "_wrapper"
-                                     
