@@ -1,10 +1,12 @@
 """This module contains all Cupy specific kernel_tuner functions."""
 from __future__ import print_function
+from warnings import warn
 
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.cupy import CupyRuntimeObserver
+from kernel_tuner.util import is_valid_nvrtc_gpu_arch_cc
 
 # embedded in try block to be able to generate documentation
 # and run tests without cupy installed
@@ -125,10 +127,11 @@ class CupyFunctions(GPUBackend):
         compiler_options = self.compiler_options
         if not any(["-std=" in opt for opt in self.compiler_options]):
             compiler_options = ["--std=c++11"] + self.compiler_options
-        if not any([b"--gpu-architecture=" in opt for opt in compiler_options]):
-            compiler_options.append(
-                f"--gpu-architecture=compute_{self.cc}".encode("UTF-8")
-            )
+        if is_valid_nvrtc_gpu_arch_cc(self.cc):
+            if not any(["--gpu-architecture=" in opt or "-arch" in opt for opt in compiler_options]):
+                compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
+        else:
+            warn(f"Could not add compiler option '--gpu-architecture=compute_{self.cc}' as {self.cc} is an invalid target")
 
         options = tuple(compiler_options)
 
