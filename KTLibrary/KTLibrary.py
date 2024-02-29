@@ -1,22 +1,34 @@
-from .CacheFiles.files import read_cache_file
+import json
+from pathlib import Path
+from typing import Optional
+
 
 class KTLibrary:
     def __init__(self):
-        self.cache_file = None
+        self.cache_file: Optional[dict] = None
     
     def read_file(self, file_path: str):
-        self.cache_file = read_cache_file(self, file_path)
-        print(type(self.cache_file))
-        print(type(self.cache_file["device_name"]))
+        self.cache_file = self.read_cache_file(file_path)
         # TODO: Check if cache file is in the right format, validate with json schema
     
-    def print_info(self):
-        device_name = self.cache_file["device_name"]
-        kernel_name = self.cache_file["kernel_name"]
-        problem_size = self.cache_file["problem_size"]
-        print(device_name)
-        print(kernel_name)
-        print(problem_size)
-        tune_parameters = self.cache_file["tune_params_keys"]
-        for x in tune_parameters:
-            print(x)
+    @staticmethod
+    def read_cache_file(file_path: str) -> dict:
+        try:
+            with open(file_path, "r") as file:
+                json_data = json.load(file)
+                print("JSON data loaded successfully")
+        except FileNotFoundError as e:
+            print("File not found: ", e)
+        except json.JSONDecodeError as e:
+            print("Invalid JSON format: ", e)
+        except PermissionError as e:
+            print("Permission denied", e)
+        return json_data
+
+    @staticmethod
+    def write_cache_file(cache_file: dict, file_path: Path):
+        try:
+            with open(file_path, "w+") as file:
+                json.dump(cache_file, file)
+        except PermissionError as e:
+            print("Permission denied: ", e)
