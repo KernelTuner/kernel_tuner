@@ -146,6 +146,19 @@ def test_get_thread_block_dimensions():
     assert threads[2] == 1
 
 
+def test_to_valid_nvrtc_gpu_arch_cc():
+    assert to_valid_nvrtc_gpu_arch_cc("89") == "89"
+    assert to_valid_nvrtc_gpu_arch_cc("88") == "87"
+    assert to_valid_nvrtc_gpu_arch_cc("86") == "80"
+    assert to_valid_nvrtc_gpu_arch_cc("40") == "52"
+    assert to_valid_nvrtc_gpu_arch_cc("90b") == "90a"
+    assert to_valid_nvrtc_gpu_arch_cc("91c") == "90a"
+    assert to_valid_nvrtc_gpu_arch_cc("10123001") == "52"
+    with pytest.raises(ValueError):
+        assert to_valid_nvrtc_gpu_arch_cc("")
+        assert to_valid_nvrtc_gpu_arch_cc("1")
+
+
 def test_prepare_kernel_string():
     kernel = "this is a weird kernel"
     grid = (3, 7)
