@@ -1,5 +1,6 @@
 """This module contains all Cupy specific kernel_tuner functions."""
 from __future__ import print_function
+from warnings import warn
 
 import numpy as np
 
@@ -124,6 +125,7 @@ class CupyFunctions(GPUBackend):
         compiler_options = self.compiler_options
         if not any(["-std=" in opt for opt in self.compiler_options]):
             compiler_options = ["--std=c++11"] + self.compiler_options
+        # CuPy already sets the --gpu-architecture by itself, as per https://github.com/cupy/cupy/blob/main/cupy/cuda/compiler.py#L145
 
         options = tuple(compiler_options)
 
@@ -132,6 +134,7 @@ class CupyFunctions(GPUBackend):
         )
 
         self.func = self.current_module.get_function(kernel_name)
+        self.num_regs = self.func.num_regs
         return self.func
 
     def start_event(self):
@@ -197,6 +200,8 @@ class CupyFunctions(GPUBackend):
             of the grid
         :type grid: tuple(int, int)
         """
+        if stream is None:
+            stream = self.stream
         func(grid, threads, gpu_args, stream=stream, shared_mem=self.smem_size)
 
     def memset(self, allocation, value, size):

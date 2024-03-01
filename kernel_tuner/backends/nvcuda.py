@@ -1,9 +1,11 @@
 """This module contains all NVIDIA cuda-python specific kernel_tuner functions."""
+from warnings import warn
+
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
-from kernel_tuner.util import SkippableFailure, cuda_error_check
+from kernel_tuner.util import SkippableFailure, cuda_error_check, to_valid_nvrtc_gpu_arch_cc
 
 # embedded in try block to be able to generate documentation
 # and run tests without cuda-python installed
@@ -161,12 +163,12 @@ class CudaFunctions(GPUBackend):
             compiler_options.append(b"--std=c++11")
         if not any(["--std=" in opt for opt in self.compiler_options]):
             self.compiler_options.append("--std=c++11")
-        if not any([b"--gpu-architecture=" in opt for opt in compiler_options]):
+        if not any([b"--gpu-architecture=" in opt or b"-arch" in opt for opt in compiler_options]):
             compiler_options.append(
-                f"--gpu-architecture=compute_{self.cc}".encode("UTF-8")
+                f"--gpu-architecture=compute_{to_valid_nvrtc_gpu_arch_cc(self.cc)}".encode("UTF-8")
             )
-        if not any(["--gpu-architecture=" in opt for opt in self.compiler_options]):
-            self.compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
+        if not any(["--gpu-architecture=" in opt or "-arch" in opt for opt in self.compiler_options]):
+            self.compiler_options.append(f"--gpu-architecture=compute_{to_valid_nvrtc_gpu_arch_cc(self.cc)}")
 
         err, program = nvrtc.nvrtcCreateProgram(
             str.encode(kernel_string), b"CUDAProgram", 0, [], []
@@ -191,6 +193,11 @@ class CudaFunctions(GPUBackend):
                 self.current_module, str.encode(kernel_name)
             )
             cuda_error_check(err)
+
+            # get the number of registers per thread used in this kernel
+            num_regs = cuda.cuFuncGetAttribute(cuda.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
+            assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
+            self.num_regs = num_regs[1]
 
         except RuntimeError as re:
             _, n = nvrtc.nvrtcGetProgramLogSize(program)
@@ -273,6 +280,8 @@ class CudaFunctions(GPUBackend):
             of the grid
         :type grid: tuple(int, int)
         """
+        if stream is None:
+            stream = self.stream
         arg_types = list()
         for arg in gpu_args:
             if isinstance(arg, cuda.CUdeviceptr):
