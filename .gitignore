@@ -37,3 +37,12 @@ temp_*.*
 
 .vscode
 .idea
+
+### JSON Schemas ###
+!kernel_tuner/schema/**/*.json
+
+### Tests ###
+!test/test_cache_files/**/*.json
+
+### Convert Example ###
+!kernel_tuner/convert/cache/**/*.json
