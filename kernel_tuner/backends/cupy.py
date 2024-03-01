@@ -47,6 +47,7 @@ class CupyFunctions(GPUBackend):
         self.devprops = dev.attributes
         self.cc = dev.compute_capability
         self.max_threads = self.devprops["MaxThreadsPerBlock"]
+        self.cache_size_L2 = self.devprops["L2CacheSize"]
 
         self.iterations = iterations
         self.current_module = None
