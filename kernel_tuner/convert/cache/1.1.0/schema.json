@@ -1,0 +1,13 @@
+{
+    "description": "abc",
+    "properties": {
+        "field1": {
+            "type": "string",
+            "description": "a string"
+        },
+        "field2": {
+            "type": "object",
+            "description": "an object"
+        }
+    }
+}
