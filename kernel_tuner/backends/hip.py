@@ -86,6 +86,8 @@ class HipFunctions(GPUBackend):
         for obs in self.observers:
             obs.register_device(self)
 
+    def allocate_ndarray(self, array):
+        return hip.hipMalloc(array.nbytes)
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the HIP function.
@@ -107,7 +109,7 @@ class HipFunctions(GPUBackend):
             # Allocate space on device for array and convert to ctypes
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
-                    device_ptr = hip.hipMalloc(arg.nbytes)
+                    device_ptr = self.allocate_ndarray(arg)
                     data_ctypes = arg.ctypes.data_as(ctypes.POINTER(dtype_map[dtype_str]))
                     hip.hipMemcpy_htod(device_ptr, data_ctypes, arg.nbytes)
                     # may be part of run_kernel, return allocations here instead

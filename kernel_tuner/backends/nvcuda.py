@@ -117,6 +117,12 @@ class CudaFunctions(GPUBackend):
                 err = cuda.cuMemFree(device_memory)
                 cuda_error_check(err)
 
+    def allocate_ndarray(self, array):
+        err, device_memory = cuda.cuMemAlloc(array.nbytes)
+        cuda_error_check(err)
+        self.allocations.append(device_memory)
+        return device_memory
+
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
 
@@ -132,9 +138,7 @@ class CudaFunctions(GPUBackend):
         for arg in arguments:
             # if arg is a numpy array copy it to device
             if isinstance(arg, np.ndarray):
-                err, device_memory = cuda.cuMemAlloc(arg.nbytes)
-                cuda_error_check(err)
-                self.allocations.append(device_memory)
+                device_memory = self.allocate_ndarray(arg)
                 gpu_args.append(device_memory)
                 self.memcpy_htod(device_memory, arg)
             # if not array, just pass along

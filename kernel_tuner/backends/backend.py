@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 from abc import ABC, abstractmethod
+from numpy import ndarray
 
 
 class Backend(ABC):
@@ -63,6 +64,11 @@ class GPUBackend(Backend):
 
     @abstractmethod
     def __init__(self, device, iterations, compiler_options, observers):
+        pass
+
+    @abstractmethod
+    def allocate_ndarray(self, array: ndarray) -> any:
+        """This method allocates a buffer for a given np.ndarray and returns the pointer."""
         pass
 
     @abstractmethod

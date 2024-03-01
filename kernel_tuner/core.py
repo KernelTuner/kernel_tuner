@@ -343,8 +343,7 @@ class DeviceInterface(object):
 
     def flush_cache(self):
         """This special function can be called to flush the L2 cache."""
-        if self.flush_kernel_possible:
-            self.dev.memset(, value=0, size=self.dev.cache_size_L2)
+        return
 
     def benchmark_default(self, func, gpu_args, threads, grid, result, flush_cache=True):
         """Benchmark one kernel execution at a time. Run with `flush_cache=True` to avoid caching effects between iterations."""

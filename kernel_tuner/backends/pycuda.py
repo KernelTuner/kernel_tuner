@@ -154,6 +154,11 @@ class PyCudaFunctions(GPUBackend):
             if hasattr(gpu_mem, "free"):
                 gpu_mem.free()
 
+    def allocate_ndarray(self, array):
+        alloc = drv.mem_alloc(array.nbytes)
+        self.allocations.append(alloc)
+        return alloc
+
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
 
@@ -169,8 +174,7 @@ class PyCudaFunctions(GPUBackend):
         for arg in arguments:
             # if arg i is a numpy array copy to device
             if isinstance(arg, np.ndarray):
-                alloc = drv.mem_alloc(arg.nbytes)
-                self.allocations.append(alloc)
+                alloc = self.allocate_ndarray(arg)
                 gpu_args.append(alloc)
                 drv.memcpy_htod(gpu_args[-1], arg)
             elif isinstance(arg, torch.Tensor):

@@ -84,6 +84,11 @@ class CupyFunctions(GPUBackend):
         self.env = env
         self.name = env["device_name"]
 
+    def allocate_ndarray(self, array):
+        alloc = cp.array(array)
+        self.allocations.append(alloc)
+        return alloc
+
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
 
@@ -99,8 +104,7 @@ class CupyFunctions(GPUBackend):
         for arg in arguments:
             # if arg i is a numpy array copy to device
             if isinstance(arg, np.ndarray):
-                alloc = cp.array(arg)
-                self.allocations.append(alloc)
+                alloc = self.allocate_ndarray(arg)
                 gpu_args.append(alloc)
             # if not a numpy array, just pass argument along
             else:
