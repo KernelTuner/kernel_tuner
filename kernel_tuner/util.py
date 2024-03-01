@@ -221,7 +221,7 @@ def check_block_size_names(block_size_names):
         if not isinstance(block_size_names, list):
             raise ValueError("block_size_names should be a list of strings!")
         if len(block_size_names) > 3:
-            raise ValueError(f"block_size_names should not contain more than 3 names! ({block_size_names=})")
+            raise ValueError("block_size_names should not contain more than 3 names!")
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
             raise ValueError("block_size_names should contain only strings!")
 
