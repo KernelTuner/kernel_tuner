@@ -340,14 +340,63 @@ class DeviceInterface(object):
         if not quiet:
             print("Using: " + self.dev.name)
 
-    def benchmark_default(self, func, gpu_args, threads, grid, result):
-        """Benchmark one kernel execution at a time."""
+        # if lang.upper() not in ['OPENCL', 'C', 'FORTRAN']:
+        #     # flush the L2 cache, inspired by https://github.com/pytorch/FBGEMM/blob/eb3c304e6c213b81f2b2077813d3c6d16597aa97/fbgemm_gpu/bench/verify_fp16_stochastic_benchmark.cu#L130
+        #     flush_gpu_string = """
+        #     __global__ void flush_gpu(char* d_flush, char* d_flush2, bool do_write) {
+        #             const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        #             const char val = d_flush[idx];
+        #             if (do_write * val) {
+        #                 d_flush2[idx] = val;
+        #         }
+        #     }
+        #     """
+        #     cache_size = self.dev.cache_size_L2
+        #     assert cache_size > 0 and cache_size % 256 == 0, f"Cache size has invalid value {cache_size}"
+        #     d_flush = np.ones((cache_size), order='F').astype(np.float32)
+        #     d_flush2 = np.ones((cache_size), order='F').astype(np.float32)
+        #     self.flush_kernel_gpu_args = [d_flush, d_flush2, np.int32(True)]
+
+        #     from kernel_tuner.interface import Options
+        #     options = {
+        #         'kernel_name': 'flush_gpu',
+        #         'lang': 'CUDA',
+        #         'arguments': self.flush_kernel_gpu_args,
+        #         'problem_size': cache_size,
+        #         'grid_div_x': None,
+        #         'grid_div_y': None,
+        #         'grid_div_z': None,
+        #         'block_size_names': None,
+        #     }
+        #     options = Options(options)
+        #     flush_kernel_lang = lang.upper() if lang.upper() in ['CUDA', 'CUPY', 'NVCUDA'] else 'CUPY'
+        #     flush_kernel_source = KernelSource('flush_gpu', flush_gpu_string, flush_kernel_lang)
+        #     self.flush_kernel_instance = self.create_kernel_instance(flush_kernel_source, kernel_options=options, params=dict(), verbose=not quiet)
+        #     self.flush_kernel = self.compile_kernel(self.flush_kernel_instance, verbose=not quiet)
+        #     self.flush_kernel_gpu_args = self.ready_argument_list(self.flush_kernel_gpu_args)
+
+        #     # from kernel_tuner.kernelbuilder import PythonKernel
+        #     # self.flush_kernel = PythonKernel('flush_gpu', flush_gpu_string, cache_size, self.flush_kernel_gpu_args)
+
+    def flush_cache(self):
+        """This special function can be called to flush the L2 cache."""
+        if hasattr(self, 'flush_kernel'):
+            return
+            self.dev.synchronize()
+            assert self.run_kernel(self.flush_kernel, self.flush_kernel_gpu_args, self.flush_kernel_instance)
+            # self.flush_kernel.run_kernel(self.flush_kernel.gpu_args)
+            self.dev.synchronize()
+
+    def benchmark_default(self, func, gpu_args, threads, grid, result, flush_cache=True):
+        """Benchmark one kernel execution at a time. Run with `flush_cache=True` to avoid caching effects between iterations."""
         observers = [
             obs for obs in self.dev.observers if not isinstance(obs, ContinuousObserver)
         ]
 
         self.dev.synchronize()
         for _ in range(self.iterations):
+            if flush_cache:
+                self.flush_cache()
             for obs in observers:
                 obs.before_start()
             self.dev.synchronize()
