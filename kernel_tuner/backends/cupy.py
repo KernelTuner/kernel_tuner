@@ -47,7 +47,6 @@ class CupyFunctions(GPUBackend):
         self.devprops = dev.attributes
         self.cc = dev.compute_capability
         self.max_threads = self.devprops["MaxThreadsPerBlock"]
-        self.cache_size_L2 = self.devprops["L2CacheSize"]
 
         self.iterations = iterations
         self.current_module = None
@@ -126,7 +125,7 @@ class CupyFunctions(GPUBackend):
         compiler_options = self.compiler_options
         if not any(["-std=" in opt for opt in self.compiler_options]):
             compiler_options = ["--std=c++11"] + self.compiler_options
-        # CuPy already sets the --gpu-architecture by itself, as per https://github.com/cupy/cupy/blob/20ccd63c0acc40969c851b1917dedeb032209e8b/cupy/cuda/compiler.py#L145
+        # CuPy already sets the --gpu-architecture by itself, as per https://github.com/cupy/cupy/blob/main/cupy/cuda/compiler.py#L145
 
         options = tuple(compiler_options)
 

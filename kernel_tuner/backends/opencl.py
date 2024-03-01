@@ -45,10 +45,6 @@ class OpenCLFunctions(GPUBackend):
         self.max_threads = self.ctx.devices[0].get_info(
             cl.device_info.MAX_WORK_GROUP_SIZE
         )
-        # TODO the L2 cache size request fails
-        # self.cache_size_L2 = self.ctx.devices[0].get_info(
-        #     cl.device_affinity_domain.L2_CACHE
-        # )
         self.compiler_options = compiler_options or []
 
         # observer stuff

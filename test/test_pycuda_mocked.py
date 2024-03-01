@@ -13,8 +13,7 @@ def setup_mock(drv):
     context = Mock()
     devprops = {'MAX_THREADS_PER_BLOCK': 1024,
                 'COMPUTE_CAPABILITY_MAJOR': 5,
-                'COMPUTE_CAPABILITY_MINOR': 5,
-                'L2_CACHE_SIZE': 4096}
+                'COMPUTE_CAPABILITY_MINOR': 5,}
     context.return_value.get_device.return_value.get_attributes.return_value = devprops
     context.return_value.get_device.return_value.compute_capability.return_value = "55"
     drv.Device.return_value.retain_primary_context.return_value = context()
