@@ -337,13 +337,19 @@ class DeviceInterface(object):
         self.units = dev.units
         self.name = dev.name
         self.max_threads = dev.max_threads
-        self.flush_kernel_possible = lang.upper() not in ['OPENCL', 'C', 'FORTRAN'] and self.dev.cache_size_L2 > 0
+        self.flush_possible = lang.upper() not in ['OPENCL', 'C', 'FORTRAN'] and isinstance(self.dev.cache_size_L2, int) and self.dev.cache_size_L2 > 0
+        if self.flush_possible:
+            t = np.int32
+            self.flush_array = np.zeros((self.dev.cache_size_L2 // t(0).itemsize), order='F').astype(t)
         if not quiet:
             print("Using: " + self.dev.name)
 
     def flush_cache(self):
         """This special function can be called to flush the L2 cache."""
-        return
+        if self.flush_possible:
+            # inspired by https://github.com/NVIDIA/nvbench/blob/main/nvbench/detail/l2flush.cuh#L51
+            alloc = self.dev.allocate_ndarray(self.flush_array)
+            self.dev.memset(alloc, value=0, size=self.flush_array.nbytes)
 
     def benchmark_default(self, func, gpu_args, threads, grid, result, flush_cache=True):
         """Benchmark one kernel execution at a time. Run with `flush_cache=True` to avoid caching effects between iterations."""

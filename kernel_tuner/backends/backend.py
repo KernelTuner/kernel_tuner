@@ -68,7 +68,7 @@ class GPUBackend(Backend):
 
     @abstractmethod
     def allocate_ndarray(self, array: ndarray) -> any:
-        """This method allocates a buffer for a given np.ndarray and returns the pointer."""
+        """This method must allocate on the GPU a buffer for a given np.ndarray and return the pointer."""
         pass
 
     @abstractmethod
