@@ -74,6 +74,10 @@ class OpenCLFunctions(GPUBackend):
 
     def allocate_ndarray(self, array):
         return cl.Buffer(self.ctx, self.mf.READ_WRITE | self.mf.COPY_HOST_PTR, hostbuf=array)
+    
+    def free_mem(self, pointer):
+        assert isinstance(pointer, cl.Buffer)
+        pointer.release()
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.

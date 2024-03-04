@@ -88,6 +88,9 @@ class HipFunctions(GPUBackend):
 
     def allocate_ndarray(self, array):
         return hip.hipMalloc(array.nbytes)
+    
+    def free_mem(self, pointer):
+        raise NotImplementedError("PyHIP currently does not have a free function")
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the HIP function.

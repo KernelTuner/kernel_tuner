@@ -341,15 +341,18 @@ class DeviceInterface(object):
         if self.flush_possible:
             t = np.int32
             self.flush_array = np.zeros((self.dev.cache_size_L2 // t(0).itemsize), order='F').astype(t)
+            self.flush_alloc = None
         if not quiet:
             print("Using: " + self.dev.name)
 
     def flush_cache(self):
         """This special function can be called to flush the L2 cache."""
+        if self.flush_alloc is not None:
+            self.dev.free_mem(self.flush_alloc)
         if self.flush_possible:
             # inspired by https://github.com/NVIDIA/nvbench/blob/main/nvbench/detail/l2flush.cuh#L51
-            alloc = self.dev.allocate_ndarray(self.flush_array)
-            self.dev.memset(alloc, value=0, size=self.flush_array.nbytes)
+            self.flush_alloc = self.dev.allocate_ndarray(self.flush_array)
+            self.dev.memset(self.flush_alloc, value=0, size=self.flush_array.nbytes)
 
     def benchmark_default(self, func, gpu_args, threads, grid, result, flush_cache=True):
         """Benchmark one kernel execution at a time. Run with `flush_cache=True` to avoid caching effects between iterations."""

@@ -88,6 +88,10 @@ class CupyFunctions(GPUBackend):
         alloc = cp.array(array)
         self.allocations.append(alloc)
         return alloc
+    
+    def free_mem(self, pointer):
+        self.allocations.remove(pointer)
+        del pointer # CuPy uses Python reference counter to free upon disuse
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.

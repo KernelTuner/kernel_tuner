@@ -72,6 +72,11 @@ class GPUBackend(Backend):
         pass
 
     @abstractmethod
+    def free_mem(self, pointer):
+        """This method must free on the GPU a buffer for a given pointer."""
+        pass
+
+    @abstractmethod
     def copy_constant_memory_args(self, cmem_args):
         """This method must implement the allocation and copy of constant memory to the GPU."""
         pass

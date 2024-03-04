@@ -152,12 +152,17 @@ class PyCudaFunctions(GPUBackend):
         for gpu_mem in self.allocations:
             # if needed for when using mocks during testing
             if hasattr(gpu_mem, "free"):
-                gpu_mem.free()
+                self.free_mem(gpu_mem)
 
     def allocate_ndarray(self, array):
         alloc = drv.mem_alloc(array.nbytes)
         self.allocations.append(alloc)
         return alloc
+    
+    def free_mem(self, pointer):
+        assert hasattr(pointer, "free")
+        self.allocations.remove(pointer)
+        pointer.free()
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
