@@ -1,0 +1,83 @@
+{
+"device_name": "Testing",
+"kernel_name": "convolution_kernel",
+"problem_size": [
+4096,
+4096
+],
+"tune_params_keys": [
+"block_size_x",
+"block_size_y",
+"tile_size_x",
+"tile_size_y",
+"read_only",
+"use_padding",
+"use_shmem",
+"use_cmem",
+"filter_height",
+"filter_width"
+],
+"tune_params": {
+"block_size_x": [
+16,
+32,
+48,
+64,
+80,
+96,
+112,
+128,
+144,
+160,
+176,
+192,
+208,
+224,
+240,
+256
+],
+"block_size_y": [
+1,
+2,
+4,
+8,
+16
+],
+"tile_size_x": [
+1,
+2,
+3,
+4
+],
+"tile_size_y": [
+1,
+2,
+3,
+4
+],
+"read_only": [
+0,
+1
+],
+"use_padding": [
+0,
+1
+],
+"use_shmem": [
+0,
+1
+],
+"use_cmem": [
+1
+],
+"filter_height": [
+15
+],
+"filter_width": [
+15
+]
+},
+"objective": "time",
+"cache": {
+"16,1,1,1,0,0,0,1,15,15": "Not Nested"
+}}
