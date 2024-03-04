@@ -347,9 +347,10 @@ class DeviceInterface(object):
 
     def flush_cache(self):
         """This special function can be called to flush the L2 cache."""
-        if self.flush_alloc is not None:
-            self.dev.free_mem(self.flush_alloc)
         if self.flush_possible:
+            # explicitely free the previous memory
+            if self.flush_alloc is not None:
+                self.dev.free_mem(self.flush_alloc)
             # inspired by https://github.com/NVIDIA/nvbench/blob/main/nvbench/detail/l2flush.cuh#L51
             self.flush_alloc = self.dev.allocate_ndarray(self.flush_array)
             self.dev.memset(self.flush_alloc, value=0, size=self.flush_array.nbytes)

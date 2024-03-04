@@ -90,7 +90,10 @@ class CupyFunctions(GPUBackend):
         return alloc
     
     def free_mem(self, pointer):
-        self.allocations.remove(pointer)
+        # iteratively comparing is required as comparing with list.remove is not properly implemented
+        to_remove = [i for i, alloc in enumerate(self.allocations) if cp.array_equal(alloc, pointer)]
+        assert len(to_remove) == 1
+        self.allocations.pop(to_remove[0])
         del pointer # CuPy uses Python reference counter to free upon disuse
 
     def ready_argument_list(self, arguments):
