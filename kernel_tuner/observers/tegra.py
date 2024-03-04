@@ -20,6 +20,8 @@ class tegra:
 
         self.default_railgate_status = self._read_railgate_file()
 
+        self.has_changed_clocks = False
+
     @staticmethod
     def get_dev_path():
         """Get the path to device core clock control in /sys"""
@@ -65,6 +67,7 @@ class tegra:
 
     def _write_clock_file(self, fname, value):
         """Write a frequency value to a core clock control file"""
+        self.has_changed_clocks = True
         available_files = ("min_freq", "max_freq")
         if fname not in available_files:
             raise ValueError(f"Illegal filename value: {fname}, must be one of {available_files}")
@@ -107,8 +110,9 @@ class tegra:
         self._write_railgate_file(self.default_railgate_status)
 
     def __del__(self):
-        # restore original core clocks
-        self.reset_clock()
+        # restore original core clocks, if changed
+        if self.has_changed_clocks:
+            self.reset_clock()
 
 
 class TegraObserver(BenchmarkObserver):
