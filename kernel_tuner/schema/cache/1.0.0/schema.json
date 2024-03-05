@@ -42,7 +42,7 @@
             "GFLOP/s": {"type": "number"},
             "strategy_time": {"type": "integer"},
             "framework_time": {"type": "number"},
-            "timestamp": {"type": "string"}
+            "timestamp": {"type": "string", "format": "datetime"}
           },
           "required": ["time", "compile_time", "verification_time", "benchmark_time", "strategy_time", "framework_time", "timestamp"],
           "additionalProperties": true
