@@ -35,13 +35,11 @@ def convert_cache_file(filestr):
             func = ("c" + oldver + "_to_" + newver).replace(".", "_")
 
             if func in func_list:
-                print("Calling {}".format(func))
                 func_list[func](filestr)
             else:
-                print("Calling default conversion")
                 default_convert(filestr, oldver, newver)
 
-            version = versions[v+1]
+            version = newver
 
     print("Cache file converted to version {}".format(version))
     return

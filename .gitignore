@@ -45,4 +45,4 @@ temp_*.*
 !test/test_cache_files/**/*.json
 
 ### Convert Example ###
-!kernel_tuner/convert/cache/**/*.json
+!kernel_tuner/convert/**/*.json
