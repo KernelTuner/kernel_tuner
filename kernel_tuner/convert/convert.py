@@ -83,12 +83,11 @@ def default_convert(filestr, oldver, newver):
         if key in old_schema["properties"]:
             new_cache[key] = old_cache[key]
         else:
-            default_value = DEFAULT_VALUES[(new_schema["properties"][key]["type"])]
-            new_cache[key] = default_value
+            new_cache[key] = DEFAULT_VALUES[(new_schema["properties"][key]["type"])]
 
     # Write to new file instead for testing purposes
     with open("new_cache.json", 'w') as f:
-        f.write(json.dumps(new_cache, sort_keys=True, indent=4))
+        f.write(json.dumps(new_cache, indent=4))
 
     cachefile.close()
 
