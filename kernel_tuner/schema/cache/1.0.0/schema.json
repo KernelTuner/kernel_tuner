@@ -13,15 +13,18 @@
     },
     "problem_size": {
       "type": "array",
-      "description": "The size of the problem."
+      "description": "The size of the problem.",
+      "items": {"type": "integer"}
     },
     "tune_params_keys": {
       "type": "array",
-      "description": "The keys (names) of all the parameters being tuned."
+      "description": "The keys (names) of all the parameters being tuned.",
+      "items": {"type": "string"}
     },
     "tune_params": {
       "type": "object",
-      "description": "The nested JSON object containing for each parameter the array of tuning values."
+      "description": "The nested JSON object containing for each parameter the array of tuning values.",
+      "additionalProperties": {"type": "array"}
     },
     "objective": {
       "type": "string",
@@ -34,15 +37,23 @@
         "^\\d+(,\\d+)*$": {
           "type": "object",
           "properties": {
-            "time": {},
-            "times": {"type": "array"},
+            "time": {
+              "anyOf": [
+                {"type": "string"},
+                {"type": "number"}
+              ]
+            },
+            "times": {
+              "type": "array", 
+              "items": {"type": "number"}
+            },
             "compile_time": {"type": "number"},
             "verification_time": {"type": "integer"},
             "benchmark_time": {"type": "number"},
             "GFLOP/s": {"type": "number"},
             "strategy_time": {"type": "integer"},
             "framework_time": {"type": "number"},
-            "timestamp": {"type": "string", "format": "datetime"}
+            "timestamp": {"type": "string", "format": "date-time"}
           },
           "required": ["time", "compile_time", "verification_time", "benchmark_time", "strategy_time", "framework_time", "timestamp"],
           "additionalProperties": true
