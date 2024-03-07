@@ -6,7 +6,7 @@ _non_identifier_keys = TypedDict("CacheEntryJSON", {
 })
 
 
-class CacheEntryJSON(TypedDict, _non_identifier_keys):
+class CacheLineJSON(TypedDict, _non_identifier_keys):
     time: Any
     times: NotRequired[list[float]]
     compile_time: float
@@ -25,4 +25,4 @@ class CacheFileJSON(TypedDict):
     tune_params_keys: list[str]
     tune_params: dict[str, list]  # is every param a number?
     objective: str
-    cache: dict[str, CacheEntryJSON]
+    cache: dict[str, CacheLineJSON]

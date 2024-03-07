@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from copy import deepcopy
 
-from kernel_tuner.cache.json import CacheFileJSON
+from kernel_tuner.cache.json import CacheFileJSON, CacheLineJSON
 
 import pytest
 import jsonschema
@@ -39,6 +39,17 @@ def cache() -> CacheFileJSON:
 def large(cache):
     cache.clear()
     cache.update(deepcopy(LARGE_CACHE))
+
+
+@pytest.fixture(params=[0, -1], ids=["first_cache_line", "last_cache_line"])
+def cache_line(cache, request) -> CacheLineJSON:
+    '''
+    Important: when using fixture large, don't put `cache_line` before fixture
+    `large` in the parameter list of a test or fixture'''
+    index = request.param
+    cache_keys = list(cache['cache'].keys())
+    cache_key = cache_keys[index]
+    return cache['cache'][cache_key]
 
 
 @pytest.fixture()
@@ -83,7 +94,6 @@ class TestCacheFileSchema:
     def test_property_types__in_root(self, cache, is_invalid, key, value):
         cache[key] = value
 
-    @pytest.mark.parametrize("index", [0, 1])
     @pytest.mark.parametrize("key", [
         "time",
         "compile_time",
@@ -93,12 +103,9 @@ class TestCacheFileSchema:
         "framework_time",
         "timestamp",
     ])
-    def test_required_keys__in_cache_data(self, cache, is_invalid, index, key):
-        cache_keys = list(cache['cache'].keys())
-        cache_key = cache_keys[index]
-        del cache['cache'][cache_key][key]
+    def test_required_keys__in_cache_data(self, cache_line, is_invalid, key):
+        del cache_line[key]
 
-    @pytest.mark.parametrize("index", [0, 1])
     @pytest.mark.parametrize("key,value", [
         ("time", True),
         ("times", {}),
@@ -111,8 +118,6 @@ class TestCacheFileSchema:
         ("framework_time", "15"),
         ("timestamp", 42),
     ])
-    def test_property_types__in_cache_data(self, cache, is_invalid,
-                                           index, key, value):
-        cache_keys = list(cache['cache'].keys())
-        cache_key = cache_keys[index]
-        cache['cache'][cache_key][key] = value
+    def test_property_types__in_cache_data(self, cache_line, is_invalid,
+                                           key, value):
+        cache_line[key] = value
