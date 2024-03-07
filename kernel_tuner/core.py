@@ -337,7 +337,7 @@ class DeviceInterface(object):
         self.units = dev.units
         self.name = dev.name
         self.max_threads = dev.max_threads
-        self.flush_possible = lang.upper() not in ['OPENCL', 'C', 'FORTRAN'] and isinstance(self.dev.cache_size_L2, int) and self.dev.cache_size_L2 > 0
+        self.flush_possible = lang.upper() not in ['OPENCL', 'HIP', 'C', 'FORTRAN'] and isinstance(self.dev.cache_size_L2, int) and self.dev.cache_size_L2 > 0
         if self.flush_possible:
             t = np.int32
             self.flush_array = np.zeros((self.dev.cache_size_L2 // t(0).itemsize), order='F').astype(t)
@@ -355,7 +355,7 @@ class DeviceInterface(object):
             self.flush_alloc = self.dev.allocate_ndarray(self.flush_array)
             self.dev.memset(self.flush_alloc, value=0, size=self.flush_array.nbytes)
 
-    def benchmark_default(self, func, gpu_args, threads, grid, result, flush_cache=True):
+    def benchmark_default(self, func, gpu_args, threads, grid, result, flush_cache=True, recopy_args=False):
         """Benchmark one kernel execution at a time. Run with `flush_cache=True` to avoid caching effects between iterations."""
         observers = [
             obs for obs in self.dev.observers if not isinstance(obs, ContinuousObserver)
@@ -365,6 +365,10 @@ class DeviceInterface(object):
         for _ in range(self.iterations):
             if flush_cache:
                 self.flush_cache()
+            if recopy_args is not None:
+                for i, arg in enumerate(recopy_args):
+                    if isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)):
+                        self.dev.memcpy_htod(gpu_args[i], arg)
             for obs in observers:
                 obs.before_start()
             self.dev.synchronize()
@@ -422,7 +426,7 @@ class DeviceInterface(object):
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
 
-    def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False):
+    def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False, flush_L2=True, rewrite_data=False):
         """Benchmark the kernel instance."""
         logging.debug("benchmark " + instance.name)
         logging.debug("thread block dimensions x,y,z=%d,%d,%d", *instance.threads)
@@ -438,7 +442,7 @@ class DeviceInterface(object):
         result = {}
         try:
             self.benchmark_default(
-                func, gpu_args, instance.threads, instance.grid, result
+                func, gpu_args, instance.threads, instance.grid, result, flush_cache=flush_L2, recopy_args=instance.arguments if rewrite_data else None
             )
 
             if self.continuous_observers:
@@ -604,7 +608,7 @@ class DeviceInterface(object):
                         self.set_nvml_parameters(instance)
                     start_benchmark = time.perf_counter()
                     result.update(
-                        self.benchmark(func, gpu_args, instance, verbose, to.objective, skip_nvml_setting=False)
+                        self.benchmark(func, gpu_args, instance, verbose, to.objective, skip_nvml_setting=False, flush_L2=to.flush_L2_cache, rewrite_data=to.always_rewrite_data)
                     )
                     last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
 
