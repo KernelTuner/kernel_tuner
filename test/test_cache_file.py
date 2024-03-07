@@ -2,18 +2,17 @@ import json
 from pathlib import Path
 from copy import deepcopy
 
-import sys
-print(sys.path)  # noqa
-
 from kernel_tuner.cache.json import CacheFileJSON
 
 import pytest
 import jsonschema
+import kernel_tuner
 
+KERNEL_TUNER_PATH = Path(kernel_tuner.__file__).parent
+SCHEMA_PATH = KERNEL_TUNER_PATH / "schema/cache/1.0.0/schema.json"
 
-PROJECT_DIR = Path(__file__).parents[1]
-SCHEMA_PATH = PROJECT_DIR / "kernel_tuner/schema/cache/1.0.0/schema.json"
-TEST_CACHE_PATH = PROJECT_DIR / "test/test_cache_files"
+TEST_PATH = Path(__file__).parent
+TEST_CACHE_PATH = TEST_PATH / "test_cache_files"
 SMALL_CACHE_PATH = TEST_CACHE_PATH / "small_cache.json"
 LARGE_CACHE_PATH = TEST_CACHE_PATH / "large_cache.json"
 
