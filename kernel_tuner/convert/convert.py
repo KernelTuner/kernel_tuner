@@ -1,5 +1,4 @@
 import json
-import jsonschema
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).parents[0]
@@ -19,7 +18,9 @@ DEFAULT_VALUES = {
     "null":     None
 }
 
+
 def convert_cache_file(filestr):
+    # Hardcoded for now
     version = "1.0.0"
 
     # Obtain a sorted list of all versions
@@ -32,42 +33,32 @@ def convert_cache_file(filestr):
         newver = versions[v+1]
 
         if oldver == version:
+            # Convert cachefile from oldver to newver
+
+            with open(filestr, 'r') as cachefile:
+                cache = json.load(cachefile)
+
+            # Look first for an implemented conversion function
+            # If no such function exists, attempt default conversion
             func = ("c" + oldver + "_to_" + newver).replace(".", "_")
 
+
             if func in func_list:
-                func_list[func](filestr)
+                cache = func_list[func](cache)
             else:
-                default_convert(filestr, oldver, newver)
+                cache = default_convert(cache, oldver, newver)
+
+
+            with open(filestr, 'w') as cachefile: 
+                cachefile.write(json.dumps(cache, indent=4))
 
             version = newver
 
-    print("Cache file converted to version {}".format(version))
+    print("Cache file converted from version {} to version {}".format("1.0.0", version))
     return
 
 
-# Add conversion functions here with naming scheme
-# c<old version>_to_<new version>    
-
-"""
-def c1_0_0_to_1_1_0(filestr):
-    # Convert
-    print("Function c1_0_0_to_1_1_0 called")
-    return
-"""
-
-def c1_1_0_to_1_1_1(filestr):
-    # Convert
-    print("Function c1_0_0_to_1_1_1 called")
-    return
-
-
-def c1_1_1_to_1_2_0(filestr):
-    # Convert
-    print("Function c1_1_0_to_1_2_0 called")
-    return
-
-
-def default_convert(filestr, oldver, newver):
+def default_convert(cache, oldver, newver):
     old_schema_path = SCHEMA_VERSIONS_PATH / oldver / "schema.json"
     new_schema_path = SCHEMA_VERSIONS_PATH / newver / "schema.json"
 
@@ -75,22 +66,27 @@ def default_convert(filestr, oldver, newver):
         old_schema = json.load(o)
         new_schema = json.load(n)
         
-    cachefile = open(filestr)
-    old_cache = json.load(cachefile)
     new_cache = dict()
-        
     for key in new_schema["properties"]:
         if key in old_schema["properties"]:
-            new_cache[key] = old_cache[key]
+            new_cache[key] = cache[key]
         else:
             new_cache[key] = DEFAULT_VALUES[(new_schema["properties"][key]["type"])]
 
-    # Write to new file instead for testing purposes
-    with open("new_cache.json", 'w') as f:
-        f.write(json.dumps(new_cache, indent=4))
+    return new_cache
 
-    cachefile.close()
+# Add conversion functions here with naming scheme
+# c<old version>_to_<new version>    
 
-    return
 
-convert_cache_file("old_cache.json")
+def c1_1_0_to_1_1_1(cache):
+    # No action needed
+
+    return cache
+
+
+def c1_1_1_to_1_2_0(cache):
+    # Could potentially grab the type from the corresponding schema file
+    cache["field1"] = DEFAULT_VALUES["object"]
+
+    return cache
