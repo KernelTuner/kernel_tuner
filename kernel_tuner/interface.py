@@ -465,7 +465,7 @@ _tuning_options = Options(
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
         ("flush_L2_cache", ("""Whether to flush the GPU L2 cache between kernel launches. Defaults to True.""", "bool")),
-        ("always_rewrite_data", ("""Whether to rewrite the input arrays to the GPU between kernel launches. Defaults to False.""", "bool")),
+        ("recopy_arrays", ("""Whether to rewrite the input arrays to the GPU between kernel launches. Defaults to False.""", "bool")),
     ]
 )
 
@@ -580,7 +580,7 @@ def tune_kernel(
     objective=None,
     objective_higher_is_better=None,
     flush_L2_cache=True,
-    always_rewrite_data=False,
+    recopy_arrays=False,
 ):
     start_overhead_time = perf_counter()
     if log:
