@@ -69,7 +69,7 @@ class TestCacheFileSchema:
         "objective",
         "cache",
     ])
-    def test_required_keys(self, cache, is_invalid, key):
+    def test_required_keys__in_root(self, cache, is_invalid, key):
         del cache[key]
 
     @pytest.mark.parametrize("key,value", [
@@ -81,7 +81,7 @@ class TestCacheFileSchema:
         ("objective", 4.5),
         ("cache", []),
     ])
-    def test_property_types(self, cache, is_invalid, key, value):
+    def test_property_types__in_root(self, cache, is_invalid, key, value):
         cache[key] = value
 
     @pytest.mark.parametrize("index", [0, 1])
@@ -94,7 +94,7 @@ class TestCacheFileSchema:
         "framework_time",
         "timestamp",
     ])
-    def test_cache_data_required_keys(self, cache, is_invalid, index, key):
+    def test_required_keys__in_cache_data(self, cache, is_invalid, index, key):
         cache_keys = list(cache['cache'].keys())
         cache_key = cache_keys[index]
         del cache['cache'][cache_key][key]
@@ -112,8 +112,8 @@ class TestCacheFileSchema:
         ("framework_time", "15"),
         ("timestamp", 42),
     ])
-    def test_cache_data_property_types(self, cache, is_invalid,
-                                       index, key, value):
+    def test_property_types__in_cache_data(self, cache, is_invalid,
+                                           index, key, value):
         cache_keys = list(cache['cache'].keys())
         cache_key = cache_keys[index]
         cache['cache'][cache_key][key] = value
