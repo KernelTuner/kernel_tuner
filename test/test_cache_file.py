@@ -36,7 +36,7 @@ def cache() -> CacheFileJSON:
 
 
 @pytest.fixture()
-def large(cache: CacheFileJSON):
+def large(cache):
     cache.clear()
     cache.update(deepcopy(LARGE_CACHE))
 
