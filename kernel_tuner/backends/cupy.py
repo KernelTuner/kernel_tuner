@@ -1,5 +1,6 @@
 """This module contains all Cupy specific kernel_tuner functions."""
 from __future__ import print_function
+from warnings import warn
 
 import numpy as np
 
@@ -46,6 +47,7 @@ class CupyFunctions(GPUBackend):
         self.devprops = dev.attributes
         self.cc = dev.compute_capability
         self.max_threads = self.devprops["MaxThreadsPerBlock"]
+        self.cache_size_L2 = self.devprops["L2CacheSize"]
 
         self.iterations = iterations
         self.current_module = None
@@ -82,6 +84,18 @@ class CupyFunctions(GPUBackend):
         self.env = env
         self.name = env["device_name"]
 
+    def allocate_ndarray(self, array):
+        alloc = cp.array(array)
+        self.allocations.append(alloc)
+        return alloc
+    
+    def free_mem(self, pointer):
+        # iteratively comparing is required as comparing with list.remove is not properly implemented
+        to_remove = [i for i, alloc in enumerate(self.allocations) if cp.array_equal(alloc, pointer)]
+        assert len(to_remove) == 1
+        self.allocations.pop(to_remove[0])
+        del pointer # CuPy uses Python reference counter to free upon disuse
+
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
 
@@ -97,8 +111,7 @@ class CupyFunctions(GPUBackend):
         for arg in arguments:
             # if arg i is a numpy array copy to device
             if isinstance(arg, np.ndarray):
-                alloc = cp.array(arg)
-                self.allocations.append(alloc)
+                alloc = self.allocate_ndarray(arg)
                 gpu_args.append(alloc)
             # if not a numpy array, just pass argument along
             else:
@@ -124,6 +137,7 @@ class CupyFunctions(GPUBackend):
         compiler_options = self.compiler_options
         if not any(["-std=" in opt for opt in self.compiler_options]):
             compiler_options = ["--std=c++11"] + self.compiler_options
+        # CuPy already sets the --gpu-architecture by itself, as per https://github.com/cupy/cupy/blob/main/cupy/cuda/compiler.py#L145
 
         options = tuple(compiler_options)
 
@@ -132,6 +146,7 @@ class CupyFunctions(GPUBackend):
         )
 
         self.func = self.current_module.get_function(kernel_name)
+        self.num_regs = self.func.num_regs
         return self.func
 
     def start_event(self):
@@ -197,6 +212,8 @@ class CupyFunctions(GPUBackend):
             of the grid
         :type grid: tuple(int, int)
         """
+        if stream is None:
+            stream = self.stream
         func(grid, threads, gpu_args, stream=stream, shared_mem=self.smem_size)
 
     def memset(self, allocation, value, size):

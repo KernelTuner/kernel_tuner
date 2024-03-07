@@ -1,9 +1,11 @@
 """This module contains all NVIDIA cuda-python specific kernel_tuner functions."""
+from warnings import warn
+
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
-from kernel_tuner.util import SkippableFailure, cuda_error_check
+from kernel_tuner.util import SkippableFailure, cuda_error_check, to_valid_nvrtc_gpu_arch_cc
 
 # embedded in try block to be able to generate documentation
 # and run tests without cuda-python installed
@@ -66,6 +68,10 @@ class CudaFunctions(GPUBackend):
             cudart.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device
         )
         cuda_error_check(err)
+        err, self.cache_size_L2 = cudart.cudaDeviceGetAttribute(
+            cudart.cudaDeviceAttr.cudaDevAttrL2CacheSize, device
+        )
+        cuda_error_check(err)
         self.cc = f"{major}{minor}"
         self.iterations = iterations
         self.current_module = None
@@ -107,9 +113,19 @@ class CudaFunctions(GPUBackend):
 
     def __del__(self):
         for device_memory in self.allocations:
-            if isinstance(device_memory, cuda.CUdeviceptr):
-                err = cuda.cuMemFree(device_memory)
-                cuda_error_check(err)
+            self.free_mem(device_memory)
+
+    def allocate_ndarray(self, array):
+        err, device_memory = cuda.cuMemAlloc(array.nbytes)
+        cuda_error_check(err)
+        self.allocations.append(device_memory)
+        return device_memory
+    
+    def free_mem(self, pointer):
+        assert isinstance(pointer, cuda.CUdeviceptr)
+        self.allocations.remove(pointer)
+        err = cuda.cuMemFree(pointer)
+        cuda_error_check(err)
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
@@ -126,9 +142,7 @@ class CudaFunctions(GPUBackend):
         for arg in arguments:
             # if arg is a numpy array copy it to device
             if isinstance(arg, np.ndarray):
-                err, device_memory = cuda.cuMemAlloc(arg.nbytes)
-                cuda_error_check(err)
-                self.allocations.append(device_memory)
+                device_memory = self.allocate_ndarray(arg)
                 gpu_args.append(device_memory)
                 self.memcpy_htod(device_memory, arg)
             # if not array, just pass along
@@ -161,12 +175,12 @@ class CudaFunctions(GPUBackend):
             compiler_options.append(b"--std=c++11")
         if not any(["--std=" in opt for opt in self.compiler_options]):
             self.compiler_options.append("--std=c++11")
-        if not any([b"--gpu-architecture=" in opt for opt in compiler_options]):
+        if not any([b"--gpu-architecture=" in opt or b"-arch" in opt for opt in compiler_options]):
             compiler_options.append(
-                f"--gpu-architecture=compute_{self.cc}".encode("UTF-8")
+                f"--gpu-architecture=compute_{to_valid_nvrtc_gpu_arch_cc(self.cc)}".encode("UTF-8")
             )
-        if not any(["--gpu-architecture=" in opt for opt in self.compiler_options]):
-            self.compiler_options.append(f"--gpu-architecture=compute_{self.cc}")
+        if not any(["--gpu-architecture=" in opt or "-arch" in opt for opt in self.compiler_options]):
+            self.compiler_options.append(f"--gpu-architecture=compute_{to_valid_nvrtc_gpu_arch_cc(self.cc)}")
 
         err, program = nvrtc.nvrtcCreateProgram(
             str.encode(kernel_string), b"CUDAProgram", 0, [], []
@@ -191,6 +205,11 @@ class CudaFunctions(GPUBackend):
                 self.current_module, str.encode(kernel_name)
             )
             cuda_error_check(err)
+
+            # get the number of registers per thread used in this kernel
+            num_regs = cuda.cuFuncGetAttribute(cuda.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
+            assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
+            self.num_regs = num_regs[1]
 
         except RuntimeError as re:
             _, n = nvrtc.nvrtcGetProgramLogSize(program)
@@ -273,6 +292,8 @@ class CudaFunctions(GPUBackend):
             of the grid
         :type grid: tuple(int, int)
         """
+        if stream is None:
+            stream = self.stream
         arg_types = list()
         for arg in gpu_args:
             if isinstance(arg, cuda.CUdeviceptr):

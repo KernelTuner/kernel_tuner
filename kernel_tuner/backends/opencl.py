@@ -45,6 +45,10 @@ class OpenCLFunctions(GPUBackend):
         self.max_threads = self.ctx.devices[0].get_info(
             cl.device_info.MAX_WORK_GROUP_SIZE
         )
+        # TODO the L2 cache size request fails
+        # self.cache_size_L2 = self.ctx.devices[0].get_info(
+        #     cl.device_affinity_domain.L2_CACHE
+        # )
         self.compiler_options = compiler_options or []
 
         # observer stuff
@@ -68,6 +72,13 @@ class OpenCLFunctions(GPUBackend):
         self.env = env
         self.name = dev.name
 
+    def allocate_ndarray(self, array):
+        return cl.Buffer(self.ctx, self.mf.READ_WRITE | self.mf.COPY_HOST_PTR, hostbuf=array)
+    
+    def free_mem(self, pointer):
+        assert isinstance(pointer, cl.Buffer)
+        pointer.release()
+
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
 
@@ -83,13 +94,7 @@ class OpenCLFunctions(GPUBackend):
         for arg in arguments:
             # if arg i is a numpy array copy to device
             if isinstance(arg, np.ndarray):
-                gpu_args.append(
-                    cl.Buffer(
-                        self.ctx,
-                        self.mf.READ_WRITE | self.mf.COPY_HOST_PTR,
-                        hostbuf=arg,
-                    )
-                )
+                gpu_args.append(self.allocate_ndarray(arg))
             # if not an array, just pass argument along
             else:
                 gpu_args.append(arg)
