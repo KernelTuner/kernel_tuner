@@ -1,4 +1,5 @@
 {
+"schema_version": "1.0.0",
 "device_name": "Testing",
 "kernel_name": "convolution_kernel",
 "problem_size": [
