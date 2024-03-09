@@ -24,6 +24,7 @@ deploy_key
 temp_*.*
 .python-version
 .nox
+.venv
 
 ### Visual Studio Code ###
 !.vscode/settings.json
@@ -37,3 +38,9 @@ temp_*.*
 
 .vscode
 .idea
+
+### JSON Schemas ###
+!kernel_tuner/schema/**/*.json
+
+### Tests ###
+!test/test_cache_files/**/*.json
