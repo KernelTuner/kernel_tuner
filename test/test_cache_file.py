@@ -70,7 +70,11 @@ class TestCacheFileSchema:
 
     def test_large_cache_is_valid(self, large, cache, is_valid): pass
 
+    def test_schema_version_is_valid(self, cache, is_invalid):
+        cache["schema_version"] = "0.1.0"
+
     @pytest.mark.parametrize("key", [
+        "schema_version",
         "device_name",
         "kernel_name",
         "problem_size",
@@ -83,6 +87,7 @@ class TestCacheFileSchema:
         del cache[key]
 
     @pytest.mark.parametrize("key,value", [
+        ("schema_version", 1234),
         ("device_name", 2312),
         ("kernel_name", True),
         ("problem_size", 2.5),
