@@ -1,9 +1,0 @@
-{
-    "description": "abc",
-    "properties": {
-        "field1" : {
-            "type": "string",
-            "description": "a string"
-        }
-    }
-}

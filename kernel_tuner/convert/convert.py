@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
+# The path construction here probably needs to be changed when this file becomes part of the library
 PROJECT_DIR = Path(__file__).parents[0]
 
-SCHEMA_VERSIONS_PATH = PROJECT_DIR / 'cache'
-
-CURRENT_VERSION = "1.2.0"
+# TEMP, will be changed when ready to merge
+SCHEMA_VERSIONS_PATH = PROJECT_DIR / "../schema/cache/convert_temp"
 
 DEFAULT_VALUES = {
     "object":   dict(),
@@ -20,8 +20,12 @@ DEFAULT_VALUES = {
 
 
 def convert_cache_file(filestr):
-    # Hardcoded for now
-    version = "1.0.0"
+    # Get the version of the cachefile
+    with open(filestr, 'r') as cachefile:
+        cache = json.load(cachefile)
+        version = cache["schema_version"]
+
+    orig_version = version    
 
     # Obtain a sorted list of all versions
     versions = list(map (lambda v:v.name, sorted(SCHEMA_VERSIONS_PATH.iterdir())))
@@ -42,19 +46,19 @@ def convert_cache_file(filestr):
             # If no such function exists, attempt default conversion
             func = ("c" + oldver + "_to_" + newver).replace(".", "_")
 
-
             if func in func_list:
                 cache = func_list[func](cache)
             else:
                 cache = default_convert(cache, oldver, newver)
 
+            version = newver
+            cache["schema_version"] = version
 
             with open(filestr, 'w') as cachefile: 
                 cachefile.write(json.dumps(cache, indent=4))
 
-            version = newver
 
-    print("Cache file converted from version {} to version {}".format("1.0.0", version))
+    print("Cache file '{}' converted from version {} to version {}".format(filestr, orig_version, version))
     return
 
 

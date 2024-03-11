@@ -11,7 +11,7 @@ from kernel_tuner.util import delete_temp_file
 
 
 KERNEL_TUNER_PATH = Path(kernel_tuner.__file__).parent
-SCHEMAS_PATH = KERNEL_TUNER_PATH / "convert/cache"
+SCHEMAS_PATH = KERNEL_TUNER_PATH / "schema/cache/convert_temp"
 SCHEMA_OLD = SCHEMAS_PATH / "1.0.0/schema.json"
 SCHEMA_NEW = SCHEMAS_PATH / "1.2.0/schema.json"
 
