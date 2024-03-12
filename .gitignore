@@ -43,8 +43,3 @@ temp_*.*
 
 ### Tests ###
 !test/test_cache_files/**/*.json
-!test/test_convert_files/**/*.json
-
-
-### Convert Example ###
-!kernel_tuner/convert/**/*.json
