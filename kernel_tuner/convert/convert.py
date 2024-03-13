@@ -4,7 +4,6 @@ from pathlib import Path
 # The path construction here probably needs to be changed when this file becomes part of the library
 PROJECT_DIR = Path(__file__).parents[0]
 
-# TEMP, will be changed when ready to merge
 SCHEMA_VERSIONS_PATH = PROJECT_DIR / "../schema/cache/convert_temp"
 
 DEFAULT_VALUES = {
@@ -79,8 +78,15 @@ def default_convert(cache, oldver, newver):
 
     return new_cache
 
-# Add conversion functions here with naming scheme
-# c<old version>_to_<new version>    
+
+# Add conversion functions here that:
+#
+# has c<old version>_to_<new version> as name,
+# has a single argument 'cache',
+# returns 'cache'.
+#
+# For example:
+# def c_1_0_0_to_1_1_0(cache):
 
 
 def c1_1_0_to_1_1_1(cache):
