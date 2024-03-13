@@ -11,7 +11,7 @@ if __name__ == '__main__':
     testLibrary.read_file('SampleCacheFiles/convolution_A100.json')
 
     p = Path.joinpath(
-        Path(os.getcwd()), 'KTLibrary', 'test.csv'
+        Path(os.getcwd()), 'KTLibrary', 'test.json'
     )
 
     testLibrary.write_cache_file(testLibrary.cache_file, p)
