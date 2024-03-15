@@ -32,6 +32,6 @@ class KTLibrary:
     def write_cache_file(cache_file: dict, file_path: Path):
         try:
             with open(file_path, "w+") as file:
-                json.dump(cache_file, file, cls=FormattedEncoder, indent=4)
+                json.dump(cache_file, file, cls=FormattedEncoder, indent=0)
         except PermissionError as e:
             print("Permission denied: ", e)
