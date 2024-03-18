@@ -3,6 +3,11 @@
   "description": "TODO",
   "type": "object",
   "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "The version of this JSON-schema, adhering to the Semantic Versioning specification.",
+      "const": "1.0.0"
+    },
     "device_name": {
       "type": "string",
       "description": "The name of the device the kernel tuner analysis is run on."
@@ -64,6 +69,6 @@
       }
     }
   },
-  "required": ["device_name", "kernel_name", "problem_size", "tune_params_keys", "tune_params", "objective", "cache"]
+  "required": ["schema_version", "device_name", "kernel_name", "problem_size", "tune_params_keys", "tune_params", "objective", "cache"]
 }
 
