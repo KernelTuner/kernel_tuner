@@ -93,6 +93,7 @@ class tegra:
     def gr_clock(self, new_clock):
         self._write_railgate_file(0)
         cur_clock = self._read_clock_file("cur_freq")
+        # system will ignore if we set new min higher than current max, or vice versa
         if new_clock > cur_clock:
             self._write_clock_file("max_freq", new_clock)
             self._write_clock_file("min_freq", new_clock)
