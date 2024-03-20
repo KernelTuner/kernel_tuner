@@ -345,6 +345,9 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
                 args.append(np.random.rand(size).astype(np.float64))
             elif p_type == "int*":
                 args.append(np.random.randint(max_int, size=size))
+            else:
+                # The parameter is an array of user defined types
+                args.append(np.random.rand(size).astype(np.byte))
         else:
             # The parameter is a scalar
             if p_type == "float":
