@@ -135,17 +135,29 @@ class nvml:
             raise ValueError(
                 "Illegal value for persistence mode, should be either 0 or 1"
             )
-        pynvml.nvmlDeviceSetPersistenceMode(self.dev, new_mode)
-        self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
+        try:
+            pynvml.nvmlDeviceSetPersistenceMode(self.dev, new_mode)
+            self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
+        except pynvml.NVMLError_NoPermission:
+            args = [
+                "sudo",
+                self.nvidia_smi,
+                "-pm",
+                str(new_mode),
+            ]
+            subprocess.run(args, check=True)
+            self._persistence_mode = pynvml.nvmlDeviceGetPersistenceMode(self.dev)
 
     def set_clocks(self, mem_clock, gr_clock):
         """Set the memory and graphics clock for this device (may require permission)."""
-        self.modified_clocks = True
         if mem_clock not in self.supported_mem_clocks:
             raise ValueError("Illegal value for memory clock")
         if gr_clock not in self.supported_gr_clocks[mem_clock]:
             raise ValueError(f"Graphics clock incompatible with memory clock ({mem_clock}), compatible graphics clocks: {self.supported_gr_clocks[mem_clock]}")
+        self.modified_clocks = True
         if self.use_locked_clocks:
+            if self.persistence_mode != 1:
+                self.persistence_mode = 1
             try:
                 pynvml.nvmlDeviceSetGpuLockedClocks(self.dev, gr_clock, gr_clock)
                 pynvml.nvmlDeviceSetMemoryLockedClocks(self.dev, mem_clock, mem_clock)
@@ -168,6 +180,11 @@ class nvml:
                     ]
                     subprocess.run(args, check=True)
         else:
+            try:
+                if self.persistence_mode != 0:
+                    self.persistence_mode = 0
+            except Exception:
+                pass
             try:
                 pynvml.nvmlDeviceSetApplicationsClocks(self.dev, mem_clock, gr_clock)
             except pynvml.NVMLError_NoPermission:

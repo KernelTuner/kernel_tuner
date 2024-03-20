@@ -59,6 +59,7 @@ generate-setup-file = false
 python = ">=3.8,<3.12"          # NOTE if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
 numpy = "^1.22.2"               # set to 1.22.2 instead of 1.22.4 to match oldest-supported-numpy required by pycuda
 scipy = "^1.10.1"               # held back by Python 3.8 support (dropped from ^1.11)
+packaging = "*"                 # required by file_utils
 jsonschema = "*"
 python-constraint2 = "^2.0.0b5"
 xmltodict = "*"
@@ -69,7 +70,7 @@ scikit-learn = "^1.0.2"
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
 # Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
 # CUDA
-pycuda = { version = "^2022.1", optional = true }           # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
+pycuda = { version = "^2024.1", optional = true }           # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 nvidia-ml-py = { version = "^12.535.108", optional = true }
 pynvml = { version = "^11.4.1", optional = true }
 # cupy-cuda11x = { version = "*", optional = true }    # Note: these are completely optional dependencies as described in CONTRIBUTING.rst
@@ -90,7 +91,7 @@ cuda_opencl = ["pycuda", "pyopencl"]
 hip = ["pyhip-interface"]
 tutorial = ["jupyter", "matplotlib", "nvidia-ml-py"]
 
-# ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt > doc/requirements.txt`
+# ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
 # Please note that there is overlap with the `dev` group
 [tool.poetry.group.docs]
 optional = true
@@ -126,7 +127,7 @@ minversion = "7.4"
 pythonpath = [
     "kernel_tuner",
 ] # necessary to get coverage reports without installing with `-e`
-addopts = "--cov --cov-config=.coveragerc --cov-report html --cov-report term-missing --cov-fail-under 60"
+addopts = "--cov --cov-config=.coveragerc --cov-report=html --cov-report=term-missing --cov-fail-under=60"
 testpaths = ["test"]
 
 [tool.black]

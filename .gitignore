@@ -8,7 +8,7 @@ __pycache__
 doc/build/*
 doc/create_doc.sh
 push_to_pypi.sh
-*coverage*
+.coverage
 /dist
 /build
 *.egg-info

@@ -670,6 +670,8 @@ def tune_kernel(
 
     # create search space
     searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
+    if verbose:
+        print(f"Searchspace has {searchspace.size} configurations after restrictions.")
 
     # call the strategy to execute the tuning process
     tuning_options["start_time"] = perf_counter()
