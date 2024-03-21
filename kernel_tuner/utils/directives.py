@@ -300,7 +300,7 @@ def generate_directive_function(
     """Generate tunable function for one directive"""
     cpp, f90 = is_cpp_or_f90(body)
 
-    code = "\n".join(preprocessor)
+    code = "\n".join(preprocessor) + "\n"
     if user_dimensions is not None:
         # add user dimensions to preprocessor
         for key, value in user_dimensions.items():
