@@ -290,7 +290,7 @@ def wrap_timing(code: str) -> str:
 
 
 def generate_directive_function(
-    preprocessor: str,
+    preprocessor: list,
     signature: str,
     body: str,
     data: dict = None,
