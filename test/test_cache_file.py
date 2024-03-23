@@ -99,6 +99,14 @@ class TestCacheFileSchema:
     def test_property_types__in_root(self, cache, is_invalid, key, value):
         cache[key] = value
 
+    @pytest.mark.parametrize("key,value", {
+        ("my_very_uncommon_key", 1),
+        ("fewajfewaijfewa", 2),
+    })
+    def test_additional_props_allowed__in_root(self, cache, is_valid,
+                                               key, value):
+        cache[key] = value
+
     @pytest.mark.parametrize("key", [
         "time",
         "compile_time",
@@ -108,7 +116,7 @@ class TestCacheFileSchema:
         "framework_time",
         "timestamp",
     ])
-    def test_required_keys__in_cache_data(self, cache_line, is_invalid, key):
+    def test_required_keys__in_cache_line(self, cache_line, is_invalid, key):
         del cache_line[key]
 
     @pytest.mark.parametrize("key,value", [
@@ -123,6 +131,14 @@ class TestCacheFileSchema:
         ("framework_time", "15"),
         ("timestamp", 42),
     ])
-    def test_property_types__in_cache_data(self, cache_line, is_invalid,
+    def test_property_types__in_cache_line(self, cache_line, is_invalid,
                                            key, value):
+        cache_line[key] = value
+
+    @pytest.mark.parametrize("key,value", [
+        ("anyParameter", 45),
+        ("xyz", [2, 3, 4]),
+    ])
+    def test_additional_props_allowed__in_cache_line(
+            self, cache_line, is_valid, key, value):
         cache_line[key] = value

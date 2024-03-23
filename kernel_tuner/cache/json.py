@@ -1,14 +1,18 @@
-from typing import TypedDict, NotRequired, Any
+from __future__ import annotations
+from typing import TypedDict, Any
 
 
 _non_identifier_keys = TypedDict("CacheEntryJSON", {
-    "GFLOP/s": NotRequired[float]
+    "GFLOP/s": float
 })
 
 
-class CacheLineJSON(TypedDict, _non_identifier_keys):
+class CacheLineOptionalJSON(TypedDict, _non_identifier_keys, total=False):
+    times: list[float]
+
+
+class CacheLineJSON(TypedDict, CacheLineOptionalJSON):
     time: Any
-    times: NotRequired[list[float]]
     compile_time: float
     verification_time: int
     benchmark_time: float
