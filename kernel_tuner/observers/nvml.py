@@ -298,7 +298,8 @@ class nvml:
 
     def pwr_usage(self):
         """Return current power usage in milliwatts."""
-        return pynvml.nvmlDeviceGetPowerUsage(self.dev)
+        NVML_FI_DEV_POWER_INSTANT = 186
+        return pynvml.nvmlDeviceGetFieldValues(self.dev, [NVML_FI_DEV_POWER_INSTANT])[0].value.uiVal
 
     def gr_voltage(self):
         """Return current graphics voltage in millivolts."""
