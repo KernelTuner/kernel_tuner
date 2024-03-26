@@ -65,6 +65,7 @@ python-constraint2 = "^2.0.0b5"
 xmltodict = "*"
 pandas = "^2.0.0"
 scikit-learn = "^1.0.2"
+semver = "^3.0.0"
 # Torch can be used with Kernel Tuner, but is not a dependency, should be up to the user to use it
 
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
