@@ -10,7 +10,7 @@ PROJECT_DIR = Path(__file__).parents[0]
 
 SCHEMA_VERSIONS_PATH = PROJECT_DIR / "../schema/cache"
 
-VERSIONS = list(map (lambda v:v.name, sorted(SCHEMA_VERSIONS_PATH.iterdir())))
+VERSIONS = list(sorted((p.name for p in SCHEMA_VERSIONS_PATH.iterdir()), key=semver.Version.parse))
 
 CONVERSION_FUNCTIONS: dict[str, Callable[[dict], dict]]
 
@@ -37,7 +37,7 @@ def convert_cache_file(filestr : str,
     ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
     mapping a version to a corresponding conversion function.
 
-    ``versions`` is a ``list`` of ``str``s containing the versions.
+    ``versions`` is a sorted ``list`` of ``str``s containing the versions.
 
     
     raises ``ValueError`` if:
@@ -78,7 +78,8 @@ def convert_cache_file(filestr : str,
         if version in conversion_functions:
             cache = conversion_functions[version](cache)
         else:
-            cache = default_convert(cache, version, versions)
+            cache = default_convert(cache, version, versions,
+                                    SCHEMA_VERSIONS_PATH)
 
         version = cache["schema_version"]
 
@@ -88,21 +89,32 @@ def convert_cache_file(filestr : str,
     return
 
 
-def default_convert(cache    : dict,
-                    oldver   : str,
-                    versions : list) -> dict:
-    """Attempts a default conversion of a cachefile to the next highest version.
+def default_convert(cache       : dict,
+                    oldver      : str,
+                    versions    : list,
+                    schema_path : Path) -> dict:
+    """Attempts a default conversion of ``cache`` to the next highest version.
 
     ``cache`` is a ``dict`` representing the cachefile.
 
     ``oldver`` is the version of the cachefile.
 
-    ``versions`` is a ``list`` of ``str``s containing the versions.
-    """
-    newver = versions[versions.index(oldver) + 1]
+    ``versions`` is a sorted ``list`` of ``str``s containing the versions.
 
-    old_schema_path = SCHEMA_VERSIONS_PATH / oldver / "schema.json"
-    new_schema_path = SCHEMA_VERSIONS_PATH / newver / "schema.json"
+    ``schema_path`` is a ``pathlib`` ``Path``  to the directory containing
+    the schema versions.
+
+    Returns a ``dict`` representing the converted cache file.
+    """
+    # Get the next version
+    parts = ["patch", "minor", "major"]
+    for part in parts:
+        newver = str(semver.VersionInfo.parse(oldver).next_version(part))
+        if newver in versions:
+            break
+
+    old_schema_path = schema_path / oldver / "schema.json"
+    new_schema_path = schema_path / newver / "schema.json"
 
     with open(old_schema_path) as o, open(new_schema_path) as n:
         old_schema = json.load(o)
@@ -117,29 +129,35 @@ def default_convert(cache    : dict,
         else:
             new_cache[key] = DEFAULT_VALUES[(new_schema["properties"][key]["type"])]
 
+    new_cache["schema_version"] = newver
+
     return new_cache
 
 
 
-#######################################################################
-# Add conversion functions here that:                                 #
-#                                                                     #
-# has "_c<old version>_to_<new version>"" as name,                    #
-# has a single argument 'cache',                                      #
-# returns 'cache'.                                                    #
-#                                                                     #
-# For example:                                                        #
-# def _c_1_0_0_to_1_1_0(cache):                                       #
-#     ...                                                             #
-#     return cache                                                    #
-#                                                                     #
-# the list of conversion functions then has to be updated, like this: #
-# CONVERSION_FUNCTIONS = {                                            #
-#    ...                                                              #
-#    "1.0.0": _c_1_0_0_to_1_1_0,                                      #
-#    ...                                                              #
-# }                                                                   #
-#######################################################################
+########################################################################
+# Add conversion functions here which:                                 #
+#                                                                      #
+# have "_c<old version>_to_<new version>" as name,                     #
+# have a single argument 'cache',                                      #
+# return 'cache'.                                                      #
+#                                                                      #
+# The conversion functions are expected to change the "schema_version" #
+# field to <new version> themselves.                                   #
+#                                                                      #
+# For example:                                                         #
+# def _c_1_0_0_to_1_1_0(cache):                                        #
+#     ...                                                              #
+#     cache["schema_version"] = "1.1.0"                                #
+#     return cache                                                     #
+#                                                                      #
+# the list of conversion functions then has to be updated, like this:  #
+# CONVERSION_FUNCTIONS = {                                             #
+#    ...                                                               #
+#    "1.0.0": _c_1_0_0_to_1_1_0,                                       #
+#    ...                                                               #
+# }                                                                    #
+########################################################################
 
 CONVERSION_FUNCTIONS = {
 
