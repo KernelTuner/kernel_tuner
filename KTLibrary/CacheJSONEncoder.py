@@ -5,17 +5,24 @@ import json
 
 
 # Custom encoder class that inherits from json.JSONEncoder
-class FormattedEncoder(json.JSONEncoder):
+class CacheJSONEncoder(json.JSONEncoder):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.indentation_level = 0
 
     def encode(self, o, force=False):
-        # Overwrites the encode function of the JSONEncoder by a custom one.
-        # If we see either a list, tuple or dict we use our custom _encode_list and _encode_object
-        # class. Otherwise, we do what JSONEncoder usually does by calling json.dumps.
-        # Both classes contain the boolean force, which tells us whether we should force
-        # the writing to be in one line.
+        """
+        Overwrites the encode function of the JSONEncoder by a custom one. It acts as the usual
+        encoder unless o is of type list, tuple or dict. We then call _encode_list and _encode_object
+        to handle our custom encoding.
+
+        Parameters:
+            o (any): The object we are encoding.
+            force (bool): Whether we should force the json string to be on a single line.
+
+        Returns:
+            str: The json we have encoded as string.
+        """
         if isinstance(o, (list, tuple)):
             return self._encode_list(o, force)
         if isinstance(o, dict):
@@ -32,9 +39,17 @@ class FormattedEncoder(json.JSONEncoder):
             default=self.default if hasattr(self, "default") else None,
         )
 
-    # Encodes a list like we want. Instead of underneath each other we print all the values
-    # in one line.
     def _encode_list(self, o, force=False):
+        """
+        Encodes a list or tuple like normal unless we force it to print on a single line.
+
+        Parameters:
+            o (list or tuple): The object we are encoding.
+            force (bool): Whether we should force the json string to be on a single line.
+
+        Returns:
+            str: The json we have encoded as string.
+        """
         if force:
             return "[" + ", ".join(self.encode(el) for el in o) + "]"
         self.indentation_level += 1
@@ -44,6 +59,16 @@ class FormattedEncoder(json.JSONEncoder):
 
     # For encode object we go through what the object contains and write it to the file.
     def _encode_object(self, o, force=False):
+        """
+        Encodes a dict like normal unless we force it to print on a single line.
+
+        Parameters:
+            o (dict): The object we are encoding.
+            force (bool): Whether we should force the json string to be on a single line.
+
+        Returns:
+            str: The json we have encoded as string.
+        """
         if not o:
             return "{}"
 
@@ -83,7 +108,16 @@ class FormattedEncoder(json.JSONEncoder):
         return "{\n" + ",\n".join(output) + "\n" + self.indent_str + "}"
 
     def _encode_cache(self, o: dict) -> str:
-        # Our custom cache gets built as a string here.
+        """
+        Encodes a dict in the way we want for our cache files where every item in the key "cache"
+        is written line by line improving readability.
+
+        Parameters:
+            o (dict): The object we are encoding.
+
+        Returns:
+            str: The json we have encoded as string.
+        """
         cache_values = self.indent_str + '"cache": {\n'
         self.indentation_level += 1
         for key, item in o.items():
@@ -98,7 +132,6 @@ class FormattedEncoder(json.JSONEncoder):
     def iterencode(self, o, **kwargs):
         return self.encode(o)
 
-    # Used for proper indents
     @property
     def indent_str(self) -> str:
         if isinstance(self.indent, int):

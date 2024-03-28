@@ -1,7 +1,7 @@
 # Library for Kernel Tuner
 ## To Dos:
-- Loading files
-- Storing files
+- <s>Loading files</s>
+- <s>Storing files</s>
 
 
 ### Testing the library:
