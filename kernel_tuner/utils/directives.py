@@ -34,7 +34,7 @@ def is_cpp_or_f90(code: str, lang: str = None) -> tuple:
 
 def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
     """Find the dimension of a pragma defined value in the preprocessor"""
-    ret_size = 1
+    ret_size = None
     for line in preprocessor:
         if f"#define {dimension}" in line:
             try:
