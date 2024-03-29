@@ -5,22 +5,26 @@ openmp = "openmp"
 
 
 def correct_kernel(kernel_name: str, line: str) -> bool:
+    """Checks if the line contains the correct kernel name"""
     return f" {kernel_name} " in line or (kernel_name in line and len(line.partition(kernel_name)[2]) == 0)
 
 
 def is_cpp(code: str, lang: str) -> bool:
+    """Check if the source code is C++ or not"""
     if str.lower(lang) == openacc:
         return "#pragma acc" in code
     return False
 
 
 def is_f90(code: str, lang: str) -> bool:
+    """Check if the source code is Fortran or not"""
     if str.lower(lang) == openacc:
         return "!$acc" in code
     return False
 
 
 def is_cpp_or_f90(code: str, lang: str = None) -> tuple:
+    """Helper function to check if the source code is C++ or Fortran"""
     if lang is not None:
         return is_cpp(code, lang), is_f90(code, lang)
     else:
@@ -63,6 +67,7 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
 
 
 def parse_size(size: object, preprocessor: list = None, dimensions: dict = None) -> int:
+    """Converts an arbitrary object into an integer representing memory size"""
     ret_size = None
     if type(size) is not int:
         try:
@@ -113,6 +118,7 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
 
 
 def create_data_directive(name: str, cpp: bool, f90: bool) -> str:
+    """Create OpenACC code to allocate and copy data"""
     data_directive = str()
 
     if cpp:
