@@ -94,8 +94,7 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
                     for dimension in size.split(","):
                         ret_size *= find_size_in_preprocessor(dimension, preprocessor)
                 else:
-                    for line in preprocessor:
-                        ret_size = find_size_in_preprocessor(size, preprocessor)
+                    ret_size = find_size_in_preprocessor(size, preprocessor)
             # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
             if dimensions is not None:
                 if size in dimensions.keys():
