@@ -32,6 +32,19 @@ def is_cpp_or_f90(code: str, lang: str = None) -> tuple:
         return is_cpp(code, openacc), is_f90(code, openacc)
 
 
+def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
+    """Find the dimension of a pragma defined value in the preprocessor"""
+    ret_size = 1
+    for line in preprocessor:
+        if f"#define {dimension}" in line:
+            try:
+                ret_size = int(line.split(" ")[2])
+                break
+            except ValueError:
+                continue
+    return ret_size
+
+
 def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> dict:
     """Extract an arbitrary section of code"""
     found_section = False
@@ -79,21 +92,10 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
                 if "," in size:
                     ret_size = 1
                     for dimension in size.split(","):
-                        for line in preprocessor:
-                            if f"#define {dimension}" in line:
-                                try:
-                                    ret_size *= int(line.split(" ")[2])
-                                    break
-                                except ValueError:
-                                    continue
+                        ret_size *= find_size_in_preprocessor(dimension, preprocessor)
                 else:
                     for line in preprocessor:
-                        if f"#define {size}" in line:
-                            try:
-                                ret_size = int(line.split(" ")[2])
-                                break
-                            except ValueError:
-                                continue
+                        ret_size = find_size_in_preprocessor(size, preprocessor)
             # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
             if dimensions is not None:
                 if size in dimensions.keys():
