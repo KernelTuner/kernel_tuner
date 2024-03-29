@@ -3,21 +3,28 @@ from pytest import raises
 from kernel_tuner.utils.directives import *
 
 
-def test_cpp():
+def test_correct_kernel():
+    assert correct_kernel("vector_add", "tuner start vector_add")
+    assert correct_kernel("vector_add", "tuner start vector_add a(float:size)")
+    assert not correct_kernel("vector_add", "tuner start gemm")
+    assert not correct_kernel("vector_add", "tuner start gemm a(float:size) b(float:size)")
+
+
+def test_is_cpp():
     cpp_code = "int main(void) {\n#pragma acc parallel}"
     assert is_cpp(cpp_code, "openacc")
     assert is_cpp(cpp_code, "OpenACC")
     assert not is_cpp(cpp_code, "open acc")
 
 
-def test_f90():
+def test_is_f90():
     f90_code = "!$acc parallel"
     assert is_f90(f90_code, "openacc")
     assert is_f90(f90_code, "OpenACC")
     assert not is_f90(f90_code, "open acc")
 
 
-def test_cpp_or_f90():
+def test_is_cpp_or_f90():
     cpp_code = "int main(void) {\n#pragma acc parallel}"
     f90_code = "!$acc parallel"
     one, two = is_cpp_or_f90(cpp_code)
