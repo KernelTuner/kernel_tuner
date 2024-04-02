@@ -9,7 +9,7 @@ from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
 from kernel_tuner.runners.remote_actor import RemoteActor
 
-class RemoteRunner(Runner):
+class ParallelRunner(Runner):
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
@@ -47,6 +47,7 @@ class RemoteRunner(Runner):
     
     def run(self, parameter_space, tuning_options):
         print(f"Size parameter_space: {len(parameter_space)}", file=sys. stderr)
+        # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
         results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(v, tuning_options), parameter_space))
         return results
     
@@ -71,7 +72,6 @@ def get_num_devices(lang):
         import cupy
         num_devices = cupy.cuda.runtime.getDeviceCount()
     elif lang.upper() == "NVCUDA":
-        # NVCUDA usually refers to NVIDIA's CUDA, so you can use pycuda or a similar approach
         import pycuda.driver as cuda
         cuda.init()
         num_devices = cuda.Device.count()

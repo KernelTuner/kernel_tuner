@@ -37,5 +37,5 @@ def env():
 
 @skip_if_no_pycuda
 def test_parallel_tune_kernel(env):
-    result, _ = tune_kernel(*env, lang="CUDA", verbose=True, remote_mode=True)
+    result, _ = tune_kernel(*env, lang="CUDA", verbose=True, parallel_mode=True)
     assert len(result) > 0

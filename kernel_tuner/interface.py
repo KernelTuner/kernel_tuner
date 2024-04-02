@@ -34,7 +34,7 @@ import kernel_tuner.util as util
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
-from kernel_tuner.runners.remote import RemoteRunner # ADDED HERE
+from kernel_tuner.runners.parallel import ParallelRunner # ADDED HERE
 from kernel_tuner.searchspace import Searchspace
 
 try:
@@ -58,6 +58,7 @@ from kernel_tuner.strategies import (
     pso,
     random_sample,
     simulated_annealing,
+    ensemble
 )
 
 strategy_map = {
@@ -76,6 +77,7 @@ strategy_map = {
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
+    "ensemble": ensemble
 }
 
 
@@ -385,6 +387,7 @@ _tuning_options = Options(
             * "pso" particle swarm optimization
             * "random_sample" takes a random sample of the search space
             * "simulated_annealing" simulated annealing strategy
+            * "ensemble" Ensemble Strategy
 
         Strategy-specific parameters and options are explained under strategy_options.
 
@@ -575,7 +578,7 @@ def tune_kernel(
     cache=None,
     metrics=None,
     simulation_mode=False,
-    remote_mode=False, # ADDED HERE
+    parallel_mode=False, # ADDED HERE
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -652,7 +655,7 @@ def tune_kernel(
         strategy = brute_force
 
     # select the runner for this job based on input
-    selected_runner = SimulationRunner if simulation_mode else (RemoteRunner if remote_mode else SequentialRunner) # ADDED HERE
+    selected_runner = SimulationRunner if simulation_mode else (ParallelRunner if parallel_mode else SequentialRunner) # ADDED HERE
     tuning_options.simulated_time = 0
     runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
 
