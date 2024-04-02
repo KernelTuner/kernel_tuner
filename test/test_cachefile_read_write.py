@@ -13,7 +13,10 @@ def calculate_file_hash(path):
 
 def test_read_cache_file():
     testLibrary = KTLibrary()
-    file_path = 'SampleCacheFiles/convolution_A100.json'
+
+    current_file_dir = Path(__file__).resolve().parent.parent
+
+    file_path = current_file_dir / 'SampleCacheFiles' / 'convolution_A100.json'
 
     testLibrary.read_file(file_path)
 
@@ -26,7 +29,10 @@ def test_read_cache_file():
 
 def test_write_cache_file():
     testLibrary = KTLibrary()
-    file_path = 'SampleCacheFiles/convolution_A100.json'
+
+    current_file_dir = Path(__file__).resolve().parent.parent
+
+    file_path = current_file_dir / 'SampleCacheFiles' / 'convolution_A100.json'
 
     testLibrary.read_file(file_path)
     p = Path.joinpath(Path(os.getcwd()), 'KTLibrary', 'test.json')
