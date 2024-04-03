@@ -1,6 +1,5 @@
 import os
 import pytest
-import time
 from pathlib import Path
 import hashlib
 from kernel_tuner.cache.KTLibrary.cachefile import read_cache_file, write_cache_file
@@ -18,34 +17,35 @@ def calculate_file_hash(path):
 def test_read_cache_file():
     current_file_dir = Path(__file__).resolve().parent.parent
 
-    file_path = current_file_dir / 'kernel_tuner' / 'cachefile' / 'SampleCacheFiles' / 'convolution_A100.json'
+    input_file = current_file_dir / 'kernel_tuner' / 'cache' / 'SampleCacheFiles' / 'convolution_A100.json'
 
     # Read device name of the given file
-    file = read_cache_file(file_path)
-    device_name = file.get('device_name')
+    file_content = read_cache_file(input_file)
+    device_name = file_content.get('device_name')
    
     # Check if the expected value of device name is in the file
     assert device_name == 'NVIDIA A100-PCIE-40GB'
 
 
 @pytest.fixture
-def tmp_output_path(tmp_path):
+def tmp_output_file(tmp_path):
     return tmp_path / 'test.json'
 
 
-def test_write_cache_file(tmp_output_path):
+def test_write_cache_file(tmp_output_file):
 
     current_file_dir = Path(__file__).resolve().parent.parent
 
-    file_path = current_file_dir / 'kernel_tuner' / 'cachefile' / 'SampleCacheFiles' / 'convolution_A100.json'
+    input_file = current_file_dir / 'kernel_tuner' / 'cache' / 'SampleCacheFiles' / 'convolution_A100.json'
 
-    p = tmp_output_path
-
-    write_cache_file(read_cache_file(file_path), p)
+    p = tmp_output_file
+    
+    # cache_file = read_cache_file(file_path)
+    write_cache_file(read_cache_file(input_file), p)
 
     # Calculate the hashes of the original file and the written file
     written_hash = calculate_file_hash(p)
-    original_hash = calculate_file_hash(file_path)
+    original_hash = calculate_file_hash(input_file)
     
     # Check if both hashes are the same
     assert written_hash == original_hash
