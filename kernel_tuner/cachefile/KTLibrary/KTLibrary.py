@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from KTLibrary.CacheJSONEncoder import CacheJSONEncoder
+from kernel_tuner.cachefile.KTLibrary.CacheJSONEncoder import CacheJSONEncoder
 
 
 class KTLibrary:
