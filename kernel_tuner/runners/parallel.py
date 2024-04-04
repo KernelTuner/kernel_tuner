@@ -7,7 +7,8 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.runners.remote_actor import RemoteActor
+from kernel_tuner.runners.parallel_remote_actor import ParallelRemoteActor
+from kernel_tuner.util import get_num_devices
 
 class ParallelRunner(Runner):
 
@@ -46,42 +47,17 @@ class ParallelRunner(Runner):
 
     
     def run(self, parameter_space, tuning_options):
-        print(f"Size parameter_space: {len(parameter_space)}", file=sys. stderr)
+        #print(f"Size parameter_space: {len(parameter_space)}", file=sys. stderr)
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
         results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(v, tuning_options), parameter_space))
         return results
     
     def create_actor_on_gpu(self, gpu_id):
         gpu_resource_name = f"gpu_{gpu_id}"
-        return RemoteActor.options(resources={gpu_resource_name: 1}).remote(self.quiet,
+        return ParallelRemoteActor.options(resources={gpu_resource_name: 1}).remote(self.quiet,
                                                                             self.kernel_source, 
                                                                             self.kernel_options, 
                                                                             self.device_options, 
                                                                             self.iterations, 
                                                                             self.observers,
                                                                             gpu_id)
-
-# DONT KNOW WHERE TO PUT IT YET
-def get_num_devices(lang):
-    num_devices = 0
-    if lang.upper() == "CUDA":
-        import pycuda.driver as cuda
-        cuda.init()
-        num_devices = cuda.Device.count()
-    elif lang.upper() == "CUPY":
-        import cupy
-        num_devices = cupy.cuda.runtime.getDeviceCount()
-    elif lang.upper() == "NVCUDA":
-        import pycuda.driver as cuda
-        cuda.init()
-        num_devices = cuda.Device.count()
-    elif lang.upper() == "OPENCL":
-        import pyopencl as cl
-        num_devices = sum(len(platform.get_devices()) for platform in cl.get_platforms())
-    elif lang.upper() == "HIP":
-        from pyhip import hip
-        num_devices = hip.hipGetDeviceCount()
-    else:
-        raise ValueError(f"Unsupported language: {lang}")
-
-    return num_devices
