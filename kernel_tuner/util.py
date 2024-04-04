@@ -1253,3 +1253,27 @@ def cuda_error_check(error):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
+
+def get_num_devices(lang):
+    num_devices = 0
+    if lang.upper() == "CUDA":
+        import pycuda.driver as cuda
+        cuda.init()
+        num_devices = cuda.Device.count()
+    elif lang.upper() == "CUPY":
+        import cupy
+        num_devices = cupy.cuda.runtime.getDeviceCount()
+    elif lang.upper() == "NVCUDA":
+        import pycuda.driver as cuda
+        cuda.init()
+        num_devices = cuda.Device.count()
+    elif lang.upper() == "OPENCL":
+        import pyopencl as cl
+        num_devices = sum(len(platform.get_devices()) for platform in cl.get_platforms())
+    elif lang.upper() == "HIP":
+        from pyhip import hip
+        num_devices = hip.hipGetDeviceCount()
+    else:
+        raise ValueError(f"Unsupported language: {lang}")
+
+    return num_devices
