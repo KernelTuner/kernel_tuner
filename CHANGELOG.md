@@ -2,7 +2,9 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.0] - Unreleased
+## Unreleased
+
+## [1.0.0] - 2024-04-04
 - HIP backend to support tuning HIP kernels on AMD GPUs
 - Experimental features for mixed-precision and accuracy tuning
 - Experimental features for OpenACC tuning
