@@ -1,0 +1,461 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# 3D Grid on GPU with Kernel Tuner\n",
+    "\n",
+    "In this tutorial we are going to see how to map a series of Gaussian functions, each located at a different point on a 3D a grid. We are going to optimize the GPU code and compare its performance with the CPU implementation. \n",
+    "\n",
+    "<div class=\"alert alert-info\">\n",
+    "\n",
+    "**Note:** If you are reading this tutorial on the Kernel Tuner's documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner's [GitHub repository](http://github.com/benvanwerkhoven/kernel_tuner). Install the Kernel Tuner and Jupyter Notebooks and you're ready to go! You can start the tutorial by typing \"jupyter notebook\" in the \"kernel_tuner/doc/source\" directory.\n",
+    "\n",
+    "</div>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Let's start on the CPU\n",
+    "\n",
+    "Before delving into the GPU implementation, let's start with a simple CPU implementation of the problem. The problem at hand is to compute the values of the following function \n",
+    "\n",
+    "\\begin{equation} \\nonumber\n",
+    "f = \\sum_{i=1}^{N}\\exp\\left(-\\beta \\sqrt{(x-x_i)^2+(y-y_i)^2+(z-z_i)^2}\\right)\n",
+    "\\end{equation}\n",
+    "\n",
+    "on a 3d grid. The $x$, $y$ and $z$ vectors contain the coordinate of the points in the Cartesian space. We can define a simple Python function that computes the value of the function $f$ for one given Gaussian. Don't forget to execute all the code cells, like the one below, as you read through this notebook by selecting the cell and pressing *shift+enter*."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import numpy.linalg as la\n",
+    "from time import time\n",
+    "\n",
+    "def compute_grid(center,xgrid,ygrid,zgrid):\n",
+    "    x0,y0,z0 = center\n",
+    "    beta = -0.1\n",
+    "    f = np.sqrt( (xgrid-x0)**2 + (ygrid-y0)**2 + (zgrid-z0)**2 )\n",
+    "    f = np.exp(beta*f)\n",
+    "    return f"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "For a given center, this function returns the values of the corresponding Gaussian function mapped on the 3D grid. The grid points are here defined by the variables `xgrid`, `ygrid` and `zgrid`. These variables are themselves 3D grids obtained, as we will see in an instant, using the `numpy.meshgrid` function. \n",
+    "\n",
+    "To use this function we simply have to create the grid, defined by the vectors x, y, and z. Since we want to later on send these vectors to the GPU we define them as 32-bit floats. For simplicity, we here select the interval $[-1:1]$ to define our grid. We use $n=256$ grid points in order to have a sufficiently large problem without requiring too long calculations. We then create meshgrids to be passed to the function above. We define here 100 gaussian centers that are randomly distributed within the 3D space."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "CPU Execution time 52320.160627 ms\n"
+     ]
+    }
+   ],
+   "source": [
+    "# dimension of the problem\n",
+    "n = 256\n",
+    "\n",
+    "# define the vectors\n",
+    "x = np.linspace(-1,1,n).astype(np.float32)\n",
+    "y = np.linspace(-1,1,n).astype(np.float32)\n",
+    "z = np.linspace(-1,1,n).astype(np.float32)\n",
+    "\n",
+    "# create meshgrids\n",
+    "xgrid,ygrid,zgrid = np.meshgrid(x,y,z)\n",
+    "cpu_grid = np.zeros_like(xgrid)\n",
+    "\n",
+    "# centers\n",
+    "npts = 100\n",
+    "center = (-1 + 2*np.random.rand(npts,3)).astype(np.float32)\n",
+    "\n",
+    "# compute the grid and time the operation\n",
+    "t0 = time()\n",
+    "for xyz in center:\n",
+    "    cpu_grid += compute_grid(xyz,xgrid,ygrid,zgrid)\n",
+    "print('CPU Execution time %f ms' %( (time()-t0)*1000) ) "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Depending on your hardware it might take a few seconds for the calculations above to finish."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Let's move to the GPU\n",
+    "\n",
+    "Let's see now how that will look like on the GPU. We first write a kernel that does the same calculation as the above function. As you can see see below, the variables `block_size_x`, `block_size_y` and `block_size_z` are not yet defined here. These variables are used to set the number of threads per thread block on the GPU and are the main parameters that we will optimize in this tutorial. During tuning, Kernel Tuner will automatically insert `#define` statements for these parameters at the top of the kernel code. So for now we don't have to specify their values. \n",
+    "\n",
+    "The dimensions of the problem `nx`, `ny`, and `nz`, are the number of grid points in the x, y, and z dimensions. We can again use Kernel Tuner to insert these parameters into the code."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "# define a kernel template\n",
+    "# several parameters are available\n",
+    "# block sizes : bx, by, bz \n",
+    "# dimensions  : nx, ny, nz\n",
+    "kernel_code = \"\"\"\n",
+    "#include <math.h>\n",
+    "\n",
+    "// a simple gaussian function\n",
+    "__host__ __device__ float f(float d){\n",
+    "    float b = 0.1;\n",
+    "    float x = exp(-b*d);\n",
+    "    return x;\n",
+    "}\n",
+    "\n",
+    "// the main function called below\n",
+    "__global__ void AddGrid(float x0, float y0, float z0, float *xvect, float *yvect, float *zvect, float *out)\n",
+    "{\n",
+    "\n",
+    "    // 3D thread \n",
+    "    int x = threadIdx.x + block_size_x * blockIdx.x;\n",
+    "    int y = threadIdx.y + block_size_y * blockIdx.y;\n",
+    "    int z = threadIdx.z + block_size_z * blockIdx.z;\n",
+    "\n",
+    "    if ( ( x < nx ) && (y < ny) && (z < nz) )\n",
+    "    {\n",
+    "\n",
+    "        float dx = xvect[x]-x0;\n",
+    "        float dy = yvect[y]-y0;\n",
+    "        float dz = zvect[z]-z0;\n",
+    "        float d = sqrt(dx*dx + dy*dy + dz*dz);\n",
+    "        out[y * nx * nz + x * nz + z] = f(d);\n",
+    "    }\n",
+    "}\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Tune the kernel\n",
+    "\n",
+    "We can now use the tuner to optimize the thread block dimensions on our GPU. To do so we define the tunable parameters of our kernel using the `tune_params` dictionary, which assigns to each block size the values we want the tuner to explore. We also use the tunable parameters to insert the domain dimensions `nx`, `ny`, and `nz`.\n",
+    "\n",
+    "We also define a list containing the arguments of the CUDA function (AddGrid) above. Since we only want to optimize the performance of the kernel we only consider here one center in the middle of the grid. Note that Kernel Tuner needs either `numpy.ndarray` or `numpy.scalar` as arguments of the kernel. Hence we need to be specific on the types of the Gaussians positions. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true,
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "from collections import OrderedDict\n",
+    "from kernel_tuner import tune_kernel\n",
+    "\n",
+    "# create the dictionary containing the tune parameters\n",
+    "tune_params = OrderedDict()\n",
+    "tune_params['block_size_x'] = [2,4,8,16,32]\n",
+    "tune_params['block_size_y'] = [2,4,8,16,32]\n",
+    "tune_params['block_size_z'] = [2,4,8,16,32]\n",
+    "tune_params['nx'] = [n]\n",
+    "tune_params['ny'] = [n]\n",
+    "tune_params['nz'] = [n]\n",
+    "\n",
+    "# define the final grid\n",
+    "grid = np.zeros_like(xgrid)\n",
+    "\n",
+    "# arguments of the CUDA function\n",
+    "x0,y0,z0 = np.float32(0),np.float32(0),np.float32(0)\n",
+    "args = [x0,y0,z0,x,y,z,grid]\n",
+    "\n",
+    "# dimensionality\n",
+    "problem_size = (n,n,n)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "As mentioned earlier, the tuner will automatically insert `#define` statements at the top of the kernel to define the block sizes and domain dimensions, so we don't need to specify them here. Then, we simply call the `tune_kernel` function. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Using: GeForce GTX 1080 Ti\n",
+      "block_size_x=2, block_size_y=2, block_size_z=2, time=3.56833920479\n",
+      "block_size_x=2, block_size_y=2, block_size_z=4, time=1.80796158314\n",
+      "block_size_x=2, block_size_y=2, block_size_z=8, time=0.940044796467\n",
+      "block_size_x=2, block_size_y=2, block_size_z=16, time=0.855628800392\n",
+      "block_size_x=2, block_size_y=2, block_size_z=32, time=0.855359995365\n",
+      "block_size_x=2, block_size_y=4, block_size_z=2, time=4.16174077988\n",
+      "block_size_x=2, block_size_y=4, block_size_z=4, time=2.11877760887\n",
+      "block_size_x=2, block_size_y=4, block_size_z=8, time=1.01592960358\n",
+      "block_size_x=2, block_size_y=4, block_size_z=16, time=0.849273598194\n",
+      "block_size_x=2, block_size_y=4, block_size_z=32, time=0.849235200882\n",
+      "block_size_x=2, block_size_y=8, block_size_z=2, time=4.19029750824\n",
+      "block_size_x=2, block_size_y=8, block_size_z=4, time=2.16199679375\n",
+      "block_size_x=2, block_size_y=8, block_size_z=8, time=1.40401918888\n",
+      "block_size_x=2, block_size_y=8, block_size_z=16, time=1.39618558884\n",
+      "block_size_x=2, block_size_y=8, block_size_z=32, time=1.39508478642\n",
+      "block_size_x=2, block_size_y=16, block_size_z=2, time=5.31647996902\n",
+      "block_size_x=2, block_size_y=16, block_size_z=4, time=2.31470079422\n",
+      "block_size_x=2, block_size_y=16, block_size_z=8, time=1.50787198544\n",
+      "block_size_x=2, block_size_y=16, block_size_z=16, time=1.53760001659\n",
+      "block_size_x=2, block_size_y=16, block_size_z=32, time=1.56709756851\n",
+      "block_size_x=2, block_size_y=32, block_size_z=2, time=5.34500494003\n",
+      "block_size_x=2, block_size_y=32, block_size_z=4, time=2.25130877495\n",
+      "block_size_x=2, block_size_y=32, block_size_z=8, time=1.50662400723\n",
+      "block_size_x=2, block_size_y=32, block_size_z=16, time=1.55267841816\n",
+      "block_size_x=4, block_size_y=2, block_size_z=2, time=4.17987194061\n",
+      "block_size_x=4, block_size_y=2, block_size_z=4, time=2.12309756279\n",
+      "block_size_x=4, block_size_y=2, block_size_z=8, time=1.01125121117\n",
+      "block_size_x=4, block_size_y=2, block_size_z=16, time=0.849631989002\n",
+      "block_size_x=4, block_size_y=2, block_size_z=32, time=0.853708791733\n",
+      "block_size_x=4, block_size_y=4, block_size_z=2, time=4.17051515579\n",
+      "block_size_x=4, block_size_y=4, block_size_z=4, time=2.15584001541\n",
+      "block_size_x=4, block_size_y=4, block_size_z=8, time=1.40074241161\n",
+      "block_size_x=4, block_size_y=4, block_size_z=16, time=1.39547519684\n",
+      "block_size_x=4, block_size_y=4, block_size_z=32, time=1.39331197739\n",
+      "block_size_x=4, block_size_y=8, block_size_z=2, time=5.30295038223\n",
+      "block_size_x=4, block_size_y=8, block_size_z=4, time=2.28725762367\n",
+      "block_size_x=4, block_size_y=8, block_size_z=8, time=1.39589118958\n",
+      "block_size_x=4, block_size_y=8, block_size_z=16, time=1.38867840767\n",
+      "block_size_x=4, block_size_y=8, block_size_z=32, time=1.37724158764\n",
+      "block_size_x=4, block_size_y=16, block_size_z=2, time=5.34344320297\n",
+      "block_size_x=4, block_size_y=16, block_size_z=4, time=2.26213116646\n",
+      "block_size_x=4, block_size_y=16, block_size_z=8, time=1.38793599606\n",
+      "block_size_x=4, block_size_y=16, block_size_z=16, time=1.3775359869\n",
+      "block_size_x=4, block_size_y=32, block_size_z=2, time=4.74003200531\n",
+      "block_size_x=4, block_size_y=32, block_size_z=4, time=2.13276162148\n",
+      "block_size_x=4, block_size_y=32, block_size_z=8, time=1.37233917713\n",
+      "block_size_x=8, block_size_y=2, block_size_z=2, time=4.18835201263\n",
+      "block_size_x=8, block_size_y=2, block_size_z=4, time=2.15777277946\n",
+      "block_size_x=8, block_size_y=2, block_size_z=8, time=1.40247042179\n",
+      "block_size_x=8, block_size_y=2, block_size_z=16, time=1.39366400242\n",
+      "block_size_x=8, block_size_y=2, block_size_z=32, time=1.39439997673\n",
+      "block_size_x=8, block_size_y=4, block_size_z=2, time=5.23719043732\n",
+      "block_size_x=8, block_size_y=4, block_size_z=4, time=2.28542718887\n",
+      "block_size_x=8, block_size_y=4, block_size_z=8, time=1.39207677841\n",
+      "block_size_x=8, block_size_y=4, block_size_z=16, time=1.38956804276\n",
+      "block_size_x=8, block_size_y=4, block_size_z=32, time=1.3778496027\n",
+      "block_size_x=8, block_size_y=8, block_size_z=2, time=5.29814395905\n",
+      "block_size_x=8, block_size_y=8, block_size_z=4, time=2.26398081779\n",
+      "block_size_x=8, block_size_y=8, block_size_z=8, time=1.38625922203\n",
+      "block_size_x=8, block_size_y=8, block_size_z=16, time=1.3754431963\n",
+      "block_size_x=8, block_size_y=16, block_size_z=2, time=4.72981758118\n",
+      "block_size_x=8, block_size_y=16, block_size_z=4, time=2.12483196259\n",
+      "block_size_x=8, block_size_y=16, block_size_z=8, time=1.37322881222\n",
+      "block_size_x=8, block_size_y=32, block_size_z=2, time=4.61618566513\n",
+      "block_size_x=8, block_size_y=32, block_size_z=4, time=2.2194111824\n",
+      "block_size_x=16, block_size_y=2, block_size_z=2, time=5.17600002289\n",
+      "block_size_x=16, block_size_y=2, block_size_z=4, time=2.27082881927\n",
+      "block_size_x=16, block_size_y=2, block_size_z=8, time=1.38787200451\n",
+      "block_size_x=16, block_size_y=2, block_size_z=16, time=1.3835711956\n",
+      "block_size_x=16, block_size_y=2, block_size_z=32, time=1.37543039322\n",
+      "block_size_x=16, block_size_y=4, block_size_z=2, time=5.30227203369\n",
+      "block_size_x=16, block_size_y=4, block_size_z=4, time=2.23127679825\n",
+      "block_size_x=16, block_size_y=4, block_size_z=8, time=1.38627202511\n",
+      "block_size_x=16, block_size_y=4, block_size_z=16, time=1.37677440643\n",
+      "block_size_x=16, block_size_y=8, block_size_z=2, time=4.64358406067\n",
+      "block_size_x=16, block_size_y=8, block_size_z=4, time=2.12255358696\n",
+      "block_size_x=16, block_size_y=8, block_size_z=8, time=1.37474560738\n",
+      "block_size_x=16, block_size_y=16, block_size_z=2, time=4.61655673981\n",
+      "block_size_x=16, block_size_y=16, block_size_z=4, time=2.19179515839\n",
+      "block_size_x=16, block_size_y=32, block_size_z=2, time=4.99912958145\n",
+      "block_size_x=32, block_size_y=2, block_size_z=2, time=5.213971138\n",
+      "block_size_x=32, block_size_y=2, block_size_z=4, time=2.16430072784\n",
+      "block_size_x=32, block_size_y=2, block_size_z=8, time=1.38772480488\n",
+      "block_size_x=32, block_size_y=2, block_size_z=16, time=1.3735104084\n",
+      "block_size_x=32, block_size_y=4, block_size_z=2, time=4.54432649612\n",
+      "block_size_x=32, block_size_y=4, block_size_z=4, time=2.05524477959\n",
+      "block_size_x=32, block_size_y=4, block_size_z=8, time=1.36935677528\n",
+      "block_size_x=32, block_size_y=8, block_size_z=2, time=4.42449922562\n",
+      "block_size_x=32, block_size_y=8, block_size_z=4, time=2.10455036163\n",
+      "block_size_x=32, block_size_y=16, block_size_z=2, time=4.67516155243\n",
+      "best performing configuration: block_size_x=2, block_size_y=4, block_size_z=32, time=0.849235200882\n"
+     ]
+    }
+   ],
+   "source": [
+    "# call the kernel tuner\n",
+    "result = tune_kernel('AddGrid', kernel_code, problem_size, args, tune_params)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The `tune_kernel` function explores all the possible combinations of tunable parameters (here only the block size). For each possible kernel configuration, the tuner compiles the code and its measures execution time (by default using 7 iterations). At the end of the the run, the `tune_kernel` outputs the optimal combination of the tunable parameters. But the measured execution time of all benchmarked kernels is also returned by `tune_kernel` for programmatic access to the data.\n",
+    "\n",
+    "As you can see the range of performances is quite large. With our GPU (GeForce GTX 1080 Ti) we obtained a maximum time of 5.30 ms and minimum one of 0.84 ms. The performance of the kernel varies by a factor 6 depending on the thread block size!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Using the optimized parameters\n",
+    "\n",
+    "Now that we have determined which parameters are the best suited for our application we can specify them in our kernel and run it.  In our case, the optimal grid size determined by the tuner were  *block_size_x = 4, block_size_y = 2, block_size_z=16*. We therefore use these parameters here to define the block size. The grid size is simply obtained by dividing the dimension of the problem by the corresponding block size. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "from pycuda import driver, compiler, gpuarray, tools\n",
+    "import pycuda.autoinit\n",
+    "\n",
+    "# optimal values of the block size\n",
+    "block = [4, 2, 16]\n",
+    "\n",
+    "# corresponding grid size\n",
+    "grid_dim = [int(np.ceil(n/b)) for b, n in zip(block, problem_size)]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Before using the kernel we need to specify the block size in its definition. There are different ways of doing this, we here simply replace the `block_size_x`, `block_size_y` and `block_size_z` by their values determined by the tuner. In order to do that we create a dictionary that associates the name of the block size and their values and simply make the substitution. Once the block size are specified, we can compile the kernel ourselves and get the function."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "# change the values of the block sizes in the kernel\n",
+    "fixed_params = OrderedDict()\n",
+    "fixed_params['block_size_x'] = block[0]\n",
+    "fixed_params['block_size_y'] = block[1]\n",
+    "fixed_params['block_size_z'] = block[2]\n",
+    "fixed_params['nx'] = n\n",
+    "fixed_params['ny'] = n\n",
+    "fixed_params['nz'] = n\n",
+    "\n",
+    "for k,v in fixed_params.items():\n",
+    "    kernel_code = kernel_code.replace(k,str(v))\n",
+    " \n",
+    "# compile the kernel_code and extract the function\n",
+    "mod = compiler.SourceModule(kernel_code)\n",
+    "addgrid = mod.get_function('AddGrid')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We now have to manually create the gpuarrays that correspond to the vector x, y and z as well as the 3D grid. Once all these are defined we can call the `addgrid` function using the gpuarrays and the block and grid size in argument. We also time the execution to compare it with the one outputed by the kernel tuner. Note that we exlicitly synchronize the CPU and GPU to obtain an accurate timing."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Final GPU time : 80.133200 ms\n"
+     ]
+    }
+   ],
+   "source": [
+    "# create the gpu arrays\n",
+    "xgpu = gpuarray.to_gpu(x)\n",
+    "ygpu = gpuarray.to_gpu(y)\n",
+    "zgpu = gpuarray.to_gpu(z)\n",
+    "grid_gpu = gpuarray.zeros((n,n,n), np.float32)\n",
+    "\n",
+    "# compute the grid and time the performance\n",
+    "t0 = time()\n",
+    "for xyz in center:\n",
+    "    x0,y0,z0 = xyz\n",
+    "    addgrid(x0,y0,z0,xgpu,ygpu,zgpu,grid_gpu,block = tuple(block),grid=tuple(grid_dim))\n",
+    "driver.Context.synchronize()\n",
+    "print('Final GPU time : %f ms' %((time()-t0)*1000))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "collapsed": true
+   },
+   "source": [
+    "As you can see the GPU execution time is much lower than than the CPU execution time obtained above. In our case it went from roughly 40000 ms to just 80 ms !"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.5.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
