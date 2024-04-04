@@ -34,7 +34,7 @@ import kernel_tuner.util as util
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
-from kernel_tuner.runners.parallel import ParallelRunner # ADDED HERE
+from kernel_tuner.runners.parallel import ParallelRunner
 from kernel_tuner.searchspace import Searchspace
 
 try:
@@ -578,7 +578,7 @@ def tune_kernel(
     cache=None,
     metrics=None,
     simulation_mode=False,
-    parallel_mode=False, # ADDED HERE
+    parallel_mode=False,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -616,6 +616,8 @@ def tune_kernel(
         tuning_options["max_fevals"] = strategy_options["max_fevals"]
     if strategy_options and "time_limit" in strategy_options:
         tuning_options["time_limit"] = strategy_options["time_limit"]
+    if strategy_options and "ensemble" in strategy_options:
+        tuning_options["ensemble"] = strategy_options["ensemble"]
 
     logging.debug("tune_kernel called")
     logging.debug("kernel_options: %s", util.get_config_string(kernel_options))
@@ -655,7 +657,7 @@ def tune_kernel(
         strategy = brute_force
 
     # select the runner for this job based on input
-    selected_runner = SimulationRunner if simulation_mode else (ParallelRunner if parallel_mode else SequentialRunner) # ADDED HERE
+    selected_runner = SimulationRunner if simulation_mode else (ParallelRunner if parallel_mode else SequentialRunner)
     tuning_options.simulated_time = 0
     runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
 
