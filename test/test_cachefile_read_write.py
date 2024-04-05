@@ -17,7 +17,7 @@ def calculate_file_hash(path):
 def test_read_cache_file():
     current_file_dir = Path(__file__).resolve().parent.parent
 
-    input_file = current_file_dir / 'kernel_tuner' / 'cache' / 'SampleCacheFiles' / 'convolution_A100.json'
+    input_file = current_file_dir / 'test' / 'SampleCacheFiles' / 'convolution_A100.json'
 
     # Read device name of the given file
     file_content = read_cache_file(input_file)
@@ -36,7 +36,7 @@ def test_write_cache_file(tmp_output_file):
 
     current_file_dir = Path(__file__).resolve().parent.parent
 
-    input_file = current_file_dir / 'kernel_tuner' / 'cache' / 'SampleCacheFiles' / 'convolution_A100.json'
+    input_file = current_file_dir / 'test' / 'SampleCacheFiles' / 'convolution_A100.json'
 
     p = tmp_output_file
     
