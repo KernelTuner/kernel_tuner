@@ -2,6 +2,7 @@
 import logging
 from datetime import datetime, timezone
 from time import perf_counter
+import ray
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
@@ -11,7 +12,7 @@ from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics,
 class SequentialRunner(Runner):
     """SequentialRunner is used for tuning with a single process/thread."""
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, cache_manager=None):
         """Instantiate the SequentialRunner.
 
         :param kernel_source: The kernel source
@@ -43,6 +44,7 @@ class SequentialRunner(Runner):
         self.device_options = device_options # needed for the ensemble strategy down the line
         self.iterations = iterations # needed for the ensemble strategy down the line
         self.observers = observers # needed for the ensemble strategy down the line
+        self.cache_manager = cache_manager
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -78,8 +80,9 @@ class SequentialRunner(Runner):
 
             # check if configuration is in the cache
             x_int = ",".join([str(i) for i in element])
-            if tuning_options.cache and x_int in tuning_options.cache:
-                params.update(tuning_options.cache[x_int])
+            cache_result = self.config_in_cache(x_int, tuning_options)
+            if cache_result:
+                params.update(cache_result)
                 params['compile_time'] = 0
                 params['verification_time'] = 0
                 params['benchmark_time'] = 0
@@ -114,9 +117,23 @@ class SequentialRunner(Runner):
                 print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
 
                 # add configuration to cache
-                store_cache(x_int, params, tuning_options)
+                self.store_in_cache(x_int, params, tuning_options)
 
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
 
         return results
+
+    def config_in_cache(self, x_int, tuning_options):
+        if self.cache_manager:
+            return ray.get(self.cache_manager.check_and_retrieve.remote(x_int))
+        elif tuning_options.cache and x_int in tuning_options.cache:
+            return tuning_options.cache[x_int]
+        else:
+            return None
+
+    def store_in_cache(self, x_int, params, tuning_options):
+        if self.cache_manager:
+            ray.get(self.cache_manager.store.remote(x_int, params))
+        else:
+            store_cache(x_int, params, tuning_options)
