@@ -11,8 +11,9 @@ from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc, scale_from_params
 from kernel_tuner.runners.simulation import SimulationRunner
-from kernel_tuner.runners.remote_actor import RemoteActor
+from kernel_tuner.runners.ray.remote_actor import RemoteActor
 from kernel_tuner.util import get_num_devices
+from kernel_tuner.runners.ray.cache_manager import CacheManager
 
 from kernel_tuner.strategies import (
     basinhopping,
@@ -61,15 +62,14 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # Initialize Ray
     os.environ["RAY_DEDUP_LOGS"] = "0"
     ray.init(resources=resources, include_dashboard=True)
+    cache_manager = CacheManager.remote(tuning_options)
     # Create RemoteActor instances
-    actors = [create_actor_on_gpu(id, runner) for id in range(num_gpus)]
-    # Create a pool of RemoteActor actors
-    #actor_pool = ActorPool(actors)
+    actors = [create_actor_on_gpu(id, runner, cache_manager) for id in range(num_gpus)]
     
     if "ensemble" in tuning_options:
         ensemble = tuning_options["ensemble"]
     else:
-        ensemble = ["random_sample", "random_sample", "random_sample"] # For now its just a random ensemble not based on any logic
+        ensemble = ["random_sample", "random_sample", "random_sample"]
     
     ensemble = [strategy_map[strategy] for strategy in ensemble]
     tasks = []
@@ -80,6 +80,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         task = actor.execute.remote(strategy, searchspace, tuning_options, simulation_mode)
         tasks.append(task)
     all_results = ray.get(tasks)
+    tuning_options = ray.get(cache_manager.get_tuning_options.remote())
 
     unique_configs = set()
     final_results = []
@@ -94,13 +95,11 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     return final_results
 
-# ITS REPEATING CODE, SAME IN parallel.py
-def create_actor_on_gpu(gpu_id, runner):
+def create_actor_on_gpu(gpu_id, runner, cache_manager):
     gpu_resource_name = f"gpu_{gpu_id}"
-    return RemoteActor.options(resources={gpu_resource_name: 1}).remote(runner.quiet,
-                                                                        runner.kernel_source, 
+    return RemoteActor.options(resources={gpu_resource_name: 1}).remote(runner.kernel_source, 
                                                                         runner.kernel_options, 
                                                                         runner.device_options, 
                                                                         runner.iterations, 
                                                                         runner.observers,
-                                                                        gpu_id)
+                                                                        cache_manager)
