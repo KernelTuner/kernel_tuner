@@ -7,7 +7,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.runners.parallel_remote_actor import ParallelRemoteActor
+from kernel_tuner.runners.ray.parallel_remote_actor import ParallelRemoteActor
 from kernel_tuner.util import get_num_devices
 
 class ParallelRunner(Runner):
@@ -47,7 +47,6 @@ class ParallelRunner(Runner):
 
     
     def run(self, parameter_space, tuning_options):
-        #print(f"Size parameter_space: {len(parameter_space)}", file=sys. stderr)
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
         results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(v, tuning_options), parameter_space))
         return results
