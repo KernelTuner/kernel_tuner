@@ -2,13 +2,11 @@ import json
 from pathlib import Path
 from shutil import copyfile
 
-import pytest
 import jsonschema
-import kernel_tuner
+import pytest
 
-from kernel_tuner.cache.convert import convert_cache_file
-from kernel_tuner.cache.convert import default_convert
-from kernel_tuner.cache.convert import VERSIONS
+import kernel_tuner
+from kernel_tuner.cache.convert import VERSIONS, convert_cache_file, convert_cache_to_t4, default_convert
 
 KERNEL_TUNER_PATH = Path(kernel_tuner.__file__).parent
 TEST_PATH         = Path(__file__).parent
@@ -34,6 +32,9 @@ NO_VERSION_FIELD  = TEST_CONVERT_PATH / "no_version_field.json"
 TOO_HIGH_VERSION  = TEST_CONVERT_PATH / "too_high_version.json"
 NOT_REAL_VERSION  = TEST_CONVERT_PATH / "not_real_version.json"
 
+# T4 Test files
+T4_CACHE_INPUT = TEST_CONVERT_PATH / "t4_cache_input.json"
+T4_TARGET_OUTPUT = TEST_CONVERT_PATH / "t4_target_output.json"
 
 
 
@@ -121,6 +122,16 @@ class TestConvertCache:
     
         return
     
+    def test_convert_to_t4(self):
+        with open(T4_CACHE_INPUT) as cache_input_file, open(T4_TARGET_OUTPUT) as t4_target_output_file:
+            cache_input = json.load(cache_input_file)
+            t4_target_output = json.load(t4_target_output_file)
+        
+        t4_converted_output = convert_cache_to_t4(cache_input)
+
+        if (t4_converted_output == t4_target_output):
+            raise ValueError("Converted T4 output does not match target output")
+    
     # Mock convert functions
     def _c1_0_0_to_1_1_0(cache):
         cache["field2"] = dict()
@@ -139,7 +150,7 @@ class TestConvertCache:
     _CONVERT_FUNCTIONS = {
         "1.0.0": _c1_0_0_to_1_1_0,
         "1.1.0": _c1_1_0_to_1_1_1,
-        "1.1.1": _c1_1_1_to_1_2_0, 
+        "1.1.1": _c1_1_1_to_1_2_0
     }
 
     _VERSIONS = [

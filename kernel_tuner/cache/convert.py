@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
-import semver
 from pathlib import Path
 from typing import Callable
 
+import semver
 
 PROJECT_DIR = Path(__file__).parents[0]
 
@@ -59,8 +59,8 @@ def convert_cache_file(filestr : str,
         cache = json.load(cachefile)
 
     if "schema_version" not in cache:
-        raise ValueError(f"Cache file has no \"schema_version\" field, "
-                         f"unversioned conversion not yet implemented.")
+        raise ValueError("Cache file has no \"schema_version\" field, "
+                         "unversioned conversion not yet implemented.")
     
     version = cache["schema_version"]
     target_version = versions[-1]
@@ -133,6 +133,44 @@ def default_convert(cache       : dict,
 
     return new_cache
 
+
+def convert_cache_to_t4(cache: dict) -> dict:
+    """Converts a cache file to the T4 auto-tuning format.
+    
+    ``cache`` is a ``dict`` representing the cache file to convert.
+
+    Returns a ``dict`` representing the converted cache file.
+    """
+    t4 = { 
+        "results": [],
+        "schema_version": "1.0.0" 
+    }
+    
+    # For every cache line, create a T4 result line
+    for cache_line in cache["cache"].values():
+        t4["results"].append({
+            "timestamp": cache_line["timestamp"],
+            "configuration": {
+                tune_param_key: cache_line[tune_param_key] for tune_param_key in cache["tune_params_keys"]
+            },
+            "times": {
+                "compilation": cache_line["compile_time"],
+                "benchmark": cache_line["benchmark_time"],
+                "framework": cache_line["framework_time"],
+                "search_algorithm": 0,
+                "validation": 0,
+                "runtimes": cache_line["times"]
+            },
+            "invalidity": "correct",
+            "correctness": 1,
+            "measurements": [
+                { "name": "time", "value": cache_line["time"], "unit": "ms" },
+                { "name": "GFLOP/s", "value": cache_line["GFLOP/s"], "unit": "" }
+            ],
+            "objectives": [ cache["objective"] ]
+        })
+
+    return t4
 
 
 ########################################################################
