@@ -26,6 +26,7 @@ class ParallelRunner(Runner):
         self.observers = observers
         self.iterations = iterations
         self.device_options = device_options
+        self.cache_manager = None
 
         # Define cluster resources
         self.num_gpus = get_num_devices(kernel_source.lang)
@@ -46,7 +47,12 @@ class ParallelRunner(Runner):
         return self.dev.get_environment()
 
     
-    def run(self, parameter_space, tuning_options):
+    def run(self, parameter_space, tuning_options, cache_manager):
+        self.cache_manager = cache_manager
+        # Distribute the cache manager to all actors and initialize runners of actors
+        for actor in self.actors:
+            actor.set_cache_manager.remote(cache_manager)
+            actor.init_runner.remote()
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
         results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(v, tuning_options), parameter_space))
         return results
