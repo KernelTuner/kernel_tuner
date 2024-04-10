@@ -61,7 +61,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         resources[gpu_resource_name] = 1
     # Initialize Ray
     os.environ["RAY_DEDUP_LOGS"] = "0"
-    ray.init(resources=resources, include_dashboard=True)
+    ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
     cache_manager = CacheManager.remote(tuning_options)
     # Create RemoteActor instances
     actors = [create_actor_on_gpu(id, runner, cache_manager) for id in range(num_gpus)]
