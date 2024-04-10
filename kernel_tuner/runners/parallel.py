@@ -36,7 +36,7 @@ class ParallelRunner(Runner):
             resources[gpu_resource_name] = 1
         # Initialize Ray
         os.environ["RAY_DEDUP_LOGS"] = "0"
-        ray.init(resources=resources, include_dashboard=True)
+        ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
         # Create RemoteActor instances
         self.actors = [self.create_actor_on_gpu(id) for id in range(self.num_gpus)]
         # Create a pool of RemoteActor actors
