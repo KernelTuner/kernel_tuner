@@ -47,7 +47,7 @@ kernel_string = generate_directive_function(
 tune_params = OrderedDict()
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
 
-answer = [None, None, args[0] + args[1], None]
+answer = [None, None, args[0] + args[1], None, None]
 
 tune_kernel(
     "vector_add",
