@@ -48,11 +48,12 @@ def test_parse_size():
 
 def test_create_data_directive():
     assert (
-        create_data_directive("array", True, False)
-        == "#pragma acc enter data create(array)\n#pragma acc update device(array)\n"
+        create_data_directive("array", 1024, True, False)
+        == "#pragma acc enter data create(array[1024])\n#pragma acc update device(array[1024])\n"
     )
     assert (
-        create_data_directive("matrix", False, True) == "!$acc enter data create(matrix)\n!$acc update device(matrix)\n"
+        create_data_directive("matrix", 35, False, True)
+        == "!$acc enter data create(matrix[35])\n!$acc update device(matrix[35])\n"
     )
 
 
