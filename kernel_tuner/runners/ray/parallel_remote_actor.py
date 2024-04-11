@@ -30,11 +30,14 @@ class ParallelRemoteActor():
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
         self.kernel_options = kernel_options
+        self.device_options = device_options
+        self.iterations = iterations
+        self.observers = observers
         self.cache_manager = None
         self.runner = None
 
     def execute(self, element, tuning_options):
-        self.runner.run(element, tuning_options, self.cache_manager)
+        return self.runner.run([element], tuning_options)[0]
 
     def set_cache_manager(self, cache_manager):
         self.cache_manager = cache_manager
