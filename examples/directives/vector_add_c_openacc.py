@@ -24,7 +24,7 @@ int main(void) {
 	float * c = (float *) malloc(VECTOR_SIZE * sizeof(float));
 
 	#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)
-	#pragma acc parallel num_gangs(ngangs) vector_length(nthreads)
+	#pragma acc parallel vector_length(nthreads)
 	#pragma acc loop
 	for ( int i = 0; i < size; i++ ) {
 		c[i] = a[i] + b[i];
@@ -50,7 +50,6 @@ data = extract_directive_data(code)
 args = allocate_signature_memory(data["vector_add"], preprocessor)
 
 tune_params = OrderedDict()
-tune_params["ngangs"] = [2**i for i in range(0, 15)]
 tune_params["nthreads"] = [2**i for i in range(0, 11)]
 
 answer = [None, None, args[0] + args[1], None]

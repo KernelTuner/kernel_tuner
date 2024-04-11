@@ -22,7 +22,7 @@ subroutine vector_add(A, B, C, n)
     integer (c_int), intent(in) :: n
 
     !$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)
-    !$acc parallel loop num_gangs(ngangs) vector_length(vlength)
+    !$acc parallel loop vector_length(nthreads)
     do i = 1, n
       C(i) = A(i) + B(i)
     end do
@@ -45,8 +45,7 @@ data = extract_directive_data(code)
 args = allocate_signature_memory(data["vector_add"], preprocessor)
 
 tune_params = OrderedDict()
-tune_params["ngangs"] = [2**i for i in range(0, 15)]
-tune_params["vlength"] = [2**i for i in range(0, 11)]
+tune_params["nthreads"] = [2**i for i in range(0, 11)]
 
 answer = [None, None, args[0] + args[1], None]
 
