@@ -53,7 +53,7 @@ def test_create_data_directive():
     )
     assert (
         create_data_directive("matrix", 35, False, True)
-        == "!$acc enter data create(matrix[35])\n!$acc update device(matrix[35])\n"
+        == "!$acc enter data create(matrix(35))\n!$acc update device(matrix(35))\n"
     )
 
 
