@@ -21,7 +21,7 @@ subroutine vector_add(A, B, C, n)
     real (c_float), intent(in), dimension(VECTOR_SIZE) :: A, B
     integer (c_int), intent(in) :: n
 
-    !$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)
+    !$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE) i(int:VECTOR_SIZE)
     !$acc parallel loop vector_length(nthreads)
     do i = 1, n
       C(i) = A(i) + B(i)
