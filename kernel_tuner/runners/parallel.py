@@ -55,6 +55,7 @@ class ParallelRunner(Runner):
             actor.init_runner.remote()
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
         results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(v, tuning_options), parameter_space))
+        tuning_options = ray.get(cache_manager.get_tuning_options.remote())
         return results
     
     def create_actor_on_gpu(self, gpu_id):
