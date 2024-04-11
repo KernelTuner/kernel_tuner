@@ -363,5 +363,8 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
                 args.append(np.float64(size))
             elif p_type == "int":
                 args.append(np.int32(size))
+            else:
+                # The parameter is some user defined type
+                args.append(np.byte(size))
 
     return args
