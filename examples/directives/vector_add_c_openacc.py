@@ -45,7 +45,9 @@ body = extract_directive_code(code)
 data = extract_directive_data(code)
 args = allocate_signature_memory(data["vector_add"], preprocessor)
 # Generate kernel string
-kernel_string = generate_directive_function(preprocessor, signature["vector_add"], body["vector_add"], data=data)
+kernel_string = generate_directive_function(
+    preprocessor, signature["vector_add"], body["vector_add"], data=data["vector_add"]
+)
 
 
 tune_params = OrderedDict()
