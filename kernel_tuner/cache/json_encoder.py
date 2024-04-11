@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from __future__ import annotations
 
 import json
@@ -74,9 +73,10 @@ class CacheJSONEncoder(json.JSONEncoder):
 
         if force:
             return (
-                    "{ "
-                    + ", ".join(f"{json.dumps(k)}: {self.encode(el)}" for k, el in o.items())
-                    + "}"
+                "{ "
+                + ", ".join(f"{json.dumps(k)}: {self.encode(el)
+                                                }" for k, el in o.items())
+                + "}"
             )
 
         has_cache = False
@@ -122,7 +122,8 @@ class CacheJSONEncoder(json.JSONEncoder):
         self.indentation_level += 1
         for key, item in o.items():
             cache_values += self.indent_str + "\"" + key + "\": {"
-            cache_values += ", ".join(f"{json.dumps(k)}: {self.encode(el, True)}" for k, el in item.items())
+            cache_values += ", ".join(f"{json.dumps(k)
+                                         }: {self.encode(el, True)}" for k, el in item.items())
             cache_values += "},\n"
         self.indentation_level -= 1
         cache_values = cache_values.strip(",\n")
@@ -140,5 +141,6 @@ class CacheJSONEncoder(json.JSONEncoder):
             return self.indentation_level * self.indent
         else:
             raise ValueError(
-                f"indent must either be of type int or str (is: {type(self.indent)})"
+                f"indent must either be of type int or str (is: {
+                    type(self.indent)})"
             )
