@@ -327,7 +327,7 @@ def generate_directive_function(
             if "*" in data[name][0]:
                 size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
                 code += create_data_directive(name, size, cpp, f90)
-    code += wrap_timing(body)
+    code += wrap_timing(body) + "\n"
     if cpp:
         code += "\n}"
     elif f90:
