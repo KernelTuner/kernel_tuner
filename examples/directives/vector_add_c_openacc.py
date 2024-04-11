@@ -52,7 +52,7 @@ kernel_string = generate_directive_function(
 tune_params = dict()
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
 metrics = dict()
-metrics["GB/s"] = lambda x: ((2 * 4 * len(args[0])) + (4 * len(args[0]))) / x["time"] / 10**3 / 10**9
+metrics["GB/s"] = lambda x: ((2 * 4 * len(args[0])) + (4 * len(args[0]))) / (x["time"] / 10**3) / 10**9
 
 answer = [None, None, args[0] + args[1], None]
 
