@@ -43,13 +43,15 @@ def large(cache):
 
 @pytest.fixture(params=[0, -1], ids=["first_cache_line", "last_cache_line"])
 def cache_line(cache, request) -> CacheLineJSON:
-    '''
-    Important: when using fixture large, don't put `cache_line` before fixture
-    `large` in the parameter list of a test or fixture'''
+    """Fixture for obtaining a reference to an arbitrary cache line.
+
+    Note: When using fixture large, don't put `cache_line` before
+    fixture `large` in the parameter list of a test or fixture
+    """
     index = request.param
-    cache_keys = list(cache['cache'].keys())
+    cache_keys = list(cache["cache"].keys())
     cache_key = cache_keys[index]
-    return cache['cache'][cache_key]
+    return cache["cache"][cache_key]
 
 
 @pytest.fixture()
@@ -66,79 +68,96 @@ def is_invalid(validator, cache):
 
 
 class TestCacheFileSchema:
-    def test_small_cache_is_valid(self, cache, is_valid): pass
+    def test_small_cache_is_valid(self, cache, is_valid):
+        pass
 
-    def test_large_cache_is_valid(self, large, cache, is_valid): pass
+    def test_large_cache_is_valid(self, large, cache, is_valid):
+        pass
 
     def test_schema_version_is_valid(self, cache, is_invalid):
         cache["schema_version"] = "0.1.0"
 
-    @pytest.mark.parametrize("key", [
-        "schema_version",
-        "device_name",
-        "kernel_name",
-        "problem_size",
-        "tune_params_keys",
-        "tune_params",
-        "objective",
-        "cache",
-    ])
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "schema_version",
+            "device_name",
+            "kernel_name",
+            "problem_size",
+            "tune_params_keys",
+            "tune_params",
+            "objective",
+            "cache",
+        ],
+    )
     def test_required_keys__in_root(self, cache, is_invalid, key):
         del cache[key]
 
-    @pytest.mark.parametrize("key,value", [
-        ("schema_version", 1234),
-        ("device_name", 2312),
-        ("kernel_name", True),
-        ("problem_size", 2.5),
-        ("tune_params_keys", {}),
-        ("tune_params", []),
-        ("objective", 4.5),
-        ("cache", []),
-    ])
+    @pytest.mark.parametrize(
+        "key,value",
+        [
+            ("schema_version", 1234),
+            ("device_name", 2312),
+            ("kernel_name", True),
+            ("problem_size", 2.5),
+            ("tune_params_keys", {}),
+            ("tune_params", []),
+            ("objective", 4.5),
+            ("cache", []),
+        ],
+    )
     def test_property_types__in_root(self, cache, is_invalid, key, value):
         cache[key] = value
 
-    @pytest.mark.parametrize("key,value", {
-        ("my_very_uncommon_key", 1),
-        ("fewajfewaijfewa", 2),
-    })
-    def test_additional_props_allowed__in_root(self, cache, is_valid,
-                                               key, value):
+    @pytest.mark.parametrize(
+        "key,value",
+        {
+            ("my_very_uncommon_key", 1),
+            ("fewajfewaijfewa", 2),
+        },
+    )
+    def test_additional_props_allowed__in_root(self, cache, is_valid, key, value):
         cache[key] = value
 
-    @pytest.mark.parametrize("key", [
-        "time",
-        "compile_time",
-        "verification_time",
-        "benchmark_time",
-        "strategy_time",
-        "framework_time",
-        "timestamp",
-    ])
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "time",
+            "compile_time",
+            "verification_time",
+            "benchmark_time",
+            "strategy_time",
+            "framework_time",
+            "timestamp",
+        ],
+    )
     def test_required_keys__in_cache_line(self, cache_line, is_invalid, key):
         del cache_line[key]
 
-    @pytest.mark.parametrize("key,value", [
-        ("time", True),
-        ("times", {}),
-        ("times", ["x"]),
-        ("compile_time", None),
-        ("verification_time", 2.5),
-        ("benchmark_time", "Invalid"),
-        ("GFLOP/s", False),
-        ("strategy_time", 100.001),
-        ("framework_time", "15"),
-        ("timestamp", 42),
-    ])
-    def test_property_types__in_cache_line(self, cache_line, is_invalid,
-                                           key, value):
+    @pytest.mark.parametrize(
+        "key,value",
+        [
+            ("time", True),
+            ("times", {}),
+            ("times", ["x"]),
+            ("compile_time", None),
+            ("verification_time", 2.5),
+            ("benchmark_time", "Invalid"),
+            ("GFLOP/s", False),
+            ("strategy_time", 100.001),
+            ("framework_time", "15"),
+            ("timestamp", 42),
+        ],
+    )
+    def test_property_types__in_cache_line(self, cache_line, is_invalid, key, value):
         cache_line[key] = value
 
-    @pytest.mark.parametrize("key,value", [
-        ("anyParameter", 45),
-        ("xyz", [2, 3, 4]),
-    ])
-    def test_additional_props_allowed__in_cache_line(
-            self, cache_line, is_valid, key, value):
+    @pytest.mark.parametrize(
+        "key,value",
+        [
+            ("anyParameter", 45),
+            ("xyz", [2, 3, 4]),
+        ],
+    )
+    def test_additional_props_allowed__in_cache_line(self, cache_line, is_valid, key, value):
         cache_line[key] = value

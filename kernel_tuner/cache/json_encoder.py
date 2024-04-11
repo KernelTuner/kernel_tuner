@@ -1,3 +1,5 @@
+"""Provides an instance of JSONEncoder in order to encode JSON to our own readable format."""
+
 from __future__ import annotations
 
 import json
@@ -5,12 +7,20 @@ import json
 
 # Custom encoder class that inherits from json.JSONEncoder
 class CacheJSONEncoder(json.JSONEncoder):
+    """Subclass of JSONEncoder used in Kernel Tuner.
+
+    This encoder ensures that each cache entry gets its own separate line, in order to make cache files more readable
+    to the human eye.
+    """
+
     def __init__(self, *args, **kwargs):
+        """Initializes a new CacheJSONEncoder object."""
         super().__init__(*args, **kwargs)
         self.indentation_level = 0
 
     def encode(self, o, force=False):
-        """
+        """Encodes any JSON object.
+
         Overwrites the encode function of the JSONEncoder by a custom one. It acts as the usual
         encoder unless o is of type list, tuple or dict. We then call _encode_list and _encode_object
         to handle our custom encoding.
@@ -39,8 +49,7 @@ class CacheJSONEncoder(json.JSONEncoder):
         )
 
     def _encode_list(self, o, force=False):
-        """
-        Encodes a list or tuple like normal unless we force it to print on a single line.
+        """Encodes a list or tuple like normal unless we force it to print on a single line.
 
         Parameters:
             o (list or tuple): The object we are encoding.
@@ -52,14 +61,13 @@ class CacheJSONEncoder(json.JSONEncoder):
         if force:
             return "[" + ", ".join(self.encode(el) for el in o) + "]"
         self.indentation_level += 1
-        output = [self.indent_str + self.encode(el) for el in o]
+        output = [self._indent_str + self.encode(el) for el in o]
         self.indentation_level -= 1
-        return "[\n" + ",\n".join(output) + "\n" + self.indent_str + "]"
+        return "[\n" + ",\n".join(output) + "\n" + self._indent_str + "]"
 
     # For encode object we go through what the object contains and write it to the file.
     def _encode_object(self, o, force=False):
-        """
-        Encodes a dict like normal unless we force it to print on a single line.
+        """Encodes a dict like normal unless we force it to print on a single line.
 
         Parameters:
             o (dict): The object we are encoding.
@@ -72,12 +80,7 @@ class CacheJSONEncoder(json.JSONEncoder):
             return "{}"
 
         if force:
-            return (
-                "{ "
-                + ", ".join(f"{json.dumps(k)}: {self.encode(el)
-                                                }" for k, el in o.items())
-                + "}"
-            )
+            return "{ " + ", ".join(f"{json.dumps(k)}: {self.encode(el)}" for k, el in o.items()) + "}"
 
         has_cache = False
         cache_values = ""
@@ -96,19 +99,18 @@ class CacheJSONEncoder(json.JSONEncoder):
             o = dict(sorted(o.items(), key=lambda x: x[0]))
 
         self.indentation_level += 1
-        output = [
-            f"{self.indent_str}{json.dumps(k)}: {self.encode(v)}" for k, v in o.items()
-        ]
+        output = [f"{self._indent_str}{json.dumps(k)}: {self.encode(v)}" for k, v in o.items()]
 
         # We call _encode_cache if we detect the key "cache"
         if has_cache:
             output.append(self._encode_cache(cache_values))
 
         self.indentation_level -= 1
-        return "{\n" + ",\n".join(output) + "\n" + self.indent_str + "}"
+        return "{\n" + ",\n".join(output) + "\n" + self._indent_str + "}"
 
     def _encode_cache(self, o: dict) -> str:
-        """
+        """Encodes the value of the cache key in the cache file.
+
         Encodes a dict in the way we want for our cache files where every item in the key "cache"
         is written line by line improving readability.
 
@@ -118,29 +120,22 @@ class CacheJSONEncoder(json.JSONEncoder):
         Returns:
             str: The json we have encoded as string.
         """
-        cache_values = self.indent_str + '"cache": {\n'
+        cache_values = self._indent_str + '"cache": {\n'
         self.indentation_level += 1
         for key, item in o.items():
-            cache_values += self.indent_str + "\"" + key + "\": {"
-            cache_values += ", ".join(f"{json.dumps(k)
-                                         }: {self.encode(el, True)}" for k, el in item.items())
+            cache_values += self._indent_str + '"' + key + '": {'
+            cache_values += ", ".join(f"{json.dumps(k)}: {self.encode(el, True)}" for k, el in item.items())
             cache_values += "},\n"
         self.indentation_level -= 1
         cache_values = cache_values.strip(",\n")
         cache_values += "}"
         return cache_values
 
-    def iterencode(self, o, **kwargs):
-        return self.encode(o)
-
     @property
-    def indent_str(self) -> str:
+    def _indent_str(self) -> str:
         if isinstance(self.indent, int):
             return " " * (self.indentation_level * self.indent)
         elif isinstance(self.indent, str):
             return self.indentation_level * self.indent
         else:
-            raise ValueError(
-                f"indent must either be of type int or str (is: {
-                    type(self.indent)})"
-            )
+            raise ValueError(f"indent must either be of type int or str (is: {type(self.indent)})")
