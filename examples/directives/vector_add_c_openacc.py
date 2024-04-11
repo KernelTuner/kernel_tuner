@@ -50,7 +50,7 @@ data = extract_directive_data(code)
 args = allocate_signature_memory(data["vector_add"], preprocessor)
 
 tune_params = OrderedDict()
-tune_params["nthreads"] = [2**i for i in range(0, 11)]
+tune_params["nthreads"] = [32*i for i in range(1, 33)]
 
 answer = [None, None, args[0] + args[1], None]
 
