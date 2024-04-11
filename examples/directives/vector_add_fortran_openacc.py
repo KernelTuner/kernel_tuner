@@ -32,20 +32,18 @@ subroutine vector_add(A, B, C, n)
 end subroutine vector_add
 """
 
-# Extract tunable directive and generate kernel_string
+# Extract tunable directive
 preprocessor = extract_preprocessor(code)
 signature = extract_directive_signature(code)
 body = extract_directive_code(code)
-kernel_string = generate_directive_function(
-    preprocessor, signature["vector_add"], body["vector_add"]
-)
-
 # Allocate memory on the host
 data = extract_directive_data(code)
 args = allocate_signature_memory(data["vector_add"], preprocessor)
+# Generate kernel string
+kernel_string = generate_directive_function(preprocessor, signature["vector_add"], body["vector_add"], data=data)
 
 tune_params = OrderedDict()
-tune_params["nthreads"] = [32*i for i in range(1, 33)]
+tune_params["nthreads"] = [32 * i for i in range(1, 33)]
 
 answer = [None, None, args[0] + args[1], None]
 
