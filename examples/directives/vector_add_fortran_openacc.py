@@ -46,6 +46,8 @@ kernel_string = generate_directive_function(
 
 tune_params = OrderedDict()
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
+metrics = dict()
+metrics["GB/s"] = lambda x: ((2 * 4 * len(args[0])) + (4 * len(args[0]))) / x["time"] / 10**3 / 10**9
 
 answer = [None, None, args[0] + args[1], None, None]
 
@@ -55,6 +57,7 @@ tune_kernel(
     0,
     args,
     tune_params,
+    metrics=metrics,
     answer=answer,
     compiler_options=["-fast", "-acc=gpu"],
     compiler="nvfortran",
