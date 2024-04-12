@@ -57,6 +57,11 @@ def test_create_data_directive():
     )
 
 
+def test_exit_data_directive():
+    assert exit_data_directive("array", 1024, True, False) == "#pragma acc exit data copyout(array[1024])\n"
+    assert exit_data_directive("matrix", 35, False, True) == "!$acc exit data copyout(matrix(35))\n"
+
+
 def test_extract_directive_code():
     code = """
         #include <stdlib.h>
@@ -177,6 +182,17 @@ def test_wrap_timing():
         wrapped
         == "auto kt_timing_start = std::chrono::steady_clock::now();\n#pragma acc\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto kt_timing_end = std::chrono::steady_clock::now();\nstd::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;\nreturn elapsed_time.count();"
     )
+
+
+def test_wrap_data():
+    code_cpp = "// this is a comment\n"
+    code_f90 = "! this is a comment\n"
+    data = {"array": ["int*", "size"]}
+    preprocessor = ["#define size 42"]
+    expected_cpp = "#pragma acc enter data create(array[42])\n#pragma acc update device(array[42])\n// this is a comment\n#pragma acc exit data copyout(array[42])\n"
+    assert wrap_data(code_cpp, data, preprocessor, None, True, False) == expected_cpp
+    expected_f90 = "!$acc enter data create(array(42))\n!$acc update device(array(42))\n! this is a comment\n!$acc exit data copyout(array(42))\n"
+    assert wrap_data(code_f90, data, preprocessor, None, False, True) == expected_f90
 
 
 def test_extract_directive_signature():
