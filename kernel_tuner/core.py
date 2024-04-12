@@ -339,8 +339,10 @@ class DeviceInterface(object):
         self.max_threads = dev.max_threads
         self.flush_possible = lang.upper() not in ['OPENCL', 'HIP', 'C', 'FORTRAN'] and isinstance(self.dev.cache_size_L2, int) and self.dev.cache_size_L2 > 0
         if self.flush_possible:
-            t = np.int32
-            self.flush_array = np.zeros((self.dev.cache_size_L2 // t(0).itemsize), order='F').astype(t)
+            self.flush_type = np.uint8
+            size = (self.dev.cache_size_L2 // self.flush_type(0).itemsize)
+            # self.flush_array = np.zeros((size), order='F', dtype=self.flush_type)
+            self.flush_array = np.empty((size), order='F', dtype=self.flush_type)
             self.flush_alloc = None
         if not quiet:
             print("Using: " + self.dev.name)
@@ -353,7 +355,7 @@ class DeviceInterface(object):
                 self.dev.free_mem(self.flush_alloc)
             # inspired by https://github.com/NVIDIA/nvbench/blob/main/nvbench/detail/l2flush.cuh#L51
             self.flush_alloc = self.dev.allocate_ndarray(self.flush_array)
-            self.dev.memset(self.flush_alloc, value=0, size=self.flush_array.nbytes)
+            self.dev.memset(self.flush_alloc, value=1, size=self.flush_array.nbytes)
 
     def benchmark_default(self, func, gpu_args, threads, grid, result, flush_cache=True, recopy_arrays=None):
         """
@@ -367,7 +369,7 @@ class DeviceInterface(object):
         ]
 
         self.dev.synchronize()
-        for _ in range(self.iterations):
+        for i in range(self.iterations):
             if flush_cache:
                 self.flush_cache()
             if recopy_arrays is not None:
