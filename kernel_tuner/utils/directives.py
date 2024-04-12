@@ -348,7 +348,7 @@ def generate_directive_function(
     if len(initialization) > 1:
         code += initialization + "\n"
     if data is not None:
-        code += wrap_data(wrap_timing(body), data, preprocessor, user_dimensions, cpp, f90)
+        code += wrap_data(wrap_timing(body) + "\n", data, preprocessor, user_dimensions, cpp, f90)
     else:
         code += wrap_timing(body)
     if cpp:
