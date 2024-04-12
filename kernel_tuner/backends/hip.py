@@ -59,7 +59,7 @@ class HipFunctions(GPUBackend):
 
         self.name = self.hipProps._name.decode('utf-8')
         self.max_threads = self.hipProps.maxThreadsPerBlock
-        self.cache_size_L2 = self.hipProps.l2CacheSize
+        self.cache_size_L2 = int(self.hipProps.l2CacheSize)
         self.device = device
         self.compiler_options = compiler_options or []
         self.iterations = iterations

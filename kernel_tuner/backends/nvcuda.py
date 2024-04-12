@@ -72,6 +72,7 @@ class CudaFunctions(GPUBackend):
             cudart.cudaDeviceAttr.cudaDevAttrL2CacheSize, device
         )
         cuda_error_check(err)
+        self.cache_size_L2 = int(self.cache_size_L2)
         self.cc = f"{major}{minor}"
         self.iterations = iterations
         self.current_module = None
@@ -330,7 +331,7 @@ class CudaFunctions(GPUBackend):
         :type size: int
 
         """
-        err = cudart.cudaMemset(allocation, value, size)
+        err = cudart.cudaMemset(allocation.__init__(), value, size)
         cuda_error_check(err)
 
     @staticmethod
