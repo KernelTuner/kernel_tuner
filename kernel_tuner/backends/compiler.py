@@ -146,9 +146,7 @@ class CompilerFunctions(CompilerBackend):
 
         for i, arg in enumerate(arguments):
             if not (isinstance(arg, (np.ndarray, np.number)) or is_cupy_array(arg)):
-                raise TypeError(
-                    f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}"
-                )
+                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}")
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
@@ -210,11 +208,7 @@ class CompilerFunctions(CompilerBackend):
 
         # detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
         if (
-            (
-                (suffix == ".cu")
-                or ("#include <cuda" in kernel_string)
-                or ("cudaMemcpy" in kernel_string)
-            )
+            ((suffix == ".cu") or ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string))
             and self.compiler == "g++"
             and self.nvcc_available
         ):
@@ -271,11 +265,7 @@ class CompilerFunctions(CompilerBackend):
             if platform.system() == "Darwin":
                 lib_extension = ".dylib"
 
-            subprocess.check_call(
-                [self.compiler, "-c", source_file]
-                + compiler_options
-                + ["-o", filename + ".o"]
-            )
+            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
             subprocess.check_call(
                 [self.compiler, filename + ".o"]
                 + compiler_options
