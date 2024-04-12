@@ -13,7 +13,7 @@ from kernel_tuner.utils.directives import (
 from collections import OrderedDict
 
 code = """
-#define VECTOR_SIZE 65536
+#define VECTOR_SIZE 1000000
 
 subroutine vector_add(A, B, C, n)
     use iso_c_binding

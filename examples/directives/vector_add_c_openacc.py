@@ -15,7 +15,7 @@ from collections import OrderedDict
 code = """
 #include <stdlib.h>
 
-#define VECTOR_SIZE 65536
+#define VECTOR_SIZE 1000000
 
 int main(void) {
 	int size = VECTOR_SIZE;
