@@ -319,7 +319,7 @@ class CompilerFunctions(CompilerBackend):
         C backend does not support asynchronous launches"""
         pass
 
-    def run_kernel(self, func, c_args, threads, grid):
+    def run_kernel(self, func, c_args, threads, grid, stream):
         """runs the kernel once, returns whatever the kernel returns
 
         :param func: A C function compiled for this specific configuration
@@ -331,11 +331,15 @@ class CompilerFunctions(CompilerBackend):
         :type c_args: list(Argument)
 
         :param threads: Ignored, but left as argument for now to have the same
-            interface as CudaFunctions and OpenCLFunctions.
+            interface as Backend.
         :type threads: any
 
         :param grid: Ignored, but left as argument for now to have the same
-            interface as CudaFunctions and OpenCLFunctions.
+            interface as Backend.
+        :type grid: any
+
+        :param stream: Ignored, but left as argument for now to have the same
+            interface as Backend.
         :type grid: any
 
         :returns: A robust average of values returned by the C function.
