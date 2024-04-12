@@ -49,17 +49,17 @@ def test_parse_size():
 def test_create_data_directive():
     assert (
         create_data_directive("array", 1024, True, False)
-        == "#pragma acc enter data create(array[1024])\n#pragma acc update device(array[1024])\n"
+        == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
     )
     assert (
         create_data_directive("matrix", 35, False, True)
-        == "!$acc enter data create(matrix(35))\n!$acc update device(matrix(35))\n"
+        == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
     )
 
 
 def test_exit_data_directive():
-    assert exit_data_directive("array", 1024, True, False) == "#pragma acc exit data copyout(array[1024])\n"
-    assert exit_data_directive("matrix", 35, False, True) == "!$acc exit data copyout(matrix(35))\n"
+    assert exit_data_directive("array", 1024, True, False) == "#pragma acc exit data copyout(array[:1024])\n"
+    assert exit_data_directive("matrix", 35, False, True) == "!$acc exit data copyout(matrix(:35))\n"
 
 
 def test_extract_directive_code():
@@ -190,9 +190,9 @@ def test_wrap_data():
     code_f90 = "! this is a comment\n"
     data = {"array": ["int*", "size"]}
     preprocessor = ["#define size 42"]
-    expected_cpp = "#pragma acc enter data create(array[42])\n#pragma acc update device(array[42])\n// this is a comment\n#pragma acc exit data copyout(array[42])\n"
+    expected_cpp = "#pragma acc enter data create(array[:42])\n#pragma acc update device(array[:42])\n// this is a comment\n#pragma acc exit data copyout(array[:42])\n"
     assert wrap_data(code_cpp, data, preprocessor, None, True, False) == expected_cpp
-    expected_f90 = "!$acc enter data create(array(42))\n!$acc update device(array(42))\n! this is a comment\n!$acc exit data copyout(array(42))\n"
+    expected_f90 = "!$acc enter data create(array(:42))\n!$acc update device(array(:42))\n! this is a comment\n!$acc exit data copyout(array(:42))\n"
     assert wrap_data(code_f90, data, preprocessor, None, False, True) == expected_f90
 
 

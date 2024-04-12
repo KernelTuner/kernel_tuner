@@ -123,9 +123,9 @@ def create_data_directive(name: str, size: int, cpp: bool, f90: bool) -> str:
     data_directive = str()
 
     if cpp:
-        data_directive += f"#pragma acc enter data create({name}[{size}])\n#pragma acc update device({name}[{size}])\n"
+        data_directive += f"#pragma acc enter data create({name}[:{size}])\n#pragma acc update device({name}[:{size}])\n"
     elif f90:
-        data_directive += f"!$acc enter data create({name}({size}))\n!$acc update device({name}({size}))\n"
+        data_directive += f"!$acc enter data create({name}(:{size}))\n!$acc update device({name}(:{size}))\n"
 
     return data_directive
 
@@ -135,9 +135,9 @@ def exit_data_directive(name: str, size: int, cpp: bool, f90: bool) -> str:
     data_directive = str()
 
     if cpp:
-        data_directive += f"#pragma acc exit data copyout({name}[{size}])\n"
+        data_directive += f"#pragma acc exit data copyout({name}[:{size}])\n"
     elif f90:
-        data_directive += f"!$acc exit data copyout({name}({size}))\n"
+        data_directive += f"!$acc exit data copyout({name}(:{size}))\n"
 
     return data_directive
 
