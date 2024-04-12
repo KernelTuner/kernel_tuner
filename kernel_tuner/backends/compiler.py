@@ -309,7 +309,7 @@ class CompilerFunctions(CompilerBackend):
         C backend does not support asynchronous launches"""
         pass
 
-    def run_kernel(self, func, c_args, threads, grid, stream):
+    def run_kernel(self, func, c_args, threads, grid, stream=None):
         """runs the kernel once, returns whatever the kernel returns
 
         :param func: A C function compiled for this specific configuration
