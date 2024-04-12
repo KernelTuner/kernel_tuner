@@ -356,7 +356,7 @@ def generate_directive_function(
     else:
         code += wrap_timing(body)
     if cpp:
-        code += close_cpp_timing(code)
+        code = close_cpp_timing(code)
         code += "\n}"
     elif f90:
         name = signature.split(" ")[1].split("(")[0]
