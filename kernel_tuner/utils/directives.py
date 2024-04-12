@@ -298,17 +298,21 @@ def wrap_timing(code: str) -> str:
         start = "auto kt_timing_start = std::chrono::steady_clock::now();"
         end = "auto kt_timing_end = std::chrono::steady_clock::now();"
         timing = "std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;"
-        ret = "return elapsed_time.count();"
     elif f90:
         start = "call system_clock(kt_timing_start, kt_rate)"
         end = "call system_clock(kt_timing_end)"
         timing = "timing = (real(kt_timing_end - kt_timing_start) / real(kt_rate)) * 1e3"
-        ret = ""
 
-    return "\n".join([start, code, end, timing, ret])
+    return "\n".join([start, code, end, timing])
+
+
+def close_cpp_timing(code: str) -> str:
+    """In C++ we need to return the measured time"""
+    return code + "\nreturn elapsed_time.count();\n"
 
 
 def wrap_data(code: str, data: dict, preprocessor: list, user_dimensions: dict, cpp: bool, f90: bool) -> str:
+    """Insert data directives before and after the timed code"""
     intro = str()
     for name in data.keys():
         if "*" in data[name][0]:
@@ -352,6 +356,7 @@ def generate_directive_function(
     else:
         code += wrap_timing(body)
     if cpp:
+        code += close_cpp_timing(code)
         code += "\n}"
     elif f90:
         name = signature.split(" ")[1].split("(")[0]

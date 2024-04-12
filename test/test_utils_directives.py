@@ -178,9 +178,10 @@ def test_extract_preprocessor():
 def test_wrap_timing():
     code = "#pragma acc\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}"
     wrapped = wrap_timing(code)
+    wrapped = close_cpp_timing(wrapped)
     assert (
         wrapped
-        == "auto kt_timing_start = std::chrono::steady_clock::now();\n#pragma acc\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto kt_timing_end = std::chrono::steady_clock::now();\nstd::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;\nreturn elapsed_time.count();"
+        == "auto kt_timing_start = std::chrono::steady_clock::now();\n#pragma acc\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto kt_timing_end = std::chrono::steady_clock::now();\nstd::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;\nreturn elapsed_time.count();\n"
     )
 
 
