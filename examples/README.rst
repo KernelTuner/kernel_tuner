@@ -8,6 +8,12 @@ Except for `test\_vector\_add.py <https://github.com/kerneltuner/kernel_tuner/bl
 `test\_vector\_add_parameterized.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/test_vector_add_parameterized.py>`__,
 which show how to write tests for GPU kernels with Kernel Tuner.
 
+.. note::
+
+    Please do not use the examples as performance benchmarks.
+    The examples here are created specifically to highlight certain features in Kernel Tuner.
+    Please contact the developers if you are interested in benchmarking Kernel Tuner.
+
 Below we list the example applications and the features they illustrate.
 
 Vector Add

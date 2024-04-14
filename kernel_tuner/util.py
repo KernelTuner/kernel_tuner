@@ -1167,8 +1167,9 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         tuning_options.cache = cached_data["cache"]
 
 
-def read_cache(cache, open_cache=True):
-    """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending."""
+def correct_open_cache(cache, open_cache=True):
+    """ if cache file was not properly closed, pretend it was properly closed """
+
     with open(cache, "r") as cachefile:
         filestr = cachefile.read().strip()
 
@@ -1184,6 +1185,13 @@ def read_cache(cache, open_cache=True):
             # if it was properly closed, open it for appending new entries
             with open(cache, "w") as cachefile:
                 cachefile.write(filestr[:-3] + ",")
+
+    return filestr
+
+def read_cache(cache, open_cache=True):
+    """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending."""
+
+    filestr = correct_open_cache(cache, open_cache)
 
     error_configs = {
         "InvalidConfig": InvalidConfig(),
