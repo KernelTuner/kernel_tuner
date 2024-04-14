@@ -72,7 +72,7 @@ class CostFunc:
         # check if max_fevals is reached or time limit is exceeded
         util.check_stop_criterion(self.tuning_options)
 
-        # snap values in x to nearest actual value for each parameter unscale x if needed
+        # snap values in x to nearest actual value for each parameter, unscale x if needed
         if self.snap:
             if self.scaling:
                 params = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)

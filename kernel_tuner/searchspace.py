@@ -52,6 +52,7 @@ class Searchspace:
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.restrictions = restrictions
+        self._modified_restrictions = restrictions      # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads) 
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
@@ -166,6 +167,10 @@ class Searchspace:
             block_size_restriction_unspaced = f"{'*'.join(used_block_size_names)} <= {max_threads}"
             if block_size_restriction_spaced not in restrictions and block_size_restriction_unspaced not in restrictions:
                 restrictions.append(block_size_restriction_spaced)
+                if isinstance(self._modified_restrictions, list) and block_size_restriction_spaced not in self._modified_restrictions:
+                    self._modified_restrictions.append(block_size_restriction_spaced)
+                    if isinstance(self.restrictions, list):
+                        self.restrictions.append(block_size_restriction_spaced)
 
         # check for search space restrictions
         if restrictions is not None:
@@ -293,6 +298,11 @@ class Searchspace:
         )
         if len(valid_block_size_names) > 0:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
+            max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
+            if isinstance(self._modified_restrictions, list) and max_block_size_product not in self._modified_restrictions:
+                self._modified_restrictions.append(max_block_size_product)
+                if isinstance(self.restrictions, list):
+                    self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names))
 
         # construct the parameter space with the constraints applied
         return parameter_space.getSolutionsAsListDict(order=self.param_names)
@@ -302,10 +312,14 @@ class Searchspace:
         if isinstance(self.restrictions, list):
             for restriction in self.restrictions:
                 required_params = self.param_names
+
+                # convert to a Constraint type if necessary
                 if isinstance(restriction, tuple):
                     restriction, required_params = restriction
                 if callable(restriction) and not isinstance(restriction, Constraint):
                     restriction = FunctionConstraint(restriction)
+                
+                # add the Constraint
                 if isinstance(restriction, FunctionConstraint):
                     parameter_space.addConstraint(restriction, required_params)
                 elif isinstance(restriction, Constraint):
