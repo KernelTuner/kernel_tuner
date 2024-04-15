@@ -7,10 +7,11 @@ from os import PathLike
 from kernel_tuner.cache.json_encoder import CacheJSONEncoder
 
 
-TERMINATE_REGEX = re.compile(r"}\s*}$")
+OPTIONAL_COMMA_END_REGEX = re.compile(r",?$")
+CLOSING_BRACES_REGEX = re.compile(r"}\s*}$")
 
 
-def read_cache_file(file_path: PathLike) -> dict:
+def read_cache_file(file_path: PathLike):
     """Reads a cache file and returns its content as a dictionary.
 
     Parameters:
@@ -25,10 +26,13 @@ def read_cache_file(file_path: PathLike) -> dict:
         except json.JSONDecodeError:
             pass  # Loading failed
 
-        try:  # Try to load the file with appended terminator
-            return json.loads(file.read() + "}}")
+    with open(file_path, "r") as file:
+        try:  # Try to load the file with closing braces appended to it
+            text = file.read()
+            text = OPTIONAL_COMMA_END_REGEX.sub("}}", text)
+            return json.loads(text)
         except json.JSONDecodeError:
-            raise ValueError(f"Cache file {file} is corrupted")
+            raise ValueError(f"Cache file {file_path} is corrupted")
 
 
 def write_cache_file(cache_json: dict, file_path: PathLike, *, terminate=True):
@@ -43,5 +47,5 @@ def write_cache_file(cache_json: dict, file_path: PathLike, *, terminate=True):
         text = json.dumps(cache_json, cls=CacheJSONEncoder, indent=0)
         if not terminate:
             # TODO: Write test
-            text = TERMINATE_REGEX.sub("", text)
+            text = CLOSING_BRACES_REGEX.sub("", text)
         file.write(text)
