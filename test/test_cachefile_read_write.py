@@ -1,7 +1,8 @@
 import pytest
+import shutil
 from pathlib import Path
 
-from kernel_tuner.cache.file import read_cache_file, write_cache_file
+from kernel_tuner.cache.file import read_cache_file, write_cache_file, close_cache_file
 
 
 TEST_PATH = Path(__file__).parent
@@ -34,16 +35,25 @@ def test_write_cache_file(output_path):
     sample_cache = read_cache_file(CLOSED_CACHE_PATH)
 
     write_cache_file(sample_cache, output_path)
-
-    with open(output_path, 'r') as output, open(CLOSED_CACHE_PATH, 'r') as input:
+    with open(output_path, "r") as output, open(CLOSED_CACHE_PATH, "r") as input:
         assert output.read() == input.read()
 
 
-@pytest.mark.skip
 def test_write_open_cache_file(output_path):
     sample_cache = read_cache_file(OPEN_CACHE_COMMA_PATH)
 
     write_cache_file(sample_cache, output_path, keep_open=True)
+    with open(output_path, "r") as output, open(OPEN_CACHE_COMMA_PATH, "r") as input:
+        assert output.read() == input.read()
 
-    with open(output_path, 'r') as output, open(OPEN_CACHE_COMMA_PATH, 'r') as input:
+
+@pytest.mark.parametrize(
+    "filename",
+    [CLOSED_CACHE_PATH, OPEN_CACHE_NO_COMMA_PATH, OPEN_CACHE_COMMA_PATH],
+    ids=["closed cache", "open cache without comma", "open cache with comma"],
+)
+def test_close_cache_file(filename, output_path):
+    shutil.copy(filename, output_path)
+    close_cache_file(output_path)
+    with open(output_path, "r") as output, open(CLOSED_CACHE_PATH, "r") as input:
         assert output.read() == input.read()
