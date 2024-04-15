@@ -1,17 +1,19 @@
 import pytest
 import filecmp
 from pathlib import Path
+
 from kernel_tuner.cache.file import read_cache_file, write_cache_file
+
+
+TEST_PATH = Path(__file__).parent
+TEST_CACHE_PATH = TEST_PATH / "test_cache_files"
+CACHE_SAMPLE_PATH = TEST_CACHE_PATH / "convolution_A100.json"
 
 
 # Function that caculate the hash of a given file
 def test_read_cache_file():
-    current_file_dir = Path(__file__).resolve().parent.parent
-
-    input_file = current_file_dir / "test" / "SampleCacheFiles" / "convolution_A100.json"
-
     # Read device name of the given file
-    file_content = read_cache_file(input_file)
+    file_content = read_cache_file(CACHE_SAMPLE_PATH)
     device_name = file_content.get("device_name")
 
     # Check if the expected value of device name is in the file
@@ -24,13 +26,8 @@ def tmp_output_file(tmp_path):
 
 
 def test_write_cache_file(tmp_output_file):
-    current_file_dir = Path(__file__).resolve().parent.parent
+    sample_cache = read_cache_file(CACHE_SAMPLE_PATH)
 
-    input_file = current_file_dir / "test" / "SampleCacheFiles" / "convolution_A100.json"
+    write_cache_file(sample_cache, tmp_output_file)
 
-    # cache_file = read_cache_file(file_path)
-    write_cache_file(read_cache_file(input_file), tmp_output_file)
-
-    # Calculate the hashes of the original file and the written file
-    # Check if both hashes are the same
-    assert filecmp.cmp(tmp_output_file, input_file)
+    assert filecmp.cmp(tmp_output_file, CACHE_SAMPLE_PATH)
