@@ -63,6 +63,14 @@ def close_cache_file(filename: PathLike):
         file.truncate()
 
 
+def open_cache_file(filename: PathLike):
+    """Opens a cache file by replacing the last braces by a comma."""
+    with open(filename, "rb+") as file:
+        _seek_cache_lines_end_brace(file, filename=filename)
+        file.write(b",")
+        file.truncate()
+
+
 def _seek_cache_lines_end_brace(file: io.BufferedRandom, *, filename=""):
     try:
         # Go to the last non-space, non-comma character in the file
