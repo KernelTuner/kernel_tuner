@@ -11,7 +11,7 @@ from kernel_tuner.observers.hip import HipRuntimeObserver
 
 try:
     from pyhip import hip, hiprtc
-except ImportError:
+except (ImportError, RuntimeError):
     hip = None
     hiprtc = None
 
