@@ -61,12 +61,12 @@ def test_read_cache(cache_path, output_path):
         assert output.read() == expected.read()
 
 
-def test_read_cache_ensuring_open_and_closed(cache_path):
+def test_read_cache__ensure_open_and_closed(cache_path):
     with pytest.raises(ValueError):
         read_cache(cache_path, ensure_open=True, ensure_closed=True)
 
 
-def test_read_unparsable_cache(output_path):
+def test_read_cache__which_is_unparsable(output_path):
     with open(output_path, "w") as file:
         file.write("INVALID")
 
@@ -82,7 +82,7 @@ def test_open_cache(cache_path, output_path):
         assert output.read() == expected.read()
 
 
-def test_open_invalid_empty_object_cache(output_path):
+def test_open_cache__with_invalid_empty_object(output_path):
     shutil.copy(INVALID_EMPTY_OBJECT_PATH, output_path)
 
     with pytest.raises(InvalidCacheError):
@@ -97,7 +97,7 @@ def test_close_cache(cache_path, output_path, request):
         assert output.read() == expected.read()
 
 
-def test_close_cache_looks_like_open(output_path):
+def test_close_cache__which_looks_like_being_open(output_path):
     shutil.copy(OPEN_LOOKS_CLOSED_PATH, output_path)
     with pytest.raises(json.JSONDecodeError):
         with open(output_path) as file:
@@ -118,7 +118,7 @@ def test_write_cache(output_path):
         assert output.read() == input.read()
 
 
-def test_write_open_cache(output_path):
+def test_write_cache__keep_open(output_path):
     sample_cache = read_cache(OPEN_CACHE_COMMA_PATH)
 
     write_cache(sample_cache, output_path, keep_open=True)
