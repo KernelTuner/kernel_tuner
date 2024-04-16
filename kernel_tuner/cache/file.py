@@ -24,7 +24,7 @@ OPTIONAL_COMMA_END_REGEX = re.compile(r",?$")
 CLOSING_BRACES_REGEX = re.compile(r"\s*}\s*}\s*$")
 
 
-def read_cache_file(filename: PathLike, *, ensure_open=False, ensure_closed=False):
+def read_cache(filename: PathLike, *, ensure_open=False, ensure_closed=False):
     """Reads a cache file and returns its content as a dictionary.
 
     Since the only way to determine whether the cache is open or closed is to parse it, this is the only place to
@@ -61,13 +61,13 @@ def read_cache_file(filename: PathLike, *, ensure_open=False, ensure_closed=Fals
                 raise ValueError(f"Cache file {filename} is corrupted")
 
     if ensure_open and not is_properly_open:
-        open_closed_cache_file(filename)
+        open_closed_cache(filename)
     elif ensure_closed and not is_closed:
-        close_opened_cache_file(filename)
+        close_opened_cache(filename)
     return data
 
 
-def write_cache_file(cache_json: dict, filename: PathLike, *, keep_open=False):
+def write_cache(cache_json: dict, filename: PathLike, *, keep_open=False):
     r"""Writes a cache file with the given content.
 
     Parameters:
@@ -90,7 +90,7 @@ def append_cache_line(key: str, cache_line: dict, cache_filename: PathLike):
         file.write(text)
 
 
-def close_opened_cache_file(filename: PathLike):
+def close_opened_cache(filename: PathLike):
     """Closes an open cache file."""
     with open(filename, "rb+") as file:
         _seek_end_of_cache_lines(file, filename=filename)
@@ -98,7 +98,7 @@ def close_opened_cache_file(filename: PathLike):
         file.truncate()
 
 
-def open_closed_cache_file(filename: PathLike):
+def open_closed_cache(filename: PathLike):
     """Opens a closed cache file."""
     with open(filename, "rb+") as file:
         _seek_end_of_cache_lines(file, filename=filename)
@@ -106,14 +106,14 @@ def open_closed_cache_file(filename: PathLike):
         file.truncate()
 
 
-def open_cache_file(filename: PathLike):
+def open_cache(filename: PathLike):
     """Closes any cache file. Needs to read the whole file in order to guarantee this."""
-    read_cache_file(filename, ensure_open=True)
+    read_cache(filename, ensure_open=True)
 
 
-def close_cache_file(filename: PathLike):
+def close_cache(filename: PathLike):
     """Opens any cache file. Needs to read the whole file in order to guarantee this."""
-    read_cache_file(filename, ensure_closed=True)
+    read_cache(filename, ensure_closed=True)
 
 
 def _seek_end_of_cache_lines(file: io.BufferedRandom, *, filename=""):
