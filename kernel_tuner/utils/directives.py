@@ -4,40 +4,44 @@ import numpy as np
 
 
 class Directive(ABC):
+    """Base class for all directives"""
+
     @abstractmethod
     def get(self) -> str:
         pass
 
 
 class Language(ABC):
+    """Base class for all languages"""
+
     @abstractmethod
     def get(self) -> str:
         pass
 
 
 class OpenACC(Directive):
-    """Class to represent OpenACC."""
+    """Class to represent OpenACC"""
 
     def get(self) -> str:
         return "openacc"
 
 
 class Cxx(Language):
-    """Class to represent C++ code."""
+    """Class to represent C++ code"""
 
     def get(self) -> str:
         return "cxx"
 
 
 class Fortran(Language):
-    """Class to represent Fortran code."""
+    """Class to represent Fortran code"""
 
     def get(self) -> str:
         return "fortran"
 
 
 class Code(object):
-    """Class to represent the directive and host code of the application."""
+    """Class to represent the directive and host code of the application"""
 
     def __init__(self, directive: Directive, lang: Language):
         self.directive = directive
@@ -65,6 +69,7 @@ def line_contains_pragma(line: str, lang: Language) -> bool:
         return line_contains_pragma_cxx(line)
     elif is_fortran(lang):
         return line_contains_pragma_fortran(line)
+    return False
 
 
 def line_contains_pragma_cxx(line: str) -> bool:
@@ -83,6 +88,7 @@ def create_data_directive(name: str, size: int, lang: Language) -> str:
         return create_data_directive_cxx(name, size)
     elif is_fortran(lang):
         return create_data_directive_fortran(name, size)
+    return ""
 
 
 def create_data_directive_cxx(name: str, size: int) -> str:
@@ -101,6 +107,7 @@ def exit_data_directive(name: str, size: int, lang: Language) -> str:
         return exit_data_directive_cxx(name, size)
     elif is_fortran(lang):
         return exit_data_directive_fortran(name, size)
+    return ""
 
 
 def exit_data_directive_cxx(name: str, size: int) -> str:
