@@ -432,14 +432,16 @@ def generate_directive_function(
         code += "\n" + signature
     if len(initialization) > 1:
         code += initialization + "\n"
-    body = wrap_timing(body, langs.language)
-    if data is not None:
-        code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
-    else:
-        code += body
     if is_cxx(langs.language):
+        body = start_timing_cxx(body)
+        if data is not None:
+            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
+        code = end_timing_cxx(code)
         code += "\n}"
     elif is_fortran(langs.language):
+        body = wrap_timing(body, langs.language)
+        if data is not None:
+            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
         name = signature.split(" ")[1].split("(")[0]
         code += f"\nend function {name}\nend module kt\n"
 
