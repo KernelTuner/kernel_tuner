@@ -1,8 +1,15 @@
 import pytest
 import shutil
+from copy import deepcopy
 from pathlib import Path
 
-from kernel_tuner.cache.file import read_cache_file, write_cache_file, close_cache_file, open_cache_file
+from kernel_tuner.cache.file import (
+    read_cache_file,
+    write_cache_file,
+    append_cache_line,
+    close_cache_file,
+    open_cache_file,
+)
 
 
 TEST_PATH = Path(__file__).parent
@@ -45,6 +52,20 @@ def test_write_open_cache_file(output_path):
     write_cache_file(sample_cache, output_path, keep_open=True)
     with open(output_path, "r") as output, open(OPEN_CACHE_COMMA_PATH, "r") as input:
         assert output.read() == input.read()
+
+
+def test_append_cache_line(output_path):
+    sample_cache = read_cache_file(CLOSED_CACHE_PATH)
+
+    smaller_cache = deepcopy(sample_cache)
+    key = next(iter(smaller_cache["cache"].keys()))
+    line = smaller_cache["cache"].pop(key)
+
+    write_cache_file(smaller_cache, output_path, keep_open=True)
+    append_cache_line(key, line, output_path)
+
+    print(sample_cache)
+    assert read_cache_file(output_path) == sample_cache
 
 
 @pytest.mark.parametrize(

@@ -55,6 +55,14 @@ def write_cache_file(cache_json: dict, filename: PathLike, *, keep_open=False):
         file.write(text)
 
 
+def append_cache_line(key: str, cache_line: dict, cache_filename: PathLike):
+    """Appends a cache line to a cache file."""
+    text = json.dumps({key: cache_line})
+    text = "\n" + text.strip()[1:-1] + ","
+    with open(cache_filename, "a") as file:
+        file.write(text)
+
+
 def close_cache_file(filename: PathLike):
     """Closes a cache file by appending the last braces."""
     with open(filename, "rb+") as file:
