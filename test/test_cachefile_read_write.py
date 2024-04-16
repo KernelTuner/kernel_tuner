@@ -49,6 +49,11 @@ def test_read_cache_file(cache_1_path, output_path):
         assert output.read() == expected.read()
 
 
+def test_read_cache_file_ensuring_open_and_closed(cache_1_path):
+    with pytest.raises(ValueError):
+        read_cache_file(cache_1_path, ensure_open=True, ensure_closed=True)
+
+
 def test_open_cache_file(cache_1_path, output_path):
     shutil.copy(cache_1_path, output_path)
     open_cache_file(output_path)
