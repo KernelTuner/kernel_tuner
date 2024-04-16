@@ -100,8 +100,11 @@ def append_cache_line(key: str, cache_line: dict, cache_filename: PathLike):
 def fix_improperly_opened_cache(filename: PathLike):
     """Properly opens a improperly opened cache file."""
     with open(filename, "rb+") as file:
+        # Seek the last `}` ("cache" property closing brace)
         file.seek(0, os.SEEK_END)
         _seek_back_while(lambda ch: ch != b"}", file)
+
+        # Skip the closing brace of the cache line suffix the cache file with a comma
         file.seek(1, os.SEEK_CUR)
         file.write(b",")
         file.truncate()
