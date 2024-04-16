@@ -15,13 +15,23 @@ import re
 import os
 import io
 from os import PathLike
-from typing import Callable
+from typing import Callable, Optional
 
 from kernel_tuner.cache.json_encoder import CacheJSONEncoder
 
 
 OPTIONAL_COMMA_END_REGEX = re.compile(r",?$")
 CLOSING_BRACES_REGEX = re.compile(r"\s*}\s*}\s*$")
+
+
+class InvalidCacheError(Exception):
+    """Error raised when reading a cache file fails."""
+
+    def __init__(self, filename: PathLike, message: str, error: Optional[Exception] = None):
+        """Constructor for the InvalidCacheError class."""
+        self.filename = str(filename)
+        self.message = message
+        self.error = error
 
 
 def read_cache(filename: PathLike, *, ensure_open=False, ensure_closed=False):
@@ -61,19 +71,16 @@ def read_cache(filename: PathLike, *, ensure_open=False, ensure_closed=False):
                 text = OPTIONAL_COMMA_END_REGEX.sub("}}", text, 1)
                 data = json.loads(text)
             except json.JSONDecodeError:
-                raise ValueError(f"Cache file {filename} is corrupted")
+                raise InvalidCacheError(filename, "Cache file is not parsable")
 
     # Now ensure the cache is open or closed
-    try:
-        if ensure_open:
-            if not is_open:
-                open_closed_cache(filename)
-            elif not is_properly_open:
-                fix_improperly_opened_cache(filename)
-        elif ensure_closed and is_open:
-            close_opened_cache(filename)
-    except OSError:
-        raise ValueError(f"Could not {'open' if ensure_open else 'close'} {filename}")
+    if ensure_open:
+        if not is_open:
+            open_closed_cache(filename)
+        elif not is_properly_open:
+            fix_improperly_opened_cache(filename)
+    elif ensure_closed and is_open:
+        close_opened_cache(filename)
     return data
 
 
@@ -128,18 +135,21 @@ def close_opened_cache(filename: PathLike):
 
 def open_closed_cache(filename: PathLike):
     """Opens a closed cache file."""
-    with open(filename, "rb+") as file:
-        # Seek the last `}` (root closing brace)
-        file.seek(0, os.SEEK_END)
-        _seek_back_while(lambda ch: ch != b"}", file)
+    try:
+        with open(filename, "rb+") as file:
+            # Seek the last `}` (root closing brace)
+            file.seek(0, os.SEEK_END)
+            _seek_back_while(lambda ch: ch != b"}", file)
 
-        # Seek the second last `}` ("cache" property closing brace)
-        file.seek(-1, os.SEEK_CUR)
-        _seek_back_while(lambda ch: ch != b"}", file)
+            # Seek the second last `}` ("cache" property closing brace)
+            file.seek(-1, os.SEEK_CUR)
+            _seek_back_while(lambda ch: ch != b"}", file)
 
-        # Replace it with a comma and truncate the file.
-        file.write(b",")
-        file.truncate()
+            # Replace it with a comma and truncate the file.
+            file.write(b",")
+            file.truncate()
+    except OSError as e:
+        raise InvalidCacheError(filename, "Could not open cache file", e)
 
 
 def open_cache(filename: PathLike):

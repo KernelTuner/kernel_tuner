@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from kernel_tuner.cache.file import (
+    InvalidCacheError,
     read_cache,
     write_cache,
     append_cache_line,
@@ -65,6 +66,14 @@ def test_read_cache_ensuring_open_and_closed(cache_path):
         read_cache(cache_path, ensure_open=True, ensure_closed=True)
 
 
+def test_read_unparsable_cache(output_path):
+    with open(output_path, "w") as file:
+        file.write("INVALID")
+
+    with pytest.raises(InvalidCacheError):
+        read_cache(output_path)
+
+
 def test_open_cache(cache_path, output_path):
     shutil.copy(cache_path, output_path)
     open_cache(output_path)
@@ -76,7 +85,7 @@ def test_open_cache(cache_path, output_path):
 def test_open_invalid_empty_object_cache(output_path):
     shutil.copy(INVALID_EMPTY_OBJECT_PATH, output_path)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidCacheError):
         open_cache(output_path)
 
 
