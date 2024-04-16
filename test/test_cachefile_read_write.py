@@ -1,5 +1,6 @@
 import pytest
 import shutil
+import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -19,13 +20,22 @@ TEST_CACHE_PATH = TEST_PATH / "test_cache_files"
 CLOSED_CACHE_PATH = TEST_CACHE_PATH / "small_cache.json"
 OPEN_CACHE_NO_COMMA_PATH = TEST_CACHE_PATH / "open_cache_no_comma.json"
 OPEN_CACHE_COMMA_PATH = TEST_CACHE_PATH / "open_cache_with_comma.json"
+OPEN_LOOKS_CLOSED_PATH = TEST_CACHE_PATH / "open_cache_looks_like_closed.json"
+
+
+@pytest.fixture(
+    params=[OPEN_CACHE_NO_COMMA_PATH, OPEN_CACHE_COMMA_PATH],
+    ids=["open cache without comma", "open cache with comma"],
+)
+def open_cache_path(request):
+    return request.param
 
 
 @pytest.fixture(
     params=[CLOSED_CACHE_PATH, OPEN_CACHE_NO_COMMA_PATH, OPEN_CACHE_COMMA_PATH],
     ids=["closed cache", "open cache without comma", "open cache with comma"],
 )
-def cache_1_path(request):
+def cache_path(request):
     return request.param
 
 
@@ -34,8 +44,8 @@ def output_path(tmp_path):
     return tmp_path / "output.json"
 
 
-def test_read_cache(cache_1_path, output_path):
-    shutil.copy(cache_1_path, output_path)
+def test_read_cache(cache_path, output_path):
+    shutil.copy(cache_path, output_path)
 
     # Read device name of the given file
     file_content = read_cache(output_path)
@@ -45,29 +55,42 @@ def test_read_cache(cache_1_path, output_path):
     assert device_name == "Testing"
 
     # Check if the file has remained unchanged
-    with open(output_path) as output, open(cache_1_path) as expected:
+    with open(output_path) as output, open(cache_path) as expected:
         assert output.read() == expected.read()
 
 
-def test_read_cache_ensuring_open_and_closed(cache_1_path):
+def test_read_cache_ensuring_open_and_closed(cache_path):
     with pytest.raises(ValueError):
-        read_cache(cache_1_path, ensure_open=True, ensure_closed=True)
+        read_cache(cache_path, ensure_open=True, ensure_closed=True)
 
 
-def test_open_cache(cache_1_path, output_path):
-    shutil.copy(cache_1_path, output_path)
+def test_open_cache(cache_path, output_path):
+    shutil.copy(cache_path, output_path)
     open_cache(output_path)
 
     with open(output_path) as output, open(OPEN_CACHE_COMMA_PATH) as expected:
         assert output.read() == expected.read()
 
 
-def test_close_cache(cache_1_path, output_path, request):
-    shutil.copy(cache_1_path, output_path)
+def test_close_cache(cache_path, output_path, request):
+    shutil.copy(cache_path, output_path)
     close_cache(output_path)
 
     with open(output_path) as output, open(CLOSED_CACHE_PATH) as expected:
         assert output.read() == expected.read()
+
+
+def test_close_cache_looks_like_open(output_path):
+    shutil.copy(OPEN_LOOKS_CLOSED_PATH, output_path)
+    with pytest.raises(json.JSONDecodeError):
+        with open(output_path) as file:
+            json.load(file)
+
+    close_cache(output_path)
+    with open(output_path) as file:
+        print(file.read())
+    with open(output_path) as file:
+        json.load(file)
 
 
 def test_write_cache(output_path):
@@ -100,15 +123,15 @@ def test_append_cache_line(output_path):
     assert read_cache(output_path) == sample_cache
 
 
-def test_close_opened_cache(cache_1_path, output_path):
-    shutil.copy(cache_1_path, output_path)
+def test_close_opened_cache(open_cache_path, output_path):
+    shutil.copy(open_cache_path, output_path)
     close_opened_cache(output_path)
     with open(output_path, "r") as output, open(CLOSED_CACHE_PATH, "r") as input:
         assert output.read() == input.read()
 
 
-def test_open_closed_cache(cache_1_path, output_path):
-    shutil.copy(cache_1_path, output_path)
+def test_open_closed_cache(output_path):
+    shutil.copy(CLOSED_CACHE_PATH, output_path)
     open_closed_cache(output_path)
     with open(output_path, "r") as output, open(OPEN_CACHE_COMMA_PATH, "r") as input:
         assert output.read() == input.read()
