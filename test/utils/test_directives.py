@@ -3,36 +3,53 @@ from pytest import raises
 from kernel_tuner.utils.directives import *
 
 
+def test_is_openacc():
+    assert is_openacc(OpenACC())
+    assert not is_openacc(None)
+
+
+def test_is_cxx():
+    assert is_cxx(Cxx())
+    assert not is_cxx(Fortran())
+    assert not is_cxx(None)
+
+
+def test_is_fortran():
+    assert is_fortran(Fortran())
+    assert not is_fortran(Cxx())
+    assert not is_fortran(None)
+
+
+def test_line_contains_pragma():
+    cxx_code = "int main(void) {\n#pragma acc parallel}"
+    f90_code = "!$acc parallel"
+    assert line_contains_pragma(cxx_code, Cxx())
+    assert not line_contains_pragma(f90_code, Cxx())
+    assert line_contains_pragma(f90_code, Fortran())
+    assert not line_contains_pragma(cxx_code, Fortran())
+
+
+def test_create_data_directive():
+    assert (
+        create_data_directive("array", 1024, Cxx())
+        == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
+    )
+    assert (
+        create_data_directive("matrix", 35, Fortran())
+        == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
+    )
+
+
+def test_exit_data_directive():
+    assert exit_data_directive("array", 1024, Cxx()) == "#pragma acc exit data copyout(array[:1024])\n"
+    assert exit_data_directive("matrix", 35, Fortran()) == "!$acc exit data copyout(matrix(:35))\n"
+
+
 def test_correct_kernel():
     assert correct_kernel("vector_add", "tuner start vector_add")
     assert correct_kernel("vector_add", "tuner start vector_add a(float:size)")
     assert not correct_kernel("vector_add", "tuner start gemm")
     assert not correct_kernel("vector_add", "tuner start gemm a(float:size) b(float:size)")
-
-
-def test_is_cpp():
-    cpp_code = "int main(void) {\n#pragma acc parallel}"
-    assert is_cpp(cpp_code, "openacc")
-    assert is_cpp(cpp_code, "OpenACC")
-    assert not is_cpp(cpp_code, "open acc")
-
-
-def test_is_f90():
-    f90_code = "!$acc parallel"
-    assert is_f90(f90_code, "openacc")
-    assert is_f90(f90_code, "OpenACC")
-    assert not is_f90(f90_code, "open acc")
-
-
-def test_is_cpp_or_f90():
-    cpp_code = "int main(void) {\n#pragma acc parallel}"
-    f90_code = "!$acc parallel"
-    one, two = is_cpp_or_f90(cpp_code)
-    assert one
-    assert not two
-    one, two = is_cpp_or_f90(f90_code)
-    assert not one
-    assert two
 
 
 def test_parse_size():
@@ -46,20 +63,26 @@ def test_parse_size():
     assert parse_size("rows,cols", dimensions={"rows": 16, "cols": 8}) == 128
 
 
-def test_create_data_directive():
+def test_wrap_timing():
+    code = "#pragma acc\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}"
+    wrapped = wrap_timing(code, Cxx())
     assert (
-        create_data_directive("array", 1024, True, False)
-        == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
-    )
-    assert (
-        create_data_directive("matrix", 35, False, True)
-        == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
+        wrapped
+        == "auto kt_timing_start = std::chrono::steady_clock::now();\n#pragma acc\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto kt_timing_end = std::chrono::steady_clock::now();\nstd::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;\nreturn elapsed_time.count();\n"
     )
 
 
-def test_exit_data_directive():
-    assert exit_data_directive("array", 1024, True, False) == "#pragma acc exit data copyout(array[:1024])\n"
-    assert exit_data_directive("matrix", 35, False, True) == "!$acc exit data copyout(matrix(:35))\n"
+def test_wrap_data():
+    acc_cxx = Code(OpenACC(), Cxx())
+    acc_f90 = Code(OpenACC(), Fortran())
+    code_cxx = "// this is a comment\n"
+    code_f90 = "! this is a comment\n"
+    data = {"array": ["int*", "size"]}
+    preprocessor = ["#define size 42"]
+    expected_cxx = "#pragma acc enter data create(array[:42])\n#pragma acc update device(array[:42])\n// this is a comment\n#pragma acc exit data copyout(array[:42])\n"
+    assert wrap_data(code_cxx, acc_cxx, data, preprocessor, None) == expected_cxx
+    expected_f90 = "!$acc enter data create(array(:42))\n!$acc update device(array(:42))\n! this is a comment\n!$acc exit data copyout(array(:42))\n"
+    assert wrap_data(code_f90, acc_f90, data, preprocessor, None) == expected_f90
 
 
 def test_extract_directive_code():
@@ -107,12 +130,13 @@ def test_extract_directive_code():
             for ( int i = 0; i < size; i++ ) {
                     c[i] = a[i] + b[i];
             }"""
-    returns = extract_directive_code(code)
+    acc_cxx = Code(OpenACC(), Cxx())
+    returns = extract_directive_code(code, acc_cxx)
     assert len(returns) == 2
     assert expected_one in returns["initialize"]
     assert expected_two in returns["vector_add"]
     assert expected_one not in returns["vector_add"]
-    returns = extract_directive_code(code, "vector")
+    returns = extract_directive_code(code, acc_cxx, "vector")
     assert len(returns) == 0
 
     code = """
@@ -129,7 +153,7 @@ def test_extract_directive_code():
       C(i) = A(i) + B(i)
     end do
     !$acc end parallel loop"""
-    returns = extract_directive_code(code, "vector_add")
+    returns = extract_directive_code(code, Code(OpenACC(), Fortran()), "vector_add")
     assert len(returns) == 1
     assert expected in returns["vector_add"]
 
@@ -175,61 +199,43 @@ def test_extract_preprocessor():
         assert item in results
 
 
-def test_wrap_timing():
-    code = "#pragma acc\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}"
-    wrapped = wrap_timing(code)
-    wrapped = close_cpp_timing(wrapped)
-    assert (
-        wrapped
-        == "auto kt_timing_start = std::chrono::steady_clock::now();\n#pragma acc\nfor ( int i = 0; i < size; i++ ) {\nc[i] = a[i] + b[i];\n}\nauto kt_timing_end = std::chrono::steady_clock::now();\nstd::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;\nreturn elapsed_time.count();\n"
-    )
-
-
-def test_wrap_data():
-    code_cpp = "// this is a comment\n"
-    code_f90 = "! this is a comment\n"
-    data = {"array": ["int*", "size"]}
-    preprocessor = ["#define size 42"]
-    expected_cpp = "#pragma acc enter data create(array[:42])\n#pragma acc update device(array[:42])\n// this is a comment\n#pragma acc exit data copyout(array[:42])\n"
-    assert wrap_data(code_cpp, data, preprocessor, None, True, False) == expected_cpp
-    expected_f90 = "!$acc enter data create(array(:42))\n!$acc update device(array(:42))\n! this is a comment\n!$acc exit data copyout(array(:42))\n"
-    assert wrap_data(code_f90, data, preprocessor, None, False, True) == expected_f90
-
-
 def test_extract_directive_signature():
+    acc_cxx = Code(OpenACC(), Cxx())
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)  \n#pragma acc"
-    signatures = extract_directive_signature(code)
+    signatures = extract_directive_signature(code, acc_cxx)
     assert len(signatures) == 1
     assert (
         "float vector_add(float * restrict a, float * restrict b, float * restrict c, int size)"
         in signatures["vector_add"]
     )
-    signatures = extract_directive_signature(code, "vector_add")
+    signatures = extract_directive_signature(code, acc_cxx, "vector_add")
     assert len(signatures) == 1
     assert (
         "float vector_add(float * restrict a, float * restrict b, float * restrict c, int size)"
         in signatures["vector_add"]
     )
-    signatures = extract_directive_signature(code, "vector_add_ext")
+    signatures = extract_directive_signature(code, acc_cxx, "vector_add_ext")
     assert len(signatures) == 0
     code = "!$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)\n!$acc"
-    signatures = extract_directive_signature(code)
+    signatures = extract_directive_signature(code, Code(OpenACC(), Fortran()))
     assert len(signatures) == 1
     assert "function vector_add(A, B, C, n)" in signatures["vector_add"]
 
 
 def test_extract_directive_data():
+    acc_cxx = Code(OpenACC(), Cxx())
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)\n#pragma acc"
-    data = extract_directive_data(code)
+    data = extract_directive_data(code, acc_cxx)
     assert len(data) == 1
     assert len(data["vector_add"]) == 4
     assert "float*" in data["vector_add"]["b"]
     assert "int" not in data["vector_add"]["c"]
     assert "VECTOR_SIZE" in data["vector_add"]["size"]
-    data = extract_directive_data(code, "vector_add_double")
+    data = extract_directive_data(code, acc_cxx, "vector_add_double")
     assert len(data) == 0
+    acc_f90 = Code(OpenACC(), Fortran())
     code = "!$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)\n!$acc"
-    data = extract_directive_data(code)
+    data = extract_directive_data(code, acc_f90)
     assert len(data) == 1
     assert len(data["vector_add"]) == 4
     assert "float*" in data["vector_add"]["B"]
@@ -238,7 +244,7 @@ def test_extract_directive_data():
     code = (
         "!$tuner start matrix_add A(float*:N_ROWS,N_COLS) B(float*:N_ROWS,N_COLS) nr(int:N_ROWS) nc(int:N_COLS)\n!$acc"
     )
-    data = extract_directive_data(code)
+    data = extract_directive_data(code, acc_f90)
     assert len(data) == 1
     assert len(data["matrix_add"]) == 4
     assert "float*" in data["matrix_add"]["A"]
@@ -247,7 +253,7 @@ def test_extract_directive_data():
 
 def test_allocate_signature_memory():
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)\n#pragma acc"
-    data = extract_directive_data(code)
+    data = extract_directive_data(code, Code(OpenACC(), Cxx()))
     with raises(TypeError):
         _ = allocate_signature_memory(data["vector_add"])
     preprocessor = ["#define VECTOR_SIZE 1024\n"]
@@ -267,7 +273,7 @@ def test_allocate_signature_memory():
     code = (
         "!$tuner start matrix_add A(float*:N_ROWS,N_COLS) B(float*:N_ROWS,N_COLS) nr(int:N_ROWS) nc(int:N_COLS)\n!$acc"
     )
-    data = extract_directive_data(code)
+    data = extract_directive_data(code, Code(OpenACC(), Fortran()))
     preprocessor = ["#define N_ROWS 128\n", "#define N_COLS 512\n"]
     args = allocate_signature_memory(data["matrix_add"], preprocessor)
     assert args[2] == 128
@@ -278,3 +284,10 @@ def test_allocate_signature_memory():
     args = allocate_signature_memory(data["matrix_add"], user_dimensions=user_values)
     assert args[3] == 16
     assert len(args[1]) == 512
+
+
+def test_extract_initialization_code():
+    code_cpp = "#pragma tuner initialize\nconst int value = 42;\n#pragma tuner stop\n"
+    code_f90 = "!$tuner initialize\ninteger :: value\n!$tuner stop\n"
+    assert extract_initialization_code(code_cpp, Code(OpenACC(), Cxx())) == "const int value = 42;\n"
+    assert extract_initialization_code(code_f90, Code(OpenACC(), Fortran())) == "integer :: value\n"

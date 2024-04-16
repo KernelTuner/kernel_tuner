@@ -1,35 +1,121 @@
+from typing import Any
+from abc import ABC, abstractmethod
 import numpy as np
 
-openacc = "openacc"
-openmp = "openmp"
+
+class Directive(ABC):
+    @abstractmethod
+    def get(self) -> str:
+        pass
+
+
+class Language(ABC):
+    @abstractmethod
+    def get(self) -> str:
+        pass
+
+
+class OpenACC(Directive):
+    """Class to represent OpenACC."""
+
+    def get(self) -> str:
+        return "openacc"
+
+
+class Cxx(Language):
+    """Class to represent C++ code."""
+
+    def get(self) -> str:
+        return "cxx"
+
+
+class Fortran(Language):
+    """Class to represent Fortran code."""
+
+    def get(self) -> str:
+        return "fortran"
+
+
+class Code(object):
+    """Class to represent the directive and host code of the application."""
+
+    def __init__(self, directive: Directive, lang: Language):
+        self.directive = directive
+        self.language = lang
+
+
+def is_openacc(directive: Directive) -> bool:
+    """Check if a directive is OpenACC"""
+    return isinstance(directive, OpenACC)
+
+
+def is_cxx(lang: Language) -> bool:
+    """Check if language is C++"""
+    return isinstance(lang, Cxx)
+
+
+def is_fortran(lang: Language) -> bool:
+    """Check if language is Fortran"""
+    return isinstance(lang, Fortran)
+
+
+def line_contains_pragma(line: str, lang: Language) -> bool:
+    """Check if line contains OpenACC pragma or not"""
+    if is_cxx(lang):
+        return line_contains_pragma_cxx(line)
+    elif is_fortran(lang):
+        return line_contains_pragma_fortran(line)
+
+
+def line_contains_pragma_cxx(line: str) -> bool:
+    """Check if a line of code contains a C++ OpenACC pragma or not"""
+    return "#pragma acc" in line
+
+
+def line_contains_pragma_fortran(line: str) -> bool:
+    """Check if a line of code contains a Fortran OpenACC pragma or not"""
+    return "!$acc" in line
+
+
+def create_data_directive(name: str, size: int, lang: Language) -> str:
+    """Create a data directive for a given language"""
+    if is_cxx(lang):
+        return create_data_directive_cxx(name, size)
+    elif is_fortran(lang):
+        return create_data_directive_fortran(name, size)
+
+
+def create_data_directive_cxx(name: str, size: int) -> str:
+    """Create C++ OpenACC code to allocate and copy data"""
+    return f"#pragma acc enter data create({name}[:{size}])\n#pragma acc update device({name}[:{size}])\n"
+
+
+def create_data_directive_fortran(name: str, size: int) -> str:
+    """Create Fortran OpenACC code to allocate and copy data"""
+    return f"!$acc enter data create({name}(:{size}))\n!$acc update device({name}(:{size}))\n"
+
+
+def exit_data_directive(name: str, size: int, lang: Language) -> str:
+    """Create code to copy data back for a given language"""
+    if is_cxx(lang):
+        return exit_data_directive_cxx(name, size)
+    elif is_fortran(lang):
+        return exit_data_directive_fortran(name, size)
+
+
+def exit_data_directive_cxx(name: str, size: int) -> str:
+    """Create C++ OpenACC code to copy back data"""
+    return f"#pragma acc exit data copyout({name}[:{size}])\n"
+
+
+def exit_data_directive_fortran(name: str, size: int) -> str:
+    """Create Fortran OpenACC code to copy back data"""
+    return f"!$acc exit data copyout({name}(:{size}))\n"
 
 
 def correct_kernel(kernel_name: str, line: str) -> bool:
     """Checks if the line contains the correct kernel name"""
     return f" {kernel_name} " in line or (kernel_name in line and len(line.partition(kernel_name)[2]) == 0)
-
-
-def is_cpp(code: str, lang: str) -> bool:
-    """Check if the source code is C++ or not"""
-    if str.lower(lang) == openacc:
-        return "#pragma acc" in code
-    return False
-
-
-def is_f90(code: str, lang: str) -> bool:
-    """Check if the source code is Fortran or not"""
-    if str.lower(lang) == openacc:
-        return "!$acc" in code
-    return False
-
-
-def is_cpp_or_f90(code: str, lang: str = None) -> tuple:
-    """Helper function to check if the source code is C++ or Fortran"""
-    if lang is not None:
-        return is_cpp(code, lang), is_f90(code, lang)
-    else:
-        # the current default language is OpenACC
-        return is_cpp(code, openacc), is_f90(code, openacc)
 
 
 def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
@@ -45,14 +131,13 @@ def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
     return ret_size
 
 
-def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> dict:
+def extract_code(start: str, stop: str, code: str, langs: Code, kernel_name: str = None) -> dict:
     """Extract an arbitrary section of code"""
     found_section = False
     sections = dict()
     tmp_string = list()
     name = ""
     init_found = 0
-    cpp, f90 = is_cpp_or_f90(code)
 
     for line in code.replace("\\\n", "").split("\n"):
         if found_section:
@@ -68,9 +153,9 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
                 if kernel_name is None or correct_kernel(kernel_name, line):
                     found_section = True
                     try:
-                        if cpp:
+                        if is_cxx(langs.language):
                             name = line.strip().split(" ")[3]
-                        elif f90:
+                        elif is_fortran(langs.language):
                             name = line.strip().split(" ")[2]
                     except IndexError:
                         name = f"init_{init_found}"
@@ -79,7 +164,7 @@ def extract_code(start: str, stop: str, code: str, kernel_name: str = None) -> d
     return sections
 
 
-def parse_size(size: object, preprocessor: list = None, dimensions: dict = None) -> int:
+def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) -> int:
     """Converts an arbitrary object into an integer representing memory size"""
     ret_size = None
     if type(size) is not int:
@@ -118,71 +203,94 @@ def parse_size(size: object, preprocessor: list = None, dimensions: dict = None)
     return ret_size
 
 
-def create_data_directive(name: str, size: int, cpp: bool, f90: bool) -> str:
-    """Create OpenACC code to allocate and copy data"""
-    data_directive = str()
-
-    if cpp:
-        data_directive += (
-            f"#pragma acc enter data create({name}[:{size}])\n#pragma acc update device({name}[:{size}])\n"
-        )
-    elif f90:
-        data_directive += f"!$acc enter data create({name}(:{size}))\n!$acc update device({name}(:{size}))\n"
-
-    return data_directive
+def wrap_timing(code: str, lang: Language):
+    """Helper to wrap timing code around the provided code"""
+    if is_cxx(lang):
+        return end_timing_cxx(start_timing_cxx(code))
+    elif is_fortran(lang):
+        return wrap_timing_fortran(code)
 
 
-def exit_data_directive(name: str, size: int, cpp: bool, f90: bool) -> str:
-    """Create OpenACC code to copy back data"""
-    data_directive = str()
+def start_timing_cxx(code: str) -> str:
+    """Wrap C++ timing code around the provided code"""
 
-    if cpp:
-        data_directive += f"#pragma acc exit data copyout({name}[:{size}])\n"
-    elif f90:
-        data_directive += f"!$acc exit data copyout({name}(:{size}))\n"
+    start = "auto kt_timing_start = std::chrono::steady_clock::now();"
+    end = "auto kt_timing_end = std::chrono::steady_clock::now();"
+    timing = "std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;"
 
-    return data_directive
+    return "\n".join([start, code, end, timing])
 
 
-def extract_directive_code(code: str, kernel_name: str = None) -> dict:
+def wrap_timing_fortran(code: str) -> str:
+    """Wrap Fortran timing code around the provided code"""
+
+    start = "call system_clock(kt_timing_start, kt_rate)"
+    end = "call system_clock(kt_timing_end)"
+    timing = "timing = (real(kt_timing_end - kt_timing_start) / real(kt_rate)) * 1e3"
+
+    return "\n".join([start, code, end, timing])
+
+
+def end_timing_cxx(code: str) -> str:
+    """In C++ we need to return the measured time"""
+    return code + "\nreturn elapsed_time.count();\n"
+
+
+def wrap_data(code: str, langs: Code, data: dict, preprocessor: list, user_dimensions: dict) -> str:
+    """Insert data directives before and after the timed code"""
+    intro = str()
+    for name in data.keys():
+        if "*" in data[name][0]:
+            size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
+            if is_openacc(langs.directive) and is_cxx(langs.language):
+                intro += create_data_directive_cxx(name, size)
+            elif is_openacc(langs.directive) and is_fortran(langs.language):
+                intro += create_data_directive_fortran(name, size)
+    outro = str()
+    for name in data.keys():
+        if "*" in data[name][0]:
+            size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
+            if is_openacc(langs.directive) and is_cxx(langs.language):
+                outro += exit_data_directive_cxx(name, size)
+            elif is_openacc(langs.directive) and is_fortran(langs.language):
+                outro += exit_data_directive_fortran(name, size)
+    return intro + code + outro
+
+
+def extract_directive_code(code: str, langs: Code, kernel_name: str = None) -> dict:
     """Extract explicitly marked directive sections from code"""
-    cpp, f90 = is_cpp_or_f90(code)
-
-    if cpp:
+    if is_cxx(langs.language):
         start_string = "#pragma tuner start"
         end_string = "#pragma tuner stop"
-    elif f90:
+    elif is_fortran(langs.language):
         start_string = "!$tuner start"
         end_string = "!$tuner stop"
 
-    return extract_code(start_string, end_string, code, kernel_name)
+    return extract_code(start_string, end_string, code, langs, kernel_name)
 
 
-def extract_initialization_code(code: str) -> str:
+def extract_initialization_code(code: str, langs: Code) -> str:
     """Extract the initialization section from code"""
-    cpp, f90 = is_cpp_or_f90(code)
-
-    if cpp:
+    if is_cxx(langs.language):
         start_string = "#pragma tuner initialize"
         end_string = "#pragma tuner stop"
-    elif f90:
+    elif is_fortran(langs.language):
         start_string = "!$tuner initialize"
         end_string = "!$tuner stop"
 
-    init_code = extract_code(start_string, end_string, code)
+    init_code = extract_code(start_string, end_string, code, langs)
     if len(init_code) >= 1:
-        return "\n".join(init_code.values())
+        return "\n".join(init_code.values()) + "\n"
     else:
         return ""
 
 
-def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
+def extract_directive_signature(code: str, langs: Code, kernel_name: str = None) -> dict:
     """Extract the user defined signature for directive sections"""
-    cpp, f90 = is_cpp_or_f90(code)
 
-    if cpp:
+    if is_cxx(langs.language):
         start_string = "#pragma tuner start"
-    elif f90:
+    elif is_fortran(langs.language):
         start_string = "!$tuner start"
     signatures = dict()
 
@@ -190,10 +298,10 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
         if start_string in line:
             if kernel_name is None or correct_kernel(kernel_name, line):
                 tmp_string = line.strip().split(" ")
-                if cpp:
+                if is_cxx(langs.language):
                     name = tmp_string[3]
                     tmp_string = tmp_string[4:]
-                elif f90:
+                elif is_fortran(langs.language):
                     name = tmp_string[2]
                     tmp_string = tmp_string[3:]
                 params = list()
@@ -206,13 +314,13 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
                     p_type = p_type.split(":")[0]
                     if "*" in p_type:
                         p_type = p_type.replace("*", " * restrict")
-                    if cpp:
+                    if is_cxx(langs.language):
                         params.append(f"{p_type} {p_name}")
-                    elif f90:
+                    elif is_fortran(langs.language):
                         params.append(p_name)
-                if cpp:
+                if is_cxx(langs.language):
                     signatures[name] = f"float {name}({', '.join(params)})"
-                elif f90:
+                elif is_fortran(langs.language):
                     signatures[
                         name
                     ] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\nimplicit none\n"
@@ -245,23 +353,22 @@ def extract_directive_signature(code: str, kernel_name: str = None) -> dict:
     return signatures
 
 
-def extract_directive_data(code: str, kernel_name: str = None) -> dict:
+def extract_directive_data(code: str, langs: Code, kernel_name: str = None) -> dict:
     """Extract the data used in the directive section"""
-    cpp, f90 = is_cpp_or_f90(code)
 
-    if cpp:
+    if is_cxx(langs.language):
         start_string = "#pragma tuner start"
-    elif f90:
+    elif is_fortran(langs.language):
         start_string = "!$tuner start"
     data = dict()
 
     for line in code.replace("\\\n", "").split("\n"):
         if start_string in line:
             if kernel_name is None or correct_kernel(kernel_name, line):
-                if cpp:
+                if is_cxx(langs.language):
                     name = line.strip().split(" ")[3]
                     tmp_string = line.strip().split(" ")[4:]
-                elif f90:
+                elif is_fortran(langs.language):
                     name = line.strip().split(" ")[2]
                     tmp_string = line.strip().split(" ")[3:]
                 data[name] = dict()
@@ -292,75 +399,39 @@ def extract_preprocessor(code: str) -> list:
     return preprocessor
 
 
-def wrap_timing(code: str) -> str:
-    """Wrap timing code around the provided code"""
-    cpp, f90 = is_cpp_or_f90(code)
-
-    if cpp:
-        start = "auto kt_timing_start = std::chrono::steady_clock::now();"
-        end = "auto kt_timing_end = std::chrono::steady_clock::now();"
-        timing = "std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;"
-    elif f90:
-        start = "call system_clock(kt_timing_start, kt_rate)"
-        end = "call system_clock(kt_timing_end)"
-        timing = "timing = (real(kt_timing_end - kt_timing_start) / real(kt_rate)) * 1e3"
-
-    return "\n".join([start, code, end, timing])
-
-
-def close_cpp_timing(code: str) -> str:
-    """In C++ we need to return the measured time"""
-    return code + "\nreturn elapsed_time.count();\n"
-
-
-def wrap_data(code: str, data: dict, preprocessor: list, user_dimensions: dict, cpp: bool, f90: bool) -> str:
-    """Insert data directives before and after the timed code"""
-    intro = str()
-    for name in data.keys():
-        if "*" in data[name][0]:
-            size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
-            intro += create_data_directive(name, size, cpp, f90)
-    outro = str()
-    for name in data.keys():
-        if "*" in data[name][0]:
-            size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
-            outro += exit_data_directive(name, size, cpp, f90)
-    return intro + code + outro
-
-
 def generate_directive_function(
     preprocessor: list,
     signature: str,
     body: str,
+    langs: Code,
     data: dict = None,
     initialization: str = "",
     user_dimensions: dict = None,
 ) -> str:
     """Generate tunable function for one directive"""
-    cpp, f90 = is_cpp_or_f90(body)
 
     code = "\n".join(preprocessor) + "\n"
     if user_dimensions is not None:
         # add user dimensions to preprocessor
         for key, value in user_dimensions.items():
             code += f"#define {key} {value}\n"
-    if cpp and "#include <chrono>" not in preprocessor:
+    if is_cxx(langs.language) and "#include <chrono>" not in preprocessor:
         code += "\n#include <chrono>\n"
-    if cpp:
+    if is_cxx(langs.language):
         code += 'extern "C" ' + signature + "{\n"
-    elif f90:
+    elif is_fortran(langs.language):
         code += "\nmodule kt\nuse iso_c_binding\ncontains\n"
         code += "\n" + signature
     if len(initialization) > 1:
         code += initialization + "\n"
+    body = wrap_timing(body, langs.language)
     if data is not None:
-        code += wrap_data(wrap_timing(body) + "\n", data, preprocessor, user_dimensions, cpp, f90)
+        code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
     else:
-        code += wrap_timing(body)
-    if cpp:
-        code = close_cpp_timing(code)
+        code += body
+    if is_cxx(langs.language):
         code += "\n}"
-    elif f90:
+    elif is_fortran(langs.language):
         name = signature.split(" ")[1].split("(")[0]
         code += f"\nend function {name}\nend module kt\n"
 
