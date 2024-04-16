@@ -210,12 +210,13 @@ def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) ->
     return ret_size
 
 
-def wrap_timing(code: str, lang: Language):
+def wrap_timing(code: str, lang: Language) -> str:
     """Helper to wrap timing code around the provided code"""
     if is_cxx(lang):
         return end_timing_cxx(start_timing_cxx(code))
     elif is_fortran(lang):
         return wrap_timing_fortran(code)
+    return ""
 
 
 def start_timing_cxx(code: str) -> str:
