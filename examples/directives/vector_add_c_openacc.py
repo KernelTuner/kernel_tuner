@@ -3,6 +3,9 @@
 
 from kernel_tuner import tune_kernel
 from kernel_tuner.utils.directives import (
+    Code,
+    OpenACC,
+    Cxx,
     extract_directive_signature,
     extract_directive_code,
     extract_preprocessor,
@@ -10,7 +13,6 @@ from kernel_tuner.utils.directives import (
     extract_directive_data,
     allocate_signature_memory,
 )
-from collections import OrderedDict
 
 code = """
 #include <stdlib.h>
@@ -38,15 +40,16 @@ int main(void) {
 """
 
 # Extract tunable directive
+app = Code(OpenACC(), Cxx())
 preprocessor = extract_preprocessor(code)
-signature = extract_directive_signature(code)
-body = extract_directive_code(code)
+signature = extract_directive_signature(code, app)
+body = extract_directive_code(code, app)
 # Allocate memory on the host
-data = extract_directive_data(code)
+data = extract_directive_data(code, app)
 args = allocate_signature_memory(data["vector_add"], preprocessor)
 # Generate kernel string
 kernel_string = generate_directive_function(
-    preprocessor, signature["vector_add"], body["vector_add"], data=data["vector_add"]
+    preprocessor, signature["vector_add"], body["vector_add"], app, data=data["vector_add"]
 )
 
 tune_params = dict()
