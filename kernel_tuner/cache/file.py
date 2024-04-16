@@ -106,6 +106,16 @@ def open_closed_cache_file(filename: PathLike):
         file.truncate()
 
 
+def open_cache_file(filename: PathLike):
+    """Closes any cache file. Needs to read the whole file in order to guarantee this."""
+    read_cache_file(filename, ensure_open=True)
+
+
+def close_cache_file(filename: PathLike):
+    """Opens any cache file. Needs to read the whole file in order to guarantee this."""
+    read_cache_file(filename, ensure_closed=True)
+
+
 def _seek_end_of_cache_lines(file: io.BufferedRandom, *, filename=""):
     try:
         # Go to the last non-space, non-comma character in the file
