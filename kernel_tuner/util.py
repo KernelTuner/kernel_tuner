@@ -47,7 +47,7 @@ from kernel_tuner.observers.nvml import NVMLObserver
 # number of special values to insert when a configuration cannot be measured
 
 
-class ErrorConfig(str):
+class ErrorConfig:
     def __str__(self):
         return self.__class__.__name__
 
