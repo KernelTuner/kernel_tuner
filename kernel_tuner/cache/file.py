@@ -64,13 +64,16 @@ def read_cache(filename: PathLike, *, ensure_open=False, ensure_closed=False):
                 raise ValueError(f"Cache file {filename} is corrupted")
 
     # Now ensure the cache is open or closed
-    if ensure_open:
-        if not is_open:
-            open_closed_cache(filename)
-        elif not is_properly_open:
-            fix_improperly_opened_cache(filename)
-    elif ensure_closed and is_open:
-        close_opened_cache(filename)
+    try:
+        if ensure_open:
+            if not is_open:
+                open_closed_cache(filename)
+            elif not is_properly_open:
+                fix_improperly_opened_cache(filename)
+        elif ensure_closed and is_open:
+            close_opened_cache(filename)
+    except OSError:
+        raise ValueError(f"Could not {'open' if ensure_open else 'close'} {filename}")
     return data
 
 
@@ -155,8 +158,6 @@ def _seek_back_while(predicate: Callable[[bytes], bool], buf: io.BufferedRandom)
 
 
 def _read_back(buf: io.BufferedRandom, size=1):
-    if buf.tell() < size:
-        raise EOFError("Cannot read backwards any further")
     buf.seek(-size, os.SEEK_CUR)
     ch = buf.peek(size)[:size]
     return ch

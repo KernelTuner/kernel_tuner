@@ -21,6 +21,7 @@ CLOSED_CACHE_PATH = TEST_CACHE_PATH / "small_cache.json"
 OPEN_CACHE_NO_COMMA_PATH = TEST_CACHE_PATH / "open_cache_no_comma.json"
 OPEN_CACHE_COMMA_PATH = TEST_CACHE_PATH / "open_cache_with_comma.json"
 OPEN_LOOKS_CLOSED_PATH = TEST_CACHE_PATH / "open_cache_looks_like_closed.json"
+INVALID_EMPTY_OBJECT_PATH = TEST_CACHE_PATH / "invalid_empty_object.json"
 
 
 @pytest.fixture(
@@ -70,6 +71,13 @@ def test_open_cache(cache_path, output_path):
 
     with open(output_path) as output, open(OPEN_CACHE_COMMA_PATH) as expected:
         assert output.read() == expected.read()
+
+
+def test_open_invalid_empty_object_cache(output_path):
+    shutil.copy(INVALID_EMPTY_OBJECT_PATH, output_path)
+
+    with pytest.raises(ValueError):
+        open_cache(output_path)
 
 
 def test_close_cache(cache_path, output_path, request):
