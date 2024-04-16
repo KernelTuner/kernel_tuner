@@ -60,6 +60,8 @@ class CacheJSONEncoder(json.JSONEncoder):
         """
         if force:
             return "[" + ", ".join(self.encode(el) for el in o) + "]"
+        if not o:
+            return "[]"
         self.indentation_level += 1
         output = [self._indent_str + self.encode(el) for el in o]
         self.indentation_level -= 1
