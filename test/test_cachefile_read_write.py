@@ -34,13 +34,19 @@ def output_path(tmp_path):
     return tmp_path / "output.json"
 
 
-def test_read_cache_file(cache_1_path):
+def test_read_cache_file(cache_1_path, output_path):
+    shutil.copy(cache_1_path, output_path)
+
     # Read device name of the given file
-    file_content = read_cache_file(cache_1_path)
+    file_content = read_cache_file(output_path)
     device_name = file_content.get("device_name")
 
     # Check if the expected value of device name is in the file
     assert device_name == "Testing"
+
+    # Check if the file has remained unchanged
+    with open(output_path) as output, open(cache_1_path) as expected:
+        assert output.read() == expected.read()
 
 
 def test_open_cache_file(cache_1_path, output_path):
