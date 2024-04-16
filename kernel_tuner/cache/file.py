@@ -1,4 +1,12 @@
-"""Provides utilities for reading and writing cachefiles."""
+"""Provides utilities for reading and writing cachefiles.
+
+Regarding being opened or closed, there are three states cache files can be in:
+1. Closed: the cache file contains valid cache json
+2. Properly open: the cache file contains a cache json object of which the root and its last `cache` property are not
+   closed, meaning the last two braces (`}}`) are missing. In addition, these braces have been replaced with a comma.
+3. Improperly open: the cache file contains a cache json object of which the root and its last `cache` property are
+   not closed, meaning the last two braces (`}}`) are missing. No comma is present.
+"""
 
 from __future__ import annotations
 
@@ -16,28 +24,47 @@ OPTIONAL_COMMA_END_REGEX = re.compile(r",?$")
 CLOSING_BRACES_REGEX = re.compile(r"\s*}\s*}\s*$")
 
 
-def read_cache_file(filename: PathLike):
+def read_cache_file(filename: PathLike, *, ensure_open=False, ensure_closed=False):
     """Reads a cache file and returns its content as a dictionary.
+
+    Since the only way to determine whether the cache is open or closed is to parse it, this is the only place to
+    reliably ensure that the cache is open or closed, which can be done via the options in the keyword arguments.
 
     Parameters:
         filename (PathLike): The path to the cache file.
+        ensure_open (bool): If true, the cache will be ensured to be properly opened
+        ensure_closed (bool): If true, the cache will be ensured to be closed
 
     Returns:
         dict: The content of the cache file.
     """
-    with open(filename, "r") as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
-            pass  # Loading failed
+    if ensure_open and ensure_closed:
+        raise ValueError("Cache files cannot be simultaneously opened and closed")
 
-        file.seek(0)
-        try:  # Try to load the file with closing braces appended to it
-            text = file.read()
-            text = OPTIONAL_COMMA_END_REGEX.sub("}}", text, 1)
-            return json.loads(text)
+    data = None
+    is_properly_open = False
+    is_closed = False
+
+    with open(filename, "r") as file:
+        try:  # Try load the cache as closed
+            data = json.load(file)
+            is_closed = True
         except json.JSONDecodeError:
-            raise ValueError(f"Cache file {filename} is corrupted")
+            # The cache is not closed, so we will try to read it as being open
+            file.seek(0)
+            try:  # Try load the cache as being opened
+                text = file.read()
+                is_properly_open = text.endswith(",")
+                text = OPTIONAL_COMMA_END_REGEX.sub("}}", text, 1)
+                data = json.loads(text)
+            except json.JSONDecodeError:
+                raise ValueError(f"Cache file {filename} is corrupted")
+
+    if ensure_open and not is_properly_open:
+        open_cache_file(filename)
+    elif ensure_closed and not is_closed:
+        close_cache_file(filename)
+    return data
 
 
 def write_cache_file(cache_json: dict, filename: PathLike, *, keep_open=False):
@@ -108,7 +135,7 @@ def _seek_back_while(predicate: Callable[[bytes], bool], buf: io.BufferedRandom)
 
 def _read_back(buf: io.BufferedRandom, size=1):
     if buf.tell() < size:
-        raise EOFError()
+        raise EOFError("Cannot read backwards any further")
     buf.seek(-size, os.SEEK_CUR)
     ch = buf.peek(size)[:size]
     return ch

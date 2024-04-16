@@ -19,23 +19,42 @@ OPEN_CACHE_NO_COMMA_PATH = TEST_CACHE_PATH / "open_cache_no_comma.json"
 OPEN_CACHE_COMMA_PATH = TEST_CACHE_PATH / "open_cache_with_comma.json"
 
 
+@pytest.fixture(
+    params=[CLOSED_CACHE_PATH, OPEN_CACHE_NO_COMMA_PATH, OPEN_CACHE_COMMA_PATH],
+    ids=["closed cache", "open cache without comma", "open cache with comma"],
+)
+def cache_1_path(request):
+    return request.param
+
+
 @pytest.fixture
 def output_path(tmp_path):
     return tmp_path / "output.json"
 
 
-@pytest.mark.parametrize(
-    "filename",
-    [CLOSED_CACHE_PATH, OPEN_CACHE_NO_COMMA_PATH, OPEN_CACHE_COMMA_PATH],
-    ids=["closed cache", "open cache without comma", "open cache with comma"],
-)
-def test_read_cache_file(filename):
+def test_read_cache_file(cache_1_path):
     # Read device name of the given file
-    file_content = read_cache_file(filename)
+    file_content = read_cache_file(cache_1_path)
     device_name = file_content.get("device_name")
 
     # Check if the expected value of device name is in the file
     assert device_name == "Testing"
+
+
+def test_read_cache_file_ensure_open(cache_1_path, output_path):
+    shutil.copy(cache_1_path, output_path)
+    _ = read_cache_file(output_path, ensure_open=True)
+
+    with open(output_path) as output, open(OPEN_CACHE_COMMA_PATH) as expected:
+        assert output.read() == expected.read()
+
+
+def test_read_cache_file_ensure_closed(cache_1_path, output_path, request):
+    shutil.copy(cache_1_path, output_path)
+    _ = read_cache_file(output_path, ensure_closed=True)
+
+    with open(output_path) as output, open(CLOSED_CACHE_PATH) as expected:
+        assert output.read() == expected.read()
 
 
 def test_write_cache_file(output_path):
