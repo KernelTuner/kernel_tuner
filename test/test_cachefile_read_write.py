@@ -7,8 +7,8 @@ from kernel_tuner.cache.file import (
     read_cache_file,
     write_cache_file,
     append_cache_line,
-    close_cache_file,
-    open_cache_file,
+    close_opened_cache_file,
+    open_closed_cache_file,
 )
 
 
@@ -43,7 +43,7 @@ def test_read_cache_file(cache_1_path):
 
 def test_read_cache_file_ensure_open(cache_1_path, output_path):
     shutil.copy(cache_1_path, output_path)
-    _ = read_cache_file(output_path, ensure_open=True)
+    read_cache_file(output_path, ensure_open=True)
 
     with open(output_path) as output, open(OPEN_CACHE_COMMA_PATH) as expected:
         assert output.read() == expected.read()
@@ -51,7 +51,7 @@ def test_read_cache_file_ensure_open(cache_1_path, output_path):
 
 def test_read_cache_file_ensure_closed(cache_1_path, output_path, request):
     shutil.copy(cache_1_path, output_path)
-    _ = read_cache_file(output_path, ensure_closed=True)
+    read_cache_file(output_path, ensure_closed=True)
 
     with open(output_path) as output, open(CLOSED_CACHE_PATH) as expected:
         assert output.read() == expected.read()
@@ -87,15 +87,15 @@ def test_append_cache_line(output_path):
     assert read_cache_file(output_path) == sample_cache
 
 
-def test_close_cache_file(cache_1_path, output_path):
+def test_close_opened_cache_file(cache_1_path, output_path):
     shutil.copy(cache_1_path, output_path)
-    close_cache_file(output_path)
+    close_opened_cache_file(output_path)
     with open(output_path, "r") as output, open(CLOSED_CACHE_PATH, "r") as input:
         assert output.read() == input.read()
 
 
 def test_open_cache_file(cache_1_path, output_path):
     shutil.copy(cache_1_path, output_path)
-    open_cache_file(output_path)
+    open_closed_cache_file(output_path)
     with open(output_path, "r") as output, open(OPEN_CACHE_COMMA_PATH, "r") as input:
         assert output.read() == input.read()

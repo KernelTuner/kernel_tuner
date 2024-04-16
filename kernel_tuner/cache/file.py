@@ -61,9 +61,9 @@ def read_cache_file(filename: PathLike, *, ensure_open=False, ensure_closed=Fals
                 raise ValueError(f"Cache file {filename} is corrupted")
 
     if ensure_open and not is_properly_open:
-        open_cache_file(filename)
+        open_closed_cache_file(filename)
     elif ensure_closed and not is_closed:
-        close_cache_file(filename)
+        close_opened_cache_file(filename)
     return data
 
 
@@ -83,23 +83,23 @@ def write_cache_file(cache_json: dict, filename: PathLike, *, keep_open=False):
 
 
 def append_cache_line(key: str, cache_line: dict, cache_filename: PathLike):
-    """Appends a cache line to a cache file."""
+    """Appends a cache line to an open cache file."""
     text = json.dumps({key: cache_line})
     text = "\n" + text.strip()[1:-1] + ","
     with open(cache_filename, "a") as file:
         file.write(text)
 
 
-def close_cache_file(filename: PathLike):
-    """Closes a cache file by appending the last braces."""
+def close_opened_cache_file(filename: PathLike):
+    """Closes an open cache file."""
     with open(filename, "rb+") as file:
         _seek_end_of_cache_lines(file, filename=filename)
         file.write(b"}\n}")
         file.truncate()
 
 
-def open_cache_file(filename: PathLike):
-    """Opens a cache file by replacing the last braces by a comma."""
+def open_closed_cache_file(filename: PathLike):
+    """Opens a closed cache file."""
     with open(filename, "rb+") as file:
         _seek_end_of_cache_lines(file, filename=filename)
         file.write(b",")
