@@ -1279,9 +1279,11 @@ def cuda_error_check(error):
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
-def get_num_devices(lang):
+def get_num_devices(lang, simulation_mode=False):
     num_devices = 0
-    if lang.upper() == "CUDA":
+    if simulation_mode:
+        num_devices = os.cpu_count()
+    elif lang.upper() == "CUDA":
         import pycuda.driver as cuda
         cuda.init()
         num_devices = cuda.Device.count()

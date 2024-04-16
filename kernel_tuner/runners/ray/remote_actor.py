@@ -9,7 +9,7 @@ from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 
-@ray.remote(num_gpus=1)
+@ray.remote
 class RemoteActor():
     def __init__(self, 
                  kernel_source,

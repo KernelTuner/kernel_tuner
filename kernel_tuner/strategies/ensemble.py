@@ -52,28 +52,34 @@ strategy_map = {
 }
 
 def tune(searchspace: Searchspace, runner, tuning_options):
-    # Define cluster resources
-    num_gpus = get_num_devices(runner.kernel_source.lang)
-    print(f"Number of GPUs in use: {num_gpus}", file=sys. stderr)
-    resources = {}
-    for id in range(num_gpus):
-        gpu_resource_name = f"gpu_{id}"
-        resources[gpu_resource_name] = 1
-    # Initialize Ray
-    os.environ["RAY_DEDUP_LOGS"] = "0"
-    ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
-    cache_manager = CacheManager.remote(tuning_options)
-    # Create RemoteActor instances
-    actors = [create_actor_on_gpu(id, runner, cache_manager) for id in range(num_gpus)]
-    
+    simulation_mode = True if isinstance(runner, SimulationRunner) else False
     if "ensemble" in tuning_options:
         ensemble = tuning_options["ensemble"]
     else:
-        ensemble = ["random_sample", "random_sample", "random_sample"]
+        ensemble = ["random_sample", "random_sample"]
+
+    # Define cluster resources
+    num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
+    print(f"Number of devices available: {num_devices}", file=sys. stderr)
+    if num_devices < len(ensemble):
+        raise ValueError(f"Number of devices ({num_devices}) is less than the number of strategies in the ensemble ({len(ensemble)})")
+    
+    resources = {}
+    for id in range(len(ensemble)):
+        device_resource_name = f"device_{id}"
+        resources[device_resource_name] = 1
+    # Initialize Ray
+    os.environ["RAY_DEDUP_LOGS"] = "0"
+    if simulation_mode:
+        ray.init(num_cpus=len(ensemble) + 1, include_dashboard=True, ignore_reinit_error=True)
+    else:
+        ray.init(num_gpus=len(ensemble), num_cpus=1, include_dashboard=True, ignore_reinit_error=True)
+    # Create cache manager and actors
+    cache_manager = CacheManager.remote(tuning_options)
+    actors = [create_actor_on_device(id, runner, cache_manager, simulation_mode) for id in range(len(ensemble))]
     
     ensemble = [strategy_map[strategy] for strategy in ensemble]
     tasks = []
-    simulation_mode = True if isinstance(runner, SimulationRunner) else False
     for i in range(len(ensemble)):
         strategy = ensemble[i]
         actor = actors[i]
@@ -93,11 +99,19 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 final_results.append(new_result)
                 unique_configs.add(config_signature)
 
+    #kill all actors and chache manager
+    for actor in actors:
+        ray.kill(actor)
+    ray.kill(cache_manager)
+
     return final_results
 
-def create_actor_on_gpu(gpu_id, runner, cache_manager):
-    gpu_resource_name = f"gpu_{gpu_id}"
-    return RemoteActor.options(resources={gpu_resource_name: 1}).remote(runner.kernel_source, 
+def create_actor_on_device(device_id, runner, cache_manager, simulation_mode):
+    if simulation_mode:
+        resource_options= {"num_cpus": 1}
+    else:
+        resource_options= {"num_gpus": 1}
+    return RemoteActor.options(**resource_options).remote(runner.kernel_source, 
                                                                         runner.kernel_options, 
                                                                         runner.device_options, 
                                                                         runner.iterations, 
