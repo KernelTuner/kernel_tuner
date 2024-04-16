@@ -87,25 +87,15 @@ def test_append_cache_line(output_path):
     assert read_cache_file(output_path) == sample_cache
 
 
-@pytest.mark.parametrize(
-    "filename",
-    [CLOSED_CACHE_PATH, OPEN_CACHE_NO_COMMA_PATH, OPEN_CACHE_COMMA_PATH],
-    ids=["closed cache", "open cache without comma", "open cache with comma"],
-)
-def test_close_cache_file(filename, output_path):
-    shutil.copy(filename, output_path)
+def test_close_cache_file(cache_1_path, output_path):
+    shutil.copy(cache_1_path, output_path)
     close_cache_file(output_path)
     with open(output_path, "r") as output, open(CLOSED_CACHE_PATH, "r") as input:
         assert output.read() == input.read()
 
 
-@pytest.mark.parametrize(
-    "filename",
-    [CLOSED_CACHE_PATH, OPEN_CACHE_NO_COMMA_PATH, OPEN_CACHE_COMMA_PATH],
-    ids=["closed cache", "open cache without comma", "open cache with comma"],
-)
-def test_open_cache_file(filename, output_path):
-    shutil.copy(filename, output_path)
+def test_open_cache_file(cache_1_path, output_path):
+    shutil.copy(cache_1_path, output_path)
     open_cache_file(output_path)
     with open(output_path, "r") as output, open(OPEN_CACHE_COMMA_PATH, "r") as input:
         assert output.read() == input.read()
