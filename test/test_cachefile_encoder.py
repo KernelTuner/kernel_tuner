@@ -44,3 +44,18 @@ class TestCacheJSONEncoder:
 
     def test_encode_cache(self):
         assert dumps({"cache": {"1": {"a": 3}, "2": {"b": 4}}}) == '{\n"cache": {\n"1": {"a": 3},\n"2": {"b": 4}}\n}'
+
+    def test_encode_error_config(self):
+        assert dumps(ErrorConfig()) == '"ErrorConfig"'
+        assert dumps(InvalidConfig()) == '"InvalidConfig"'
+        assert dumps(CompilationFailedConfig()) == '"CompilationFailedConfig"'
+        assert dumps(RuntimeFailedConfig()) == '"RuntimeFailedConfig"'
+
+    def test_encode_np_int(self):
+        assert dumps(np.int16(1234)) == "1234"
+
+    def test_encode_np_float(self):
+        assert dumps(np.float16(1.0)) == "1.0"
+
+    def test_encode_np_array(self):
+        assert dumps(np.array([3, 1, 4, 1, 5])) == "[\n3,\n1,\n4,\n1,\n5\n]"

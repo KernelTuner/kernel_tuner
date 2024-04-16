@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import numpy as np
+
+from kernel_tuner.util import ErrorConfig
 
 
 # Custom encoder class that inherits from json.JSONEncoder
@@ -17,6 +20,19 @@ class CacheJSONEncoder(json.JSONEncoder):
         """Initializes a new CacheJSONEncoder object."""
         super().__init__(*args, **kwargs)
         self.indentation_level = 0
+
+    def default(self, o):
+        """Method for converting non-standard python objects to JSON."""
+        print(type(o))
+        if isinstance(o, ErrorConfig):
+            return str(o)
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        super().default(o)
 
     def encode(self, o, force=False):
         """Encodes any JSON object.
