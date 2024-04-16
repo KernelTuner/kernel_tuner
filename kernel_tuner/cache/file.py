@@ -29,6 +29,7 @@ class InvalidCacheError(Exception):
 
     def __init__(self, filename: PathLike, message: str, error: Optional[Exception] = None):
         """Constructor for the InvalidCacheError class."""
+        super().__init__(filename, message, error)
         self.filename = str(filename)
         self.message = message
         self.error = error
