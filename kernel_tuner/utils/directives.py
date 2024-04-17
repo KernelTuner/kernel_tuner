@@ -294,6 +294,7 @@ def extract_initialization_code(code: str, langs: Code) -> str:
 
 
 def format_argument_fortran(p_type: str, p_size: int, p_name: str) -> str:
+    """Format the argument for Fortran code"""
     argument = ""
     if "float*" in p_type:
         argument = f"real (c_float), dimension({p_size}) :: {p_name}"
