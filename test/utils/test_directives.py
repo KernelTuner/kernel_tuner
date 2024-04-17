@@ -29,14 +29,19 @@ def test_line_contains_pragma():
     assert not line_contains_openacc_pragma(cxx_code, Fortran())
 
 
+def test_openacc_pragma_contains_data_clause():
+    assert openacc_pragma_contains_data_clause("#pragma acc parallel present(A[:1089])")
+    assert not openacc_pragma_contains_data_clause("#pragma acc parallel for")
+
+
 def test_create_data_directive():
     assert (
-            create_data_directive_openacc("array", 1024, Cxx())
-            == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
+        create_data_directive_openacc("array", 1024, Cxx())
+        == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
     )
     assert (
-            create_data_directive_openacc("matrix", 35, Fortran())
-            == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
+        create_data_directive_openacc("matrix", 35, Fortran())
+        == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
     )
 
 
@@ -291,3 +296,16 @@ def test_extract_initialization_code():
     code_f90 = "!$tuner initialize\ninteger :: value\n!$tuner stop\n"
     assert extract_initialization_code(code_cpp, Code(OpenACC(), Cxx())) == "const int value = 42;\n"
     assert extract_initialization_code(code_f90, Code(OpenACC(), Fortran())) == "integer :: value\n"
+
+
+def test_add_present_openacc():
+    acc_cxx = Code(OpenACC(), Cxx())
+    acc_f90 = Code(OpenACC(), Fortran())
+    code_cxx = "#pragma acc parallel num_gangs(32)\n"
+    code_f90 = "!$acc parallel async num_workers(16)\n"
+    data = {"array": ["int*", "size"]}
+    preprocessor = ["#define size 42"]
+    expected_cxx = "#pragma acc parallel num_gangs(32) present(array[:42])\n"
+    assert add_present_openacc(code_cxx, acc_cxx, data, preprocessor, None) == expected_cxx
+    expected_f90 = "!$acc parallel async num_workers(16) present(array(:42))\n"
+    assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == expected_f90

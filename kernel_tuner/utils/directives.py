@@ -82,6 +82,20 @@ def line_contains_openacc_pragma_fortran(line: str) -> bool:
     return "!$acc" in line
 
 
+def openacc_pragma_contains_clause(line: str, clauses: list) -> bool:
+    """Check if an OpenACC directive contains one clause from a list"""
+    for clause in clauses:
+        if clause in line:
+            return True
+    return False
+
+
+def openacc_pragma_contains_data_clause(line: str) -> bool:
+    """Check if an OpenACC directive contains one data clause"""
+    data_clauses = ["copy", "copyin", "copyout", "create", "no_create", "present", "device_ptr", "attach"]
+    return openacc_pragma_contains_clause(line, data_clauses)
+
+
 def create_data_directive_openacc(name: str, size: int, lang: Language) -> str:
     """Create a data directive for a given language"""
     if is_cxx(lang):
@@ -244,23 +258,18 @@ def end_timing_cxx(code: str) -> str:
     return code + "\nreturn elapsed_time.count();\n"
 
 
-def wrap_data(code: str, langs: Code, data: dict, preprocessor: list, user_dimensions: dict) -> str:
+def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
     """Insert data directives before and after the timed code"""
     intro = str()
-    for name in data.keys():
-        if "*" in data[name][0]:
-            size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
-            if is_openacc(langs.directive) and is_cxx(langs.language):
-                intro += create_data_directive_openacc_cxx(name, size)
-            elif is_openacc(langs.directive) and is_fortran(langs.language):
-                intro += create_data_directive_openacc_fortran(name, size)
     outro = str()
     for name in data.keys():
         if "*" in data[name][0]:
             size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
             if is_openacc(langs.directive) and is_cxx(langs.language):
+                intro += create_data_directive_openacc_cxx(name, size)
                 outro += exit_data_directive_openacc_cxx(name, size)
             elif is_openacc(langs.directive) and is_fortran(langs.language):
+                intro += create_data_directive_openacc_fortran(name, size)
                 outro += exit_data_directive_openacc_fortran(name, size)
     return intro + code + outro
 
@@ -439,6 +448,8 @@ def generate_directive_function(
         code += "\n" + signature
     if len(initialization) > 1:
         code += initialization + "\n"
+    if data is not None:
+        body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
     if is_cxx(langs.language):
         body = start_timing_cxx(body)
         if data is not None:
@@ -499,3 +510,40 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
             args.append(allocate_scalar(p_type, size))
 
     return args
+
+
+def add_present_openacc(
+    code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None
+) -> str:
+    """Add the present clause to OpenACC directive"""
+    new_body = ""
+    for line in code.replace("\\\n", "").split("\n"):
+        if not line_contains_openacc_pragma(line, langs.language):
+            new_body += line
+        else:
+            # The line contains an OpenACC directive
+            if openacc_pragma_contains_data_clause(line):
+                # The OpenACC directive manages memory, do not interfere
+                return code
+            else:
+                new_line = line.replace("\n", "")
+                present_clause = ""
+                for name in data.keys():
+                    if "*" in data[name][0]:
+                        size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
+                        if is_cxx(langs.language):
+                            present_clause += add_present_openacc_cxx(name, size)
+                        elif is_fortran(langs.language):
+                            present_clause += add_present_openacc_fortran(name, size)
+                new_body += new_line + present_clause.rstrip() + "\n"
+    return new_body
+
+
+def add_present_openacc_cxx(name: str, size: int) -> str:
+    """Create present clause for C++ OpenACC directive"""
+    return f" present({name}[:{size}]) "
+
+
+def add_present_openacc_fortran(name: str, size: int) -> str:
+    """Create present clause for Fortran OpenACC directive"""
+    return f" present({name}(:{size})) "
