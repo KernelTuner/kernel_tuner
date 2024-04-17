@@ -63,59 +63,59 @@ def is_fortran(lang: Language) -> bool:
     return isinstance(lang, Fortran)
 
 
-def line_contains_pragma(line: str, lang: Language) -> bool:
+def line_contains_openacc_pragma(line: str, lang: Language) -> bool:
     """Check if line contains OpenACC pragma or not"""
     if is_cxx(lang):
-        return line_contains_pragma_cxx(line)
+        return line_contains_openacc_pragma_cxx(line)
     elif is_fortran(lang):
-        return line_contains_pragma_fortran(line)
+        return line_contains_openacc_pragma_fortran(line)
     return False
 
 
-def line_contains_pragma_cxx(line: str) -> bool:
+def line_contains_openacc_pragma_cxx(line: str) -> bool:
     """Check if a line of code contains a C++ OpenACC pragma or not"""
     return "#pragma acc" in line
 
 
-def line_contains_pragma_fortran(line: str) -> bool:
+def line_contains_openacc_pragma_fortran(line: str) -> bool:
     """Check if a line of code contains a Fortran OpenACC pragma or not"""
     return "!$acc" in line
 
 
-def create_data_directive(name: str, size: int, lang: Language) -> str:
+def create_data_directive_openacc(name: str, size: int, lang: Language) -> str:
     """Create a data directive for a given language"""
     if is_cxx(lang):
-        return create_data_directive_cxx(name, size)
+        return create_data_directive_openacc_cxx(name, size)
     elif is_fortran(lang):
-        return create_data_directive_fortran(name, size)
+        return create_data_directive_openacc_fortran(name, size)
     return ""
 
 
-def create_data_directive_cxx(name: str, size: int) -> str:
+def create_data_directive_openacc_cxx(name: str, size: int) -> str:
     """Create C++ OpenACC code to allocate and copy data"""
     return f"#pragma acc enter data create({name}[:{size}])\n#pragma acc update device({name}[:{size}])\n"
 
 
-def create_data_directive_fortran(name: str, size: int) -> str:
+def create_data_directive_openacc_fortran(name: str, size: int) -> str:
     """Create Fortran OpenACC code to allocate and copy data"""
     return f"!$acc enter data create({name}(:{size}))\n!$acc update device({name}(:{size}))\n"
 
 
-def exit_data_directive(name: str, size: int, lang: Language) -> str:
+def exit_data_directive_openacc(name: str, size: int, lang: Language) -> str:
     """Create code to copy data back for a given language"""
     if is_cxx(lang):
-        return exit_data_directive_cxx(name, size)
+        return exit_data_directive_openacc_cxx(name, size)
     elif is_fortran(lang):
-        return exit_data_directive_fortran(name, size)
+        return exit_data_directive_openacc_fortran(name, size)
     return ""
 
 
-def exit_data_directive_cxx(name: str, size: int) -> str:
+def exit_data_directive_openacc_cxx(name: str, size: int) -> str:
     """Create C++ OpenACC code to copy back data"""
     return f"#pragma acc exit data copyout({name}[:{size}])\n"
 
 
-def exit_data_directive_fortran(name: str, size: int) -> str:
+def exit_data_directive_openacc_fortran(name: str, size: int) -> str:
     """Create Fortran OpenACC code to copy back data"""
     return f"!$acc exit data copyout({name}(:{size}))\n"
 
@@ -251,17 +251,17 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list, user_dimen
         if "*" in data[name][0]:
             size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
             if is_openacc(langs.directive) and is_cxx(langs.language):
-                intro += create_data_directive_cxx(name, size)
+                intro += create_data_directive_openacc_cxx(name, size)
             elif is_openacc(langs.directive) and is_fortran(langs.language):
-                intro += create_data_directive_fortran(name, size)
+                intro += create_data_directive_openacc_fortran(name, size)
     outro = str()
     for name in data.keys():
         if "*" in data[name][0]:
             size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
             if is_openacc(langs.directive) and is_cxx(langs.language):
-                outro += exit_data_directive_cxx(name, size)
+                outro += exit_data_directive_openacc_cxx(name, size)
             elif is_openacc(langs.directive) and is_fortran(langs.language):
-                outro += exit_data_directive_fortran(name, size)
+                outro += exit_data_directive_openacc_fortran(name, size)
     return intro + code + outro
 
 

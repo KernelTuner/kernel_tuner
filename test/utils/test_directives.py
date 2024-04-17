@@ -23,26 +23,26 @@ def test_is_fortran():
 def test_line_contains_pragma():
     cxx_code = "int main(void) {\n#pragma acc parallel}"
     f90_code = "!$acc parallel"
-    assert line_contains_pragma(cxx_code, Cxx())
-    assert not line_contains_pragma(f90_code, Cxx())
-    assert line_contains_pragma(f90_code, Fortran())
-    assert not line_contains_pragma(cxx_code, Fortran())
+    assert line_contains_openacc_pragma(cxx_code, Cxx())
+    assert not line_contains_openacc_pragma(f90_code, Cxx())
+    assert line_contains_openacc_pragma(f90_code, Fortran())
+    assert not line_contains_openacc_pragma(cxx_code, Fortran())
 
 
 def test_create_data_directive():
     assert (
-        create_data_directive("array", 1024, Cxx())
-        == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
+            create_data_directive_openacc("array", 1024, Cxx())
+            == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
     )
     assert (
-        create_data_directive("matrix", 35, Fortran())
-        == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
+            create_data_directive_openacc("matrix", 35, Fortran())
+            == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
     )
 
 
 def test_exit_data_directive():
-    assert exit_data_directive("array", 1024, Cxx()) == "#pragma acc exit data copyout(array[:1024])\n"
-    assert exit_data_directive("matrix", 35, Fortran()) == "!$acc exit data copyout(matrix(:35))\n"
+    assert exit_data_directive_openacc("array", 1024, Cxx()) == "#pragma acc exit data copyout(array[:1024])\n"
+    assert exit_data_directive_openacc("matrix", 35, Fortran()) == "!$acc exit data copyout(matrix(:35))\n"
 
 
 def test_correct_kernel():
