@@ -293,6 +293,22 @@ def extract_initialization_code(code: str, langs: Code) -> str:
         return ""
 
 
+def format_argument_fortran(p_type: str, p_size: int, p_name: str) -> str:
+    if "float*" in p_type:
+        return f"real (c_float), dimension({p_size}) :: {p_name}"
+    elif "double*" in p_type:
+        return f"real (c_double), dimension({p_size}) :: {p_name}"
+    elif "int*" in p_type:
+        return f"integer (c_int), dimension({p_size}) :: {p_name}"
+    elif "float" in p_type:
+        return f"real (c_float), value :: {p_name}"
+    elif "double" in p_type:
+        return f"real (c_double), value :: {p_name}"
+    elif "int" in p_type:
+        return f"integer (c_int), value :: {p_name}"
+    return ""
+
+
 def extract_directive_signature(code: str, langs: Code, kernel_name: str = None) -> dict:
     """Extract the user defined signature for directive sections"""
 
@@ -341,18 +357,7 @@ def extract_directive_signature(code: str, langs: Code, kernel_name: str = None)
                         p_type = param[1:-1]
                         p_size = p_type.split(":")[1]
                         p_type = p_type.split(":")[0]
-                        if "float*" in p_type:
-                            params.append(f"real (c_float), dimension({p_size}) :: {p_name}")
-                        elif "double*" in p_type:
-                            params.append(f"real (c_double), dimension({p_size}) :: {p_name}")
-                        elif "int*" in p_type:
-                            params.append(f"integer (c_int), dimension({p_size}) :: {p_name}")
-                        elif "float" in p_type:
-                            params.append(f"real (c_float), value :: {p_name}")
-                        elif "double" in p_type:
-                            params.append(f"real (c_double), value :: {p_name}")
-                        elif "int" in p_type:
-                            params.append(f"integer (c_int), value :: {p_name}")
+                        params.append(format_argument_fortran(p_type, p_size, p_name))
                     signatures[name] += "\n".join(params) + "\n"
                     signatures[
                         name
@@ -448,6 +453,30 @@ def generate_directive_function(
     return code
 
 
+def allocate_array(p_type: str, size: int) -> np.ndarray:
+    if p_type == "float*":
+        return np.random.rand(size).astype(np.float32)
+    elif p_type == "double*":
+        return np.random.rand(size).astype(np.float64)
+    elif p_type == "int*":
+        return np.random.randint(max_int, size=size)
+    else:
+        # The parameter is an array of user defined types
+        return np.random.rand(size).astype(np.byte)
+
+
+def allocate_scalar(p_type: str, size: int) -> np.number:
+    if p_type == "float":
+        return np.float32(size)
+    elif p_type == "double":
+        return np.float64(size)
+    elif p_type == "int":
+        return np.int32(size)
+    else:
+        # The parameter is some user defined type
+        return np.byte(size)
+
+
 def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimensions: dict = None) -> list:
     """Allocates the data needed by a kernel and returns the arguments array"""
     args = []
@@ -457,26 +486,8 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
         p_type = data[parameter][0]
         size = parse_size(data[parameter][1], preprocessor, user_dimensions)
         if "*" in p_type:
-            # The parameter is an array
-            if p_type == "float*":
-                args.append(np.random.rand(size).astype(np.float32))
-            elif p_type == "double*":
-                args.append(np.random.rand(size).astype(np.float64))
-            elif p_type == "int*":
-                args.append(np.random.randint(max_int, size=size))
-            else:
-                # The parameter is an array of user defined types
-                args.append(np.random.rand(size).astype(np.byte))
+            args.append(allocate_array(p_type, size))
         else:
-            # The parameter is a scalar
-            if p_type == "float":
-                args.append(np.float32(size))
-            elif p_type == "double":
-                args.append(np.float64(size))
-            elif p_type == "int":
-                args.append(np.int32(size))
-            else:
-                # The parameter is some user defined type
-                args.append(np.byte(size))
+            args.append(allocate_scalar(p_type, size))
 
     return args
