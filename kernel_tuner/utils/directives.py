@@ -294,19 +294,20 @@ def extract_initialization_code(code: str, langs: Code) -> str:
 
 
 def format_argument_fortran(p_type: str, p_size: int, p_name: str) -> str:
+    argument = ""
     if "float*" in p_type:
-        return f"real (c_float), dimension({p_size}) :: {p_name}"
+        argument = f"real (c_float), dimension({p_size}) :: {p_name}"
     elif "double*" in p_type:
-        return f"real (c_double), dimension({p_size}) :: {p_name}"
+        argument = f"real (c_double), dimension({p_size}) :: {p_name}"
     elif "int*" in p_type:
-        return f"integer (c_int), dimension({p_size}) :: {p_name}"
+        argument = f"integer (c_int), dimension({p_size}) :: {p_name}"
     elif "float" in p_type:
-        return f"real (c_float), value :: {p_name}"
+        argument = f"real (c_float), value :: {p_name}"
     elif "double" in p_type:
-        return f"real (c_double), value :: {p_name}"
+        argument = f"real (c_double), value :: {p_name}"
     elif "int" in p_type:
-        return f"integer (c_int), value :: {p_name}"
-    return ""
+        argument = f"integer (c_int), value :: {p_name}"
+    return argument
 
 
 def extract_directive_signature(code: str, langs: Code, kernel_name: str = None) -> dict:
@@ -454,33 +455,39 @@ def generate_directive_function(
 
 
 def allocate_array(p_type: str, size: int) -> np.ndarray:
+    """Allocate a Numpy array"""
+    max_int = 1024
+    array = None
     if p_type == "float*":
-        return np.random.rand(size).astype(np.float32)
+        array = np.random.rand(size).astype(np.float32)
     elif p_type == "double*":
-        return np.random.rand(size).astype(np.float64)
+        array = np.random.rand(size).astype(np.float64)
     elif p_type == "int*":
-        return np.random.randint(max_int, size=size)
+        array = np.random.randint(max_int, size=size)
     else:
         # The parameter is an array of user defined types
-        return np.random.rand(size).astype(np.byte)
+        array = np.random.rand(size).astype(np.byte)
+    return array
 
 
 def allocate_scalar(p_type: str, size: int) -> np.number:
+    """Allocate a Numpy scalar"""
+    scalar = None
     if p_type == "float":
-        return np.float32(size)
+        scalar = np.float32(size)
     elif p_type == "double":
-        return np.float64(size)
+        scalar = np.float64(size)
     elif p_type == "int":
-        return np.int32(size)
+        scalar = np.int32(size)
     else:
         # The parameter is some user defined type
-        return np.byte(size)
+        scalar = np.byte(size)
+    return scalar
 
 
 def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimensions: dict = None) -> list:
     """Allocates the data needed by a kernel and returns the arguments array"""
     args = []
-    max_int = 1024
 
     for parameter in data.keys():
         p_type = data[parameter][0]
