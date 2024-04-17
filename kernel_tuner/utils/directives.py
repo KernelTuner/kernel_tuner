@@ -63,23 +63,47 @@ def is_fortran(lang: Language) -> bool:
     return isinstance(lang, Fortran)
 
 
-def line_contains_openacc_pragma(line: str, lang: Language) -> bool:
-    """Check if line contains OpenACC pragma or not"""
+def line_contains_openacc_directive(line: str, lang: Language) -> bool:
+    """Check if line contains an OpenACC pragma or not"""
     if is_cxx(lang):
-        return line_contains_openacc_pragma_cxx(line)
+        return line_contains_openacc_directive_cxx(line)
     elif is_fortran(lang):
-        return line_contains_openacc_pragma_fortran(line)
+        return line_contains_openacc_directive_fortran(line)
     return False
 
 
-def line_contains_openacc_pragma_cxx(line: str) -> bool:
-    """Check if a line of code contains a C++ OpenACC pragma or not"""
-    return "#pragma acc" in line
+def line_contains_openacc_directive_cxx(line: str) -> bool:
+    """Check if a line of code contains a C++ OpenACC directive or not"""
+    return line_contains(line, "#pragma acc")
 
 
-def line_contains_openacc_pragma_fortran(line: str) -> bool:
-    """Check if a line of code contains a Fortran OpenACC pragma or not"""
-    return "!$acc" in line
+def line_contains_openacc_directive_fortran(line: str) -> bool:
+    """Check if a line of code contains a Fortran OpenACC directive or not"""
+    return line_contains(line, "!$acc")
+
+
+def line_contains_openacc_parallel_directive(line: str, lang: Language) -> bool:
+    """Check if line contains an OpenACC parallel directive or not"""
+    if is_cxx(lang):
+        return line_contains_openacc_parallel_directive_cxx(line)
+    elif is_fortran(lang):
+        return line_contains_openacc_parallel_directive_fortran(line)
+    return False
+
+
+def line_contains_openacc_parallel_directive_cxx(line: str) -> bool:
+    """Check if a line of code contains a C++ OpenACC parallel directive or not"""
+    return line_contains(line, "#pragma acc parallel")
+
+
+def line_contains_openacc_parallel_directive_fortran(line: str) -> bool:
+    """Check if a line of code contains a Fortran OpenACC parallel directive or not"""
+    return line_contains(line, "!$acc parallel")
+
+
+def line_contains(line: str, target: str) -> bool:
+    """Generic helper to check if a line contains the target"""
+    return target in line
 
 
 def openacc_pragma_contains_clause(line: str, clauses: list) -> bool:
@@ -518,7 +542,7 @@ def add_present_openacc(
     """Add the present clause to OpenACC directive"""
     new_body = ""
     for line in code.replace("\\\n", "").split("\n"):
-        if not line_contains_openacc_pragma(line, langs.language):
+        if not line_contains_openacc_parallel_directive(line, langs.language):
             new_body += line
         else:
             # The line contains an OpenACC directive

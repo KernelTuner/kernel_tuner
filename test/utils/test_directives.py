@@ -20,13 +20,20 @@ def test_is_fortran():
     assert not is_fortran(None)
 
 
-def test_line_contains_pragma():
+def test_line_contains_openacc_directive():
     cxx_code = "int main(void) {\n#pragma acc parallel}"
     f90_code = "!$acc parallel"
-    assert line_contains_openacc_pragma(cxx_code, Cxx())
-    assert not line_contains_openacc_pragma(f90_code, Cxx())
-    assert line_contains_openacc_pragma(f90_code, Fortran())
-    assert not line_contains_openacc_pragma(cxx_code, Fortran())
+    assert line_contains_openacc_directive(cxx_code, Cxx())
+    assert not line_contains_openacc_directive(f90_code, Cxx())
+    assert line_contains_openacc_directive(f90_code, Fortran())
+    assert not line_contains_openacc_directive(cxx_code, Fortran())
+
+
+def test_line_contains_openacc_parallel_directive():
+    assert line_contains_openacc_parallel_directive("#pragma acc parallel wait", Cxx())
+    assert line_contains_openacc_parallel_directive("!$acc parallel", Fortran())
+    assert not line_contains_openacc_parallel_directive("#pragma acc for", Cxx())
+    assert not line_contains_openacc_parallel_directive("!$acc for", Fortran())
 
 
 def test_openacc_pragma_contains_data_clause():
