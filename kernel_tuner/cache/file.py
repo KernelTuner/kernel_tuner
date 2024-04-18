@@ -65,6 +65,9 @@ def append_cache_line(
 ) -> CacheLinePosition:
     """Appends a cache line to an open cache file.
 
+    If ``position`` is unset, it will assume the "cache" property comes last in the root object when determining the
+    position to insert the cache line at.
+
     Returns the position of the next cache line.
     """
     p = position or CacheLinePosition()
