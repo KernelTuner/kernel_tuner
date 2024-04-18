@@ -32,8 +32,8 @@ def test_line_contains_openacc_directive():
 def test_line_contains_openacc_parallel_directive():
     assert line_contains_openacc_parallel_directive("#pragma acc parallel wait", Cxx())
     assert line_contains_openacc_parallel_directive("!$acc parallel", Fortran())
-    assert not line_contains_openacc_parallel_directive("#pragma acc for", Cxx())
-    assert not line_contains_openacc_parallel_directive("!$acc for", Fortran())
+    assert not line_contains_openacc_parallel_directive("#pragma acc loop", Cxx())
+    assert not line_contains_openacc_parallel_directive("!$acc loop", Fortran())
 
 
 def test_openacc_pragma_contains_data_clause():
@@ -318,3 +318,6 @@ def test_add_present_openacc():
     assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == expected_f90
     code_f90 = "!$acc parallel async num_workers(16) copy(array(:42))\n"
     assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == code_f90
+    code_cxx = "#pragma acc parallel num_gangs(32)\n\t#pragma acc loop\n\t//for loop"
+    expected_cxx = "#pragma acc parallel num_gangs(32) present(array[:42])\n\t#pragma acc loop\n\t//for loop"
+    assert add_present_openacc(code_cxx, acc_cxx, data, preprocessor, None) == expected_cxx
