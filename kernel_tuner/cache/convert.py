@@ -154,18 +154,17 @@ def convert_cache_to_t4(cache: dict) -> dict:
                 tune_param_key: cache_line[tune_param_key] for tune_param_key in cache["tune_params_keys"]
             },
             "times": {
-                "compilation": cache_line["compile_time"],
-                "benchmark": cache_line["benchmark_time"],
+                "compilation_time": cache_line["compile_time"],
                 "framework": cache_line["framework_time"],
-                "search_algorithm": 0,
-                "validation": 0,
+                "search_algorithm": cache_line["strategy_time"],
+                "validation": cache_line["verification_time"],
                 "runtimes": cache_line["times"]
             },
+            # We assume that the supplied cache file is correct
             "invalidity": "correct",
             "correctness": 1,
             "measurements": [
-                { "name": "time", "value": cache_line["time"], "unit": "ms" },
-                { "name": "GFLOP/s", "value": cache_line["GFLOP/s"], "unit": "" }
+                { "name": cache["objective"], "value": cache_line[cache["objective"]], "unit": ""}
             ],
             "objectives": [ cache["objective"] ]
         })

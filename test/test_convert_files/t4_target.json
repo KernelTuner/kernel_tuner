@@ -15,8 +15,7 @@
                 "filter_width": 15
             },
             "times": {
-                "compilation": 661.5392221137881,
-                "benchmark": 393.9172066748142,
+                "compilation_time": 661.5392221137881,
                 "framework": 53.12582431361079,
                 "search_algorithm": 0,
                 "validation": 0,
@@ -61,11 +60,6 @@
                 {
                     "name": "time",
                     "value": 12.262957006692886,
-                    "unit": "ms"
-                },
-                {
-                    "name": "GFLOP/s",
-                    "value": 615.6547067627729,
                     "unit": ""
                 }
             ],

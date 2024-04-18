@@ -32,9 +32,13 @@ NO_VERSION_FIELD  = TEST_CONVERT_PATH / "no_version_field.json"
 TOO_HIGH_VERSION  = TEST_CONVERT_PATH / "too_high_version.json"
 NOT_REAL_VERSION  = TEST_CONVERT_PATH / "not_real_version.json"
 
+# T4 schema files
+T4_SCHEMAS_PATH = KERNEL_TUNER_PATH / "schema/T4"
+T4_SCHEMA = T4_SCHEMAS_PATH / "1.0.0/results-schema.json"
+
 # T4 Test files
-T4_CACHE_INPUT = TEST_CONVERT_PATH / "t4_cache_input.json"
-T4_TARGET_OUTPUT = TEST_CONVERT_PATH / "t4_target_output.json"
+T4_CACHE = TEST_CONVERT_PATH / "t4_cache.json"
+T4_TARGET = TEST_CONVERT_PATH / "t4_target.json"
 
 
 
@@ -123,14 +127,25 @@ class TestConvertCache:
         return
     
     def test_convert_to_t4(self):
-        with open(T4_CACHE_INPUT) as cache_input_file, open(T4_TARGET_OUTPUT) as t4_target_output_file:
-            cache_input = json.load(cache_input_file)
-            t4_target_output = json.load(t4_target_output_file)
+        with open(T4_CACHE) as cache_file, open(T4_TARGET) as t4_target_file:
+            cache = json.load(cache_file)
+            t4_target = json.load(t4_target_file)
         
-        t4_converted_output = convert_cache_to_t4(cache_input)
+        t4 = convert_cache_to_t4(cache)
 
-        if (t4_converted_output == t4_target_output):
-            raise ValueError("Converted T4 output does not match target output")
+        if (t4 != t4_target):
+            raise ValueError("Converted T4 does not match target T4")
+    
+    def test_convert_to_t4_is_valid(self):
+        with open(T4_CACHE) as cache_file:
+            cache = json.load(cache_file)
+
+        t4_converted_output = convert_cache_to_t4(cache)
+
+        with open(T4_SCHEMA) as t4_schema_file:
+            t4_schema = json.load(t4_schema_file)
+            jsonschema.validate(t4_converted_output, t4_schema)
+
     
     # Mock convert functions
     def _c1_0_0_to_1_1_0(cache):

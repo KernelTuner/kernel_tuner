@@ -100,7 +100,6 @@
             ],
             "compile_time": 661.5392221137881,
             "verification_time": 0,
-            "benchmark_time": 393.9172066748142,
             "GFLOP/s": 615.6547067627729,
             "strategy_time": 0,
             "framework_time": 53.12582431361079,
