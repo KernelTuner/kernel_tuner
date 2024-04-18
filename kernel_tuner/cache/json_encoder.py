@@ -394,3 +394,81 @@ def _make_iterencode(
                 del markers[markerid]
 
     return _iterencode
+
+
+class CacheLineEncoder(json.JSONEncoder):
+    """JSON encoder for Kernel Tuner cache lines.
+
+    Supports the following objects and types by default:
+
+    +-------------------+---------------+
+    | Python            | JSON          |
+    +===================+===============+
+    | util.ErrorConfig  | str           |
+    +-------------------+---------------+
+    | np.integer        | int           |
+    +-------------------+---------------+
+    | np.floating       | float         |
+    +-------------------+---------------+
+    | np.ndarray        | list          |
+    +-------------------+---------------+
+    | dict              | object        |
+    +-------------------+---------------+
+    | list, tuple       | array         |
+    +-------------------+---------------+
+    | str               | string        |
+    +-------------------+---------------+
+    | int, float        | number        |
+    +-------------------+---------------+
+    | True              | true          |
+    +-------------------+---------------+
+    | False             | false         |
+    +-------------------+---------------+
+    | None              | null          |
+    +-------------------+---------------+
+
+    To extend this to recognize other objects, subclass and implement a
+    ``.default()`` method with another method that returns a serializable
+    object for ``o`` if possible, otherwise it should call the superclass
+    implementation (to raise ``TypeError``).
+
+    """
+
+    def __init__(
+        self,
+        *,
+        skipkeys=False,
+        ensure_ascii=True,
+        check_circular=True,
+        allow_nan=True,
+        sort_keys=False,
+        indent=None,
+        separators=None,
+        default=None,
+    ):
+        """Constructor for CacheJSONEncoder, with sensible defaults."""
+        if indent is None:
+            separators = (", ", ": ")
+
+        super().__init__(
+            skipkeys=skipkeys,
+            ensure_ascii=ensure_ascii,
+            check_circular=check_circular,
+            allow_nan=allow_nan,
+            sort_keys=sort_keys,
+            indent=indent,
+            separators=separators,
+            default=default,
+        )
+
+    def default(self, o):
+        """Converts non-jsonifiable objects to jsonifiable objects."""
+        if isinstance(o, util.ErrorConfig):
+            return str(o)
+        elif isinstance(o, np.integer):
+            return int(o)
+        elif isinstance(o, np.floating):
+            return float(o)
+        elif isinstance(o, np.ndarray):
+            return o.tolist()
+        super().default(o)

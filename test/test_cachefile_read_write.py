@@ -66,7 +66,7 @@ def test_append_cache_line(cache_path, output_path):
     key = next(iter(smaller_cache["cache"].keys()))
     line = smaller_cache["cache"].pop(key)
 
-    write_cache(smaller_cache, output_path, keep_open=True)
+    write_cache(smaller_cache, output_path)
     append_cache_line(key, line, output_path)
 
     assert read_cache(output_path) == sample_cache
@@ -78,11 +78,11 @@ def test_append_cache_line__with_position(cache_path, output_path):
     empty_cache = deepcopy(sample_cache)
     cache_lines = deepcopy(empty_cache["cache"])
     empty_cache["cache"].clear()
-    write_cache(empty_cache, output_path, keep_open=True)
+    write_cache(empty_cache, output_path)
 
     pos = CacheLinePosition()
     for key, line in cache_lines.items():
-        append_cache_line(key, line, output_path, position=pos)
+        pos = append_cache_line(key, line, output_path, pos)
 
     assert read_cache(output_path) == sample_cache
 
@@ -94,7 +94,7 @@ def test_append_cache_line__to_empty_cache(cache_path, output_path):
     cache_lines = deepcopy(empty_cache["cache"])
     empty_cache["cache"].clear()
 
-    write_cache(empty_cache, output_path, keep_open=True)
+    write_cache(empty_cache, output_path)
     for key, line in cache_lines.items():
         append_cache_line(key, line, output_path)
 

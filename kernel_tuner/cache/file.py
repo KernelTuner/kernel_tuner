@@ -8,7 +8,7 @@ import io
 from os import PathLike
 from typing import Callable, Optional
 
-from kernel_tuner.cache.json_encoder import CacheEncoder
+from kernel_tuner.cache.json_encoder import CacheEncoder, CacheLineEncoder
 
 
 class InvalidCacheError(Exception):
@@ -49,42 +49,62 @@ def read_cache(filename: PathLike):
     return data
 
 
-def write_cache(cache_json: dict, filename: PathLike, *, keep_open=False):
+def write_cache(cache_json: dict, filename: PathLike):
     r"""Writes a cache file with the given content.
 
     Parameters:
         cache_file (dict): The content to be written to the cache file.
         filename (PathLike): The path to write the cache file.
-        keep_open (bool): If true, add a comma instead of the final two braces ('}\n}')
     """
     with open(filename, "w") as file:
         json.dump(cache_json, file, cls=CacheEncoder, indent=0)
 
 
-def append_cache_line(key: str, cache_line: dict, filename: PathLike, *, position: Optional[CacheLinePosition] = None):
-    """Appends a cache line to an open cache file."""
-    _pos = position
-    if _pos is None:
-        _pos = CacheLinePosition()
-    if not _pos.is_initialized:
-        _get_next_cache_line_position(filename, _pos)
+def append_cache_line(
+    key: str, cache_line: dict, filename: PathLike, position: Optional[CacheLinePosition] = None
+) -> CacheLinePosition:
+    """Appends a cache line to an open cache file.
 
+    Returns the position of the next cache line.
+    """
+    p = position or CacheLinePosition()
+    if not p.is_initialized:
+        _unsafe_get_next_cache_line_position(filename, p)
+    return _append_cache_line_at(key, cache_line, filename, p)
+
+
+def _append_cache_line_at(
+    key: str, cache_line: dict, filename: PathLike, position: CacheLinePosition
+) -> CacheLinePosition:
     with open(filename, "r+") as file:
-        file.seek(_pos.file_position)
+        # Save cache closing braces properties coming after "cache" as text in suffix
+        file.seek(position.file_position)
+        after_text = file.read()
 
-        # Add a cache line
+        # Append the cache line at the right position in the file
+        file.seek(position.file_position)
         text = ""
-        if not _pos.is_first_line:
+        if not position.is_first_line:
             text += ","
-        text += "\n" + json.dumps({key: cache_line}, separators=(", ", ": ")).strip()[1:-1] + "}\n}"
+        text += "\n"
+        text += json.dumps({key: cache_line}, cls=CacheLineEncoder).strip()[1:-1]
         file.write(text)
+
+        # Update the position
+        next_pos = CacheLinePosition()
+        next_pos.is_initialized = True
+        next_pos.is_first_line = False
+        next_pos.file_position = file.tell()
+
+        # Close off the cache
+        file.write(after_text)
         file.truncate()
 
-    if position is not None:
-        _get_next_cache_line_position(filename, _pos)
+    return next_pos
 
 
-def _get_next_cache_line_position(filename: PathLike, state: CacheLinePosition):
+# FIXME: This function is unsafe: it only works when "cache" property is stored last
+def _unsafe_get_next_cache_line_position(filename: PathLike, state: CacheLinePosition):
     with open(filename, "rb+") as file:
         # Seek the last `}` (root closing brace)
         file.seek(0, os.SEEK_END)
