@@ -45,6 +45,9 @@ class TestCacheJSONEncoder:
     def test_encode_cache(self):
         assert dumps({"cache": {"1": {"a": 3}, "2": {"b": 4}}}) == '{\n"cache": {\n"1": {"a": 3},\n"2": {"b": 4}}\n}'
 
+    def test_encode_cache_last(self):
+        assert dumps({"b": 2, "cache": {}, "d": 4}) == '{\n"b": 2,\n"d": 4,\n"cache": {}\n}'
+
     def test_encode_error_config(self):
         assert dumps(ErrorConfig()) == '"ErrorConfig"'
         assert dumps(InvalidConfig()) == '"InvalidConfig"'
