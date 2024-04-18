@@ -27,6 +27,7 @@ def test_line_contains_openacc_directive():
     assert not line_contains_openacc_directive(f90_code, Cxx())
     assert line_contains_openacc_directive(f90_code, Fortran())
     assert not line_contains_openacc_directive(cxx_code, Fortran())
+    assert not line_contains_openacc_directive(cxx_code, None)
 
 
 def test_line_contains_openacc_parallel_directive():
@@ -34,6 +35,7 @@ def test_line_contains_openacc_parallel_directive():
     assert line_contains_openacc_parallel_directive("!$acc parallel", Fortran())
     assert not line_contains_openacc_parallel_directive("#pragma acc loop", Cxx())
     assert not line_contains_openacc_parallel_directive("!$acc loop", Fortran())
+    assert not line_contains_openacc_parallel_directive("!$acc parallel", None)
 
 
 def test_openacc_pragma_contains_data_clause():
@@ -50,11 +52,13 @@ def test_create_data_directive():
         create_data_directive_openacc("matrix", 35, Fortran())
         == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
     )
+    assert create_data_directive_openacc("array", 1024, None) == ""
 
 
 def test_exit_data_directive():
     assert exit_data_directive_openacc("array", 1024, Cxx()) == "#pragma acc exit data copyout(array[:1024])\n"
     assert exit_data_directive_openacc("matrix", 35, Fortran()) == "!$acc exit data copyout(matrix(:35))\n"
+    assert exit_data_directive_openacc("matrix", 1024, None) == ""
 
 
 def test_correct_kernel():
