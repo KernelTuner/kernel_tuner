@@ -136,7 +136,23 @@ def test_append_cache_line(output_path):
     write_cache(smaller_cache, output_path, keep_open=True)
     append_cache_line(key, line, output_path)
 
-    print(sample_cache)
+    assert read_cache(output_path) == sample_cache
+
+
+def test_append_cache_line__to_empty_cache(output_path):
+    sample_cache = read_cache(CLOSED_CACHE_PATH)
+
+    empty_cache = deepcopy(sample_cache)
+    cache_lines = deepcopy(empty_cache["cache"])
+    empty_cache["cache"].clear()
+
+    write_cache(empty_cache, output_path, keep_open=True)
+    for key, line in cache_lines.items():
+        append_cache_line(key, line, output_path)
+
+    with output_path.open() as file:
+        print(file.read())
+
     assert read_cache(output_path) == sample_cache
 
 

@@ -21,7 +21,15 @@ from kernel_tuner.cache.json_encoder import CacheJSONEncoder
 
 
 OPTIONAL_COMMA_END_REGEX = re.compile(r",?$")
-CLOSING_BRACES_REGEX = re.compile(r"\s*}\s*}\s*$")
+CLOSING_EMPTY_CACHE_REGEX = re.compile(r"{\s*}\s*}\s*$")
+COMMA_REPLACEMENT_REGEX = re.compile(
+    r"""
+    (?<!\s|\{)\s*   # property "cache" must not be an empty object 
+    }\s*            # match closing brace from property "cache"
+    }\s*$           # match closing brace from root
+""",
+    re.VERBOSE,
+)
 
 
 class InvalidCacheError(Exception):
@@ -96,11 +104,22 @@ def write_cache(cache_json: dict, filename: PathLike, *, keep_open=False):
     with open(filename, "w") as file:
         text = json.dumps(cache_json, cls=CacheJSONEncoder, indent=0)
         if keep_open:
-            text = CLOSING_BRACES_REGEX.sub(",", text)
+            if COMMA_REPLACEMENT_REGEX.search(text):
+                text = COMMA_REPLACEMENT_REGEX.sub(",", text)
+            else:
+                text = CLOSING_EMPTY_CACHE_REGEX.sub("{", text)
         file.write(text)
 
 
 def append_cache_line(key: str, cache_line: dict, cache_filename: PathLike):
+    """Appends a cache line to an open cache file."""
+    text = json.dumps({key: cache_line})
+    text = "\n" + text.strip()[1:-1] + ","
+    with open(cache_filename, "a") as file:
+        file.write(text)
+
+
+def append_cache_line_to_closed_cache_file(key: str, cache_line: dict, cache_filename: PathLike):
     """Appends a cache line to an open cache file."""
     text = json.dumps({key: cache_line})
     text = "\n" + text.strip()[1:-1] + ","
