@@ -535,11 +535,13 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
 
     return args
 
+
 def add_new_line(line: str) -> str:
     """Adds the new line character to the end of the line if not present"""
     if line.rfind("\n") != len(line) - 1:
         return line + "\n"
     return line
+
 
 def add_present_openacc(
     code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None
