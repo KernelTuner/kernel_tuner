@@ -535,6 +535,11 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
 
     return args
 
+def add_new_line(line: str) -> str:
+    """Adds the new line character to the end of the line if not present"""
+    if line.rfind("\n") != len(line) - 1:
+        return line + "\n"
+    return line
 
 def add_present_openacc(
     code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None
@@ -560,8 +565,7 @@ def add_present_openacc(
                         elif is_fortran(langs.language):
                             present_clause += add_present_openacc_fortran(name, size)
                 new_body += new_line + present_clause.rstrip() + "\n"
-    if new_body.rfind("\n") != len(new_body) - 1:
-        new_body += "\n"
+        new_body = add_new_line(new_body)
     return new_body
 
 

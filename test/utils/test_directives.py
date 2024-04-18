@@ -318,6 +318,6 @@ def test_add_present_openacc():
     assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == expected_f90
     code_f90 = "!$acc parallel async num_workers(16) copy(array(:42))\n"
     assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == code_f90
-    code_cxx = "#pragma acc parallel num_gangs(32)\n\t#pragma acc loop\n\t//for loop"
-    expected_cxx = "#pragma acc parallel num_gangs(32) present(array[:42])\n\t#pragma acc loop\n\t//for loop"
+    code_cxx = "#pragma acc parallel num_gangs(32)\n\t#pragma acc loop\n\t//for loop\n"
+    expected_cxx = "#pragma acc parallel num_gangs(32) present(array[:42])\n\t#pragma acc loop\n\t//for loop\n"
     assert add_present_openacc(code_cxx, acc_cxx, data, preprocessor, None) == expected_cxx
