@@ -38,9 +38,9 @@ def test_line_contains_openacc_parallel_directive():
     assert not line_contains_openacc_parallel_directive("!$acc parallel", None)
 
 
-def test_openacc_pragma_contains_data_clause():
-    assert openacc_pragma_contains_data_clause("#pragma acc parallel present(A[:1089])")
-    assert not openacc_pragma_contains_data_clause("#pragma acc parallel for")
+def test_openacc_directive_contains_data_clause():
+    assert openacc_directive_contains_data_clause("#pragma acc parallel present(A[:1089])")
+    assert not openacc_directive_contains_data_clause("#pragma acc parallel for")
 
 
 def test_create_data_directive():

@@ -64,7 +64,7 @@ def is_fortran(lang: Language) -> bool:
 
 
 def line_contains_openacc_directive(line: str, lang: Language) -> bool:
-    """Check if line contains an OpenACC pragma or not"""
+    """Check if line contains an OpenACC directive or not"""
     if is_cxx(lang):
         return line_contains_openacc_directive_cxx(line)
     elif is_fortran(lang):
@@ -106,7 +106,7 @@ def line_contains(line: str, target: str) -> bool:
     return target in line
 
 
-def openacc_pragma_contains_clause(line: str, clauses: list) -> bool:
+def openacc_directive_contains_clause(line: str, clauses: list) -> bool:
     """Check if an OpenACC directive contains one clause from a list"""
     for clause in clauses:
         if clause in line:
@@ -114,10 +114,10 @@ def openacc_pragma_contains_clause(line: str, clauses: list) -> bool:
     return False
 
 
-def openacc_pragma_contains_data_clause(line: str) -> bool:
+def openacc_directive_contains_data_clause(line: str) -> bool:
     """Check if an OpenACC directive contains one data clause"""
     data_clauses = ["copy", "copyin", "copyout", "create", "no_create", "present", "device_ptr", "attach"]
-    return openacc_pragma_contains_clause(line, data_clauses)
+    return openacc_directive_contains_clause(line, data_clauses)
 
 
 def create_data_directive_openacc(name: str, size: int, lang: Language) -> str:
@@ -164,7 +164,7 @@ def correct_kernel(kernel_name: str, line: str) -> bool:
 
 
 def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
-    """Find the dimension of a pragma defined value in the preprocessor"""
+    """Find the dimension of a directive defined value in the preprocessor"""
     ret_size = None
     for line in preprocessor:
         if f"#define {dimension}" in line:
@@ -553,7 +553,7 @@ def add_present_openacc(
             new_body += line
         else:
             # The line contains an OpenACC directive
-            if openacc_pragma_contains_data_clause(line):
+            if openacc_directive_contains_data_clause(line):
                 # The OpenACC directive manages memory, do not interfere
                 return code
             else:
