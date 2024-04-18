@@ -308,11 +308,13 @@ def test_extract_initialization_code():
 def test_add_present_openacc():
     acc_cxx = Code(OpenACC(), Cxx())
     acc_f90 = Code(OpenACC(), Fortran())
-    code_cxx = "#pragma acc parallel num_gangs(32)\n"
+    code_cxx = "#pragma acc parallel num_gangs(32)\n#pragma acc\n"
     code_f90 = "!$acc parallel async num_workers(16)\n"
     data = {"array": ["int*", "size"]}
     preprocessor = ["#define size 42"]
-    expected_cxx = "#pragma acc parallel num_gangs(32) present(array[:42])\n"
+    expected_cxx = "#pragma acc parallel num_gangs(32) present(array[:42])\n#pragma acc\n"
     assert add_present_openacc(code_cxx, acc_cxx, data, preprocessor, None) == expected_cxx
     expected_f90 = "!$acc parallel async num_workers(16) present(array(:42))\n"
     assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == expected_f90
+    code_f90 = "!$acc parallel async num_workers(16) copy(array(:42))\n"
+    assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == code_f90

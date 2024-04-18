@@ -560,6 +560,8 @@ def add_present_openacc(
                         elif is_fortran(langs.language):
                             present_clause += add_present_openacc_fortran(name, size)
                 new_body += new_line + present_clause.rstrip() + "\n"
+    if new_body.rfind("\n") != len(new_body) - 1:
+        new_body += "\n"
     return new_body
 
 
