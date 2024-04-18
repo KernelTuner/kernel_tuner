@@ -1,159 +1,396 @@
-"""Provides an instance of JSONEncoder in order to encode JSON to our own readable format."""
+"""Provides an instance of JSONEncoder in order to encode JSON to our own readable format.
+
+Modified from https://github.com/python/cpython/blob/3.8/Lib/json/encoder.py in order to format cache in Kernel Tuner
+cache format.
+"""
 
 from __future__ import annotations
 
 import json
+from typing import Tuple
+
 import numpy as np
 
-from kernel_tuner.util import ErrorConfig
+import kernel_tuner.util as util
 
 
-# Custom encoder class that inherits from json.JSONEncoder
-class CacheJSONEncoder(json.JSONEncoder):
-    """Subclass of JSONEncoder used in Kernel Tuner.
+INFINITY = float("inf")
 
-    This encoder ensures that each cache entry gets its own separate line, in order to make cache files more readable
-    to the human eye.
+
+class CacheEncoder(json.JSONEncoder):
+    """JSON encoder for Kernel Tuner cache.
+
+    Supports the following objects and types by default:
+
+    +-------------------+---------------+
+    | Python            | JSON          |
+    +===================+===============+
+    | util.ErrorConfig  | str           |
+    +-------------------+---------------+
+    | np.integer        | int           |
+    +-------------------+---------------+
+    | np.floating       | float         |
+    +-------------------+---------------+
+    | np.ndarray        | list          |
+    +-------------------+---------------+
+    | dict              | object        |
+    +-------------------+---------------+
+    | list, tuple       | array         |
+    +-------------------+---------------+
+    | str               | string        |
+    +-------------------+---------------+
+    | int, float        | number        |
+    +-------------------+---------------+
+    | True              | true          |
+    +-------------------+---------------+
+    | False             | false         |
+    +-------------------+---------------+
+    | None              | null          |
+    +-------------------+---------------+
+
+    To extend this to recognize other objects, subclass and implement a
+    ``.default()`` method with another method that returns a serializable
+    object for ``o`` if possible, otherwise it should call the superclass
+    implementation (to raise ``TypeError``).
+
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initializes a new CacheJSONEncoder object."""
-        super().__init__(*args, **kwargs)
-        self.indentation_level = 0
+    item_separator = ", "
+    key_separator = ": "
+
+    def __init__(
+        self,
+        *,
+        skipkeys=False,
+        ensure_ascii=True,
+        check_circular=True,
+        allow_nan=True,
+        sort_keys=False,
+        indent=None,
+        separators=None,
+        default=None,
+    ):
+        """Constructor for CacheJSONEncoder, with sensible defaults."""
+        super().__init__(
+            skipkeys=skipkeys,
+            ensure_ascii=ensure_ascii,
+            check_circular=check_circular,
+            allow_nan=allow_nan,
+            sort_keys=sort_keys,
+            indent=indent,
+            separators=separators,
+            default=default,
+        )
 
     def default(self, o):
-        """Method for converting non-standard python objects to JSON."""
-        print(type(o))
-        if isinstance(o, ErrorConfig):
+        """Converts non-jsonifiable objects to jsonifiable objects."""
+        if isinstance(o, util.ErrorConfig):
             return str(o)
-        if isinstance(o, np.integer):
+        elif isinstance(o, np.integer):
             return int(o)
-        if isinstance(o, np.floating):
+        elif isinstance(o, np.floating):
             return float(o)
-        if isinstance(o, np.ndarray):
+        elif isinstance(o, np.ndarray):
             return o.tolist()
         super().default(o)
 
-    def encode(self, o, force=False):
-        """Encodes any JSON object.
+    def encode(self, o):
+        """Return a JSON string representation of a Python data structure.
 
-        Overwrites the encode function of the JSONEncoder by a custom one. It acts as the usual
-        encoder unless o is of type list, tuple or dict. We then call _encode_list and _encode_object
-        to handle our custom encoding.
+        >>> from json.encoder import JSONEncoder
+        >>> JSONEncoder().encode({"foo": ["bar", "baz"]})
+        '{"foo": ["bar", "baz"]}'
 
-        Parameters:
-            o (any): The object we are encoding.
-            force (bool): Whether we should force the json string to be on a single line.
-
-        Returns:
-            str: The json we have encoded as string.
         """
-        if isinstance(o, (list, tuple)):
-            return self._encode_list(o, force)
-        if isinstance(o, dict):
-            return self._encode_object(o, force)
-        return json.dumps(
-            o,
-            skipkeys=self.skipkeys,
-            ensure_ascii=self.ensure_ascii,
-            check_circular=self.check_circular,
-            allow_nan=self.allow_nan,
-            sort_keys=self.sort_keys,
-            indent=self.indent,
-            separators=(self.item_separator, self.key_separator),
-            default=self.default if hasattr(self, "default") else None,
-        )
+        # This is for extremely simple cases and benchmarks.
+        if isinstance(o, str):
+            ### MODIFICATION: encode strings using super().encode in order to access native c interface for converting
+            ###   strings to json strings in cases this c interface exists
+            super().encode(o)
+            ### END MODIFICATION
+        # This doesn't pass the iterator directly to ''.join() because the
+        # exceptions aren't as detailed.  The list call should be roughly
+        # equivalent to the PySequence_Fast that ''.join() would do.
+        chunks = self.iterencode(o, _one_shot=True)
+        if not isinstance(chunks, (list, tuple)):
+            chunks = list(chunks)
+        return "".join(chunks)
 
-    def _encode_list(self, o, force=False):
-        """Encodes a list or tuple like normal unless we force it to print on a single line.
+    def iterencode(self, o, _one_shot=False):
+        """Encode the given object and yield each string representation as available.
 
-        Parameters:
-            o (list or tuple): The object we are encoding.
-            force (bool): Whether we should force the json string to be on a single line.
+        For example::
 
-        Returns:
-            str: The json we have encoded as string.
+            for chunk in JSONEncoder().iterencode(bigobject):
+                mysocket.write(chunk)
+
         """
-        if force:
-            return "[" + ", ".join(self.encode(el) for el in o) + "]"
-        if not o:
-            return "[]"
-        self.indentation_level += 1
-        output = [self._indent_str + self.encode(el) for el in o]
-        self.indentation_level -= 1
-        return "[\n" + ",\n".join(output) + "\n" + self._indent_str + "]"
-
-    # For encode object we go through what the object contains and write it to the file.
-    def _encode_object(self, o, force=False):
-        """Encodes a dict like normal unless we force it to print on a single line.
-
-        Parameters:
-            o (dict): The object we are encoding.
-            force (bool): Whether we should force the json string to be on a single line.
-
-        Returns:
-            str: The json we have encoded as string.
-        """
-        if not o:
-            return "{}"
-
-        if force:
-            return "{ " + ", ".join(f"{json.dumps(k)}: {self.encode(el)}" for k, el in o.items()) + "}"
-
-        has_cache = False
-        cache_values = ""
-
-        # If we detect the key entry "cache", we remove this key and write it using our custom
-        # function to convert it to a single line. This is done later in the code where we check for the boolean
-        # "has_cache". Otherwise, we continue like normal (so the normal expected format gets used)
-        if "cache" in o.keys():
-            cache_values = o.get("cache")
-            o.pop("cache", None)
-            has_cache = True
-
-        o = {str(k) if k is not None else "null": v for k, v in o.items()}
-
-        if self.sort_keys:
-            o = dict(sorted(o.items(), key=lambda x: x[0]))
-
-        self.indentation_level += 1
-        output = [f"{self._indent_str}{json.dumps(k)}: {self.encode(v)}" for k, v in o.items()]
-
-        # We call _encode_cache if we detect the key "cache"
-        if has_cache:
-            output.append(self._encode_cache(cache_values))
-
-        self.indentation_level -= 1
-        return "{\n" + ",\n".join(output) + "\n" + self._indent_str + "}"
-
-    def _encode_cache(self, o: dict) -> str:
-        """Encodes the value of the cache key in the cache file.
-
-        Encodes a dict in the way we want for our cache files where every item in the key "cache"
-        is written line by line improving readability.
-
-        Parameters:
-            o (dict): The object we are encoding.
-
-        Returns:
-            str: The json we have encoded as string.
-        """
-        cache_values = self._indent_str + '"cache": {\n'
-        self.indentation_level += 1
-        for key, item in o.items():
-            cache_values += self._indent_str + '"' + key + '": {'
-            cache_values += ", ".join(f"{json.dumps(k)}: {self.encode(el, True)}" for k, el in item.items())
-            cache_values += "},\n"
-        self.indentation_level -= 1
-        cache_values = cache_values.strip(",\n")
-        cache_values += "}"
-        return cache_values
-
-    @property
-    def _indent_str(self) -> str:
-        if isinstance(self.indent, int):
-            return " " * (self.indentation_level * self.indent)
-        elif isinstance(self.indent, str):
-            return self.indentation_level * self.indent
+        if self.check_circular:
+            markers = {}
         else:
-            raise ValueError(f"indent must either be of type int or str (is: {type(self.indent)})")
+            markers = None
+        ### MODIFICATION: encode strings using super().encode in order to access native c interface for converting
+        ###   strings to json strings in cases this c interface exists
+        _encoder = super().encode
+        ### END MODIFICATION
+
+        def floatstr(o, allow_nan=self.allow_nan, _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+            # Check for specials.  Note that this type of test is processor
+            # and/or platform-specific, so do tests which don't depend on the
+            # internals.
+
+            if o != o:
+                text = "NaN"
+            elif o == _inf:
+                text = "Infinity"
+            elif o == _neginf:
+                text = "-Infinity"
+            else:
+                return _repr(o)
+
+            if not allow_nan:
+                raise ValueError("Out of range float values are not JSON compliant: " + repr(o))
+
+            return text
+
+        _iterencode = _make_iterencode(
+            markers,
+            self.default,
+            _encoder,
+            self.indent,
+            floatstr,
+            self.key_separator,
+            self.item_separator,
+            self.sort_keys,
+            self.skipkeys,
+            _one_shot,
+        )
+        return _iterencode(o, ())
+
+
+def _make_iterencode(
+    markers,
+    _default,
+    _encoder,
+    _indent,
+    _floatstr,
+    _key_separator,
+    _item_separator,
+    _sort_keys,
+    _skipkeys,
+    _one_shot,
+    ## HACK: hand-optimized bytecode; turn globals into locals
+    ValueError=ValueError,
+    dict=dict,
+    float=float,
+    id=id,
+    int=int,
+    isinstance=isinstance,
+    list=list,
+    str=str,
+    tuple=tuple,
+    _intstr=int.__repr__,
+):
+    if _indent is not None and not isinstance(_indent, str):
+        _indent = " " * _indent
+
+    def _get_indent_level(_current_path: Tuple):
+        if _indent is None:
+            return None
+        if len(_current_path) > 0 and _current_path[0] == "cache":
+            if len(_current_path) > 1:
+                return None
+            return 0
+        return len(_current_path)
+
+    ### SINGLE LINE MODIFICATION: Use the current path to `o` as a parameter instead of the indentation level
+    def _iterencode_list(lst, _current_path: Tuple):
+        if not lst:
+            yield "[]"
+            return
+        if markers is not None:
+            markerid = id(lst)
+            if markerid in markers:
+                raise ValueError("Circular reference detected")
+            markers[markerid] = lst
+        buf = "["
+        ### MODIFICATION: Let _current_indent_level vary depending on the path
+        _current_indent_level = _get_indent_level(_current_path)
+        if _current_indent_level is not None:
+            newline_indent = "\n" + _indent * _current_indent_level
+            separator = _item_separator + newline_indent
+            buf += newline_indent
+        ### END MODIFICATION
+        else:
+            newline_indent = None
+            ### MODIFICATION: Use spaces after the comma in compact representation
+            separator = ", "
+            ### END MODIFICATION
+        first = True
+        for index, value in enumerate(lst):
+            if first:
+                first = False
+            else:
+                buf = separator
+            if isinstance(value, str):
+                yield buf + _encoder(value)
+            elif value is None:
+                yield buf + "null"
+            elif value is True:
+                yield buf + "true"
+            elif value is False:
+                yield buf + "false"
+            elif isinstance(value, int):
+                # Subclasses of int/float may override __repr__, but we still
+                # want to encode them as integers/floats in JSON. One example
+                # within the standard library is IntEnum.
+                yield buf + _intstr(value)
+            elif isinstance(value, float):
+                # see comment above for int
+                yield buf + _floatstr(value)
+            else:
+                yield buf
+                ### MODIFICATION: pass item_path instead of _current_indent_level
+                item_path = _current_path + (index,)
+                if isinstance(value, (list, tuple)):
+                    chunks = _iterencode_list(value, item_path)
+                elif isinstance(value, dict):
+                    chunks = _iterencode_dict(value, item_path)
+                else:
+                    chunks = _iterencode(value, item_path)
+                ### END MODIFICATION
+                yield from chunks
+        if newline_indent is not None:
+            ### SINGLE LINE MODIFICATION: determine the previous indent level from the path
+            _current_indent_level = _get_indent_level(_current_path[:-1])
+            yield "\n" + _indent * _current_indent_level
+        yield "]"
+        if markers is not None:
+            del markers[markerid]
+
+    ### SINGLE LINE MODIFICATION: Use the current path to `o` as a parameter instead of the indentation level
+    def _iterencode_dict(dct, _current_path: Tuple):
+        if not dct:
+            yield "{}"
+            return
+        if markers is not None:
+            markerid = id(dct)
+            if markerid in markers:
+                raise ValueError("Circular reference detected")
+            markers[markerid] = dct
+        yield "{"
+        ### MODIFICATION: Let _current_indent_level vary depending on the path
+        _current_indent_level = _get_indent_level(_current_path)
+        if _current_indent_level is not None:
+            newline_indent = "\n" + _indent * _current_indent_level
+            item_separator = _item_separator + newline_indent
+            yield newline_indent
+        ### END MODIFICATION
+        else:
+            newline_indent = None
+            ### MODIFICATION: Use spaces after the comma in compact representation
+            item_separator = ", "
+            ### END MODIFICATION
+        first = True
+        if _sort_keys:
+            items = sorted(dct.items())
+        ### MODIFICATION: Order the cache attribute in the root object to be last
+        elif len(_current_path) == 0:
+            items = list((key, value) for key, value in dct.items() if key != "cache")
+            if "cache" in dct:
+                items.append(("cache", dct["cache"]))
+        ### END MODIFICATION:
+        else:
+            items = dct.items()
+        for key, value in items:
+            if isinstance(key, str):
+                pass
+            # JavaScript is weakly typed for these, so it makes sense to
+            # also allow them.  Many encoders seem to do something like this.
+            elif isinstance(key, float):
+                # see comment for int/float in _make_iterencode
+                key = _floatstr(key)
+            elif key is True:
+                key = "true"
+            elif key is False:
+                key = "false"
+            elif key is None:
+                key = "null"
+            elif isinstance(key, int):
+                # see comment for int/float in _make_iterencode
+                key = _intstr(key)
+            elif _skipkeys:
+                continue
+            else:
+                raise TypeError(f"keys must be str, int, float, bool or None, " f"not {key.__class__.__name__}")
+            if first:
+                first = False
+            else:
+                yield item_separator
+            yield _encoder(key)
+            yield _key_separator
+            if isinstance(value, str):
+                yield _encoder(value)
+            elif value is None:
+                yield "null"
+            elif value is True:
+                yield "true"
+            elif value is False:
+                yield "false"
+            elif isinstance(value, int):
+                # see comment for int/float in _make_iterencode
+                yield _intstr(value)
+            elif isinstance(value, float):
+                # see comment for int/float in _make_iterencode
+                yield _floatstr(value)
+            else:
+                ### MODIFICATION: pass item_path instead of _current_indent_level
+                item_path = _current_path + (key,)
+                if isinstance(value, (list, tuple)):
+                    chunks = _iterencode_list(value, item_path)
+                elif isinstance(value, dict):
+                    chunks = _iterencode_dict(value, item_path)
+                else:
+                    chunks = _iterencode(value, item_path)
+                yield from chunks
+                ### END MODIFICATION
+        if newline_indent is not None:
+            ### SINGLE LINE MODIFICATION: determine the previous indent level from the path
+            _current_indent_level = _get_indent_level(_current_path[:-1])
+            yield "\n" + _indent * _current_indent_level
+        yield "}"
+        if markers is not None:
+            del markers[markerid]
+
+    ### SINGLE LINE MODIFICATION: Use the current path to `o` as a parameter instead of the indentation level
+    def _iterencode(o, _current_path: Tuple):
+        if isinstance(o, str):
+            yield _encoder(o)
+        elif o is None:
+            yield "null"
+        elif o is True:
+            yield "true"
+        elif o is False:
+            yield "false"
+        elif isinstance(o, int):
+            # see comment for int/float in _make_iterencode
+            yield _intstr(o)
+        elif isinstance(o, float):
+            # see comment for int/float in _make_iterencode
+            yield _floatstr(o)
+        elif isinstance(o, (list, tuple)):
+            yield from _iterencode_list(o, _current_path)
+        elif isinstance(o, dict):
+            yield from _iterencode_dict(o, _current_path)
+        else:
+            if markers is not None:
+                markerid = id(o)
+                if markerid in markers:
+                    raise ValueError("Circular reference detected")
+                markers[markerid] = o
+            o = _default(o)
+            yield from _iterencode(o, _current_path)
+            if markers is not None:
+                del markers[markerid]
+
+    return _iterencode

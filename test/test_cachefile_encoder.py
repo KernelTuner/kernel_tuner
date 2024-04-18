@@ -1,12 +1,12 @@
 import json
 import numpy as np
 
-from kernel_tuner.cache.json_encoder import CacheJSONEncoder
+from kernel_tuner.cache.json_encoder import CacheEncoder
 from kernel_tuner.util import ErrorConfig, InvalidConfig, CompilationFailedConfig, RuntimeFailedConfig
 
 
 def dumps(data):
-    return json.dumps(data, cls=CacheJSONEncoder, indent=0)
+    return json.dumps(data, cls=CacheEncoder, indent=0)
 
 
 class TestCacheJSONEncoder:
@@ -43,7 +43,7 @@ class TestCacheJSONEncoder:
         )
 
     def test_encode_cache(self):
-        assert dumps({"cache": {"1": {"a": 3}, "2": {"b": 4}}}) == '{\n"cache": {\n"1": {"a": 3},\n"2": {"b": 4}}\n}'
+        assert dumps({"cache": {"1": {"a": 3}, "2": {"b": 4}}}) == '{\n"cache": {\n"1": {"a": 3},\n"2": {"b": 4}\n}\n}'
 
     def test_encode_cache_last(self):
         assert dumps({"b": 2, "cache": {}, "d": 4}) == '{\n"b": 2,\n"d": 4,\n"cache": {}\n}'
