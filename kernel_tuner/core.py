@@ -23,7 +23,7 @@ from kernel_tuner.backends.compiler import CompilerFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
+from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
 
 try:
     import torch
@@ -319,6 +319,7 @@ class DeviceInterface(object):
         self.use_nvml = False
         self.continuous_observers = []
         self.output_observers = []
+        self.prologue_observers = []
         if observers:
             for obs in observers:
                 if isinstance(obs, NVMLObserver):
@@ -328,7 +329,8 @@ class DeviceInterface(object):
                     self.continuous_observers.append(obs.continuous_observer)
                 if isinstance(obs, OutputObserver):
                     self.output_observers.append(obs)
-
+                if isinstance(obs, PrologueObserver):
+                    self.prologue_observers.append(obs)
 
         self.iterations = iterations
 
@@ -345,6 +347,12 @@ class DeviceInterface(object):
         observers = [
             obs for obs in self.dev.observers if not isinstance(obs, ContinuousObserver)
         ]
+
+        for obs in self.prologue_observers:
+            obs.before_start()
+            self.dev.run_kernel(func, gpu_args, threads, grid)
+            self.dev.synchronize()
+            obs.after_finish()
 
         self.dev.synchronize()
         for _ in range(self.iterations):
