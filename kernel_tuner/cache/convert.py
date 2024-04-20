@@ -43,7 +43,8 @@ def convert_cache_file(filestr : PathLike,
     
     raises ``ValueError`` if:
 
-    given cachefile has no "schema_version" field,
+    given cachefile has no "schema_version" field and can not be converted
+    to version 1.0.0,
 
     the cachefile's version is higher than the newest version,
 
@@ -60,8 +61,7 @@ def convert_cache_file(filestr : PathLike,
         cache = json.load(cachefile)
 
     if "schema_version" not in cache:
-        raise ValueError(f"Cache file has no \"schema_version\" field, "
-                         f"unversioned conversion not yet implemented.")
+        cache = unversioned_convert(cache, SCHEMA_VERSIONS_PATH)
     
     version = cache["schema_version"]
     target_version = versions[-1]
@@ -133,6 +133,32 @@ def default_convert(cache       : dict,
     new_cache["schema_version"] = newver
 
     return new_cache
+
+
+def unversioned_convert(cache       : dict,
+                        schema_path : Path) -> dict:
+    """Attempts a conversion of an unversioned cache file to version 1.0.0.
+
+    ``cache`` is a ``dict`` representing the cachefile.
+
+    Returns a ``dict`` representing the converted cache file.
+
+    raises ``ValueError`` if given cache file is too old and no suitable
+    conversion exists.
+    """
+    cache["schema_version"] = "1.0.0"
+
+    path = schema_path / "1.0.0/schema.json"
+
+    with open(path) as s:
+        versioned_schema = json.load(s)
+
+    for key in versioned_schema["properties"]:
+        if key not in cache:
+            raise ValueError(f"Cache file too old, no suitable conversion "
+                             f"to version 1.0.0 exists.")
+
+    return cache
 
 
 

@@ -7,6 +7,7 @@ import jsonschema
 import kernel_tuner
 
 from kernel_tuner.cache.convert import convert_cache_file
+from kernel_tuner.cache.convert import unversioned_convert
 from kernel_tuner.cache.convert import default_convert
 from kernel_tuner.cache.convert import VERSIONS
 
@@ -82,10 +83,15 @@ class TestConvertCache:
         TEST_COPY = tmp_path / "temp_cache.json"
         copyfile(NO_VERSION_FIELD, TEST_COPY)
 
-        with pytest.raises(ValueError):
-            convert_cache_file(TEST_COPY,
-                               self._CONVERT_FUNCTIONS,
-                               self._VERSIONS)
+        with open(TEST_COPY) as c:
+            cache = json.load(c)
+
+        cache = unversioned_convert(cache, MOCK_SCHEMAS_PATH)
+        
+        with open(MOCK_SCHEMA_OLD) as s:
+            schema = json.load(s)
+            jsonschema.validate(cache, schema)
+
         return
 
     def test_too_high_version(self, tmp_path):
