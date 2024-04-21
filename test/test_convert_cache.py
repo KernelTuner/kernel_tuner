@@ -66,16 +66,16 @@ class TestConvertCache:
         copyfile(REAL_CACHE_FILE, TEST_COPY)
 
         with open(TEST_COPY) as c, open(SCHEMA_OLD) as s:
-            mock_cache  = json.load(c)
-            mock_schema = json.load(s)
-            jsonschema.validate(mock_cache, mock_schema)
+            real_cache  = json.load(c)
+            real_schema = json.load(s)
+            jsonschema.validate(real_cache, real_schema)
         
         convert_cache_file(TEST_COPY)
 
         with open(TEST_COPY) as c, open(SCHEMA_NEW) as s:
-            mock_cache  = json.load(c)
-            mock_schema = json.load(s)
-            jsonschema.validate(mock_cache, mock_schema)
+            real_cache  = json.load(c)
+            real_schema = json.load(s)
+            jsonschema.validate(real_cache, real_schema)
 
         return
     
