@@ -16,7 +16,7 @@ TEST_PATH         = Path(__file__).parent
 TEST_CONVERT_PATH = TEST_PATH / "test_convert_files"
 
 # Mock schema files
-MOCK_CACHE_FILE = TEST_CONVERT_PATH / "mock_cache.json"
+MOCK_CACHE_FILE   = TEST_CONVERT_PATH / "mock_cache.json"
 
 MOCK_SCHEMAS_PATH = TEST_CONVERT_PATH / "mock_schemas"
 MOCK_SCHEMA_OLD   = MOCK_SCHEMAS_PATH / "1.0.0/schema.json"
@@ -24,7 +24,7 @@ MOCK_SCHEMA_NEW   = MOCK_SCHEMAS_PATH / "1.2.0/schema.json"
 UPGRADED_SCHEMA   = MOCK_SCHEMAS_PATH / "1.1.0/schema.json"
 
 # Actual schema files
-REAL_CACHE_FILE      = TEST_CONVERT_PATH / "real_cache.json"
+REAL_CACHE_FILE   = TEST_CONVERT_PATH / "real_cache.json"
 
 SCHEMAS_PATH      = KERNEL_TUNER_PATH / "schema/cache"
 SCHEMA_OLD        = SCHEMAS_PATH / VERSIONS[ 0] / "schema.json"
