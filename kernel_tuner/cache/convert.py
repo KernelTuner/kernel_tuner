@@ -33,22 +33,24 @@ def convert_cache_file(filestr : PathLike,
                        versions=None):
     """Convert a cache file to the newest version.
 
-    ``filestr`` is the name of the cachefile.
+    Parameters:
+        ``filestr`` is the name of the cachefile.
 
-    ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
-    mapping a version to a corresponding conversion function.
+        ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
+        mapping a version to a corresponding conversion function.
 
-    ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+        ``versions`` is a sorted ``list`` of ``str``s containing the versions.
 
     
-    raises ``ValueError`` if:
+    Raises
+        ``ValueError`` if:
 
-    given cachefile has no "schema_version" field and can not be converted
-    to version 1.0.0,
+            given cachefile has no "schema_version" field and can not be converted
+            to version 1.0.0,
 
-    the cachefile's version is higher than the newest version,
+            the cachefile's version is higher than the newest version,
 
-    the cachefile's version is not a real version.
+            the cachefile's version is not a real version.
     """
     if conversion_functions is None:
         conversion_functions = CONVERSION_FUNCTIONS
@@ -96,16 +98,18 @@ def default_convert(cache       : dict,
                     schema_path : Path) -> dict:
     """Attempts a default conversion of ``cache`` to the next highest version.
 
-    ``cache`` is a ``dict`` representing the cachefile.
+    Parameters:
+        ``cache`` is a ``dict`` representing the cachefile.
 
-    ``oldver`` is the version of the cachefile.
+        ``oldver`` is the version of the cachefile.
 
-    ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+        ``versions`` is a sorted ``list`` of ``str``s containing the versions.
 
-    ``schema_path`` is a ``pathlib`` ``Path``  to the directory containing
-    the schema versions.
+        ``schema_path`` is a ``pathlib`` ``Path``  to the directory containing
+        the schema versions.
 
-    Returns a ``dict`` representing the converted cache file.
+    Returns:
+        a ``dict`` representing the converted cache file.
     """
     # Get the next version
     parts = ["patch", "minor", "major"]
@@ -139,12 +143,15 @@ def unversioned_convert(cache       : dict,
                         schema_path : Path) -> dict:
     """Attempts a conversion of an unversioned cache file to version 1.0.0.
 
-    ``cache`` is a ``dict`` representing the cachefile.
+    Parameters:
+        ``cache`` is a ``dict`` representing the cachefile.
 
-    Returns a ``dict`` representing the converted cache file.
+    Returns:
+        a ``dict`` representing the converted cache file.
 
-    raises ``ValueError`` if given cache file is too old and no suitable
-    conversion exists.
+    Raises:
+        ``ValueError`` if given cache file is too old and no suitable
+        conversion exists.
     """
     cache["schema_version"] = "1.0.0"
 
