@@ -40,7 +40,6 @@ def convert_cache_file(filestr : str,
 
         ``versions`` is a sorted ``list`` of ``str``s containing the versions.
 
-    
     Raises
         ``ValueError`` if:
 
@@ -85,6 +84,7 @@ def convert_cache_file(filestr : str,
 
         version = cache["schema_version"]
 
+    # TODO use our custom encoder here when it is finished
     with open(filestr, 'w') as cachefile: 
         cachefile.write(json.dumps(cache, indent=4))
 
