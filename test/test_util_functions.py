@@ -154,9 +154,6 @@ def test_to_valid_nvrtc_gpu_arch_cc():
     assert to_valid_nvrtc_gpu_arch_cc("90b") == "90a"
     assert to_valid_nvrtc_gpu_arch_cc("91c") == "90a"
     assert to_valid_nvrtc_gpu_arch_cc("1234") == "52"
-    with pytest.raises(ValueError):
-        assert to_valid_nvrtc_gpu_arch_cc("")
-        assert to_valid_nvrtc_gpu_arch_cc("1")
 
 
 def test_prepare_kernel_string():

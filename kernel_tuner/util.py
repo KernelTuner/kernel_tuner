@@ -570,22 +570,11 @@ def get_total_timings(results, env, overhead_time):
     return env
 
 
+NVRTC_VALID_CC = np.array(['50', '52', '53', '60', '61', '62', '70', '72', '75', '80', '87', '89', '90', '90a'])
+
 def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
     """Returns a valid Compute Capability for NVRTC `--gpu-architecture=`, as per https://docs.nvidia.com/cuda/nvrtc/index.html#group__options."""
-    valid_cc = ['50', '52', '53', '60', '61', '62', '70', '72', '75', '80', '87', '89', '90', '90a']    # must be in ascending order, when updating also update test_to_valid_nvrtc_gpu_arch_cc
-    compute_capability = str(compute_capability)
-    if len(compute_capability) < 2:
-        raise ValueError(f"Compute capability '{compute_capability}' must be at least of length 2, is {len(compute_capability)}")
-    if compute_capability in valid_cc:
-        return compute_capability
-    # if the compute capability does not match, scale down to the nearest matching
-    subset_cc = [cc for cc in valid_cc if compute_capability[0] == cc[0]]
-    if len(subset_cc) > 0:
-        # get the next-highest valid CC
-        highest_cc_index = max([i for i, cc in enumerate(subset_cc) if int(cc[1]) <= int(compute_capability[1])])
-        return subset_cc[highest_cc_index]
-    # if all else fails, return the default 52
-    return '52'
+    return max(NVRTC_VALID_CC[NVRTC_VALID_CC<=compute_capability], default='52')
 
 
 def print_config(config, tuning_options, runner):
