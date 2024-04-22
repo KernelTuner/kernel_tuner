@@ -112,3 +112,11 @@ More information about PMT can be found here: https://git.astron.nl/RD/pmt/
 
 
 
+NCUObserver
+~~~~~~~~~~~
+
+The NCUObserver can be used to automatically extract performance counters during tuning using Nvidia's NsightCompute profiler.
+The NCUObserver relies on an intermediate library, which can be found here: https://github.com/nlesc-recruit/nvmetrics
+
+.. autoclass:: kernel_tuner.observers.ncu.NCUObserver
+

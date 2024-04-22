@@ -4,20 +4,26 @@ try:
     import nvmetrics
 except (ImportError):
     nvmetrics = None
-    pass
 
 class NCUObserver(PrologueObserver):
     """``NCUObserver`` measures performance counters.
 
-    """
+        The exact performance counters supported differ per GPU, some examples:
 
-    def __init__(self, metrics=None, device=0):
-        """Create a new ``NCUObserver``.
+         * "dram__bytes.sum",                                     # Counter         byte            # of bytes accessed in DRAM
+         * "dram__bytes_read.sum",                                # Counter         byte            # of bytes read from DRAM
+         * "dram__bytes_write.sum",                               # Counter         byte            # of bytes written to DRAM
+         * "smsp__sass_thread_inst_executed_op_fadd_pred_on.sum", # Counter         inst            # of FADD thread instructions executed where all predicates were true
+         * "smsp__sass_thread_inst_executed_op_ffma_pred_on.sum", # Counter         inst            # of FFMA thread instructions executed where all predicates were true
+         * "smsp__sass_thread_inst_executed_op_fmul_pred_on.sum", # Counter         inst            # of FMUL thread instructions executed where all predicates were true
 
         :param metrics: The metrics to observe. This should be a list of strings.
                         You can use ``ncu --query-metrics`` to get a list of valid metrics.
-        """
+        :type metrics: list[str]
 
+    """
+
+    def __init__(self, metrics=None, device=0):
         if not nvmetrics:
             print("NCUObserver is not available.")
 
