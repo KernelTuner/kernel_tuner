@@ -1,7 +1,6 @@
 import re
 import subprocess
 import time
-from warnings import warn
 
 import numpy as np
 
