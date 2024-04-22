@@ -172,7 +172,7 @@ class nvml:
                 if self.nvidia_smi:
                     args = ["sudo", self.nvidia_smi, "-i", str(self.id)]
                     command_set_clocks = f"--applications-clocks={str(mem_clock)},{str(gr_clock)}"
-                    subprocess.run(args + command_set_clocks, check=True)
+                    subprocess.run(args + [command_set_clocks], check=True)
 
         # Store the fact that we have modified the clocks
         self.modified_clocks = True
