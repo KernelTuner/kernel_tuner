@@ -11,7 +11,7 @@ class NCUObserver(PrologueObserver):
 
     """
 
-    def __init__(self, metrics=None):
+    def __init__(self, metrics=None, device=0):
         """Create a new ``NCUObserver``.
 
         :param metrics: The metrics to observe. This should be a list of strings.
@@ -22,11 +22,12 @@ class NCUObserver(PrologueObserver):
             print("NCUObserver is not available.")
 
         self.metrics = metrics
+        self.device = device
         self.results = dict()
 
     def before_start(self):
         if nvmetrics:
-            nvmetrics.measureMetricsStart(self.metrics)
+            nvmetrics.measureMetricsStart(self.metrics, self.device)
 
     def after_finish(self):
         if nvmetrics:
