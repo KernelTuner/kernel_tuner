@@ -36,6 +36,108 @@ def get_schema_path(version: Version):
 class Cache:
     """Interface for writing and reading cache files."""
 
+    @classmethod
+    def create(
+        cls,
+        filename: PathLike,
+        *,
+        device_name: str,
+        kernel_name: str,
+        problem_size: Any,
+        tune_params_keys: Sequence[str],
+        tune_params: dict[str, Sequence],
+        objective: str,
+    ):
+        """Creates a new cache file.
+
+        For parameters of type Sequence, a list or tuple should be given as argument.
+        """
+        if not isinstance(device_name, str):
+            raise ValueError("Argument device_name should be a string")
+        if not isinstance(kernel_name, str):
+            raise ValueError("Argument kernel_name should be a string")
+        if not isinstance(tune_params_keys, Sequence) and not all(isinstance(key, str) for key in tune_params_keys):
+            raise ValueError("Argument tune_params_keys should be a list of strings")
+        if not isinstance(tune_params, Mapping) or not all(
+            isinstance(key, str) and isinstance(value, Sequence) for key, value in tune_params.items()
+        ):
+            raise ValueError(
+                "Argument tune_params should be a dict with:\n"
+                "- keys being parameter keys (and all parameter keys should be used)\n"
+                "- values being the parameter's list of possible values"
+            )
+        if not isinstance(objective, str):
+            raise ValueError("Expected objective to be a string")
+        if set(tune_params_keys) != set(tune_params.keys()):
+            raise ValueError("Expected tune_params to have exactly the same keys as in the list tune_params_keys")
+
+        cache_json = {
+            "version": str(LATEST_VERSION),
+            "device_name": device_name,
+            "kernel_name": kernel_name,
+            "problem_size": problem_size,
+            "tune_params_keys": tune_params_keys,
+            "tune_params": tune_params,
+            "objective": objective,
+            "cache": {},
+        }
+
+        with open(filename, "w") as file:
+            json.dump(cache_json, file)
+
+    @classmethod
+    def read(cls, filename: PathLike):
+        """Reads an existing cache file."""
+        with open(filename, "r") as file:
+            cache_json = json.load(file)
+            # TODO: Validate and convert cache file
+        return cls(filename, cache_json)
+
+    def __init__(self, filename: PathLike, cache_json: CacheFileJSON):
+        """Inits a cache file instance."""
+        self._filename = Path(filename)
+        self._cache_json = cache_json
+
+    @cached_property
+    def version(self) -> Version:
+        """Version of the cache file."""
+        return Version.parse(self._cache_json["version"])
+
+    @cached_property
+    def device_name(self) -> str:
+        """Name of the device."""
+        return self._cache_json["device_name"]
+
+    @cached_property
+    def kernel_name(self) -> str:
+        """Name of the kernel."""
+        return self._cache_json["kernel_name"]
+
+    @cached_property
+    def problem_size(self) -> Any:
+        """Problem size of the kernel being tuned."""
+        return self._cache_json["problem_size"]
+
+    @cached_property
+    def tune_params_keys(self) -> tuple[str, ...]:
+        """List of names (keys) of the tunable parameters."""
+        return tuple(self._cache_json["tune_params_keys"])
+
+    @cached_property
+    def tune_params(self) -> frozendict[str, tuple[Any, ...]]:
+        """Dictionary containing per tunable parameter a tuple of its possible values."""
+        return frozendict({key: tuple(value) for key, value in self._cache_json["tune_params"].items()})
+
+    @cached_property
+    def objective(self) -> str:
+        """Objective of tuning the kernel."""
+        return self._cache_json["objective"]
+
+    @cached_property
+    def lines(self) -> Lines:
+        """List of cache lines."""
+        return self.Lines(self, self._filename, self._cache_json)
+
     class Lines(Mapping):
         """Cache lines in a cache file."""
 
@@ -64,6 +166,22 @@ class Cache:
         def __contains__(self, line_id):
             """Returns whether there exists a cache line with id ``line_id``."""
             return line_id in self._lines
+
+        def append(
+            self,
+            time: Any,
+            *compile_time: float,
+            verification_time: int,
+            benchmark_time: float,
+            strategy_time: int,
+            framework_time: float,
+            timestamp: str,
+            times: Optional[list[float]] = None,
+            GFLOP_per_s: Optional[float] = None,
+            **params,
+        ):
+            """Appends a cache line to the cache lines."""
+            pass
 
         def get(self, line_id: Optional[str] = None, default=None, **params):
             """Returns a cache line corresponding with ``line_id``.
@@ -168,104 +286,3 @@ class Cache:
         def __getattr__(self, name: str):
             """Accesses members of the dict as if they were attributes."""
             return self[name]
-
-    @classmethod
-    def create(
-        cls,
-        filename: PathLike,
-        *,
-        device_name: str,
-        kernel_name: str,
-        problem_size: Any,
-        tune_params_keys: Sequence[str],
-        tune_params: dict[str, Sequence],
-        objective: str,
-    ):
-        """Creates a new cache file.
-
-        For parameters of type Sequence, a list or tuple should be given as argument.
-        """
-        if not isinstance(device_name, str):
-            raise ValueError("Argument device_name should be a string")
-        if not isinstance(kernel_name, str):
-            raise ValueError("Argument kernel_name should be a string")
-        if not isinstance(tune_params_keys, Sequence) and not all(isinstance(key, str) for key in tune_params_keys):
-            raise ValueError("Argument tune_params_keys should be a list of strings")
-        if not isinstance(tune_params, Mapping) or not all(
-            isinstance(key, str) and isinstance(value, Sequence) for key, value in tune_params.items()
-        ):
-            raise ValueError(
-                "Argument tune_params should be a dict with:\n"
-                "- keys being parameter keys (and all parameter keys should be used)\n"
-                "- values being the parameter's list of possible values"
-            )
-        if not isinstance(objective, str):
-            raise ValueError("Expected objective to be a string")
-        if set(tune_params_keys) != set(tune_params.keys()):
-            raise ValueError("Expected tune_params to have exactly the same keys as in the list tune_params_keys")
-
-        cache_json = {
-            "version": str(LATEST_VERSION),
-            "device_name": device_name,
-            "kernel_name": kernel_name,
-            "problem_size": problem_size,
-            "tune_params_keys": tune_params_keys,
-            "tune_params": tune_params,
-            "objective": objective,
-            "cache": {},
-        }
-
-        with open(filename, "w") as file:
-            json.dump(cache_json, file)
-
-    @classmethod
-    def read(cls, filename: PathLike):
-        """Reads an existing cache file."""
-        with open(filename, "r") as file:
-            cache_json = json.load(file)
-        return cls(filename, cache_json)
-
-    def __init__(self, filename: PathLike, cache_json: CacheFileJSON):
-        """Inits a cache file instance."""
-        self._filename = Path(filename)
-        self._cache_json = cache_json
-
-    @cached_property
-    def version(self) -> Version:
-        """Version of the cache file."""
-        return Version.parse(self._cache_json["version"])
-
-    @cached_property
-    def device_name(self) -> str:
-        """Name of the device."""
-        return self._cache_json["device_name"]
-
-    @cached_property
-    def kernel_name(self) -> str:
-        """Name of the kernel."""
-        return self._cache_json["kernel_name"]
-
-    @cached_property
-    def problem_size(self) -> Any:
-        """Problem size of the kernel being tuned."""
-        return self._cache_json["problem_size"]
-
-    @cached_property
-    def tune_params_keys(self) -> tuple[str, ...]:
-        """List of names (keys) of the tunable parameters."""
-        return tuple(self._cache_json["tune_params_keys"])
-
-    @cached_property
-    def tune_params(self) -> frozendict[str, tuple[Any, ...]]:
-        """Dictionary containing per tunable parameter a tuple of its possible values."""
-        return frozendict({key: tuple(value) for key, value in self._cache_json["tune_params"].items()})
-
-    @cached_property
-    def objective(self) -> str:
-        """Objective of tuning the kernel."""
-        return self._cache_json["objective"]
-
-    @cached_property
-    def lines(self) -> Lines:
-        """List of cache lines."""
-        return self.Lines(self, self._filename, self._cache_json)

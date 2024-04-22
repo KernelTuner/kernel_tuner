@@ -30,7 +30,6 @@ class TestCache:
             "compile_time": 2,
             "verification_time": 3,
             "benchmark_time": 4,
-            "gflop/s": 5,
             "strategy_time": 6,
             "framework_time": 7,
             "timestamp": "2023-12-22 09:54:05.502007+00:00",
@@ -134,12 +133,18 @@ class TestCache:
         assert isinstance(cache_line_read.timestamp, str)
 
     def test_line_dict(self, cache_line_read, cache_json):
-        assert cache_line_read["time"] == 0
-        assert cache_line_read["times"] == [1]
-        assert cache_line_read["compile_time"] == 2
-        assert cache_line_read["verification_time"] == 3
-        assert cache_line_read["benchmark_time"] == 4
-        assert "GFLOP_per_s" not in cache_line_read
-        assert cache_line_read["strategy_time"] == 6
-        assert cache_line_read["framework_time"] == 7
+        assert "GFLOP/s" not in cache_line_read
         assert isinstance(cache_line_read.timestamp, str)
+        assert dict(cache_line_read) == {
+            "a": 0,
+            "b": 0,
+            "c": 0,
+            "time": 0,
+            "times": [1],
+            "compile_time": 2,
+            "verification_time": 3,
+            "benchmark_time": 4,
+            "strategy_time": 6,
+            "framework_time": 7,
+            "timestamp": "2023-12-22 09:54:05.502007+00:00",
+        }
