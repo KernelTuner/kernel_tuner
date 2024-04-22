@@ -11,6 +11,7 @@ class CacheLineOptionalJSON(TypedDict, _CacheLineOptionalJSON, total=False):
     """TypedDict for optional data in a cache line."""
 
     times: list[float]
+    # "GFLOP/s": float
 
 
 class CacheLineJSON(TypedDict, CacheLineOptionalJSON):
@@ -20,7 +21,6 @@ class CacheLineJSON(TypedDict, CacheLineOptionalJSON):
     compile_time: float
     verification_time: int
     benchmark_time: float
-    # "GFLOP/s": float
     strategy_time: int
     framework_time: float
     timestamp: str
