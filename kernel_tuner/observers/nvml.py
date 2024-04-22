@@ -1,6 +1,7 @@
 import re
 import subprocess
 import time
+from warnings import warn
 
 import numpy as np
 
@@ -156,43 +157,35 @@ class nvml:
             raise ValueError("Illegal value for memory clock")
         if gr_clock not in self.supported_gr_clocks[mem_clock]:
             raise ValueError(f"Graphics clock incompatible with memory clock ({mem_clock}), compatible graphics clocks: {self.supported_gr_clocks[mem_clock]}")
-        self.modified_clocks = True
+
+        # Check whether persistence mode is set. Without persistence mode, setting the clocks is not meaningful
+        # I deliberately removed the try..except clause here, if setting persistence mode fails, setting the clocks should fail
+        if self.persistence_mode != 1:
+            self.persistence_mode = 1
+
         if self.use_locked_clocks:
-            if self.persistence_mode != 1:
-                self.persistence_mode = 1
             try:
                 pynvml.nvmlDeviceSetGpuLockedClocks(self.dev, gr_clock, gr_clock)
                 pynvml.nvmlDeviceSetMemoryLockedClocks(self.dev, mem_clock, mem_clock)
             except pynvml.NVMLError_NoPermission:
                 if self.nvidia_smi:
-                    args = [
-                        "sudo",
-                        self.nvidia_smi,
-                        "-i",
-                        str(self.id),
-                    ]
+                    args = ["sudo", self.nvidia_smi, "-i", str(self.id)]
                     command_set_mem_clocks = f"--lock-memory-clocks={str(mem_clock)},{str(mem_clock)}"
                     command_set_gpu_clocks = f"--lock-gpu-clocks={str(gr_clock)},{str(gr_clock)}"
                     subprocess.run(args + [command_set_gpu_clocks], check=True)
                     subprocess.run(args + [command_set_mem_clocks], check=True)
         else:
             try:
-                if self.persistence_mode != 1:
-                    self.persistence_mode = 1
-            except Exception:
-                pass
-            try:
                 pynvml.nvmlDeviceSetApplicationsClocks(self.dev, mem_clock, gr_clock)
             except pynvml.NVMLError_NoPermission:
                 if self.nvidia_smi:
-                    args = [
-                        "sudo",
-                        self.nvidia_smi,
-                        "-i",
-                        str(self.id),
-                        "--applications-clocks=" + str(mem_clock) + "," + str(gr_clock),
-                    ]
-                    subprocess.run(args, check=True)
+                    args = ["sudo", self.nvidia_smi, "-i", str(self.id)]
+                    command_set_clocks = f"--applications-clocks={str(mem_clock)},{str(gr_clock)}"
+                    subprocess.run(args + command_set_clocks, check=True)
+
+        # Store the fact that we have modified the clocks
+        self.modified_clocks = True
+
 
     def reset_clocks(self):
         """Reset the clocks to the default clock if the device uses a non default clock."""
