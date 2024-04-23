@@ -5,7 +5,7 @@ from __future__ import annotations
 from os import PathLike
 from pathlib import Path
 from typing import Any, Union, Optional, Dict, Iterable
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from functools import cached_property
 from datetime import datetime
 
@@ -63,8 +63,8 @@ class Cache:
         device_name: str,
         kernel_name: str,
         problem_size: Any,
-        tune_params_keys: Sequence[str],
-        tune_params: dict[str, Sequence],
+        tune_params_keys: list[str],
+        tune_params: dict[str, list],
         objective: str,
     ) -> "Cache":
         """Creates a new cache file.
@@ -75,10 +75,10 @@ class Cache:
             raise ValueError("Argument device_name should be a string")
         if not isinstance(kernel_name, str):
             raise ValueError("Argument kernel_name should be a string")
-        if not isinstance(tune_params_keys, Sequence) and not all(isinstance(key, str) for key in tune_params_keys):
+        if not isinstance(tune_params_keys, list) and not all(isinstance(key, str) for key in tune_params_keys):
             raise ValueError("Argument tune_params_keys should be a list of strings")
         if not isinstance(tune_params, Mapping) or not all(
-            isinstance(key, str) and isinstance(value, Sequence) for key, value in tune_params.items()
+            isinstance(key, str) and isinstance(value, list) for key, value in tune_params.items()
         ):
             raise ValueError(
                 "Argument tune_params should be a dict with:\n"
