@@ -55,7 +55,7 @@ class TestCache:
 
     @pytest.fixture
     def cache_json(self, header, cache_lines):
-        return {"version": "1.0.0", **vars(header), "cache": cache_lines}
+        return {"schema_version": "1.0.0", **vars(header), "cache": cache_lines}
 
     @pytest.fixture
     def assert_create__raises_ValueError(self, cache_path, header):
@@ -67,8 +67,8 @@ class TestCache:
         Cache.create(cache_path, **vars(header))
         with open(cache_path) as file:
             data = json.load(file)
-        assert "version" in data
-        assert {**data, "version": "*"} == {"version": "*", **vars(header), "cache": {}}
+        assert "schema_version" in data
+        assert {**data, "schema_version": "*"} == {"schema_version": "*", **vars(header), "cache": {}}
 
     def test_create__returns_object(self, cache_path, header):
         cache = Cache.create(cache_path, **vars(header))

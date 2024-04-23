@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from os import PathLike
 from pathlib import Path
 from typing import Any, Union, Optional, Dict, Iterable
@@ -9,13 +10,13 @@ from collections.abc import Mapping
 from functools import cached_property
 from datetime import datetime
 
+import jsonschema
 from semver import Version
-import json
 
 import kernel_tuner
 import kernel_tuner.util as util
 from .json import CacheFileJSON, CacheLineJSON
-from .file import write_cache, append_cache_line
+from .file import read_cache, write_cache, append_cache_line
 
 
 PROJECT_DIR = Path(kernel_tuner.__file__).parent
@@ -93,7 +94,7 @@ class Cache:
             raise ValueError("Found a reserved key in tune_params_keys")
 
         cache_json = {
-            "version": str(LATEST_VERSION),
+            "schema_version": str(LATEST_VERSION),
             "device_name": device_name,
             "kernel_name": kernel_name,
             "problem_size": problem_size,
@@ -109,10 +110,17 @@ class Cache:
     @classmethod
     def read(cls, filename: PathLike):
         """Reads an existing cache file."""
-        with open(filename, "r") as file:
-            cache_json = json.load(file)
-            # TODO: Validate and convert cache file
+        cache_json = read_cache(filename)
+        cls.validate_json(cache_json)
         return cls(filename, cache_json)
+
+    @classmethod
+    def validate_json(cls, cache_json: Any):
+        """Validates cache json."""
+        schema_path = CACHE_SCHEMAS_DIR / cache_json["schema_version"] / "schema.json"
+        with open(schema_path, "r") as file:
+            schema = json.load(file)
+        jsonschema.validate(instance=cache_json, schema=schema)
 
     def __init__(self, filename: PathLike, cache_json: CacheFileJSON):
         """Inits a cache file instance, given that the file referred to by ``filename`` contains data ``cache_json``."""
@@ -127,7 +135,7 @@ class Cache:
     @cached_property
     def version(self) -> Version:
         """Version of the cache file."""
-        return Version.parse(self._cache_json["version"])
+        return Version.parse(self._cache_json["schema_version"])
 
     @cached_property
     def device_name(self) -> str:

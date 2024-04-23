@@ -29,7 +29,7 @@ class CacheLineJSON(TypedDict, CacheLineOptionalJSON):
 class CacheFileJSON(TypedDict):
     """TypedDict for the contents of a cache file."""
 
-    version: str
+    schema_version: str
     device_name: str
     kernel_name: str
     problem_size: str
