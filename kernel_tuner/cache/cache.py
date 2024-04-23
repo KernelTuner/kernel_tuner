@@ -231,7 +231,6 @@ class Cache:
             for key in self._cache.tune_params_keys:
                 if key in tune_params:
                     value = tune_params[key]
-                    print(key, value, self._cache.tune_params[key])
                     if value not in self._cache.tune_params[key]:
                         raise ValueError(f"Invalid value {value} for tunable parameter {key}")
                     param_list.append(value)
