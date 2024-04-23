@@ -1,6 +1,7 @@
 import pytest
 import json
 import semver
+from datetime import datetime
 from types import SimpleNamespace
 
 from kernel_tuner.cache.cache import Cache
@@ -22,8 +23,12 @@ class TestCache:
             objective="maximize",
         )
 
+    @pytest.fixture(scope="class")
+    def now(self):
+        return datetime.now()
     @pytest.fixture
     def cache_lines(self):
+    def cache_lines(self, now):
         LINE_TEMPLATE = {
             "time": 0,
             "times": [1],
@@ -32,7 +37,7 @@ class TestCache:
             "benchmark_time": 4,
             "strategy_time": 6,
             "framework_time": 7,
-            "timestamp": "2023-12-22 09:54:05.502007+00:00",
+            "timestamp": str(now),
         }
 
         def param_obj(a, b, c):
@@ -121,7 +126,7 @@ class TestCache:
         assert len(cache.lines.get(b=1, c=1)) == 0
         assert len(cache.lines.get(a=0)) == 3
 
-    def test_line_attributes(self, cache_line_read):
+    def test_line_attributes(self, cache_line_read, now):
         assert cache_line_read.time == 0
         assert cache_line_read.times == [1]
         assert cache_line_read.compile_time == 2
@@ -130,11 +135,10 @@ class TestCache:
         assert cache_line_read.GFLOP_per_s is None
         assert cache_line_read.strategy_time == 6
         assert cache_line_read.framework_time == 7
-        assert isinstance(cache_line_read.timestamp, str)
+        assert cache_line_read.timestamp == now
 
-    def test_line_dict(self, cache_line_read, cache_json):
+    def test_line_dict(self, cache_line_read, cache_json, now):
         assert "GFLOP/s" not in cache_line_read
-        assert isinstance(cache_line_read.timestamp, str)
         assert dict(cache_line_read) == {
             "a": 0,
             "b": 0,
@@ -146,5 +150,5 @@ class TestCache:
             "benchmark_time": 4,
             "strategy_time": 6,
             "framework_time": 7,
-            "timestamp": "2023-12-22 09:54:05.502007+00:00",
+            "timestamp": str(now),
         }

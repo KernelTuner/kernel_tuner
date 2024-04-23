@@ -8,11 +8,13 @@ from types import MappingProxyType
 from typing import Any, Union, Optional, Dict, Iterable
 from collections.abc import Mapping, Sequence
 from functools import cached_property
+from datetime import datetime
 
 from semver import Version
 import json
 
 import kernel_tuner
+import kernel_tuner.util as util
 from .json import CacheFileJSON, CacheLineJSON
 
 
@@ -244,18 +246,29 @@ class Cache:
     class Line(Mapping):
         """Cache line in a cache file."""
 
-        time: Union[str, int]
         compile_time: float
         verification_time: int
         benchmark_time: float
         strategy_time: int
         framework_time: float
-        timestamp: str
+
+        @property
+        def time(self) -> Union[float, util.ErrorConfig]:
+            """The time of a cache line."""
+            time_or_error = self["time"]
+            if isinstance(time_or_error, str):
+                return util.ErrorConfig(time_or_error)
+            return time_or_error
 
         @property
         def times(self) -> Optional[list[float]]:
             """The times attribute."""
             return self.get("times")
+
+        @property
+        def timestamp(self) -> datetime:
+            """The timestamp as a datetime object."""
+            return datetime.fromisoformat(self["timestamp"])
 
         @property
         def GFLOP_per_s(self) -> Optional[float]:
