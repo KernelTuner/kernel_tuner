@@ -96,25 +96,10 @@ class Cache:
         return cls(filename, cache_json)  # type: ignore
 
     @classmethod
-    def read(
-        cls,
-        filename: PathLike,
-        # , *, force_update=False
-    ):
-        """Reads an existing cache file.
-
-        When ``force_update`` is set, the cache file is updated to the latest version when this is not the case.
-        Otherwise the file will be loaded in readonly mode.
-        """
+    def read(cls, filename: PathLike):
+        """Reads an existing cache file."""
         cache_json = read_cache(filename)
         cls.validate_json(cache_json)
-
-        # version = Version.parse(cache_json["schema_version"])
-        # if force_update and version < LATEST_VERSION:
-        #     convert_cache_file(filename)
-        #     cache_json = read_cache(filename)
-        #     cls.validate_json(cache_json)  # NOTE: Validate the case a second time, just to be sure
-
         return cls(filename, cache_json)
 
     @classmethod
