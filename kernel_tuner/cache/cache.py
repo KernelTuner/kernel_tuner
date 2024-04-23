@@ -276,32 +276,19 @@ class Cache:
                 raise ValueError("The keys in the parameters should be in `tune_params_keys`")
 
             line_ids: Iterable[str]
-            multiple = False
             if line_id is not None:
                 line_ids = (line_id,)
+                multiple = False
             else:
-                # Match all line ids that correspond to params
-                param_lists: list[list[Any]] = [[]]
-                for key in self._cache.tune_params_keys:
-                    # If a tunable key is found, only match the value of the parameter
-                    if key in params:
-                        value = params[key]
-                        for par_list in param_lists:
-                            par_list.append(value)
-                    # If the tunable key is not present, generate all possible matchin keys
-                    else:
-                        multiple = True
-                        prev_lists = param_lists
-                        param_lists = []
-                        for value in self._cache.tune_params[key]:
-                            param_lists.extend(it + [value] for it in prev_lists)
-                line_ids = list(map(self.__get_line_id, param_lists))
+                line_ids = self.__get_matching_line_ids(params)
+                multiple = not all(key in params for key in self._cache.tune_params_keys)
 
             if multiple:
-                lines_json_iter = (self._lines[k] for k in line_ids if k in self._lines)
+                lines_json_iter = (self._lines[k] for k in line_ids)
                 return list(Cache.Line(self._cache, line) for line in lines_json_iter)
-
-            line_id = next(iter(line_ids))
+            line_id = next(iter(line_ids), None)
+            if line_id is None:
+                return default
             line_json = self._lines.get(line_id)
             if line_json is None:
                 return default
@@ -309,6 +296,22 @@ class Cache:
 
         def __get_line_id(self, param_list: list[Any]):
             return ",".join(map(str, param_list))
+
+        def __get_matching_line_ids(self, params: dict[str, Any]):
+            param_lists: list[list[Any]] = [[]]
+            for key in self._cache.tune_params_keys:
+                # If a tunable key is found, only match the value of the parameter
+                if key in params:
+                    value = params[key]
+                    for par_list in param_lists:
+                        par_list.append(value)
+                # If the tunable key is not present, generate all possible matchin keys
+                else:
+                    prev_lists = param_lists
+                    param_lists = []
+                    for value in self._cache.tune_params[key]:
+                        param_lists.extend(it + [value] for it in prev_lists)
+            return [line_id for line_id in map(self.__get_line_id, param_lists) if line_id in self._lines]
 
     class Line(Mapping):
         """Cache line in a cache file."""
