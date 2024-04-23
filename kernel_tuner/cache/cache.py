@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from os import PathLike
 from pathlib import Path
-from types import MappingProxyType
 from typing import Any, Union, Optional, Dict, Iterable
 from collections.abc import Mapping, Sequence
 from functools import cached_property
@@ -17,9 +16,6 @@ import kernel_tuner
 import kernel_tuner.util as util
 from .json import CacheFileJSON, CacheLineJSON
 from .file import write_cache, append_cache_line
-
-
-frozendict = MappingProxyType
 
 
 PROJECT_DIR = Path(kernel_tuner.__file__).parent
@@ -149,14 +145,14 @@ class Cache:
         return self._cache_json["problem_size"]
 
     @cached_property
-    def tune_params_keys(self) -> tuple[str, ...]:
+    def tune_params_keys(self) -> list[str]:
         """List of names (keys) of the tunable parameters."""
-        return tuple(self._cache_json["tune_params_keys"])
+        return self._cache_json["tune_params_keys"].copy()
 
     @cached_property
-    def tune_params(self) -> frozendict[str, tuple[Any, ...]]:
+    def tune_params(self) -> dict[str, list[Any]]:
         """Dictionary containing per tunable parameter a tuple of its possible values."""
-        return frozendict({key: tuple(value) for key, value in self._cache_json["tune_params"].items()})
+        return {key: value.copy() for key, value in self._cache_json["tune_params"].items()}
 
     @cached_property
     def objective(self) -> str:
