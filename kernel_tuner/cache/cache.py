@@ -205,16 +205,10 @@ class Cache:
             timestamp: datetime,
             times: Optional[list[float]] = None,
             GFLOP_per_s: Optional[float] = None,
-            **params,
+            **tune_params,
         ):
             """Appends a cache line to the cache lines."""
-            param_list = []
-            for key in self._cache.tune_params_keys:
-                if key in params:
-                    param_list.append(params[key])
-                else:
-                    raise ValueError(f"Expected tune param key {key} to be present in parameters")
-            line_id = self.__get_line_id(param_list)
+            line_id = self.__get_line_id_from_tune_params_dict(tune_params)
             line: dict = {
                 "time": time,
                 "compile_time": compile_time,
@@ -228,9 +222,22 @@ class Cache:
                 line["times"] = times
             if GFLOP_per_s is not None:
                 line["GFLOP/s"] = GFLOP_per_s
-            line.update(params)
+            line.update(tune_params)
             self._lines[line_id] = line  # type: ignore
             append_cache_line(line_id, line, self._filename)
+
+        def __get_line_id_from_tune_params_dict(self, tune_params: dict) -> str:
+            param_list = []
+            for key in self._cache.tune_params_keys:
+                if key in tune_params:
+                    value = tune_params[key]
+                    print(key, value, self._cache.tune_params[key])
+                    if value not in self._cache.tune_params[key]:
+                        raise ValueError(f"Invalid value {value} for tunable parameter {key}")
+                    param_list.append(value)
+                else:
+                    raise ValueError(f"Expected tune param key {key} to be present in parameters")
+            return self.__get_line_id(param_list)
 
         def get(self, line_id: Optional[str] = None, default=None, **params):
             """Returns a cache line corresponding with ``line_id``.

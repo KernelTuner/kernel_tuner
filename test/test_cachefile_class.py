@@ -32,7 +32,7 @@ class TestCache:
 
     @pytest.fixture
     def cache_lines(self, now):
-        LINE_TEMPLATE = {
+        LINE_JSON_TEMPLATE = {
             "time": 0,
             "times": [1],
             "compile_time": 2,
@@ -47,10 +47,10 @@ class TestCache:
             return {"a": a, "b": b, "c": c}
 
         return {
-            "0,0,0": {**param_obj(0, 0, 0), **LINE_TEMPLATE},
-            "0,0,1": {**param_obj(0, 0, 1), **LINE_TEMPLATE},
-            "0,1,0": {**param_obj(0, 1, 0), **LINE_TEMPLATE},
-            "1,1,0": {**param_obj(1, 1, 0), **LINE_TEMPLATE},
+            "0,0,0": {**param_obj(0, 0, 0), **LINE_JSON_TEMPLATE},
+            "0,0,1": {**param_obj(0, 0, 1), **LINE_JSON_TEMPLATE},
+            "0,1,0": {**param_obj(0, 1, 0), **LINE_JSON_TEMPLATE},
+            "1,1,0": {**param_obj(1, 1, 0), **LINE_JSON_TEMPLATE},
         }
 
     @pytest.fixture
@@ -177,9 +177,9 @@ class TestCache:
             "timestamp": str(now),
         }
 
-    def test_line_append(self, cache_file, cache: Cache):
-        prev_len = len(cache.lines)
-        cache.lines.append(
+    @pytest.fixture
+    def cache_line(self):
+        return SimpleNamespace(
             time=999,
             compile_time=1,
             verification_time=2,
@@ -187,39 +187,38 @@ class TestCache:
             strategy_time=4,
             framework_time=5,
             timestamp=datetime.now(),
-            a=1,
-            b=1,
-            c=1,
         )
-        assert len(cache.lines) == prev_len + 1
-        cache = Cache.read(cache_file)
-        assert len(cache.lines) == prev_len + 1
 
-    def test_line_append__with_ErrorConfig(self, cache):
+    @pytest.fixture
+    def full_cache_line(self, cache_line):
+        cache_line.a = 1
+        cache_line.b = 1
+        cache_line.c = 1
+        return cache_line
+
+    @pytest.fixture
+    def assert_can_append_line(self, cache, cache_line):
+        yield
         prev_len = len(cache.lines)
-        cache.lines.append(
-            time=util.InvalidConfig(),
-            compile_time=1,
-            verification_time=2,
-            benchmark_time=3,
-            strategy_time=4,
-            framework_time=5,
-            timestamp=datetime.now(),
-            a=1,
-            b=1,
-            c=1,
-        )
+        cache.lines.append(**vars(cache_line))
+        assert len(cache.lines) == prev_len + 1
+        cache = Cache.read(cache.filepath)
         assert len(cache.lines) == prev_len + 1
 
-    def test_line_append__with_partial_params(self, cache):
+    @pytest.fixture
+    def assert_append_line__raises_ValueError(self, cache, cache_line):
+        yield
         with pytest.raises(ValueError):
-            cache.lines.append(
-                time=999,
-                compile_time=1,
-                verification_time=2,
-                benchmark_time=3,
-                strategy_time=4,
-                framework_time=5,
-                timestamp=datetime.now(),
-                a=1,
-            )
+            cache.lines.append(**vars(cache_line))
+
+    def test_line_append(self, full_cache_line, assert_can_append_line):
+        pass
+
+    def test_line_append__with_ErrorConfig(self, full_cache_line, assert_can_append_line):
+        full_cache_line.time = util.InvalidConfig()
+
+    def test_line_append__with_partial_params(self, cache_line, assert_append_line__raises_ValueError):
+        cache_line.a = 1
+
+    def test_line_append__with_invalid_tune_params(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.a = 2
