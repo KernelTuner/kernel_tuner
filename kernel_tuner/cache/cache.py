@@ -16,6 +16,7 @@ import json
 import kernel_tuner
 import kernel_tuner.util as util
 from .json import CacheFileJSON, CacheLineJSON
+from .file import write_cache, append_cache_line
 
 
 frozendict = MappingProxyType
@@ -84,8 +85,7 @@ class Cache:
             "cache": {},
         }
 
-        with open(filename, "w") as file:
-            json.dump(cache_json, file)
+        write_cache(cache_json, filename)
 
     @classmethod
     def read(cls, filename: PathLike):
@@ -147,11 +147,7 @@ class Cache:
             """Inits a new CacheLines instance."""
             self._cache = cache
             self._filename = filename
-            self._cache_json = cache_json
-
-        @cached_property
-        def _lines(self) -> dict[str, CacheLineJSON]:
-            return self._cache_json["cache"]
+            self._lines = cache_json["cache"]
 
         def __getitem__(self, line_id: str):
             """Returns a cache line given the parameters (in order)."""
@@ -171,19 +167,42 @@ class Cache:
 
         def append(
             self,
-            time: Any,
-            *compile_time: float,
+            *,
+            time: Union[float, util.ErrorConfig],
+            compile_time: float,
             verification_time: int,
             benchmark_time: float,
             strategy_time: int,
             framework_time: float,
-            timestamp: str,
+            timestamp: datetime,
             times: Optional[list[float]] = None,
             GFLOP_per_s: Optional[float] = None,
             **params,
         ):
             """Appends a cache line to the cache lines."""
-            pass
+            param_list = []
+            for key in self._cache.tune_params_keys:
+                if key in params:
+                    param_list.append(params[key])
+                else:
+                    raise ValueError(f"Expected tune param key {key} to be present in parameters")
+            line_id = self.__get_line_id(param_list)
+            line: dict = {
+                "time": time,
+                "compile_time": compile_time,
+                "verification_time": verification_time,
+                "benchmark_time": benchmark_time,
+                "strategy_time": strategy_time,
+                "framework_time": framework_time,
+                "timestamp": str(timestamp),
+            }
+            if times is not None:
+                line["times"] = times
+            if GFLOP_per_s is not None:
+                line["GFLOP/s"] = GFLOP_per_s
+            line.update(params)
+            self._lines[line_id] = line  # type: ignore
+            append_cache_line(line_id, line, self._filename)
 
         def get(self, line_id: Optional[str] = None, default=None, **params):
             """Returns a cache line corresponding with ``line_id``.
@@ -237,7 +256,6 @@ class Cache:
             line_json = self._lines.get(line_id)
             if line_json is None:
                 return default
-
             return Cache.Line(self._cache, line_json)
 
         def __get_line_id(self, param_list: list[Any]):
@@ -257,7 +275,7 @@ class Cache:
             """The time of a cache line."""
             time_or_error = self["time"]
             if isinstance(time_or_error, str):
-                return util.ErrorConfig(time_or_error)
+                return util.ErrorConfig.from_str(time_or_error)
             return time_or_error
 
         @property

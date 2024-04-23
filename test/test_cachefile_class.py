@@ -4,6 +4,8 @@ import semver
 from datetime import datetime
 from types import SimpleNamespace
 
+import kernel_tuner.util as util
+from kernel_tuner.cache.file import write_cache
 from kernel_tuner.cache.cache import Cache
 
 
@@ -26,8 +28,8 @@ class TestCache:
     @pytest.fixture(scope="class")
     def now(self):
         return datetime.now()
+
     @pytest.fixture
-    def cache_lines(self):
     def cache_lines(self, now):
         LINE_TEMPLATE = {
             "time": 0,
@@ -85,8 +87,7 @@ class TestCache:
 
     @pytest.fixture
     def cache_file(self, cache_path, cache_json):
-        with open(cache_path, "w") as file:
-            json.dump(cache_json, file)
+        write_cache(cache_json, cache_path)
         yield cache_path
 
     @pytest.fixture
@@ -152,3 +153,50 @@ class TestCache:
             "framework_time": 7,
             "timestamp": str(now),
         }
+
+    def test_line_append(self, cache_file, cache: Cache):
+        prev_len = len(cache.lines)
+        cache.lines.append(
+            time=999,
+            compile_time=1,
+            verification_time=2,
+            benchmark_time=3,
+            strategy_time=4,
+            framework_time=5,
+            timestamp=datetime.now(),
+            a=1,
+            b=1,
+            c=1,
+        )
+        assert len(cache.lines) == prev_len + 1
+        cache = Cache.read(cache_file)
+        assert len(cache.lines) == prev_len + 1
+
+    def test_line_append__with_ErrorConfig(self, cache):
+        prev_len = len(cache.lines)
+        cache.lines.append(
+            time=util.InvalidConfig(),
+            compile_time=1,
+            verification_time=2,
+            benchmark_time=3,
+            strategy_time=4,
+            framework_time=5,
+            timestamp=datetime.now(),
+            a=1,
+            b=1,
+            c=1,
+        )
+        assert len(cache.lines) == prev_len + 1
+
+    def test_line_append__with_partial_params(self, cache):
+        with pytest.raises(ValueError):
+            cache.lines.append(
+                time=999,
+                compile_time=1,
+                verification_time=2,
+                benchmark_time=3,
+                strategy_time=4,
+                framework_time=5,
+                timestamp=datetime.now(),
+                a=1,
+            )
