@@ -22,7 +22,7 @@ class InvalidCacheError(Exception):
         self.error = error
 
 
-class CacheLinePosition:
+class CachedFilePosition:
     """Dataclass for reme."""
 
     is_initialized: bool = False
@@ -61,8 +61,8 @@ def write_cache(cache_json: dict, filename: PathLike):
 
 
 def append_cache_line(
-    key: str, cache_line: dict, filename: PathLike, position: Optional[CacheLinePosition] = None
-) -> CacheLinePosition:
+    key: str, cache_line: dict, filename: PathLike, position: Optional[CachedFilePosition] = None
+) -> CachedFilePosition:
     """Appends a cache line to an open cache file.
 
     If ``position`` is unset, it will assume the "cache" property comes last in the root object when determining the
@@ -70,15 +70,15 @@ def append_cache_line(
 
     Returns the position of the next cache line.
     """
-    p = position or CacheLinePosition()
+    p = position or CachedFilePosition()
     if not p.is_initialized:
         _unsafe_get_next_cache_line_position(filename, p)
     return _append_cache_line_at(key, cache_line, filename, p)
 
 
 def _append_cache_line_at(
-    key: str, cache_line: dict, filename: PathLike, position: CacheLinePosition
-) -> CacheLinePosition:
+    key: str, cache_line: dict, filename: PathLike, position: CachedFilePosition
+) -> CachedFilePosition:
     with open(filename, "r+") as file:
         # Save cache closing braces properties coming after "cache" as text in suffix
         file.seek(position.file_position)
@@ -94,7 +94,7 @@ def _append_cache_line_at(
         file.write(text)
 
         # Update the position
-        next_pos = CacheLinePosition()
+        next_pos = CachedFilePosition()
         next_pos.is_initialized = True
         next_pos.is_first_line = False
         next_pos.file_position = file.tell()
@@ -107,7 +107,7 @@ def _append_cache_line_at(
 
 
 # FIXME: This function is unsafe: it only works when "cache" property is stored last
-def _unsafe_get_next_cache_line_position(filename: PathLike, state: CacheLinePosition):
+def _unsafe_get_next_cache_line_position(filename: PathLike, state: CachedFilePosition):
     with open(filename, "rb+") as file:
         # Seek the last `}` (root closing brace)
         file.seek(0, os.SEEK_END)
