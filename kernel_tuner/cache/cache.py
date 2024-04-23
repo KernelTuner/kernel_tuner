@@ -39,6 +39,26 @@ def get_schema_path(version: Version):
 class Cache:
     """Interface for writing and reading cache files."""
 
+    RESERVED_PARAM_KEYS: set = {
+        "time",
+        "compile_time",
+        "verification_time",
+        "benchmark_time",
+        "strategy_time",
+        "framework_time",
+        "timestamp",
+        "times",
+        "GFLOP/s",
+    }
+
+    time: Any
+    compile_time: float
+    verification_time: int
+    benchmark_time: float
+    strategy_time: int
+    framework_time: float
+    timestamp: str
+
     @classmethod
     def create(
         cls,
@@ -73,6 +93,8 @@ class Cache:
             raise ValueError("Expected objective to be a string")
         if set(tune_params_keys) != set(tune_params.keys()):
             raise ValueError("Expected tune_params to have exactly the same keys as in the list tune_params_keys")
+        if len(cls.RESERVED_PARAM_KEYS & set(tune_params_keys)) > 0:
+            raise ValueError("Found a reserved key in tune_params_keys")
 
         cache_json = {
             "version": str(LATEST_VERSION),
@@ -97,7 +119,7 @@ class Cache:
         return cls(filename, cache_json)
 
     def __init__(self, filename: PathLike, cache_json: CacheFileJSON):
-        """Inits a cache file instance."""
+        """Inits a cache file instance, given that the file referred to by ``filename`` contains data ``cache_json``."""
         self._filename = Path(filename)
         self._cache_json = cache_json
 

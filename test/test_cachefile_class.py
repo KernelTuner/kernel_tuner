@@ -58,7 +58,7 @@ class TestCache:
         return {"version": "1.0.0", **vars(header), "cache": cache_lines}
 
     @pytest.fixture
-    def assert_create__raises_ValueError(cache_path, header):
+    def assert_create__raises_ValueError(self, cache_path, header):
         yield
         with pytest.raises(ValueError):
             Cache.create(cache_path, **vars(header))
@@ -86,6 +86,24 @@ class TestCache:
 
     def test_create__invalid_tune_params__mismatch(self, header, assert_create__raises_ValueError):
         header.tune_params_keys = ["a", "b"]
+
+    @pytest.mark.parametrize(
+        "key",
+        [
+            "time",
+            "compile_time",
+            "verification_time",
+            "benchmark_time",
+            "strategy_time",
+            "framework_time",
+            "timestamp",
+            "times",
+            "GFLOP/s",
+        ],
+    )
+    def test_create__invalid_tune_params__reserved_keys(self, header, key, assert_create__raises_ValueError):
+        header.tune_params_keys.append(key)
+        header.tune_params[key] = [1, 2]
 
     def test_create__invalid_objective(self, header, assert_create__raises_ValueError):
         header.objective = 3.141592
