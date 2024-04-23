@@ -50,7 +50,7 @@ class Cache:
         tune_params_keys: Sequence[str],
         tune_params: dict[str, Sequence],
         objective: str,
-    ):
+    ) -> "Cache":
         """Creates a new cache file.
 
         For parameters of type Sequence, a list or tuple should be given as argument.
@@ -86,6 +86,7 @@ class Cache:
         }
 
         write_cache(cache_json, filename)
+        return cls(filename, cache_json)  # type: ignore
 
     @classmethod
     def read(cls, filename: PathLike):
@@ -99,6 +100,11 @@ class Cache:
         """Inits a cache file instance."""
         self._filename = Path(filename)
         self._cache_json = cache_json
+
+    @cached_property
+    def filepath(self) -> Path:
+        """Returns the path to the cache file."""
+        return self._filename
 
     @cached_property
     def version(self) -> Version:

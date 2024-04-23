@@ -1,3 +1,4 @@
+import os
 import pytest
 import json
 import semver
@@ -68,6 +69,10 @@ class TestCache:
             data = json.load(file)
         assert "version" in data
         assert {**data, "version": "*"} == {"version": "*", **vars(header), "cache": {}}
+
+    def test_create__returns_object(self, cache_path, header):
+        cache = Cache.create(cache_path, **vars(header))
+        assert os.path.normpath(cache.filepath) == os.path.normpath(cache_path)
 
     def test_create__invalid_device_name(self, header, assert_create__raises_ValueError):
         header.device_name = 3
