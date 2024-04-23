@@ -25,19 +25,17 @@ class NCUObserver(PrologueObserver):
 
     def __init__(self, metrics=None, device=0):
         if not nvmetrics:
-            print("NCUObserver is not available.")
+            raise Exception("NCUObserver is not available.")
 
         self.metrics = metrics
         self.device = device
         self.results = dict()
 
     def before_start(self):
-        if nvmetrics:
-            nvmetrics.measureMetricsStart(self.metrics, self.device)
+        nvmetrics.measureMetricsStart(self.metrics, self.device)
 
     def after_finish(self):
-        if nvmetrics:
-            self.results = nvmetrics.measureMetricsStop()
+        self.results = nvmetrics.measureMetricsStop()
 
     def get_results(self):
         return dict(zip(self.metrics, self.results))
