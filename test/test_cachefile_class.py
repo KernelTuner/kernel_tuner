@@ -33,13 +33,13 @@ class TestCache:
     @pytest.fixture
     def cache_lines(self, now):
         LINE_JSON_TEMPLATE = {
-            "time": 0,
-            "times": [1],
-            "compile_time": 2,
+            "time": 0.0,
+            "times": [1.0],
+            "compile_time": 2.0,
             "verification_time": 3,
-            "benchmark_time": 4,
+            "benchmark_time": 4.0,
             "strategy_time": 6,
-            "framework_time": 7,
+            "framework_time": 7.0,
             "timestamp": str(now),
         }
 
@@ -185,12 +185,12 @@ class TestCache:
     @pytest.fixture
     def cache_line(self):
         return SimpleNamespace(
-            time=999,
-            compile_time=1,
+            time=99.9,
+            compile_time=1.0,
             verification_time=2,
-            benchmark_time=3,
+            benchmark_time=3.0,
             strategy_time=4,
-            framework_time=5,
+            framework_time=5.0,
             timestamp=datetime.now(),
         )
 
@@ -227,3 +227,27 @@ class TestCache:
 
     def test_line_append__with_invalid_tune_params(self, full_cache_line, assert_append_line__raises_ValueError):
         full_cache_line.a = 2
+
+    def test_line_append__with_invalid_time(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.time = "999"
+
+    def test_line_append__with_invalid_compile_time(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.compile_time = True
+
+    def test_line_append__with_invalid_verificat_time(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.verification_time = None
+
+    def test_line_append__with_invalid_benchmark_time(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.benchmark_time = []
+
+    def test_line_append__with_invalid_strategy_time(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.strategy_time = {}
+
+    def test_line_append__with_invalid_framework_time(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.framework_time = False
+
+    def test_line_append__with_invalid_timestamp(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.timestamp = 88
+
+    def test_line_append__with_invalid_times(self, full_cache_line, assert_append_line__raises_ValueError):
+        full_cache_line.times = ["Hello"]

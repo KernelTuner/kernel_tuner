@@ -208,6 +208,25 @@ class Cache:
             **tune_params,
         ):
             """Appends a cache line to the cache lines."""
+            if not (isinstance(time, float) or isinstance(time, util.ErrorConfig)):
+                raise ValueError("Argument time should be a float or an ErrorConfig")
+            if not isinstance(compile_time, float):
+                raise ValueError("Argument compile_time should be a float")
+            if not isinstance(verification_time, int):
+                raise ValueError("Argument verification_time should be an int")
+            if not isinstance(benchmark_time, float):
+                raise ValueError("Argument benchmark_time should be a float")
+            if not isinstance(strategy_time, int):
+                raise ValueError("Argument strategy_time should be an int")
+            if not isinstance(framework_time, float):
+                raise ValueError("Argument framework_time should be a float")
+            if not isinstance(timestamp, datetime):
+                raise ValueError("Argument timestamp should be a Python datetime")
+            if times is not None and not (isinstance(times, list) and all(isinstance(time, float) for time in times)):
+                raise ValueError("Argument times should be a list of floats or None")
+            if GFLOP_per_s is not None and not isinstance(GFLOP_per_s, float):
+                raise ValueError("Argument GFLOP_per_s should be a float or None")
+
             line_id = self.__get_line_id_from_tune_params_dict(tune_params)
             line: dict = {
                 "time": time,
