@@ -13,24 +13,12 @@ from datetime import datetime
 import jsonschema
 from semver import Version
 
-import kernel_tuner
 import kernel_tuner.util as util
 from .json import CacheFileJSON, CacheLineJSON
 from .file import read_cache, write_cache, append_cache_line
-
-
-PROJECT_DIR = Path(kernel_tuner.__file__).parent
-SCHEMA_DIR = PROJECT_DIR / "schema"
-CACHE_SCHEMAS_DIR = SCHEMA_DIR / "cache"
-
-SORTED_VERSIONS: list[Version] = sorted(Version.parse(p.name) for p in CACHE_SCHEMAS_DIR.iterdir())
-VERSIONS: list[Version] = SORTED_VERSIONS
-LATEST_VERSION: Version = VERSIONS[-1]
-
-
-def get_schema_path(version: Version):
-    """Returns the path to the schema of the cache of a specific version."""
-    return CACHE_SCHEMAS_DIR / str(version)
+from .convert import convert_cache_file
+from .versions import LATEST_VERSION
+from .paths import get_schema_path
 
 
 class Cache:
@@ -103,21 +91,31 @@ class Cache:
             "objective": objective,
             "cache": {},
         }
-
+        cls.validate_json(cache_json)  # NOTE: Validate the cache just to be sure
         write_cache(cache_json, filename)
         return cls(filename, cache_json)  # type: ignore
 
     @classmethod
-    def read(cls, filename: PathLike):
-        """Reads an existing cache file."""
+    def read(cls, filename: PathLike, *, force_update=False):
+        """Reads an existing cache file.
+
+        When ``force_update`` is set, the cache file is updated to the latest version when this is not the case.
+        """
         cache_json = read_cache(filename)
         cls.validate_json(cache_json)
+
+        version = Version.parse(cache_json["schema_version"])
+        if force_update and version < LATEST_VERSION:
+            convert_cache_file(filename)
+            cache_json = read_cache(filename)
+            cls.validate_json(cache_json)  # NOTE: Validate the case a second time, just to be sure
+
         return cls(filename, cache_json)
 
     @classmethod
     def validate_json(cls, cache_json: Any):
         """Validates cache json."""
-        schema_path = CACHE_SCHEMAS_DIR / cache_json["schema_version"] / "schema.json"
+        schema_path = get_schema_path(cache_json["schema_version"])
         with open(schema_path, "r") as file:
             schema = json.load(file)
         jsonschema.validate(instance=cache_json, schema=schema)
@@ -232,6 +230,8 @@ class Cache:
                 raise ValueError("Argument GFLOP_per_s should be a float or None")
 
             line_id = self.__get_line_id_from_tune_params_dict(tune_params)
+            # TODO: Decide whether to keep the data pure JSON or still allow Python objects.
+            # If the latter is the case, then we should program Cache.Line accordingly.
             line: dict = {
                 "time": time,
                 "compile_time": compile_time,
