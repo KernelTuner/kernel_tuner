@@ -139,16 +139,21 @@ class TestCache:
         assert cache.lines["0,0,0"] == cache_lines["0,0,0"]
         assert cache.lines.get(a=0, b=0, c=0) == cache_lines["0,0,0"]
 
+    def test_lines_get__default(self, cache):
+        assert cache.lines.get("1,0,0", "Hi!") == "Hi!"
+        assert cache.lines.get(a=1, b=0, c=0, default="DEF") == "DEF"
+
+    def test_lines_get__multiple(self, cache):
+        assert len(cache.lines.get(b=1, c=1)) == 0
+        assert len(cache.lines.get(b=2)) == 0
+        assert len(cache.lines.get(a=0)) == 3
+
     def test_lines_get__no_KeyError(self, cache):
         cache.lines.get("gibberish")
 
     def test_lines_get__with_non_existing_param_key(self, cache):
         with pytest.raises(ValueError):
             cache.lines.get(d=0)
-
-    def test_lines_get__with_partial_param_keys(self, cache):
-        assert len(cache.lines.get(b=1, c=1)) == 0
-        assert len(cache.lines.get(a=0)) == 3
 
     def test_line_attributes(self, cache_line_read, now):
         assert cache_line_read.time == 0
