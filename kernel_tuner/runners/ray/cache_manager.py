@@ -3,7 +3,7 @@ import json
 
 from kernel_tuner.util import store_cache
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class CacheManager:
     def __init__(self, tuning_options):
         self.tuning_options = tuning_options
