@@ -349,10 +349,10 @@ class DeviceInterface(object):
         ]
 
         for obs in self.prologue_observers:
-            obs.before_start()
+            obs.prologue_start()
             self.dev.run_kernel(func, gpu_args, threads, grid)
             self.dev.synchronize()
-            obs.after_finish()
+            obs.prologue_finish()
 
         self.dev.synchronize()
         for _ in range(self.iterations):

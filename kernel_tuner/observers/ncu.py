@@ -31,10 +31,10 @@ class NCUObserver(PrologueObserver):
         self.device = device
         self.results = dict()
 
-    def before_start(self):
+    def prologue_start(self):
         nvmetrics.measureMetricsStart(self.metrics, self.device)
 
-    def after_finish(self):
+    def prologue_finish(self):
         self.results = nvmetrics.measureMetricsStop()
 
     def get_results(self):

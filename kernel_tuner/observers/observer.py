@@ -61,11 +61,11 @@ class PrologueObserver(BenchmarkObserver):
     """Observer that measures something in a seperate kernel invocation prior to the normal benchmark."""
 
     @abstractmethod
-    def before_start(self):
-        """before start is called before the kernel starts"""
+    def prologue_start(self):
+        """prologue start is called before the kernel starts"""
         pass
 
     @abstractmethod
-    def after_finish(self):
-        """after finish is called after the kernel has finished execution"""
+    def prologue_finish(self):
+        """prologue finish is called after the kernel has finished execution"""
         pass
