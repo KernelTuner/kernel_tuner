@@ -1,7 +1,7 @@
 
 
 <div align="center">
-  <img width="500px" src="doc/images/KernelTuner-logo.png"/>
+  <img width="500px" src="https://raw.githubusercontent.com/KernelTuner/kernel_tuner/master/doc/images/KernelTuner-logo.png"/>
 </div>
 
 ---
@@ -98,11 +98,11 @@ More [examples here](https://kerneltuner.github.io/kernel_tuner/stable/examples.
 
 ## Kernel Tuner ecosystem
 
-<img width="250px" src="doc/images/kernel_launcher.png"/><br />C++ magic to integrate auto-tuned kernels into C++ applications 
+<img width="250px" src="https://raw.githubusercontent.com/KernelTuner/kernel_tuner/master/doc/images/kernel_launcher.png"/><br />C++ magic to integrate auto-tuned kernels into C++ applications 
 
-<img width="250px" src="doc/images/kernel_float.png"/><br />C++ data types for mixed-precision CUDA kernel programming
+<img width="250px" src="https://raw.githubusercontent.com/KernelTuner/kernel_tuner/master/doc/images/kernel_float.png"/><br />C++ data types for mixed-precision CUDA kernel programming
 
-<img width="275px" src="doc/images/kernel_dashboard.png"/><br />Monitor, analyze, and visualize auto-tuning runs
+<img width="275px" src="https://raw.githubusercontent.com/KernelTuner/kernel_tuner/master/doc/images/kernel_dashboard.png"/><br />Monitor, analyze, and visualize auto-tuning runs
 
 
 ## Communication & Contribution

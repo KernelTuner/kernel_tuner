@@ -570,6 +570,13 @@ def get_total_timings(results, env, overhead_time):
     return env
 
 
+NVRTC_VALID_CC = np.array(['50', '52', '53', '60', '61', '62', '70', '72', '75', '80', '87', '89', '90', '90a'])
+
+def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
+    """Returns a valid Compute Capability for NVRTC `--gpu-architecture=`, as per https://docs.nvidia.com/cuda/nvrtc/index.html#group__options."""
+    return max(NVRTC_VALID_CC[NVRTC_VALID_CC<=compute_capability], default='52')
+
+
 def print_config(config, tuning_options, runner):
     """Print the configuration string with tunable parameters and benchmark results."""
     print_config_output(tuning_options.tune_params, config, runner.quiet, tuning_options.metrics, runner.units)
