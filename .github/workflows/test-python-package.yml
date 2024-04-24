@@ -28,7 +28,7 @@ jobs:
             - name: Setup Nox
               uses: fjwillemsen/setup-nox2@v3.0.0
             - name: Setup Poetry
-              uses: Gr1N/setup-poetry@v8
+              uses: Gr1N/setup-poetry@v9
             - run: poetry self add poetry-plugin-export
             - name: Run tests with Nox
               run: |
