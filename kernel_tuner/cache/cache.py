@@ -10,7 +10,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Any, Union, Optional, Dict, Iterable
 from collections.abc import Mapping
-from functools import cached_property
+from functools import lru_cache as cache, cached_property
 from datetime import datetime
 
 import jsonschema
@@ -18,6 +18,7 @@ from semver import Version
 
 import kernel_tuner.util as util
 from .json import CacheFileJSON, CacheLineJSON
+from .json_encoder import CacheLineEncoder
 from .file import read_cache, write_cache, append_cache_line
 from .versions import LATEST_VERSION
 from .paths import get_schema_path
@@ -357,8 +358,10 @@ class Cache:
         """Cache line in a cache file.
 
         Every instance of this class behaves in principle as if it were a readable dict. Items can be accessed via the
-        instance's attributes. In addition, the aliased properties automatically convert json data to python objects or
-        can reference some dict item that does not have a key that can be used as attribute.
+        instance's attributes, or via __getitem__ using the traditional brackets (`line[...]`). In addition, the aliased
+        properties automatically convert json data to python objects or can reference some dict item that does not have
+        a key that can be used as attribute. Items accessed using __getitem__ will always return a json serializable
+        object.
 
         Alias Properties:
             time: error `util.ErrorConfig` or a number `float`
@@ -419,7 +422,13 @@ class Cache:
 
         def __getitem__(self, key: str):
             """Returns an item in a line."""
-            return self._line[key]
+            item = self._line[key]
+            if not (item is None or isinstance(item, (bool, int, float, str, list, dict))):
+                # FIX: This will convert the root object of any not json serializable object to a json serializable
+                # object, but it will not convert any items from the object returned to be json serializable.
+                encoder = _get_cache_line_json_encoder()
+                item = encoder.default(item)
+            return item
 
         def __len__(self) -> int:
             """Returns the number of attributes in a line."""
@@ -466,3 +475,8 @@ class Cache:
     def objective(self) -> str:
         """Objective of tuning the kernel."""
         return self._cache_json["objective"]
+
+
+@cache
+def _get_cache_line_json_encoder():
+    return CacheLineEncoder()

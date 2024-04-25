@@ -182,6 +182,28 @@ class TestCache:
             "timestamp": str(now),
         }
 
+    def test_line_dict__json_and_non_json(self, cache: Cache, now):
+        cache.lines.append(
+            time=util.RuntimeFailedConfig(),
+            compile_time=1.0,
+            verification_time=2,
+            benchmark_time=3.0,
+            strategy_time=4,
+            framework_time=5.0,
+            timestamp=now,
+            times=[6.0],
+            a=1,
+            b=1,
+            c=1,
+        )
+        line = cache.lines.get(a=1, b=1, c=1)
+
+        assert line["time"] == util.RuntimeFailedConfig.__name__
+        assert isinstance(line.time, util.RuntimeFailedConfig)
+
+        assert line["timestamp"] == str(now)
+        assert isinstance(line.timestamp, datetime)
+
     @pytest.fixture
     def cache_line(self):
         return SimpleNamespace(
