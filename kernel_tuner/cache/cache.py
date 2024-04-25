@@ -234,37 +234,22 @@ class Cache:
             if GFLOP_per_s is not None and not isinstance(GFLOP_per_s, float):
                 raise ValueError("Argument GFLOP_per_s should be a float or None")
 
-            line_id = self.__get_line_id_from_tune_params_dict(tune_params)
-            # TODO: Decide whether to keep the data pure JSON or still allow Python objects.
-            # If the latter is the case, then we should program Cache.Line accordingly.
-            line: dict = {
-                "time": time,
-                "compile_time": compile_time,
-                "verification_time": verification_time,
-                "benchmark_time": benchmark_time,
-                "strategy_time": strategy_time,
-                "framework_time": framework_time,
-                "timestamp": str(timestamp),
-            }
-            if times is not None:
-                line["times"] = times
-            if GFLOP_per_s is not None:
-                line["GFLOP/s"] = GFLOP_per_s
-            line.update(tune_params)
-            self._lines[line_id] = line  # type: ignore
-            append_cache_line(line_id, line, self._filename)
+            line = self.__get_line_json_object(
+                time,
+                compile_time,
+                verification_time,
+                benchmark_time,
+                strategy_time,
+                framework_time,
+                timestamp,
+                times,
+                GFLOP_per_s,
+                tune_params,
+            )
 
-        def __get_line_id_from_tune_params_dict(self, tune_params: dict) -> str:
-            param_list = []
-            for key in self._cache.tune_params_keys:
-                if key in tune_params:
-                    value = tune_params[key]
-                    if value not in self._cache.tune_params[key]:
-                        raise ValueError(f"Invalid value {value} for tunable parameter {key}")
-                    param_list.append(value)
-                else:
-                    raise ValueError(f"Expected tune param key {key} to be present in parameters")
-            return self.__get_line_id(param_list)
+            line_id = self.__get_line_id_from_tune_params_dict(tune_params)
+            self._lines[line_id] = line
+            append_cache_line(line_id, line, self._filename)
 
         def get(self, line_id: Optional[str] = None, default=None, **params):
             """Returns a cache line corresponding with ``line_id``.
@@ -325,6 +310,48 @@ class Cache:
                     for value in self._cache.tune_params[key]:
                         param_lists.extend(it + [value] for it in prev_lists)
             return [line_id for line_id in map(self.__get_line_id, param_lists) if line_id in self._lines]
+
+        def __get_line_id_from_tune_params_dict(self, tune_params: dict) -> str:
+            param_list = []
+            for key in self._cache.tune_params_keys:
+                if key in tune_params:
+                    value = tune_params[key]
+                    if value not in self._cache.tune_params[key]:
+                        raise ValueError(f"Invalid value {value} for tunable parameter {key}")
+                    param_list.append(value)
+                else:
+                    raise ValueError(f"Expected tune param key {key} to be present in parameters")
+            return self.__get_line_id(param_list)
+
+        def __get_line_json_object(
+            self,
+            time: Union[float, util.ErrorConfig],
+            compile_time: float,
+            verification_time: int,
+            benchmark_time: float,
+            strategy_time: int,
+            framework_time: float,
+            timestamp: datetime,
+            times: Optional[list[float]],
+            GFLOP_per_s: Optional[float],
+            tune_params,
+        ):
+            line: dict = {
+                "time": time,
+                "compile_time": compile_time,
+                "verification_time": verification_time,
+                "benchmark_time": benchmark_time,
+                "strategy_time": strategy_time,
+                "framework_time": framework_time,
+                "timestamp": str(timestamp),
+            }
+            if times is not None:
+                line["times"] = times
+            if GFLOP_per_s is not None:
+                line["GFLOP/s"] = GFLOP_per_s
+            line = {**line, **tune_params}
+
+            return line
 
     class Line(Mapping):
         """Cache line in a cache file.
