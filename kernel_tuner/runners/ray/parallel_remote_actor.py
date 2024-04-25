@@ -17,7 +17,8 @@ class ParallelRemoteActor():
                  device_options,
                  iterations,
                  observers,
-                 gpu_id):
+                 gpu_id,
+                 cache_manager):
         
         self.gpu_id = gpu_id
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
@@ -33,14 +34,13 @@ class ParallelRemoteActor():
         self.device_options = device_options
         self.iterations = iterations
         self.observers = observers
-        self.cache_manager = None
+        self.cache_manager = cache_manager
         self.runner = None
 
     def execute(self, element, tuning_options):
+        if self.runner is None:
+            self.init_runner()
         return self.runner.run([element], tuning_options)[0]
-
-    def set_cache_manager(self, cache_manager):
-        self.cache_manager = cache_manager
 
     def init_runner(self):
         if self.cache_manager is None:

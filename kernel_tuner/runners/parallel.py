@@ -12,7 +12,7 @@ from kernel_tuner.util import get_num_devices
 
 class ParallelRunner(Runner):
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, cache_manager=None, resources=None):
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
         self.units = self.dev.units
         self.quiet = device_options.quiet
@@ -26,39 +26,44 @@ class ParallelRunner(Runner):
         self.observers = observers
         self.iterations = iterations
         self.device_options = device_options
-        self.cache_manager = None
+        self.cache_manager = cache_manager
 
         # Define cluster resources
         self.num_gpus = get_num_devices(kernel_source.lang)
         print(f"Number of GPUs in use: {self.num_gpus}", file=sys. stderr)
-        resources = {}
-        for id in range(self.num_gpus):
-            gpu_resource_name = f"gpu_{id}"
-            resources[gpu_resource_name] = 1
+        if resources is None:
+            for id in range(self.num_gpus):
+                gpu_resource_name = f"gpu_{id}"
+                resources[gpu_resource_name] = 1
         # Initialize Ray
-        os.environ["RAY_DEDUP_LOGS"] = "0"
-        ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
-        # Create RemoteActor instances
-        self.actors = [self.create_actor_on_gpu(id) for id in range(self.num_gpus)]
-        # Create a pool of RemoteActor actors
-        self.actor_pool = ActorPool(self.actors)
+        if not ray.is_initialized():
+            os.environ["RAY_DEDUP_LOGS"] = "0"
+            ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
 
     def get_environment(self, tuning_options):
         return self.dev.get_environment()
 
     
-    def run(self, parameter_space, tuning_options, cache_manager):
-        self.cache_manager = cache_manager
-        # Distribute the cache manager to all actors and initialize runners of actors
-        for actor in self.actors:
-            actor.set_cache_manager.remote(cache_manager)
-            actor.init_runner.remote()
+    def run(self, parameter_space, tuning_options, cache_manager=None):
+        if self.cache_manager is None:
+            if cache_manager is None:
+                raise ValueError("A cache manager is required for parallel execution")
+            self.cache_manager = cache_manager
+        # Create RemoteActor instances
+        self.actors = [self.create_actor_on_gpu(id, self.cache_manager) for id in range(self.num_gpus)]
+        # Create a pool of RemoteActor actors
+        self.actor_pool = ActorPool(self.actors)
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
         results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(v, tuning_options), parameter_space))
-        tuning_options = ray.get(cache_manager.get_tuning_options.remote())
+        new_tuning_options = ray.get(cache_manager.get_tuning_options.remote())
+        tuning_options.update(new_tuning_options)
+
+        for actor in self.actors:
+            ray.kill(actor)
+        
         return results
     
-    def create_actor_on_gpu(self, gpu_id):
+    def create_actor_on_gpu(self, gpu_id, cache_manager):
         gpu_resource_name = f"gpu_{gpu_id}"
         return ParallelRemoteActor.options(resources={gpu_resource_name: 1}).remote(self.quiet,
                                                                             self.kernel_source, 
@@ -66,4 +71,5 @@ class ParallelRunner(Runner):
                                                                             self.device_options, 
                                                                             self.iterations, 
                                                                             self.observers,
-                                                                            gpu_id)
+                                                                            gpu_id,
+                                                                            cache_manager)
