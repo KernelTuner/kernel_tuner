@@ -6,6 +6,7 @@ import numpy as np
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.util import get_num_devices
 
 _docstring_template = """ Find the best performing kernel configuration in the parameter space
 
@@ -44,7 +45,7 @@ def make_strategy_options_doc(strategy_options):
 
 def get_options(strategy_options, options):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
-    accepted = list(options.keys()) + ["max_fevals", "time_limit", "ensemble"]
+    accepted = list(options.keys()) + ["max_fevals", "time_limit", "ensemble", "candidates", "candidate", "population", "maxiter"]
     for key in strategy_options:
         if key not in accepted:
             raise ValueError(f"Unrecognized option {key} in strategy_options")
@@ -73,6 +74,35 @@ class CostFunc:
         util.check_stop_criterion(self.tuning_options)
 
         # snap values in x to nearest actual value for each parameter, unscale x if needed
+        configs = [self._prepare_config(cfg) for cfg in configs]
+
+        legal_configs, illegal_results = self._get_legal_configs(configs)
+        results = self.runner.run(legal_configs, self.tuning_options)
+        self.results.extend(results)
+
+        for result in results:
+            config = {key: result[key] for key in self.tuning_options.tune_params if key in result}
+            x_int = ",".join([str(i) for i in config])
+            # append to tuning results
+            if x_int not in self.tuning_options.unique_results:
+                self.tuning_options.unique_results[x_int] = result
+
+        # upon returning from this function control will be given back to the strategy, so reset the start time
+        self.runner.last_strategy_start_time = perf_counter()
+
+        # get numerical return values, taking optimization direction into account
+        all_results = results + illegal_results
+        return_values = []
+        for result in all_results:
+            return_value = result[self.tuning_options.objective] or sys.float_info.max
+            return_values.append(return_value if not self.tuning_options.objective_higher_is_better else -return_value)
+
+        if len(return_values) == 1:
+            return return_values[0]
+        return return_values
+    
+    def _prepare_config(self, x):
+        """Prepare a single configuration by snapping to nearest values and/or scaling."""
         if self.snap:
             if self.scaling:
                 params = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)
@@ -81,38 +111,21 @@ class CostFunc:
         else:
             params = x
         logging.debug('params ' + str(params))
+        return params
+    
+    def _get_legal_configs(self, configs) -> list:
+            results = []
+            legal_configs = []
+            for config in configs:
+                params_dict = dict(zip(self.searchspace.tune_params.keys(), config))
+                legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
+                if not legal:
+                    params_dict[self.tuning_options.objective] = util.InvalidConfig()
+                    results.append(params_dict)
+                else:
+                    legal_configs.append(config)
+            return legal_configs, results
 
-        legal = True
-        result = {}
-        x_int = ",".join([str(i) for i in params])
-
-        # else check if this is a legal (non-restricted) configuration
-        if check_restrictions and self.searchspace.restrictions:
-            params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
-            legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
-            if not legal:
-                result = params_dict
-                result[self.tuning_options.objective] = util.InvalidConfig()
-
-        if legal:
-            # compile and benchmark this instance
-            res = self.runner.run([params], self.tuning_options)
-            result = res[0]
-
-            # append to tuning results
-            if x_int not in self.tuning_options.unique_results:
-                self.tuning_options.unique_results[x_int] = result
-
-            self.results.append(result)
-
-            # upon returning from this function control will be given back to the strategy, so reset the start time
-            self.runner.last_strategy_start_time = perf_counter()
-
-        # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective] or sys.float_info.max
-        return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
-
-        return return_value
 
     def get_bounds_x0_eps(self):
         """Compute bounds, x0 (the initial guess), and eps."""
@@ -243,3 +256,16 @@ def scale_from_params(params, tune_params, eps):
     for i, v in enumerate(tune_params.values()):
         x[i] = 0.5 * eps + v.index(params[i])*eps
     return x
+
+def setup_resources(ensemble_size: int, simulation_mode: bool, runner):
+    num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
+    print(f"Number of devices available: {num_devices}", file=sys.stderr)
+    if num_devices < ensemble_size:
+        raise ValueError(f"Number of devices ({num_devices}) is less than the number of strategies in the ensemble ({ensemble_size})")
+    
+    resources = {}
+    for id in range(ensemble_size):
+        device_resource_name = f"gpu_{id}"
+        resources[device_resource_name] = 1
+    resources["cache_manager_cpu"] = 1
+    return resources
