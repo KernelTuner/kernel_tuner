@@ -35,5 +35,5 @@ class RemoteActor():
             runner = SequentialRunner(self.kernel_source, self.kernel_options, self.device_options, 
                                  self.iterations, self.observers, cache_manager=self.cache_manager)
         results = strategy.tune(searchspace, runner, tuning_options)
-        return results
+        return results, tuning_options
     
