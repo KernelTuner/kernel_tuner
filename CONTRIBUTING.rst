@@ -34,9 +34,27 @@ have look at the :ref:`design documentation <design documentation>`, or discuss 
 
 .. _development environment:
 
-Development environment
------------------------
-The following steps help you set up a development environment.
+
+Simple development setup
+------------------------
+
+For small changes to the code you can setup a quick development environment with the following steps:
+
+* :bash:`git clone git@github.com:KernelTuner/kernel_tuner.git`
+* :bash:`cd kernel_tuner`
+* :bash:`pip install -e .`
+
+To run the tests:
+* :bash:`pip install -r doc/requirements_test.txt`
+* :bash:`pytest -v test`
+
+For larger changes, or when you need to change the dependencies of Kernel Tuner, please follow the instructions below to setup the full development environment.
+
+
+Full development environment
+----------------------------
+The following steps help you set up a full development environment. **These steps are only needed for core developers of Kernel Tuner who need to test against multiple Python versions 
+or change dependencies of Kernel Tuner.**
 
 Local setup
 ^^^^^^^^^^^
