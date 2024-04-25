@@ -20,7 +20,6 @@ from kernel_tuner.runners.ray.cache_manager import CacheManager
 from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
-    brute_force,
     diff_evo,
     dual_annealing,
     firefly_algorithm,
@@ -36,7 +35,6 @@ from kernel_tuner.strategies import (
 )
 
 strategy_map = {
-    "brute_force": brute_force,
     "random_sample": random_sample,
     "minimize": minimize,
     "basinhopping": basinhopping,
