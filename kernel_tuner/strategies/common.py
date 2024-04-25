@@ -75,23 +75,16 @@ class CostFunc:
 
         # snap values in x to nearest actual value for each parameter, unscale x if needed
         configs = [self._prepare_config(cfg) for cfg in configs]
-
-        legal_configs, illegal_results = self._get_legal_configs(configs)
-        results = self.runner.run(legal_configs, self.tuning_options)
-        self.results.extend(results)
-
-        for result in results:
-            config = {key: result[key] for key in self.tuning_options.tune_params if key in result}
-            x_int = ",".join([str(i) for i in config])
-            # append to tuning results
-            if x_int not in self.tuning_options.unique_results:
-                self.tuning_options.unique_results[x_int] = result
-
-        # upon returning from this function control will be given back to the strategy, so reset the start time
-        self.runner.last_strategy_start_time = perf_counter()
+        
+        legal_configs = configs
+        illegal_results = []
+        if check_restrictions and self.searchspace.restrictions:
+            legal_configs, illegal_results = self._get_legal_configs(configs)
+        
+        final_results = self._evaluate_configs(legal_configs) if len(legal_configs) > 0 else []
 
         # get numerical return values, taking optimization direction into account
-        all_results = results + illegal_results
+        all_results = final_results + illegal_results
         return_values = []
         for result in all_results:
             return_value = result[self.tuning_options.objective] or sys.float_info.max
@@ -125,7 +118,27 @@ class CostFunc:
                 else:
                     legal_configs.append(config)
             return legal_configs, results
+    
+    def _evaluate_configs(self, configs):
+        results = self.runner.run(configs, self.tuning_options)
+        self.results.extend(results)
 
+        final_results = []
+        for result in results:
+            config = {key: result[key] for key in self.tuning_options.tune_params if key in result}
+            x_int = ",".join([str(i) for i in config])
+            # append to tuning results
+            if x_int not in self.tuning_options.unique_results:
+                self.tuning_options.unique_results[x_int] = result
+                # check if max_fevals is reached or time limit is exceeded within the the results
+                util.check_stop_criterion(self.tuning_options)
+            final_results.append(result)
+
+        self.results.append(final_results)
+        # upon returning from this function control will be given back to the strategy, so reset the start time
+        self.runner.last_strategy_start_time = perf_counter()
+
+        return final_results
 
     def get_bounds_x0_eps(self):
         """Compute bounds, x0 (the initial guess), and eps."""
