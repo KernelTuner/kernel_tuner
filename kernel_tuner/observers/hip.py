@@ -4,7 +4,7 @@ from kernel_tuner.observers.observer import BenchmarkObserver
 
 try:
     from pyhip import hip, hiprtc
-except ImportError:
+except (ImportError, RuntimeError):
     hip = None
     hiprtc = None
 
