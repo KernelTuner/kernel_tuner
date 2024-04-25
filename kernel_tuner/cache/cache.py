@@ -16,7 +16,6 @@ from semver import Version
 import kernel_tuner.util as util
 from .json import CacheFileJSON, CacheLineJSON
 from .file import read_cache, write_cache, append_cache_line
-from .convert import convert_cache_file
 from .versions import LATEST_VERSION
 from .paths import get_schema_path
 
