@@ -58,7 +58,10 @@ generate-setup-file = false
 [tool.poetry.dependencies]
 python = ">=3.8,<3.13"          # NOTE if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
 numpy = "^1.22.2"               # set to 1.22.2 instead of 1.22.4 to match oldest-supported-numpy required by pycuda
-scipy = "^1.10.1"               # held back by Python 3.8 support (dropped from ^1.11)
+scipy = [
+    {version = "^1.10.0", python = "==3.8"}, # held back by Python 3.8 support (dropped from ^1.11)
+    {version = "^1.11.0", python = ">=3.9"}
+]
 packaging = "*"                 # required by file_utils
 jsonschema = "*"
 python-constraint2 = "^2.0.0b5"
