@@ -55,5 +55,5 @@ To build the documentation locally:
 * :bash:`make html`
 
 These instructions should be enough for most small contributions. 
-For larger changes, or when you need to change the dependencies of Kernel Tuner, please see the documentation on setting up a full development environment.
+For larger changes, or when you need to change the dependencies of Kernel Tuner, please see the documentation on setting up a `full development environment <https://kerneltuner.github.io/kernel_tuner/latest/dev-environment.html>`_.
 
