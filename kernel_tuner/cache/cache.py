@@ -1,4 +1,7 @@
-"""Provides utilities for reading and writing cache files."""
+"""Provides utilities for reading and writing cache files.
+
+In order to modify and read cache files, the Cache class should be used, see its docstring.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +24,35 @@ from .paths import get_schema_path
 
 
 class Cache:
-    """Interface for writing and reading cache files."""
+    """Writes and reads cache files.
+
+    Cache files can be read using `Cache.read()` and created using `Cache.create()`. In both cases, a `Cache` instance
+    is returned. This object simultaneously keeps track of the file, as well as its json contents in an efficient
+    manner. Note that the cache file should not be changed during the Cache instance's lifetime, as the instance's state
+    would in that case not correspond to the file's JSON content. To automatically detect changes in the Cache instance,
+    one could use os.path.getmtime() in order to detect whenever the cache file changes.
+
+    The Cache class furthermore contains an easily usable interface for reading cache file properties, e.g.
+    `Cache.kernel_name` or `Cache.version`, and an easily usable interface for matching cache lines from their
+    parameters `Cache.lines.get()`, and an easily usable interface for appending cache lines `Cache.lines.append()`
+    to cache files.
+
+    Properties:
+        filepath: filepath to the cache.
+        version: schema version of the cache.
+        lines: cache lines of the json file.
+
+        device_name
+        kernel_name
+        problem_size
+        tune_params_keys
+        tune_params
+        objective
+
+    See Also:
+        Docstring from `Cache.Lines` explaining how to read and append cache lines
+        Docstring from `Cache.Line` explaining how to read properties from cache lines
+    """
 
     RESERVED_PARAM_KEYS: set = {
         "time",
@@ -34,14 +65,6 @@ class Cache:
         "times",
         "GFLOP/s",
     }
-
-    time: Any
-    compile_time: float
-    verification_time: int
-    benchmark_time: float
-    strategy_time: int
-    framework_time: float
-    timestamp: str
 
     @classmethod
     def create(
@@ -125,42 +148,35 @@ class Cache:
         return Version.parse(self._cache_json["schema_version"])
 
     @cached_property
-    def device_name(self) -> str:
-        """Name of the device."""
-        return self._cache_json["device_name"]
-
-    @cached_property
-    def kernel_name(self) -> str:
-        """Name of the kernel."""
-        return self._cache_json["kernel_name"]
-
-    @cached_property
-    def problem_size(self) -> Any:
-        """Problem size of the kernel being tuned."""
-        return self._cache_json["problem_size"]
-
-    @cached_property
-    def tune_params_keys(self) -> list[str]:
-        """List of names (keys) of the tunable parameters."""
-        return self._cache_json["tune_params_keys"].copy()
-
-    @cached_property
-    def tune_params(self) -> dict[str, list[Any]]:
-        """Dictionary containing per tunable parameter a tuple of its possible values."""
-        return {key: value.copy() for key, value in self._cache_json["tune_params"].items()}
-
-    @cached_property
-    def objective(self) -> str:
-        """Objective of tuning the kernel."""
-        return self._cache_json["objective"]
-
-    @cached_property
     def lines(self) -> Lines:
         """List of cache lines."""
         return self.Lines(self, self._filename, self._cache_json)
 
     class Lines(Mapping):
-        """Cache lines in a cache file."""
+        """Cache lines in a cache file.
+
+        Behaves exactly like an only readable dict, except with an `append` method for appending lines.
+
+        Usage Example:
+            cache: Cache = ...
+
+            print("Line with id 0,0,0 is ", cache.lines["0,0,0"])
+            printf(f"There are {len(cache.lines)} lines")
+
+            cache.lines.append(..., tune_param_a=1, tune_param_b=2, tune_param_c=3)
+
+            printf(f"There are {len(cache.lines)} lines")
+            for line_id, line in cache.lines.items():
+                print(f"Line {line_id} has value {line}.")
+
+            # If there are more tunable parameter keys than just "a",
+            # then cache.lines.get(a=...) returns a list.
+            for line in cache.lines.get(a=1):
+                print(f"Line {line} is one of the lines with `a=1`")
+
+        See Also:
+            collections.abc.Mapping: https://docs.python.org/3/library/collections.abc.html
+        """
 
         def __init__(self, cache: Cache, filename: PathLike, cache_json: CacheFileJSON):
             """Inits a new CacheLines instance."""
@@ -311,7 +327,34 @@ class Cache:
             return [line_id for line_id in map(self.__get_line_id, param_lists) if line_id in self._lines]
 
     class Line(Mapping):
-        """Cache line in a cache file."""
+        """Cache line in a cache file.
+
+        Every instance of this class behaves in principle as if it were a readable dict. Items can be accessed via the
+        instance's attributes. In addition, the aliased properties automatically convert json data to python objects or
+        can reference some dict item that does not have a key that can be used as attribute.
+
+        Alias Properties:
+            time: error `util.ErrorConfig` or a number `float`
+            times: a list of floats (`float`) or `None`
+            timestamp: a `datetime` object of the timestamp
+            GFLOP_per_s: alias of "GFLOP/s"
+
+        Usage Example:
+            from datetime import datetime
+
+            cache: Cache = ...
+            line = cache.lines[...]
+
+            # Useful alias for GFLOP/s
+            assert line.GFLOP_per_s == line["GFLOP/s"]
+
+            # The timestamp attribute is automatically converted to a `datetime` object
+            assert isinstance(line.timestamp, datetime)
+            assert isinstance(line["timestamp"], str)
+
+        See Also:
+            collections.abc.Mapping: https://docs.python.org/3/library/collections.abc.html
+        """
 
         compile_time: float
         verification_time: int
@@ -366,3 +409,33 @@ class Cache:
         def __getattr__(self, name: str):
             """Accesses members of the dict as if they were attributes."""
             return self[name]
+
+    @cached_property
+    def device_name(self) -> str:
+        """Name of the device."""
+        return self._cache_json["device_name"]
+
+    @cached_property
+    def kernel_name(self) -> str:
+        """Name of the kernel."""
+        return self._cache_json["kernel_name"]
+
+    @cached_property
+    def problem_size(self) -> Any:
+        """Problem size of the kernel being tuned."""
+        return self._cache_json["problem_size"]
+
+    @cached_property
+    def tune_params_keys(self) -> list[str]:
+        """List of names (keys) of the tunable parameters."""
+        return self._cache_json["tune_params_keys"].copy()
+
+    @cached_property
+    def tune_params(self) -> dict[str, list[Any]]:
+        """Dictionary containing per tunable parameter a tuple of its possible values."""
+        return {key: value.copy() for key, value in self._cache_json["tune_params"].items()}
+
+    @cached_property
+    def objective(self) -> str:
+        """Objective of tuning the kernel."""
+        return self._cache_json["objective"]
