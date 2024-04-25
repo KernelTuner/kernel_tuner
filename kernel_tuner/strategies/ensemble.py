@@ -2,6 +2,8 @@ import random
 import sys
 import os
 import ray
+import copy
+import logging
 from ray.util.actor_pool import ActorPool
 
 import numpy as np
@@ -9,7 +11,7 @@ import numpy as np
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import CostFunc, scale_from_params
+from kernel_tuner.strategies.common import CostFunc, scale_from_params, setup_resources
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.runners.ray.remote_actor import RemoteActor
 from kernel_tuner.util import get_num_devices
@@ -51,29 +53,20 @@ strategy_map = {
     "bayes_opt": bayes_opt,
 }
 
-def tune(searchspace: Searchspace, runner, tuning_options):
+def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None):
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     if "ensemble" in tuning_options:
         ensemble = tuning_options["ensemble"]
     else:
         ensemble = ["random_sample", "random_sample"]
-
-    # Define cluster resources
-    num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
-    print(f"Number of devices available: {num_devices}", file=sys. stderr)
-    if num_devices < len(ensemble):
-        raise ValueError(f"Number of devices ({num_devices}) is less than the number of strategies in the ensemble ({len(ensemble)})")
-    
-    resources = {}
-    for id in range(len(ensemble)):
-        device_resource_name = f"gpu_{id}"
-        resources[device_resource_name] = 1
-    resources["cache_manager_cpu"] = 1
+    resources = setup_resources(len(ensemble), simulation_mode, runner)
     # Initialize Ray
-    os.environ["RAY_DEDUP_LOGS"] = "0"
-    ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
+    if not ray.is_initialized():
+        os.environ["RAY_DEDUP_LOGS"] = "0"
+        ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
     # Create cache manager and actors
-    cache_manager = CacheManager.options(resources={"cache_manager_cpu": 1}).remote(tuning_options)
+    if cache_manager is None:
+        cache_manager = CacheManager.options(resources={"cache_manager_cpu": 1}).remote(tuning_options)
     actors = [create_actor_on_device(id, runner, cache_manager, simulation_mode) for id in range(len(ensemble))]
     
     ensemble = [strategy_map[strategy] for strategy in ensemble]
@@ -81,27 +74,19 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     for i in range(len(ensemble)):
         strategy = ensemble[i]
         actor = actors[i]
-        task = actor.execute.remote(strategy, searchspace, tuning_options, simulation_mode)
+        remote_tuning_options = setup_tuning_options(tuning_options)
+        task = actor.execute.remote(strategy, searchspace, remote_tuning_options, simulation_mode)
         tasks.append(task)
     all_results = ray.get(tasks)
-    tuning_options = ray.get(cache_manager.get_tuning_options.remote())
+    new_tuning_options = ray.get(cache_manager.get_tuning_options.remote())
+    tuning_options.update(new_tuning_options)
+    final_results, population = process_results(all_results, searchspace)
 
-    unique_configs = set()
-    final_results = []
+    if population: # for memetic strategy
+        tuning_options.strategy_options["population"] = population
+        logging.debug(f"tuning_options.strategy_options[population]: {tuning_options.strategy_options['population']}")
 
-    for strategy_results in all_results:
-        for new_result in strategy_results:
-            config_signature = tuple(new_result[param] for param in searchspace.tune_params)
-
-            if config_signature not in unique_configs:
-                final_results.append(new_result)
-                unique_configs.add(config_signature)
-
-    #kill all actors and chache manager
-    for actor in actors:
-        ray.kill(actor)
-    ray.kill(cache_manager)
-
+    clean_up(actors, cache_manager)
     return final_results
 
 def create_actor_on_device(gpu_id, runner, cache_manager, simulation_mode):
@@ -116,3 +101,31 @@ def create_actor_on_device(gpu_id, runner, cache_manager, simulation_mode):
                                                                                             runner.iterations, 
                                                                                             runner.observers,
                                                                                             cache_manager)
+
+def setup_tuning_options(tuning_options):
+    new_tuning_options = copy.deepcopy(tuning_options)
+    if "candidates" in tuning_options.strategy_options:
+        #new_tuning_options.strategy_options.pop("candidates")
+        if len(tuning_options.strategy_options["candidates"]) > 0:
+            new_tuning_options.strategy_options["candidate"] = tuning_options.strategy_options["candidates"].pop(0)
+    return new_tuning_options
+
+def process_results(all_results, searchspace):
+    unique_configs = set()
+    final_results = []
+    population = [] # for memetic strategy
+
+    for (strategy_results, tuning_options) in all_results:
+        if "candidate" in tuning_options.strategy_options:
+            population.append(tuning_options.strategy_options["candidate"])
+        for new_result in strategy_results:
+            config_signature = tuple(new_result[param] for param in searchspace.tune_params)
+            if config_signature not in unique_configs:
+                final_results.append(new_result)
+                unique_configs.add(config_signature)
+    return final_results, population
+
+def clean_up(actors, cache_manager):
+    for actor in actors:
+        ray.kill(actor)
+    ray.kill(cache_manager)
