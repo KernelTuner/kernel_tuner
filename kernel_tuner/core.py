@@ -341,7 +341,7 @@ class DeviceInterface(object):
             print("Using: " + self.dev.name)
 
     def benchmark_default(self, func, gpu_args, threads, grid, result):
-        """Benchmark one kernel execution at a time"""
+        """Benchmark one kernel execution at a time."""
         observers = [
             obs for obs in self.dev.observers if not isinstance(obs, ContinuousObserver)
         ]
@@ -391,12 +391,8 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             result.update(obs.get_results())
 
-    def benchmark(self, func, gpu_args, instance, verbose, objective):
-        """benchmark the kernel instance"""
-        logging.debug("benchmark " + instance.name)
-        logging.debug("thread block dimensions x,y,z=%d,%d,%d", *instance.threads)
-        logging.debug("grid dimensions x,y,z=%d,%d,%d", *instance.grid)
-
+    def set_nvml_parameters(self, instance):
+        """Set the NVML parameters. Avoids setting time leaking into benchmark time."""
         if self.use_nvml:
             if "nvml_pwr_limit" in instance.params:
                 new_limit = int(
@@ -408,6 +404,15 @@ class DeviceInterface(object):
                 self.nvml.gr_clock = instance.params["nvml_gr_clock"]
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
+
+    def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False):
+        """Benchmark the kernel instance."""
+        logging.debug("benchmark " + instance.name)
+        logging.debug("thread block dimensions x,y,z=%d,%d,%d", *instance.threads)
+        logging.debug("grid dimensions x,y,z=%d,%d,%d", *instance.grid)
+
+        if self.use_nvml and not skip_nvml_setting:
+            self.set_nvml_parameters(instance)
 
         # Call the observers to register the configuration to be benchmarked
         for obs in self.dev.observers:
@@ -577,9 +582,12 @@ class DeviceInterface(object):
 
                 # benchmark
                 if func:
+                    # setting the NVML parameters here avoids this time from leaking into the benchmark time, ends up in framework time instead
+                    if self.use_nvml:
+                        self.set_nvml_parameters(instance)
                     start_benchmark = time.perf_counter()
                     result.update(
-                        self.benchmark(func, gpu_args, instance, verbose, to.objective)
+                        self.benchmark(func, gpu_args, instance, verbose, to.objective, skip_nvml_setting=False)
                     )
                     last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
 
