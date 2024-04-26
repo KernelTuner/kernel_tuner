@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import semver
+from os import PathLike
 from pathlib import Path
 from typing import Callable
 
@@ -27,7 +28,7 @@ DEFAULT_VALUES = {
 
 
 
-def convert_cache_file(filestr : str, 
+def convert_cache_file(filestr : PathLike, 
                        conversion_functions=None,
                        versions=None):
     """Convert a cache file to the newest version.

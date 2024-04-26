@@ -1,51 +1,102 @@
-import os
 import pytest
+import shutil
+from copy import deepcopy
 from pathlib import Path
-import hashlib
-from kernel_tuner.cache.KTLibrary.cachefile import read_cache_file, write_cache_file
+
+from kernel_tuner.cache.file import (
+    InvalidCacheError,
+    CachedLinePosition,
+    read_cache,
+    write_cache,
+    append_cache_line,
+)
 
 
-# Function that caculate the hash of a given file
-def calculate_file_hash(path):
-    hasher = hashlib.sha256()
-    with open(path, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b''):
-            hasher.update(chunk)
-    return hasher.hexdigest()
-
-
-def test_read_cache_file():
-    current_file_dir = Path(__file__).resolve().parent.parent
-
-    input_file = current_file_dir / 'test' / 'SampleCacheFiles' / 'convolution_A100.json'
-
-    # Read device name of the given file
-    file_content = read_cache_file(input_file)
-    device_name = file_content.get('device_name')
-   
-    # Check if the expected value of device name is in the file
-    assert device_name == 'NVIDIA A100-PCIE-40GB'
+TEST_DIR = Path(__file__).parent
+TEST_CACHE_DIR = TEST_DIR / "test_cache_files"
+SMALL_CACHE_PATH = TEST_CACHE_DIR / "small_cache.json"
+LARGE_CACHE_PATH = TEST_CACHE_DIR / "large_cache.json"
+XXL_CACHE_PATH = TEST_CACHE_DIR / "convolution_A100.json"
 
 
 @pytest.fixture
-def tmp_output_file(tmp_path):
-    return tmp_path / 'test.json'
+def output_path(tmp_path):
+    return tmp_path / "output.json"
 
 
-def test_write_cache_file(tmp_output_file):
+@pytest.fixture(params=[SMALL_CACHE_PATH, LARGE_CACHE_PATH, XXL_CACHE_PATH], ids=["small", "large", "extra large"])
+def cache_path(request):
+    return request.param
 
-    current_file_dir = Path(__file__).resolve().parent.parent
 
-    input_file = current_file_dir / 'test' / 'SampleCacheFiles' / 'convolution_A100.json'
+def test_read_cache(cache_path, output_path):
+    shutil.copy(cache_path, output_path)
 
-    p = tmp_output_file
-    
-    # cache_file = read_cache_file(file_path)
-    write_cache_file(read_cache_file(input_file), p)
+    # Read device name of the given file
+    file_content = read_cache(output_path)
+    device_name = file_content.get("device_name")
 
-    # Calculate the hashes of the original file and the written file
-    written_hash = calculate_file_hash(p)
-    original_hash = calculate_file_hash(input_file)
-    
-    # Check if both hashes are the same
-    assert written_hash == original_hash
+    # Check if the expected value of device name is in the file
+    assert isinstance(device_name, str)
+
+    # Check if the file has remained unchanged
+    with open(output_path) as output, open(cache_path) as expected:
+        assert output.read().rstrip() == expected.read().rstrip()
+
+
+def test_read_cache__which_is_unparsable(output_path):
+    with open(output_path, "w") as file:
+        file.write("INVALID")
+
+    with pytest.raises(InvalidCacheError):
+        read_cache(output_path)
+
+
+def test_write_cache(cache_path, output_path):
+    sample_cache = read_cache(cache_path)
+
+    write_cache(sample_cache, output_path)
+    with open(output_path, "r") as output, open(cache_path, "r") as input:
+        assert output.read().rstrip() == input.read().rstrip()
+
+
+def test_append_cache_line(cache_path, output_path):
+    sample_cache = read_cache(cache_path)
+
+    smaller_cache = deepcopy(sample_cache)
+    key = next(iter(smaller_cache["cache"].keys()))
+    line = smaller_cache["cache"].pop(key)
+
+    write_cache(smaller_cache, output_path)
+    append_cache_line(key, line, output_path)
+
+    assert read_cache(output_path) == sample_cache
+
+
+def test_append_cache_line__with_position(cache_path, output_path):
+    sample_cache = read_cache(cache_path)
+
+    empty_cache = deepcopy(sample_cache)
+    cache_lines = deepcopy(empty_cache["cache"])
+    empty_cache["cache"].clear()
+    write_cache(empty_cache, output_path)
+
+    pos = CachedLinePosition()
+    for key, line in cache_lines.items():
+        pos = append_cache_line(key, line, output_path, pos)
+
+    assert read_cache(output_path) == sample_cache
+
+
+def test_append_cache_line__to_empty_cache(cache_path, output_path):
+    sample_cache = read_cache(cache_path)
+
+    empty_cache = deepcopy(sample_cache)
+    cache_lines = deepcopy(empty_cache["cache"])
+    empty_cache["cache"].clear()
+
+    write_cache(empty_cache, output_path)
+    for key, line in cache_lines.items():
+        append_cache_line(key, line, output_path)
+
+    assert read_cache(output_path) == sample_cache
