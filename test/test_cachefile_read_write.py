@@ -5,7 +5,7 @@ from pathlib import Path
 
 from kernel_tuner.cache.file import (
     InvalidCacheError,
-    CachedFilePosition,
+    CachedLinePosition,
     read_cache,
     write_cache,
     append_cache_line,
@@ -81,7 +81,7 @@ def test_append_cache_line__with_position(cache_path, output_path):
     empty_cache["cache"].clear()
     write_cache(empty_cache, output_path)
 
-    pos = CachedFilePosition()
+    pos = CachedLinePosition()
     for key, line in cache_lines.items():
         pos = append_cache_line(key, line, output_path, pos)
 

@@ -12,7 +12,7 @@ from kernel_tuner.cache.json_encoder import CacheEncoder, CacheLineEncoder
 
 
 class InvalidCacheError(Exception):
-    """Error raised when reading a cache file fails."""
+    """Cache file reading or writing failed."""
 
     def __init__(self, filename: PathLike, message: str, error: Optional[Exception] = None):
         """Constructor for the InvalidCacheError class."""
@@ -22,8 +22,8 @@ class InvalidCacheError(Exception):
         self.error = error
 
 
-class CachedFilePosition:
-    """Dataclass for reme."""
+class CachedLinePosition:
+    """Position of a cache line in a cache file."""
 
     is_initialized: bool = False
     is_first_line: bool = False
@@ -61,8 +61,8 @@ def write_cache(cache_json: dict, filename: PathLike):
 
 
 def append_cache_line(
-    key: str, cache_line: dict, filename: PathLike, position: Optional[CachedFilePosition] = None
-) -> CachedFilePosition:
+    key: str, cache_line: dict, filename: PathLike, position: Optional[CachedLinePosition] = None
+) -> CachedLinePosition:
     """Appends a cache line to an open cache file.
 
     If ``position`` is unset, it will assume the "cache" property comes last in the root object when determining the
@@ -70,15 +70,15 @@ def append_cache_line(
 
     Returns the position of the next cache line.
     """
-    p = position or CachedFilePosition()
+    p = position or CachedLinePosition()
     if not p.is_initialized:
         _unsafe_get_next_cache_line_position(filename, p)
     return _append_cache_line_at(key, cache_line, filename, p)
 
 
 def _append_cache_line_at(
-    key: str, cache_line: dict, filename: PathLike, position: CachedFilePosition
-) -> CachedFilePosition:
+    key: str, cache_line: dict, filename: PathLike, position: CachedLinePosition
+) -> CachedLinePosition:
     with open(filename, "r+") as file:
         # Save cache closing braces properties coming after "cache" as text in suffix
         file.seek(position.file_position)
@@ -94,7 +94,7 @@ def _append_cache_line_at(
         file.write(text)
 
         # Update the position
-        next_pos = CachedFilePosition()
+        next_pos = CachedLinePosition()
         next_pos.is_initialized = True
         next_pos.is_first_line = False
         next_pos.file_position = file.tell()
@@ -107,7 +107,7 @@ def _append_cache_line_at(
 
 
 # FIXME: This function is unsafe: it only works when "cache" property is stored last
-def _unsafe_get_next_cache_line_position(filename: PathLike, state: CachedFilePosition):
+def _unsafe_get_next_cache_line_position(filename: PathLike, state: CachedLinePosition):
     with open(filename, "rb+") as file:
         # Seek the last `}` (root closing brace)
         file.seek(0, os.SEEK_END)
