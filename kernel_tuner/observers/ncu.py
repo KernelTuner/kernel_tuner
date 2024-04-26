@@ -25,7 +25,7 @@ class NCUObserver(PrologueObserver):
 
     def __init__(self, metrics=None, device=0):
         if not nvmetrics:
-            raise Exception("NCUObserver is not available.")
+            raise ImportError("could not import nvmetrics")
 
         self.metrics = metrics
         self.device = device
