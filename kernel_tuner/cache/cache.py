@@ -162,11 +162,11 @@ class Cache:
             cache: Cache = ...
 
             print("Line with id 0,0,0 is ", cache.lines["0,0,0"])
-            printf(f"There are {len(cache.lines)} lines")
+            print(f"There are {len(cache.lines)} lines")
 
             cache.lines.append(..., tune_param_a=1, tune_param_b=2, tune_param_c=3)
 
-            printf(f"There are {len(cache.lines)} lines")
+            print(f"There are {len(cache.lines)} lines")
             for line_id, line in cache.lines.items():
                 print(f"Line {line_id} has value {line}.")
 
