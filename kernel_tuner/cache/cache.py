@@ -89,7 +89,7 @@ class Cache:
             raise ValueError("Argument kernel_name should be a string")
         if not isinstance(tune_params_keys, list) and not all(isinstance(key, str) for key in tune_params_keys):
             raise ValueError("Argument tune_params_keys should be a list of strings")
-        if not isinstance(tune_params, Mapping) or not all(
+        if not isinstance(tune_params, dict) or not all(
             isinstance(key, str) and isinstance(value, list) for key, value in tune_params.items()
         ):
             raise ValueError(
