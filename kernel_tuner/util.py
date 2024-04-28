@@ -312,6 +312,9 @@ def convert_constraint_restriction(restrict: Constraint):
     elif isinstance(restrict, MaxProdConstraint):
         def f_restrict(p):
             return np.prod(p) <= restrict._maxprod
+    elif isinstance(restrict, MinProdConstraint):
+        def f_restrict(p):
+            return np.prod(p) >= restrict._minprod
     elif isinstance(restrict, MaxSumConstraint):
         def f_restrict(p):
             return sum(p) <= restrict._maxsum
