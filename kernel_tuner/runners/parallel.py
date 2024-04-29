@@ -30,7 +30,6 @@ class ParallelRunner(Runner):
 
         # Define cluster resources
         self.num_gpus = get_num_devices(kernel_source.lang)
-        print(f"Number of GPUs in use: {self.num_gpus}", file=sys. stderr)
         if resources is None:
             for id in range(self.num_gpus):
                 gpu_resource_name = f"gpu_{id}"
@@ -55,7 +54,7 @@ class ParallelRunner(Runner):
         self.actor_pool = ActorPool(self.actors)
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
         results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(v, tuning_options), parameter_space))
-        new_tuning_options = ray.get(cache_manager.get_tuning_options.remote())
+        new_tuning_options = ray.get(self.cache_manager.get_tuning_options.remote())
         tuning_options.update(new_tuning_options)
 
         for actor in self.actors:
