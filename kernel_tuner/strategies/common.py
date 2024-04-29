@@ -94,18 +94,23 @@ class CostFunc:
         return return_values
     
     def _is_single_configuration(self, x):
-        # Check if x is an int or float
+        """
+        Determines if the input is a single configuration based on its type and composition.
+        
+        Parameters:
+            x: The input to check, which can be an int, float, numpy array, list, or tuple.
+
+        Returns:
+            bool: True if `x` is a single configuration, which includes being a singular int or float, 
+                a numpy array of ints or floats, or a list or tuple where all elements are ints or floats.
+                Otherwise, returns False.
+        """
         if isinstance(x, (int, float)):
             return True
-        
-        # Check if x is a numpy array with only floats or ints
         if isinstance(x, np.ndarray):
             return x.dtype.kind in 'if'  # Checks for data type being integer ('i') or float ('f')
-
-        # Check if x is a list or tuple and all elements are int or float
         if isinstance(x, (list, tuple)):
             return all(isinstance(item, (int, float)) for item in x)
-        
         return False
     
     def _prepare_config(self, x):
