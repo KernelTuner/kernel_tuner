@@ -1,10 +1,12 @@
 import logging
 import ray
 import os
+import sys
 
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.runners.parallel import ParallelRunner
 from kernel_tuner.runners.simulation import SimulationRunner
+from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.ray.cache_manager import CacheManager
 from kernel_tuner.strategies.common import setup_resources
 
@@ -109,10 +111,12 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                                 resources=resources)
     
     for i in range(iterations):
-        print(f"Memetic algorithm iteration {i}")
-        print(f"start local search ensemble with candidates = {tuning_options.strategy_options['candidates']}")
+        print(f"Memetic iteration: {i}", file=sys.stderr)
+        print(f"Candidates local search: {tuning_options.strategy_options['candidates']}", file=sys.stderr)
         ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager)
-        print(f"start pop base algo with population = {tuning_options.strategy_options['population']}")
+        print(f"Population pop based: {tuning_options.strategy_options['population']}", file=sys.stderr)
         results = pop_based_strategy.tune(searchspace, pop_runner, tuning_options)
+
+    ray.kill(cache_manager)
 
     return results
