@@ -134,6 +134,9 @@ class CostFunc:
     
     def _evaluate_configs(self, configs):
         results = self.runner.run(configs, self.tuning_options)
+        # sort based on timestamp, needed because of parallel tuning of populations and restrospective stop criterion check
+        if "timestamp" in results[0]:
+            results.sort(key=lambda x: x['timestamp'])
 
         final_results = []
         for result in results:
@@ -142,7 +145,7 @@ class CostFunc:
             # append to tuning results
             if x_int not in self.tuning_options.unique_results:
                 self.tuning_options.unique_results[x_int] = result
-                # check if max_fevals is reached or time limit is exceeded within the the results
+                # check restrospectively if max_fevals is reached or time limit is exceeded within the the results
                 util.check_stop_criterion(self.tuning_options)
             final_results.append(result)
 
