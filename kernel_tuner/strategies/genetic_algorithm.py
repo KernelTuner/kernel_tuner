@@ -191,7 +191,6 @@ def evaluate_population(runner, cost_func, population):
     Returns:
     - List of tuples (dna, fitness_score) representing the population and their evaluation results.
     """
-    print(f"population: {population}")
     if isinstance(runner, ParallelRunner):
         # Process the whole population at once if using a ParallelRunner
         results = cost_func(population, check_restrictions=False)
