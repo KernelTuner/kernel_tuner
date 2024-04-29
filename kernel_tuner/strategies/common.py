@@ -73,8 +73,8 @@ class CostFunc:
         # check if max_fevals is reached or time limit is exceeded
         util.check_stop_criterion(self.tuning_options)
 
-        # snap values in x to nearest actual value for each parameter, unscale x if needed
-        configs = [self._prepare_config(cfg) for cfg in configs]
+        x_list = [x] if self._is_single_configuration(x) else x
+        configs = [self._prepare_config(cfg) for cfg in x_list]
         
         legal_configs = configs
         illegal_results = []
@@ -82,17 +82,31 @@ class CostFunc:
             legal_configs, illegal_results = self._get_legal_configs(configs)
         
         final_results = self._evaluate_configs(legal_configs) if len(legal_configs) > 0 else []
-
         # get numerical return values, taking optimization direction into account
         all_results = final_results + illegal_results
         return_values = []
         for result in all_results:
             return_value = result[self.tuning_options.objective] or sys.float_info.max
             return_values.append(return_value if not self.tuning_options.objective_higher_is_better else -return_value)
-
+        
         if len(return_values) == 1:
             return return_values[0]
         return return_values
+    
+    def _is_single_configuration(self, x):
+        # Check if x is an int or float
+        if isinstance(x, (int, float)):
+            return True
+        
+        # Check if x is a numpy array with only floats or ints
+        if isinstance(x, np.ndarray):
+            return x.dtype.kind in 'if'  # Checks for data type being integer ('i') or float ('f')
+
+        # Check if x is a list or tuple and all elements are int or float
+        if isinstance(x, (list, tuple)):
+            return all(isinstance(item, (int, float)) for item in x)
+        
+        return False
     
     def _prepare_config(self, x):
         """Prepare a single configuration by snapping to nearest values and/or scaling."""
@@ -103,10 +117,9 @@ class CostFunc:
                 params = snap_to_nearest_config(x, self.searchspace.tune_params)
         else:
             params = x
-        logging.debug('params ' + str(params))
         return params
     
-    def _get_legal_configs(self, configs) -> list:
+    def _get_legal_configs(self, configs):
             results = []
             legal_configs = []
             for config in configs:
@@ -121,11 +134,10 @@ class CostFunc:
     
     def _evaluate_configs(self, configs):
         results = self.runner.run(configs, self.tuning_options)
-        self.results.extend(results)
 
         final_results = []
         for result in results:
-            config = {key: result[key] for key in self.tuning_options.tune_params if key in result}
+            config = tuple(result[key] for key in self.tuning_options.tune_params if key in result)
             x_int = ",".join([str(i) for i in config])
             # append to tuning results
             if x_int not in self.tuning_options.unique_results:
@@ -134,7 +146,7 @@ class CostFunc:
                 util.check_stop_criterion(self.tuning_options)
             final_results.append(result)
 
-        self.results.append(final_results)
+        self.results.extend(final_results)
         # upon returning from this function control will be given back to the strategy, so reset the start time
         self.runner.last_strategy_start_time = perf_counter()
 
@@ -272,7 +284,6 @@ def scale_from_params(params, tune_params, eps):
 
 def setup_resources(ensemble_size: int, simulation_mode: bool, runner):
     num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
-    print(f"Number of devices available: {num_devices}", file=sys.stderr)
     if num_devices < ensemble_size:
         raise ValueError(f"Number of devices ({num_devices}) is less than the number of strategies in the ensemble ({ensemble_size})")
     
