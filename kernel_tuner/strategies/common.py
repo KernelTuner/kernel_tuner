@@ -179,6 +179,8 @@ class CostFunc:
                 # check retrospectively if max_fevals is reached or time limit is exceeded within the results
                 util.check_stop_criterion(self.tuning_options)
             final_results.append(result)
+            # in case of stop creterion reached, save the results so far
+            self.results.append(result)
 
         self.results.extend(final_results)
         # upon returning from this function control will be given back to the strategy, so reset the start time
