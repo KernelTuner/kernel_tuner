@@ -109,7 +109,16 @@ class CostFunc:
         return False
     
     def _prepare_config(self, x):
-        """Prepare a single configuration by snapping to nearest values and/or scaling."""
+        """
+        Prepare a single configuration by snapping to nearest values and/or scaling.
+
+        Args:
+            x (list): The input configuration to be prepared.
+
+        Returns:
+            list: The prepared configuration.
+
+        """
         if self.snap:
             if self.scaling:
                 params = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)
@@ -120,19 +129,41 @@ class CostFunc:
         return params
     
     def _get_legal_configs(self, configs):
-            results = []
-            legal_configs = []
-            for config in configs:
-                params_dict = dict(zip(self.searchspace.tune_params.keys(), config))
-                legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
-                if not legal:
-                    params_dict[self.tuning_options.objective] = util.InvalidConfig()
-                    results.append(params_dict)
-                else:
-                    legal_configs.append(config)
-            return legal_configs, results
+        """
+        Filters and categorizes configurations into legal and illegal based on defined restrictions. 
+        Configurations are checked against restrictions; illegal ones are modified to indicate an invalid state and 
+        included in the results. Legal configurations are collected and returned for potential use.
+
+        Parameters:
+            configs (list of tuple): Configurations to be checked, each represented as a tuple of parameter values.
+
+        Returns:
+            tuple: A pair containing a list of legal configurations and a list of results with illegal configurations marked.
+        """
+        results = []
+        legal_configs = []
+        for config in configs:
+            params_dict = dict(zip(self.searchspace.tune_params.keys(), config))
+            legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
+            if not legal:
+                params_dict[self.tuning_options.objective] = util.InvalidConfig()
+                results.append(params_dict)
+            else:
+                legal_configs.append(config)
+        return legal_configs, results
     
     def _evaluate_configs(self, configs):
+        """
+        Evaluate and manage configurations based on tuning options. Results are sorted by timestamp to maintain 
+        order during parallel processing. The function ensures no duplicates in results and checks for stop criteria 
+        post-processing. Strategy start time is updated upon completion.
+
+        Parameters:
+            configs (list): Configurations to be evaluated.
+
+        Returns:
+            list of dict: Processed results of the evaluations.
+        """
         results = self.runner.run(configs, self.tuning_options)
         # sort based on timestamp, needed because of parallel tuning of populations and restrospective stop criterion check
         if "timestamp" in results[0]:
@@ -145,7 +176,7 @@ class CostFunc:
             # append to tuning results
             if x_int not in self.tuning_options.unique_results:
                 self.tuning_options.unique_results[x_int] = result
-                # check restrospectively if max_fevals is reached or time limit is exceeded within the the results
+                # check retrospectively if max_fevals is reached or time limit is exceeded within the results
                 util.check_stop_criterion(self.tuning_options)
             final_results.append(result)
 
@@ -286,6 +317,21 @@ def scale_from_params(params, tune_params, eps):
     return x
 
 def setup_resources(ensemble_size: int, simulation_mode: bool, runner):
+    """
+    Configures resources for an ensemble based on device availability and ensemble size. Checks device 
+    availability against the required number and assigns necessary resources to each GPU and the cache manager.
+
+    Parameters:
+        ensemble_size (int): Required number of devices.
+        simulation_mode (bool): Indicates if the simulation mode affects device availability.
+        runner: Provides access to device information.
+
+    Returns:
+        dict: Resource allocation for GPUs and other components.
+
+    Raises:
+        ValueError: If available devices are insufficient for the ensemble size.
+    """
     num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     if num_devices < ensemble_size:
         raise ValueError(f"Number of devices ({num_devices}) is less than the number of strategies in the ensemble ({ensemble_size})")
