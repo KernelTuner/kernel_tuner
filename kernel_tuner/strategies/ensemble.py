@@ -63,7 +63,9 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None):
         os.environ["RAY_DEDUP_LOGS"] = "0"
         ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
     # Create cache manager and actors
+    kill_cache_manager = False
     if cache_manager is None:
+        kill_cache_manager = True
         cache_manager = CacheManager.options(resources={"cache_manager_cpu": 1}).remote(tuning_options)
     actors = [create_actor_on_device(id, runner, cache_manager, simulation_mode) for id in range(len(ensemble))]
     
@@ -82,9 +84,8 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None):
 
     if population: # for memetic strategy
         tuning_options.strategy_options["population"] = population
-        logging.debug(f"tuning_options.strategy_options[population]: {tuning_options.strategy_options['population']}")
 
-    clean_up(actors, cache_manager)
+    clean_up(actors, cache_manager, kill_cache_manager)
     return final_results
 
 def create_actor_on_device(gpu_id, runner, cache_manager, simulation_mode):
@@ -103,7 +104,6 @@ def create_actor_on_device(gpu_id, runner, cache_manager, simulation_mode):
 def setup_tuning_options(tuning_options):
     new_tuning_options = copy.deepcopy(tuning_options)
     if "candidates" in tuning_options.strategy_options:
-        #new_tuning_options.strategy_options.pop("candidates")
         if len(tuning_options.strategy_options["candidates"]) > 0:
             new_tuning_options.strategy_options["candidate"] = tuning_options.strategy_options["candidates"].pop(0)
     return new_tuning_options
@@ -117,13 +117,14 @@ def process_results(all_results, searchspace):
         if "candidate" in tuning_options.strategy_options:
             population.append(tuning_options.strategy_options["candidate"])
         for new_result in strategy_results:
-            config_signature = tuple(new_result[param] for param in searchspace.tune_params)
+            config_signature = tuple(new_result[key] for key in searchspace.tune_params)
             if config_signature not in unique_configs:
                 final_results.append(new_result)
                 unique_configs.add(config_signature)
     return final_results, population
 
-def clean_up(actors, cache_manager):
+def clean_up(actors, cache_manager, kill_cache_manager):
     for actor in actors:
         ray.kill(actor)
-    ray.kill(cache_manager)
+    if kill_cache_manager:
+        ray.kill(cache_manager)
