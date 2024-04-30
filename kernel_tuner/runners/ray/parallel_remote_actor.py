@@ -17,10 +17,8 @@ class ParallelRemoteActor():
                  device_options,
                  iterations,
                  observers,
-                 gpu_id,
                  cache_manager):
         
-        self.gpu_id = gpu_id
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
         self.units = self.dev.units
         self.quiet = quiet

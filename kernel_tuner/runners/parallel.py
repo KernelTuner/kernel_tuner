@@ -12,7 +12,7 @@ from kernel_tuner.util import get_num_devices
 
 class ParallelRunner(Runner):
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, cache_manager=None, resources=None):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, num_gpus, cache_manager=None):
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
         self.units = self.dev.units
         self.quiet = device_options.quiet
@@ -27,17 +27,12 @@ class ParallelRunner(Runner):
         self.iterations = iterations
         self.device_options = device_options
         self.cache_manager = cache_manager
+        self.num_gpus = num_gpus
 
-        # Define cluster resources
-        self.num_gpus = get_num_devices(kernel_source.lang)
-        if resources is None:
-            for id in range(self.num_gpus):
-                gpu_resource_name = f"gpu_{id}"
-                resources[gpu_resource_name] = 1
         # Initialize Ray
         if not ray.is_initialized():
             os.environ["RAY_DEDUP_LOGS"] = "0"
-            ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
+            ray.init(include_dashboard=True, ignore_reinit_error=True)
 
     def get_environment(self, tuning_options):
         return self.dev.get_environment()
@@ -49,7 +44,7 @@ class ParallelRunner(Runner):
                 raise ValueError("A cache manager is required for parallel execution")
             self.cache_manager = cache_manager
         # Create RemoteActor instances
-        self.actors = [self.create_actor_on_gpu(id, self.cache_manager) for id in range(self.num_gpus)]
+        self.actors = [self.create_actor_on_gpu(self.cache_manager) for _ in range(self.num_gpus)]
         # Create a pool of RemoteActor actors
         self.actor_pool = ActorPool(self.actors)
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
@@ -62,13 +57,11 @@ class ParallelRunner(Runner):
         
         return results
     
-    def create_actor_on_gpu(self, gpu_id, cache_manager):
-        gpu_resource_name = f"gpu_{gpu_id}"
-        return ParallelRemoteActor.options(resources={gpu_resource_name: 1}).remote(self.quiet,
-                                                                            self.kernel_source, 
-                                                                            self.kernel_options, 
-                                                                            self.device_options, 
-                                                                            self.iterations, 
-                                                                            self.observers,
-                                                                            gpu_id,
-                                                                            cache_manager)
+    def create_actor_on_gpu(self, cache_manager):
+        return ParallelRemoteActor.remote(self.quiet,
+                                            self.kernel_source, 
+                                            self.kernel_options, 
+                                            self.device_options, 
+                                            self.iterations, 
+                                            self.observers,
+                                            cache_manager)

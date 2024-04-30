@@ -8,7 +8,8 @@ from kernel_tuner.runners.parallel import ParallelRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.ray.cache_manager import CacheManager
-from kernel_tuner.strategies.common import setup_resources
+from kernel_tuner.strategies.common import check_num_devices
+from kernel_tuner.util import get_num_devices
 
 from kernel_tuner.strategies import (
     basinhopping,
@@ -81,7 +82,7 @@ pop_based_strategies_list = {
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
-    ls_strategies = ["greedy_ils", "greedy_ils", "greedy_ils", "greedy_ils"]
+    ls_strategies = ['greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils']
     pop_based_strategy = "genetic_algorithm"
     iterations = 10
 
@@ -96,19 +97,19 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         raise ValueError("Provided population based strategy is not a population based strategy")
     
     tuning_options.strategy_options["candidates"] = searchspace.get_random_sample(len(ls_strategies))
-    tuning_options.strategy_options["max_fevals"] = 10
-    tuning_options.strategy_options["maxiter"] = 10
+    tuning_options.strategy_options["max_fevals"] = (100 // iterations) // 2
+    tuning_options.strategy_options["maxiter"] = (100 // iterations) // 2
 
-    resources = setup_resources(len(ls_strategies), simulation_mode, runner)
     # Initialize Ray
     if not ray.is_initialized():
+        check_num_devices(len(ls_strategies), simulation_mode, runner)
         os.environ["RAY_DEDUP_LOGS"] = "0"
-        ray.init(resources=resources, include_dashboard=True, ignore_reinit_error=True)
+        ray.init(include_dashboard=True, ignore_reinit_error=True)
+    num_gpus = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     # Create cache manager and actors
-    cache_manager = CacheManager.options(resources={"cache_manager_cpu": 1}).remote(tuning_options)
+    cache_manager = CacheManager.remote(tuning_options)
     pop_runner = ParallelRunner(runner.kernel_source, runner.kernel_options, runner.device_options, 
-                                runner.iterations, runner.observers, cache_manager=cache_manager,
-                                resources=resources)
+                                runner.iterations, runner.observers, num_gpus=num_gpus, cache_manager=cache_manager)
     
     for i in range(iterations):
         print(f"Memetic iteration: {i}", file=sys.stderr)

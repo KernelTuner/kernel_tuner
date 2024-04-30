@@ -1,6 +1,7 @@
 import logging
 import sys
 from time import perf_counter
+import warnings
 
 import numpy as np
 
@@ -323,29 +324,9 @@ def scale_from_params(params, tune_params, eps):
         x[i] = 0.5 * eps + v.index(params[i])*eps
     return x
 
-def setup_resources(ensemble_size: int, simulation_mode: bool, runner):
-    """
-    Configures resources for an ensemble based on device availability and ensemble size. Checks device 
-    availability against the required number and assigns necessary resources to each GPU and the cache manager.
-
-    Parameters:
-        ensemble_size (int): Required number of devices.
-        simulation_mode (bool): Indicates if the simulation mode affects device availability.
-        runner: Provides access to device information.
-
-    Returns:
-        dict: Resource allocation for GPUs and other components.
-
-    Raises:
-        ValueError: If available devices are insufficient for the ensemble size.
-    """
+def check_num_devices(ensemble_size: int, simulation_mode: bool, runner):
+    
     num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     if num_devices < ensemble_size:
-        raise ValueError(f"Number of devices ({num_devices}) is less than the number of strategies in the ensemble ({ensemble_size})")
+         warnings.warn("Number of devices is less than the number of strategies in the ensemble. Some strategies will wait until devices are available.", UserWarning)
     
-    resources = {}
-    for id in range(ensemble_size):
-        device_resource_name = f"gpu_{id}"
-        resources[device_resource_name] = 1
-    resources["cache_manager_cpu"] = 1
-    return resources

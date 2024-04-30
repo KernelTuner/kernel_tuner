@@ -26,14 +26,15 @@ class RemoteActor():
         self.iterations = iterations
         self.observers = observers
         self.cache_manager = cache_manager
+        self.runner = None
         
     def execute(self, strategy, searchspace, tuning_options, simulation_mode=False):
         if simulation_mode:
-            runner = SimulationRunner(self.kernel_source, self.kernel_options, self.device_options, 
+            self.runner = SimulationRunner(self.kernel_source, self.kernel_options, self.device_options, 
                                  self.iterations, self.observers)
         else:
-            runner = SequentialRunner(self.kernel_source, self.kernel_options, self.device_options, 
+            self.runner = SequentialRunner(self.kernel_source, self.kernel_options, self.device_options, 
                                  self.iterations, self.observers, cache_manager=self.cache_manager)
-        results = strategy.tune(searchspace, runner, tuning_options)
+        results = strategy.tune(searchspace, self.runner, tuning_options)
         return results, tuning_options
     
