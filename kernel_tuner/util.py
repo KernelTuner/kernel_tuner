@@ -47,7 +47,14 @@ from kernel_tuner.observers.nvml import NVMLObserver
 # number of special values to insert when a configuration cannot be measured
 
 
-class ErrorConfig(str):
+class ErrorConfig:
+    @classmethod
+    def from_str(cls, name: str):
+        """Creates an ErrorConfig subclass whieh has name ``name``."""
+        for SubClass in cls.__subclasses__():
+            if SubClass.__name__ == name:
+                return SubClass()
+
     def __str__(self):
         return self.__class__.__name__
 
