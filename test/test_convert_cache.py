@@ -9,7 +9,7 @@ import kernel_tuner
 from kernel_tuner.cache.convert import convert_cache_file
 from kernel_tuner.cache.convert import unversioned_convert
 from kernel_tuner.cache.convert import default_convert
-from kernel_tuner.cache.convert import VERSIONS
+from kernel_tuner.cache.versions import VERSIONS
 
 KERNEL_TUNER_PATH = Path(kernel_tuner.__file__).parent
 TEST_PATH         = Path(__file__).parent
@@ -27,8 +27,8 @@ UPGRADED_SCHEMA   = MOCK_SCHEMAS_PATH / "1.1.0/schema.json"
 REAL_CACHE_FILE   = TEST_CONVERT_PATH / "real_cache.json"
 
 SCHEMAS_PATH      = KERNEL_TUNER_PATH / "schema/cache"
-SCHEMA_OLD        = SCHEMAS_PATH / VERSIONS[ 0] / "schema.json"
-SCHEMA_NEW        = SCHEMAS_PATH / VERSIONS[-1] / "schema.json"
+SCHEMA_OLD        = SCHEMAS_PATH / str(VERSIONS[ 0]) / "schema.json"
+SCHEMA_NEW        = SCHEMAS_PATH / str(VERSIONS[-1]) / "schema.json"
 
 # Test files
 NO_VERSION_FIELD  = TEST_CONVERT_PATH / "no_version_field.json"

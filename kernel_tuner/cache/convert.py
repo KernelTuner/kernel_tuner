@@ -6,12 +6,12 @@ from os import PathLike
 from pathlib import Path
 from typing import Callable
 
+from kernel_tuner.cache.versions import VERSIONS
+
 
 PROJECT_DIR = Path(__file__).parents[0]
 
 SCHEMA_VERSIONS_PATH = PROJECT_DIR / "../schema/cache"
-
-VERSIONS = list(sorted((p.name for p in SCHEMA_VERSIONS_PATH.iterdir()), key=semver.Version.parse))
 
 CONVERSION_FUNCTIONS: dict[str, Callable[[dict], dict]]
 
@@ -55,7 +55,7 @@ def convert_cache_file(filestr : PathLike,
         conversion_functions = CONVERSION_FUNCTIONS
 
     if versions is None:
-        versions = VERSIONS
+        versions: list[str] = VERSIONS
 
     # Load cache
     with open(filestr, 'r') as cachefile:
