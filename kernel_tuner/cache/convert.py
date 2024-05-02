@@ -8,6 +8,7 @@ from typing import Callable
 
 from kernel_tuner.cache.versions import VERSIONS
 from kernel_tuner.cache.paths    import CACHE_SCHEMAS_DIR
+from kernel_tuner.cache.file     import read_cache, write_cache
 
 CONVERSION_FUNCTIONS: dict[str, Callable[[dict], dict]]
 
@@ -54,8 +55,7 @@ def convert_cache_file(filestr : PathLike,
         versions: list[str] = VERSIONS
 
     # Load cache
-    with open(filestr, 'r') as cachefile:
-        cache = json.load(cachefile)
+    cache = read_cache(filestr)
 
     if "schema_version" not in cache:
         cache = unversioned_convert(cache, CACHE_SCHEMAS_DIR)
@@ -81,11 +81,8 @@ def convert_cache_file(filestr : PathLike,
 
         version = cache["schema_version"]
 
-    # TODO use our custom encoder here when it is finished
-    with open(filestr, 'w') as cachefile: 
-        cachefile.write(json.dumps(cache, indent=4))
-
-    return
+    # Update cache file
+    write_cache(cache, filestr)
 
 
 def default_convert(cache       : dict,
