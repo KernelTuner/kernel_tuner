@@ -57,8 +57,6 @@ class TestConvertCache:
             mock_cache  = json.load(c)
             mock_schema = json.load(s)
             jsonschema.validate(mock_cache, mock_schema)
-
-        return
     
     # Test using implemented schema/cache files and conversion functions
     def test_convert_real(self, tmp_path):
@@ -76,8 +74,6 @@ class TestConvertCache:
             real_cache  = json.load(c)
             real_schema = json.load(s)
             jsonschema.validate(real_cache, real_schema)
-
-        return
     
     def test_no_version_field(self, tmp_path):
         TEST_COPY = tmp_path / "temp_cache.json"
@@ -91,8 +87,6 @@ class TestConvertCache:
         with open(MOCK_SCHEMA_OLD) as s:
             schema = json.load(s)
             jsonschema.validate(cache, schema)
-
-        return
 
     def test_too_high_version(self, tmp_path):
         TEST_COPY = tmp_path / "temp_cache.json"
@@ -124,9 +118,8 @@ class TestConvertCache:
         with open(UPGRADED_SCHEMA) as s:
             upgraded_schema = json.load(s)
             jsonschema.validate(cache, upgraded_schema)
-    
-        return
-    
+
+
     # Mock convert functions
     def _c1_0_0_to_1_1_0(cache):
         cache["field2"] = dict()
