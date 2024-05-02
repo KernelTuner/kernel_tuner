@@ -7,11 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 from kernel_tuner.cache.versions import VERSIONS
-
-
-PROJECT_DIR = Path(__file__).parents[0]
-
-SCHEMA_VERSIONS_PATH = PROJECT_DIR / "../schema/cache"
+from kernel_tuner.cache.paths    import CACHE_SCHEMAS_DIR
 
 CONVERSION_FUNCTIONS: dict[str, Callable[[dict], dict]]
 
@@ -62,7 +58,7 @@ def convert_cache_file(filestr : PathLike,
         cache = json.load(cachefile)
 
     if "schema_version" not in cache:
-        cache = unversioned_convert(cache, SCHEMA_VERSIONS_PATH)
+        cache = unversioned_convert(cache, CACHE_SCHEMAS_DIR)
     
     version = cache["schema_version"]
     target_version = versions[-1]
@@ -81,7 +77,7 @@ def convert_cache_file(filestr : PathLike,
             cache = conversion_functions[version](cache)
         else:
             cache = default_convert(cache, version, versions,
-                                    SCHEMA_VERSIONS_PATH)
+                                    CACHE_SCHEMAS_DIR)
 
         version = cache["schema_version"]
 
