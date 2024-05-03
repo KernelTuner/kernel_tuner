@@ -2,6 +2,7 @@ import logging
 import ray
 import os
 import sys
+import copy
 
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.runners.parallel import ParallelRunner
@@ -49,22 +50,6 @@ strategy_map = {
     "bayes_opt": bayes_opt,
 }
 
-# Pseudo code from "Memetic algorithms and memetic computing optimization: A literature review" by Ferrante Neri and Carlos Cotta
-# function BasicMA (in P: Problem, in par: Parameters):
-# Solution; 
-# begin 
-#     pop ← Initialize(par, P); 
-#     repeat 
-#         newpop1 ← Cooperate(pop, par, P); 
-#         newpop2 ← Improve(newpop1, par, P); 
-#         pop ← Compete (pop, newpop2); 
-#         if Converged(pop) then 
-#             pop ← Restart(pop, par); 
-#         end 
-#     until TerminationCriterion(par); 
-#     return GetNthBest(pop, 1); 
-# end
-
 ls_strategies_list = {
     "greedy_mls",
     "ordered_greedy_mls",
@@ -81,43 +66,121 @@ pop_based_strategies_list = {
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
+    options = tuning_options.strategy_options
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
-    ls_strategies = ['greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils', 'greedy_ils']
-    pop_based_strategy = "genetic_algorithm"
-    iterations = 10
+    local_search = options.get('local_search', 'greedy_ils')
+    global_search = options.get('global_search', "genetic_algorithm")
+    max_feval = options.get("max_fevals", 100)
+    alsd = options.get("alsd", 2) # Adaptive Local Search Depth (ALSD)
+    lsd = options.get("lsd", 25) # Local Search Depth (LSD)
+    maxiter = options.get("maxiter", 3)
+    popsize = options.get("popsize", 10)
 
-    if set(ls_strategies) <= ls_strategies_list:
-        tuning_options["ensemble"] = ls_strategies
+    if local_search in ls_strategies_list:
+        tuning_options["ensemble"] = [local_search] * popsize
     else:
         raise ValueError("Provided local search ensemble are not all local search strategies")
 
-    if pop_based_strategy in pop_based_strategies_list:
-        pop_based_strategy = strategy_map[pop_based_strategy]
+    if global_search in pop_based_strategies_list:
+        global_search = strategy_map[global_search]
     else:
         raise ValueError("Provided population based strategy is not a population based strategy")
     
-    tuning_options.strategy_options["candidates"] = searchspace.get_random_sample(len(ls_strategies))
-    tuning_options.strategy_options["max_fevals"] = (100 // iterations) // 2
-    tuning_options.strategy_options["maxiter"] = (100 // iterations) // 2
+    tuning_options.strategy_options["population"] = searchspace.get_random_sample(popsize)
 
     # Initialize Ray
     if not ray.is_initialized():
-        check_num_devices(len(ls_strategies), simulation_mode, runner)
+        check_num_devices(popsize, simulation_mode, runner)
         os.environ["RAY_DEDUP_LOGS"] = "0"
         ray.init(include_dashboard=True, ignore_reinit_error=True)
     num_gpus = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     # Create cache manager and actors
     cache_manager = CacheManager.remote(tuning_options)
-    pop_runner = ParallelRunner(runner.kernel_source, runner.kernel_options, runner.device_options, 
-                                runner.iterations, runner.observers, num_gpus=num_gpus, cache_manager=cache_manager)
+    if simulation_mode:
+        pop_runner = runner
+    else:
+        pop_runner = ParallelRunner(runner.kernel_source, runner.kernel_options, runner.device_options, 
+                                runner.iterations, runner.observers, num_gpus=num_gpus, cache_manager=cache_manager,
+                                simulation_mode=simulation_mode)
     
-    for i in range(iterations):
-        print(f"Memetic iteration: {i}", file=sys.stderr)
-        print(f"Candidates local search: {tuning_options.strategy_options['candidates']}", file=sys.stderr)
-        ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager)
-        print(f"Population pop based: {tuning_options.strategy_options['population']}", file=sys.stderr)
-        results = pop_based_strategy.tune(searchspace, pop_runner, tuning_options)
+    all_results = []
+    all_results_dict = {}
+    feval = 0
+    while feval < max_feval:
+        print(f"DEBUG: --------------------NEW ITERATION--------feval = {feval}------------", file=sys.stderr)
+        if feval + lsd + maxiter * popsize > max_feval:
+            lsd = max_feval - feval - maxiter * popsize
+        print(f"DEBUG: maxiter * popsize = {maxiter * popsize}, lsd = {lsd}", file=sys.stderr)
+        # Global Search (GS)
+        print(f"DEBUG:=================Global Search=================", file=sys.stderr)
+        tuning_options.strategy_options["maxiter"] = maxiter
+        pop_start_gs = copy.deepcopy(tuning_options.strategy_options["population"])
+        results = global_search.tune(searchspace, pop_runner, tuning_options)
+        add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
+        feval += maxiter * popsize
+
+        pop_start_gs_res = get_pop_results(pop_start_gs, all_results_dict)
+        pop_end_gs = copy.deepcopy(tuning_options.strategy_options["population"])
+        pop_end_gs_res = get_pop_results(pop_end_gs, all_results_dict)
+        afi_gs = calculate_afi(pop_start_gs_res, pop_end_gs_res, maxiter, all_results_dict)
+
+        # Local Search (LS)
+        print(f"DEBUG:=================Local Search=================", file=sys.stderr)
+        tuning_options.strategy_options["max_fevals"] = lsd
+        pop_start_ls = copy.deepcopy(tuning_options.strategy_options["candidates"])
+        results = ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager)
+        add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
+        feval += lsd
+
+        pop_start_ls_res = get_pop_results(pop_start_ls, all_results_dict)
+        pop_end_ls = copy.deepcopy(tuning_options.strategy_options["candidates"])
+        pop_end_ls_res = get_pop_results(pop_end_ls, all_results_dict)
+        afi_ls = calculate_afi(pop_start_ls_res, pop_end_ls_res, lsd, all_results_dict)
+
+        # Adaptive Local Search Depth (ALSD)
+        if lsd > 3:
+            if afi_ls > afi_gs:
+                lsd += alsd
+            elif afi_ls < afi_gs:
+                lsd -= alsd
+            print(f"DEBUG: Adaptive Local Search Depth (ALSD) lsd = {lsd}", file=sys.stderr)
 
     ray.kill(cache_manager)
 
     return results
+
+def calculate_afi(pop_before_rs, pop_after_rs, feval, results):
+    delta_fitness = fitness_increment(pop_before_rs, pop_after_rs)
+    afi = delta_fitness / feval
+    print(f"DEBUG:calculate_afi afi: {afi}", file=sys.stderr)
+    return afi
+
+def fitness_increment(pop_before, pop_after):
+    if len(pop_before) != len(pop_after):
+        raise ValueError("populations must have the same size.")
+    
+    sum_before = sum(t for t in pop_before if isinstance(t, float))
+    sum_after = sum(t for t in pop_after if isinstance(t, float))
+    difference_sum = sum_before - sum_after
+    print(f"DEBUG:fitness_increment difference_sum: {difference_sum}", file=sys.stderr)
+    return difference_sum
+
+def get_pop_results(pop, results):
+    print(f"DEBUG:get_pop_results pop = {pop}", file=sys.stderr)
+    times = []
+    for entry in pop:
+        key = ','.join(map(str, entry))
+        if key in results:
+            time = results[key]
+            times.append(time)
+        else:
+            times.append(None)
+
+    print(f"DEBUG:get_pop_results times = {times}", file=sys.stderr)
+    return times
+
+def add_to_results(all_results, all_results_dict, results, tune_params):
+    for result in results:
+        key = ",".join(str(result[param]) for param in tune_params)
+        all_results_dict[key] = result["time"]
+        all_results.append(result)
