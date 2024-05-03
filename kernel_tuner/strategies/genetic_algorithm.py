@@ -31,11 +31,12 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         population = list(list(p) for p in searchspace.get_random_sample(pop_size))
     else:
         pop_size = len(population)
-
+    
     for generation in range(generations):
 
         # Evaluate the entire population
         try:
+            old_population = population
             weighted_population = evaluate_population(runner, cost_func, population)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
@@ -70,6 +71,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                     break
 
         # could combine old + new generation here and do a selection
+    tuning_options.strategy_options["population"] = old_population # for memetic strategy
     tuning_options.strategy_options["candidates"] = population # for memetic strategy
     return cost_func.results
 
