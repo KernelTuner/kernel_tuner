@@ -95,10 +95,12 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None):
 
     new_tuning_options = ray.get(cache_manager.get_tuning_options.remote())
     tuning_options.update(new_tuning_options)
-    final_results, population = process_results(all_results, searchspace)
+    final_results, population, candidates = process_results(all_results, searchspace)
 
     if population: # for memetic strategy
         tuning_options.strategy_options["population"] = population
+    if candidates: # for memetic strategy
+        tuning_options.strategy_options["candidates"] = candidates
 
     clean_up(actors, cache_manager, kill_cache_manager)
     return final_results
@@ -126,8 +128,11 @@ def process_results(all_results, searchspace):
     unique_configs = set()
     final_results = []
     population = [] # for memetic strategy
+    candidates = [] # for memetic strategy
 
     for (strategy_results, tuning_options) in all_results:
+        if "old_candidate" in tuning_options.strategy_options:
+            candidates.append(tuning_options.strategy_options["old_candidate"])
         if "candidate" in tuning_options.strategy_options:
             population.append(tuning_options.strategy_options["candidate"])
         for new_result in strategy_results:
@@ -135,7 +140,7 @@ def process_results(all_results, searchspace):
             if config_signature not in unique_configs:
                 final_results.append(new_result)
                 unique_configs.add(config_signature)
-    return final_results, population
+    return final_results, population, candidates
 
 def clean_up(actors, cache_manager, kill_cache_manager):
     for actor in actors:
