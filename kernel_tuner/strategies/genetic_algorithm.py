@@ -32,6 +32,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     else:
         pop_size = len(population)
     
+    old_population = population
     for generation in range(generations):
 
         # Evaluate the entire population
