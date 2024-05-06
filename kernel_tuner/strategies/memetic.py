@@ -73,8 +73,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     max_feval = options.get("max_fevals", 100)
     alsd = options.get("alsd", 2) # Adaptive Local Search Depth (ALSD)
     lsd = options.get("lsd", 25) # Local Search Depth (LSD)
-    maxiter = options.get("maxiter", 3)
-    popsize = options.get("popsize", 10)
+    maxiter = options.get("maxiter", 2)
+    popsize = options.get("popsize", 20)
 
     if local_search in ls_strategies_list:
         tuning_options["ensemble"] = [local_search] * popsize
@@ -108,9 +108,15 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     feval = 0
     while feval < max_feval:
         print(f"DEBUG: --------------------NEW ITERATION--------feval = {feval}------------", file=sys.stderr)
-        if feval + lsd + maxiter * popsize > max_feval:
-            lsd = max_feval - feval - maxiter * popsize
+        feval_left = max_feval - feval
+        if feval_left < lsd + maxiter * popsize:
+            maxiter = feval_left // popsize
+            if maxiter == 1: # It doesnt make sense to have one generation for global search, so we give all final resources to local search
+                maxiter = 0
+                lsd = feval_left
+            lsd = feval_left - maxiter * popsize
         print(f"DEBUG: maxiter * popsize = {maxiter * popsize}, lsd = {lsd}", file=sys.stderr)
+
         # Global Search (GS)
         print(f"DEBUG:=================Global Search=================", file=sys.stderr)
         tuning_options.strategy_options["maxiter"] = maxiter
@@ -138,20 +144,21 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         afi_ls = calculate_afi(pop_start_ls_res, pop_end_ls_res, lsd, all_results_dict)
 
         # Adaptive Local Search Depth (ALSD)
-        if lsd > 3:
+        if afi_gs is not None and afi_ls is not None:
             if afi_ls > afi_gs:
                 lsd += alsd
             elif afi_ls < afi_gs:
-                lsd -= alsd
-            print(f"DEBUG: Adaptive Local Search Depth (ALSD) lsd = {lsd}", file=sys.stderr)
+                lsd -= alsd if lsd - alsd > 5 else 5
+                print(f"DEBUG: Adaptive Local Search Depth (ALSD) lsd = {lsd}", file=sys.stderr)
 
     ray.kill(cache_manager)
 
     return results
 
 def calculate_afi(pop_before_rs, pop_after_rs, feval, results):
+    # Average Fitness Increment (AFI)
     delta_fitness = fitness_increment(pop_before_rs, pop_after_rs)
-    afi = delta_fitness / feval
+    afi = delta_fitness / feval if feval > 0 else None
     print(f"DEBUG:calculate_afi afi: {afi}", file=sys.stderr)
     return afi
 
