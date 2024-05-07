@@ -1282,7 +1282,7 @@ def cuda_error_check(error):
 def get_num_devices(lang, simulation_mode=False):
     num_devices = 0
     if simulation_mode:
-        num_devices = os.cpu_count()
+        num_devices = int(round(os.cpu_count() * 0.8)) # keep resources for the main process and other tasks
     elif lang.upper() == "CUDA":
         import pycuda.driver as cuda
         cuda.init()
