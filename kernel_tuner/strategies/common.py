@@ -2,12 +2,14 @@ import logging
 import sys
 from time import perf_counter
 import warnings
+import ray
 
 import numpy as np
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.util import get_num_devices
+from kernel_tuner.runners.ray.remote_actor import RemoteActor
 
 _docstring_template = """ Find the best performing kernel configuration in the parameter space
 
@@ -46,7 +48,8 @@ def make_strategy_options_doc(strategy_options):
 
 def get_options(strategy_options, options):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
-    accepted = list(options.keys()) + ["max_fevals", "time_limit", "ensemble", "candidates", "candidate", "population", "maxiter"]
+    accepted = list(options.keys()) + ["max_fevals", "time_limit", "ensemble", "candidates", "candidate", "population", 
+                                       "maxiter", "lsd", "popsize", "alsd", ]
     for key in strategy_options:
         if key not in accepted:
             raise ValueError(f"Unrecognized option {key} in strategy_options")
@@ -329,4 +332,28 @@ def check_num_devices(ensemble_size: int, simulation_mode: bool, runner):
     num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     if num_devices < ensemble_size:
          warnings.warn("Number of devices is less than the number of strategies in the ensemble. Some strategies will wait until devices are available.", UserWarning)
+
+def create_actor_on_device(kernel_source, kernel_options, device_options, iterations, observers, cache_manager, simulation_mode, id):
+    # Check if Ray is initialized, raise an error if not
+    if not ray.is_initialized():
+        raise RuntimeError("Ray is not initialized. Initialize Ray before creating an actor (remember to include resources).")
+
+    if simulation_mode:
+        resource_options = {"num_cpus": 1}
+    else:
+        resource_options = {"num_gpus": 1}
     
+    # Create the actor with the specified options and resources
+    return RemoteActor.options(**resource_options).remote(kernel_source, 
+                                                            kernel_options, 
+                                                            device_options, 
+                                                            iterations, 
+                                                            observers,
+                                                            cache_manager=cache_manager,
+                                                            simulation_mode=simulation_mode)
+
+def initialize_ray():
+    # Initialize Ray
+    if not ray.is_initialized():
+        ray.init(include_dashboard=True, ignore_reinit_error=True)
+
