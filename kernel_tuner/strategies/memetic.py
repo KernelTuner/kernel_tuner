@@ -9,8 +9,9 @@ from kernel_tuner.runners.parallel import ParallelRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.ray.cache_manager import CacheManager
-from kernel_tuner.strategies.common import check_num_devices
+from kernel_tuner.strategies.common import check_num_devices, create_actor_on_device, initialize_ray
 from kernel_tuner.util import get_num_devices
+from kernel_tuner.runners.ray.remote_actor import RemoteActor
 
 from kernel_tuner.strategies import (
     basinhopping,
@@ -70,7 +71,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     local_search = options.get('local_search', 'greedy_ils')
     global_search = options.get('global_search', "genetic_algorithm")
-    max_feval = options.get("max_fevals", 100)
+    max_feval = options.get("max_fevals", 500)
     alsd = options.get("alsd", 2) # Adaptive Local Search Depth (ALSD)
     lsd = options.get("lsd", 25) # Local Search Depth (LSD)
     maxiter = options.get("maxiter", 2)
@@ -88,20 +89,17 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     
     tuning_options.strategy_options["population"] = searchspace.get_random_sample(popsize)
 
-    # Initialize Ray
-    if not ray.is_initialized():
-        check_num_devices(popsize, simulation_mode, runner)
-        os.environ["RAY_DEDUP_LOGS"] = "0"
-        ray.init(include_dashboard=True, ignore_reinit_error=True)
     num_gpus = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
-    # Create cache manager and actors
+    check_num_devices(num_gpus, simulation_mode, runner)
+    initialize_ray(num_gpus)
+    # Create cache manager, actors and parallel runner
     cache_manager = CacheManager.remote(tuning_options)
-    if simulation_mode:
-        pop_runner = runner
-    else:
-        pop_runner = ParallelRunner(runner.kernel_source, runner.kernel_options, runner.device_options, 
+    num_actors = num_gpus if num_gpus < popsize else popsize
+    runner_attributes = [runner.kernel_source, runner.kernel_options, runner.device_options, runner.iterations, runner.observers]
+    actors = [create_actor_on_device(*runner_attributes, cache_manager, simulation_mode, id) for id in range(num_actors)]
+    pop_runner = ParallelRunner(runner.kernel_source, runner.kernel_options, runner.device_options, 
                                 runner.iterations, runner.observers, num_gpus=num_gpus, cache_manager=cache_manager,
-                                simulation_mode=simulation_mode)
+                                simulation_mode=simulation_mode, actors=actors)
     
     all_results = []
     all_results_dict = {}
@@ -134,7 +132,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         print(f"DEBUG:=================Local Search=================", file=sys.stderr)
         tuning_options.strategy_options["max_fevals"] = lsd
         pop_start_ls = copy.deepcopy(tuning_options.strategy_options["candidates"])
-        results = ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager)
+        results = ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager, actors=actors)
         add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
         feval += lsd
 
@@ -152,6 +150,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 print(f"DEBUG: Adaptive Local Search Depth (ALSD) lsd = {lsd}", file=sys.stderr)
 
     ray.kill(cache_manager)
+    for actor in actors:
+        ray.kill(actor)
 
     return results
 
