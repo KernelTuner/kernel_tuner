@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
-import io
 from os import PathLike
 from typing import Callable, Optional
 
@@ -50,7 +50,7 @@ def read_cache(filename: PathLike):
 
 
 def write_cache(cache_json: dict, filename: PathLike):
-    r"""Writes a cache file with the given content.
+    """Writes a cache file with the given content.
 
     Parameters:
         cache_file (dict): The content to be written to the cache file.
