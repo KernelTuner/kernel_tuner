@@ -23,6 +23,7 @@
             1024
         ]
     },
+    "objective": "time",
     "cache": {
         "128": {
             "block_size_x": 128,
