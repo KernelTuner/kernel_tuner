@@ -69,6 +69,6 @@
       }
     }
   },
-  "required": ["schema_version", "device_name", "kernel_name", "problem_size", "tune_params_keys", "tune_params", "objective", "cache"]
+  "required": ["schema_version", "device_name", "kernel_name", "tune_params_keys", "tune_params", "objective", "cache"]
 }
 

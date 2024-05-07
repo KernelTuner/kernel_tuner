@@ -1,12 +1,12 @@
 import json
-from pathlib import Path
 from copy import deepcopy
+from pathlib import Path
 
-from kernel_tuner.cache.json import CacheFileJSON, CacheLineJSON
-
-import pytest
 import jsonschema
+import pytest
+
 import kernel_tuner
+from kernel_tuner.cache.json import CacheFileJSON, CacheLineJSON
 
 KERNEL_TUNER_PATH = Path(kernel_tuner.__file__).parent
 SCHEMA_PATH = KERNEL_TUNER_PATH / "schema/cache/1.0.0/schema.json"
@@ -83,7 +83,6 @@ class TestCacheFileSchema:
             "schema_version",
             "device_name",
             "kernel_name",
-            "problem_size",
             "tune_params_keys",
             "tune_params",
             "objective",
