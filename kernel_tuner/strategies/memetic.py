@@ -71,7 +71,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     local_search = options.get('local_search', 'greedy_ils')
     global_search = options.get('global_search', "genetic_algorithm")
-    max_feval = options.get("max_fevals", 500)
+    max_feval = options.get("max_fevals", 2000)
     alsd = options.get("alsd", 2) # Adaptive Local Search Depth (ALSD)
     lsd = options.get("lsd", 25) # Local Search Depth (LSD)
     maxiter = options.get("maxiter", 2)
@@ -91,7 +91,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     num_gpus = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     check_num_devices(num_gpus, simulation_mode, runner)
-    initialize_ray(num_gpus)
+    initialize_ray()
     # Create cache manager, actors and parallel runner
     cache_manager = CacheManager.remote(tuning_options)
     num_actors = num_gpus if num_gpus < popsize else popsize
@@ -104,15 +104,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     all_results = []
     all_results_dict = {}
     feval = 0
+    afi_gs, afi_ls = None, None
     while feval < max_feval:
         print(f"DEBUG: --------------------NEW ITERATION--------feval = {feval}------------", file=sys.stderr)
-        feval_left = max_feval - feval
-        if feval_left < lsd + maxiter * popsize:
-            maxiter = feval_left // popsize
-            if maxiter == 1: # It doesnt make sense to have one generation for global search, so we give all final resources to local search
-                maxiter = 0
-                lsd = feval_left
-            lsd = feval_left - maxiter * popsize
+        maxiter, lsd = distribute_feval(feval, max_feval, maxiter, lsd, popsize, afi_gs, afi_ls)
         print(f"DEBUG: maxiter * popsize = {maxiter * popsize}, lsd = {lsd}", file=sys.stderr)
 
         # Global Search (GS)
@@ -134,7 +129,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         pop_start_ls = copy.deepcopy(tuning_options.strategy_options["candidates"])
         results = ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager, actors=actors)
         add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
-        feval += lsd
+        feval += lsd * popsize
 
         pop_start_ls_res = get_pop_results(pop_start_ls, all_results_dict)
         pop_end_ls = copy.deepcopy(tuning_options.strategy_options["candidates"])
@@ -147,7 +142,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 lsd += alsd
             elif afi_ls < afi_gs:
                 lsd -= alsd if lsd - alsd > 5 else 5
-                print(f"DEBUG: Adaptive Local Search Depth (ALSD) lsd = {lsd}", file=sys.stderr)
+            print(f"DEBUG: Adaptive Local Search Depth (ALSD) lsd = {lsd}", file=sys.stderr)
 
     ray.kill(cache_manager)
     for actor in actors:
@@ -191,3 +186,34 @@ def add_to_results(all_results, all_results_dict, results, tune_params):
         key = ",".join(str(result[param]) for param in tune_params)
         all_results_dict[key] = result["time"]
         all_results.append(result)
+
+def distribute_feval(feval, max_feval, maxiter, lsd, popsize, afi_gs, afi_ls):
+    remaining_feval = max_feval - feval
+    if remaining_feval < (lsd + maxiter) * popsize:
+        # Calculate how many full batches of popsize can still be processed
+        proportion = remaining_feval // popsize
+
+        if afi_gs is None or afi_ls is None:
+            maxiter = int(proportion * 0.5)
+            lsd = int(proportion * 0.5)
+        else:
+            if afi_gs > afi_ls:
+                # More evaluations to maxiter
+                maxiter = int(proportion * 0.6)
+                lsd = int(proportion * 0.4)
+            else:
+                # More evaluations to lsd
+                maxiter = int(proportion * 0.4)
+                lsd = int(proportion * 0.6)
+
+        # If maxiter ends up being 1, assign all remaining feval to lsd
+        if maxiter == 1:
+            lsd = proportion  # Give all available batches to lsd
+            maxiter = 0
+
+        # Ensure at least one of maxiter or lsd is non-zero if there are still fevals to be used
+        if maxiter == 0 and lsd == 0 and remaining_feval > 0:
+            lsd = 1  # Allocate at least one batch to lsd to ensure progress
+
+    return maxiter, lsd
+ 
