@@ -31,7 +31,7 @@ try:
 except Exception:
     opencl_present = False
 
-gcc_present = shutil.which("gcc") is not None
+gcc_present = shutil.which("g++") is not None
 gfortran_present = shutil.which("gfortran") is not None
 openmp_present = "libgomp" in subprocess.getoutput(["ldconfig -p | grep libgomp"])
 openacc_present = shutil.which("nvc++") is not None
@@ -95,7 +95,7 @@ def skip_backend(backend: str):
     elif backend.upper() == "OPENCL" and not opencl_present:
         pytest.skip("PyOpenCL not installed or no OpenCL device detected")
     elif backend.upper() == "C" and not gcc_present:
-        pytest.skip("No gcc on PATH")
+        pytest.skip("No g++ on PATH")
     elif backend.upper() == "FORTRAN" and not gfortran_present:
         pytest.skip("No gfortran on PATH")
     elif backend.upper() == "OPENACC" and not openacc_present:

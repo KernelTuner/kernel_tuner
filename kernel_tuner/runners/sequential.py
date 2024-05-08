@@ -106,7 +106,7 @@ class SequentialRunner(Runner):
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
-            total_time = 1000 * (perf_counter() - self.start_time) - warmup_time
+            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time) 
             params['strategy_time'] = self.last_strategy_time
             params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
             params['timestamp'] = str(datetime.now(timezone.utc))
