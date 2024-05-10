@@ -138,7 +138,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
         feval += lsd * popsize
         try:
-            print(f"DEBUG: check for sto criterion in memetic algo", file=sys.stderr)
             check_stop_criterion(tuning_options)
         except StopCriterionReached as e:
             if tuning_options.verbose:
@@ -179,7 +178,6 @@ def fitness_increment(pop_before, pop_after):
     sum_before = sum(t for t in pop_before if isinstance(t, float))
     sum_after = sum(t for t in pop_after if isinstance(t, float))
     difference_sum = sum_before - sum_after
-    print(f"DEBUG:fitness_increment difference_sum: {difference_sum}", file=sys.stderr)
     return difference_sum
 
 def get_pop_results(pop, results):
@@ -197,8 +195,6 @@ def get_pop_results(pop, results):
     return times
 
 def add_to_results(all_results, all_results_dict, results, tune_params):
-    print(f"DEBUG:add_to_results results size = {len(results)}", file=sys.stderr)
-    print(f"DEBUG:add_to_results all_results size = {len(all_results)}", file=sys.stderr)
     for result in results:
         key = ",".join(str(result[param]) for param in tune_params)
         all_results_dict[key] = result["time"]
