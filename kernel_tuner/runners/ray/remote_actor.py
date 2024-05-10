@@ -1,7 +1,9 @@
 import ray
+import sys
 
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
+from kernel_tuner.util import get_nested_types
 
 @ray.remote
 class RemoteActor():
@@ -29,7 +31,8 @@ class RemoteActor():
             results = strategy.tune(searchspace, self.runner, tuning_options)
             return results, tuning_options
         elif element:
-            return self.runner.run([element], tuning_options)[0]
+            results = self.runner.run([element], tuning_options)[0]
+            return results, tuning_options
         else:
             raise ValueError("Invalid arguments for ray actor's execute method.")
         
