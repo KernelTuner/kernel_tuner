@@ -10,7 +10,7 @@ from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.ray.cache_manager import CacheManager
 from kernel_tuner.strategies.common import check_num_devices, create_actor_on_device, initialize_ray
-from kernel_tuner.util import get_num_devices
+from kernel_tuner.util import get_num_devices, check_stop_criterion, StopCriterionReached
 from kernel_tuner.runners.ray.remote_actor import RemoteActor
 
 from kernel_tuner.strategies import (
@@ -71,11 +71,11 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     local_search = options.get('local_search', 'greedy_ils')
     global_search = options.get('global_search', "genetic_algorithm")
-    max_feval = options.get("max_fevals", 2000)
     alsd = options.get("alsd", 2) # Adaptive Local Search Depth (ALSD)
     lsd = options.get("lsd", 25) # Local Search Depth (LSD)
     maxiter = options.get("maxiter", 2)
     popsize = options.get("popsize", 20)
+    max_feval = options.get("max_fevals", None if 'time_limit' in options else 2000)
 
     if local_search in ls_strategies_list:
         tuning_options["ensemble"] = [local_search] * popsize
@@ -105,9 +105,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     all_results_dict = {}
     feval = 0
     afi_gs, afi_ls = None, None
-    while feval < max_feval:
+    while (max_feval is None) or feval < max_feval:
         print(f"DEBUG: --------------------NEW ITERATION--------feval = {feval}------------", file=sys.stderr)
-        maxiter, lsd = distribute_feval(feval, max_feval, maxiter, lsd, popsize, afi_gs, afi_ls)
+        if max_feval is not None:
+            maxiter, lsd = distribute_feval(feval, max_feval, maxiter, lsd, popsize, afi_gs, afi_ls)
         print(f"DEBUG: maxiter * popsize = {maxiter * popsize}, lsd = {lsd}", file=sys.stderr)
 
         # Global Search (GS)
@@ -117,6 +118,12 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         results = global_search.tune(searchspace, pop_runner, tuning_options)
         add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
         feval += maxiter * popsize
+        try:
+            check_stop_criterion(tuning_options)
+        except StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            break
 
         pop_start_gs_res = get_pop_results(pop_start_gs, all_results_dict)
         pop_end_gs = copy.deepcopy(tuning_options.strategy_options["population"])
@@ -130,6 +137,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         results = ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager, actors=actors)
         add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
         feval += lsd * popsize
+        try:
+            print(f"DEBUG: check for sto criterion in memetic algo", file=sys.stderr)
+            check_stop_criterion(tuning_options)
+        except StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            break
 
         pop_start_ls_res = get_pop_results(pop_start_ls, all_results_dict)
         pop_end_ls = copy.deepcopy(tuning_options.strategy_options["candidates"])
@@ -148,12 +162,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     for actor in actors:
         ray.kill(actor)
 
-    return results
+    return all_results
 
 def calculate_afi(pop_before_rs, pop_after_rs, feval, results):
     # Average Fitness Increment (AFI)
+    assert(feval >= 0)
     delta_fitness = fitness_increment(pop_before_rs, pop_after_rs)
-    afi = delta_fitness / feval if feval > 0 else None
+    afi = delta_fitness / feval if feval > 0 else 0
     print(f"DEBUG:calculate_afi afi: {afi}", file=sys.stderr)
     return afi
 
@@ -182,6 +197,8 @@ def get_pop_results(pop, results):
     return times
 
 def add_to_results(all_results, all_results_dict, results, tune_params):
+    print(f"DEBUG:add_to_results results size = {len(results)}", file=sys.stderr)
+    print(f"DEBUG:add_to_results all_results size = {len(all_results)}", file=sys.stderr)
     for result in results:
         key = ",".join(str(result[param]) for param in tune_params)
         all_results_dict[key] = result["time"]
