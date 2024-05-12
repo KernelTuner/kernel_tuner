@@ -6,12 +6,9 @@ from os import PathLike
 from pathlib import Path
 from typing import Callable
 
-
-PROJECT_DIR = Path(__file__).parents[0]
-
-SCHEMA_VERSIONS_PATH = PROJECT_DIR / "../schema/cache"
-
-VERSIONS = list(sorted((p.name for p in SCHEMA_VERSIONS_PATH.iterdir()), key=semver.Version.parse))
+from kernel_tuner.cache.versions import VERSIONS
+from kernel_tuner.cache.paths    import CACHE_SCHEMAS_DIR
+from kernel_tuner.cache.file     import read_cache, write_cache
 
 CONVERSION_FUNCTIONS: dict[str, Callable[[dict], dict]]
 
@@ -33,35 +30,35 @@ def convert_cache_file(filestr : PathLike,
                        versions=None):
     """Convert a cache file to the newest version.
 
-    ``filestr`` is the name of the cachefile.
+    Parameters:
+        ``filestr`` is the name of the cachefile.
 
-    ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
-    mapping a version to a corresponding conversion function.
+        ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
+        mapping a version to a corresponding conversion function.
 
-    ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+        ``versions`` is a sorted ``list`` of ``str``s containing the versions.
 
-    
-    raises ``ValueError`` if:
+    Raises
+        ``ValueError`` if:
 
-    given cachefile has no "schema_version" field,
+            given cachefile has no "schema_version" field and can not be converted
+            to version 1.0.0,
 
-    the cachefile's version is higher than the newest version,
+            the cachefile's version is higher than the newest version,
 
-    the cachefile's version is not a real version.
+            the cachefile's version is not a real version.
     """
     if conversion_functions is None:
         conversion_functions = CONVERSION_FUNCTIONS
 
     if versions is None:
-        versions = VERSIONS
+        versions: list[str] = VERSIONS
 
     # Load cache
-    with open(filestr, 'r') as cachefile:
-        cache = json.load(cachefile)
+    cache = read_cache(filestr)
 
     if "schema_version" not in cache:
-        raise ValueError(f"Cache file has no \"schema_version\" field, "
-                         f"unversioned conversion not yet implemented.")
+        cache = unversioned_convert(cache, CACHE_SCHEMAS_DIR)
     
     version = cache["schema_version"]
     target_version = versions[-1]
@@ -80,14 +77,12 @@ def convert_cache_file(filestr : PathLike,
             cache = conversion_functions[version](cache)
         else:
             cache = default_convert(cache, version, versions,
-                                    SCHEMA_VERSIONS_PATH)
+                                    CACHE_SCHEMAS_DIR)
 
         version = cache["schema_version"]
 
-    with open(filestr, 'w') as cachefile: 
-        cachefile.write(json.dumps(cache, indent=4))
-
-    return
+    # Update cache file
+    write_cache(cache, filestr)
 
 
 def default_convert(cache       : dict,
@@ -96,16 +91,18 @@ def default_convert(cache       : dict,
                     schema_path : Path) -> dict:
     """Attempts a default conversion of ``cache`` to the next highest version.
 
-    ``cache`` is a ``dict`` representing the cachefile.
+    Parameters:
+        ``cache`` is a ``dict`` representing the cachefile.
 
-    ``oldver`` is the version of the cachefile.
+        ``oldver`` is the version of the cachefile.
 
-    ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+        ``versions`` is a sorted ``list`` of ``str``s containing the versions.
 
-    ``schema_path`` is a ``pathlib`` ``Path``  to the directory containing
-    the schema versions.
+        ``schema_path`` is a ``pathlib`` ``Path``  to the directory containing
+        the schema versions.
 
-    Returns a ``dict`` representing the converted cache file.
+    Returns:
+        a ``dict`` representing the converted cache file.
     """
     # Get the next version
     parts = ["patch", "minor", "major"]
@@ -133,6 +130,35 @@ def default_convert(cache       : dict,
     new_cache["schema_version"] = newver
 
     return new_cache
+
+
+def unversioned_convert(cache       : dict,
+                        schema_path : Path) -> dict:
+    """Attempts a conversion of an unversioned cache file to version 1.0.0.
+
+    Parameters:
+        ``cache`` is a ``dict`` representing the cachefile.
+
+    Returns:
+        a ``dict`` representing the converted cache file.
+
+    Raises:
+        ``ValueError`` if given cache file is too old and no suitable
+        conversion exists.
+    """
+    cache["schema_version"] = "1.0.0"
+
+    path = schema_path / "1.0.0/schema.json"
+
+    with open(path) as s:
+        versioned_schema = json.load(s)
+
+    for key in versioned_schema["properties"]:
+        if key not in cache:
+            raise ValueError(f"Cache file too old, no suitable conversion "
+                             f"to version 1.0.0 exists.")
+
+    return cache
 
 
 
