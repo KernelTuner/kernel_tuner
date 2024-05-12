@@ -118,17 +118,19 @@ class TestConvertCache:
             upgraded_schema = json.load(s)
             jsonschema.validate(cache, upgraded_schema)
 
-
     # Mock convert functions
+    @staticmethod
     def _c1_0_0_to_1_1_0(cache):
         cache["field2"] = dict()
         cache["schema_version"] = "1.1.0"
         return cache
 
+    @staticmethod
     def _c1_1_0_to_1_1_1(cache):
         cache["schema_version"] = "1.1.1"
         return cache
-    
+
+    @staticmethod
     def _c1_1_1_to_1_2_0(cache):
         cache["field1"] = dict()
         cache["schema_version"] = "1.2.0"
