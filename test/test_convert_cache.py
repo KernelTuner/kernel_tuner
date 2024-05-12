@@ -137,9 +137,9 @@ class TestConvertCache:
         return cache
 
     _CONVERT_FUNCTIONS = {
-        "1.0.0": _c1_0_0_to_1_1_0,
-        "1.1.0": _c1_1_0_to_1_1_1,
-        "1.1.1": _c1_1_1_to_1_2_0, 
+        "1.0.0": _c1_0_0_to_1_1_0.__func__,
+        "1.1.0": _c1_1_0_to_1_1_1.__func__,
+        "1.1.1": _c1_1_1_to_1_2_0.__func__, 
     }
 
     _VERSIONS = [
