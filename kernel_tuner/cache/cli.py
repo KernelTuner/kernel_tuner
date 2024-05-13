@@ -40,10 +40,8 @@ When you are in the main /kernel_tuner directory, start a poetry shell (by runni
 """
 
 # import required files from within kernel tuner
-from .cache import *
-from .convert import *
-from .cli_fct import *
-from .paths import *
+from .cache import Cache
+from .cli_fct import cli_inspect, cli_convert, cli_merge
 
 import argparse
 

@@ -4,11 +4,10 @@ This way, we can split the files correctly and not obtain messy code.
 Merging now works, inspecting and conversion still needs to be completed.
 """
 
+from .cache import Cache
 from pathlib import Path
 from os import PathLike
-from typing import *
-from .paths import *
-from .cache import *
+
 import json
 import jsonschema
 
@@ -89,7 +88,8 @@ def mergeFiles(listOfFiles: list[PathLike], ofile: PathLike):
     tune_params_keys=resultingOutput.tune_params_keys, tune_params=resultingOutput.tune_params, \
     objective=resultingOutput.objective)
 
-    resultingOutput._filename = ofile
+    # We read so the ._filename changes for append
+    resultingOutput = Cache.read(ofile)
 
     # Now for each file add the cache content.
     # Does not check for duplicates
