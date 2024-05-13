@@ -1,112 +1,117 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "description": "TODO",
-    "type": "object",
-    "properties": {
-        "schema_version": {
-            "type": "string",
-            "description": "The version of this JSON-schema, adhering to the Semantic Versioning specification.",
-            "const": "1.1.0"
-        },
-        "device_name": {
-            "type": "string",
-            "description": "The name of the device the kernel tuner analysis is run on."
-        },
-        "kernel_name": {
-            "type": "string",
-            "description": "The name of the kernel."
-        },
-        "problem_size": {
-            "type": "array",
-            "description": "The size of the problem.",
-            "items": {
-                "type": "integer"
-            }
-        },
-        "tune_params_keys": {
-            "type": "array",
-            "description": "The keys (names) of all the parameters being tuned.",
-            "items": {
-                "type": "string"
-            }
-        },
-        "tune_params": {
-            "type": "object",
-            "description": "The nested JSON object containing for each parameter the array of tuning values.",
-            "additionalProperties": {
-                "type": "array"
-            }
-        },
-        "objective": {
-            "type": "string",
-            "description": "The objective with kernel."
-        },
-        "cache": {
-            "type": "array",
-            "description": "The actual data; the data of the instances cached.",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "time": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "number"
-                            }
-                        ]
-                    },
-                    "times": {
-                        "type": "array",
-                        "items": {
-                            "type": "number"
-                        }
-                    },
-                    "compile_time": {
-                        "type": "number"
-                    },
-                    "verification_time": {
-                        "type": "integer"
-                    },
-                    "benchmark_time": {
-                        "type": "number"
-                    },
-                    "GFLOP/s": {
-                        "type": "number"
-                    },
-                    "strategy_time": {
-                        "type": "integer"
-                    },
-                    "framework_time": {
-                        "type": "number"
-                    },
-                    "timestamp": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                },
-                "required": [
-                    "time",
-                    "compile_time",
-                    "verification_time",
-                    "benchmark_time",
-                    "strategy_time",
-                    "framework_time",
-                    "timestamp"
-                ],
-                "additionalProperties": true
-            }
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Schema for cache files used in kernel tuning analysis, capturing parameters and metrics or easy comparison of tuning configurations and performace results",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "The version of this JSON-schema, adhering to the Semantic Versioning specification.",
+      "const": "1.1.0"
     },
-    "required": [
-        "schema_version",
-        "device_name",
-        "kernel_name",
-        "problem_size",
-        "tune_params_keys",
-        "tune_params",
-        "objective",
-        "cache"
-    ]
+    "device_name": {
+      "type": "string",
+      "description": "The name of the device the kernel tuner analysis is run on."
+    },
+    "kernel_name": {
+      "type": "string",
+      "description": "The name of the kernel."
+    },
+    "problem_size": {
+      "type": "array",
+      "description": "The size of the problem.",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "tune_params_keys": {
+      "type": "array",
+      "description": "The keys (names) of all the parameters being tuned.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tune_params": {
+      "type": "object",
+      "description": "The nested JSON object containing for each parameter the array of tuning values.",
+      "additionalProperties": {
+        "type": "array"
+      }
+    },
+    "objective": {
+      "type": "string",
+      "description": "The objective with kernel."
+    },
+    "cache": {
+      "type": "object",
+      "description": "The actual data; the data of the instances cached.",
+      "items": {
+        "type": "array",
+        "properties": {
+          "time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "InvalidConfig",
+                  "CompilationFailedConfig",
+                  "RuntimeFailedConfig"
+                ]
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "times": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "compile_time": {
+          "type": "number"
+        },
+        "verification_time": {
+          "type": "integer"
+        },
+        "benchmark_time": {
+          "type": "number"
+        },
+        "GFLOP/s": {
+          "type": "number"
+        },
+        "strategy_time": {
+          "type": "integer"
+        },
+        "framework_time": {
+          "type": "number"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "iso-date-time"
+        }
+      },
+      "required": [
+        "time",
+        "compile_time",
+        "verification_time",
+        "benchmark_time",
+        "strategy_time",
+        "framework_time",
+        "timestamp"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "device_name",
+    "kernel_name",
+    "problem_size",
+    "tune_params_keys",
+    "tune_params",
+    "objective",
+    "cache"
+  ]
 }
