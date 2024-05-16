@@ -2,16 +2,28 @@
 import json
 import jsonschema
 from datetime import datetime
-import sys  # Import the sys module
+import sys  
 
 import jsonschema.exceptions
 from .paths import get_schema_path
 
 def validate_data(data_file):
+    """
+    Validate the input data in a cache file against its corresponding schema.
+
+    Parameters:
+
+    data_file (str): The path to the cache file that needs to be validated.
+    Raises:
+
+    ValueError: If the cache file does not have a "schema_version" field, or if the version does not match
+    a valid version.
+    FileNotFoundError: If the schema file cannot be found at the specified path.
+    RuntimeError: If an error occurs while retrieving the schema path.
+    """
     with open(data_file, 'r') as f:
         data = json.load(f)
     
-    # Get schema path using schema version from the data
     try:
         schema_path = get_schema_path(data["schema_version"])
     except KeyError:
@@ -41,9 +53,9 @@ def validate_data(data_file):
     
     try:
         jsonschema.validate(instance=data, schema=schema, format_checker=format_checker)
-        print("De invoerdata voldoet aan het schema")
+        print("The input data conforms to the schema.")
     except jsonschema.exceptions.ValidationError as e:
-        print("Fout bij valideren van invoerdata")
+        print("Error validating input data")
         print(e)
 
 

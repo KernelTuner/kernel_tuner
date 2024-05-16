@@ -178,7 +178,7 @@ class TestCacheFileSchema:
         sys.stdout = sys.__stdout__
         printed_output = captured_output.getvalue()
 
-        assert "Fout bij valideren van invoerdata" in printed_output
+        assert "Error validating input data" in printed_output
 
     def test_invalid_cache(self):
         with pytest.raises(SystemExit) as e:
@@ -194,5 +194,5 @@ class TestCacheFileSchema:
         sys.stdout = sys.__stdout__
         printed_output = captured_output.getvalue()
       
-        assert "De invoerdata voldoet aan het schema" in printed_output
+        assert "The input data conforms to the schema." in printed_output
  
