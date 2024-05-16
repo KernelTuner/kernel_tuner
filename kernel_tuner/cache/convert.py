@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 import json
-import semver
 from os import PathLike
 from pathlib import Path
 from typing import Callable
 
+import semver
+
+from kernel_tuner.cache.file import read_cache, write_cache
+from kernel_tuner.cache.json import (
+    CacheFileJSON,
+    T4FileJSON,
+    T4ResultLineJSON,
+    T4ResultMeasurementJSON,
+    T4ResultTimesJSON,
+)
+from kernel_tuner.cache.paths import CACHE_SCHEMAS_DIR
 from kernel_tuner.cache.versions import VERSIONS
-from kernel_tuner.cache.paths    import CACHE_SCHEMAS_DIR
-from kernel_tuner.cache.file     import read_cache, write_cache
 
 CONVERSION_FUNCTIONS: dict[str, Callable[[dict], dict]]
 
@@ -38,7 +46,7 @@ def convert_cache_file(filestr : PathLike,
 
         ``versions`` is a sorted ``list`` of ``str``s containing the versions.
 
-    Raises
+    Raises:
         ``ValueError`` if:
 
             given cachefile has no "schema_version" field and can not be converted
@@ -155,11 +163,51 @@ def unversioned_convert(cache       : dict,
 
     for key in versioned_schema["properties"]:
         if key not in cache:
-            raise ValueError(f"Cache file too old, no suitable conversion "
-                             f"to version 1.0.0 exists.")
+            raise ValueError("Cache file too old, no suitable conversion "
+                             "to version 1.0.0 exists.")
 
     return cache
 
+
+def convert_cache_to_t4(cache: CacheFileJSON) -> T4FileJSON:
+    """Converts a cache file to the T4 auto-tuning format.
+    
+    ``cache`` is a ``CacheFileJSON`` representing the cache file to convert.
+
+    Returns a ``T4FileJSON`` representing the converted cache file.
+    """
+    t4 = T4FileJSON(results = [], schema_version = "1.0.0")
+
+    for cache_line in cache["cache"].values():
+        times = T4ResultTimesJSON(
+            compilation_time = cache_line["compile_time"],
+            framework = cache_line["framework_time"],
+            search_algorithm = cache_line["strategy_time"],
+            validation = cache_line["verification_time"],
+            runtimes = cache_line["times"]
+        )
+
+        measurement = T4ResultMeasurementJSON(
+            name = cache["objective"],
+            value = cache_line[cache["objective"]],
+            unit = ""
+        )
+
+        result = T4ResultLineJSON(
+            timestamp = cache_line["timestamp"],
+            configuration = {
+                tune_param_key: cache_line[tune_param_key] for tune_param_key in cache["tune_params_keys"]
+            },
+            times = times,
+            # We assume that the supplied cache file is correct
+            invalidity = "correct",
+            correctness = 1,
+            measurements = [ measurement ],
+            objectives = [ cache["objective"] ]
+        )
+        t4["results"].append(result)
+
+    return t4
 
 
 ########################################################################

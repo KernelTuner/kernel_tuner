@@ -2,15 +2,12 @@ import json
 from pathlib import Path
 from shutil import copyfile
 
-import pytest
 import jsonschema
-import kernel_tuner
+import pytest
 
-from kernel_tuner.cache.convert  import convert_cache_file
-from kernel_tuner.cache.convert  import unversioned_convert
-from kernel_tuner.cache.convert  import default_convert
+from kernel_tuner.cache.convert import convert_cache_file, convert_cache_to_t4, default_convert, unversioned_convert
+from kernel_tuner.cache.paths import CACHE_SCHEMAS_DIR, SCHEMA_DIR
 from kernel_tuner.cache.versions import VERSIONS
-from kernel_tuner.cache.paths    import CACHE_SCHEMAS_DIR
 
 TEST_PATH         = Path(__file__).parent
 TEST_CONVERT_PATH = TEST_PATH / "test_convert_files"
@@ -34,6 +31,12 @@ NO_VERSION_FIELD  = TEST_CONVERT_PATH / "no_version_field.json"
 TOO_HIGH_VERSION  = TEST_CONVERT_PATH / "too_high_version.json"
 NOT_REAL_VERSION  = TEST_CONVERT_PATH / "not_real_version.json"
 
+# T4 schema files
+T4_SCHEMA = SCHEMA_DIR / "T4/1.0.0/results-schema.json"
+
+# T4 Test files
+T4_CACHE = TEST_CONVERT_PATH / "t4_cache.json"
+T4_TARGET = TEST_CONVERT_PATH / "t4_target.json"
 
 
 
@@ -117,7 +120,28 @@ class TestConvertCache:
         with open(UPGRADED_SCHEMA) as s:
             upgraded_schema = json.load(s)
             jsonschema.validate(cache, upgraded_schema)
+    
+    def test_convert_to_t4(self):
+        with open(T4_CACHE) as cache_file, open(T4_TARGET) as t4_target_file:
+            cache = json.load(cache_file)
+            t4_target = json.load(t4_target_file)
+        
+        t4 = convert_cache_to_t4(cache)
 
+        if (t4 != t4_target):
+            raise ValueError("Converted T4 does not match target T4")
+    
+    def test_convert_to_t4_is_valid(self):
+        with open(T4_CACHE) as cache_file:
+            cache = json.load(cache_file)
+
+        t4_converted_output = convert_cache_to_t4(cache)
+
+        with open(T4_SCHEMA) as t4_schema_file:
+            t4_schema = json.load(t4_schema_file)
+            jsonschema.validate(t4_converted_output, t4_schema)
+
+    
     # Mock convert functions
     @staticmethod
     def _c1_0_0_to_1_1_0(cache):
