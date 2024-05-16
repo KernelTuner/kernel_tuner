@@ -3,10 +3,14 @@ from pathlib import Path
 from copy import deepcopy
 
 from kernel_tuner.cache.json import CacheFileJSON, CacheLineJSON
-
+from kernel_tuner.cache.validate import validate_data
 import pytest
 import jsonschema
 import kernel_tuner
+
+from io import StringIO
+from contextlib import redirect_stdout
+import sys
 
 KERNEL_TUNER_PATH = Path(kernel_tuner.__file__).parent
 SCHEMA_PATH = KERNEL_TUNER_PATH / "schema/cache/1.0.0/schema.json"
@@ -15,6 +19,9 @@ TEST_PATH = Path(__file__).parent
 TEST_CACHE_PATH = TEST_PATH / "test_cache_files"
 SMALL_CACHE_PATH = TEST_CACHE_PATH / "small_cache.json"
 LARGE_CACHE_PATH = TEST_CACHE_PATH / "large_cache.json"
+INVALID_TIMESTAMP_CACHE_PATH = TEST_CACHE_PATH / "invalid_timestamp_cache.json"
+VALID_CACHE_PATH = TEST_CACHE_PATH / "convolution_A100.json"
+INVALID_CACHE_PATH = TEST_CACHE_PATH / "invalid_schemaversion_cache.json"
 
 with open(SMALL_CACHE_PATH) as f:
     SMALL_CACHE = json.load(f)
@@ -161,3 +168,31 @@ class TestCacheFileSchema:
     )
     def test_additional_props_allowed__in_cache_line(self, cache_line, is_valid, key, value):
         cache_line[key] = value
+    
+    def test_invalid_timestamp_cache(self):
+        captured_output = StringIO()
+        sys.stdout = captured_output
+
+        validate_data(INVALID_TIMESTAMP_CACHE_PATH)
+
+        sys.stdout = sys.__stdout__
+        printed_output = captured_output.getvalue()
+
+        assert "Fout bij valideren van invoerdata" in printed_output
+
+    def test_invalid_cache(self):
+        with pytest.raises(SystemExit) as e:
+            validate_data(INVALID_CACHE_PATH)
+        assert str(e.value) == "1"
+
+    def test_valid_cache(self):
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        
+        validate_data(VALID_CACHE_PATH)
+
+        sys.stdout = sys.__stdout__
+        printed_output = captured_output.getvalue()
+      
+        assert "De invoerdata voldoet aan het schema" in printed_output
+ 
