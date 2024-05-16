@@ -5,6 +5,8 @@ Merging now works, inspecting and conversion still needs to be completed.
 """
 
 from .cache import Cache
+from .file import read_cache, write_cache 
+
 from pathlib import Path
 from os import PathLike
 
@@ -78,6 +80,10 @@ def validateFiles(listOfFiles: list[PathLike]):
             print("Error. File '{}' is not adhering to the JSON schema.".format(str(i)))
             exit()
 
+        except:
+            print("Error with cachefile '{}'.".format(str(i)))
+            exit()
+
 def mergeFiles(listOfFiles: list[PathLike], ofile: PathLike):
     """Merges the actual files and writes to the file `ofile`."""
     """Assumes that checks in validateFiles() have been performed."""
@@ -110,12 +116,14 @@ def mergeFiles(listOfFiles: list[PathLike], ofile: PathLike):
                              GFLOP_per_s=tempFile.lines[line]["GFLOP/s"],
                              **tune_params)
 
-def cliAppend(inFile: PathLike, appendFile: PathLike):
+def cliAppend(inFile: PathLike, appendFile: PathLike, outFile: PathLike):
     """The function handling the appending to file `inFile`, reading content
     from `appendFile` (cacheline entries).
     Not completed yet.
     """
     print("[*] Appending not completed.")
+
+
 
 def cliCheck(inFile: PathLike, checkEntry: str):
     """Checks if entry (string) `checkEntry` is inside file `inFile`, by using
@@ -136,23 +144,39 @@ def cliCheck(inFile: PathLike, checkEntry: str):
 
 
 
-def cliRemove(inFile: PathLike, removeEntry: str):
+def cliRemove(inFile: PathLike, removeEntry: str, outFile: PathLike):
     """Tries to remove entry `removeEntry` from file `inFile`, by using the
-    `cache.py` library. Note that the `cache.py` has no removing functionality
-    yet, hence we remove by appending everything but the entry. Note that this
-    is very inefficient, but for now there is no better (safe) way yet.
-    First we check if the entry actually exists in the cachefile. If not, there
+    `file.py` functions read_cache, write_cache. 
+    We delete the json entry ["cache"][`removeEntry`] from the returned JSON object
+    from read_cache, then use write_cache() to write the result to the desired output file
+    `outFile`.
+    First we check if the entry actually exists in the cachefile using the library. If not, there
     is nothing to do.
-    Not completed yet.
+    Note that we may assume everything is right with the files since validatefiles does all our error checking.
     """
 
     validateFiles([inFile])
 
+    
     cacheFile = Cache.read(inFile)
 
+    
     if (cacheFile.lines.get(removeEntry) == None):
         print("Error. Entry '{}' is not contained in cachefile '{}'.".format(str(removeEntry), str(inFile)))
         exit(0)
+
+
+    jsonData = read_cache(inFile)
+
+    del jsonData["cache"][removeEntry]
+
+
+    write_cache(jsonData, outFile)
+
+    print("[*] Writing to output file '{}' after removing entry '{}' completed.".format(str(outFile), str(removeEntry)))
+
+    exit(0)
+
 
 
 
@@ -167,12 +191,18 @@ def cli_inspect(apRes):
     Not completed yet."""
 
     # we only allow either add, remove, or check
-    # append
     if (apRes.append and not (apRes.remove != None or apRes.check != None)):
-        cliAppend(apRes.inFile, apRes.file)
+        if (apRes.output == None):
+            apRes.output = apRes.infile 
+
+        cliAppend(apRes.infile, apRes.file, apRes.output)
 
     elif (not apRes.append and apRes.remove != None and apRes.check == None):
-        cliRemove(apRes.infile, apRes.remove)
+        if (apRes.output == None):
+            apRes.output = apRes.infile 
+
+        cliRemove(apRes.infile, apRes.remove, apRes.output)
+
 
     elif (not apRes.append and apRes.remove == None and apRes.check != None):
         cliCheck(apRes.infile, apRes.check)
