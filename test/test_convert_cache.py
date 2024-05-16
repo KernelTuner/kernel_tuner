@@ -121,8 +121,6 @@ class TestConvertCache:
             upgraded_schema = json.load(s)
             jsonschema.validate(cache, upgraded_schema)
     
-        return
-    
     def test_convert_to_t4(self):
         with open(T4_CACHE) as cache_file, open(T4_TARGET) as t4_target_file:
             cache = json.load(cache_file)
