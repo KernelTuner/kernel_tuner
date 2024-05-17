@@ -209,14 +209,6 @@ def tests(session: Session) -> None:
                 except Exception as error:
                     session.log(error)
                     session.warn(install_warning)
-    if install_opencl and session.python == "3.8":
-        # if we need to install the OpenCL extras, first install pyopencl seperately, reason:
-        #   it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry, but only for Python<3.9
-        try:
-            session.install("pyopencl")       # Attention: if changed, check `pyopencl` in pyproject.toml as well
-        except Exception as error:
-            session.log(error)
-            session.warn(install_warning)
 
     # finally, install the dependencies, optional dependencies and the package itself
     poetry_env = Path(session.run_always("poetry", "env", "info", "--executable", silent=not verbose, external=True).splitlines()[-1].strip()).resolve()

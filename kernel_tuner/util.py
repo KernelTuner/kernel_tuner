@@ -1,6 +1,4 @@
 """Module for kernel tuner utility functions."""
-from __future__ import annotations
-
 import errno
 import json
 import logging
@@ -1175,8 +1173,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
 
 def correct_open_cache(cache, open_cache=True):
-    """ if cache file was not properly closed, pretend it was properly closed """
-
+    """If cache file was not properly closed, pretend it was properly closed."""
     with open(cache, "r") as cachefile:
         filestr = cachefile.read().strip()
 
@@ -1197,7 +1194,6 @@ def correct_open_cache(cache, open_cache=True):
 
 def read_cache(cache, open_cache=True):
     """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending."""
-
     filestr = correct_open_cache(cache, open_cache)
 
     error_configs = {
