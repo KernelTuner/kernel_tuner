@@ -17,11 +17,11 @@ on:
 jobs:
     build:
         name: Test on ${{ matrix.os }} with all supported Python versions
-        runs-on: ${{ format('{0}', matrix.os)  }} # "-latest" is added here so we can use OS in the format expected by CodeCov
+        runs-on: ${{ format('{0}-latest', matrix.os)  }} # "-latest" is added here so we can use OS in the format expected by CodeCov
 
         strategy:
             matrix:
-                os: [ubuntu-latest, macos-13]
+                os: [ubuntu, macos]
 
         steps:
             - uses: actions/checkout@v4
