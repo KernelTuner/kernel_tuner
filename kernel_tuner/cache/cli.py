@@ -2,10 +2,9 @@
 """
 The CLI tool to manipulate kernel tuner cache files. Works with the cache file manipulation library (cache.py), conversion functionality
 (convert.py) and other helper functions (defined in cli_fct.py).
-See the main() function for more detailed inner working.
 
 Basic usage:
-$ cli {convert, delete, get, merge}
+$ cli {convert, delete-line, get-line, merge}
 
 We can:
 	  - `convert`: using the functionality from convert.py one can convert to a specified version. Write 'T4' for converting to T4 format.
@@ -14,13 +13,13 @@ We can:
                 - `-T/--target-version`: The version to convert to. Write 'T4' to convert to T4 format.
                 - `-o/--output`: The output file.
 
-       - `delete`: using the cache library one can delete from a certain cachefile. 
+       - `delete-line`: using the cache library one can delete from a certain cachefile. 
               We have arguments:
               - <infile>: the input file to delete the entry.
               - (Required) `--key`: The key to try and delete.
               - (Optional): the new output file.
 
-       - `get`: using the cache library one can get a certain cacheline entry from the input cachefile. Prints in JSON.
+       - `get-line`: using the cache library one can get a certain cacheline entry from the input cachefile. Prints in JSON.
               We have arugments:
               - <infile>: the input file to get the cacheline entry from.
               - (Required) `--key`: The key to check if present in the cachefile. 
@@ -31,8 +30,8 @@ We can:
 
 Example usages:
 $ cli convert --infile 1.json -v 1.1.0 -o 2.json
-$ cli delete 1.json --key <key> 
-$ cli get 1.json --key <key>
+$ cli delete-line 1.json --key <key> 
+$ cli get-line 1.json --key <key>
 $ cli merge 1.json 2.json 3.json 4.json -o merged.json
 
 
@@ -50,19 +49,12 @@ import argparse
 
 def main():
 	"""
-	The main function performing the argument parsing and following the user-specified actions.
-	We can:
-	  - `convert`: using the functionality from convert.py one can convert to a specified version.
-	  - `merge`: merge several cache files that are of the same json schema and have equivalent 'tune_params_keys' and 'objective'.
-	  - `inspect`: one can inspect a specific cache file. Optional arguments are:
-	    - `-c, --check`: check if a certain cacheline is in the cachefile. I expect this to be very slow as you might have to search through the whole search
-		  space.
-		- `-r, --remove`: remove a certain cacheline from the cache file.
-		- `-a, --add`: add a list of cachelines to the cachefile, reading it from file specified by `-f/--file`.
+	The main function performing the argument parsing and following the user-specified actions
+	(one of {convert, delete-line, get-line, merge}); based on this the appropiate function is called.
 	"""
 
 
-	# Creates the parser and adds subparsers.
+	# Setup parsing
 
 	parser = argparse.ArgumentParser(
 		prog="cache_cli",

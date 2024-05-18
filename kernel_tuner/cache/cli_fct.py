@@ -104,11 +104,12 @@ def cli_get(apRes: argparse.Namespace):
     cacheLine = iFile.lines.get(apRes.key) # apres-ski?
 
     if cacheLine == None:
-        print("Cacheline entry '{}' is not contained in cachefile '{}'.".format(str(apRes.key), str(apRes.infile)))
+        raise ValueError(f"Cacheline entry '{apRes.key}' is not contained in cachefile '{apRes.infile[0]}'.")
 
     else:
-        print("[*] Cacheline entry '{}' content [*]".format(str(apRes.key)))
-        print(dict(cacheline.items()))
+        print("[*] Cacheline entry '{}' content [*]\n\n************************".format(str(apRes.key)))
+        print(dict(cacheLine.items()))
+        print("************************")
 
 
 
