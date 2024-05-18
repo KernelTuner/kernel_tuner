@@ -9,6 +9,7 @@ from .file import read_cache, write_cache
 
 from pathlib import Path
 from os import PathLike
+from typing import List
 
 import argparse
 import json
@@ -19,7 +20,7 @@ def fileExists(fileName: PathLike) -> bool:
     """Validates if the file specified by fileName even exists."""
     return Path(fileName).is_file()
 
-def checkEquivalence(listOfFiles: list[PathLike]):
+def checkEquivalence(listOfFiles: List[PathLike]):
     """Checks equivalence of set parameters for files in `listOfFiles`.
     Assumes that all files have been validated.
     We use the first file (listOfFiles[0]) as our base file, and compare everything with that."""
@@ -58,7 +59,7 @@ def checkEquivalence(listOfFiles: list[PathLike]):
             exit()
 
 
-def mergeFiles(listOfFiles: list[PathLike], ofile: PathLike):
+def mergeFiles(listOfFiles: List[PathLike], ofile: PathLike):
     """Merges the actual files and writes to the file `ofile`."""
     """Assumes that all files have been validated."""
     # FIXME: Cannot be guaranteed that the order of the cachelines in the files is also kept when merging
