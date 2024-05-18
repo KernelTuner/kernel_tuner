@@ -10,6 +10,7 @@ from .file import read_cache, write_cache
 from pathlib import Path
 from os import PathLike
 
+import argparse
 import json
 import jsonschema
 
@@ -20,7 +21,7 @@ def fileExists(fileName: PathLike) -> bool:
 
 def checkEquivalence(listOfFiles: list[PathLike]):
     """Checks equivalence of set parameters for files in `listOfFiles`.
-    Assumes that validateFiles() has been passed.
+    Assumes that all files have been validated.
     We use the first file (listOfFiles[0]) as our base file, and compare everything with that."""
     baseFile = Cache.read(listOfFiles[0])
 
@@ -29,6 +30,8 @@ def checkEquivalence(listOfFiles: list[PathLike]):
 
         # Now the equivalence logic
 
+        # Merging is yet to be updated to work with different schema versions.
+        checkProperties(        )
         if (baseFile.version != tempFile.version):
             print("Error in merging; files '{}' and '{}' are not of the same schema version.".format(str(listOfFiles[0]), str(listOfFiles[i])))
             exit()
@@ -55,38 +58,11 @@ def checkEquivalence(listOfFiles: list[PathLike]):
             exit()
 
 
-def validateFiles(listOfFiles: list[PathLike]):
-    """Validates cachefiles. Validates existence and correctness of the files in `listOfFiles`.
-    Correctness means being a valid JSON file adhering to a JSON schema."""
-
-    for i in listOfFiles:
-        if not fileExists(i):
-            print("Error in reading file '{}'. File does not exist.".format(str(i)))
-            exit()
-
-        try:
-            Cache.read(i)
-
-        except KeyError:
-            print("Error in reading file '{}'. Key {} does not exist.".format(str(i), str(e)))
-            exit()
-
-        except FileNotFoundError:
-            # We now know that the filenotfounderror is from the json schema lookup.
-            print("Error. Either your value for 'schema_version' is invalid or the jsonschema does not exist in the current repository.")
-            exit()
-
-        except jsonschema.exceptions.ValidationError:
-            print("Error. File '{}' is not adhering to the JSON schema.".format(str(i)))
-            exit()
-
-        except:
-            print("Error with cachefile '{}'.".format(str(i)))
-            exit()
-
 def mergeFiles(listOfFiles: list[PathLike], ofile: PathLike):
     """Merges the actual files and writes to the file `ofile`."""
-    """Assumes that checks in validateFiles() have been performed."""
+    """Assumes that all files have been validated."""
+    # FIXME: Cannot be guaranteed that the order of the cachelines in the files is also kept when merging
+    # From cache.py (json.load).
 
     resultingOutput = Cache.read(listOfFiles[0])
     resultingOutput.create(ofile, device_name=resultingOutput.device_name, \
@@ -116,114 +92,89 @@ def mergeFiles(listOfFiles: list[PathLike], ofile: PathLike):
                              GFLOP_per_s=tempFile.lines[line]["GFLOP/s"],
                              **tune_params)
 
-def cliAppend(inFile: PathLike, appendFile: PathLike, outFile: PathLike):
-    """The function handling the appending to file `inFile`, reading content
-    from `appendFile` (cacheline entries).
-    Not completed yet.
-    """
-    print("[*] Appending not completed.")
 
 
-
-def cliCheck(inFile: PathLike, checkEntry: str):
+def cli_get(apRes: argparse.Namespace):
     """Checks if entry (string) `checkEntry` is inside file `inFile`, by using
     the `cache.py` library.
     Does not perform syntax checking on `checkEntry`."""
 
-    validateFiles([inFile])
+    iFile = Cache.read(apRes.infile[0])
 
-    iFile = Cache.read(inFile)
+    cacheLine = iFile.lines.get(apRes.key) # apres-ski?
 
-    if (iFile.lines.get(checkEntry) != None):
-        print("Cacheline entry '{}' is contained in cachefile '{}'.".format(str(checkEntry), str(inFile)))
-        exit(0)
+    if cacheLine == None:
+        print("Cacheline entry '{}' is not contained in cachefile '{}'.".format(str(apRes.key), str(apRes.infile)))
 
     else:
-        print("Cacheline entry '{}' is not contained in cachefile '{}'.".format(str(checkEntry), str(inFile)))
-        exit(0)
+        print("[*] Cacheline entry '{}' content [*]".format(str(apRes.key)))
+        print(dict(cacheline.items()))
 
 
 
-def cliRemove(inFile: PathLike, removeEntry: str, outFile: PathLike):
-    """Tries to remove entry `removeEntry` from file `inFile`, by using the
+def cli_delete(apRes: argparse.Namespace):
+    """
+    Tries to remove entry `removeEntry` from file `inFile`, by using the
     `file.py` functions read_cache, write_cache. 
     We delete the json entry ["cache"][`removeEntry`] from the returned JSON object
     from read_cache, then use write_cache() to write the result to the desired output file
     `outFile`.
     First we check if the entry actually exists in the cachefile using the library. If not, there
     is nothing to do.
-    Note that we may assume everything is right with the files since validatefiles does all our error checking.
     """
 
-    validateFiles([inFile])
+    inFile = outFile = apRes.infile[0] 
 
-    
+    if (apRes.output != None):
+        outFile = apRes.output 
+
     cacheFile = Cache.read(inFile)
 
     
-    if (cacheFile.lines.get(removeEntry) == None):
-        print("Error. Entry '{}' is not contained in cachefile '{}'.".format(str(removeEntry), str(inFile)))
-        exit(0)
+    if (cacheFile.lines.get(apRes.key) == None):
+        raise ValueError(f"Entry '{apRes.key}' is not contained in cachefile '{inFile}'.")
 
 
+    # FIXME: want to use the "safe" library version instead of these functions.
+    # At time of commit library still needs to be updated.
     jsonData = read_cache(inFile)
 
-    del jsonData["cache"][removeEntry]
+    del jsonData["cache"][apRes.key]
 
 
     write_cache(jsonData, outFile)
 
-    print("[*] Writing to output file '{}' after removing entry '{}' completed.".format(str(outFile), str(removeEntry)))
-
-    exit(0)
+    print("\n[*] Writing to output file '{}' after removing entry '{}' completed.".format(str(outFile), str(apRes.key)))
 
 
 
 
 
-def cli_convert(apRes):
+
+def cli_convert(apRes: argparse.Namespace):
     """The main function for handling the conversion of a cachefile.
     Not completed yet."""
-    print("[*] In cli_convert()")
-
-def cli_inspect(apRes):
-    """The main function for handling the inspection of a cachefile.
-    Not completed yet."""
-
-    # we only allow either add, remove, or check
-    if (apRes.append and not (apRes.remove != None or apRes.check != None)):
-        if (apRes.output == None):
-            apRes.output = apRes.infile 
-
-        cliAppend(apRes.infile, apRes.file, apRes.output)
-
-    elif (not apRes.append and apRes.remove != None and apRes.check == None):
-        if (apRes.output == None):
-            apRes.output = apRes.infile 
-
-        cliRemove(apRes.infile, apRes.remove, apRes.output)
+    # Tobias: for you
+    print("[*] cli_convert not implemented yet")
 
 
-    elif (not apRes.append and apRes.remove == None and apRes.check != None):
-        cliCheck(apRes.infile, apRes.check)
 
-    else:
-        print("Error. You must select one of the options appending, removing or checking.")
-        exit(1)
-
-    exit()
-
-def cli_merge(apRes):
+def cli_merge(apRes: argparse.Namespace):
     """The main function for handling the merging of two or more cachefiles.
     First, we must validate the existence and validity of cachefiles, then we merge."""
     fileList = apRes.files
 
+    if (len(fileList) < 2):
+        raise ValueError(f"Not enough (< 2) files provided to merge.")
     # Perform validation, equivalence and after merge.
-    validateFiles(fileList)
+
+    for i in fileList:
+        Cache.read(i)
+
+    # Tobias: You would need to add convert to equivalent schema version function call here
 
     checkEquivalence(fileList)
 
     mergeFiles(fileList, apRes.output)
 
     print("[*] Merging finished. Output file: '{}'.".format(str(apRes.output)))
-    exit()
