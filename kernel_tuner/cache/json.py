@@ -1,8 +1,8 @@
 """Provides types for cache in JSON format."""
 
 from __future__ import annotations
-from typing import TypedDict, Any
 
+from typing import Any, TypedDict
 
 _CacheLineOptionalJSON = TypedDict("_CacheLineOptionalJSON", {"GFLOP/s": float})
 
@@ -37,3 +37,36 @@ class CacheFileJSON(TypedDict):
     tune_params: dict[str, list]  # is every param a number?
     objective: str
     cache: dict[str, CacheLineJSON]
+
+class T4ResultMeasurementJSON(TypedDict):
+    """TypedDict for the measurements of a T4 result line."""
+
+    name: str
+    value: float
+    unit: str
+
+class T4ResultTimesJSON(TypedDict):
+    """TypedDict for the times of a T4 result line."""
+
+    compilation_time: float
+    framework: float
+    search_algorithm: float
+    validation: float
+    runtimes: list[float]
+
+class T4ResultLineJSON(TypedDict):
+    """TypedDict for the contents of a T4 result line."""
+
+    timestamp: str
+    configuration: dict[str, Any]
+    times: T4ResultTimesJSON
+    invalidity: str
+    correctness: int
+    measurements: list[T4ResultMeasurementJSON]
+    objectives: list[str]
+
+class T4FileJSON(TypedDict):
+    """TypedDict for the contents of a T4 file."""
+
+    results: list[T4ResultLineJSON] 
+    schema_version: str
