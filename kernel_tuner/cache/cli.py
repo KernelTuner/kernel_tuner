@@ -66,7 +66,7 @@ def main():
 	convert = sp.add_parser("convert", help="Convert a cache file from one version to another.")
 	convert.add_argument("-i", "--infile", required=True, help="The input cache file to read from.")
 	convert.add_argument("-o", "--output", help="The (optional) output (JSON) file to write to.")
-	convert.add_argument("-T", "--target-version", required=True, help="The destination target version. Write 'T4' for conversion to T4 format.")
+	convert.add_argument("-T", "--target-version", help="The destination target version. Write 'T4' for conversion to T4 format.")
 	convert.set_defaults(func=cli_convert)
 
 

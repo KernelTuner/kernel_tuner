@@ -6,10 +6,13 @@ Merging now works, inspecting and conversion still needs to be completed.
 
 from .cache import Cache
 from .file import read_cache, write_cache 
+from .convert import convert_cache_file
 
 from pathlib import Path
 from os import PathLike
 from typing import List
+
+from shutil import copyfile
 
 import argparse
 import json
@@ -156,8 +159,24 @@ def cli_delete(apRes: argparse.Namespace):
 def cli_convert(apRes: argparse.Namespace):
     """The main function for handling the conversion of a cachefile.
     Not completed yet."""
-    # Tobias: for you
-    print("[*] cli_convert not implemented yet")
+
+    read_file  = apRes.infile
+    write_file = apRes.output
+
+    if not fileExists(read_file):
+        raise ValueError(f"Can not find file \"{read_file}\"")
+    
+    if write_file is not None and write_file[-5:] != ".json":
+        raise ValueError(f"Please specify a .json file for the output file")
+    
+    if write_file is None:
+        write_file = read_file
+    else:
+        copyfile(read_file, write_file)
+    
+    convert_cache_file(write_file)
+
+
 
 
 
