@@ -35,7 +35,8 @@ DEFAULT_VALUES = {
 
 def convert_cache_file(filestr : PathLike, 
                        conversion_functions=None,
-                       versions=None):
+                       versions=None,
+                       target_version=None):
     """Convert a cache file to the newest version.
 
     Parameters:
@@ -45,6 +46,9 @@ def convert_cache_file(filestr : PathLike,
         mapping a version to a corresponding conversion function.
 
         ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+
+        ``target`` is the version that the cache should be converted to. By
+        default it is the latest version in ``versions``.
 
     Raises:
         ``ValueError`` if:
@@ -62,6 +66,9 @@ def convert_cache_file(filestr : PathLike,
     if versions is None:
         versions: list[str] = VERSIONS
 
+    if target_version is None:
+        target_version = versions[-1]
+        
     # Load cache
     cache = read_cache(filestr)
 
@@ -69,7 +76,6 @@ def convert_cache_file(filestr : PathLike,
         cache = unversioned_convert(cache, CACHE_SCHEMAS_DIR)
     
     version = cache["schema_version"]
-    target_version = versions[-1]
 
     if semver.VersionInfo.parse(version).compare(target_version) > 0:
         raise ValueError(f"Target version ({target_version}) should not be "
