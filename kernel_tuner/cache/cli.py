@@ -42,7 +42,7 @@ When you are in the main /kernel_tuner directory, start a poetry shell (by runni
 
 # import required files from within kernel tuner
 from .cache import Cache
-from .cli_fct import cli_convert, cli_delete, cli_get, cli_merge
+from .cli_fct import cli_convert, cli_delete, cli_get, cli_merge, cli_t4
 
 import argparse
 
@@ -65,11 +65,14 @@ def main():
 
 	convert = sp.add_parser("convert", help="Convert a cache file from one version to another.")
 	convert.add_argument("-i", "--infile", required=True, help="The input cache file to read from.")
-	convert.add_argument("-o", "--output", help="The (optional) output (JSON) file to write to.")
-	convert.add_argument("-T", "--target", help="The destination target version. Write 'T4' for conversion to T4 format.")
+	convert.add_argument("-o", "--output", help="The (optional) output JSON file to write to.")
+	convert.add_argument("-T", "--target", help="The destination target version. By default the newest version")
 	convert.set_defaults(func=cli_convert)
 
-
+	t4 = sp.add_parser("t4", help="Convert a cache file to the T4 auto-tuning format.")
+	t4.add_argument("-i", "--infile", required=True, help="The input cache file to read from.")
+	t4.add_argument("-o", "--output", required=True, help="The output JSON file to write to.")
+	t4.set_defaults(func=cli_t4)
 
 	delete = sp.add_parser("delete-line", help="Delete a certain cacheline entry from the specified cachefile.")
 	delete.add_argument("infile", nargs=1, help="The input file to delete from.")

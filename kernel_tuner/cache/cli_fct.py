@@ -6,7 +6,7 @@ Merging now works, inspecting and conversion still needs to be completed.
 
 from .cache import Cache
 from .file import read_cache, write_cache 
-from .convert import convert_cache_file
+from .convert import convert_cache_file, convert_cache_to_t4
 
 from pathlib import Path
 from os import PathLike
@@ -60,7 +60,6 @@ def checkEquivalence(listOfFiles: List[PathLike]):
         if (baseFile.tune_params_keys != tempFile.tune_params_keys):
             print("Error in merging; key 'tune_params_keys' is not equivalent for files '{}' and '{}'.".format(str(listOfFiles[0]), str(listOfFiles[i])))
             exit()
-
 
 def mergeFiles(listOfFiles: List[PathLike], ofile: PathLike):
     """Merges the actual files and writes to the file `ofile`."""
@@ -153,13 +152,8 @@ def cli_delete(apRes: argparse.Namespace):
 
 
 
-
-
-
 def cli_convert(apRes: argparse.Namespace):
-    """The main function for handling the conversion of a cachefile.
-    Not completed yet."""
-
+    """The main function for handling the version conversion of a cachefile."""
     read_file  = apRes.infile
     write_file = apRes.output
 
@@ -169,6 +163,7 @@ def cli_convert(apRes: argparse.Namespace):
     if write_file is not None and write_file[-5:] != ".json":
         raise ValueError(f"Please specify a .json file for the output file")
     
+    # If no output file is specified, let the conversion overwrite the input file
     if write_file is None:
         write_file = read_file
     else:
@@ -178,6 +173,23 @@ def cli_convert(apRes: argparse.Namespace):
                        target_version=apRes.target)
 
 
+
+def cli_t4(apRes: argparse.Namespace):
+    """The main function for handling the T4 conversion of a cachefile. """
+    read_file  = apRes.infile
+    write_file = apRes.output
+
+    if not fileExists(read_file):
+        raise ValueError(f"Can not find file \"{read_file}\"")
+    
+    if write_file is not None and write_file[-5:] != ".json":
+        raise ValueError(f"Please specify a .json file for the output file")
+    
+    cache = read_cache(read_file)
+
+    t4_cache = convert_cache_to_t4(cache)
+
+    write_cache(t4_cache, write_file)
 
 
 
