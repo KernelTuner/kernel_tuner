@@ -26,6 +26,9 @@
         },
         {
           "type": "integer"
+        },
+        {
+          "type": "string"
         }
       ],
       "description": "The size of the problem."

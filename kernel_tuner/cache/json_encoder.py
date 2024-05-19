@@ -13,7 +13,6 @@ import numpy as np
 
 import kernel_tuner.util as util
 
-
 INFINITY = float("inf")
 
 

@@ -106,7 +106,25 @@ class TestCacheFileSchema:
             ("cache", []),
         ],
     )
-    def test_property_types__in_root(self, cache, is_invalid, key, value):
+    def test_property_types_invalid__in_root(self, cache, is_invalid, key, value):
+        cache[key] = value
+
+    @pytest.mark.parametrize(
+        "key,value",
+        [
+            ("schema_version", "1.0.0"),
+            ("device_name", "test_device"),
+            ("kernel_name", "test_kernel"),
+            ("problem_size", 100),
+            ("problem_size", [100, 100]),
+            ("problem_size", "num_blocks_x"),
+            ("tune_params_keys", ["block_size_x"]),
+            ("tune_params", { "block_size_x": [128, 256, 512, 1024] }),
+            ("objective", "time"),
+            ("cache", {})
+        ],
+    )
+    def test_property_types_valid__in_root(self, cache, is_valid, key, value):
         cache[key] = value
 
     @pytest.mark.parametrize(
