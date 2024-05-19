@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "TODO",
+  "description": "This schema defines the structure of a cache file used by the Kernel Tuner project. Cache files store benchmarking results for individual kernel configurations during the tuning process. They enable resuming interrupted tuning sessions, conducting simulations, and generating visualizations of the search space.",
   "type": "object",
   "properties": {
     "schema_version": {
