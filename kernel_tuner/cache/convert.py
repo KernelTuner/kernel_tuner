@@ -64,11 +64,11 @@ def convert_cache_file(filestr : PathLike,
         conversion_functions = CONVERSION_FUNCTIONS
 
     if versions is None:
-        versions: list[str] = VERSIONS
+        versions = list(map(str, VERSIONS))
 
     if target_version is None:
         target_version = versions[-1]
-        
+
     # Load cache
     cache = read_cache(filestr)
 
@@ -84,6 +84,10 @@ def convert_cache_file(filestr : PathLike,
     if version not in versions:
         raise ValueError(f"Version ({version}) should be a real "
                          f"existing version")
+    
+    if target_version not in versions:
+        raise ValueError(f"Target version ({target_version}) should be "
+                         f"a real existing version")
     
     # Main convert loop
     while version != target_version:

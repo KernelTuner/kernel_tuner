@@ -174,7 +174,8 @@ def cli_convert(apRes: argparse.Namespace):
     else:
         copyfile(read_file, write_file)
     
-    convert_cache_file(write_file)
+    convert_cache_file(filestr=write_file,
+                       target_version=apRes.target)
 
 
 
