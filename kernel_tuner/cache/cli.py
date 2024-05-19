@@ -45,15 +45,9 @@ from .cache import Cache
 from .cli_fct import cli_convert, cli_delete, cli_get, cli_merge, cli_t4
 
 import argparse
+import sys
 
-
-def main():
-	"""
-	The main function performing the argument parsing and following the user-specified actions
-	(one of {convert, delete-line, get-line, merge}); based on this the appropiate function is called.
-	"""
-
-
+def parse_args(args):
 	# Setup parsing
 
 	parser = argparse.ArgumentParser(
@@ -93,9 +87,17 @@ def main():
 
 
 	# Parse input and call the appropiate function.
-	res = parser.parse_args()
+	return parser.parse_args(args)
 
-	res.func(res)
+
+def main():
+	"""
+	The main function performing the argument parsing and following the user-specified actions
+	(one of {convert, delete-line, get-line, merge}); based on this the appropiate function is called.
+	"""
+	parser = parse_args(sys.argv[1:])
+
+	parser.func(parser)
 
 if __name__ == "__main__":
 	main()
