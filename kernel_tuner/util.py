@@ -1130,7 +1130,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
             raise ValueError(
                 "Cannot load cache which contains results for different kernel"
             )
-        if c.problem_size is not None and not callable(kernel_options.problem_size):
+        if not callable(kernel_options.problem_size):
             # if problem_size is not iterable, compare directly
             if not hasattr(kernel_options.problem_size, "__iter__"):
                 if c.problem_size != kernel_options.problem_size:

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "TODO",
+  "description": "This schema defines the structure of a cache file used by the Kernel Tuner project. Cache files store benchmarking results for individual kernel configurations during the tuning process. They enable resuming interrupted tuning sessions, conducting simulations, and generating visualizations of the search space.",
   "type": "object",
   "properties": {
     "schema_version": {
@@ -17,19 +17,35 @@
       "description": "The name of the kernel."
     },
     "problem_size": {
-      "type": "array",
-      "description": "The size of the problem.",
-      "items": {"type": "integer"}
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "The size of the problem."
     },
     "tune_params_keys": {
       "type": "array",
       "description": "The keys (names) of all the parameters being tuned.",
-      "items": {"type": "string"}
+      "items": {
+        "type": "string"
+      }
     },
     "tune_params": {
       "type": "object",
       "description": "The nested JSON object containing for each parameter the array of tuning values.",
-      "additionalProperties": {"type": "array"}
+      "additionalProperties": {
+        "type": "array"
+      }
     },
     "objective": {
       "type": "string",
@@ -44,23 +60,52 @@
           "properties": {
             "time": {
               "anyOf": [
-                {"type": "string"},
-                {"type": "number"}
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
               ]
             },
             "times": {
-              "type": "array", 
-              "items": {"type": "number"}
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
             },
-            "compile_time": {"type": "number"},
-            "verification_time": {"type": "number"},
-            "benchmark_time": {"type": "number"},
-            "GFLOP/s": {"type": "number"},
-            "strategy_time": {"type": "number"},
-            "framework_time": {"type": "number"},
-            "timestamp": {"type": "string", "format": "date-time"}
+            "compile_time": {
+              "type": "number"
+            },
+            "verification_time": {
+              "type": "number"
+            },
+            "benchmark_time": {
+              "type": "number"
+            },
+            "GFLOP/s": {
+              "type": "number"
+            },
+            "strategy_time": {
+              "type": "number"
+            },
+            "framework_time": {
+              "type": "number"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            }
           },
-          "required": ["time", "compile_time", "verification_time", "benchmark_time", "strategy_time", "framework_time", "timestamp"],
+          "required": [
+            "time",
+            "compile_time",
+            "verification_time",
+            "benchmark_time",
+            "strategy_time",
+            "framework_time",
+            "timestamp"
+          ],
           "additionalProperties": true
         }
       },
@@ -69,6 +114,14 @@
       }
     }
   },
-  "required": ["schema_version", "device_name", "kernel_name", "tune_params_keys", "tune_params", "objective", "cache"]
+  "required": [
+    "schema_version",
+    "device_name",
+    "kernel_name",
+    "problem_size",
+    "tune_params_keys",
+    "tune_params",
+    "objective",
+    "cache"
+  ]
 }
-

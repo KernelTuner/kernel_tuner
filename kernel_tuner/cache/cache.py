@@ -461,7 +461,7 @@ class Cache:
     @cached_property
     def problem_size(self) -> Any:
         """Problem size of the kernel being tuned."""
-        return self._cache_json.get("problem_size") # NOTE: not required, so should not raise KeyError
+        return self._cache_json["problem_size"]
 
     @cached_property
     def tune_params_keys(self) -> list[str]:
