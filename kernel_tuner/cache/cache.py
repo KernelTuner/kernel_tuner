@@ -224,10 +224,16 @@ class Cache:
                 raise ValueError("Argument compile_time should be a float")
             if not isinstance(verification_time, (int, float)):
                 raise ValueError("Argument verification_time should be an int or float")
+            # It is possible that verification_time is a bool which is also of instance int. Check and cast to be sure.
+            elif isinstance(verification_time, bool):
+                verification_time = int(verification_time)
             if not isinstance(benchmark_time, float):
                 raise ValueError("Argument benchmark_time should be a float")
             if not isinstance(strategy_time, (int, float)):
                 raise ValueError("Argument strategy_time should be an int or float")
+            # It is possible that strategy_time is a bool which is also of instance int. Check and cast to be sure.
+            elif isinstance(strategy_time, bool):
+                strategy_time = int(strategy_time)
             if not isinstance(framework_time, float):
                 raise ValueError("Argument framework_time should be a float")
             if not isinstance(timestamp, datetime):
