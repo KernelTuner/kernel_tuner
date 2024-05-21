@@ -17,7 +17,6 @@ from shutil import copyfile
 import argparse
 import json
 import jsonschema
-import re 
 
 
 def fileExists(fileName: PathLike) -> bool:
