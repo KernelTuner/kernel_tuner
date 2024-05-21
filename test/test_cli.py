@@ -44,3 +44,30 @@ class TestCli:
 
         with pytest.raises(ValueError):
             parser.func(parser)
+
+
+    def test_merge_one_file(self):
+        parser = parse_args(['merge', '1.json', '-o', 'test.json'])
+
+        with pytest.raises(ValueError):
+            parser.func(parser)
+
+    def test_merge_invalid_file(self, tmp_path):
+        invalid_file = tmp_path / "nonexistent.json"
+        invalid_file_two = tmp_path / "nonexistent2.json"
+
+        parser = parse_args(["merge", str(invalid_file), str(invalid_file_two), "-o", "test.json"])
+
+        with pytest.raises(FileNotFoundError):
+            parser.func(parser)
+
+
+    def test_delete_invalid_file(self, tmp_path):
+        delete_file = tmp_path / "nonexistent.json"
+
+        parser = parse_args(["delete-line", str(delete_file), "--key", "1"])
+
+        with pytest.raises(FileNotFoundError):
+            parser.func(parser)
+
+

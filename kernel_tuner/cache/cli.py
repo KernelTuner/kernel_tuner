@@ -4,14 +4,19 @@ The CLI tool to manipulate kernel tuner cache files. Works with the cache file m
 (convert.py) and other helper functions (defined in cli_fct.py).
 
 Basic usage:
-$ cli {convert, delete-line, get-line, merge}
+$ cli {convert, t4, delete-line, get-line, merge}
 
 We can:
-	  - `convert`: using the functionality from convert.py one can convert to a specified version. Write 'T4' for converting to T4 format.
+	  - `convert`: using the functionality from convert.py one can convert to a specified version.
               Within conversion (all required yet nonpositional arguments):
                 - `-i/--infile`: the input file to read from.
-                - `-T/--target-version`: The version to convert to. Write 'T4' to convert to T4 format.
-                - `-o/--output`: The output file.
+                - `-T/--target-version`: The version to convert to. 
+                - `-o/--output`: The converted output file.
+
+       - `t4`: using the functionality from convert.py one can convert to T4 format.
+       		  Within t4 conversion:
+       		  	- `-i/--infile`: the input file to read from.
+       		  	- `-o/--output`: the t4-converted output file.
 
        - `delete-line`: using the cache library one can delete from a certain cachefile. 
               We have arguments:
@@ -28,11 +33,14 @@ We can:
                 - <files>: The list of (space separated) input files to read in order to merge the cachefiles.
                 - `-o, --output`: The output file to write the merged result to.
 
+      -
+
 Example usages:
 $ cli convert --infile 1.json -v 1.1.0 -o 2.json
 $ cli delete-line 1.json --key <key> 
 $ cli get-line 1.json --key <key>
 $ cli merge 1.json 2.json 3.json 4.json -o merged.json
+$ cli t4 -i unconverted.json -o converted.json
 
 
 [*] For now, we run it as a module:
