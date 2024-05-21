@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "description": "Schema for cache files used in kernel tuning analysis, capturing parameters and metrics for easy comparison of tuning configurations and performance results",
+    "description": "Schema for analyzing Kernel Tuner cache files, capturing parameters and metrics to facilitate easy comparison of tuning configurations and performance results",
     "type": "object",
     "properties": {
         "schema_version": {
