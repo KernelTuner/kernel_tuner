@@ -102,9 +102,6 @@ default_block_size_names = [
     "block_size_x",
     "block_size_y",
     "block_size_z",
-    # "ngangs",
-    # "nworkers",
-    # "vlength",
 ]
 
 
