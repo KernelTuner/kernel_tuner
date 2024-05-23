@@ -141,6 +141,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.StopCriterionReached"><code class="docutils literal notranslate"><span class="pre">StopCriterionReached</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_list"><code class="docutils literal notranslate"><span class="pre">check_argument_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_type"><code class="docutils literal notranslate"><span class="pre">check_argument_type()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restriction"><code class="docutils literal notranslate"><span class="pre">check_restriction()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restrictions"><code class="docutils literal notranslate"><span class="pre">check_restrictions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_stop_criterion"><code class="docutils literal notranslate"><span class="pre">check_stop_criterion()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_thread_block_dimensions"><code class="docutils literal notranslate"><span class="pre">check_thread_block_dimensions()</span></code></a></li>
@@ -1690,9 +1691,15 @@ implement default like this:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.check_restriction">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_restriction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#kernel_tuner.util.check_restriction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether a configuration meets a search space restriction.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.check_restrictions">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_restrictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#kernel_tuner.util.check_restrictions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check whether a specific configuration meets the search space restrictions.</p>
+<dd><p>Check whether a configuration meets the search space restrictions.</p>
 </dd></dl>
 
 <dl class="py function">
