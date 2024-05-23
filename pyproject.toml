@@ -106,6 +106,7 @@ markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
 # sphinx-autodoc-typehints = "^1.24.0"
 
 # ATTENTION: if anything is changed here, run `poetry update`
+# Please also run `poetry export -f requirements.txt --output doc/requirements_test.txt --with test`
 [tool.poetry.group.test]
 optional = true
 [tool.poetry.group.test.dependencies]
