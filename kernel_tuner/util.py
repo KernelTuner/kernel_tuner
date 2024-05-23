@@ -102,9 +102,6 @@ default_block_size_names = [
     "block_size_x",
     "block_size_y",
     "block_size_z",
-    "ngangs",
-    "nworkers",
-    "vlength",
 ]
 
 
@@ -248,9 +245,37 @@ def check_block_size_params_names_list(block_size_names, tune_params):
                 UserWarning,
             )
 
+def check_restriction(restrict, params: dict) -> bool:
+    """Check whether a configuration meets a search space restriction."""
+    # if it's a python-constraint, convert to function and execute
+    if isinstance(restrict, Constraint):
+        restrict = convert_constraint_restriction(restrict)
+        return restrict(list(params.values()))
+    # if it's a string, fill in the parameters and evaluate
+    elif isinstance(restrict, str):
+        return eval(replace_param_occurrences(restrict, params))
+    # if it's a function, call it
+    elif callable(restrict):
+        return restrict(**params)
+    # if it's a tuple, use only the parameters in the second argument to call the restriction
+    elif (isinstance(restrict, tuple) and len(restrict) == 2
+        and callable(restrict[0]) and isinstance(restrict[1], (list, tuple))):
+        # unpack the tuple
+        restrict, selected_params = restrict
+        # look up the selected parameters and their value
+        selected_params = dict((key, params[key]) for key in selected_params)
+        # call the restriction
+        if isinstance(restrict, Constraint):
+            restrict = convert_constraint_restriction(restrict)
+            return restrict(list(selected_params.values()))
+        else:
+            return restrict(**selected_params)
+    # otherwise, raise an error
+    else:
+        raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")
 
 def check_restrictions(restrictions, params: dict, verbose: bool) -> bool:
-    """Check whether a specific configuration meets the search space restrictions."""
+    """Check whether a configuration meets the search space restrictions."""
     if callable(restrictions):
         valid = restrictions(params)
         if not valid and verbose is True:
@@ -260,40 +285,13 @@ def check_restrictions(restrictions, params: dict, verbose: bool) -> bool:
     for restrict in restrictions:
         # Check the type of each restriction and validate accordingly. Re-implement as a switch when Python >= 3.10.
         try:
-            # if it's a python-constraint, convert to function and execute
-            if isinstance(restrict, Constraint):
-                restrict = convert_constraint_restriction(restrict)
-                if not restrict(params.values()):
-                    valid = False
-                    break
-            # if it's a string, fill in the parameters and evaluate
-            elif isinstance(restrict, str):
-                if not eval(replace_param_occurrences(restrict, params)):
-                    valid = False
-                    break
-            # if it's a function, call it
-            elif callable(restrict):
-                if not restrict(**params):
-                    valid = False
-                    break
-            # if it's a tuple, use only the parameters in the second argument to call the restriction
-            elif (isinstance(restrict, tuple) and len(restrict) == 2
-                and callable(restrict[0]) and isinstance(restrict[1], (list, tuple))):
-                # unpack the tuple
-                restrict, selected_params = restrict
-                # look up the selected parameters and their value
-                selected_params = dict((key, params[key]) for key in selected_params)
-                # call the restriction
-                if not restrict(**selected_params):
-                    valid = False
-                    break
-            # otherwise, raise an error
-            else:
-                raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")
+            valid = check_restriction(restrict, params)
+            if not valid:
+                break
         except ZeroDivisionError:
             logging.debug(f"Restriction {restrict} with configuration {get_instance_string(params)} divides by zero.")
     if not valid and verbose is True:
-        print(f"skipping config {get_instance_string(params)}, reason: config fails restriction")
+        print(f"skipping config {get_instance_string(params)}, reason: config fails restriction {restrict}")
     return valid
 
 
@@ -311,6 +309,9 @@ def convert_constraint_restriction(restrict: Constraint):
     elif isinstance(restrict, MaxProdConstraint):
         def f_restrict(p):
             return np.prod(p) <= restrict._maxprod
+    elif isinstance(restrict, MinProdConstraint):
+        def f_restrict(p):
+            return np.prod(p) >= restrict._minprod
     elif isinstance(restrict, MaxSumConstraint):
         def f_restrict(p):
             return sum(p) <= restrict._maxsum
@@ -1005,6 +1006,9 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
             params_used = list(params_used)
             finalized_constraint = None
             if try_to_constraint and " or " not in res and " and " not in res:
+                # if applicable, strip the outermost round brackets
+                while parsed_restriction[0] == '(' and parsed_restriction[-1] == ')' and '(' not in parsed_restriction[1:] and ')' not in parsed_restriction[:1]:
+                    parsed_restriction = parsed_restriction[1:-1]
                 # check if we can turn this into the built-in numeric comparison constraint
                 finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
                 if finalized_constraint is None:
@@ -1059,8 +1063,15 @@ def compile_restrictions(restrictions: list, tune_params: dict, monolithic = Fal
     # return the restrictions and used parameters
     if len(restrictions_ignore) == 0:
         return compiled_restrictions
-    restrictions_ignore = list(zip(restrictions_ignore, (() for _ in restrictions_ignore)))
-    return restrictions_ignore + compiled_restrictions
+
+    # use the required parameters or add an empty tuple for unknown parameters of ignored restrictions
+    noncompiled_restrictions = []
+    for r in restrictions_ignore:
+        if isinstance(r, tuple) and len(r) == 2 and isinstance(r[1], (list, tuple)):
+            noncompiled_restrictions.append(r)
+        else:
+            noncompiled_restrictions.append((r, ()))
+    return noncompiled_restrictions + compiled_restrictions
 
 
 def process_cache(cache, kernel_options, tuning_options, runner):
@@ -1181,7 +1192,7 @@ def correct_open_cache(cache, open_cache=True):
         filestr = cachefile.read().strip()
 
     # if file was not properly closed, pretend it was properly closed
-    if len(filestr) > 0 and not filestr[-3:] == "}\n}":
+    if len(filestr) > 0 and not filestr[-3:] in ["}\n}", "}}}"]:
         # remove the trailing comma if any, and append closing brackets
         if filestr[-1] == ",":
             filestr = filestr[:-1]
