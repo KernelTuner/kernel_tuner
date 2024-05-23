@@ -80,9 +80,10 @@ def mergeFiles(listOfFiles: List[PathLike], ofile: PathLike):
         temp_file = Cache.read(listOfFiles[i])
 
         for line in temp_file.lines:
-            temp_line = temp_file.lines[line]
-            tune_params = {key: temp_line[key] for key in temp_file.tune_params_keys}
-            resulting_output.lines.append(time=temp_line["time"],
+            if resulting_output.lines.get(line) != None:
+                temp_line = temp_file.lines[line]
+                tune_params = {key: temp_line[key] for key in temp_file.tune_params_keys}
+                resulting_output.lines.append(time=temp_line["time"],
                              compile_time=temp_line["compile_time"],
                              verification_time=temp_line["verification_time"],
                              benchmark_time=temp_line["benchmark_time"],
@@ -93,10 +94,13 @@ def mergeFiles(listOfFiles: List[PathLike], ofile: PathLike):
                              GFLOP_per_s=temp_line["GFLOP/s"],
                              **tune_params)
 
+            else:
+                raise ValueError(f"Multiple entries in files for cacheline with key '{line}'.")
+
 
 
 def cli_get(apRes: argparse.Namespace):
-    """Checks if entry (string) `checkEntry` is inside file `inFile`, by using
+    """Checks if entry (string) `checkEntry` is inside file `in_file`, by using
     the `cache.py` library.
     Does not perform syntax checking on `checkEntry`."""
 
