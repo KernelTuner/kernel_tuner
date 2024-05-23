@@ -23,45 +23,46 @@ def fileExists(fileName: PathLike) -> bool:
     """Validates if the file specified by fileName even exists."""
     return Path(fileName).is_file()
 
-def checkEquivalence(listOfFiles: List[PathLike]):
+def checkEquivalence(file_list: List[PathLike]):
     """Checks equivalence of set parameters for files in `listOfFiles`.
     Assumes that all files have been validated.
     We use the first file (listOfFiles[0]) as our base file, and compare everything with that."""
-    base_file = Cache.read(listOfFiles[0])
+    base_file = Cache.read(file_list[0])
 
-    for i in range(1, len(listOfFiles)):
-        temp_file = Cache.read(listOfFiles[i])
+
+    for file in file_list[1:]:
+        temp_file = Cache.read(file)
 
         # Now the equivalence logic
 
         # Merging is yet to be updated to work with different schema versions.
         
         if (base_file.version != temp_file.version):
-            raise ValueError(f"Error in merging; files '{listOfFiles[0]}' and '{listOfFiles[i]}' are not of the same schema version.")
+            raise ValueError(f"Error in merging; files '{file_list[0]}' and '{file_list[i]}' are not of the same schema version.")
 
         if (base_file.device_name != temp_file.device_name):
-            raise ValueError(f"Error in merging; key 'device_name' is not equivalent for files '{listOfFiles[0]}' and '{listOfFiles[i]}'.")
+            raise ValueError(f"Error in merging; key 'device_name' is not equivalent for files '{file_list[0]}' and '{file_list[i]}'.")
 
         if (base_file.kernel_name != temp_file.kernel_name):
-            raise ValueError(f"Error in merging; key 'kernel_name' is not equivalent for files '{listOfFiles[0]}' and '{listOfFiles[i]}'.")
+            raise ValueError(f"Error in merging; key 'kernel_name' is not equivalent for files '{file_list[0]}' and '{file_list[i]}'.")
 
         if (base_file.problem_size != temp_file.problem_size):
-            raise ValueError(f"Error in merging; key 'problem_size' is not equivalent for files '{listOfFiles[0]}' and '{listOfFiles[i]}'.")
+            raise ValueError(f"Error in merging; key 'problem_size' is not equivalent for files '{file_list[0]}' and '{file_list[i]}'.")
 
         if (base_file.objective != temp_file.objective):
-            raise ValueError(f"Error in merging; key 'objective' is not equivalent for files '{listOfFiles[0]}' and '{listOfFiles[i]}'.")
+            raise ValueError(f"Error in merging; key 'objective' is not equivalent for files '{file_list[0]}' and '{file_list[i]}'.")
 
         if (base_file.tune_params_keys != temp_file.tune_params_keys):
-            raise ValueError(f"Error in merging; key 'tune_params_keys' is not equivalent for files '{listOfFiles[0]}' and '{listOfFiles[i]}'.")
+            raise ValueError(f"Error in merging; key 'tune_params_keys' is not equivalent for files '{file_list[0]}' and '{file_list[i]}'.")
 
 
-def mergeFiles(listOfFiles: List[PathLike], ofile: PathLike):
+def mergeFiles(file_list: List[PathLike], ofile: PathLike):
     """Merges the actual files and writes to the file `ofile`."""
     """Assumes that all files have been validated."""
     # FIXME: Cannot be guaranteed that the order of the cachelines in the files is also kept when merging
     # From cache.py (json.load).
 
-    resulting_output = Cache.read(listOfFiles[0])
+    resulting_output = Cache.read(file_list[0])
     resulting_output.create(ofile, \
         device_name=resulting_output.device_name, \
         kernel_name=resulting_output.kernel_name, \
@@ -74,29 +75,23 @@ def mergeFiles(listOfFiles: List[PathLike], ofile: PathLike):
     resulting_output = Cache.read(ofile)
 
     # Now for each file add the cache content.
-    # Does not check for duplicates
-    for i in range(0, len(listOfFiles)):
+    for file in file_list:
 
-        temp_file = Cache.read(listOfFiles[i])
+        temp_file = Cache.read(file)
 
         for line in temp_file.lines:
-            if resulting_output.lines.get(line) != None:
-                temp_line = temp_file.lines[line]
-                tune_params = {key: temp_line[key] for key in temp_file.tune_params_keys}
-                resulting_output.lines.append(time=temp_line["time"],
-                             compile_time=temp_line["compile_time"],
-                             verification_time=temp_line["verification_time"],
-                             benchmark_time=temp_line["benchmark_time"],
-                             strategy_time=temp_line["strategy_time"],
-                             framework_time=temp_line["framework_time"],
-                             timestamp=temp_file.lines.get(line).timestamp,
-                             times=temp_line["times"],
-                             GFLOP_per_s=temp_line["GFLOP/s"],
-                             **tune_params)
-
-            else:
-                raise ValueError(f"Multiple entries in files for cacheline with key '{line}'.")
-
+            temp_line = temp_file.lines[line]
+            tune_params = {key: temp_line[key] for key in temp_file.tune_params_keys}
+            resulting_output.lines.append(time=temp_line["time"],
+                         compile_time=temp_line["compile_time"],
+                         verification_time=temp_line["verification_time"],
+                         benchmark_time=temp_line["benchmark_time"],
+                         strategy_time=temp_line["strategy_time"],
+                         framework_time=temp_line["framework_time"],
+                         timestamp=temp_file.lines.get(line).timestamp,
+                         times=temp_line["times"],
+                         GFLOP_per_s=temp_line["GFLOP/s"],
+                         **tune_params)
 
 
 def cli_get(apRes: argparse.Namespace):
@@ -106,49 +101,62 @@ def cli_get(apRes: argparse.Namespace):
 
     in_file = Cache.read(apRes.infile[0])
 
-    cache_line = in_file.lines.get(apRes.key)
+    cache_line = in_file.lines[apRes.key]
 
-    if cache_line == None:
-        raise ValueError(f"Cacheline entry '{apRes.key}' is not contained in cachefile '{apRes.infile[0]}'.")
-
-    else:
-        print("[*] Cacheline entry '{}' content [*]\n\n************************".format(str(apRes.key)))
-        print(dict(cache_line.items()))
-        print("************************")
+    print("[*] Cacheline entry '{}' content [*]\n\n************************".format(str(apRes.key)))
+    print(dict(cache_line.items()))
+    print("************************")
 
 
 
 def cli_delete(apRes: argparse.Namespace):
     """
     Tries to remove entry `key` from file `in_file`, by using the
-    `file.py` functions read_cache, write_cache. 
-    We delete the json entry ["cache"][`removeEntry`] from the returned JSON object
-    from read_cache, then use write_cache() to write the result to the desired output file
-    `out_file`.
+    `cache.py` functions. 
     First we check if the entry actually exists in the cachefile using the library. If not, there
     is nothing to do.
+    If it exists, we delete by inverse-appending.
     """
 
     in_file = out_file = apRes.infile[0] 
 
+    delete_key = apRes.key
+
     if (apRes.output != None):
         out_file = apRes.output 
 
-    cache_file = Cache.read(in_file)
 
-    
-    if (cache_file.lines.get(apRes.key) == None):
-        raise ValueError(f"Entry '{apRes.key}' is not contained in cachefile '{in_file}'.")
+    cache_infile = Cache.read(in_file)
+
+    if (cache_infile.lines.get(delete_key) == None):
+        raise ValueError(f"Entry '{delete_key}' is not contained in cachefile '{in_file}'.")
+
+    cache_infile.create(out_file, \
+        device_name=cache_infile.device_name, \
+        kernel_name=cache_infile.kernel_name, \
+        problem_size=cache_infile.problem_size, \
+        tune_params_keys=cache_infile.tune_params_keys, \
+        tune_params=cache_infile.tune_params, \
+        objective=cache_infile.objective)
 
 
-    # FIXME: want to use the "safe" library version instead of these functions.
-    # library still needs to be updated.
-    json_data = read_cache(in_file)
+    # We read so the ._filename changes for append
+    resulting_output = Cache.read(out_file)
 
-    del json_data["cache"][apRes.key]
-
-
-    write_cache(json_data, out_file)
+    for line in cache_infile.lines:
+        if line != delete_key:
+            temp_line = cache_infile.lines[line]
+            tune_params = {key: temp_line[key] for key in cache_infile.tune_params_keys}
+            resulting_output.lines.append(time=temp_line["time"],
+                         compile_time=temp_line["compile_time"],
+                         verification_time=temp_line["verification_time"],
+                         benchmark_time=temp_line["benchmark_time"],
+                         strategy_time=temp_line["strategy_time"],
+                         framework_time=temp_line["framework_time"],
+                         timestamp=cache_infile.lines.get(line).timestamp,
+                         times=temp_line["times"],
+                         GFLOP_per_s=temp_line["GFLOP/s"],
+                         **tune_params)
 
     print("\n[*] Writing to output file '{}' after removing entry '{}' completed.".format(str(out_file), str(apRes.key)))
 
@@ -156,7 +164,7 @@ def cli_delete(apRes: argparse.Namespace):
 
 def cli_convert(apRes: argparse.Namespace):
     """The main function for handling the version conversion of a cachefile."""
-    read_file  = apRes.infile
+    read_file = apRes.infile
     write_file = apRes.output
 
     if not fileExists(read_file):
@@ -202,6 +210,7 @@ def cli_merge(apRes: argparse.Namespace):
 
     if (len(file_list) < 2):
         raise ValueError(f"Not enough (< 2) files provided to merge.")
+
     # Perform validation, equivalence and after merge.
 
     for i in file_list:
