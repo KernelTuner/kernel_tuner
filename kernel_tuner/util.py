@@ -892,7 +892,6 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
             except Exception:
                 # it's not a solvable subexpression, return None
                 return None
-            
 
         # either the left or right side of the equation must evaluate to a constant number
         left_num = is_or_evals_to_number(left)
@@ -1064,7 +1063,7 @@ def compile_restrictions(restrictions: list, tune_params: dict, monolithic = Fal
     # return the restrictions and used parameters
     if len(restrictions_ignore) == 0:
         return compiled_restrictions
-    
+
     # use the required parameters or add an empty tuple for unknown parameters of ignored restrictions
     noncompiled_restrictions = []
     for r in restrictions_ignore:
