@@ -1384,7 +1384,7 @@ Allowed values are np.ndarray, cupy.ndarray, and/or np.int32, np.float32, and so
 
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.run_kernel">
-<span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.run_kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>runs the kernel once, returns whatever the kernel returns</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1394,9 +1394,11 @@ Allowed values are np.ndarray, cupy.ndarray, and/or np.int32, np.float32, and so
 order in the code. The list should be prepared using
 ready_argument_list().</p></li>
 <li><p><strong>threads</strong> (<em>any</em>) – Ignored, but left as argument for now to have the same
-interface as CudaFunctions and OpenCLFunctions.</p></li>
+interface as Backend.</p></li>
 <li><p><strong>grid</strong> (<em>any</em>) – Ignored, but left as argument for now to have the same
-interface as CudaFunctions and OpenCLFunctions.</p></li>
+interface as Backend.</p></li>
+<li><p><strong>stream</strong> – Ignored, but left as argument for now to have the same
+interface as Backend.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
