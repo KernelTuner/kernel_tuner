@@ -146,9 +146,7 @@ class CompilerFunctions(CompilerBackend):
 
         for i, arg in enumerate(arguments):
             if not (isinstance(arg, (np.ndarray, np.number)) or is_cupy_array(arg)):
-                raise TypeError(
-                    f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}"
-                )
+                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}")
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
@@ -210,11 +208,7 @@ class CompilerFunctions(CompilerBackend):
 
         # detect whether to use nvcc as default instead of g++, may overrule an explicitly passed g++
         if (
-            (
-                (suffix == ".cu")
-                or ("#include <cuda" in kernel_string)
-                or ("cudaMemcpy" in kernel_string)
-            )
+            ((suffix == ".cu") or ("#include <cuda" in kernel_string) or ("cudaMemcpy" in kernel_string))
             and self.compiler == "g++"
             and self.nvcc_available
         ):
@@ -271,11 +265,7 @@ class CompilerFunctions(CompilerBackend):
             if platform.system() == "Darwin":
                 lib_extension = ".dylib"
 
-            subprocess.check_call(
-                [self.compiler, "-c", source_file]
-                + compiler_options
-                + ["-o", filename + ".o"]
-            )
+            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
             subprocess.check_call(
                 [self.compiler, filename + ".o"]
                 + compiler_options
@@ -319,7 +309,7 @@ class CompilerFunctions(CompilerBackend):
         C backend does not support asynchronous launches"""
         pass
 
-    def run_kernel(self, func, c_args, threads, grid):
+    def run_kernel(self, func, c_args, threads, grid, stream=None):
         """runs the kernel once, returns whatever the kernel returns
 
         :param func: A C function compiled for this specific configuration
@@ -331,11 +321,15 @@ class CompilerFunctions(CompilerBackend):
         :type c_args: list(Argument)
 
         :param threads: Ignored, but left as argument for now to have the same
-            interface as CudaFunctions and OpenCLFunctions.
+            interface as Backend.
         :type threads: any
 
         :param grid: Ignored, but left as argument for now to have the same
-            interface as CudaFunctions and OpenCLFunctions.
+            interface as Backend.
+        :type grid: any
+
+        :param stream: Ignored, but left as argument for now to have the same
+            interface as Backend.
         :type grid: any
 
         :returns: A robust average of values returned by the C function.

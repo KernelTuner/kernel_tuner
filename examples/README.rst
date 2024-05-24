@@ -18,7 +18,7 @@ Below we list the example applications and the features they illustrate.
 
 Vector Add
 ----------
-[`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add.py>`__] [`CUDA-C++ <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda-c++/vector_add.py>`__] [`OpenCL <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add.py>`__] [`C <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py>`__] [`Fortran <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/fortran/vector_add.py>`__]
+[`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add.py>`__] [`CUDA-C++ <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda-c++/vector_add.py>`__] [`OpenCL <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add.py>`__] [`C <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py>`__] [`Fortran <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/fortran/vector_add.py>`__] [`OpenACC-C++ <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/directives/vector_add_c_openacc.py>`__] [`OpenACC-Fortran <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/directives/vector_add_fortran_openacc.py>`__]
  - use Kernel Tuner to tune a simple kernel
 
 Stencil
