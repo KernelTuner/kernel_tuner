@@ -12,32 +12,39 @@ jobs:
         environment: dev_environment
         runs-on: ubuntu-latest
         steps:
-            - name: Get Python 3.10
-              uses: actions/setup-python@v4
+            - name: Get Python 3.12
+              uses: actions/setup-python@v5
               with:
-                python-version: '3.10' 
+                  python-version: "3.12"
             - name: Checkout
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
             - name: Get version set env, exit if beta release
               run: |
-                echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-                if [[ "$RELEASE_VERSION" == *"b"* ]]; then
-                  echo "Version is a beta release. Cancel workflow."
-                  exit 0
-                fi
+                  echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+                  if [[ "$RELEASE_VERSION" == *"b"* ]]; then
+                    echo "Version is a beta release. Cancel workflow."
+                    exit 0
+                  fi
             - name: Install dependencies
               run: |
                   sudo apt-get update;
                   sudo apt-get install pandoc;
                   pip install -e .
-            - name: Build and Commit
-              uses: sphinx-notes/pages@v2
+            - name: Build
+              uses: sphinx-notes/pages@v3
               with:
+                  python_version: 3.12
                   requirements_path: doc/requirements.txt
                   documentation_path: doc/source
-                  target_path: ${{ env.RELEASE_VERSION }}
+                  publish: false
+            - name: Commit
+              uses: peaceiris/actions-gh-pages@v4
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ${{ steps.deployment.outputs.artifact }}
+                  destination_dir: ${{ env.RELEASE_VERSION }}
             - name: Redirect stable to new release
               run: |
                   echo "Redirecting stable to newly released version " $RELEASE_VERSION
