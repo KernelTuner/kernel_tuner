@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Development environment &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=359c27e9"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -110,12 +112,12 @@
   <div class="toctree-wrapper compound">
 </div>
 <section id="development-environment">
-<span id="dev-environment"></span><h1>Development environment<a class="headerlink" href="#development-environment" title="Permalink to this heading">¶</a></h1>
+<span id="dev-environment"></span><h1>Development environment<a class="headerlink" href="#development-environment" title="Link to this heading">¶</a></h1>
 <p>The following steps help you set up a full development environment. <strong>These steps are only needed for core developers of Kernel Tuner who need to test against multiple Python versions
 or change dependencies of Kernel Tuner.</strong></p>
 <p>For small changes to the code, please see the simplified instructions in the <a class="reference internal" href="contributing.html#simple-dev-env"><span class="std std-ref">Simple development setup</span></a>.</p>
 <section id="local-setup">
-<h2>Local setup<a class="headerlink" href="#local-setup" title="Permalink to this heading">¶</a></h2>
+<h2>Local setup<a class="headerlink" href="#local-setup" title="Link to this heading">¶</a></h2>
 <p>Steps with <code class="code highlight bash docutils literal highlight-bash">sudo</code> access (e.g. on a local device):</p>
 <ol class="arabic simple">
 <li><p>Clone the git repository to the desired location: <code class="code highlight bash docutils literal highlight-bash">git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KernelTuner/kernel_tuner.git</code>, and <code class="code highlight bash docutils literal highlight-bash"><span class="nb">cd</span></code> to it.</p></li>
@@ -138,12 +140,12 @@ or change dependencies of Kernel Tuner.</strong></p>
 <li><dl class="simple">
 <dt>Install the required Python versions:</dt><dd><ul class="simple">
 <li><p>On some systems, additional packages may be needed to build Python versions. For example on Ubuntu: <code class="code highlight bash docutils literal highlight-bash">sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>build-essential<span class="w"> </span>zlib1g-dev<span class="w"> </span>libncurses5-dev<span class="w"> </span>libgdbm-dev<span class="w"> </span>libnss3-dev<span class="w"> </span>libssl-dev<span class="w"> </span>libreadline-dev<span class="w"> </span>libffi-dev<span class="w"> </span>libsqlite3-dev<span class="w"> </span>wget<span class="w"> </span>libbz2-dev<span class="w"> </span>liblzma-dev<span class="w"> </span>lzma</code>.</p></li>
-<li><p>Install the Python versions with: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.8<span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11</code>. The reason we’re installing all these versions as opposed to just one, is so we can test against all supported Python versions.</p></li>
+<li><p>Install the Python versions with: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span><span class="m">3</span>.12</code>. The reason we’re installing all these versions as opposed to just one, is so we can test against all supported Python versions.</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><p>Set the Python versions so they can be found: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="m">3</span>.8<span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11</code> (replace <code class="code highlight bash docutils literal highlight-bash"><span class="nb">local</span></code> with <code class="code highlight bash docutils literal highlight-bash">global</code> when not using the virtualenv).</p></li>
+<li><p>Set the Python versions so they can be found: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span><span class="m">3</span>.12</code> (replace <code class="code highlight bash docutils literal highlight-bash"><span class="nb">local</span></code> with <code class="code highlight bash docutils literal highlight-bash">global</code> when not using the virtualenv).</p></li>
 <li><p>Setup a local virtual environment in the folder: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>virtualenv<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span>kerneltuner</code> (or whatever environment name and Python version you prefer).</p></li>
 <li><dl class="simple">
 <dt><a class="reference external" href="https://python-poetry.org/docs/#installing-with-the-official-installer">Install Poetry</a>.</dt><dd><ul class="simple">
@@ -184,7 +186,7 @@ or change dependencies of Kernel Tuner.</strong></p>
 </ol>
 </section>
 <section id="cluster-setup">
-<h2>Cluster setup<a class="headerlink" href="#cluster-setup" title="Permalink to this heading">¶</a></h2>
+<h2>Cluster setup<a class="headerlink" href="#cluster-setup" title="Link to this heading">¶</a></h2>
 <p>Steps without <code class="code highlight bash docutils literal highlight-bash">sudo</code> access (e.g. on a cluster):</p>
 <ol class="arabic">
 <li><p>Clone the git repository to the desired location: <code class="code highlight bash docutils literal highlight-bash">git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KernelTuner/kernel_tuner.git</code>.</p></li>
@@ -263,7 +265,7 @@ or change dependencies of Kernel Tuner.</strong></p>
 </ol>
 </section>
 <section id="running-tests">
-<h2>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this heading">¶</a></h2>
+<h2>Running tests<a class="headerlink" href="#running-tests" title="Link to this heading">¶</a></h2>
 <p>To run the tests you can use <code class="code highlight bash docutils literal highlight-bash">nox</code> (to run against all supported Python versions in isolated environments) and <code class="code highlight bash docutils literal highlight-bash">pytest</code> (to run against the local Python version, see below) in the top-level directory.
 For full coverage, make Nox use the additional tests (such as cupy and cuda-python) with <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests</code>.</p>
 <p>The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run <code class="code highlight bash docutils literal highlight-bash">nox</code> with the <code class="code highlight bash docutils literal highlight-bash">small-disk</code> option. This removes the other environment caches before each session is ran (note that this will take longer to run). A better option would be to change the location environments are stored in with <code class="code highlight bash docutils literal highlight-bash">envdir</code> in the <code class="code highlight bash docutils literal highlight-bash">noxsettings.toml</code> file.</p>
@@ -284,7 +286,7 @@ It is also possible to invoke PyTest from the ‘Testing’ tab in Visual Studio
 Note that these will also use the installed package.</p>
 </section>
 <section id="building-documentation">
-<h2>Building documentation<a class="headerlink" href="#building-documentation" title="Permalink to this heading">¶</a></h2>
+<h2>Building documentation<a class="headerlink" href="#building-documentation" title="Link to this heading">¶</a></h2>
 <p>Documentation is located in the <code class="docutils literal notranslate"><span class="pre">doc/</span></code> directory. This is where you can type
 <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code> to generate the html pages in the <code class="docutils literal notranslate"><span class="pre">doc/build/html</span></code> directory.
 The source files used for building the documentation are located in

@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Backends &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=359c27e9"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -108,13 +110,13 @@
   <div class="toctree-wrapper compound">
 </div>
 <section id="backends">
-<h1>Backends<a class="headerlink" href="#backends" title="Permalink to this heading">¶</a></h1>
+<h1>Backends<a class="headerlink" href="#backends" title="Link to this heading">¶</a></h1>
 <p>Kernel Tuner implements multiple backends for CUDA, one for OpenCL, one for HIP, and a generic
 Compiler backend.</p>
 <p>Selecting a backend is in most cases automatic and is done based on the kernel’s programming
 language, but sometimes you’ll want to specifically choose a backend.</p>
 <section id="cuda-backends">
-<h2>CUDA Backends<a class="headerlink" href="#cuda-backends" title="Permalink to this heading">¶</a></h2>
+<h2>CUDA Backends<a class="headerlink" href="#cuda-backends" title="Link to this heading">¶</a></h2>
 <p>PyCUDA is default CUDA backend in Kernel Tuner. It is comparable in feature completeness with CuPy.
 Because the HIP kernel language is identical to the CUDA kernel language, HIP is included here as well.
 To use HIP on nvidia GPUs, see <a class="reference external" href="https://github.com/jatinx/hip-on-nv">https://github.com/jatinx/hip-on-nv</a>.</p>
@@ -131,7 +133,7 @@ present in header files.</p>
 limited support is implemented by Kernel Tuner to support templated kernels for the PyCUDA and
 CUDA-Python backends.</p>
 <table class="docutils align-default" id="id1">
-<caption><span class="caption-text">Backend feature support</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<caption><span class="caption-text">Backend feature support</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
 <thead>
 <tr class="row-odd"><th class="head"><p>Feature</p></th>
 <th class="head"><p>PyCUDA</p></th>
@@ -195,7 +197,7 @@ CUDA-Python backends.</p>
 below lists which Python package is required, how the backend can be selected and which compiler is
 used to compile the kernels.</p>
 <table class="docutils align-default" id="id2">
-<caption><span class="caption-text">Backend usage and compiler</span><a class="headerlink" href="#id2" title="Permalink to this table">¶</a></caption>
+<caption><span class="caption-text">Backend usage and compiler</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
 <thead>
 <tr class="row-odd"><th class="head"><p>Feature</p></th>
 <th class="head"><p>PyCUDA</p></th>

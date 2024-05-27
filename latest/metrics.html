@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Metrics and Objectives &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=359c27e9"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -107,10 +109,10 @@
            <div itemprop="articleBody">
              
   <section id="metrics-and-objectives">
-<h1>Metrics and Objectives<a class="headerlink" href="#metrics-and-objectives" title="Permalink to this heading">¶</a></h1>
+<h1>Metrics and Objectives<a class="headerlink" href="#metrics-and-objectives" title="Link to this heading">¶</a></h1>
 <p>Metrics and custom tuning objectives are two related features that are explained on this page.</p>
 <section id="metrics">
-<span id="id1"></span><h2>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">¶</a></h2>
+<span id="id1"></span><h2>Metrics<a class="headerlink" href="#metrics" title="Link to this heading">¶</a></h2>
 <p>User-defined metrics serve as an easy way for the user to define their own derived results based on the measurements reported
 by Kernel Tuner, and possibly any additional observers. This allows for example to implement performance metrics, such as
 performance in floating point operations per second (e.g. GFLOP/s), or other metrics that might be more specific to the
@@ -131,7 +133,7 @@ work performed by the first kernel depends on tunable parameters such as the thr
 number of thread blocks.</p>
 </section>
 <section id="tuning-objectives">
-<span id="objectives"></span><h2>Tuning Objectives<a class="headerlink" href="#tuning-objectives" title="Permalink to this heading">¶</a></h2>
+<span id="objectives"></span><h2>Tuning Objectives<a class="headerlink" href="#tuning-objectives" title="Link to this heading">¶</a></h2>
 <p>Users can specify tuning objectives other than the default optimization objective, which is kernel execution time. When using
 an optimization strategy other than exhaustive search (brute force), this objective is used to guide the optimization through
 the parameter space. The tuning objective is specified using the <code class="docutils literal notranslate"><span class="pre">objective=</span></code> optional parameter of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> and

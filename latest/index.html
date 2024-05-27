@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Kernel Tuner documentation &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=359c27e9"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -108,7 +110,7 @@
            <div itemprop="articleBody">
              
   <section id="the-kernel-tuner-documentation">
-<h1>The Kernel Tuner documentation<a class="headerlink" href="#the-kernel-tuner-documentation" title="Permalink to this heading">¶</a></h1>
+<h1>The Kernel Tuner documentation<a class="headerlink" href="#the-kernel-tuner-documentation" title="Link to this heading">¶</a></h1>
 <p>Kernel Tuner is a software development tool for the creation of highly-optimized and tuned GPU applications.</p>
 <p>The Kernel Tuner documentation pages are mostly about Kernel Tuner itself, but there are a number of related repositories that
 are considered part of the Kernel Tuner family:</p>
@@ -120,7 +122,7 @@ are considered part of the Kernel Tuner family:</p>
 </ul>
 </div></blockquote>
 <section id="quick-install">
-<h2>Quick install<a class="headerlink" href="#quick-install" title="Permalink to this heading">¶</a></h2>
+<h2>Quick install<a class="headerlink" href="#quick-install" title="Link to this heading">¶</a></h2>
 <p>The easiest way to install the Kernel Tuner is using pip:</p>
 <p>To tune CUDA kernels:</p>
 <ul class="simple">
@@ -145,7 +147,7 @@ are considered part of the Kernel Tuner family:</p>
 dependencies can be found under <a class="reference internal" href="install.html#install"><span class="std std-ref">Installation</span></a>.</p>
 </section>
 <section id="example-usage">
-<h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this heading">¶</a></h2>
+<h2>Example usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
 <p>The following shows a simple example for tuning a CUDA kernel:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">__global__ void vector_add(float *c, float *a, float *b, int n) {</span>
@@ -172,7 +174,7 @@ dependencies can be found under <a class="reference internal" href="install.html
 </div>
 </section>
 <section id="citation">
-<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading">¶</a></h2>
+<h2>Citation<a class="headerlink" href="#citation" title="Link to this heading">¶</a></h2>
 <p>If you use Kernel Tuner in research or research software, please cite the most relevant among the following publications:</p>
 <p>The first paper on Kernel Tuner, please note that the capabilities of Kernel Tuner have significantly expanded since the first publication:</p>
 <div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@article<span class="nb">{</span>kerneltuner,

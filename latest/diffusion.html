@@ -1,20 +1,22 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Diffusion &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=359c27e9"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -115,7 +117,7 @@
            <div itemprop="articleBody">
              
   <section id="Diffusion">
-<h1>Diffusion<a class="headerlink" href="#Diffusion" title="Permalink to this heading">¶</a></h1>
+<h1>Diffusion<a class="headerlink" href="#Diffusion" title="Link to this heading">¶</a></h1>
 <p>This guide is designed to show you the whole process starting from modeling a physical process to a Python implementation to creating optimized and auto-tuned GPU application using Kernel Tuner.</p>
 <p>In this guide, we will use <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion">diffusion</a> as an example application.</p>
 <p>We start with modeling the physical process of diffusion, for which we create a simple numerical implementation in Python. Then we create a CUDA kernel that performs the same computation, but on the GPU. Once we have a CUDA kernel, we start using the Kernel Tuner for auto-tuning our GPU application. And finally, we’ll introduce a few code optimizations to our CUDA kernel that will improve performance, but also add more parameters to tune on using the Kernel Tuner.</p>
@@ -123,7 +125,7 @@
 <p><strong>Note:</strong> If you are reading this guide on the Kernel Tuner’s documentation pages, note that you can actually run this guide as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/kerneltuner/kernel_tuner">GitHub repository</a>. Install using <em>pip install .[tutorial,cuda]</em> and you’re ready to go! You can start the guide by typing “jupyter notebook” in the “kernel_tuner/doc/source” directory.</p>
 </div>
 <section id="id1">
-<h2>Diffusion<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
+<h2>Diffusion<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
 <p>Put simply, diffusion is the redistribution of something from a region of high concentration to a region of low concentration without bulk motion. The concept of diffusion is widely used in many fields, including physics, chemistry, biology, and many more.</p>
 <p>Suppose that we take a metal sheet, in which the temperature is exactly equal to one degree everywhere in the sheet. Now if we were to heat a number of points on the sheet to a very high temperature, say a thousand degrees, in an instant by some method. We could see the heat diffuse from these hotspots to the cooler areas. We are assuming that the metal does not melt. In addition, we will ignore any heat loss from radiation or other causes in this example.</p>
 <p>We can use the <a class="reference external" href="https://en.wikipedia.org/wiki/Diffusion_equation">diffusion equation</a> to model how the heat diffuses through our metal sheet:</p>
@@ -159,7 +161,7 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 \end{equation*}</span></p>
 </section>
 <section id="Python-implementation">
-<h2>Python implementation<a class="headerlink" href="#Python-implementation" title="Permalink to this heading">¶</a></h2>
+<h2>Python implementation<a class="headerlink" href="#Python-implementation" title="Link to this heading">¶</a></h2>
 <p>We can create a Python function that implements the numerical approximation defined in the above equation. For simplicity we’ll use the assumption of a free boundary condition.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -262,7 +264,7 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 </div>
 </section>
 <section id="Computing-on-the-GPU">
-<h2>Computing on the GPU<a class="headerlink" href="#Computing-on-the-GPU" title="Permalink to this heading">¶</a></h2>
+<h2>Computing on the GPU<a class="headerlink" href="#Computing-on-the-GPU" title="Link to this heading">¶</a></h2>
 <p>The next step in this guide is to implement a GPU kernel that will allow us to run our problem on the GPU. We store the kernel code in a Python string, because we can directly compile and run the kernel from Python. In this guide, we’ll use the CUDA programming model to implement our kernels.</p>
 <blockquote>
 <div><p>If you prefer OpenCL over CUDA, don’t worry. Everything in this guide applies as much to OpenCL as it does to CUDA. But we will use CUDA for our examples, and CUDA terminology in the text.</p>
@@ -391,7 +393,7 @@ u'_{x,y} = u_{x,y} + \delta t \times \left( u_{x,y_{i+1}}+u_{x_{i+1},y}-4u_{{x_i
 <p>Also, if you think the Python boilerplate code to call a GPU kernel was a bit messy, we’ve got good news for you! From now on, we’ll only use the Kernel Tuner to compile and benchmark GPU kernels, which we can do with much cleaner Python code.</p>
 </section>
 <section id="Auto-Tuning-with-the-Kernel-Tuner">
-<h2>Auto-Tuning with the Kernel Tuner<a class="headerlink" href="#Auto-Tuning-with-the-Kernel-Tuner" title="Permalink to this heading">¶</a></h2>
+<h2>Auto-Tuning with the Kernel Tuner<a class="headerlink" href="#Auto-Tuning-with-the-Kernel-Tuner" title="Link to this heading">¶</a></h2>
 <p>Remember that previously we’ve set the thread block dimensions to 16 by 16. But how do we actually know if that is the best performing setting? That is where auto-tuning comes into play. Basically, it is very difficult to provide an answer through performance modeling and as such, we’d rather use the Kernel Tuner to compile and benchmark all possible kernel configurations.</p>
 <p>But before we continue, we’ll increase the problem size, because the GPU is very likely underutilized.</p>
 <div class="nbinput nblast docutils container">
@@ -487,7 +489,7 @@ too much shared memory. And likewise for kernels that use too many registers to 
 <p>However, knowing the best performing combination of tunable parameters becomes even more important when we start to further optimize our CUDA kernel. In the next section, we’ll add a simple code optimization and show how this affects performance.</p>
 </section>
 <section id="Using-Shared-Memory">
-<h2>Using Shared Memory<a class="headerlink" href="#Using-Shared-Memory" title="Permalink to this heading">¶</a></h2>
+<h2>Using Shared Memory<a class="headerlink" href="#Using-Shared-Memory" title="Link to this heading">¶</a></h2>
 <p>Shared memory, is a special type of the memory available in CUDA. Shared memory can be used by threads within the same thread block to exchange and share values. It is in fact, one of the very few ways for threads to communicate on the GPU.</p>
 <p>The idea is that we’ll try improve the performance of our kernel by using shared memory as a software controlled cache. There are already caches on the GPU, but most GPUs only cache accesses to global memory in L2. Shared memory is closer to the multiprocessors where the thread blocks are executed, comparable to an L1 cache.</p>
 <p>However, because there are also hardware caches, the performance improvement from this step is expected to not be that great. The more fine-grained control that we get by using a software managed cache, rather than a hardware implemented cache, comes at the cost of some instruction overhead. In fact, performance is quite likely to degrade a little. However, this intermediate step is necessary for the next optimization step we have in mind.</p>
@@ -570,7 +572,7 @@ best performing configuration: block_size_x=64, block_size_y=4, time=1.048070430
 </div>
 </section>
 <section id="Tiling-GPU-Code">
-<h2>Tiling GPU Code<a class="headerlink" href="#Tiling-GPU-Code" title="Permalink to this heading">¶</a></h2>
+<h2>Tiling GPU Code<a class="headerlink" href="#Tiling-GPU-Code" title="Link to this heading">¶</a></h2>
 <p>One very useful code optimization is called tiling, sometimes also called thread-block-merge. You can look at it in this way, currently we have many thread blocks that together work on the entire domain. If we were to use only half of the number of thread blocks, every thread block would need to double the amount of work it performs to cover the entire domain. However, the threads may be able to reuse part of the data and computation that is required to process a single output element for every
 element beyond the first.</p>
 <p>This is a code optimization because effectively we are reducing the total number of instructions executed by all threads in all thread blocks. So in a way, were are condensing the total instruction stream while keeping the all the really necessary compute instructions. More importantly, we are increasing data reuse, where previously these values would have been reused from the cache or in the worst-case from GPU memory.</p>
@@ -876,7 +878,7 @@ block_size_x=128, block_size_y=4, tile_size_x=2, tile_size_y=4, time=0.540383994
 </div>
 </section>
 <section id="Storing-the-results">
-<h2>Storing the results<a class="headerlink" href="#Storing-the-results" title="Permalink to this heading">¶</a></h2>
+<h2>Storing the results<a class="headerlink" href="#Storing-the-results" title="Link to this heading">¶</a></h2>
 <p>While it’s nice that the Kernel Tuner prints the tuning results to stdout, it’s not that great if we’d have to parse what is printed to get the results. That is why the <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> returns a data structure that holds all the results. We’ve actually already used this data in the above bit of Python code.</p>
 <p><code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> returns a list of dictionaries, where each benchmarked kernel is represented by a dictionary containing the tunable parameters for that particular kernel configuration and one more entry called ‘time’. The list of dictionaries format is very flexible and can easily be converted other formats that are easy to parse formats, like json or csv, for further analysis.</p>
 <p>You can execute the following code block to store the tuning results to both a json and a csv file (if you have Pandas installed).</p>

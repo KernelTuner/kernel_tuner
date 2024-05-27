@@ -1,20 +1,22 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Grid on GPU with Kernel Tuner &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=359c27e9"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="_static/documentation_options.js?v=f2a433a1"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -104,13 +106,13 @@
            <div itemprop="articleBody">
              
   <section id="3D-Grid-on-GPU-with-Kernel-Tuner">
-<h1>3D Grid on GPU with Kernel Tuner<a class="headerlink" href="#3D-Grid-on-GPU-with-Kernel-Tuner" title="Permalink to this heading">¶</a></h1>
+<h1>3D Grid on GPU with Kernel Tuner<a class="headerlink" href="#3D-Grid-on-GPU-with-Kernel-Tuner" title="Link to this heading">¶</a></h1>
 <p>In this tutorial we are going to see how to map a series of Gaussian functions, each located at a different point on a 3D a grid. We are going to optimize the GPU code and compare its performance with the CPU implementation.</p>
 <div class="admonition note">
 <p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install the Kernel Tuner and Jupyter Notebooks and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/doc/source” directory.</p>
 </div>
 <section id="Let's-start-on-the-CPU">
-<h2>Let’s start on the CPU<a class="headerlink" href="#Let's-start-on-the-CPU" title="Permalink to this heading">¶</a></h2>
+<h2>Let’s start on the CPU<a class="headerlink" href="#Let's-start-on-the-CPU" title="Link to this heading">¶</a></h2>
 <p>Before delving into the GPU implementation, let’s start with a simple CPU implementation of the problem. The problem at hand is to compute the values of the following function</p>
 <p><span class="math">\begin{equation} \nonumber
 f = \sum_{i=1}^{N}\exp\left(-\beta \sqrt{(x-x_i)^2+(y-y_i)^2+(z-z_i)^2}\right)
@@ -175,7 +177,7 @@ CPU Execution time 52320.160627 ms
 <p>Depending on your hardware it might take a few seconds for the calculations above to finish.</p>
 </section>
 <section id="Let's-move-to-the-GPU">
-<h2>Let’s move to the GPU<a class="headerlink" href="#Let's-move-to-the-GPU" title="Permalink to this heading">¶</a></h2>
+<h2>Let’s move to the GPU<a class="headerlink" href="#Let's-move-to-the-GPU" title="Link to this heading">¶</a></h2>
 <p>Let’s see now how that will look like on the GPU. We first write a kernel that does the same calculation as the above function. As you can see see below, the variables <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code>, <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_z</span></code> are not yet defined here. These variables are used to set the number of threads per thread block on the GPU and are the main parameters that we will optimize in this tutorial. During tuning, Kernel Tuner will automatically insert <code class="docutils literal notranslate"><span class="pre">#define</span></code> statements for these parameters at
 the top of the kernel code. So for now we don’t have to specify their values.</p>
 <p>The dimensions of the problem <code class="docutils literal notranslate"><span class="pre">nx</span></code>, <code class="docutils literal notranslate"><span class="pre">ny</span></code>, and <code class="docutils literal notranslate"><span class="pre">nz</span></code>, are the number of grid points in the x, y, and z dimensions. We can again use Kernel Tuner to insert these parameters into the code.</p>
@@ -221,7 +223,7 @@ the top of the kernel code. So for now we don’t have to specify their values.<
 </div>
 </div>
 <section id="Tune-the-kernel">
-<h3>Tune the kernel<a class="headerlink" href="#Tune-the-kernel" title="Permalink to this heading">¶</a></h3>
+<h3>Tune the kernel<a class="headerlink" href="#Tune-the-kernel" title="Link to this heading">¶</a></h3>
 <p>We can now use the tuner to optimize the thread block dimensions on our GPU. To do so we define the tunable parameters of our kernel using the <code class="docutils literal notranslate"><span class="pre">tune_params</span></code> dictionary, which assigns to each block size the values we want the tuner to explore. We also use the tunable parameters to insert the domain dimensions <code class="docutils literal notranslate"><span class="pre">nx</span></code>, <code class="docutils literal notranslate"><span class="pre">ny</span></code>, and <code class="docutils literal notranslate"><span class="pre">nz</span></code>.</p>
 <p>We also define a list containing the arguments of the CUDA function (AddGrid) above. Since we only want to optimize the performance of the kernel we only consider here one center in the middle of the grid. Note that Kernel Tuner needs either <code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="docutils literal notranslate"><span class="pre">numpy.scalar</span></code> as arguments of the kernel. Hence we need to be specific on the types of the Gaussians positions.</p>
 <div class="nbinput nblast docutils container">
@@ -366,7 +368,7 @@ best performing configuration: block_size_x=2, block_size_y=4, block_size_z=32, 
 </section>
 </section>
 <section id="Using-the-optimized-parameters">
-<h2>Using the optimized parameters<a class="headerlink" href="#Using-the-optimized-parameters" title="Permalink to this heading">¶</a></h2>
+<h2>Using the optimized parameters<a class="headerlink" href="#Using-the-optimized-parameters" title="Link to this heading">¶</a></h2>
 <p>Now that we have determined which parameters are the best suited for our application we can specify them in our kernel and run it. In our case, the optimal grid size determined by the tuner were <em>block_size_x = 4, block_size_y = 2, block_size_z=16</em>. We therefore use these parameters here to define the block size. The grid size is simply obtained by dividing the dimension of the problem by the corresponding block size.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
