@@ -1,14 +1,21 @@
+from pytest import raises
+
 import kernel_tuner
 from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.register import RegisterObserver
 from kernel_tuner.observers.observer import BenchmarkObserver
+from kernel_tuner.observers.register import RegisterObserver
 
-from .context import skip_if_no_pycuda, skip_if_no_pynvml, skip_if_no_cupy, skip_if_no_cuda, skip_if_no_opencl, skip_if_no_pyhip
+from .context import (
+    skip_if_no_cuda,
+    skip_if_no_cupy,
+    skip_if_no_opencl,
+    skip_if_no_pycuda,
+    skip_if_no_pyhip,
+    skip_if_no_pynvml,
+)
+from .test_hip_functions import env as env_hip  # noqa: F401
+from .test_opencl_functions import env as env_opencl  # noqa: F401
 from .test_runners import env  # noqa: F401
-from .test_opencl_functions import env as env_opencl    # noqa: F401
-from .test_hip_functions import env as env_hip          # noqa: F401
-
-from pytest import raises
 
 
 @skip_if_no_pycuda
@@ -62,8 +69,8 @@ def test_register_observer_opencl(env_opencl):
     assert "OpenCL" in str(err.value)
 
 @skip_if_no_pyhip
-def test_register_observer_hip(env_opencl):
+def test_register_observer_hip(env_hip):
     with raises(NotImplementedError) as err:
-        kernel_tuner.tune_kernel(*env_opencl, observers=[RegisterObserver()], lang='HIP')
+        kernel_tuner.tune_kernel(*env_hip, observers=[RegisterObserver()], lang='HIP')
     assert err.errisinstance(NotImplementedError)
     assert "Hip" in str(err.value)

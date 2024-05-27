@@ -56,15 +56,15 @@ generate-setup-file = false
 
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"          # NOTE if we drop 3.8 support, remove "from __future__ import annotations"  # NOTE when changing the supported Python versions, also change the test versions in the noxfile
-numpy = "^1.22.2"               # set to 1.22.2 instead of 1.22.4 to match oldest-supported-numpy required by pycuda
-scipy = "^1.10.1"               # held back by Python 3.8 support (dropped from ^1.11)
+python = ">=3.9,<3.13"          # NOTE when changing the supported Python versions, also change the test versions in the noxfile
+numpy = ">=1.26.0"              # Python 3.12 requires numpy at least 1.26
+scipy = ">=1.11.0"
 packaging = "*"                 # required by file_utils
 jsonschema = "*"
 python-constraint2 = "^2.0.0b5"
 xmltodict = "*"
-pandas = "^2.0.0"
-scikit-learn = "^1.0.2"
+pandas = ">=2.0.0"
+scikit-learn = ">=1.0.2"
 # Torch can be used with Kernel Tuner, but is not a dependency, should be up to the user to use it
 
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
@@ -96,12 +96,12 @@ tutorial = ["jupyter", "matplotlib", "nvidia-ml-py"]
 [tool.poetry.group.docs]
 optional = true
 [tool.poetry.group.docs.dependencies]
-sphinx = "^7.1.2"           # held back by Python 3.8 support (dropped from ^7.2)
-sphinx_rtd_theme = "^1.3.0" # updated from "^0.1.9"
+sphinx = "^7.3.7"
+sphinx_rtd_theme = "^2.0.0"
 sphinx-pyproject = "^0.3"
 nbsphinx = "^0.9"
 ipython = "*"
-pytest = "^7.4.0"           # TODO why do we need pytest here?
+pytest = "^8.2.0"           # TODO why do we need pytest here?
 markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
 # sphinx-autodoc-typehints = "^1.24.0"
 
@@ -110,14 +110,14 @@ markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
 [tool.poetry.group.test]
 optional = true
 [tool.poetry.group.test.dependencies]
-pytest = "^7.4.0"
-pytest-cov = "^4.1.0"
-mock = "^5.0.0"
-nox = "^2023.4.22"
+pytest = "^8.2.0"
+pytest-cov = "^5.0.0"
+mock = "^5.1.0"
+nox = "^2024.4.15"
 nox-poetry = "^1.0.3"
-ruff = "^0.0.292"
+ruff = "^0.4.4"
 pep440 = "^0.1.2"
-tomli = "^2.0.1"      # can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
+tomli = "^2.0.1"      # held back by Python <= 3.10, can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
 
 # development dependencies are unused for now, as this is already covered by test and docs
 # # ATTENTION: if anything is changed here, run `poetry update`
