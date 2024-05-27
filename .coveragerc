@@ -1,8 +1,0 @@
-[run]
-source = kernel_tuner
-omit = *test*, *examples*, *doc*
-
-[report]
-exclude_lines =
-    if __name__ == .__main__.:
-    pragma: no cover

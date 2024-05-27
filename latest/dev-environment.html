@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Development environment &mdash; Kernel Tuner 1.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=359c27e9"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Contribution guide" href="contributing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="backends.html">Backends</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Development environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#local-setup">Local setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cluster-setup">Cluster setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-tests">Running tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-documentation">Building documentation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Development environment</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/dev-environment.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="toctree-wrapper compound">
+</div>
+<section id="development-environment">
+<span id="dev-environment"></span><h1>Development environment<a class="headerlink" href="#development-environment" title="Permalink to this heading">¶</a></h1>
+<p>The following steps help you set up a full development environment. <strong>These steps are only needed for core developers of Kernel Tuner who need to test against multiple Python versions
+or change dependencies of Kernel Tuner.</strong></p>
+<p>For small changes to the code, please see the simplified instructions in the <a class="reference internal" href="contributing.html#simple-dev-env"><span class="std std-ref">Simple development setup</span></a>.</p>
+<section id="local-setup">
+<h2>Local setup<a class="headerlink" href="#local-setup" title="Permalink to this heading">¶</a></h2>
+<p>Steps with <code class="code highlight bash docutils literal highlight-bash">sudo</code> access (e.g. on a local device):</p>
+<ol class="arabic simple">
+<li><p>Clone the git repository to the desired location: <code class="code highlight bash docutils literal highlight-bash">git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KernelTuner/kernel_tuner.git</code>, and <code class="code highlight bash docutils literal highlight-bash"><span class="nb">cd</span></code> to it.</p></li>
+<li><dl class="simple">
+<dt>Prepare your system for building Python versions.</dt><dd><ul class="simple">
+<li><p>On Ubuntu, run <code class="code highlight bash docutils literal highlight-bash">sudo<span class="w"> </span>apt<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>apt<span class="w"> </span>upgrade</code>, and <code class="code highlight bash docutils literal highlight-bash">sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>make<span class="w"> </span>build-essential<span class="w"> </span>libssl-dev<span class="w"> </span>zlib1g-dev<span class="w"> </span>libbz2-dev<span class="w"> </span>libreadline-dev<span class="w"> </span>libsqlite3-dev<span class="w"> </span>wget<span class="w"> </span>curl<span class="w"> </span>llvm<span class="w"> </span>libncurses5-dev<span class="w"> </span>libncursesw5-dev<span class="w"> </span>xz-utils<span class="w"> </span>tk-dev<span class="w"> </span>libffi-dev<span class="w"> </span>liblzma-dev<span class="w"> </span>python-openssl<span class="w"> </span>git</code>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Install <a class="reference external" href="https://github.com/pyenv/pyenv#installation">pyenv</a>:</dt><dd><ul class="simple">
+<li><p>On Linux, run <code class="code highlight bash docutils literal highlight-bash">curl<span class="w"> </span>https://pyenv.run<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash</code> (remember to add the output to <code class="code highlight bash docutils literal highlight-bash">.bash_profile</code> and <code class="code highlight bash docutils literal highlight-bash">.bashrc</code> as specified).</p></li>
+<li><p>On macOS, run <code class="code highlight bash docutils literal highlight-bash">brew<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>brew<span class="w"> </span>install<span class="w"> </span>pyenv</code>.</p></li>
+<li><p>After installation, restart your shell.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Install the required Python versions:</dt><dd><ul class="simple">
+<li><p>On some systems, additional packages may be needed to build Python versions. For example on Ubuntu: <code class="code highlight bash docutils literal highlight-bash">sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>build-essential<span class="w"> </span>zlib1g-dev<span class="w"> </span>libncurses5-dev<span class="w"> </span>libgdbm-dev<span class="w"> </span>libnss3-dev<span class="w"> </span>libssl-dev<span class="w"> </span>libreadline-dev<span class="w"> </span>libffi-dev<span class="w"> </span>libsqlite3-dev<span class="w"> </span>wget<span class="w"> </span>libbz2-dev<span class="w"> </span>liblzma-dev<span class="w"> </span>lzma</code>.</p></li>
+<li><p>Install the Python versions with: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.8<span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11</code>. The reason we’re installing all these versions as opposed to just one, is so we can test against all supported Python versions.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Set the Python versions so they can be found: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="m">3</span>.8<span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11</code> (replace <code class="code highlight bash docutils literal highlight-bash"><span class="nb">local</span></code> with <code class="code highlight bash docutils literal highlight-bash">global</code> when not using the virtualenv).</p></li>
+<li><p>Setup a local virtual environment in the folder: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>virtualenv<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span>kerneltuner</code> (or whatever environment name and Python version you prefer).</p></li>
+<li><dl class="simple">
+<dt><a class="reference external" href="https://python-poetry.org/docs/#installing-with-the-official-installer">Install Poetry</a>.</dt><dd><ul class="simple">
+<li><p>Use <code class="code highlight bash docutils literal highlight-bash">curl<span class="w"> </span>-sSL<span class="w"> </span>https://install.python-poetry.org<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-</code> to install Poetry.</p></li>
+<li><p>Make sure to add Poetry to <code class="code highlight bash docutils literal highlight-bash">PATH</code> as instructed at the end of the installation.</p></li>
+<li><p>Add the poetry export plugin with <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>self<span class="w"> </span>add<span class="w"> </span>poetry-plugin-export</code>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Make sure that non-Python dependencies are installed if applicable, such as CUDA, OpenCL or HIP. This is described in <a class="reference internal" href="install.html#installation"><span class="std std-ref">Installation</span></a>.</p></li>
+<li><dl class="simple">
+<dt>Apply changes:</dt><dd><ul class="simple">
+<li><p>Re-open the shell for changes to take effect.</p></li>
+<li><p>Activate the environment with <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>activate<span class="w"> </span>kerneltuner</code>.</p></li>
+<li><p>Make sure <code class="code highlight bash docutils literal highlight-bash">which<span class="w"> </span>python</code> and <code class="code highlight bash docutils literal highlight-bash">which<span class="w"> </span>pip</code> point to the expected Python location and version.</p></li>
+<li><p>Update Pip with <code class="code highlight bash docutils literal highlight-bash">pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip</code>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Install the project, dependencies and extras: <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--with<span class="w"> </span>test,docs<span class="w"> </span>-E<span class="w"> </span>cuda<span class="w"> </span>-E<span class="w"> </span>opencl<span class="w"> </span>-E<span class="w"> </span>hip</code>, leaving out <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>cuda</code>, <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>opencl</code> or <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>hip</code> if this does not apply on your system. To go all-out, use <code class="code highlight bash docutils literal highlight-bash">--all-extras</code></dt><dd><ul class="simple">
+<li><p>Depending on the environment, it may be necessary or convenient to install extra packages such as <code class="code highlight bash docutils literal highlight-bash">cupy-cuda11x</code> / <code class="code highlight bash docutils literal highlight-bash">cupy-cuda12x</code>, and <code class="code highlight bash docutils literal highlight-bash">cuda-python</code>. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.</p></li>
+<li><p>Do not forget to make sure the paths are set correctly. If you’re using CUDA, the desired CUDA version should be in <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$PATH</span></code>, <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$LD_LIBARY_PATH</span></code> and <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$CPATH</span></code>.</p></li>
+<li><p>Re-open the shell for changes to take effect.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Check if the environment is setup correctly by running <code class="code highlight bash docutils literal highlight-bash">pytest</code> and <code class="code highlight bash docutils literal highlight-bash">nox</code>. All tests should pass, except if one or more extras has been left out in the previous step, then these tests will skip gracefully.</dt><dd><ul class="simple">
+<li><p>[Note]: sometimes, changing the NVIDIA driver privileges is required to read program counters and energy measurements. Check if <code class="code highlight bash docutils literal highlight-bash">cat<span class="w"> </span>/proc/driver/nvidia/params<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>RmProfilingAdminOnly</code> is set to 1. If so, <a class="reference external" href="https://developer.nvidia.com/nvidia-development-tools-solutions-err_nvgpuctrperm-permission-issue-performance-counters">follow these steps</a></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ol>
+</section>
+<section id="cluster-setup">
+<h2>Cluster setup<a class="headerlink" href="#cluster-setup" title="Permalink to this heading">¶</a></h2>
+<p>Steps without <code class="code highlight bash docutils literal highlight-bash">sudo</code> access (e.g. on a cluster):</p>
+<ol class="arabic">
+<li><p>Clone the git repository to the desired location: <code class="code highlight bash docutils literal highlight-bash">git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KernelTuner/kernel_tuner.git</code>.</p></li>
+<li><dl>
+<dt>Install Conda with <a class="reference external" href="https://mamba.readthedocs.io/en/latest/mamba-installation.html">Mamba</a> (for better performance) or <a class="reference external" href="https://docs.conda.io/projects/conda/en/latest/user-guide/install">Miniconda</a> (for traditional minimal Conda).</dt><dd><ul>
+<li><dl>
+<dt>[Optional] if you are under quotas or are otherwise restricted by disk space, you can instruct Conda to use a different directory for saving environments by adding the following to your <code class="code highlight bash docutils literal highlight-bash">.condarc</code> file:</dt><dd><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>envs_dirs:
+<span class="w"> </span>-<span class="w"> </span>/path/to/directory
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+<li><p>[Optional] both Mamba and Miniconda can be automatically activated via <code class="code highlight bash docutils literal highlight-bash">~/.bashrc</code>. Do not forget to add these (usually provided at the end of the installation).</p></li>
+<li><p>Exit the shell and re-enter to make sure Conda is available. <code class="code highlight bash docutils literal highlight-bash"><span class="nb">cd</span></code> to the kernel tuner directory.</p></li>
+<li><p>[Optional] if you have limited user folder space, the Pip cache can be pointed elsewhere with the environment variable <code class="code highlight bash docutils literal highlight-bash">PIP_CACHE_DIR</code>. The cache location can be checked with <code class="code highlight bash docutils literal highlight-bash">pip<span class="w"> </span>cache<span class="w"> </span>dir</code>. On Linux, to point the entire <code class="code highlight bash docutils literal highlight-bash">~/.cache</code> default elsewhere, use the <code class="code highlight bash docutils literal highlight-bash">XDG_CACHE_HOME</code> environment variable.</p></li>
+<li><p>[Optional] update Conda if available before continuing: <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>update<span class="w"> </span>-n<span class="w"> </span>base<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>conda</code>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Setup a virtual environment: <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>kerneltuner<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.11</code> (or whatever Python version and environment name you prefer).</p></li>
+<li><dl class="simple">
+<dt>Activate the virtual environment: <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>activate<span class="w"> </span>kerneltuner</code>.</dt><dd><ul class="simple">
+<li><p>[Optional] to use the correct environment by default, execute <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>config<span class="w"> </span>--set<span class="w"> </span>auto_activate_base<span class="w"> </span><span class="nb">false</span></code>, and add <cite>conda activate kerneltuner</cite> to your <code class="code highlight bash docutils literal highlight-bash">.bash_profile</code> or <code class="code highlight bash docutils literal highlight-bash">.bashrc</code>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Make sure that non-Python dependencies are loaded if applicable, such as CUDA, OpenCL or HIP. On most clusters it is possible to load (or unload) modules (e.g. CUDA, OpenCL / ROCM). For more information, see <a class="reference internal" href="install.html#installation"><span class="std std-ref">Installation</span></a>.</dt><dd><ul class="simple">
+<li><p>Do not forget to make sure the paths are set correctly. If you’re using CUDA, the desired CUDA version should be in <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$PATH</span></code>, <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$LD_LIBARY_PATH</span></code> and <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$CPATH</span></code>.</p></li>
+<li><p>[Optional] the loading of modules and setting of paths is likely convenient to put in your <code class="code highlight bash docutils literal highlight-bash">.bash_profile</code> or <code class="code highlight bash docutils literal highlight-bash">.bashrc</code>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><a class="reference external" href="https://python-poetry.org/docs/#installing-with-the-official-installer">Install Poetry</a>.</dt><dd><ul class="simple">
+<li><p>Use <code class="code highlight bash docutils literal highlight-bash">curl<span class="w"> </span>-sSL<span class="w"> </span>https://install.python-poetry.org<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-</code> to install Poetry.</p></li>
+<li><p>Add the poetry export plugin with <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>self<span class="w"> </span>add<span class="w"> </span>poetry-plugin-export</code>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Install the project, dependencies and extras: <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--with<span class="w"> </span>test,docs<span class="w"> </span>-E<span class="w"> </span>cuda<span class="w"> </span>-E<span class="w"> </span>opencl<span class="w"> </span>-E<span class="w"> </span>hip</code>, leaving out <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>cuda</code>, <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>opencl</code> or <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>hip</code> if this does not apply on your system. To go all-out, use <code class="code highlight bash docutils literal highlight-bash">--all-extras</code>.</dt><dd><ul class="simple">
+<li><p>If you run into “keyring” or other seemingly weird issues, this is a known issue with Poetry on some systems. Do: <code class="code highlight bash docutils literal highlight-bash">pip<span class="w"> </span>install<span class="w"> </span>keyring</code>, <code class="code highlight bash docutils literal highlight-bash">python3<span class="w"> </span>-m<span class="w"> </span>keyring<span class="w"> </span>--disable</code>.</p></li>
+<li><p>Depending on the environment, it may be necessary or convenient to install extra packages such as <code class="code highlight bash docutils literal highlight-bash">cupy-cuda11x</code> / <code class="code highlight bash docutils literal highlight-bash">cupy-cuda12x</code>, and <code class="code highlight bash docutils literal highlight-bash">cuda-python</code>. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.</p></li>
+<li><p>Verify that your development environment has no missing installs or updates with <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--sync<span class="w"> </span>--dry-run<span class="w"> </span>--with<span class="w"> </span><span class="nb">test</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Check if the environment is setup correctly by running <code class="code highlight bash docutils literal highlight-bash">pytest</code>. All tests should pass, except if you’re not on a GPU node, or one or more extras has been left out in the previous step, then these tests will skip gracefully.</p></li>
+<li><dl class="simple">
+<dt>Set Nox to use the correct backend and location:</dt><dd><ul class="simple">
+<li><p>Run <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>--<span class="w"> </span>create-settings-file</code> to automatically create a settings file.</p></li>
+<li><dl class="simple">
+<dt>In this settings file <code class="code highlight bash docutils literal highlight-bash">noxsettings.toml</code>, change the <code class="code highlight bash docutils literal highlight-bash">venvbackend</code>:</dt><dd><ul>
+<li><p>If you used Mamba in step 2, to <code class="code highlight bash docutils literal highlight-bash">mamba</code>.</p></li>
+<li><p>If you used Miniconda or Anaconda in step 2, to <code class="code highlight bash docutils literal highlight-bash">conda</code>.</p></li>
+<li><p>If you used Venv in step 2, to <code class="code highlight bash docutils literal highlight-bash">venv</code>.</p></li>
+<li><p>If you used Virtualenv in step 2, this is already the default.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Be sure to adjust this when changing backends.</p></li>
+<li><p>The settings file also has <code class="code highlight bash docutils literal highlight-bash">envdir</code>, which allows you to <a class="reference external" href="https://nox.thea.codes/en/stable/usage.html#opt-envdir">change the directory Nox caches environments in</a>, particularly helpful if you have a diskquota on your user directory.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>[Optional] Run the tests on Nox as described below.</p></li>
+</ol>
+</section>
+<section id="running-tests">
+<h2>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this heading">¶</a></h2>
+<p>To run the tests you can use <code class="code highlight bash docutils literal highlight-bash">nox</code> (to run against all supported Python versions in isolated environments) and <code class="code highlight bash docutils literal highlight-bash">pytest</code> (to run against the local Python version, see below) in the top-level directory.
+For full coverage, make Nox use the additional tests (such as cupy and cuda-python) with <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests</code>.</p>
+<p>The Nox isolated environments can take up to 1 gigabyte in size, so users tight on diskspace can run <code class="code highlight bash docutils literal highlight-bash">nox</code> with the <code class="code highlight bash docutils literal highlight-bash">small-disk</code> option. This removes the other environment caches before each session is ran (note that this will take longer to run). A better option would be to change the location environments are stored in with <code class="code highlight bash docutils literal highlight-bash">envdir</code> in the <code class="code highlight bash docutils literal highlight-bash">noxsettings.toml</code> file.</p>
+<p>Please note that the command-line options can be combined, e.g. <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>additional-tests<span class="w"> </span>skip-hip<span class="w"> </span>small-disk</code>.
+If you do not have fully compatible hardware or environment, you can use the following options:</p>
+<ul class="simple">
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda</code> to skip tests involving CUDA.</p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-hip</code> to skip tests involving HIP.</p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-opencl</code> to skip tests involving OpenCL.</p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-gpu</code> to skip all tests on the GPU (the same as <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda<span class="w"> </span>skip-hip<span class="w"> </span>skip-opencl</code>), especially helpful if you don’t have a GPU locally.</p></li>
+</ul>
+<p>Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally!</p>
+<p>Running with <code class="code highlight bash docutils literal highlight-bash">pytest</code> will test against your local Python version and PIP packages.
+In this case, tests that require PyCuda and/or a CUDA capable GPU will be skipped automatically if these are not installed/present.
+The same holds for tests that require PyOpenCL, Cupy, and CUDA.
+It is also possible to invoke PyTest from the ‘Testing’ tab in Visual Studio Code to visualize the testing in your IDE.</p>
+<p>The examples can be seen as <em>integration tests</em> for the Kernel Tuner.
+Note that these will also use the installed package.</p>
+</section>
+<section id="building-documentation">
+<h2>Building documentation<a class="headerlink" href="#building-documentation" title="Permalink to this heading">¶</a></h2>
+<p>Documentation is located in the <code class="docutils literal notranslate"><span class="pre">doc/</span></code> directory. This is where you can type
+<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code> to generate the html pages in the <code class="docutils literal notranslate"><span class="pre">doc/build/html</span></code> directory.
+The source files used for building the documentation are located in
+<code class="docutils literal notranslate"><span class="pre">doc/source</span></code>.
+To locally inspect the documentation before committing you can browse through
+the documentation pages generated locally in <code class="docutils literal notranslate"><span class="pre">doc/build/html</span></code>.</p>
+<p>To make sure you have all the dependencies required to build the documentation, at least those in <code class="docutils literal notranslate"><span class="pre">--with</span> <span class="pre">docs</span></code>.
+Pandoc is also required, you can install pandoc on Ubuntu using <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt</span> <span class="pre">install</span> <span class="pre">pandoc</span></code> and on Mac using <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">pandoc</span></code>.
+For different setups please see <a class="reference external" href="https://pandoc.org/installing.html">pandoc’s install documentation</a>.</p>
+<p>The documentation pages hosted online are built automatically using GitHub actions.
+The documentation pages corresponding to the master branch are hosted in /latest/.
+The documentation of the last release is in /stable/. When a new release
+is published the documentation for that release will be stored in a directory
+created for that release and /stable/ will be updated to point to the last
+release. This process is again fully automated using GitHub actions.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="contributing.html" class="btn btn-neutral float-left" title="Contribution guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2024, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metrics and Objectives &mdash; Kernel Tuner 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Observers" href="observers.html" />
+    <link rel="prev" title="Optimization strategies" href="optimization.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="contents.html" class="icon icon-home"> Kernel Tuner
+          </a>
+              <div class="version">
+                0.4.3
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Metrics and Objectives</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#metrics">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tuning-objectives">Tuning Objectives</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Metrics and Objectives</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/metrics.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="metrics-and-objectives">
+<h1>Metrics and Objectives<a class="headerlink" href="#metrics-and-objectives" title="Permalink to this heading">¶</a></h1>
+<p>Metrics and custom tuning objectives are two related features that are explained on this page.</p>
+<section id="metrics">
+<span id="id1"></span><h2>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">¶</a></h2>
+<p>User-defined metrics serve as an easy way for the user to define their own derived results based on the measurements reported
+by Kernel Tuner, and possibly any additional observers. This allows for example to implement performance metrics, such as
+performance in floating point operations per second (e.g. GFLOP/s), or other metrics that might be more specific to the
+application, for example the number of input elements processed per second. The code below shows an example of
+user-defined metrics for a kernel that performs <code class="docutils literal notranslate"><span class="pre">total\_flops</span></code> GFLOP in total. User-defined
+metrics are composable, meaning that they can be defined using other user-defined metrics. That is why metrics must be
+specified using an OrderedDict as they are defined in order.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">metrics</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;GFLOP/s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">total_flops</span> <span class="o">/</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1e3</span><span class="p">)</span>
+<span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;GFLOPS/W&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">total_flops</span> <span class="o">/</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;ps_energy&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>User-defined metrics are particularly useful when the total amount of work varies between kernel configurations
+and the total execution time on its own is no longer a sufficient metric to compare the performance of different kernel
+configurations. This occurs in many kernels, for example in kernels that perform a reduction step, where some
+part of the data reduction is left for another kernel because of synchronization. In this case, the amount of
+work performed by the first kernel depends on tunable parameters such as the thread block dimensions or the
+number of thread blocks.</p>
+</section>
+<section id="tuning-objectives">
+<span id="objectives"></span><h2>Tuning Objectives<a class="headerlink" href="#tuning-objectives" title="Permalink to this heading">¶</a></h2>
+<p>Users can specify tuning objectives other than the default optimization objective, which is kernel execution time. When using
+an optimization strategy other than exhaustive search (brute force), this objective is used to guide the optimization through
+the parameter space. The tuning objective is specified using the <code class="docutils literal notranslate"><span class="pre">objective=</span></code> optional parameter of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> and
+is specified as a string. This string can be a user-defined metric or a quantity reported by an observer.</p>
+<p>In addition to specifying the name of the tuning objective, it is important for many of the optimization
+strategies implemented in Kernel Tuner to know whether the objective should be minimized or maximized. Kernel
+Tuner uses a list of defaults, but for some user-defined metrics the user may also need to specify the direction
+of optimization. This is done by passing a boolean in the <code class="docutils literal notranslate"><span class="pre">objective_higher_is_better=</span></code> optional parameter of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="optimization.html" class="btn btn-neutral float-left" title="Optimization strategies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="observers.html" class="btn btn-neutral float-right" title="Observers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
