@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Grid on GPU with Kernel Tuner &mdash; Kernel Tuner 0.4.4 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                0.4.4
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">3D Grid on GPU with Kernel Tuner</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/grid3d.ipynb" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars and line breaks on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+    white-space: pre;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt .copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+.jp-RenderedHTMLCommon table,
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+.jp-RenderedHTMLCommon thead,
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+.jp-RenderedHTMLCommon tr,
+.jp-RenderedHTMLCommon th,
+.jp-RenderedHTMLCommon td,
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+.jp-RenderedHTMLCommon th,
+div.rendered_html th {
+  font-weight: bold;
+}
+.jp-RenderedHTMLCommon tbody tr:nth-child(odd),
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+.jp-RenderedHTMLCommon tbody tr:hover,
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="3D-Grid-on-GPU-with-Kernel-Tuner">
+<h1>3D Grid on GPU with Kernel Tuner<a class="headerlink" href="#3D-Grid-on-GPU-with-Kernel-Tuner" title="Permalink to this heading">¶</a></h1>
+<p>In this tutorial we are going to see how to map a series of Gaussian functions, each located at a different point on a 3D a grid. We are going to optimize the GPU code and compare its performance with the CPU implementation.</p>
+<div class="admonition note">
+<p><strong>Note:</strong> If you are reading this tutorial on the Kernel Tuner’s documentation pages, note that you can actually run this tutorial as a Jupyter Notebook. Just clone the Kernel Tuner’s <a class="reference external" href="http://github.com/benvanwerkhoven/kernel_tuner">GitHub repository</a>. Install the Kernel Tuner and Jupyter Notebooks and you’re ready to go! You can start the tutorial by typing “jupyter notebook” in the “kernel_tuner/doc/source” directory.</p>
+</div>
+<section id="Let’s-start-on-the-CPU">
+<h2>Let’s start on the CPU<a class="headerlink" href="#Let’s-start-on-the-CPU" title="Permalink to this heading">¶</a></h2>
+<p>Before delving into the GPU implementation, let’s start with a simple CPU implementation of the problem. The problem at hand is to compute the values of the following function</p>
+<p><span class="math">\begin{equation} \nonumber
+f = \sum_{i=1}^{N}\exp\left(-\beta \sqrt{(x-x_i)^2+(y-y_i)^2+(z-z_i)^2}\right)
+\end{equation}</span></p>
+<p>on a 3d grid. The <span class="math notranslate nohighlight">\(x\)</span>, <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(z\)</span> vectors contain the coordinate of the points in the Cartesian space. We can define a simple Python function that computes the value of the function <span class="math notranslate nohighlight">\(f\)</span> for one given Gaussian. Don’t forget to execute all the code cells, like the one below, as you read through this notebook by selecting the cell and pressing <em>shift+enter</em>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.linalg</span> <span class="k">as</span> <span class="nn">la</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+
+<span class="k">def</span> <span class="nf">compute_grid</span><span class="p">(</span><span class="n">center</span><span class="p">,</span><span class="n">xgrid</span><span class="p">,</span><span class="n">ygrid</span><span class="p">,</span><span class="n">zgrid</span><span class="p">):</span>
+    <span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span> <span class="o">=</span> <span class="n">center</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.1</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="p">(</span><span class="n">xgrid</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">ygrid</span><span class="o">-</span><span class="n">y0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">zgrid</span><span class="o">-</span><span class="n">z0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">beta</span><span class="o">*</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f</span>
+</pre></div>
+</div>
+</div>
+<p>For a given center, this function returns the values of the corresponding Gaussian function mapped on the 3D grid. The grid points are here defined by the variables <code class="docutils literal notranslate"><span class="pre">xgrid</span></code>, <code class="docutils literal notranslate"><span class="pre">ygrid</span></code> and <code class="docutils literal notranslate"><span class="pre">zgrid</span></code>. These variables are themselves 3D grids obtained, as we will see in an instant, using the <code class="docutils literal notranslate"><span class="pre">numpy.meshgrid</span></code> function.</p>
+<p>To use this function we simply have to create the grid, defined by the vectors x, y, and z. Since we want to later on send these vectors to the GPU we define them as 32-bit floats. For simplicity, we here select the interval <span class="math notranslate nohighlight">\([-1:1]\)</span> to define our grid. We use <span class="math notranslate nohighlight">\(n=256\)</span> grid points in order to have a sufficiently large problem without requiring too long calculations. We then create meshgrids to be passed to the function above. We define here 100 gaussian centers that are randomly
+distributed within the 3D space.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># dimension of the problem</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mi">256</span>
+
+<span class="c1"># define the vectors</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="c1"># create meshgrids</span>
+<span class="n">xgrid</span><span class="p">,</span><span class="n">ygrid</span><span class="p">,</span><span class="n">zgrid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">)</span>
+<span class="n">cpu_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xgrid</span><span class="p">)</span>
+
+<span class="c1"># centers</span>
+<span class="n">npts</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">center</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">npts</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="c1"># compute the grid and time the operation</span>
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">center</span><span class="p">:</span>
+    <span class="n">cpu_grid</span> <span class="o">+=</span> <span class="n">compute_grid</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span><span class="n">xgrid</span><span class="p">,</span><span class="n">ygrid</span><span class="p">,</span><span class="n">zgrid</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;CPU Execution time </span><span class="si">%f</span><span class="s1"> ms&#39;</span> <span class="o">%</span><span class="p">(</span> <span class="p">(</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span> <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU Execution time 52320.160627 ms
+</pre></div></div>
+</div>
+<p>Depending on your hardware it might take a few seconds for the calculations above to finish.</p>
+</section>
+<section id="Let’s-move-to-the-GPU">
+<h2>Let’s move to the GPU<a class="headerlink" href="#Let’s-move-to-the-GPU" title="Permalink to this heading">¶</a></h2>
+<p>Let’s see now how that will look like on the GPU. We first write a kernel that does the same calculation as the above function. As you can see see below, the variables <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code>, <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_z</span></code> are not yet defined here. These variables are used to set the number of threads per thread block on the GPU and are the main parameters that we will optimize in this tutorial. During tuning, Kernel Tuner will automatically insert <code class="docutils literal notranslate"><span class="pre">#define</span></code> statements for these parameters at
+the top of the kernel code. So for now we don’t have to specify their values.</p>
+<p>The dimensions of the problem <code class="docutils literal notranslate"><span class="pre">nx</span></code>, <code class="docutils literal notranslate"><span class="pre">ny</span></code>, and <code class="docutils literal notranslate"><span class="pre">nz</span></code>, are the number of grid points in the x, y, and z dimensions. We can again use Kernel Tuner to insert these parameters into the code.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># define a kernel template</span>
+<span class="c1"># several parameters are available</span>
+<span class="c1"># block sizes : bx, by, bz</span>
+<span class="c1"># dimensions  : nx, ny, nz</span>
+<span class="n">kernel_code</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">#include &lt;math.h&gt;</span>
+
+<span class="s2">// a simple gaussian function</span>
+<span class="s2">__host__ __device__ float f(float d){</span>
+<span class="s2">    float b = 0.1;</span>
+<span class="s2">    float x = exp(-b*d);</span>
+<span class="s2">    return x;</span>
+<span class="s2">}</span>
+
+<span class="s2">// the main function called below</span>
+<span class="s2">__global__ void AddGrid(float x0, float y0, float z0, float *xvect, float *yvect, float *zvect, float *out)</span>
+<span class="s2">{</span>
+
+<span class="s2">    // 3D thread</span>
+<span class="s2">    int x = threadIdx.x + block_size_x * blockIdx.x;</span>
+<span class="s2">    int y = threadIdx.y + block_size_y * blockIdx.y;</span>
+<span class="s2">    int z = threadIdx.z + block_size_z * blockIdx.z;</span>
+
+<span class="s2">    if ( ( x &lt; nx ) &amp;&amp; (y &lt; ny) &amp;&amp; (z &lt; nz) )</span>
+<span class="s2">    {</span>
+
+<span class="s2">        float dx = xvect[x]-x0;</span>
+<span class="s2">        float dy = yvect[y]-y0;</span>
+<span class="s2">        float dz = zvect[z]-z0;</span>
+<span class="s2">        float d = sqrt(dx*dx + dy*dy + dz*dz);</span>
+<span class="s2">        out[y * nx * nz + x * nz + z] = f(d);</span>
+<span class="s2">    }</span>
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</div>
+<section id="Tune-the-kernel">
+<h3>Tune the kernel<a class="headerlink" href="#Tune-the-kernel" title="Permalink to this heading">¶</a></h3>
+<p>We can now use the tuner to optimize the thread block dimensions on our GPU. To do so we define the tunable parameters of our kernel using the <code class="docutils literal notranslate"><span class="pre">tune_params</span></code> dictionary, which assigns to each block size the values we want the tuner to explore. We also use the tunable parameters to insert the domain dimensions <code class="docutils literal notranslate"><span class="pre">nx</span></code>, <code class="docutils literal notranslate"><span class="pre">ny</span></code>, and <code class="docutils literal notranslate"><span class="pre">nz</span></code>.</p>
+<p>We also define a list containing the arguments of the CUDA function (AddGrid) above. Since we only want to optimize the performance of the kernel we only consider here one center in the middle of the grid. Note that Kernel Tuner needs either <code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="docutils literal notranslate"><span class="pre">numpy.scalar</span></code> as arguments of the kernel. Hence we need to be specific on the types of the Gaussians positions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">kernel_tuner</span> <span class="kn">import</span> <span class="n">tune_kernel</span>
+
+<span class="c1"># create the dictionary containing the tune parameters</span>
+<span class="n">tune_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;nx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;ny&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;nz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
+
+<span class="c1"># define the final grid</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xgrid</span><span class="p">)</span>
+
+<span class="c1"># arguments of the CUDA function</span>
+<span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">grid</span><span class="p">]</span>
+
+<span class="c1"># dimensionality</span>
+<span class="n">problem_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>As mentioned earlier, the tuner will automatically insert <code class="docutils literal notranslate"><span class="pre">#define</span></code> statements at the top of the kernel to define the block sizes and domain dimensions, so we don’t need to specify them here. Then, we simply call the <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> function.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># call the kernel tuner</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s1">&#39;AddGrid&#39;</span><span class="p">,</span> <span class="n">kernel_code</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Using: GeForce GTX 1080 Ti
+block_size_x=2, block_size_y=2, block_size_z=2, time=3.56833920479
+block_size_x=2, block_size_y=2, block_size_z=4, time=1.80796158314
+block_size_x=2, block_size_y=2, block_size_z=8, time=0.940044796467
+block_size_x=2, block_size_y=2, block_size_z=16, time=0.855628800392
+block_size_x=2, block_size_y=2, block_size_z=32, time=0.855359995365
+block_size_x=2, block_size_y=4, block_size_z=2, time=4.16174077988
+block_size_x=2, block_size_y=4, block_size_z=4, time=2.11877760887
+block_size_x=2, block_size_y=4, block_size_z=8, time=1.01592960358
+block_size_x=2, block_size_y=4, block_size_z=16, time=0.849273598194
+block_size_x=2, block_size_y=4, block_size_z=32, time=0.849235200882
+block_size_x=2, block_size_y=8, block_size_z=2, time=4.19029750824
+block_size_x=2, block_size_y=8, block_size_z=4, time=2.16199679375
+block_size_x=2, block_size_y=8, block_size_z=8, time=1.40401918888
+block_size_x=2, block_size_y=8, block_size_z=16, time=1.39618558884
+block_size_x=2, block_size_y=8, block_size_z=32, time=1.39508478642
+block_size_x=2, block_size_y=16, block_size_z=2, time=5.31647996902
+block_size_x=2, block_size_y=16, block_size_z=4, time=2.31470079422
+block_size_x=2, block_size_y=16, block_size_z=8, time=1.50787198544
+block_size_x=2, block_size_y=16, block_size_z=16, time=1.53760001659
+block_size_x=2, block_size_y=16, block_size_z=32, time=1.56709756851
+block_size_x=2, block_size_y=32, block_size_z=2, time=5.34500494003
+block_size_x=2, block_size_y=32, block_size_z=4, time=2.25130877495
+block_size_x=2, block_size_y=32, block_size_z=8, time=1.50662400723
+block_size_x=2, block_size_y=32, block_size_z=16, time=1.55267841816
+block_size_x=4, block_size_y=2, block_size_z=2, time=4.17987194061
+block_size_x=4, block_size_y=2, block_size_z=4, time=2.12309756279
+block_size_x=4, block_size_y=2, block_size_z=8, time=1.01125121117
+block_size_x=4, block_size_y=2, block_size_z=16, time=0.849631989002
+block_size_x=4, block_size_y=2, block_size_z=32, time=0.853708791733
+block_size_x=4, block_size_y=4, block_size_z=2, time=4.17051515579
+block_size_x=4, block_size_y=4, block_size_z=4, time=2.15584001541
+block_size_x=4, block_size_y=4, block_size_z=8, time=1.40074241161
+block_size_x=4, block_size_y=4, block_size_z=16, time=1.39547519684
+block_size_x=4, block_size_y=4, block_size_z=32, time=1.39331197739
+block_size_x=4, block_size_y=8, block_size_z=2, time=5.30295038223
+block_size_x=4, block_size_y=8, block_size_z=4, time=2.28725762367
+block_size_x=4, block_size_y=8, block_size_z=8, time=1.39589118958
+block_size_x=4, block_size_y=8, block_size_z=16, time=1.38867840767
+block_size_x=4, block_size_y=8, block_size_z=32, time=1.37724158764
+block_size_x=4, block_size_y=16, block_size_z=2, time=5.34344320297
+block_size_x=4, block_size_y=16, block_size_z=4, time=2.26213116646
+block_size_x=4, block_size_y=16, block_size_z=8, time=1.38793599606
+block_size_x=4, block_size_y=16, block_size_z=16, time=1.3775359869
+block_size_x=4, block_size_y=32, block_size_z=2, time=4.74003200531
+block_size_x=4, block_size_y=32, block_size_z=4, time=2.13276162148
+block_size_x=4, block_size_y=32, block_size_z=8, time=1.37233917713
+block_size_x=8, block_size_y=2, block_size_z=2, time=4.18835201263
+block_size_x=8, block_size_y=2, block_size_z=4, time=2.15777277946
+block_size_x=8, block_size_y=2, block_size_z=8, time=1.40247042179
+block_size_x=8, block_size_y=2, block_size_z=16, time=1.39366400242
+block_size_x=8, block_size_y=2, block_size_z=32, time=1.39439997673
+block_size_x=8, block_size_y=4, block_size_z=2, time=5.23719043732
+block_size_x=8, block_size_y=4, block_size_z=4, time=2.28542718887
+block_size_x=8, block_size_y=4, block_size_z=8, time=1.39207677841
+block_size_x=8, block_size_y=4, block_size_z=16, time=1.38956804276
+block_size_x=8, block_size_y=4, block_size_z=32, time=1.3778496027
+block_size_x=8, block_size_y=8, block_size_z=2, time=5.29814395905
+block_size_x=8, block_size_y=8, block_size_z=4, time=2.26398081779
+block_size_x=8, block_size_y=8, block_size_z=8, time=1.38625922203
+block_size_x=8, block_size_y=8, block_size_z=16, time=1.3754431963
+block_size_x=8, block_size_y=16, block_size_z=2, time=4.72981758118
+block_size_x=8, block_size_y=16, block_size_z=4, time=2.12483196259
+block_size_x=8, block_size_y=16, block_size_z=8, time=1.37322881222
+block_size_x=8, block_size_y=32, block_size_z=2, time=4.61618566513
+block_size_x=8, block_size_y=32, block_size_z=4, time=2.2194111824
+block_size_x=16, block_size_y=2, block_size_z=2, time=5.17600002289
+block_size_x=16, block_size_y=2, block_size_z=4, time=2.27082881927
+block_size_x=16, block_size_y=2, block_size_z=8, time=1.38787200451
+block_size_x=16, block_size_y=2, block_size_z=16, time=1.3835711956
+block_size_x=16, block_size_y=2, block_size_z=32, time=1.37543039322
+block_size_x=16, block_size_y=4, block_size_z=2, time=5.30227203369
+block_size_x=16, block_size_y=4, block_size_z=4, time=2.23127679825
+block_size_x=16, block_size_y=4, block_size_z=8, time=1.38627202511
+block_size_x=16, block_size_y=4, block_size_z=16, time=1.37677440643
+block_size_x=16, block_size_y=8, block_size_z=2, time=4.64358406067
+block_size_x=16, block_size_y=8, block_size_z=4, time=2.12255358696
+block_size_x=16, block_size_y=8, block_size_z=8, time=1.37474560738
+block_size_x=16, block_size_y=16, block_size_z=2, time=4.61655673981
+block_size_x=16, block_size_y=16, block_size_z=4, time=2.19179515839
+block_size_x=16, block_size_y=32, block_size_z=2, time=4.99912958145
+block_size_x=32, block_size_y=2, block_size_z=2, time=5.213971138
+block_size_x=32, block_size_y=2, block_size_z=4, time=2.16430072784
+block_size_x=32, block_size_y=2, block_size_z=8, time=1.38772480488
+block_size_x=32, block_size_y=2, block_size_z=16, time=1.3735104084
+block_size_x=32, block_size_y=4, block_size_z=2, time=4.54432649612
+block_size_x=32, block_size_y=4, block_size_z=4, time=2.05524477959
+block_size_x=32, block_size_y=4, block_size_z=8, time=1.36935677528
+block_size_x=32, block_size_y=8, block_size_z=2, time=4.42449922562
+block_size_x=32, block_size_y=8, block_size_z=4, time=2.10455036163
+block_size_x=32, block_size_y=16, block_size_z=2, time=4.67516155243
+best performing configuration: block_size_x=2, block_size_y=4, block_size_z=32, time=0.849235200882
+</pre></div></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> function explores all the possible combinations of tunable parameters (here only the block size). For each possible kernel configuration, the tuner compiles the code and its measures execution time (by default using 7 iterations). At the end of the the run, the <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> outputs the optimal combination of the tunable parameters. But the measured execution time of all benchmarked kernels is also returned by <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code> for programmatic access to the data.</p>
+<p>As you can see the range of performances is quite large. With our GPU (GeForce GTX 1080 Ti) we obtained a maximum time of 5.30 ms and minimum one of 0.84 ms. The performance of the kernel varies by a factor 6 depending on the thread block size!</p>
+</section>
+</section>
+<section id="Using-the-optimized-parameters">
+<h2>Using the optimized parameters<a class="headerlink" href="#Using-the-optimized-parameters" title="Permalink to this heading">¶</a></h2>
+<p>Now that we have determined which parameters are the best suited for our application we can specify them in our kernel and run it. In our case, the optimal grid size determined by the tuner were <em>block_size_x = 4, block_size_y = 2, block_size_z=16</em>. We therefore use these parameters here to define the block size. The grid size is simply obtained by dividing the dimension of the problem by the corresponding block size.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pycuda</span> <span class="kn">import</span> <span class="n">driver</span><span class="p">,</span> <span class="n">compiler</span><span class="p">,</span> <span class="n">gpuarray</span><span class="p">,</span> <span class="n">tools</span>
+<span class="kn">import</span> <span class="nn">pycuda.autoinit</span>
+
+<span class="c1"># optimal values of the block size</span>
+<span class="n">block</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+
+<span class="c1"># corresponding grid size</span>
+<span class="n">grid_dim</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span><span class="o">/</span><span class="n">b</span><span class="p">))</span> <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">)]</span>
+</pre></div>
+</div>
+</div>
+<p>Before using the kernel we need to specify the block size in its definition. There are different ways of doing this, we here simply replace the <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code>, <code class="docutils literal notranslate"><span class="pre">block_size_y</span></code> and <code class="docutils literal notranslate"><span class="pre">block_size_z</span></code> by their values determined by the tuner. In order to do that we create a dictionary that associates the name of the block size and their values and simply make the substitution. Once the block size are specified, we can compile the kernel ourselves and get the function.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># change the values of the block sizes in the kernel</span>
+<span class="n">fixed_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;nx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;ny&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;nz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">fixed_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">kernel_code</span> <span class="o">=</span> <span class="n">kernel_code</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+<span class="c1"># compile the kernel_code and extract the function</span>
+<span class="n">mod</span> <span class="o">=</span> <span class="n">compiler</span><span class="o">.</span><span class="n">SourceModule</span><span class="p">(</span><span class="n">kernel_code</span><span class="p">)</span>
+<span class="n">addgrid</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s1">&#39;AddGrid&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We now have to manually create the gpuarrays that correspond to the vector x, y and z as well as the 3D grid. Once all these are defined we can call the <code class="docutils literal notranslate"><span class="pre">addgrid</span></code> function using the gpuarrays and the block and grid size in argument. We also time the execution to compare it with the one outputed by the kernel tuner. Note that we exlicitly synchronize the CPU and GPU to obtain an accurate timing.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create the gpu arrays</span>
+<span class="n">xgpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">ygpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="n">zgpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+<span class="n">grid_gpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="c1"># compute the grid and time the performance</span>
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">center</span><span class="p">:</span>
+    <span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span> <span class="o">=</span> <span class="n">xyz</span>
+    <span class="n">addgrid</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span><span class="p">,</span><span class="n">xgpu</span><span class="p">,</span><span class="n">ygpu</span><span class="p">,</span><span class="n">zgpu</span><span class="p">,</span><span class="n">grid_gpu</span><span class="p">,</span><span class="n">block</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">block</span><span class="p">),</span><span class="n">grid</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_dim</span><span class="p">))</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Final GPU time : </span><span class="si">%f</span><span class="s1"> ms&#39;</span> <span class="o">%</span><span class="p">((</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Final GPU time : 80.133200 ms
+</pre></div></div>
+</div>
+<p>As you can see the GPU execution time is much lower than than the CPU execution time obtained above. In our case it went from roughly 40000 ms to just 80 ms !</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016, Ben van Werkhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
