@@ -1,0 +1,40 @@
+### Project ###
+poetry.lock
+noxenv.txt
+noxsettings.toml
+
+### Python ###
+*.pyc
+__pycache__
+doc/build/*
+doc/create_doc.sh
+push_to_pypi.sh
+.coverage
+/dist
+/build
+*.egg-info
+.nfs*
+*.log
+*.json
+*.csv
+.cache
+*.ipynb_checkpoints
+examples/cuda/output
+deploy_key
+*.mod
+temp_*.*
+.python-version
+.nox
+
+### Visual Studio Code ###
+!.vscode/settings.json
+!.vscode/extensions.json
+
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+.vscode
+.idea
