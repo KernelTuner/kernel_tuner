@@ -12,10 +12,10 @@ jobs:
         environment: dev_environment
         runs-on: ubuntu-latest
         steps:
-            - name: Get Python 3.12
-              uses: actions/setup-python@v5
+            - name: Get Python 3.10
+              uses: actions/setup-python@v4
               with:
-                  python-version: "3.12"
+                  python-version: "3.10"
             - name: Checkout
               uses: actions/checkout@v4
               with:
@@ -32,19 +32,12 @@ jobs:
                   sudo apt-get update;
                   sudo apt-get install pandoc;
                   pip install -e .
-            - name: Build
-              uses: sphinx-notes/pages@v3
+            - name: Build and Commit
+              uses: sphinx-notes/pages@v2
               with:
-                  python_version: 3.12
                   requirements_path: doc/requirements.txt
                   documentation_path: doc/source
-                  publish: false
-            - name: Commit
-              uses: peaceiris/actions-gh-pages@v4
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: ${{ steps.deployment.outputs.artifact }}
-                  destination_dir: ${{ env.RELEASE_VERSION }}
+                  target_path: ${{ env.RELEASE_VERSION }}
             - name: Redirect stable to new release
               run: |
                   echo "Redirecting stable to newly released version " $RELEASE_VERSION

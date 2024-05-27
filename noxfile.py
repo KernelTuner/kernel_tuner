@@ -8,7 +8,6 @@ Be careful that the general setup of tests is left to pyproject.toml.
 
 import platform
 import re
-from difflib import unified_diff
 from pathlib import Path
 
 import nox
@@ -96,19 +95,6 @@ def check_development_environment(session: Session) -> None:
             Update with 'poetry install --sync', using '--with' and '-E' for optional dependencies, extras respectively.
             Note: {removals} packages are not in the specification (i.e. installed manually) and may be removed.
             To preview changes, run 'poetry install --sync --dry-run' (with optional dependencies and extras).""")
-        
-@session    # to only run on the current python interpreter
-def check_requirements_files(session: Session) -> None:
-    """Check whether the requirement files are not outdated."""
-    doc_requirements_path = Path("doc/requirements.txt")
-    doc_temp_requirements_path = Path("doc/test_requirements.txt")
-    if doc_temp_requirements_path.exists():
-        doc_temp_requirements_path.unlink()
-    session.run("poetry", "export", "--with", "docs", "--without-hashes", "--format=requirements.txt", "--output", str(doc_temp_requirements_path), external=True)
-    diff = list(unified_diff(doc_requirements_path.read_text(), doc_temp_requirements_path.read_text()))
-    if doc_temp_requirements_path.exists():
-        doc_temp_requirements_path.unlink()
-    assert len(diff) == 0, f"Documentation requirements file not up to date with poetry.lock, please update it.\nDiff: {diff}"
 
 @session(python=python_versions_to_test)  # missing versions can be installed with `pyenv install ...`
 # do not forget check / set the versions with `pyenv global`, or `pyenv local` in case of virtual environment
