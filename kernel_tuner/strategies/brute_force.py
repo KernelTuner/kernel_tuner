@@ -9,8 +9,8 @@ _options = {}
 def tune(searchspace: Searchspace, runner, tuning_options):
 
     if isinstance(runner, ParallelRunner):
-        cache_manager = CacheManager.remote(tuning_options)
-        return runner.run(searchspace.sorted_list(), tuning_options, cache_manager)
+        cache_manager = CacheManager.remote(tuning_options.cache, tuning_options.cachefile)
+        return runner.run(parameter_space=searchspace.sorted_list(), tuning_options=tuning_options, cache_manager=cache_manager)
     else:
         return runner.run(searchspace.sorted_list(), tuning_options)
 
