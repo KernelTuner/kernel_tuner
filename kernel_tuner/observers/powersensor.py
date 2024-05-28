@@ -27,6 +27,9 @@ class PowerSensorObserver(BenchmarkObserver):
     def __init__(self, observables=None, device=None):
         if not powersensor:
             raise ImportError("could not import powersensor")
+        
+        # needed for re-initializing observer on ray actor
+        self.init_arguments = [observables, device]
 
         supported = ["ps_energy", "ps_power"]
         for obs in observables:
