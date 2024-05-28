@@ -10,6 +10,10 @@ from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.util import get_num_devices
 from kernel_tuner.runners.ray.remote_actor import RemoteActor
+from kernel_tuner.observers.nvml import NVMLObserver, NVMLPowerObserver
+from kernel_tuner.observers.pmt import PMTObserver
+from kernel_tuner.observers.powersensor import PowerSensorObserver
+from kernel_tuner.observers.register import RegisterObserver
 
 _docstring_template = """ Find the best performing kernel configuration in the parameter space
 
@@ -343,12 +347,22 @@ def create_actor_on_device(kernel_source, kernel_options, device_options, iterat
     else:
         resource_options = {"num_gpus": 1}
     
+    observers_type_and_arguments = []
+    if observers is not None:
+        # observers can't be pickled so we will re-initialize them in the actors
+        # observers related to backends will be initialized once we call the device interface inside the actor, that is why we skip them here
+        for i, observer in enumerate(observers):
+            if isinstance(observer, (NVMLObserver, NVMLPowerObserver, PMTObserver, PowerSensorObserver)):
+                observers_type_and_arguments.append((observer.__class__, observer.init_arguments))
+            if isinstance(observer, RegisterObserver):
+                observers_type_and_arguments.append((observer.__class__, []))
+    
     # Create the actor with the specified options and resources
     return RemoteActor.options(**resource_options).remote(kernel_source, 
                                                             kernel_options, 
                                                             device_options, 
                                                             iterations, 
-                                                            observers,
+                                                            observers_type_and_arguments=observers_type_and_arguments,
                                                             cache_manager=cache_manager,
                                                             simulation_mode=simulation_mode)
 
