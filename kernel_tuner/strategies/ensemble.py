@@ -54,6 +54,8 @@ strategy_map = {
 }
 
 def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, actors=None):
+    clean_up = True if actors is None and cache_manager is None else False
+    options = tuning_options.strategy_options
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     
@@ -63,6 +65,9 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, a
     else:
         ensemble = ["greedy_ils", "greedy_ils"]
     ensemble_size = len(ensemble)
+
+    tuning_options.strategy_options["max_fevals"] = options.get("max_fevals", 100 * ensemble_size)
+
     if num_devices < ensemble_size:
         warnings.warn("Number of devices is less than the number of strategies in the ensemble. Some strategies will wait until devices are available.", UserWarning)
     num_actors = num_devices if ensemble_size > num_devices else ensemble_size
@@ -72,5 +77,8 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, a
                                     runner.iterations, runner.observers, num_gpus=num_actors, cache_manager=cache_manager,
                                     simulation_mode=simulation_mode, actors=actors)
     final_results = parallel_runner.run(tuning_options=tuning_options, ensemble=ensemble, searchspace=searchspace)
+
+    if clean_up:
+        parallel_runner.clean_up_ray()
     
     return final_results
