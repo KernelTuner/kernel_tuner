@@ -76,6 +76,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     maxiter = options.get("maxiter", 2)
     popsize = options.get("popsize", 20)
     max_feval = options.get("max_fevals", None if 'time_limit' in options else 2000)
+    print(f"DEBUG: local_search={local_search} global_search={global_search} alsd={alsd} lsd={lsd} maxiter={maxiter} popsize={popsize} max_feval={max_feval}", file=sys.stderr)
 
     if local_search in ls_strategies_list:
         tuning_options["ensemble"] = [local_search] * popsize
@@ -93,7 +94,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     check_num_devices(num_gpus, simulation_mode, runner)
     initialize_ray()
     # Create cache manager, actors and parallel runner
-    cache_manager = CacheManager.remote(tuning_options)
+    cache_manager = CacheManager.remote(tuning_options.cache, tuning_options.cachefile)
     num_actors = num_gpus if num_gpus < popsize else popsize
     runner_attributes = [runner.kernel_source, runner.kernel_options, runner.device_options, runner.iterations, runner.observers]
     actors = [create_actor_on_device(*runner_attributes, cache_manager, simulation_mode, id) for id in range(num_actors)]
@@ -132,7 +133,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         # Local Search (LS)
         print(f"DEBUG:=================Local Search=================", file=sys.stderr)
-        tuning_options.strategy_options["max_fevals"] = lsd
+        tuning_options.strategy_options["max_fevals"] = lsd * popsize
         pop_start_ls = copy.deepcopy(tuning_options.strategy_options["candidates"])
         results = ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager, actors=actors)
         add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
@@ -154,7 +155,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             if afi_ls > afi_gs:
                 lsd += alsd
             elif afi_ls < afi_gs:
-                lsd -= alsd if lsd - alsd > 5 else 5
+                lsd -= alsd
+            # Less than 5 lsd doesn't make sense
+            if lsd < 5:
+                lsd = 5
             print(f"DEBUG: Adaptive Local Search Depth (ALSD) lsd = {lsd}", file=sys.stderr)
 
     ray.kill(cache_manager)
