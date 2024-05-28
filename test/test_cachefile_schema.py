@@ -3,10 +3,11 @@ from pathlib import Path
 from copy import deepcopy
 
 from kernel_tuner.cache.json import CacheFileJSON, CacheLineJSON
-
+from kernel_tuner.cache.validate import validate_data
 import pytest
 import jsonschema
 import kernel_tuner
+
 
 KERNEL_TUNER_PATH = Path(kernel_tuner.__file__).parent
 SCHEMA_PATH = KERNEL_TUNER_PATH / "schema/cache/1.0.0/schema.json"
@@ -15,6 +16,7 @@ TEST_PATH = Path(__file__).parent
 TEST_CACHE_PATH = TEST_PATH / "test_cache_files"
 SMALL_CACHE_PATH = TEST_CACHE_PATH / "small_cache.json"
 LARGE_CACHE_PATH = TEST_CACHE_PATH / "large_cache.json"
+
 
 with open(SMALL_CACHE_PATH) as f:
     SMALL_CACHE = json.load(f)
@@ -65,6 +67,54 @@ def is_invalid(validator, cache):
     yield  # let the test apply some modifications
     with pytest.raises(jsonschema.exceptions.ValidationError):
         validator.validate(cache)  # assert the cache is invalid
+
+@pytest.fixture()
+def invalid_timestamp_cache() -> dict:
+    return {
+        "schema_version": "1.0.0",
+        "device_name": "Testing",
+        "kernel_name": "convolution_kernel",
+        "problem_size": [4096, 4096],
+        "tune_params_keys": ["block_size_x"],
+        "tune_params": {"block_size_x": [16, 32]},
+        "objective": "time",
+        "cache": {
+            "16,1,1,1,0,0,0,1,15,15": {
+                "block_size_x": 16,
+                "time": 3.875,
+                "compile_time": 918.6,
+                "verification_time": 0,
+                "benchmark_time": 126.3,
+                "strategy_time": 0,
+                "framework_time": 105.2,
+                "timestamp": "2023"
+            }
+        }
+    }
+
+@pytest.fixture()
+def invalid_schemaversion() -> dict:
+    return {
+        "schema_version": "20.9.8",
+        "device_name": "Testing",
+        "kernel_name": "convolution_kernel",
+        "problem_size": [4096, 4096],
+        "tune_params_keys": ["block_size_x"],
+        "tune_params": {"block_size_x": [16, 32]},
+        "objective": "time",
+        "cache": {
+            "16,1,1,1,0,0,0,1,15,15": {
+                "block_size_x": 16,
+                "time": 3.875,
+                "compile_time": 918.6,
+                "verification_time": 0,
+                "benchmark_time": 126.3,
+                "strategy_time": 0,
+                "framework_time": 105.2,
+                "timestamp": "2023-12-22T10:33:29.006875+00:00"
+            }
+        }
+    }
 
 
 class TestCacheFileSchema:
@@ -161,3 +211,21 @@ class TestCacheFileSchema:
     )
     def test_additional_props_allowed__in_cache_line(self, cache_line, is_valid, key, value):
         cache_line[key] = value
+    
+
+    def test_invalid_timestamp_cache(self, invalid_timestamp_cache, validator, capfd):
+        with open("invalid_timestamp_cache.json", "w") as f:
+            json.dump(invalid_timestamp_cache, f)
+
+        with pytest.raises(jsonschema.exceptions.ValidationError):
+            validate_data("invalid_timestamp_cache.json")
+   
+
+    def test_invalid_schema_version(self, invalid_schemaversion):
+        with open("invalid_schema_version.json", "w") as f:
+            json.dump(invalid_schemaversion, f)
+
+        with pytest.raises(ValueError) as excinfo:
+            validate_data("invalid_schema_version.json")
+
+        assert "Schema version '20.9.8' is not a valid version." in str(excinfo.value)
