@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import ast
 import re
 from pathlib import Path
@@ -52,7 +50,8 @@ class Searchspace:
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.restrictions = restrictions
-        self._modified_restrictions = restrictions      # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads) 
+        # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
+        self._modified_restrictions = restrictions
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
@@ -318,7 +317,7 @@ class Searchspace:
                     restriction, required_params = restriction
                 if callable(restriction) and not isinstance(restriction, Constraint):
                     restriction = FunctionConstraint(restriction)
-                
+
                 # add the Constraint
                 if isinstance(restriction, FunctionConstraint):
                     parameter_space.addConstraint(restriction, required_params)

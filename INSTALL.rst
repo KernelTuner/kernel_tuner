@@ -7,8 +7,7 @@ The Kernel Tuner requires several packages to be installed. First of all, you ne
 working Python version, several Python packages, and optionally CUDA and/or OpenCL
 installations. All of this is explained in detail in this guide.
 
-For comprehensive step-by-step instructions on setting up a development environment, see :ref:`Development Environment <development environment>`.
-
+For comprehensive step-by-step instructions on setting up a development environment, see :ref:`Development Environment <dev-environment>`.
 
 Python
 ------
@@ -21,7 +20,7 @@ Linux users could type the following to download and install Python 3 using Mini
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-You are of course also free to use your own Python installation, and the Kernel Tuner is developed to be fully compatible with Python 3.8 and newer.
+You are of course also free to use your own Python installation, and the Kernel Tuner is developed to be fully compatible with Python 3.9 and newer.
 
 Installing Python Packages
 --------------------------
@@ -156,7 +155,7 @@ Installing the git version
 
 You can also install from the git repository. This way you also get the examples.
 Please note that this will install all required dependencies in the current environment.
-For step-by-step instructions on setting up a development environment, see :ref:`Development Environment <development environment>`.
+For step-by-step instructions on setting up a development environment, see :ref:`Development Environment <dev-environment>`.
 
 .. code-block:: bash
 

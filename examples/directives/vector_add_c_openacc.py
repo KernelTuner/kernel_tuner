@@ -3,6 +3,9 @@
 
 from kernel_tuner import tune_kernel
 from kernel_tuner.utils.directives import (
+    Code,
+    OpenACC,
+    Cxx,
     extract_directive_signature,
     extract_directive_code,
     extract_preprocessor,
@@ -10,12 +13,11 @@ from kernel_tuner.utils.directives import (
     extract_directive_data,
     allocate_signature_memory,
 )
-from collections import OrderedDict
 
 code = """
 #include <stdlib.h>
 
-#define VECTOR_SIZE 65536
+#define VECTOR_SIZE 1000000
 
 int main(void) {
 	int size = VECTOR_SIZE;
@@ -24,7 +26,7 @@ int main(void) {
 	float * c = (float *) malloc(VECTOR_SIZE * sizeof(float));
 
 	#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)
-	#pragma acc parallel num_gangs(ngangs) vector_length(nthreads)
+	#pragma acc parallel vector_length(nthreads)
 	#pragma acc loop
 	for ( int i = 0; i < size; i++ ) {
 		c[i] = a[i] + b[i];
@@ -37,21 +39,23 @@ int main(void) {
 }
 """
 
-# Extract tunable directive and generate kernel_string
+# Extract tunable directive
+app = Code(OpenACC(), Cxx())
 preprocessor = extract_preprocessor(code)
-signature = extract_directive_signature(code)
-body = extract_directive_code(code)
+signature = extract_directive_signature(code, app)
+body = extract_directive_code(code, app)
+# Allocate memory on the host
+data = extract_directive_data(code, app)
+args = allocate_signature_memory(data["vector_add"], preprocessor)
+# Generate kernel string
 kernel_string = generate_directive_function(
-    preprocessor, signature["vector_add"], body["vector_add"]
+    preprocessor, signature["vector_add"], body["vector_add"], app, data=data["vector_add"]
 )
 
-# Allocate memory on the host
-data = extract_directive_data(code)
-args = allocate_signature_memory(data["vector_add"], preprocessor)
-
-tune_params = OrderedDict()
-tune_params["ngangs"] = [2**i for i in range(0, 15)]
-tune_params["nthreads"] = [2**i for i in range(0, 11)]
+tune_params = dict()
+tune_params["nthreads"] = [32 * i for i in range(1, 33)]
+metrics = dict()
+metrics["GB/s"] = lambda x: ((2 * 4 * len(args[0])) + (4 * len(args[0]))) / (x["time"] / 10**3) / 10**9
 
 answer = [None, None, args[0] + args[1], None]
 
@@ -61,6 +65,7 @@ tune_kernel(
     0,
     args,
     tune_params,
+    metrics=metrics,
     answer=answer,
     compiler_options=["-fast", "-acc=gpu"],
     compiler="nvc++",

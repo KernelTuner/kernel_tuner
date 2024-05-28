@@ -8,7 +8,6 @@ Be careful that the general setup of tests is left to pyproject.toml.
 
 import platform
 import re
-from difflib import unified_diff
 from pathlib import Path
 
 import nox
@@ -16,7 +15,7 @@ from nox_poetry import Session, session
 
 # set the test parameters
 verbose = False
-python_versions_to_test = ["3.8", "3.9", "3.10", "3.11"]
+python_versions_to_test = ["3.9", "3.10", "3.11", "3.12"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
 nox.options.default_venv_backend = 'virtualenv'
@@ -96,19 +95,6 @@ def check_development_environment(session: Session) -> None:
             Update with 'poetry install --sync', using '--with' and '-E' for optional dependencies, extras respectively.
             Note: {removals} packages are not in the specification (i.e. installed manually) and may be removed.
             To preview changes, run 'poetry install --sync --dry-run' (with optional dependencies and extras).""")
-        
-@session    # to only run on the current python interpreter
-def check_requirements_files(session: Session) -> None:
-    """Check whether the requirement files are not outdated."""
-    doc_requirements_path = Path("doc/requirements.txt")
-    doc_temp_requirements_path = Path("doc/test_requirements.txt")
-    if doc_temp_requirements_path.exists():
-        doc_temp_requirements_path.unlink()
-    session.run("poetry", "export", "--with", "docs", "--without-hashes", "--format=requirements.txt", "--output", str(doc_temp_requirements_path), external=True)
-    diff = list(unified_diff(doc_requirements_path.read_text(), doc_temp_requirements_path.read_text()))
-    if doc_temp_requirements_path.exists():
-        doc_temp_requirements_path.unlink()
-    assert len(diff) == 0, f"Documentation requirements file not up to date with poetry.lock, please update it.\nDiff: {diff}"
 
 @session(python=python_versions_to_test)  # missing versions can be installed with `pyenv install ...`
 # do not forget check / set the versions with `pyenv global`, or `pyenv local` in case of virtual environment
@@ -209,14 +195,6 @@ def tests(session: Session) -> None:
                 except Exception as error:
                     session.log(error)
                     session.warn(install_warning)
-    if install_opencl and session.python == "3.8":
-        # if we need to install the OpenCL extras, first install pyopencl seperately, reason:
-        #   it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry, but only for Python<3.9
-        try:
-            session.install("pyopencl")       # Attention: if changed, check `pyopencl` in pyproject.toml as well
-        except Exception as error:
-            session.log(error)
-            session.warn(install_warning)
 
     # finally, install the dependencies, optional dependencies and the package itself
     poetry_env = Path(session.run_always("poetry", "env", "info", "--executable", silent=not verbose, external=True).splitlines()[-1].strip()).resolve()
