@@ -10,7 +10,7 @@ import copy
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
 from kernel_tuner.runners.ray.remote_actor import RemoteActor
-from kernel_tuner.util import get_num_devices, get_nested_types
+from kernel_tuner.util import get_num_devices
 from kernel_tuner.runners.ray.cache_manager import CacheManager
 from kernel_tuner.strategies.common import create_actor_on_device, initialize_ray
 
@@ -19,14 +19,11 @@ class ParallelRunner(Runner):
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, 
                  num_gpus=None, cache_manager=None, actors=None, simulation_mode=False):
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options) if not simulation_mode else None
-        self.quiet = device_options.quiet
         self.kernel_source = kernel_source
-        self.warmed_up = False
         self.simulation_mode = simulation_mode
+        self.kernel_options = kernel_options
         self.start_time = perf_counter()
         self.last_strategy_start_time = self.start_time
-        self.last_strategy_time = 0
-        self.kernel_options = kernel_options
         self.observers = observers
         self.iterations = iterations
         self.device_options = device_options
@@ -36,49 +33,52 @@ class ParallelRunner(Runner):
 
         if num_gpus is None:
             self.num_gpus = get_num_devices(kernel_source.lang, simulation_mode=self.simulation_mode)
-
+        
         initialize_ray()
-
-        # Create RemoteActor instances
-        if actors is None:
-            runner_attributes = [self.kernel_source, self.kernel_options, self.device_options, self.iterations, self.observers]
-            self.actors = [create_actor_on_device(*runner_attributes, self.cache_manager, simulation_mode, id) for id in range(self.num_gpus)]
 
     def get_environment(self, tuning_options):
         return self.dev.get_environment()
 
-    
     def run(self, parameter_space=None, tuning_options=None, ensemble=None, searchspace=None, cache_manager=None):
         if tuning_options is None: #HACK as tuning_options can't be the first argument and parameter_space needs to be a default argument
             raise ValueError("tuning_options cannot be None")
         
+        # Create RemoteActor instances
+        if self.actors is None:
+            runner_attributes = [self.kernel_source, self.kernel_options, self.device_options, self.iterations, self.observers]
+            self.actors = [create_actor_on_device(*runner_attributes, self.cache_manager, self.simulation_mode, id) for id in range(self.num_gpus)]
+
         if self.cache_manager is None:
             if cache_manager is None:
-                cache_manager = CacheManager.remote(tuning_options)
+                cache_manager = CacheManager.remote(tuning_options.cache, tuning_options.cachefile)
             self.cache_manager = cache_manager
         
         # set the cache manager for each actor. Can't be done in constructor because we do not always yet have the tuning_options
         for actor in self.actors:
             ray.get(actor.set_cache_manager.remote(self.cache_manager))
     
+        # Some observers can't be pickled
+        run_tuning_options = copy.deepcopy(tuning_options)
+        run_tuning_options['observers'] = None
         # Determine what type of parallelism and run appropriately
         if parameter_space and not ensemble and not searchspace:
-            results, tuning_options_list = self.run_parallel_tuning(tuning_options, parameter_space)
+            results, tuning_options_list = self.parallel_function_evaluation(run_tuning_options, parameter_space)
         elif ensemble and searchspace and not parameter_space:
-            results, tuning_options_list = self.run_parallel_ensemble(ensemble, tuning_options, searchspace)
+            results, tuning_options_list = self.multi_strategy_parallel_execution(ensemble, run_tuning_options, searchspace)
         else:
             raise ValueError("Invalid arguments to parallel runner run method")
         
         # Update tuning options
-        new_tuning_options = ray.get(self.cache_manager.get_tuning_options.remote())
-        tuning_options.update(new_tuning_options)
+        # NOTE: tuning options won't have the state of the observers created in the actors as they can't be pickled
+        cache, cachefile = ray.get(self.cache_manager.get_cache.remote())
+        tuning_options.cache = cache
+        tuning_options.cachefile = cachefile
         if self.simulation_mode:
             tuning_options.simulated_time += self._calculate_simulated_time(tuning_options_list)
-            print(f"DEBUG: simulated_time = {tuning_options.simulated_time}", file=sys.stderr)
         
         return results
 
-    def run_parallel_ensemble(self, ensemble, tuning_options, searchspace):
+    def multi_strategy_parallel_execution(self, ensemble, tuning_options, searchspace):
         """
         Runs strategies from the ensemble in parallel using distributed actors, 
         manages dynamic task allocation, and collects results.
@@ -86,11 +86,20 @@ class ParallelRunner(Runner):
         ensemble_queue = deque(ensemble)
         pending_tasks = {}
         all_results = []
+        max_feval = tuning_options.strategy_options["max_fevals"]
+        num_strategies = len(ensemble)
+
+        # distributing feval to all strategies
+        base_eval_per_strategy = max_feval // num_strategies
+        remainder = max_feval % num_strategies
+        evaluations_per_strategy = [base_eval_per_strategy] * num_strategies
+        for i in range(remainder):
+            evaluations_per_strategy[i] += 1
 
         # Start initial tasks for each actor
         for actor in self.actors:
             strategy = ensemble_queue.popleft()
-            remote_tuning_options = self._setup_tuning_options(tuning_options)
+            remote_tuning_options = self._setup_tuning_options(tuning_options, evaluations_per_strategy)
             task = actor.execute.remote(strategy=strategy, searchspace=searchspace, tuning_options=remote_tuning_options)
             pending_tasks[task] = actor
         
@@ -105,7 +114,7 @@ class ParallelRunner(Runner):
                 # Reassign actors if strategies remain
                 if ensemble_queue:
                     strategy = ensemble_queue.popleft()
-                    remote_tuning_options = self._setup_tuning_options(tuning_options)
+                    remote_tuning_options = self._setup_tuning_options(tuning_options, evaluations_per_strategy)
                     task = actor.execute.remote(strategy=strategy, searchspace=searchspace, tuning_options=remote_tuning_options)
                     pending_tasks[task] = actor
         
@@ -117,13 +126,15 @@ class ParallelRunner(Runner):
             tuning_options.strategy_options["population"] = population
         if candidates:
             tuning_options.strategy_options["candidates"] = candidates
+        
         return results, tuning_options_list
     
-    def _setup_tuning_options(self, tuning_options):
+    def _setup_tuning_options(self, tuning_options, evaluations_per_strategy):
         new_tuning_options = copy.deepcopy(tuning_options)
         if "candidates" in tuning_options.strategy_options:
             if len(tuning_options.strategy_options["candidates"]) > 0:
                 new_tuning_options.strategy_options["candidate"] = tuning_options.strategy_options["candidates"].pop(0)
+        new_tuning_options.strategy_options["max_fevals"] = evaluations_per_strategy.pop(0)
         return new_tuning_options
     
     def _process_results_ensemble(self, all_results):
@@ -143,11 +154,11 @@ class ParallelRunner(Runner):
         return results, tuning_options_list, population, candidates
 
 
-    def run_parallel_tuning(self, tuning_options, parameter_space):
+    def parallel_function_evaluation(self, tuning_options, parameter_space):
         # Create a pool of RemoteActor actors
         self.actor_pool = ActorPool(self.actors)
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
-        all_results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(element=v, tuning_options=tuning_options), parameter_space))
+        all_results = list(self.actor_pool.map_unordered(lambda a, v: a.execute.remote(tuning_options, element=v), parameter_space))
         results = [x[0] for x in all_results]
         tuning_options_list = [x[1] for x in all_results]
         return results, tuning_options_list
@@ -167,7 +178,13 @@ class ParallelRunner(Runner):
     def _calculate_simulated_time(self, tuning_options_list):
         simulated_times = []
         for tuning_options in tuning_options_list:
-            print(f"DEBUG:_calculate_simulated_time tuning_options.simulated_time = {tuning_options.simulated_time}", file=sys.stderr)
             simulated_times.append(tuning_options.simulated_time)
         #simulated_times = [tuning_options.simulated_time for tuning_options in tuning_options_list]
         return max(simulated_times)
+
+    def clean_up_ray(self):
+        if self.actors is not None:
+            for actor in self.actors:
+                ray.kill(actor)
+        if self.cache_manager is not None:
+            ray.kill(self.cache_manager)
