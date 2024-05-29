@@ -144,3 +144,6 @@ select = [
 ]
 [tool.ruff.pydocstyle]
 convention = "google"
+
+[tool.poetry.scripts]
+"ktcache" = "scripts.cli:main"

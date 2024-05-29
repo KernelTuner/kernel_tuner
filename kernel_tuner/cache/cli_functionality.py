@@ -13,6 +13,7 @@ from packaging import version
 from .cache import Cache
 from .convert import convert_cache_file, convert_cache_to_t4
 from .file import read_cache, write_cache
+from .versions import LATEST_VERSION
 
 
 def convert_new_schema(file_list: List[PathLike]):
@@ -147,6 +148,11 @@ def delete_line(infile: PathLike,  delete_key: any, outfile=None):
 
 
     cache_infile = Cache.read(infile)
+
+    # We require the file to be of the latest version.
+    if cache_infile.version != LATEST_VERSION:
+        raise ValueError(f"Cachefile '{infile}' is of version {str(cache_infile.version)} but should be of version "\
+                         f"{str(LATEST_VERSION)} (latest).")
 
     if cache_infile.lines.get(delete_key) is None:
         raise KeyError(f"Entry '{delete_key}' is not contained in cachefile '{infile}'.")
