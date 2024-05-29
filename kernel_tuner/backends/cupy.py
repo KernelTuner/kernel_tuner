@@ -47,6 +47,7 @@ class CupyFunctions(GPUBackend):
         self.devprops = dev.attributes
         self.cc = dev.compute_capability
         self.max_threads = self.devprops["MaxThreadsPerBlock"]
+        self.cache_size_L2 = int(self.devprops["L2CacheSize"])
 
         self.iterations = iterations
         self.current_module = None
@@ -83,6 +84,18 @@ class CupyFunctions(GPUBackend):
         self.env = env
         self.name = env["device_name"]
 
+    def allocate_ndarray(self, array):
+        alloc = cp.array(array)
+        self.allocations.append(alloc)
+        return alloc
+    
+    def free_mem(self, pointer):
+        # iteratively comparing is required as comparing with list.remove is not properly implemented
+        to_remove = [i for i, alloc in enumerate(self.allocations) if cp.array_equal(alloc, pointer)]
+        assert len(to_remove) == 1
+        self.allocations.pop(to_remove[0])
+        del pointer # CuPy uses Python reference counter to free upon disuse
+
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
 
@@ -98,8 +111,7 @@ class CupyFunctions(GPUBackend):
         for arg in arguments:
             # if arg i is a numpy array copy to device
             if isinstance(arg, np.ndarray):
-                alloc = cp.array(arg)
-                self.allocations.append(alloc)
+                alloc = self.allocate_ndarray(arg)
                 gpu_args.append(alloc)
             # if not a numpy array, just pass argument along
             else:

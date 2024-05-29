@@ -68,6 +68,11 @@ class CudaFunctions(GPUBackend):
             cudart.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device
         )
         cuda_error_check(err)
+        err, self.cache_size_L2 = cudart.cudaDeviceGetAttribute(
+            cudart.cudaDeviceAttr.cudaDevAttrL2CacheSize, device
+        )
+        cuda_error_check(err)
+        self.cache_size_L2 = int(self.cache_size_L2)
         self.cc = f"{major}{minor}"
         self.iterations = iterations
         self.current_module = None
@@ -109,9 +114,19 @@ class CudaFunctions(GPUBackend):
 
     def __del__(self):
         for device_memory in self.allocations:
-            if isinstance(device_memory, cuda.CUdeviceptr):
-                err = cuda.cuMemFree(device_memory)
-                cuda_error_check(err)
+            self.free_mem(device_memory)
+
+    def allocate_ndarray(self, array):
+        err, device_memory = cuda.cuMemAlloc(array.nbytes)
+        cuda_error_check(err)
+        self.allocations.append(device_memory)
+        return device_memory
+    
+    def free_mem(self, pointer):
+        assert isinstance(pointer, cuda.CUdeviceptr)
+        self.allocations.remove(pointer)
+        err = cuda.cuMemFree(pointer)
+        cuda_error_check(err)
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
@@ -128,9 +143,7 @@ class CudaFunctions(GPUBackend):
         for arg in arguments:
             # if arg is a numpy array copy it to device
             if isinstance(arg, np.ndarray):
-                err, device_memory = cuda.cuMemAlloc(arg.nbytes)
-                cuda_error_check(err)
-                self.allocations.append(device_memory)
+                device_memory = self.allocate_ndarray(arg)
                 gpu_args.append(device_memory)
                 self.memcpy_htod(device_memory, arg)
             # if not array, just pass along
@@ -318,7 +331,7 @@ class CudaFunctions(GPUBackend):
         :type size: int
 
         """
-        err = cudart.cudaMemset(allocation, value, size)
+        err = cudart.cudaMemset(allocation.__init__(), value, size)
         cuda_error_check(err)
 
     @staticmethod

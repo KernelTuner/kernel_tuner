@@ -101,6 +101,7 @@ class PyCudaFunctions(GPUBackend):
             str(k): v for (k, v) in self.context.get_device().get_attributes().items()
         }
         self.max_threads = devprops["MAX_THREADS_PER_BLOCK"]
+        self.cache_size_L2 = int(devprops["L2_CACHE_SIZE"])
         cc = str(devprops.get("COMPUTE_CAPABILITY_MAJOR", "0")) + str(
             devprops.get("COMPUTE_CAPABILITY_MINOR", "0")
         )
@@ -151,7 +152,17 @@ class PyCudaFunctions(GPUBackend):
         for gpu_mem in self.allocations:
             # if needed for when using mocks during testing
             if hasattr(gpu_mem, "free"):
-                gpu_mem.free()
+                self.free_mem(gpu_mem)
+
+    def allocate_ndarray(self, array):
+        alloc = drv.mem_alloc(array.nbytes)
+        self.allocations.append(alloc)
+        return alloc
+    
+    def free_mem(self, pointer):
+        assert hasattr(pointer, "free")
+        self.allocations.remove(pointer)
+        pointer.free()
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
@@ -168,8 +179,7 @@ class PyCudaFunctions(GPUBackend):
         for arg in arguments:
             # if arg i is a numpy array copy to device
             if isinstance(arg, np.ndarray):
-                alloc = drv.mem_alloc(arg.nbytes)
-                self.allocations.append(alloc)
+                alloc = self.allocate_ndarray(arg)
                 gpu_args.append(alloc)
                 drv.memcpy_htod(gpu_args[-1], arg)
             elif isinstance(arg, torch.Tensor):
