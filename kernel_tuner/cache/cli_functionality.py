@@ -1,6 +1,17 @@
-"""This file cli_fct.py contains the helper functions used in cli.py.
+"""This file cli_fct.py contains several functions used to perform several operations on cachefiles.
 
-This way, we can split the files correctly and not obtain messy code.
+This is one of:
+   - `convert`: one may convert a cachefile to a specified (higher) version; for this we have function convert().
+   - `convert-t4`: one may convert a cachefile to T4 format; for this we have function convert_t4().
+   - `delete-line`: one may delete a certain cacheline from a cachefile; required that the cachefile is of the newest
+       JSON schema version. For this we have the delete_line() function.
+   - `get-line`: One may obtain the cacheline data of a certain cacheline inside a cachefile. For this, we have the 
+       get_line() function.
+   - `merge`: one may merge several (with possible non-equivalent version) cachefiles into one cachefile;
+      for this we have the merge_files() function. The resulting merged cachefile is always using the **newest** JSON
+      schema.
+
+   For these main operations to work, there are also helper functions such as convert_new_schema().
 """  
 
 from os import PathLike

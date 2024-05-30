@@ -1,10 +1,10 @@
 """The CLI tool to manipulate kernel tuner cache files.
 
 Works with the cache file manipulation library (cache.py),
-conversion functionality (convert.py) and other helper functions (defined in cli_fct.py).
+conversion functionality (convert.py) and other helper functions (defined in cli_functionality.py).
 
 Basic usage:
-$ cli {convert, t4, delete-line, get-line, merge}
+$ poetry run ktcache {convert, t4, delete-line, get-line, merge}
 
 We can:
    - `convert`: using the functionality from convert.py one can convert to a specified version.
@@ -22,8 +22,8 @@ We can:
       schema_version. 
       We have arguments:
          - <infile>: the input file to delete the entry.
-         - (Required) `--key`: The key to try and delete.
-         - (Optional): the new output file.
+         - `--key`: The key to try and delete.
+         - ``: the new output file.
 
    - `get-line`: using the cache library one can get a certain cacheline entry from the input cachefile. 
       Prints in JSON.
