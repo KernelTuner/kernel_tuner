@@ -6,7 +6,7 @@
     "schema_version": {
       "type": "string",
       "description": "The version of this JSON-schema, adhering to the Semantic Versioning specification.",
-      "const": "1.0.0"
+      "const": "1.0.1"
     },
     "device_name": {
       "type": "string",
