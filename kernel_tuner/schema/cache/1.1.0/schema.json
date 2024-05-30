@@ -17,11 +17,21 @@
             "description": "The name of the kernel."
         },
         "problem_size": {
-            "type": "array",
-            "description": "The size of the problem.",
-            "items": {
-                "type": "integer"
-            }
+            "oneOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+            ],
+            "description": "The size of the problem."
         },
         "tune_params_keys": {
             "type": "array",
@@ -72,7 +82,7 @@
                         "type": "number"
                     },
                     "verification_time": {
-                        "type": "integer"
+                        "type": "number"
                     },
                     "benchmark_time": {
                         "type": "number"
@@ -81,7 +91,7 @@
                         "type": "number"
                     },
                     "strategy_time": {
-                        "type": "integer"
+                        "type": "number"
                     },
                     "framework_time": {
                         "type": "number"
