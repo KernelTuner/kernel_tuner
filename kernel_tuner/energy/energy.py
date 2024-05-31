@@ -2,7 +2,8 @@
 import numpy as np
 from scipy import optimize
 
-from kernel_tuner import tune_kernel, util
+from kernel_tuner import tune_kernel
+from kernel_tuner.cache.cache import Cache
 from kernel_tuner.observers.nvml import NVMLObserver, get_nvml_gr_clocks
 
 try:
@@ -54,10 +55,10 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
         nvml_gr_clocks = get_nvml_gr_clocks(device, n=n_samples, quiet=True)
 
     else:
-        cached_data = util.read_cache(cache, open_cache=False)
-        multiprocessor_count = cached_data["problem_size"][0]
-        max_block_dim_x = cached_data["tune_params"]["block_size_x"][0]
-        nvml_gr_clocks = cached_data["tune_params"]
+        c = Cache.read(cache)
+        multiprocessor_count = c.problem_size[0]
+        max_block_dim_x = c.tune_params["block_size_x"][0]
+        nvml_gr_clocks = c.tune_params
 
     # kernel arguments
     data_size = (multiprocessor_count, max_block_dim_x)

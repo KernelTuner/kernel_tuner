@@ -49,14 +49,14 @@
               ]
             },
             "times": {
-              "type": "array", 
+              "type": "array",
               "items": {"type": "number"}
             },
             "compile_time": {"type": "number"},
-            "verification_time": {"type": "integer"},
+            "verification_time": {"type": "number"},
             "benchmark_time": {"type": "number"},
             "GFLOP/s": {"type": "number"},
-            "strategy_time": {"type": "integer"},
+            "strategy_time": {"type": "number"},
             "framework_time": {"type": "number"},
             "timestamp": {"type": "string", "format": "date-time"}
           },

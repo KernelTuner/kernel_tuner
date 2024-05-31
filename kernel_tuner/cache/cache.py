@@ -6,22 +6,24 @@ In order to modify and read cache files, the Cache class should be used, see its
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
+from datetime import datetime
+from functools import cached_property
+from functools import lru_cache as cache
 from os import PathLike
 from pathlib import Path
-from typing import Any, Union, Optional, Dict, Iterable
-from collections.abc import Mapping
-from functools import lru_cache as cache, cached_property
-from datetime import datetime
+from typing import Any, Dict, Iterable, Optional, Union
 
 import jsonschema
 from semver import Version
 
 import kernel_tuner.util as util
+
+from .file import append_cache_line, read_cache, write_cache
 from .json import CacheFileJSON, CacheLineJSON
 from .json_encoder import CacheLineEncoder
-from .file import read_cache, write_cache, append_cache_line
-from .versions import LATEST_VERSION
 from .paths import get_schema_path
+from .versions import LATEST_VERSION
 
 
 class Cache:
@@ -220,12 +222,18 @@ class Cache:
                 raise ValueError("Argument time should be a float or an ErrorConfig")
             if not isinstance(compile_time, float):
                 raise ValueError("Argument compile_time should be a float")
-            if not isinstance(verification_time, int):
-                raise ValueError("Argument verification_time should be an int")
+            if not isinstance(verification_time, (int, float)):
+                raise ValueError("Argument verification_time should be an int or float")
+            # It is possible that verification_time is a bool which is also of instance int. Check and cast to be sure.
+            elif isinstance(verification_time, bool):
+                verification_time = int(verification_time)
             if not isinstance(benchmark_time, float):
                 raise ValueError("Argument benchmark_time should be a float")
-            if not isinstance(strategy_time, int):
-                raise ValueError("Argument strategy_time should be an int")
+            if not isinstance(strategy_time, (int, float)):
+                raise ValueError("Argument strategy_time should be an int or float")
+            # It is possible that strategy_time is a bool which is also of instance int. Check and cast to be sure.
+            elif isinstance(strategy_time, bool):
+                strategy_time = int(strategy_time)
             if not isinstance(framework_time, float):
                 raise ValueError("Argument framework_time should be a float")
             if not isinstance(timestamp, datetime):
