@@ -172,7 +172,7 @@ class TestCli:
 
         # Merging small_cache_one_entry.json and small_cache.json should result in small_cache_three_entries.json
 
-        parser = parse_args(["merge", str(TEST_SMALL_CACHEFILE_DST), str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST), \
+        parser = parse_args(["merge", str(TEST_SMALL_CACHEFILE_DST), str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST),
                              "--out", str(TEST_MERGE_OUTPUT)])
         
 
@@ -198,7 +198,7 @@ class TestCli:
 
 
         # We know that small_cache_one_entry.json and small_cache_three_entries.json have overlap for key 32,1
-        parser = parse_args(["merge", str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST), \
+        parser = parse_args(["merge", str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST),
                              str(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST), "--out", str(OUT_FILE)])
                 
         with pytest.raises(KeyError):

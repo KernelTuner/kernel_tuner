@@ -101,12 +101,12 @@ def merge_files(file_list: List[PathLike], ofile: PathLike):
     # From cache.py (json.load).
 
     resulting_output = Cache.read(file_list[0])
-    resulting_output.create(ofile, \
-        device_name=resulting_output.device_name, \
-        kernel_name=resulting_output.kernel_name, \
-        problem_size=resulting_output.problem_size, \
-        tune_params_keys=resulting_output.tune_params_keys, \
-        tune_params=resulting_output.tune_params, \
+    resulting_output.create(ofile,
+        device_name=resulting_output.device_name,
+        kernel_name=resulting_output.kernel_name,
+        problem_size=resulting_output.problem_size,
+        tune_params_keys=resulting_output.tune_params_keys,
+        tune_params=resulting_output.tune_params,
         objective=resulting_output.objective)
 
     # We read so the ._filename changes for append
@@ -141,9 +141,10 @@ def get_line(infile: PathLike, key: any):
 
     cache_line = cache_infile.lines[key]
 
-    print(f"[*] Cacheline entry '{key}' content [*]\n\n************************")
+    print(f"[*] Cacheline entry '{key}' content [*]\n\n"
+          f"************************")
     print(dict(cache_line.items()))
-    print("************************")
+    print(f"************************")
 
 
 
@@ -162,18 +163,18 @@ def delete_line(infile: PathLike,  delete_key: any, outfile=None):
 
     # We require the file to be of the latest version.
     if cache_infile.version != LATEST_VERSION:
-        raise ValueError(f"Cachefile '{infile}' is of version {str(cache_infile.version)} but should be of version "\
+        raise ValueError(f"Cachefile '{infile}' is of version {str(cache_infile.version)} but should be of version "
                          f"{str(LATEST_VERSION)} (latest).")
 
     if cache_infile.lines.get(delete_key) is None:
         raise KeyError(f"Entry '{delete_key}' is not contained in cachefile '{infile}'.")
 
-    cache_infile.create(outfile, \
-        device_name=cache_infile.device_name, \
-        kernel_name=cache_infile.kernel_name, \
-        problem_size=cache_infile.problem_size, \
-        tune_params_keys=cache_infile.tune_params_keys, \
-        tune_params=cache_infile.tune_params, \
+    cache_infile.create(outfile,
+        device_name=cache_infile.device_name,
+        kernel_name=cache_infile.kernel_name,
+        problem_size=cache_infile.problem_size,
+        tune_params_keys=cache_infile.tune_params_keys,
+        tune_params=cache_infile.tune_params,
         objective=cache_infile.objective)
 
 

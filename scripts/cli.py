@@ -92,39 +92,63 @@ def parse_args(args):
 		description="A CLI tool to manipulate kernel tuner cache files.",
 		epilog="More help/issues? Visit https://github.com/kernel_tuner/kernel_tuner")
 
-    sp = parser.add_subparsers(required=True, \
-							help="Possible subcommands: 'convert', 'delete-line', 'get-line' and 'inspect'.")
+    sp = parser.add_subparsers(required=True,
+							   help="Possible subcommands: 'convert', 'delete-line', 'get-line' and 'inspect'.")
+    
 
     convert = sp.add_parser("convert", help="Convert a cache file from one version to another.")
-    convert.add_argument("--in", "--infile", required=True, help="The input cache file to read from.", dest="infile")
-    convert.add_argument("--out", "--output", help="The (optional) output JSON file to write to.", dest="output")
-    convert.add_argument("-T", "--target", help="The destination target version. By default the newest version")
+    convert.add_argument("--in", "--infile", 
+                    required=True, 
+                    help="The input cache file to read from.", 
+                    dest="infile")
+    convert.add_argument("--out", "--output", 
+                    help="The (optional) output JSON file to write to.", 
+                    dest="output")
+    convert.add_argument("-T", "--target", 
+                    help="The destination target version. By default the newest version")
     convert.set_defaults(func=cli_convert)
 
     t4 = sp.add_parser("t4", help="Convert a cache file to the T4 auto-tuning format.")
-    t4.add_argument("--in", "--infile", required=True, help="The input cache file to read from.", dest="infile")
-    t4.add_argument("--out", "--output", required=True, help="The output JSON file to write to.", dest="output")
+    t4.add_argument("--in", "--infile", 
+                    required=True, 
+                    help="The input cache file to read from.", 
+                    dest="infile")
+    t4.add_argument("--out", "--output", 
+                    required=True, 
+                    help="The output JSON file to write to.", 
+                    dest="output")
     t4.set_defaults(func=cli_t4)
     
     delete = sp.add_parser("delete-line", help="Delete a certain cacheline entry from the specified cachefile.")
-    delete.add_argument("infile", nargs=1, help="The input file to delete from.")
-    delete.add_argument("--key", required=True, \
-					help="The (potential) key of the (potential) cacheline entry to delete.")
-    delete.add_argument("-o", "--out", "--output", \
-					help="The (optional) output file to write the updated cachefile to.", dest="output")
+    delete.add_argument("infile", 
+                    nargs=1, 
+                    help="The input file to delete from.")
+    delete.add_argument("--key", 
+                    required=True,
+				    help="The (potential) key of the (potential) cacheline entry to delete.")
+    delete.add_argument("-o", "--out", "--output", 
+                    help="The (optional) output file to write the updated cachefile to.", 
+                    dest="output")
     delete.set_defaults(func=cli_deleteline)
     
     get = sp.add_parser("get-line", help="Get a certain cacheline entry from the specified cachefile.")
-    get.add_argument("infile", nargs=1, help="The input file to check.")
-    get.add_argument("--key", required=True, help="The (potential) key of the (potential) cacheline entry to get.")
+    get.add_argument("infile", 
+                    nargs=1, 
+                    help="The input file to check.")
+    get.add_argument("--key", 
+                    required=True, 
+                    help="The (potential) key of the (potential) cacheline entry to get.")
     get.set_defaults(func=cli_getline)
     
     merge = sp.add_parser("merge", help="Merge two or more cachefiles.")
-    merge.add_argument("files", nargs="+", \
-					help="The cachefiles to merge (minimum two). \
-						They must be of the same version, and contain equivalent metadata.")
-    merge.add_argument("-o", "--out", "--output", required=True, \
-					help="The output file to write the merged cachefiles to.", dest="output")
+    merge.add_argument("files", 
+                    nargs="+",
+					help=f"The cachefiles to merge (minimum two). They must be of the same version, and "
+                         f"contain equivalent metadata.")
+    merge.add_argument("-o", "--out", "--output", 
+                    required=True,
+					help="The output file to write the merged cachefiles to.", 
+                    dest="output")
     merge.set_defaults(func=cli_merge)
     
 
