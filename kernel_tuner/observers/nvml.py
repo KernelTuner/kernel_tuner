@@ -316,8 +316,14 @@ class NVMLObserver(BenchmarkObserver):
     ):
         """Create an NVMLObserver."""
         # needed for re-initializing observer on ray actor
-        self.init_arguments = [observables, device, save_all, nvidia_smi_fallback, use_locked_clocks, continous_duration]
-
+        self.init_arguments = {
+            "observables": observables,
+            "device": device,
+            "save_all": save_all,
+            "nvidia_smi_fallback": nvidia_smi_fallback,
+            "use_locked_clocks": use_locked_clocks,
+            "continous_duration": continous_duration
+        }
         if nvidia_smi_fallback:
             self.nvml = nvml(
                 device,
@@ -428,7 +434,12 @@ class NVMLPowerObserver(ContinuousObserver):
         self.nvml = nvml_instance
 
         # needed for re-initializing observer on ray actor
-        self.init_arguments = [observables, parent, nvml_instance, continous_duration]
+        self.init_arguments = {
+            "observables": observables,
+            "parent": parent,
+            "nvml_instance": nvml_instance,
+            "continous_duration": continous_duration
+        }
 
         supported = ["power_readings", "nvml_power", "nvml_energy"]
         for obs in observables:
