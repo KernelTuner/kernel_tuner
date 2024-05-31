@@ -59,11 +59,7 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, a
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     
-    ensemble = []
-    if "ensemble" in tuning_options:
-        ensemble = tuning_options.ensemble
-    else:
-        ensemble = ["greedy_ils", "greedy_ils"]
+    ensemble = options.get('ensemble', ["greedy_ils", "greedy_ils"])
     ensemble_size = len(ensemble)
 
     tuning_options.strategy_options["max_fevals"] = options.get("max_fevals", 100 * ensemble_size)

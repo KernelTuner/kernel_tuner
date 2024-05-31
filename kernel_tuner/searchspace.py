@@ -50,6 +50,11 @@ class Searchspace:
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.restrictions = restrictions
+        self.max_threads = max_threads
+        self.block_size_names = block_size_names
+        self.framework = framework
+        self.solver_method = solver_method
+        self.path_to_ATF_cache = path_to_ATF_cache
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
         self._modified_restrictions = restrictions
         self.param_names = list(self.tune_params.keys())
@@ -727,3 +732,42 @@ class Searchspace:
                 f"The number of ordered parameter configurations ({len(ordered_param_configs)}) differs from the original number of parameter configurations ({len(param_configs)})"
             )
         return ordered_param_configs
+
+    def split_searchspace(self, n: int) -> List['Searchspace']:
+        """Splits the searchspace into n more or less equal parts using a round-robin approach."""
+        if n <= 0:
+            raise ValueError("Number of parts must be greater than zero.")
+        if n > self.size:
+            raise ValueError(f"Cannot split into more parts ({n}) than the size of the searchspace ({self.size}).")
+
+        # Initialize the parts and their corresponding tune_params
+        parts = [{param: [] for param in self.tune_params} for _ in range(n)]
+        
+        # Distribute configurations in a round-robin fashion
+        for index, config in enumerate(self.list):
+            part_index = index % n
+            for j, param in enumerate(self.param_names):
+                parts[part_index][param].append(config[j])
+
+        # Remove duplicates and sort parameters within each part
+        for part_tune_params in parts:
+            for param in part_tune_params:
+                part_tune_params[param] = sorted(list(set(part_tune_params[param])))
+
+        # Create Searchspace objects for each part
+        searchspace_parts = []
+        for part_tune_params in parts:
+            part_searchspace = Searchspace(
+                tune_params=part_tune_params,
+                restrictions=self.restrictions,
+                max_threads=self.max_threads,
+                block_size_names=self.block_size_names,
+                build_neighbors_index=self.build_neighbors_index,
+                neighbor_method=self.neighbor_method,
+                framework=self.framework,
+                solver_method=self.solver_method,
+                path_to_ATF_cache=self.path_to_ATF_cache
+            )
+            searchspace_parts.append(part_searchspace)
+
+        return searchspace_parts

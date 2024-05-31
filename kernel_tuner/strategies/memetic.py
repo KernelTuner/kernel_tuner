@@ -79,7 +79,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     print(f"DEBUG: local_search={local_search} global_search={global_search} alsd={alsd} lsd={lsd} maxiter={maxiter} popsize={popsize} max_feval={max_feval}", file=sys.stderr)
 
     if local_search in ls_strategies_list:
-        tuning_options["ensemble"] = [local_search] * popsize
+        options["ensemble"] = [local_search] * popsize
     else:
         raise ValueError("Provided local search ensemble are not all local search strategies")
 
@@ -88,7 +88,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     else:
         raise ValueError("Provided population based strategy is not a population based strategy")
     
-    tuning_options.strategy_options["population"] = searchspace.get_random_sample(popsize)
+    options["population"] = searchspace.get_random_sample(popsize)
 
     num_gpus = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
     check_num_devices(num_gpus, simulation_mode, runner)
@@ -97,7 +97,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cache_manager = CacheManager.remote(tuning_options.cache, tuning_options.cachefile)
     num_actors = num_gpus if num_gpus < popsize else popsize
     runner_attributes = [runner.kernel_source, runner.kernel_options, runner.device_options, runner.iterations, runner.observers]
-    actors = [create_actor_on_device(*runner_attributes, cache_manager, simulation_mode, id) for id in range(num_actors)]
+    actors = [create_actor_on_device(*runner_attributes, id=id, cache_manager=cache_manager, simulation_mode=simulation_mode) for id in range(num_actors)]
     pop_runner = ParallelRunner(runner.kernel_source, runner.kernel_options, runner.device_options, 
                                 runner.iterations, runner.observers, num_gpus=num_gpus, cache_manager=cache_manager,
                                 simulation_mode=simulation_mode, actors=actors)

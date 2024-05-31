@@ -15,6 +15,7 @@ class RemoteActor():
                  device_options,
                  iterations,
                  observers_type_and_arguments,
+                 id,
                  cache_manager=None,
                  simulation_mode=False):
         self.kernel_source = kernel_source
@@ -24,20 +25,9 @@ class RemoteActor():
         self.cache_manager = cache_manager
         self.simulation_mode = simulation_mode
         self.runner = None
-
-        # observers can't be pickled to the actor so we need to re-initialize them
-        register_observer = False
-        self.observers = []
-        for (observer, arguments) in observers_type_and_arguments:
-            if isinstance(observer, RegisterObserver):
-                register_observer = True
-            else:
-                self.observers.append(observer(*arguments))
-        # we dont initialize the dev with observers, as this creates a 'invalid resource handle' error down the line
-        self.dev = DeviceInterface(kernel_source, iterations=iterations, **device_options) if not simulation_mode else None
-        # the register observer needs dev to be initialized, that's why its done later
-        if register_observer:
-            self.observers.append(RegisterObserver(self.dev))
+        self.id = id
+        self._reinitialize_observers(observers_type_and_arguments)
+        
 
     def execute(self, tuning_options, strategy=None, searchspace=None, element=None):
         tuning_options['observers'] = self.observers
@@ -72,3 +62,20 @@ class RemoteActor():
         else:
             self.runner = SequentialRunner(self.kernel_source, self.kernel_options, self.device_options, 
                                        self.iterations, self.observers, cache_manager=self.cache_manager)
+
+    def _reinitialize_observers(self, observers_type_and_arguments):
+        # observers can't be pickled to the actor so we need to re-initialize them
+        register_observer = False
+        self.observers = []
+        for (observer, arguments) in observers_type_and_arguments:
+            if "device" in arguments:
+                arguments["device"] = self.id
+            if isinstance(observer, RegisterObserver):
+                register_observer = True
+            else:
+                self.observers.append(observer(**arguments))
+        # we dont initialize the dev with observers, as this creates a 'invalid resource handle' error down the line
+        self.dev = DeviceInterface(self.kernel_source, iterations=self.iterations, **self.device_options) if not self.simulation_mode else None
+        # the register observer needs dev to be initialized, that's why its done later
+        if register_observer:
+            self.observers.append(RegisterObserver(self.dev))

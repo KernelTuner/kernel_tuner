@@ -53,7 +53,7 @@ def make_strategy_options_doc(strategy_options):
 def get_options(strategy_options, options):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
     accepted = list(options.keys()) + ["max_fevals", "time_limit", "ensemble", "candidates", "candidate", "population", 
-                                       "maxiter", "lsd", "popsize", "alsd", ]
+                                       "maxiter", "lsd", "popsize", "alsd", "split_searchspace"]
     for key in strategy_options:
         if key not in accepted:
             raise ValueError(f"Unrecognized option {key} in strategy_options")
@@ -364,7 +364,8 @@ def create_actor_on_device(kernel_source, kernel_options, device_options, iterat
                                                             iterations, 
                                                             observers_type_and_arguments=observers_type_and_arguments,
                                                             cache_manager=cache_manager,
-                                                            simulation_mode=simulation_mode)
+                                                            simulation_mode=simulation_mode,
+                                                            id=id)
 
 def initialize_ray():
     # Initialize Ray

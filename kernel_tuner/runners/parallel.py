@@ -46,7 +46,7 @@ class ParallelRunner(Runner):
         # Create RemoteActor instances
         if self.actors is None:
             runner_attributes = [self.kernel_source, self.kernel_options, self.device_options, self.iterations, self.observers]
-            self.actors = [create_actor_on_device(*runner_attributes, self.cache_manager, self.simulation_mode, id) for id in range(self.num_gpus)]
+            self.actors = [create_actor_on_device(*runner_attributes, id=id, cache_manager=self.cache_manager, simulation_mode=self.simulation_mode) for id in range(self.num_gpus)]
 
         if self.cache_manager is None:
             if cache_manager is None:
@@ -86,7 +86,9 @@ class ParallelRunner(Runner):
         ensemble_queue = deque(ensemble)
         pending_tasks = {}
         all_results = []
-        max_feval = tuning_options.strategy_options["max_fevals"]
+        options = tuning_options.strategy_options
+        max_feval = options["max_fevals"]
+        split_searchspace = options["split_searchspace"] if "split_searchspace" in options else False
         num_strategies = len(ensemble)
 
         # distributing feval to all strategies
@@ -96,9 +98,17 @@ class ParallelRunner(Runner):
         for i in range(remainder):
             evaluations_per_strategy[i] += 1
 
+        # Ensure we always have a list of search spaces
+        if split_searchspace:
+            searchspaces = searchspace.split_searchspace(num_strategies)
+        else:
+            searchspaces = [searchspace] * num_strategies
+        searchspaces = deque(searchspaces)
+
         # Start initial tasks for each actor
         for actor in self.actors:
             strategy = ensemble_queue.popleft()
+            searchspace = searchspaces.popleft()
             remote_tuning_options = self._setup_tuning_options(tuning_options, evaluations_per_strategy)
             task = actor.execute.remote(strategy=strategy, searchspace=searchspace, tuning_options=remote_tuning_options)
             pending_tasks[task] = actor
@@ -114,6 +124,7 @@ class ParallelRunner(Runner):
                 # Reassign actors if strategies remain
                 if ensemble_queue:
                     strategy = ensemble_queue.popleft()
+                    searchspace = searchspaces.popleft()
                     remote_tuning_options = self._setup_tuning_options(tuning_options, evaluations_per_strategy)
                     task = actor.execute.remote(strategy=strategy, searchspace=searchspace, tuning_options=remote_tuning_options)
                     pending_tasks[task] = actor
@@ -128,6 +139,7 @@ class ParallelRunner(Runner):
             tuning_options.strategy_options["candidates"] = candidates
         
         return results, tuning_options_list
+
     
     def _setup_tuning_options(self, tuning_options, evaluations_per_strategy):
         new_tuning_options = copy.deepcopy(tuning_options)
@@ -135,6 +147,8 @@ class ParallelRunner(Runner):
             if len(tuning_options.strategy_options["candidates"]) > 0:
                 new_tuning_options.strategy_options["candidate"] = tuning_options.strategy_options["candidates"].pop(0)
         new_tuning_options.strategy_options["max_fevals"] = evaluations_per_strategy.pop(0)
+        # the stop criterion uses the max feval in tuning options for some reason
+        new_tuning_options["max_fevals"] = new_tuning_options.strategy_options["max_fevals"]
         return new_tuning_options
     
     def _process_results_ensemble(self, all_results):
