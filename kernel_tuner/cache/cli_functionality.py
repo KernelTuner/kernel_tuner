@@ -203,7 +203,7 @@ def delete_line(infile: PathLike,  delete_key: any, outfile=None):
 def convert(read_file: PathLike, write_file=None, target=None):
     """The main function for handling the version conversion of a cachefile."""
     if not file_exists(read_file):
-        raise ValueError(f"Can not find file \"{read_file}\"")
+        raise FileNotFoundError(f"Can not find file \"{read_file}\"")
     
     if write_file is not None and write_file[-5:] != ".json":
         raise ValueError("Please specify a .json file for the output file")
@@ -223,7 +223,7 @@ def convert(read_file: PathLike, write_file=None, target=None):
 def convert_t4(read_file: PathLike, write_file=None):
     """The main function for handling the T4 conversion of a cachefile."""
     if not file_exists(read_file):
-        raise ValueError(f"Can not find file \"{read_file}\"")
+        raise FileNotFoundError(f"Can not find file \"{read_file}\"")
     
     if write_file is not None and write_file[-5:] != ".json":
         raise ValueError("Please specify a .json file for the output file")

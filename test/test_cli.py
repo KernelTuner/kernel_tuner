@@ -5,10 +5,11 @@ from shutil import copyfile
 import jsonschema
 import pytest
 
-from kernel_tuner.cache.cli import parse_args
+from scripts.cli import parse_args
 from kernel_tuner.cache.file import read_cache
 from kernel_tuner.cache.paths import CACHE_SCHEMAS_DIR
 from kernel_tuner.cache.versions import VERSIONS
+from kernel_tuner.cache.convert import convert_cache_file
 
 TEST_PATH         = Path(__file__).parent
 TEST_CACHE_PATH   = TEST_PATH / "test_cache_files"
@@ -38,14 +39,14 @@ class TestCli:
             real_schema = json.load(s)
             jsonschema.validate(real_cache, real_schema)
 
+
     def test_convert_no_file(self, tmp_path):
         parser = parse_args(['convert', '--in', 'bogus.json'])
 
-        with pytest.raises(ValueError):
+        with pytest.raises(FileNotFoundError):
             parser.func(parser)
 
 
-    
     def test_deleteline_invalid_file(self, tmp_path):
         delete_file = tmp_path / "nonexistent.json"
 
@@ -61,10 +62,13 @@ class TestCli:
 
         copyfile(TEST_SMALL_CACHEFILE_SRC, TEST_SMALL_CACHEFILE_DST)
 
+        convert_cache_file(TEST_SMALL_CACHEFILE_DST)
+
         parser = parse_args(["delete-line", str(TEST_SMALL_CACHEFILE_DST), "--key", "1,1"])
 
         with pytest.raises(KeyError):
             parser.func(parser)
+
 
     def test_deleteline_valid_key(self, tmp_path):
         TEST_SMALL_CACHEFILE_THREE_ENTRIES_SRC = TEST_CACHE_PATH / "small_cache_three_entries.json"
@@ -75,6 +79,9 @@ class TestCli:
 
         copyfile(TEST_SMALL_CACHEFILE_THREE_ENTRIES_SRC, TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
         copyfile(TEST_SMALL_CACHEFILE_SRC, TEST_SMALL_CACHEFILE_DST)
+
+        convert_cache_file(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
+        convert_cache_file(TEST_SMALL_CACHEFILE_DST)
 
         # Removing key 32,1 from small_cache_three_entries.json should result in small_cache.json
 
@@ -87,6 +94,7 @@ class TestCli:
 
         assert delete_result == small_content
 
+
     def test_getline_invalid_file(self, tmp_path):
         INPUT_FILE = tmp_path / "nonexistent.json"
 
@@ -94,6 +102,7 @@ class TestCli:
 
         with pytest.raises(FileNotFoundError):
             parser.func(parser)
+
 
     def test_getline_invalid_key(self, tmp_path):
         TEST_SMALL_CACHEFILE_SRC = TEST_CACHE_PATH / "large_cache.json"
@@ -170,6 +179,9 @@ class TestCli:
         copyfile(TEST_SMALL_CACHEFILE_THREE_ENTRIES_SRC, TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
         copyfile(TEST_SMALL_CACHEFILE_SRC, TEST_SMALL_CACHEFILE_DST)
 
+        # The newly created merge result will use the latest version, so convert the desired result
+        convert_cache_file(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
+
         # Merging small_cache_one_entry.json and small_cache.json should result in small_cache_three_entries.json
 
         parser = parse_args(["merge", str(TEST_SMALL_CACHEFILE_DST), str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST),
@@ -203,4 +215,3 @@ class TestCli:
                 
         with pytest.raises(KeyError):
             parser.func(parser)
-
