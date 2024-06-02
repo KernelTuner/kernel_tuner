@@ -17,6 +17,9 @@ TEST_CONVERT_PATH = TEST_PATH / "test_convert_files"
 
 REAL_CACHE_FILE   = TEST_CONVERT_PATH / "real_cache.json"
 
+T4_CACHE = TEST_CONVERT_PATH / "t4_cache.json"
+T4_TARGET = TEST_CONVERT_PATH / "t4_target.json"
+
 SCHEMA_NEW        = CACHE_SCHEMAS_DIR / str(VERSIONS[-1]) / "schema.json"
 
 
@@ -28,9 +31,9 @@ class TestCli:
 
         copyfile(REAL_CACHE_FILE, TEST_COPY_SRC)
 
-        parser = parse_args(['convert',
-                             '--in', f'{TEST_COPY_SRC}',
-                             '--out', f'{TEST_COPY_DST}'])
+        parser = parse_args(["convert",
+                             "--in", f"{TEST_COPY_SRC}",
+                             "--out", f"{TEST_COPY_DST}"])
         
         parser.func(parser)
         
@@ -41,9 +44,48 @@ class TestCli:
 
 
     def test_convert_no_file(self, tmp_path):
-        parser = parse_args(['convert', '--in', 'bogus.json'])
+        parser = parse_args(["convert", "--in", "bogus.json"])
 
         with pytest.raises(FileNotFoundError):
+            parser.func(parser)
+
+
+    def test_convert_no_json(self, tmp_path):
+        TEST_COPY_SRC = tmp_path / "temp_cache_src.json"
+
+        copyfile(REAL_CACHE_FILE, TEST_COPY_SRC)
+
+        parser = parse_args(["convert",
+                             "--in", f"{TEST_COPY_SRC}",
+                             "--out", "cachefile" ])
+
+        with pytest.raises(ValueError):
+            parser.func(parser)
+
+    
+    def test_t4(self, tmp_path):
+        TEST_COPY_DST = tmp_path / "temp_cache_dst.json"
+
+        parser = parse_args(["t4",
+                             "--in", f"{T4_CACHE}",
+                             "--out", f"{TEST_COPY_DST}"])
+        
+        parser.func(parser)
+        
+        with open(TEST_COPY_DST) as t4_file, open(T4_TARGET) as t4_target_file:
+            t4 = json.load(t4_file)
+            t4_target = json.load(t4_target_file)
+
+        if t4 != t4_target:
+            raise ValueError("Converted T4 does not match target T4")
+        
+
+    def test_t4_no_json(self, tmp_path):
+        parser = parse_args(["t4",
+                             "--in", f"{T4_CACHE}",
+                             "--out", "cachefile"])
+        
+        with pytest.raises(ValueError):
             parser.func(parser)
 
 

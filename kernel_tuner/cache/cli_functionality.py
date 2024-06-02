@@ -211,7 +211,6 @@ def convert(read_file: PathLike, write_file=None, target=None):
     # If no output file is specified, let the conversion overwrite the input file
     if write_file is None:
         write_file = read_file
-        
     else:
         copyfile(read_file, write_file)
     
@@ -220,12 +219,9 @@ def convert(read_file: PathLike, write_file=None, target=None):
 
 
 
-def convert_t4(read_file: PathLike, write_file=None):
+def convert_t4(read_file: PathLike, write_file: PathLike):
     """The main function for handling the T4 conversion of a cachefile."""
-    if not file_exists(read_file):
-        raise FileNotFoundError(f"Can not find file \"{read_file}\"")
-    
-    if write_file is not None and write_file[-5:] != ".json":
+    if write_file[-5:] != ".json":
         raise ValueError("Please specify a .json file for the output file")
     
     cache = read_cache(read_file)
