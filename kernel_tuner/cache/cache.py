@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 from os import PathLike
 from pathlib import Path
-from typing import Any, Union, Optional, Dict, Iterable, Iterator
+from typing import cast, Any, Union, Optional, Dict, Iterable, Iterator
 from collections.abc import Mapping
 from functools import lru_cache as cache, cached_property
 from datetime import datetime
@@ -17,6 +17,7 @@ import jsonschema
 from semver import Version
 
 import kernel_tuner.util as util
+from .convert import convert_cache
 from .json import CacheFileJSON, CacheLineJSON
 from .json_encoder import CacheLineEncoder
 from .file import read_cache, write_cache, append_cache_line
@@ -82,6 +83,8 @@ class Cache:
         """Creates a new cache file.
 
         For parameters of type Sequence, a list or tuple should be given as argument.
+
+        Returns a Cache instance of which the lines are modifiable.
         """
         if not isinstance(device_name, str):
             raise ValueError("Argument device_name should be a string")
@@ -104,7 +107,7 @@ class Cache:
         if len(cls.RESERVED_PARAM_KEYS & set(tune_params_keys)) > 0:
             raise ValueError("Found a reserved key in tune_params_keys")
 
-        cache_json = {
+        cache_json: CacheFileJSON = {
             "schema_version": str(LATEST_VERSION),
             "device_name": device_name,
             "kernel_name": kernel_name,
@@ -115,15 +118,35 @@ class Cache:
             "cache": {},
         }
         cls.validate_json(cache_json)  # NOTE: Validate the cache just to be sure
-        write_cache(cache_json, filename)
-        return cls(filename, cache_json)  # type: ignore
+        write_cache(cast(dict, cache_json), filename)
+        return cls(filename, cache_json, readonly=False)
 
     @classmethod
     def load(cls, filename: PathLike):
-        """Reads an existing cache file."""
+        """Loads an existing cache file. Returns a Cache instance with modifiable lines.
+
+        This cache file should have the latest version
+        """
         cache_json = read_cache(filename)
+        assert Version.parse(cache_json["schema_version"]) == LATEST_VERSION, "Cache file is not of the latest version."
         cls.validate_json(cache_json)
-        return cls(filename, cache_json)
+        return cls(filename, cache_json, readonly=False)
+
+    @classmethod
+    def read(cls, filename: PathLike):
+        """Loads an existing cache. Returns a Cache instance which can only be read.
+
+        If the cache file does not have the latest version, then it will be read after virtually converting it to the
+        latest version. The file in this case is kept the same.
+        """
+        cache_json = read_cache(filename)
+        # If the cache is versioned, then validate it
+        if "schema_version" in cache_json:
+            cls.validate_json(cache_json)
+
+        cache_json = convert_cache(cache_json)
+        cls.validate_json(cache_json)  # NOTE: Validate the cache just to be sure
+        return cls(filename, cache_json, readonly=True)
 
     @classmethod
     def validate_json(cls, cache_json: Any):
@@ -133,10 +156,14 @@ class Cache:
             schema = json.load(file)
         jsonschema.validate(instance=cache_json, schema=schema)
 
-    def __init__(self, filename: PathLike, cache_json: CacheFileJSON):
-        """Inits a cache file instance, given that the file referred to by ``filename`` contains data ``cache_json``."""
+    def __init__(self, filename: PathLike, cache_json: CacheFileJSON, *, readonly: bool):
+        """Inits a cache file instance, given that the file referred to by ``filename`` contains data ``cache_json``.
+
+        Argument ``cache_json`` is a cache dictionary expected to have the latest cache version.
+        """
         self._filename = Path(filename)
         self._cache_json = cache_json
+        self._readonly = readonly
 
     @cached_property
     def filepath(self) -> Path:
@@ -149,9 +176,12 @@ class Cache:
         return Version.parse(self._cache_json["schema_version"])
 
     @cached_property
-    def lines(self) -> Lines:
+    def lines(self) -> Union[Lines, ReadableLines]:
         """List of cache lines."""
-        return self.Lines(self, self._filename, self._cache_json)
+        if self._readonly:
+            return self.ReadableLines(self, self._filename, self._cache_json)
+        else:
+            return self.Lines(self, self._filename, self._cache_json)
 
     class Lines(Mapping):
         """Cache lines in a cache file.
@@ -355,6 +385,13 @@ class Cache:
             line = {**line, **tune_params}
 
             return line
+
+    class ReadableLines(Lines):
+        """Cache lines in a readonly cache file."""
+
+        def append(*args, **kwargs):
+            """Dummy method that does nothing."""
+            pass
 
     class Line(Mapping):
         """Cache line in a cache file.

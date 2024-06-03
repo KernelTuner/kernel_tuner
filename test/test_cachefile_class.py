@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import os
 import pytest
+import shutil
 import json
 import semver
+from pathlib import Path
 from datetime import datetime
 from types import SimpleNamespace
 from typing import cast
@@ -11,6 +13,12 @@ from typing import cast
 import kernel_tuner.util as util
 from kernel_tuner.cache.file import write_cache
 from kernel_tuner.cache.cache import Cache
+from kernel_tuner.cache.versions import LATEST_VERSION
+
+
+TEST_DIR = Path(__file__).parent
+TEST_CACHE_DIR = TEST_DIR / "test_cache_files"
+XXL_CACHE_PATH = TEST_CACHE_DIR / "convolution_A100.json"
 
 
 class TestCache:
@@ -58,7 +66,7 @@ class TestCache:
 
     @pytest.fixture
     def cache_json(self, header, cache_lines):
-        return {"schema_version": "1.0.0", **vars(header), "cache": cache_lines}
+        return {"schema_version": str(LATEST_VERSION), **vars(header), "cache": cache_lines}
 
     @pytest.fixture
     def assert_create__raises_ValueError(self, cache_path, header):
@@ -281,3 +289,26 @@ class TestCache:
 
     def test_line_append__with_invalid_times(self, full_cache_line, assert_append_line__raises_ValueError):
         full_cache_line.times = ["Hello"]
+
+    def test_read(self, cache_file):
+        Cache.read(cache_file)
+
+    @pytest.fixture
+    def cache_backup_file(self, cache_file):
+        backup_file = cache_file.with_suffix(".bak")
+        shutil.copy(cache_file, backup_file)
+        return backup_file
+
+    @pytest.fixture
+    def assert_cache_unchanged(self, cache_file, cache_backup_file):
+        yield
+        with open(cache_file) as cache, open(cache_backup_file) as backup:
+            assert cache.read() == backup.read()
+
+    def test_read__cannot_modify(self, cache_file, full_cache_line, assert_cache_unchanged):
+        cache = Cache.read(cache_file)
+        cache.lines.append(**vars(full_cache_line))
+
+    def test_read__outdated(self):
+        cache = Cache.read(XXL_CACHE_PATH)
+        assert len(cache.lines) > 100

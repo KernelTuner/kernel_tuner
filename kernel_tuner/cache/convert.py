@@ -37,10 +37,47 @@ def convert_cache_file(filestr : PathLike,
                        conversion_functions=None,
                        versions=None,
                        target_version=None):
-    """Convert a cache file to the newest version.
+    """Convert a cache file to the latest/later version.
 
     Parameters:
         ``filestr`` is the name of the cachefile.
+
+        ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
+        mapping a version to a corresponding conversion function.
+
+        ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+
+        ``target`` is the version that the cache should be converted to. By
+        default it is the latest version in ``versions``.
+
+    Raises:
+        ``ValueError`` if:
+
+            given cachefile has no "schema_version" field and can not be converted
+            to version 1.0.0,
+
+            the cachefile's version is higher than the newest version,
+
+            the cachefile's version is not a real version.
+    """
+    # Load cache from file
+    cache = read_cache(filestr)
+
+    # Convert cache
+    cache = convert_cache(cache, conversion_functions, versions, target_version)
+
+    # Update cache file
+    write_cache(cache, filestr)
+
+
+def convert_cache(cache : dict, 
+                  conversion_functions=None,
+                  versions=None,
+                  target_version=None) -> dict:
+    """Convert a cache dict to the latest/later version.
+
+    Parameters:
+        ``cache`` is the cache dictionary
 
         ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
         mapping a version to a corresponding conversion function.
@@ -69,9 +106,6 @@ def convert_cache_file(filestr : PathLike,
     if target_version is None:
         target_version = versions[-1]
 
-    # Load cache
-    cache = read_cache(filestr)
-
     if "schema_version" not in cache:
         cache = unversioned_convert(cache, CACHE_SCHEMAS_DIR)
     
@@ -99,8 +133,7 @@ def convert_cache_file(filestr : PathLike,
 
         version = cache["schema_version"]
 
-    # Update cache file
-    write_cache(cache, filestr)
+    return cache
 
 
 def default_convert(cache       : dict,
