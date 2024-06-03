@@ -235,6 +235,7 @@ class Cache:
             if GFLOP_per_s is not None and not isinstance(GFLOP_per_s, float):
                 raise ValueError("Argument GFLOP_per_s should be a float or None")
 
+            line_id = self.__get_line_id_from_tune_params_dict(tune_params)
             line = self.__get_line_json_object(
                 time,
                 compile_time,
@@ -247,8 +248,6 @@ class Cache:
                 GFLOP_per_s,
                 tune_params,
             )
-
-            line_id = self.__get_line_id_from_tune_params_dict(tune_params)
             self._lines[line_id] = line
             append_cache_line(line_id, line, self._filename)
 
@@ -293,8 +292,8 @@ class Cache:
                 return default
             return Cache.Line(self._cache, line_json)
 
-        def __get_line_id(self, param_list: list[Any]):
-            return ",".join(map(str, param_list))
+        def __get_line_id(self, param_list: list[Any]) -> str:
+            return json.dumps(param_list, separators=(",", ":"))[1:-1]
 
         def __get_matching_line_ids(self, params: dict[str, Any]):
             param_lists: list[list[Any]] = [[]]
