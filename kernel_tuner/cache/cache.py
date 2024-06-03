@@ -185,19 +185,19 @@ class Cache:
             self._filename = filename
             self._lines = cache_json["cache"]
 
-        def __getitem__(self, line_id: str):
+        def __getitem__(self, line_id: str) -> Cache.Line:
             """Returns a cache line given the parameters (in order)."""
-            return self._lines[line_id]
+            return Cache.Line(self._cache, self._lines[line_id])
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[str]:
             """Returns an iterator over the keys of the cache lines."""
             return iter(self._lines)
 
-        def __len__(self):
+        def __len__(self) -> int:
             """Returns the number of cache lines."""
             return len(self._lines)
 
-        def __contains__(self, line_id):
+        def __contains__(self, line_id) -> bool:
             """Returns whether there exists a cache line with id ``line_id``."""
             return line_id in self._lines
 
@@ -214,7 +214,7 @@ class Cache:
             times: Optional[list[float]] = None,
             GFLOP_per_s: Optional[float] = None,
             **tune_params,
-        ):
+        ) -> None:
             """Appends a cache line to the cache lines."""
             if not (isinstance(time, float) or isinstance(time, util.ErrorConfig)):
                 raise ValueError("Argument time should be a float or an ErrorConfig")
@@ -254,7 +254,7 @@ class Cache:
             self._lines[line_id] = line
             append_cache_line(line_id, line, self._filename)
 
-        def get(self, line_id: Optional[str] = None, default=None, **params):
+        def get(self, line_id: Optional[str] = None, default=None, **params) -> Union[Cache.Line, list[Cache.Line]]:
             """Returns a cache line corresponding with ``line_id``.
 
             If the line_id is given and not None, the line corresponding to ``line_id`` is returned. Otherwise the
@@ -272,7 +272,7 @@ class Cache:
             If ``line_id`` is none and no parameters are defined, a list of all the lines is returned.
             """
             if line_id is None and len(params) == 0:
-                return list(self._lines.values())
+                return list(Cache.Line(self._cache, line) for line in self._lines.values())
             if not all(key in self._cache.tune_params_keys for key in params):
                 raise ValueError("The keys in the parameters should be in `tune_params_keys`")
 

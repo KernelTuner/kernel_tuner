@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import os
 import pytest
 import json
 import semver
 from datetime import datetime
 from types import SimpleNamespace
+from typing import cast
 
 import kernel_tuner.util as util
 from kernel_tuner.cache.file import write_cache
@@ -135,6 +138,11 @@ class TestCache:
         assert list(cache.problem_size) == header.problem_size
         assert cache.objective == header.objective
 
+    def test_lines_get__type(self, cache, cache_lines):
+        assert type(cache.lines["0,0,0"]) == Cache.Line
+        assert type(cache.lines.get(a=0, b=0, c=0)) == Cache.Line
+        assert type(cache.lines.get(a=0)[0]) == Cache.Line
+
     def test_lines_get(self, cache, cache_lines):
         assert cache.lines["0,0,0"] == cache_lines["0,0,0"]
         assert cache.lines.get(a=0, b=0, c=0) == cache_lines["0,0,0"]
@@ -196,7 +204,7 @@ class TestCache:
             b=1,
             c=1,
         )
-        line = cache.lines.get(a=1, b=1, c=1)
+        line = cast(Cache.Line, cache.lines.get(a=1, b=1, c=1))
 
         assert line["time"] == util.RuntimeFailedConfig.__name__
         assert isinstance(line.time, util.RuntimeFailedConfig)
