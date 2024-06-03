@@ -5,23 +5,22 @@ from shutil import copyfile
 import jsonschema
 import pytest
 
-from scripts.cli import parse_args
+from kernel_tuner.scripts.ktcache import parse_args
 from kernel_tuner.cache.file import read_cache
 from kernel_tuner.cache.paths import CACHE_SCHEMAS_DIR
 from kernel_tuner.cache.versions import VERSIONS
 from kernel_tuner.cache.convert import convert_cache_file
 
-TEST_PATH         = Path(__file__).parent
-TEST_CACHE_PATH   = TEST_PATH / "test_cache_files"
+TEST_PATH = Path(__file__).parent
+TEST_CACHE_PATH = TEST_PATH / "test_cache_files"
 TEST_CONVERT_PATH = TEST_PATH / "test_convert_files"
 
-REAL_CACHE_FILE   = TEST_CONVERT_PATH / "real_cache.json"
+REAL_CACHE_FILE = TEST_CONVERT_PATH / "real_cache.json"
 
 T4_CACHE = TEST_CONVERT_PATH / "t4_cache.json"
 T4_TARGET = TEST_CONVERT_PATH / "t4_target.json"
 
-SCHEMA_NEW        = CACHE_SCHEMAS_DIR / str(VERSIONS[-1]) / "schema.json"
-
+SCHEMA_NEW = CACHE_SCHEMAS_DIR / str(VERSIONS[-1]) / "schema.json"
 
 
 class TestCli:
@@ -31,17 +30,14 @@ class TestCli:
 
         copyfile(REAL_CACHE_FILE, TEST_COPY_SRC)
 
-        parser = parse_args(["convert",
-                             "--in", f"{TEST_COPY_SRC}",
-                             "--out", f"{TEST_COPY_DST}"])
-        
+        parser = parse_args(["convert", "--in", f"{TEST_COPY_SRC}", "--out", f"{TEST_COPY_DST}"])
+
         parser.func(parser)
-        
+
         with open(TEST_COPY_DST) as c, open(SCHEMA_NEW) as s:
-            real_cache  = json.load(c)
+            real_cache = json.load(c)
             real_schema = json.load(s)
             jsonschema.validate(real_cache, real_schema)
-
 
     def test_convert_no_file(self, tmp_path):
         parser = parse_args(["convert", "--in", "bogus.json"])
@@ -49,23 +45,20 @@ class TestCli:
         with pytest.raises(FileNotFoundError):
             parser.func(parser)
 
-    
     def test_t4(self, tmp_path):
         TEST_COPY_DST = tmp_path / "temp_cache_dst.json"
 
-        parser = parse_args(["t4",
-                             "--in", f"{T4_CACHE}",
-                             "--out", f"{TEST_COPY_DST}"])
-        
+        parser = parse_args(["t4", "--in", f"{T4_CACHE}", "--out", f"{TEST_COPY_DST}"])
+
         parser.func(parser)
-        
+
         with open(TEST_COPY_DST) as t4_file, open(T4_TARGET) as t4_target_file:
             t4 = json.load(t4_file)
             t4_target = json.load(t4_target_file)
 
         if t4 != t4_target:
             raise ValueError("Converted T4 does not match target T4")
-        
+
     def test_deleteline_invalid_file(self, tmp_path):
         delete_file = tmp_path / "nonexistent.json"
 
@@ -73,7 +66,6 @@ class TestCli:
 
         with pytest.raises(FileNotFoundError):
             parser.func(parser)
-
 
     def test_deleteline_invalid_key(self, tmp_path):
         TEST_SMALL_CACHEFILE_SRC = TEST_CACHE_PATH / "small_cache.json"
@@ -87,7 +79,6 @@ class TestCli:
 
         with pytest.raises(KeyError):
             parser.func(parser)
-
 
     def test_deleteline_valid_key(self, tmp_path):
         TEST_SMALL_CACHEFILE_THREE_ENTRIES_SRC = TEST_CACHE_PATH / "small_cache_three_entries.json"
@@ -113,7 +104,6 @@ class TestCli:
 
         assert delete_result == small_content
 
-
     def test_getline_invalid_file(self, tmp_path):
         INPUT_FILE = tmp_path / "nonexistent.json"
 
@@ -121,7 +111,6 @@ class TestCli:
 
         with pytest.raises(FileNotFoundError):
             parser.func(parser)
-
 
     def test_getline_invalid_key(self, tmp_path):
         TEST_SMALL_CACHEFILE_SRC = TEST_CACHE_PATH / "large_cache.json"
@@ -136,7 +125,6 @@ class TestCli:
         with pytest.raises(KeyError):
             parser.func(parser)
 
-
     def test_getline_valid_key(self, tmp_path):
         TEST_SMALL_CACHEFILE_SRC = TEST_CACHE_PATH / "large_cache.json"
         TEST_SMALL_CACHEFILE_DST = tmp_path / "large_cache.json"
@@ -148,7 +136,6 @@ class TestCli:
 
         parser.func(parser)
 
-    
     def test_merge_invalid_file(self, tmp_path):
         INVALID_FILE = tmp_path / "nonexistent.json"
         INVALID_FILE_TWO = tmp_path / "nonexistent2.json"
@@ -159,13 +146,12 @@ class TestCli:
             parser.func(parser)
 
     def test_merge_nonequiv_key(self, tmp_path):
-
         # These files have nonequivalent `device_name`
         TEST_SMALL_CACHEFILE_SRC = TEST_CACHE_PATH / "small_cache.json"
         TEST_SMALL_CACHEFILE_DST = tmp_path / "small_cache.json"
         TEST_LARGE_CACHEFILE_SRC = TEST_CACHE_PATH / "large_cache.json"
         TEST_LARGE_CACHEFILE_DST = tmp_path / "large_cache.json"
-        
+
         copyfile(TEST_SMALL_CACHEFILE_SRC, TEST_SMALL_CACHEFILE_DST)
         copyfile(TEST_LARGE_CACHEFILE_SRC, TEST_LARGE_CACHEFILE_DST)
 
@@ -174,16 +160,13 @@ class TestCli:
         with pytest.raises(ValueError):
             parser.func(parser)
 
-
     def test_merge_one_file(self):
-        parser = parse_args(['merge', '1.json', '-o', 'test.json'])
+        parser = parse_args(["merge", "1.json", "-o", "test.json"])
 
         with pytest.raises(ValueError):
             parser.func(parser)
 
-
     def test_merge_correct_two_files(self, tmp_path):
-
         TEST_SMALL_CACHEFILE_ONE_ENTRY_SRC = TEST_CACHE_PATH / "small_cache_one_entry.json"
         TEST_SMALL_CACHEFILE_ONE_ENTRY_DST = tmp_path / "small_cache_one_entry.json"
         TEST_SMALL_CACHEFILE_THREE_ENTRIES_SRC = TEST_CACHE_PATH / "small_cache_three_entries.json"
@@ -203,9 +186,15 @@ class TestCli:
 
         # Merging small_cache_one_entry.json and small_cache.json should result in small_cache_three_entries.json
 
-        parser = parse_args(["merge", str(TEST_SMALL_CACHEFILE_DST), str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST),
-                             "--out", str(TEST_MERGE_OUTPUT)])
-        
+        parser = parse_args(
+            [
+                "merge",
+                str(TEST_SMALL_CACHEFILE_DST),
+                str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST),
+                "--out",
+                str(TEST_MERGE_OUTPUT),
+            ]
+        )
 
         parser.func(parser)
 
@@ -213,8 +202,7 @@ class TestCli:
 
         dest_output = read_cache(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
 
-        assert merge_result == dest_output 
-
+        assert merge_result == dest_output
 
     def test_merge_when_keys_overlap(self, tmp_path):
         TEST_SMALL_CACHEFILE_ONE_ENTRY_SRC = TEST_CACHE_PATH / "small_cache_one_entry.json"
@@ -227,10 +215,16 @@ class TestCli:
         copyfile(TEST_SMALL_CACHEFILE_ONE_ENTRY_SRC, TEST_SMALL_CACHEFILE_ONE_ENTRY_DST)
         copyfile(TEST_SMALL_CACHEFILE_THREE_ENTRIES_SRC, TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
 
-
         # We know that small_cache_one_entry.json and small_cache_three_entries.json have overlap for key 32,1
-        parser = parse_args(["merge", str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST),
-                             str(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST), "--out", str(OUT_FILE)])
-                
+        parser = parse_args(
+            [
+                "merge",
+                str(TEST_SMALL_CACHEFILE_ONE_ENTRY_DST),
+                str(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST),
+                "--out",
+                str(OUT_FILE),
+            ]
+        )
+
         with pytest.raises(KeyError):
             parser.func(parser)
