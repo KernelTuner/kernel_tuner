@@ -236,6 +236,9 @@ class Cache:
                 raise ValueError("Argument GFLOP_per_s should be a float or None")
 
             line_id = self.__get_line_id_from_tune_params_dict(tune_params)
+            if line_id in self._lines:
+                raise KeyError("Line with given tunable parameters already exists")
+
             line = self.__get_line_json_object(
                 time,
                 compile_time,
