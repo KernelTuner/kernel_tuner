@@ -37,14 +37,6 @@ We can:
          - <files>: The list of (space separated) input files to read in order to merge the cachefiles.
          - `-o, --output`: The output file to write the merged result to.
 
-Example usages:
-$ cli convert --infile 1.json -T 1.1.0 --out 2.json
-$ cli delete-line 1.json --key <key> 
-$ cli get-line 1.json --key <key>
-$ cli merge 1.json 2.json 3.json 4.json -o merged.json
-$ cli t4 --in unconverted.json --out converted.json
-
-
 """
 
 # import required files from within kernel tuner
@@ -55,27 +47,27 @@ from kernel_tuner.cache.cli_functionality import convert, convert_t4, delete_lin
 
 
 def cli_convert(ap_res: argparse.Namespace):
-    """The main function for handling conversion to a `schema_version` in the cli. Calls `convert` to convert."""
+    """The main function for handling conversion to a `schema_version` in the cli."""
     convert(ap_res.infile, write_file=ap_res.output, target=ap_res.target)
 
 
-def cli_deleteline(ap_res: argparse.Namespace):
-    """The main function for handling deletion of a cacheline using `delete-line` in the cli. Calls `delete_line`."""
+def cli_delete_line(ap_res: argparse.Namespace):
+    """The main function for handling deletion of a cacheline using `delete-line` in the cli."""
     delete_line(ap_res.infile[0], ap_res.key, outfile=ap_res.output)
 
 
 def cli_getline(ap_res: argparse.Namespace):
-    """The main function for getting a line using `get-line` in the cli. Calls `get_line`."""
+    """The main function for getting a line using `get-line` in the cli."""
     get_line(ap_res.infile[0], ap_res.key)
     
 
 def cli_merge(ap_res: argparse.Namespace):
-    """The main function for merging several cachefiles using `merge` in the cli. Calls `merge`."""
+    """The main function for merging several cachefiles using `merge` in the cli."""
     merge(ap_res.files, ap_res.output)
 
 
 def cli_t4(ap_res: argparse.Namespace):
-    """The main function for handling conversion to t4 format in the cli. Calls `convert_t4` to convert."""
+    """The main function for handling conversion to t4 format in the cli."""
     convert_t4(ap_res.infile, write_file=ap_res.output)
 
 
@@ -93,7 +85,7 @@ def parse_args(args):
 		epilog="More help/issues? Visit https://github.com/kernel_tuner/kernel_tuner")
 
     sp = parser.add_subparsers(required=True,
-							   help="Possible subcommands: 'convert', 'delete-line', 'get-line' and 'inspect'.")
+                               help="Possible subcommands: 'convert', 'delete-line', 'get-line' and 'inspect'.")
     
 
     convert = sp.add_parser("convert", help="Convert a cache file from one version to another.")
@@ -125,11 +117,11 @@ def parse_args(args):
                     help="The input file to delete from.")
     delete.add_argument("--key", 
                     required=True,
-				    help="The (potential) key of the (potential) cacheline entry to delete.")
+                    help="The (potential) key of the (potential) cacheline entry to delete.")
     delete.add_argument("-o", "--out", "--output", 
                     help="The (optional) output file to write the updated cachefile to.", 
                     dest="output")
-    delete.set_defaults(func=cli_deleteline)
+    delete.set_defaults(func=cli_delete_line)
     
     get = sp.add_parser("get-line", help="Get a certain cacheline entry from the specified cachefile.")
     get.add_argument("infile", 
@@ -143,8 +135,8 @@ def parse_args(args):
     merge = sp.add_parser("merge", help="Merge two or more cachefiles.")
     merge.add_argument("files", 
                     nargs="+",
-					help=f"The cachefiles to merge (minimum two). They must be of the same version, and "
-                         f"contain equivalent metadata.")
+					help="The cachefiles to merge (minimum two). They must be of the same version, and " \
+                         "contain equivalent metadata.")
     merge.add_argument("-o", "--out", "--output", 
                     required=True,
 					help="The output file to write the merged cachefiles to.", 
@@ -159,8 +151,8 @@ def parse_args(args):
 def main():
     """The function called when running the cli. This function calls the main parsing function.
     
-    This is one of {convert, delete-line, get-line, merge},
-    based on this the appropiate function cli_{convert, delete-line, get-line, merge} is called.
+    This is one of {convert, delete-line, get-line, merge, t4},
+    based on this the appropiate function cli_{convert, delete-line, get-line, merge, t4} is called.
     """
     parser = parse_args(sys.argv[1:])
 

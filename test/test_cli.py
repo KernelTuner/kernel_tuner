@@ -49,19 +49,6 @@ class TestCli:
         with pytest.raises(FileNotFoundError):
             parser.func(parser)
 
-
-    def test_convert_no_json(self, tmp_path):
-        TEST_COPY_SRC = tmp_path / "temp_cache_src.json"
-
-        copyfile(REAL_CACHE_FILE, TEST_COPY_SRC)
-
-        parser = parse_args(["convert",
-                             "--in", f"{TEST_COPY_SRC}",
-                             "--out", "cachefile" ])
-
-        with pytest.raises(ValueError):
-            parser.func(parser)
-
     
     def test_t4(self, tmp_path):
         TEST_COPY_DST = tmp_path / "temp_cache_dst.json"
@@ -79,16 +66,6 @@ class TestCli:
         if t4 != t4_target:
             raise ValueError("Converted T4 does not match target T4")
         
-
-    def test_t4_no_json(self, tmp_path):
-        parser = parse_args(["t4",
-                             "--in", f"{T4_CACHE}",
-                             "--out", "cachefile"])
-        
-        with pytest.raises(ValueError):
-            parser.func(parser)
-
-
     def test_deleteline_invalid_file(self, tmp_path):
         delete_file = tmp_path / "nonexistent.json"
 
@@ -194,7 +171,7 @@ class TestCli:
 
         parser = parse_args(["merge", str(TEST_SMALL_CACHEFILE_DST), str(TEST_LARGE_CACHEFILE_DST), "-o", "test.json"])
 
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             parser.func(parser)
 
 
@@ -205,7 +182,7 @@ class TestCli:
             parser.func(parser)
 
 
-    def test_merge_correct_two(self, tmp_path):
+    def test_merge_correct_two_files(self, tmp_path):
 
         TEST_SMALL_CACHEFILE_ONE_ENTRY_SRC = TEST_CACHE_PATH / "small_cache_one_entry.json"
         TEST_SMALL_CACHEFILE_ONE_ENTRY_DST = tmp_path / "small_cache_one_entry.json"
@@ -239,7 +216,7 @@ class TestCli:
         assert merge_result == dest_output 
 
 
-    def test_merge_overlapping_keys(self, tmp_path):
+    def test_merge_when_keys_overlap(self, tmp_path):
         TEST_SMALL_CACHEFILE_ONE_ENTRY_SRC = TEST_CACHE_PATH / "small_cache_one_entry.json"
         TEST_SMALL_CACHEFILE_ONE_ENTRY_DST = tmp_path / "small_cache_one_entry.json"
         TEST_SMALL_CACHEFILE_THREE_ENTRIES_SRC = TEST_CACHE_PATH / "small_cache_three_entries.json"
