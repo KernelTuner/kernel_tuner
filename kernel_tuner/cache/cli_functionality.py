@@ -15,7 +15,6 @@ This is one of:
 """
 
 from os import PathLike
-from pathlib import Path
 from shutil import copyfile
 from typing import List
 
@@ -25,7 +24,7 @@ from .file import read_cache, write_cache
 from .versions import LATEST_VERSION
 
 
-def convert_new_schema_write_files(file_list: List[PathLike]):
+def convert_files_to_their_least_common_version(file_list: List[PathLike]):
     """Converts all necessary files in file_list to the newest schema_version.
     
     Does this by using the existing conversion functionality; convert the file, then write the result to the same file.
@@ -226,7 +225,7 @@ def merge(file_list: List[PathLike], outfile: PathLike):
 
     # Convert all files in `file_list` that are not matching the newest `schema_version` to the newest schema version.
     # Write the converted result to the same file.
-    convert_new_schema_write_files(file_list)
+    convert_files_to_their_least_common_version(file_list)
 
     check_equivalence(file_list)
 
