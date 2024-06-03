@@ -146,4 +146,4 @@ select = [
 convention = "google"
 
 [tool.poetry.scripts]
-"ktcache" = "scripts.cli:main"
+"ktcache" = "kernel_tuner.scripts.ktcache:main"
