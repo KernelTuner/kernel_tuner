@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 from os import PathLike
 from pathlib import Path
-from typing import Any, Union, Optional, Dict, Iterable
+from typing import Any, Union, Optional, Dict, Iterable, Iterator
 from collections.abc import Mapping
 from functools import lru_cache as cache, cached_property
 from datetime import datetime
