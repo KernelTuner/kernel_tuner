@@ -30,10 +30,10 @@ def convert_files_to_their_least_common_version(file_list: List[PathLike]):
     Does this by using the existing conversion functionality; convert the file, then write the result to the same file.
     """
     # Get highest schema_version
-    max_version = str(max([Cache.read(file).version for file in file_list]))
+    max_version = str(max([Cache.load(file).version for file in file_list]))
 
     for file in file_list:
-        cachefile = Cache.read(file)
+        cachefile = Cache.load(file)
 
         if str(cachefile.version) != max_version:
             # We write to the input filename.
@@ -46,10 +46,10 @@ def check_equivalence(file_list: List[PathLike]):
     Assumes that all files have been validated.
     We use the first file (file_list[0]) as our base file, and compare everything with that.
     """
-    base_file = Cache.read(file_list[0])
+    base_file = Cache.load(file_list[0])
 
     for file in file_list[1:]:
-        temp_file = Cache.read(file)
+        temp_file = Cache.load(file)
 
         # Now the equivalence logic
 
@@ -80,7 +80,7 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
     # FIXME: Cannot be guaranteed that the order of the cachelines in the files is also kept when merging
     # From cache.py (json.load).
 
-    cache = Cache.read(cache_files[0])
+    cache = Cache.load(cache_files[0])
     output = Cache.create(
         output_path,
         device_name=cache.device_name,
@@ -93,7 +93,7 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
 
     # Now for each file add the cache content.
     for file in cache_files:
-        input = Cache.read(file)
+        input = Cache.load(file)
         for line in input.lines.values():
             print(type(input.lines))
             tune_params = {key: line[key] for key in input.tune_params_keys}
@@ -113,7 +113,7 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
 
 def get_line(infile: PathLike, key: str):
     """Checks if entry (string) `key` is inside file `in_file`, by using the `cache.py` library."""
-    cache_infile = Cache.read(infile)
+    cache_infile = Cache.load(infile)
 
     cache_line = cache_infile.lines[key]
 
@@ -132,7 +132,7 @@ def delete_line(infile: PathLike, key: str, outfile):
     if outfile is None:
         outfile = infile
 
-    cache_infile = Cache.read(infile)
+    cache_infile = Cache.load(infile)
 
     # We require the file to be of the latest version.
     if cache_infile.version != LATEST_VERSION:
@@ -155,7 +155,7 @@ def delete_line(infile: PathLike, key: str, outfile):
     )
 
     # We read so the ._filename changes for append
-    resulting_output = Cache.read(outfile)
+    resulting_output = Cache.load(outfile)
 
     for line in cache_infile.lines:
         if line != key:
@@ -180,7 +180,7 @@ def delete_line(infile: PathLike, key: str, outfile):
 def convert(read_file: PathLike, write_file=None, target=None):
     """The main function for handling the version conversion of a cachefile."""
     # Check if the `read_file` is actually a valid cachefile
-    Cache.read(read_file)
+    Cache.load(read_file)
 
     # If no output file is specified, let the conversion overwrite the input file
     if write_file is None:
@@ -211,7 +211,7 @@ def merge(file_list: List[PathLike], outfile: PathLike):
     # Perform validation, conversion, equivalence check and after merge.
 
     for i in file_list:
-        Cache.read(i)
+        Cache.load(i)
 
     # Convert all files in `file_list` that are not matching the newest `schema_version` to the newest schema version.
     # Write the converted result to the same file.

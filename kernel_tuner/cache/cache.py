@@ -27,7 +27,7 @@ from .paths import get_schema_path
 class Cache:
     """Writes and reads cache files.
 
-    Cache files can be read using `Cache.read()` and created using `Cache.create()`. In both cases, a `Cache` instance
+    Cache files can be loaded using `Cache.load()` and created using `Cache.create()`. In both cases, a `Cache` instance
     is returned. This object simultaneously keeps track of the file, as well as its json contents in an efficient
     manner. Note that the cache file should not be changed during the Cache instance's lifetime, as the instance's state
     would in that case not correspond to the file's JSON content. To automatically detect changes in the Cache instance,
@@ -119,7 +119,7 @@ class Cache:
         return cls(filename, cache_json)  # type: ignore
 
     @classmethod
-    def read(cls, filename: PathLike):
+    def load(cls, filename: PathLike):
         """Reads an existing cache file."""
         cache_json = read_cache(filename)
         cls.validate_json(cache_json)
