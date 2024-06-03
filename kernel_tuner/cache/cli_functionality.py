@@ -72,7 +72,7 @@ def check_equivalence(file_list: List[PathLike]):
             raise ValueError(f"Merge error; key 'tune_params_keys' not equivalent for '{file_list[0]}' and '{file}'.")
 
 
-def merge_files(file_list: List[PathLike], ofile: PathLike):
+def merge_files(cache_files: List[PathLike], output_path: PathLike):
     """Merges the actual files and writes to the file `ofile`.
 
     Assumes that all files have been validated.
@@ -80,40 +80,33 @@ def merge_files(file_list: List[PathLike], ofile: PathLike):
     # FIXME: Cannot be guaranteed that the order of the cachelines in the files is also kept when merging
     # From cache.py (json.load).
 
-    resulting_output = Cache.read(file_list[0])
-    resulting_output.create(
-        ofile,
-        device_name=resulting_output.device_name,
-        kernel_name=resulting_output.kernel_name,
-        problem_size=resulting_output.problem_size,
-        tune_params_keys=resulting_output.tune_params_keys,
-        tune_params=resulting_output.tune_params,
-        objective=resulting_output.objective,
+    cache = Cache.read(cache_files[0])
+    output = Cache.create(
+        output_path,
+        device_name=cache.device_name,
+        kernel_name=cache.kernel_name,
+        problem_size=cache.problem_size,
+        tune_params_keys=cache.tune_params_keys,
+        tune_params=cache.tune_params,
+        objective=cache.objective,
     )
 
-    # We read so the ._filename changes for append
-    resulting_output = Cache.read(ofile)
-
     # Now for each file add the cache content.
-    for file in file_list:
-        temp_file = Cache.read(file)
-
-        for line in temp_file.lines:
-            if line in resulting_output.lines:
-                raise KeyError(f"Merge error; overlap for key '{line}' in several files.")
-
-            temp_line = temp_file.lines[line]
-            tune_params = {key: temp_line[key] for key in temp_file.tune_params_keys}
-            resulting_output.lines.append(
-                time=temp_line["time"],
-                compile_time=temp_line["compile_time"],
-                verification_time=temp_line["verification_time"],
-                benchmark_time=temp_line["benchmark_time"],
-                strategy_time=temp_line["strategy_time"],
-                framework_time=temp_line["framework_time"],
-                timestamp=temp_file.lines.get(line).timestamp,
-                times=temp_line["times"],
-                GFLOP_per_s=temp_line["GFLOP/s"],
+    for file in cache_files:
+        input = Cache.read(file)
+        for line in input.lines.values():
+            print(type(input.lines))
+            tune_params = {key: line[key] for key in input.tune_params_keys}
+            output.lines.append(
+                time=line.time,
+                compile_time=line.compile_time,
+                verification_time=line.verification_time,
+                benchmark_time=line.benchmark_time,
+                strategy_time=line.strategy_time,
+                framework_time=line.framework_time,
+                timestamp=line.timestamp,
+                times=line.times,
+                GFLOP_per_s=line.GFLOP_per_s,
                 **tune_params,
             )
 
