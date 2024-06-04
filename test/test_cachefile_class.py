@@ -126,13 +126,13 @@ class TestCache:
 
     @pytest.fixture
     def cache(self, cache_file):
-        return Cache.load(cache_file)
+        return Cache.open(cache_file)
 
     @pytest.fixture
     def cache_line_read(self, cache) -> Cache.Line:
         return cache.lines.get(a=0, b=0, c=0)
 
-    def test_load(self, cache, header, cache_lines):
+    def test_open(self, cache, header, cache_lines):
         pass
 
     def test_version(self, cache):
@@ -245,7 +245,7 @@ class TestCache:
         prev_len = len(cache.lines)
         cache.lines.append(**vars(cache_line))
         assert len(cache.lines) == prev_len + 1
-        cache = Cache.load(cache.filepath)
+        cache = Cache.open(cache.filepath)
         assert len(cache.lines) == prev_len + 1
 
     @pytest.fixture

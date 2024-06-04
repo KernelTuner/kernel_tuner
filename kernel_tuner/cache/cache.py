@@ -28,11 +28,13 @@ from .paths import get_schema_path
 class Cache:
     """Writes and reads cache files.
 
-    Cache files can be loaded using `Cache.load()` and created using `Cache.create()`. In both cases, a `Cache` instance
-    is returned. This object simultaneously keeps track of the file, as well as its json contents in an efficient
-    manner. Note that the cache file should not be changed during the Cache instance's lifetime, as the instance's state
-    would in that case not correspond to the file's JSON content. To automatically detect changes in the Cache instance,
-    one could use os.path.getmtime() in order to detect whenever the cache file changes.
+    Cache files can be opened using ``Cache.open()`` and created using ``Cache.create()``. In both cases, a ``Cache``
+    instance is returned. This object simultaneously keeps track of the file, as well as its json contents in an
+    efficient manner. To read cache files of any old version, use `Cache.read()`, which returns a ``Cache`` instance
+    which which won't be able to be mutated. Note that the cache file should not be changed during the Cache instance's
+    lifetime, as the instance's state would in that case not correspond to the file's JSON content. To automatically
+    detect changes in the Cache instance, one could use os.path.getmtime() in order to detect whenever the cache file
+    changes.
 
     The Cache class furthermore contains an easily usable interface for reading cache file properties, e.g.
     `Cache.kernel_name` or `Cache.version`, and an easily usable interface for matching cache lines from their
@@ -122,8 +124,8 @@ class Cache:
         return cls(filename, cache_json, readonly=False)
 
     @classmethod
-    def load(cls, filename: PathLike):
-        """Loads an existing cache file. Returns a Cache instance with modifiable lines.
+    def open(cls, filename: PathLike):
+        """Opens an existing cache file. Returns a Cache instance with modifiable lines.
 
         This cache file should have the latest version
         """
