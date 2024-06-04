@@ -465,7 +465,13 @@ Currently supported: “CUDA”, “OpenCL”, “HIP” or “C”</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark_default">
 <span class="sig-name descname"><span class="pre">benchmark_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark_default" title="Link to this definition">¶</a></dt>
-<dd><p>Benchmark one kernel execution at a time.</p>
+<dd><p>Benchmark one kernel execution for ‘iterations’ at a time</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark_prologue">
+<span class="sig-name descname"><span class="pre">benchmark_prologue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark_prologue" title="Link to this definition">¶</a></dt>
+<dd><p>Benchmark prologue one kernel execution per PrologueObserver</p>
 </dd></dl>
 
 <dl class="py method">

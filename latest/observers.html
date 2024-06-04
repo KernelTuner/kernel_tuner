@@ -93,6 +93,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.pmt.PMTObserver"><code class="docutils literal notranslate"><span class="pre">PMTObserver</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#ncuobserver">NCUObserver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.observers.ncu.NCUObserver"><code class="docutils literal notranslate"><span class="pre">NCUObserver</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -327,6 +331,34 @@ id is not used, it should be ‘None’ in those cases.</p></li>
 <p>This observer will report “&lt;platform&gt;_energy&gt;” and “&lt;platform&gt;_power” for
 all specified platforms.</p>
 </p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="ncuobserver">
+<h2>NCUObserver<a class="headerlink" href="#ncuobserver" title="Link to this heading">¶</a></h2>
+<p>The NCUObserver can be used to automatically extract performance counters during tuning using Nvidia’s NsightCompute profiler.
+The NCUObserver relies on an intermediate library, which can be found here: <a class="reference external" href="https://github.com/nlesc-recruit/nvmetrics">https://github.com/nlesc-recruit/nvmetrics</a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.observers.ncu.NCUObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.ncu.</span></span><span class="sig-name descname"><span class="pre">NCUObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.ncu.NCUObserver" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">NCUObserver</span></code> measures performance counters.</p>
+<p>The exact performance counters supported differ per GPU, some examples:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>“dram__bytes.sum”,                                     # Counter         byte            # of bytes accessed in DRAM</p></li>
+<li><p>“dram__bytes_read.sum”,                                # Counter         byte            # of bytes read from DRAM</p></li>
+<li><p>“dram__bytes_write.sum”,                               # Counter         byte            # of bytes written to DRAM</p></li>
+<li><p>“smsp__sass_thread_inst_executed_op_fadd_pred_on.sum”, # Counter         inst            # of FADD thread instructions executed where all predicates were true</p></li>
+<li><p>“smsp__sass_thread_inst_executed_op_ffma_pred_on.sum”, # Counter         inst            # of FFMA thread instructions executed where all predicates were true</p></li>
+<li><p>“smsp__sass_thread_inst_executed_op_fmul_pred_on.sum”, # Counter         inst            # of FMUL thread instructions executed where all predicates were true</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>metrics</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – The metrics to observe. This should be a list of strings.
+You can use <code class="docutils literal notranslate"><span class="pre">ncu</span> <span class="pre">--query-metrics</span></code> to get a list of valid metrics.</p>
 </dd>
 </dl>
 </dd></dl>
