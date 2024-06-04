@@ -39,11 +39,6 @@ We can:
          - <files>: The list of (space separated) input files to read in order to merge the cachefiles.
          - `-o, --output`: The output file to write the merged result to.
 
-    Example usages:
-    ktcache convert --in a.json -T 1.1.0 --out b.json
-    ktcache merge 
-    ktcache t4 --in 1.json --out 2.json 
-
 
 """
 
