@@ -105,7 +105,7 @@ def delete_line(infile: PathLike, key: str, outfile):
     if cache_infile.lines.get(key) is None:
         raise KeyError(f"Entry '{key}' is not contained in cachefile '{infile}'.")
 
-    Cache.create(
+    output = Cache.create(
         outfile,
         device_name=cache_infile.device_name,
         kernel_name=cache_infile.kernel_name,
@@ -114,9 +114,6 @@ def delete_line(infile: PathLike, key: str, outfile):
         tune_params=cache_infile.tune_params,
         objective=cache_infile.objective,
     )
-
-    # We read so the ._filename changes for append
-    output = Cache.load(outfile)
 
     for k, line in cache_infile.lines.items():
         if k != key:
@@ -140,7 +137,7 @@ def delete_line(infile: PathLike, key: str, outfile):
 def convert(read_file: PathLike, write_file=None, target=None):
     """The main function for handling the version conversion of a cachefile."""
     # Check if the `read_file` is actually a valid cachefile
-    Cache.read(read_file)
+    Cache.validate(read_file)
 
     # If no output file is specified, let the conversion overwrite the input file
     if write_file is None:
@@ -171,7 +168,7 @@ def merge(file_list: List[PathLike], outfile: PathLike):
     # Perform validation, conversion, equivalence check and after merge.
 
     for i in file_list:
-        Cache.read(i)
+        Cache.validate(i)
 
     # Convert all files in `file_list` that are not matching the newest `schema_version` to the newest schema version.
     # Write the converted result to the same file.

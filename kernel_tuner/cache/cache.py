@@ -21,7 +21,7 @@ from .convert import convert_cache
 from .json import CacheFileJSON, CacheLineJSON
 from .json_encoder import CacheLineEncoder
 from .file import read_cache, write_cache, append_cache_line
-from .versions import LATEST_VERSION
+from .versions import LATEST_VERSION, VERSIONS
 from .paths import get_schema_path
 
 
@@ -149,12 +149,36 @@ class Cache:
         return cls(filename, cache_json, readonly=True)
 
     @classmethod
+    def validate(cls, filename: PathLike):
+        """Validates a cache file and raises an error if invalid."""
+        cache_json = read_cache(filename)
+        cls.validate_json(cache_json)
+
+    @classmethod
     def validate_json(cls, cache_json: Any):
         """Validates cache json."""
-        schema_path = get_schema_path(cache_json["schema_version"])
+        if "schema_version" not in cache_json:
+            raise jsonschema.ValidationError("Key 'schema_version' is not present in cache data")
+        schema_version = cache_json["schema_version"]
+        cls.__validate_json_schema_version(schema_version)
+        schema = cls.__get_schema_for_version(schema_version)
+        format_checker = _get_format_checker()
+        jsonschema.validate(instance=cache_json, schema=schema, format_checker=format_checker)
+
+    @classmethod
+    def __validate_json_schema_version(cls, version: str):
+        try:
+            if Version.parse(version) in VERSIONS:
+                return
+        except (ValueError, TypeError):
+            pass
+        raise jsonschema.ValidationError(f"Invalid version {repr(version)} found.")
+
+    @classmethod
+    def __get_schema_for_version(cls, version: str):
+        schema_path = get_schema_path(version)
         with open(schema_path, "r") as file:
-            schema = json.load(file)
-        jsonschema.validate(instance=cache_json, schema=schema)
+            return json.load(file)
 
     def __init__(self, filename: PathLike, cache_json: CacheFileJSON, *, readonly: bool):
         """Inits a cache file instance, given that the file referred to by ``filename`` contains data ``cache_json``.
@@ -519,3 +543,19 @@ class Cache:
 @cache
 def _get_cache_line_json_encoder():
     return CacheLineEncoder()
+
+
+@cache
+def _get_format_checker():
+    """Returns a JSON format checker instance."""
+    format_checker = jsonschema.FormatChecker()
+
+    @format_checker.checks("date-time")
+    def _check_iso_datetime(instance):
+        try:
+            datetime.fromisoformat(instance)
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    return format_checker
