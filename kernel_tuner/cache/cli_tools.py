@@ -116,22 +116,21 @@ def delete_line(infile: PathLike, key: str, outfile):
     )
 
     # We read so the ._filename changes for append
-    resulting_output = Cache.load(outfile)
+    output = Cache.load(outfile)
 
-    for line in cache_infile.lines:
-        if line != key:
-            temp_line = cache_infile.lines[line]
-            tune_params = {key: temp_line[key] for key in cache_infile.tune_params_keys}
-            resulting_output.lines.append(
-                time=temp_line["time"],
-                compile_time=temp_line["compile_time"],
-                verification_time=temp_line["verification_time"],
-                benchmark_time=temp_line["benchmark_time"],
-                strategy_time=temp_line["strategy_time"],
-                framework_time=temp_line["framework_time"],
-                timestamp=cache_infile.lines.get(line).timestamp,
-                times=temp_line["times"],
-                GFLOP_per_s=temp_line["GFLOP/s"],
+    for k, line in cache_infile.lines.items():
+        if k != key:
+            tune_params = {key: line[key] for key in cache_infile.tune_params_keys}
+            output.lines.append(
+                time=line.time,
+                compile_time=line.compile_time,
+                verification_time=line.verification_time,
+                benchmark_time=line.benchmark_time,
+                strategy_time=line.strategy_time,
+                framework_time=line.framework_time,
+                timestamp=line.timestamp,
+                times=line.times,
+                GFLOP_per_s=line.GFLOP_per_s,
                 **tune_params,
             )
 
