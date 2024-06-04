@@ -43,7 +43,7 @@ We can:
 import argparse
 import sys
 
-from kernel_tuner.cache.cli_functionality import convert, convert_t4, delete_line, get_line, merge
+from kernel_tuner.cache.cli_tools import convert, convert_t4, delete_line, get_line, merge
 
 
 def cli_convert(ap_res: argparse.Namespace):

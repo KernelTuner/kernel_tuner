@@ -1,18 +1,4 @@
-"""This module contains several functions used to perform several operations on cachefiles.
-
-This is one of:
-   - `convert`: one may convert a cachefile to a specified (higher) version.
-
-   - `delete-line`: one may delete a certain cacheline from a cachefile; required that the cachefile is of the newest
-       JSON schema version.
-   - `get-line`: One may obtain the cacheline data of a certain cacheline inside a cachefile.
-   - `merge`: one may merge several (with possible non-equivalent version) cachefiles into one cachefile;
-      The resulting merged cachefile is always using the **newest** JSON
-      schema. Note that the file content of the input files change.
-   - `t4`: one may convert a cachefile to T4 format.
-
-   For these main operations to work, several helper functions also exist.
-"""
+"""This module contains several functions used to perform several operations on cachefiles."""
 
 from os import PathLike
 from shutil import copyfile
@@ -21,35 +7,18 @@ from typing import List, Any
 from .cache import Cache
 from .convert import convert_cache_file, convert_cache_to_t4
 from .file import read_cache, write_cache
-from .versions import LATEST_VERSION
 
 
-def convert_files_to_their_least_common_version(file_list: List[PathLike]):
-    """Converts all necessary files in file_list to the newest schema_version.
-
-    Does this by using the existing conversion functionality; convert the file, then write the result to the same file.
-    """
-    # Get highest schema_version
-    max_version = str(max([Cache.load(file).version for file in file_list]))
-
-    for file in file_list:
-        cachefile = Cache.load(file)
-
-        if str(cachefile.version) != max_version:
-            # We write to the input filename.
-            convert_cache_file(filestr=file, target_version=max_version)
-
-
-def check_equivalence(file_list: List[PathLike]):
+def assert_cache_files_have_compatible_headers(file_list: List[PathLike]):
     """Checks equivalence of set parameters for files in `file_list`.
 
     Assumes that all files have been validated.
     We use the first file (file_list[0]) as our base file, and compare everything with that.
     """
-    base_file = Cache.load(file_list[0])
+    base_file = Cache.read(file_list[0])
 
     for file in file_list[1:]:
-        temp_file = Cache.load(file)
+        temp_file = Cache.read(file)
 
         # Now the equivalence logic
 
@@ -80,7 +49,7 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
     # FIXME: Cannot be guaranteed that the order of the cachelines in the files is also kept when merging
     # From cache.py (json.load).
 
-    cache = Cache.load(cache_files[0])
+    cache = Cache.read(cache_files[0])
     output = Cache.create(
         output_path,
         device_name=cache.device_name,
@@ -93,7 +62,7 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
 
     # Now for each file add the cache content.
     for file in cache_files:
-        input = Cache.load(file)
+        input = Cache.read(file)
         for line in input.lines.values():
             print(type(input.lines))
             tune_params = {key: line[key] for key in input.tune_params_keys}
@@ -113,7 +82,7 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
 
 def get_line(infile: PathLike, key: str):
     """Checks if entry (string) `key` is inside file `in_file`, by using the `cache.py` library."""
-    cache_infile = Cache.load(infile)
+    cache_infile = Cache.read(infile)
 
     cache_line = cache_infile.lines[key]
 
@@ -132,19 +101,11 @@ def delete_line(infile: PathLike, key: str, outfile):
     if outfile is None:
         outfile = infile
 
-    cache_infile = Cache.load(infile)
-
-    # We require the file to be of the latest version.
-    if cache_infile.version != LATEST_VERSION:
-        raise ValueError(
-            f"Cachefile '{infile}' is of version {str(cache_infile.version)} but should be of version "
-            f"{str(LATEST_VERSION)} (latest)."
-        )
-
+    cache_infile = Cache.read(infile)
     if cache_infile.lines.get(key) is None:
         raise KeyError(f"Entry '{key}' is not contained in cachefile '{infile}'.")
 
-    cache_infile.create(
+    Cache.create(
         outfile,
         device_name=cache_infile.device_name,
         kernel_name=cache_infile.kernel_name,
@@ -180,7 +141,7 @@ def delete_line(infile: PathLike, key: str, outfile):
 def convert(read_file: PathLike, write_file=None, target=None):
     """The main function for handling the version conversion of a cachefile."""
     # Check if the `read_file` is actually a valid cachefile
-    Cache.load(read_file)
+    Cache.read(read_file)
 
     # If no output file is specified, let the conversion overwrite the input file
     if write_file is None:
@@ -211,13 +172,11 @@ def merge(file_list: List[PathLike], outfile: PathLike):
     # Perform validation, conversion, equivalence check and after merge.
 
     for i in file_list:
-        Cache.load(i)
+        Cache.read(i)
 
     # Convert all files in `file_list` that are not matching the newest `schema_version` to the newest schema version.
     # Write the converted result to the same file.
-    convert_files_to_their_least_common_version(file_list)
-
-    check_equivalence(file_list)
+    assert_cache_files_have_compatible_headers(file_list)
 
     merge_files(file_list, outfile)
 
