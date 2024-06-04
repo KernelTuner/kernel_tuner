@@ -45,6 +45,30 @@ class TestCli:
         with pytest.raises(FileNotFoundError):
             parser.func(parser)
 
+    def test_convert_unversioned(self, tmp_path):
+
+        TEST_COPY_UNVERSIONED_SRC = TEST_CACHE_PATH / "small_cache_unversioned.json"
+        TEST_COPY_UNVERSIONED_DST = tmp_path / "small_cache_unversioned.json"
+
+        TEST_COPY_VERSIONED_SRC = TEST_CACHE_PATH / "small_cache.json"
+        TEST_COPY_VERSIONED_DST = tmp_path / "small_cache.json"
+
+        UNVERSIONED_CONVERT_OUT = tmp_path / "small_cache_unversioned_out.json"
+
+        copyfile(TEST_COPY_UNVERSIONED_SRC, TEST_COPY_UNVERSIONED_DST)
+        copyfile(TEST_COPY_VERSIONED_SRC, TEST_COPY_VERSIONED_DST)
+
+        parser = parse_args(["convert", "--in", f"{TEST_COPY_UNVERSIONED_DST}", "--allow-version-absence", \
+                            "-T", "1.0.0", "--out", f"{UNVERSIONED_CONVERT_OUT}"])
+        
+        parser.func(parser)
+
+        convert_result = read_cache(UNVERSIONED_CONVERT_OUT)
+        small_content = read_cache(TEST_COPY_VERSIONED_DST)
+
+        assert convert_result == small_content 
+
+
     def test_t4(self, tmp_path):
         TEST_COPY_DST = tmp_path / "temp_cache_dst.json"
 

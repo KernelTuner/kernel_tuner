@@ -4,14 +4,16 @@ Works with the cache file manipulation library (cache.py),
 conversion functionality (convert.py) and other helper functions (defined in cli_functionality.py).
 
 Basic usage:
-$ poetry run ktcache {convert, t4, delete-line, get-line, merge}
+$ ktcache {convert, t4, delete-line, get-line, merge}
 
 We can:
    - `convert`: using the functionality from convert.py one can convert to a specified version.
       Within conversion (all required yet nonpositional arguments):
          - `-i/--infile`: the input file to read from.
          - `-T/--target`: The version to convert to. 
-         - `-o/--output`: The converted output file.
+         - `--out/--output`: The converted output file.
+         - `--force-version-absence`: allow unversioned cachefiles to be converted.
+
 
    - `t4`: using the functionality from convert.py one can convert to T4 format.
       Within t4 conversion:
@@ -37,6 +39,12 @@ We can:
          - <files>: The list of (space separated) input files to read in order to merge the cachefiles.
          - `-o, --output`: The output file to write the merged result to.
 
+    Example usages:
+    ktcache convert --in a.json -T 1.1.0 --out b.json
+    ktcache merge 
+    ktcache t4 --in 1.json --out 2.json 
+
+
 """
 
 # import required files from within kernel tuner
@@ -48,7 +56,8 @@ from kernel_tuner.cache.cli_tools import convert, convert_t4, delete_line, get_l
 
 def cli_convert(ap_res: argparse.Namespace):
     """The main function for handling conversion to a `schema_version` in the cli."""
-    convert(ap_res.infile, write_file=ap_res.output, target=ap_res.target)
+    convert(ap_res.infile, write_file=ap_res.output, target=ap_res.target, \
+            allow_version_absence=ap_res.allow_version_absence)
 
 
 def cli_delete_line(ap_res: argparse.Namespace):
@@ -82,7 +91,13 @@ def parse_args(args):
     parser = argparse.ArgumentParser(
 		prog="cache_cli",
 		description="A CLI tool to manipulate kernel tuner cache files.",
-		epilog="More help/issues? Visit https://github.com/kernel_tuner/kernel_tuner")
+		epilog="Example usages:\n" \
+        f"{sys.argv[0]} convert --in a.json -T 1.1.0 --out b.json\n" \
+        f"{sys.argv[0]} convert --in a.json -T 1.1.0 --out b.json --allow-version-absence\n" \
+        f"{sys.argv[0]} delete-line 1.json --key 1,2,3,4 --out 2.json\n" \
+        f"{sys.argv[0]} get-line file.json --key 1,2,3,4\n" \
+        f"{sys.argv[0]} t4 --in x.json --out y.json\n" \
+        f"{sys.argv[0]} merge 1.json 2.json 3.json --out 4.json\n")
 
     sp = parser.add_subparsers(required=True,
                                help="Possible subcommands: 'convert', 'delete-line', 'get-line' and 'inspect'.")
@@ -98,6 +113,8 @@ def parse_args(args):
                     dest="output")
     convert.add_argument("-T", "--target", 
                     help="The destination target version. By default the newest version")
+    convert.add_argument("--allow-version-absence", dest="allow_version_absence", action="store_true",
+                    help="Allow unversioned cachefiles to be converted.")
     convert.set_defaults(func=cli_convert)
 
     t4 = sp.add_parser("t4", help="Convert a cache file to the T4 auto-tuning format.")

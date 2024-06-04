@@ -64,7 +64,6 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
     for file in cache_files:
         input = Cache.read(file)
         for line in input.lines.values():
-            print(type(input.lines))
             tune_params = {key: line[key] for key in input.tune_params_keys}
             output.lines.append(
                 time=line.time,
@@ -131,13 +130,12 @@ def delete_line(infile: PathLike, key: str, outfile):
                 **tune_params,
             )
 
-    print(f"Writing to output file '{outfile}' after removing entry '{key}' completed.")
 
-
-def convert(read_file: PathLike, write_file=None, target=None):
+def convert(read_file: PathLike, write_file=None, target=None, allow_version_absence=False):
     """The main function for handling the version conversion of a cachefile."""
-    # Check if the `read_file` is actually a valid cachefile
-    Cache.validate(read_file)
+    # Check if the `read_file` is actually a valid cachefile, in case it is versioned.
+    if not allow_version_absence:
+        Cache.validate(read_file)
 
     # If no output file is specified, let the conversion overwrite the input file
     if write_file is None:
@@ -175,5 +173,3 @@ def merge(file_list: List[PathLike], outfile: PathLike):
     assert_cache_files_have_compatible_headers(file_list)
 
     merge_files(file_list, outfile)
-
-    print(f"[*] Merging finished. Output file: '{outfile}'.")
