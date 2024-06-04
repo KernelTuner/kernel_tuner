@@ -84,15 +84,16 @@ def parse_args(args):
 	# Setup parsing
 
     parser = argparse.ArgumentParser(
-		prog="cache_cli",
+		prog="ktcache",
 		description="A CLI tool to manipulate kernel tuner cache files.",
-		epilog="Example usages:\n" \
-        f"{sys.argv[0]} convert --in a.json -T 1.1.0 --out b.json\n" \
-        f"{sys.argv[0]} convert --in a.json -T 1.1.0 --out b.json --allow-version-absence\n" \
-        f"{sys.argv[0]} delete-line 1.json --key 1,2,3,4 --out 2.json\n" \
-        f"{sys.argv[0]} get-line file.json --key 1,2,3,4\n" \
-        f"{sys.argv[0]} t4 --in x.json --out y.json\n" \
-        f"{sys.argv[0]} merge 1.json 2.json 3.json --out 4.json\n")
+		epilog="Example usages:\n\n" \
+        "ktcache convert --in a.json -T 1.1.0 --out b.json\n" \
+        "ktcache convert --in a.json -T 1.1.0 --out b.json --allow-version-absence\n" \
+        "ktcache delete-line 1.json --key 1,2,3,4 --out 2.json\n" \
+        "ktcache get-line file.json --key 1,2,3,4\n" \
+        "ktcache t4 --in x.json --out y.json\n" \
+        "ktcache merge 1.json 2.json 3.json --out 4.json\n\n",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
     sp = parser.add_subparsers(required=True,
                                help="Possible subcommands: 'convert', 'delete-line', 'get-line' and 'inspect'.")
