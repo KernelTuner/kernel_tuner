@@ -48,7 +48,7 @@ class PMTObserver(BenchmarkObserver):
             if not obs in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
 
-        self.pms = [pmt.get_pmt(obs[0], obs[1]) for obs in observable.items()]
+        self.pms = [pmt.create(obs[0], obs[1]) for obs in observable.items()]
         self.pm_names = list(observable.keys())
 
         self.begin_states = [None] * len(self.pms)
@@ -70,9 +70,8 @@ class PMTObserver(BenchmarkObserver):
         for i in range(len(self.pms)):
             begin_state = self.begin_states[i]
             end_state = end_states[i]
-            measured_energy = pmt.pypmt.PMT.joules(begin_state, end_state)
-            measured_power = pmt.pypmt.PMT.watts(begin_state, end_state)
-            print(measured_energy, measured_power)
+            measured_energy = pmt.joules(begin_state, end_state)
+            measured_power = pmt.watts(begin_state, end_state)
             pm_name = self.pm_names[i]
             energy_result_name = f"{pm_name}_energy"
             power_result_name = f"{pm_name}_power"
