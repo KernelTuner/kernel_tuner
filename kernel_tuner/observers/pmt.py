@@ -38,8 +38,8 @@ class PMTObserver(BenchmarkObserver):
         if type(observable) is dict:
             pass
         elif type(observable) is list:
-            # user specifies a list of platforms as observable
-            observable = dict([(obs, 0) for obs in observable])
+            # user specifies a list of platforms as observable, optionally with an argument
+            observable = dict([obs if isinstance(obs, tuple) else (obs, None) for obs in observable])
         else:
             # User specifices a string (single platform) as observable
             observable = {observable: None}

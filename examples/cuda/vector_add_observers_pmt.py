@@ -31,7 +31,7 @@ def tune():
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    pmtobserver = PMTObserver(["nvidia", "rapl"])
+    pmtobserver = PMTObserver([("nvidia", 0), "rapl"])
 
     metrics = OrderedDict()
     metrics["GPU W"] = lambda p: p["nvidia_power"]
