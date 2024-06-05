@@ -43,7 +43,7 @@ class PMTObserver(BenchmarkObserver):
         else:
             # User specifices a string (single platform) as observable
             observable = {observable: None}
-        supported = ["arduino", "jetson", "likwid", "nvml", "rapl", "rocm", "xilinx"]
+        supported = ["powersensor2", "powersensor3", "nvidia", "likwid", "rapl", "rocm", "xilinx"]
         for obs in observable.keys():
             if not obs in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
@@ -70,8 +70,9 @@ class PMTObserver(BenchmarkObserver):
         for i in range(len(self.pms)):
             begin_state = self.begin_states[i]
             end_state = end_states[i]
-            measured_energy = pmt.joules(begin_state, end_state)
-            measured_power = pmt.watts(begin_state, end_state)
+            measured_energy = pmt.pypmt.PMT.joules(begin_state, end_state)
+            measured_power = pmt.pypmt.PMT.watts(begin_state, end_state)
+            print(measured_energy, measured_power)
             pm_name = self.pm_names[i]
             energy_result_name = f"{pm_name}_energy"
             power_result_name = f"{pm_name}_power"
