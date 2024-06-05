@@ -35,7 +35,14 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     if not candidate:
         candidate = searchspace.get_random_sample(1)[0]
     old_candidate = candidate # for memetic strategy
-    best_score = cost_func(candidate, check_restrictions=False)
+    try:
+        best_score = cost_func(candidate, check_restrictions=False)
+    except util.StopCriterionReached as e:
+        tuning_options.strategy_options["old_candidate"] = old_candidate # for memetic strategy
+        tuning_options.strategy_options["candidate"] = candidate # for memetic strategy
+        if tuning_options.verbose:
+            print(e)
+        return cost_func.results
 
     last_improvement = 0
     while fevals < max_fevals:
@@ -45,6 +52,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=True)
             new_score = cost_func(candidate, check_restrictions=False)
         except util.StopCriterionReached as e:
+            tuning_options.strategy_options["old_candidate"] = old_candidate # for memetic strategy
+            tuning_options.strategy_options["candidate"] = candidate # for memetic strategy
             if tuning_options.verbose:
                 print(e)
             return cost_func.results

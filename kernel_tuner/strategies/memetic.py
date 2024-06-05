@@ -71,15 +71,15 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     local_search = options.get('local_search', 'greedy_ils')
     global_search = options.get('global_search', "genetic_algorithm")
-    alsd = options.get("alsd", 2) # Adaptive Local Search Depth (ALSD)
-    lsd = options.get("lsd", 25) # Local Search Depth (LSD)
-    maxiter = options.get("maxiter", 2)
+    alsd = options.get("alsd", 5) # Adaptive Local Search Depth (ALSD)
+    lsd = options.get("lsd", 30) # Local Search Depth (LSD)
+    maxiter = options.get("maxiter", 3)
     popsize = options.get("popsize", 20)
     max_feval = options.get("max_fevals", None if 'time_limit' in options else 2000)
     print(f"DEBUG: local_search={local_search} global_search={global_search} alsd={alsd} lsd={lsd} maxiter={maxiter} popsize={popsize} max_feval={max_feval}", file=sys.stderr)
 
     if local_search in ls_strategies_list:
-        options["ensemble"] = [local_search] * popsize
+        tuning_options.strategy_options["ensemble"] = [local_search] * popsize
     else:
         raise ValueError("Provided local search ensemble are not all local search strategies")
 
@@ -119,12 +119,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         results = global_search.tune(searchspace, pop_runner, tuning_options)
         add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
         feval += maxiter * popsize
-        try:
-            check_stop_criterion(tuning_options)
-        except StopCriterionReached as e:
-            if tuning_options.verbose:
-                print(e)
-            break
 
         pop_start_gs_res = get_pop_results(pop_start_gs, all_results_dict)
         pop_end_gs = copy.deepcopy(tuning_options.strategy_options["population"])
@@ -138,12 +132,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         results = ensemble.tune(searchspace, runner, tuning_options, cache_manager=cache_manager, actors=actors)
         add_to_results(all_results, all_results_dict, results, tuning_options.tune_params)
         feval += lsd * popsize
-        try:
-            check_stop_criterion(tuning_options)
-        except StopCriterionReached as e:
-            if tuning_options.verbose:
-                print(e)
-            break
 
         pop_start_ls_res = get_pop_results(pop_start_ls, all_results_dict)
         pop_end_ls = copy.deepcopy(tuning_options.strategy_options["candidates"])
