@@ -31,10 +31,10 @@ def tune():
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    pmtobserver = PMTObserver(["nvidia", "rapl"])
+    pmtobserver = PMTObserver(["nvml", "rapl"])
 
     metrics = OrderedDict()
-    metrics["GPU W"] = lambda p: p["nvidia_power"]
+    metrics["GPU W"] = lambda p: p["nvml_power"]
     metrics["CPU W"] = lambda p: p["rapl_power"]
 
     results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, observers=[pmtobserver], metrics=metrics, iterations=32)
