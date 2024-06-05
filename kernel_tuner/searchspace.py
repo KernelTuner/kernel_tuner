@@ -47,6 +47,7 @@ class Searchspace:
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         """
         # set the object attributes using the arguments
+        framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.restrictions = restrictions
@@ -66,21 +67,23 @@ class Searchspace:
         if (
             len(restrictions) > 0
             and any(isinstance(restriction, str) for restriction in restrictions)
-            and not (framework.lower() == "pysmt" or framework.lower() == "bruteforce")
+            and not (framework_l == "pysmt" or framework_l == "pyatf" or framework_l == "bruteforce")
         ):
             self.restrictions = compile_restrictions(
-                restrictions, tune_params, monolithic=False, try_to_constraint=framework.lower() == "pythonconstraint"
+                restrictions, tune_params, monolithic=False, try_to_constraint=framework_l == "pythonconstraint"
             )
 
         # get the framework given the framework argument
-        if framework.lower() == "pythonconstraint":
+        if framework_l == "pythonconstraint":
             searchspace_builder = self.__build_searchspace
-        elif framework.lower() == "pysmt":
+        elif framework_l == "pysmt":
             searchspace_builder = self.__build_searchspace_pysmt
-        elif framework.lower() == "atf_cache":
+        elif framework_l == "pyatf":
+            searchspace_builder = self.__build_searchspace_pyATF
+        elif framework_l == "atf_cache":
             searchspace_builder = self.__build_searchspace_ATF_cache
             self.path_to_ATF_cache = path_to_ATF_cache
-        elif framework.lower() == "bruteforce":
+        elif framework_l == "bruteforce":
             searchspace_builder = self.__build_searchspace_bruteforce
         else:
             raise ValueError(f"Invalid framework parameter {framework}")
@@ -246,6 +249,28 @@ class Searchspace:
             parameter_space_list.append(tuple(sol_dict[param_name] for param_name in list(tune_params.keys())))
 
         return self.__parameter_space_list_to_lookup_and_return_type(parameter_space_list)
+
+    def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
+        """Builds the searchspace using pyATF."""
+        from pyatf import TP, Set, Tuner
+        from pyatf.cost_functions.generic import CostFunction
+        from pyatf.search_techniques import Exhaustive
+
+        costfunc = CostFunction("echo 'hello'")
+
+        def get_params():
+            params = List()
+            for key, values in self.tune_params.items():
+                TP(key, Set(values))
+            return params
+
+        tuning_result = (
+            Tuner()
+            .tuning_parameters(*get_params())
+            .search_technique(Exhaustive())
+            .tune(costfunc)
+        )
+        return tuning_result
 
     def __build_searchspace_ATF_cache(self, block_size_names: list, max_threads: int, solver: Solver):
         """Imports the valid configurations from an ATF CSV file, returns the searchspace, a dict of the searchspace for fast lookups and the size."""
