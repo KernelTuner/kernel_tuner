@@ -219,12 +219,16 @@ def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) ->
         except ValueError:
             # If size cannot be natively converted to an int, we try to derive it from the preprocessor
             if preprocessor is not None:
-                if "," in size:
-                    ret_size = 1
-                    for dimension in size.split(","):
-                        ret_size *= find_size_in_preprocessor(dimension, preprocessor)
-                else:
-                    ret_size = find_size_in_preprocessor(size, preprocessor)
+                try:
+                    if "," in size:
+                        ret_size = 1
+                        for dimension in size.split(","):
+                            ret_size *= find_size_in_preprocessor(dimension, preprocessor)
+                    else:
+                        ret_size = find_size_in_preprocessor(size, preprocessor)
+                except TypeError:
+                    # preprocessor is available but does not contain the dimensions
+                    pass
             # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
             if dimensions is not None:
                 if size in dimensions.keys():
