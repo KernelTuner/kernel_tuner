@@ -518,6 +518,9 @@ class Cache:
             """Accesses members of the dict as if they were attributes."""
             return self[name]
 
+        def todict(self):
+            """Returns the cache line as a dictionary."""
+            return self._line.copy()
 
     @cached_property
     def device_name(self) -> str:
