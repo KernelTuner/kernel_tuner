@@ -38,17 +38,17 @@ class PMTObserver(BenchmarkObserver):
         if type(observable) is dict:
             pass
         elif type(observable) is list:
-            # user specifies a list of platforms as observable
-            observable = dict([(obs, 0) for obs in observable])
+            # user specifies a list of platforms as observable, optionally with an argument
+            observable = dict([obs if isinstance(obs, tuple) else (obs, None) for obs in observable])
         else:
             # User specifices a string (single platform) as observable
             observable = {observable: None}
-        supported = ["arduino", "jetson", "likwid", "nvml", "rapl", "rocm", "xilinx"]
+        supported = ["powersensor2", "powersensor3", "nvidia", "likwid", "rapl", "rocm", "xilinx"]
         for obs in observable.keys():
             if not obs in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
 
-        self.pms = [pmt.get_pmt(obs[0], obs[1]) for obs in observable.items()]
+        self.pms = [pmt.create(obs[0], obs[1]) for obs in observable.items()]
         self.pm_names = list(observable.keys())
 
         self.begin_states = [None] * len(self.pms)
