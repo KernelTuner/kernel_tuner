@@ -78,6 +78,7 @@ def test_parse_size():
     assert parse_size("m", ["#define size 512\n"], {"n": 32}) is None
     assert parse_size("rows,cols", dimensions={"rows": 16, "cols": 8}) == 128
     assert parse_size("n_rows,n_cols", ["#define n_cols 16\n", "#define n_rows 32\n"]) == 512
+    assert parse_size("rows,cols", [], dimensions={"rows": 16, "cols": 8}) == 128
 
 
 def test_wrap_timing():
