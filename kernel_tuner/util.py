@@ -822,14 +822,14 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
-def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = False, try_to_constraint = True) -> list[tuple[Union[Constraint, str], list[str]]]:
+def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = False, format = None, try_to_constraint = True) -> list[tuple[Union[Constraint, str], list[str]]]:
     """Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters."""
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
 
     def replace_params(match_object):
         key = match_object.group(1)
-        if key in tune_params:
+        if key in tune_params and format != "pyatf":
             param = str(key)
             return "params[params_index['" + param + "']]"
         else:
@@ -990,6 +990,8 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
                 return AllDifferentConstraint()
             return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
         return None
+    
+    # TODO if format == "pyatf", combine based on last parameter
 
     # create the parsed restrictions
     if monolithic is False:
@@ -1027,12 +1029,15 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
         # provide a mapping of the parameter names to the index in the tuple received
         params_index = dict(zip(tune_params.keys(), range(len(tune_params.keys()))))
 
-        parsed_restrictions = [(f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n", list(tune_params.keys()))]
+        if format == "pyatf":
+            parsed_restrictions = [(f"def restrictions({', '.join(params_index.keys())}): return {parsed_restrictions} \n", list(tune_params.keys()))]
+        else:
+            parsed_restrictions = [(f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n", list(tune_params.keys()))]
 
     return parsed_restrictions
 
 
-def compile_restrictions(restrictions: list, tune_params: dict, monolithic = False, try_to_constraint = True) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
+def compile_restrictions(restrictions: list, tune_params: dict, monolithic = False, format = None, try_to_constraint = True) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
     """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
@@ -1042,7 +1047,9 @@ def compile_restrictions(restrictions: list, tune_params: dict, monolithic = Fal
         return restrictions_ignore
 
     # parse the strings
-    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, monolithic=monolithic, try_to_constraint=try_to_constraint)
+    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, monolithic=monolithic, format=format, try_to_constraint=try_to_constraint)
+
+    # TODO if format == "pyatf", return a dictionary instead of a list
 
     # compile the parsed restrictions into a function
     compiled_restrictions: list[tuple] = list()
@@ -1189,7 +1196,7 @@ def correct_open_cache(cache, open_cache=True):
         filestr = cachefile.read().strip()
 
     # if file was not properly closed, pretend it was properly closed
-    if len(filestr) > 0 and not filestr[-3:] in ["}\n}", "}}}"]:
+    if len(filestr) > 0 and filestr[-3:] not in ["}\n}", "}}}"]:
         # remove the trailing comma if any, and append closing brackets
         if filestr[-1] == ",":
             filestr = filestr[:-1]
