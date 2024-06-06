@@ -1,5 +1,3 @@
-from pytest import raises
-
 from kernel_tuner.utils.directives import *
 
 
@@ -44,21 +42,31 @@ def test_openacc_directive_contains_data_clause():
 
 
 def test_create_data_directive():
+    size = ArraySize()
+    size.add(1024)
     assert (
-        create_data_directive_openacc("array", 1024, Cxx())
+        create_data_directive_openacc("array", size, Cxx())
         == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
     )
+    size.clear()
+    size.add(35)
+    size.add(16)
     assert (
-        create_data_directive_openacc("matrix", 35, Fortran())
-        == "!$acc enter data create(matrix(:35))\n!$acc update device(matrix(:35))\n"
+        create_data_directive_openacc("matrix", size, Fortran())
+        == "!$acc enter data create(matrix(:35,:16))\n!$acc update device(matrix(:35,:16))\n"
     )
-    assert create_data_directive_openacc("array", 1024, None) == ""
+    assert create_data_directive_openacc("array", size, None) == ""
 
 
 def test_exit_data_directive():
-    assert exit_data_directive_openacc("array", 1024, Cxx()) == "#pragma acc exit data copyout(array[:1024])\n"
-    assert exit_data_directive_openacc("matrix", 35, Fortran()) == "!$acc exit data copyout(matrix(:35))\n"
-    assert exit_data_directive_openacc("matrix", 1024, None) == ""
+    size = ArraySize()
+    size.add(1024)
+    assert exit_data_directive_openacc("array", size, Cxx()) == "#pragma acc exit data copyout(array[:1024])\n"
+    size.clear()
+    size.add(35)
+    size.add(16)
+    assert exit_data_directive_openacc("matrix", size, Fortran()) == "!$acc exit data copyout(matrix(:35,:16))\n"
+    assert exit_data_directive_openacc("matrix", size, None) == ""
 
 
 def test_correct_kernel():
@@ -69,16 +77,16 @@ def test_correct_kernel():
 
 
 def test_parse_size():
-    assert parse_size(128) == 128
-    assert parse_size("16") == 16
-    assert parse_size("test") is None
-    assert parse_size("n", ["#define n 1024\n"]) == 1024
-    assert parse_size("n,m", ["#define n 16\n", "#define m 32\n"]) == 512
-    assert parse_size("n", ["#define size 512\n"], {"n": 32}) == 32
-    assert parse_size("m", ["#define size 512\n"], {"n": 32}) is None
-    assert parse_size("rows,cols", dimensions={"rows": 16, "cols": 8}) == 128
-    assert parse_size("n_rows,n_cols", ["#define n_cols 16\n", "#define n_rows 32\n"]) == 512
-    assert parse_size("rows,cols", [], dimensions={"rows": 16, "cols": 8}) == 128
+    assert parse_size(128).get() == 128
+    assert parse_size("16").get() == 16
+    assert parse_size("test").get() == 0
+    assert parse_size("n", ["#define n 1024\n"]).get() == 1024
+    assert parse_size("n,m", ["#define n 16\n", "#define m 32\n"]).get() == 512
+    assert parse_size("n", ["#define size 512\n"], {"n": 32}).get() == 32
+    assert parse_size("m", ["#define size 512\n"], {"n": 32}).get() == 0
+    assert parse_size("rows,cols", dimensions={"rows": 16, "cols": 8}).get() == 128
+    assert parse_size("n_rows,n_cols", ["#define n_cols 16\n", "#define n_rows 32\n"]).get() == 512
+    assert parse_size("rows,cols", [], dimensions={"rows": 16, "cols": 8}).get() == 128
 
 
 def test_wrap_timing():
@@ -272,8 +280,8 @@ def test_extract_directive_data():
 def test_allocate_signature_memory():
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)\n#pragma acc"
     data = extract_directive_data(code, Code(OpenACC(), Cxx()))
-    with raises(TypeError):
-        _ = allocate_signature_memory(data["vector_add"])
+    args = allocate_signature_memory(data["vector_add"])
+    assert args[3] == 0
     preprocessor = ["#define VECTOR_SIZE 1024\n"]
     args = allocate_signature_memory(data["vector_add"], preprocessor)
     assert type(args[0]) is np.ndarray
@@ -327,3 +335,8 @@ def test_add_present_openacc():
     code_cxx = "#pragma acc parallel num_gangs(32)\n\t#pragma acc loop\n\t//for loop\n"
     expected_cxx = "#pragma acc parallel num_gangs(32) present(array[:42])\n\t#pragma acc loop\n\t//for loop\n"
     assert add_present_openacc(code_cxx, acc_cxx, data, preprocessor, None) == expected_cxx
+    code_f90 = "!$acc parallel async num_workers(16)\n"
+    data = {"matrix": ["float*", "rows,cols"]}
+    preprocessor = ["#define cols 18\n", "#define rows 14\n"]
+    expected_f90 = "!$acc parallel async num_workers(16) present(matrix(:14,:18))\n"
+    assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == expected_f90

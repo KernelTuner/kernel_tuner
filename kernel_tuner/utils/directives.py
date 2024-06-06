@@ -48,6 +48,47 @@ class Code(object):
         self.language = lang
 
 
+class ArraySize:
+    """Size of an array"""
+
+    def __init__(self):
+        self.size = list()
+
+    def __iter__(self):
+        for i in self.size:
+            yield i
+
+    def __len__(self):
+        return len(self.size)
+
+    def clear(self):
+        self.size.clear()
+
+    def get(self) -> int:
+        length = len(self.size)
+        if length == 0:
+            return 0
+        elif length == 1:
+            return self.size[0]
+        else:
+            product = 1
+            for i in self.size:
+                product *= i
+            return product
+
+    def add(self, dim: int) -> None:
+        # Only allow adding valid dimensions
+        if dim >= 1:
+            self.size.append(dim)
+
+
+def fortran_md_size(size: ArraySize) -> list:
+    md_size = list()
+    for dim in size:
+        md_size.append(f":{dim}")
+    return md_size
+
+
 def is_openacc(directive: Directive) -> bool:
     """Check if a directive is OpenACC"""
     return isinstance(directive, OpenACC)
@@ -120,7 +161,7 @@ def openacc_directive_contains_data_clause(line: str) -> bool:
     return openacc_directive_contains_clause(line, data_clauses)
 
 
-def create_data_directive_openacc(name: str, size: int, lang: Language) -> str:
+def create_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
     """Create a data directive for a given language"""
     if is_cxx(lang):
         return create_data_directive_openacc_cxx(name, size)
@@ -129,17 +170,23 @@ def create_data_directive_openacc(name: str, size: int, lang: Language) -> str:
     return ""
 
 
-def create_data_directive_openacc_cxx(name: str, size: int) -> str:
+def create_data_directive_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create C++ OpenACC code to allocate and copy data"""
-    return f"#pragma acc enter data create({name}[:{size}])\n#pragma acc update device({name}[:{size}])\n"
+    return f"#pragma acc enter data create({name}[:{size.get()}])\n#pragma acc update device({name}[:{size.get()}])\n"
 
 
-def create_data_directive_openacc_fortran(name: str, size: int) -> str:
+def create_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create Fortran OpenACC code to allocate and copy data"""
-    return f"!$acc enter data create({name}(:{size}))\n!$acc update device({name}(:{size}))\n"
+    if len(size) == 1:
+        return f"!$acc enter data create({name}(:{size.get()}))\n!$acc update device({name}(:{size.get()}))\n"
+    else:
+        md_size = fortran_md_size(size)
+        return (
+            f"!$acc enter data create({name}({','.join(md_size)}))\n!$acc update device({name}({','.join(md_size)}))\n"
+        )
 
 
-def exit_data_directive_openacc(name: str, size: int, lang: Language) -> str:
+def exit_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
     """Create code to copy data back for a given language"""
     if is_cxx(lang):
         return exit_data_directive_openacc_cxx(name, size)
@@ -148,14 +195,18 @@ def exit_data_directive_openacc(name: str, size: int, lang: Language) -> str:
     return ""
 
 
-def exit_data_directive_openacc_cxx(name: str, size: int) -> str:
+def exit_data_directive_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create C++ OpenACC code to copy back data"""
-    return f"#pragma acc exit data copyout({name}[:{size}])\n"
+    return f"#pragma acc exit data copyout({name}[:{size.get()}])\n"
 
 
-def exit_data_directive_openacc_fortran(name: str, size: int) -> str:
+def exit_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create Fortran OpenACC code to copy back data"""
-    return f"!$acc exit data copyout({name}(:{size}))\n"
+    if len(size) == 1:
+        return f"!$acc exit data copyout({name}(:{size.get()}))\n"
+    else:
+        md_size = fortran_md_size(size)
+        return f"!$acc exit data copyout({name}({','.join(md_size)}))\n"
 
 
 def correct_kernel(kernel_name: str, line: str) -> bool:
@@ -165,7 +216,7 @@ def correct_kernel(kernel_name: str, line: str) -> bool:
 
 def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
     """Find the dimension of a directive defined value in the preprocessor"""
-    ret_size = None
+    ret_size = 0
     for line in preprocessor:
         if f"#define {dimension}" in line:
             try:
@@ -209,45 +260,43 @@ def extract_code(start: str, stop: str, code: str, langs: Code, kernel_name: str
     return sections
 
 
-def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) -> int:
+def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) -> ArraySize:
     """Converts an arbitrary object into an integer representing memory size"""
-    ret_size = None
+    ret_size = ArraySize()
     if type(size) is not int:
         try:
             # Try to convert the size to an integer
-            ret_size = int(size)
+            ret_size.add(int(size))
         except ValueError:
             # If size cannot be natively converted to an int, we try to derive it from the preprocessor
-            if preprocessor is not None:
-                try:
+            try:
+                if preprocessor is not None:
                     if "," in size:
-                        ret_size = 1
                         for dimension in size.split(","):
-                            ret_size *= find_size_in_preprocessor(dimension, preprocessor)
+                            ret_size.add(find_size_in_preprocessor(dimension, preprocessor))
                     else:
-                        ret_size = find_size_in_preprocessor(size, preprocessor)
-                except TypeError:
-                    # preprocessor is available but does not contain the dimensions
-                    pass
+                        ret_size.add(find_size_in_preprocessor(size, preprocessor))
+            except TypeError:
+                # At least one of the dimension cannot be derived from the preprocessor
+                pass
             # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
             if dimensions is not None:
                 if size in dimensions.keys():
                     try:
-                        ret_size = int(dimensions[size])
+                        ret_size.add(int(dimensions[size]))
                     except ValueError:
                         # User error, no mitigation
                         return ret_size
                 elif "," in size:
-                    ret_size = 1
                     for dimension in size.split(","):
                         try:
-                            ret_size *= int(dimensions[dimension])
+                            ret_size.add(int(dimensions[dimension]))
                         except ValueError:
                             # User error, no mitigation
-                            return None
+                            return ret_size
     else:
         # size is already an int. no need for conversion
-        ret_size = size
+        ret_size.add(size)
 
     return ret_size
 
@@ -297,8 +346,13 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
                 intro += create_data_directive_openacc_cxx(name, size)
                 outro += exit_data_directive_openacc_cxx(name, size)
             elif is_openacc(langs.directive) and is_fortran(langs.language):
-                intro += create_data_directive_openacc_fortran(name, size)
-                outro += exit_data_directive_openacc_fortran(name, size)
+                if "," in data[name][1]:
+                    # Multi dimensional
+                    pass
+                else:
+                    # One dimensional
+                    intro += create_data_directive_openacc_fortran(name, size)
+                    outro += exit_data_directive_openacc_fortran(name, size)
     return intro + code + outro
 
 
@@ -537,9 +591,9 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
         p_type = data[parameter][0]
         size = parse_size(data[parameter][1], preprocessor, user_dimensions)
         if "*" in p_type:
-            args.append(allocate_array(p_type, size))
+            args.append(allocate_array(p_type, size.get()))
         else:
-            args.append(allocate_scalar(p_type, size))
+            args.append(allocate_scalar(p_type, size.get()))
 
     return args
 
@@ -579,11 +633,15 @@ def add_present_openacc(
     return new_body
 
 
-def add_present_openacc_cxx(name: str, size: int) -> str:
+def add_present_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create present clause for C++ OpenACC directive"""
-    return f" present({name}[:{size}]) "
+    return f" present({name}[:{size.get()}]) "
 
 
-def add_present_openacc_fortran(name: str, size: int) -> str:
+def add_present_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create present clause for Fortran OpenACC directive"""
-    return f" present({name}(:{size})) "
+    if len(size) == 1:
+        return f" present({name}(:{size.get()})) "
+    else:
+        md_size = fortran_md_size(size)
+        return f" present({name}({','.join(md_size)})) "
