@@ -13,9 +13,6 @@ from functools import lru_cache as cache
 from os import PathLike
 from pathlib import Path
 from typing import cast, Any, Union, Optional, Dict, Iterable, Iterator
-from collections.abc import Mapping
-from functools import lru_cache as cache, cached_property
-from datetime import datetime
 
 import jsonschema
 from semver import Version
@@ -27,7 +24,6 @@ from .json_encoder import CacheLineEncoder
 from .file import read_cache, write_cache, append_cache_line
 from .versions import LATEST_VERSION, VERSIONS
 from .paths import get_schema_path
-from .versions import LATEST_VERSION
 
 
 class Cache:
@@ -521,6 +517,7 @@ class Cache:
         def __getattr__(self, name: str):
             """Accesses members of the dict as if they were attributes."""
             return self[name]
+
 
     @cached_property
     def device_name(self) -> str:
