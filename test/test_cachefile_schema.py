@@ -1,7 +1,11 @@
 import json
-from pathlib import Path
 from copy import deepcopy
+from pathlib import Path
 
+import jsonschema
+import pytest
+
+import kernel_tuner
 from kernel_tuner.cache.json import CacheFileJSON, CacheLineJSON
 from kernel_tuner.cache.cache import Cache
 import jsonschema
@@ -151,7 +155,23 @@ class TestCacheFileSchema:
             ("cache", []),
         ],
     )
-    def test_property_types__in_root(self, cache, is_invalid, key, value):
+    def test_property_types_invalid__in_root(self, cache, is_invalid, key, value):
+        cache[key] = value
+
+    @pytest.mark.parametrize(
+        "key,value",
+        [
+            ("schema_version", "1.0.0"),
+            ("device_name", "test_device"),
+            ("kernel_name", "test_kernel"),
+            ("problem_size", [100, 100]),
+            ("tune_params_keys", ["block_size_x"]),
+            ("tune_params", { "block_size_x": [128, 256, 512, 1024] }),
+            ("objective", "time"),
+            ("cache", {})
+        ],
+    )
+    def test_property_types_valid__in_root(self, cache, is_valid, key, value):
         cache[key] = value
 
     @pytest.mark.parametrize(
@@ -186,10 +206,10 @@ class TestCacheFileSchema:
             ("times", {}),
             ("times", ["x"]),
             ("compile_time", None),
-            ("verification_time", 2.5),
+            ("verification_time", True),
             ("benchmark_time", "Invalid"),
             ("GFLOP/s", False),
-            ("strategy_time", 100.001),
+            ("strategy_time", "123"),
             ("framework_time", "15"),
             ("timestamp", 42),
         ],
