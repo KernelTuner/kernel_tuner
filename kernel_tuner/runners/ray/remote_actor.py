@@ -6,6 +6,7 @@ from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.observers.register import RegisterObserver
+from kernel_tuner.util import get_gpu_id, get_gpu_type
 
 @ray.remote
 class RemoteActor():
@@ -25,7 +26,7 @@ class RemoteActor():
         self.cache_manager = cache_manager
         self.simulation_mode = simulation_mode
         self.runner = None
-        self.id = id
+        self.id = get_gpu_id(kernel_source.lang) if not simulation_mode else None
         self._reinitialize_observers(observers_type_and_arguments)
         
 
@@ -79,3 +80,7 @@ class RemoteActor():
         # the register observer needs dev to be initialized, that's why its done later
         if register_observer:
             self.observers.append(RegisterObserver(self.dev))
+
+    def get_gpu_type(self, lang):
+        print(f"DEBUG:actor get_gpu_type called", file=sys.stderr)
+        return get_gpu_type(lang)

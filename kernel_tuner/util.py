@@ -11,6 +11,8 @@ import warnings
 from inspect import signature
 from types import FunctionType
 from typing import Optional, Union
+import ray
+import subprocess
 
 import numpy as np
 from constraint import (
@@ -89,6 +91,9 @@ class SkippableFailure(Exception):
 
 class StopCriterionReached(Exception):
     """Exception thrown when a stop criterion has been reached."""
+
+class GPUTypeMismatchError(Exception):
+    """Exception thrown when GPU types are not the same in parallel execution"""
 
 
 try:
@@ -1277,28 +1282,26 @@ def cuda_error_check(error):
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
-def get_num_devices(lang, simulation_mode=False):
-    num_devices = 0
+def get_num_devices(simulation_mode=False):
+    resources = ray.cluster_resources()
     if simulation_mode:
-        num_devices = int(round(os.cpu_count() * 0.8)) # keep resources for the main process and other tasks
-    elif lang.upper() == "CUDA":
-        import pycuda.driver as cuda
-        cuda.init()
-        num_devices = cuda.Device.count()
-    elif lang.upper() == "CUPY":
-        import cupy
-        num_devices = cupy.cuda.runtime.getDeviceCount()
-    elif lang.upper() == "NVCUDA":
-        import pycuda.driver as cuda
-        cuda.init()
-        num_devices = cuda.Device.count()
-    elif lang.upper() == "OPENCL":
-        import pyopencl as cl
-        num_devices = sum(len(platform.get_devices()) for platform in cl.get_platforms())
-    elif lang.upper() == "HIP":
-        from pyhip import hip
-        num_devices = hip.hipGetDeviceCount()
+        num_devices = round(resources.get("CPU") * 0.8)
     else:
-        raise ValueError(f"Unsupported language: {lang}")
+        num_devices = resources.get("GPU")
+    print(f"DEBUG: {num_devices} Ray devices detected", file=sys.stderr)
+    return int(num_devices)
 
-    return num_devices
+def get_gpu_id(lang):
+    if lang == "CUDA" or lang == "CUPY" or lang == "NVCUDA":
+        gpu_id = os.environ.get("CUDA_VISIBLE_DEVICES") or os.environ.get("NVIDIA_VISIBLE_DEVICES") or "No GPU assigned"
+    else:
+        raise NotImplementedError("TODO: implement other languages")
+    return int(gpu_id)
+
+def get_gpu_type(lang):
+    gpu_id = get_gpu_id(lang)
+    if lang == "CUDA" or lang == "CUPY" or lang == "NVCUDA":
+        result = subprocess.run(['nvidia-smi', '--query-gpu=gpu_name', '--format=csv,noheader', '-i', str(gpu_id)], capture_output=True, text=True)
+        return result.stdout.strip()
+    else:
+        raise NotImplementedError("TODO: implement other languages")

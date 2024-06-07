@@ -10,7 +10,7 @@ import copy
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
 from kernel_tuner.runners.ray.remote_actor import RemoteActor
-from kernel_tuner.util import get_num_devices
+from kernel_tuner.util import get_num_devices, GPUTypeMismatchError
 from kernel_tuner.runners.ray.cache_manager import CacheManager
 from kernel_tuner.strategies.common import create_actor_on_device, initialize_ray
 
@@ -30,11 +30,15 @@ class ParallelRunner(Runner):
         self.cache_manager = cache_manager
         self.num_gpus = num_gpus
         self.actors = actors
-
-        if num_gpus is None:
-            self.num_gpus = get_num_devices(kernel_source.lang, simulation_mode=self.simulation_mode)
         
         initialize_ray()
+
+        if num_gpus is None:
+            self.num_gpus = get_num_devices(simulation_mode)
+
+        # So we know the number of GPUs in the cache file
+        if not simulation_mode:
+            self.dev.name = [self.dev.name] * self.num_gpus
 
     def get_environment(self, tuning_options):
         return self.dev.get_environment()
@@ -46,7 +50,11 @@ class ParallelRunner(Runner):
         # Create RemoteActor instances
         if self.actors is None:
             runner_attributes = [self.kernel_source, self.kernel_options, self.device_options, self.iterations, self.observers]
-            self.actors = [create_actor_on_device(*runner_attributes, id=id, cache_manager=self.cache_manager, simulation_mode=self.simulation_mode) for id in range(self.num_gpus)]
+            self.actors = [create_actor_on_device(*runner_attributes, id=_id, cache_manager=self.cache_manager, simulation_mode=self.simulation_mode) for _id in range(self.num_gpus)]
+        
+        # Check if all GPUs are of the same type
+        if not self.simulation_mode and not self._check_gpus_equals():
+            raise GPUTypeMismatchError(f"Different GPU types found") 
 
         if self.cache_manager is None:
             if cache_manager is None:
@@ -88,7 +96,6 @@ class ParallelRunner(Runner):
         all_results = []
         options = tuning_options.strategy_options
         max_feval = options["max_fevals"]
-        split_searchspace = options["split_searchspace"] if "split_searchspace" in options else False
         num_strategies = len(ensemble)
 
         # distributing feval to all strategies
@@ -99,10 +106,7 @@ class ParallelRunner(Runner):
             evaluations_per_strategy[i] += 1
 
         # Ensure we always have a list of search spaces
-        if split_searchspace:
-            searchspaces = searchspace.split_searchspace(num_strategies)
-        else:
-            searchspaces = [searchspace] * num_strategies
+        searchspaces = [searchspace] * num_strategies
         searchspaces = deque(searchspaces)
 
         # Start initial tasks for each actor
@@ -195,6 +199,16 @@ class ParallelRunner(Runner):
             simulated_times.append(tuning_options.simulated_time)
         #simulated_times = [tuning_options.simulated_time for tuning_options in tuning_options_list]
         return max(simulated_times)
+
+    def _check_gpus_equals(self):
+        gpu_types = []
+        for actor in self.actors:
+            gpu_types.append(ray.get(actor.get_gpu_type.remote(self.kernel_source.lang)))
+        if len(set(gpu_types)) == 1:
+            print(f"DEBUG: Running on {len(gpu_types)} {gpu_types[0]}", file=sys.stderr)
+            return True
+        else:
+            return False
 
     def clean_up_ray(self):
         if self.actors is not None:
