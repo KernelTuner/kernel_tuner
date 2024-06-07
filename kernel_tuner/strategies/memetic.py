@@ -89,10 +89,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         raise ValueError("Provided population based strategy is not a population based strategy")
     
     options["population"] = searchspace.get_random_sample(popsize)
-
-    num_gpus = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
-    check_num_devices(num_gpus, simulation_mode, runner)
+    
     initialize_ray()
+    num_gpus = get_num_devices(simulation_mode=simulation_mode)
+    check_num_devices(num_gpus, simulation_mode, runner)
     # Create cache manager, actors and parallel runner
     cache_manager = CacheManager.remote(tuning_options.cache, tuning_options.cachefile)
     num_actors = num_gpus if num_gpus < popsize else popsize
