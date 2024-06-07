@@ -48,7 +48,7 @@ class Code(object):
         self.language = lang
 
 
-class ArraySize:
+class ArraySize(object):
     """Size of an array"""
 
     def __init__(self):
@@ -83,6 +83,7 @@ class ArraySize:
 
 
 def fortran_md_size(size: ArraySize) -> list:
+    """Format a multidimensional size into the correct Fortran string"""
     md_size = list()
     for dim in size:
         md_size.append(f":{dim}")
