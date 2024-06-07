@@ -58,7 +58,7 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, a
     options = tuning_options.strategy_options
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     initialize_ray()
-    num_devices = get_num_devices(simulation_mode=simulation_mode)
+    num_devices = tuning_options['num_gpus'] if 'num_gpus' in tuning_options else get_num_devices(simulation_mode=simulation_mode)
     
     ensemble = options.get('ensemble', ["diff_evo", "diff_evo"])
     ensemble_size = len(ensemble)

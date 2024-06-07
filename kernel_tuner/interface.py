@@ -618,8 +618,8 @@ def tune_kernel(
         tuning_options["max_fevals"] = strategy_options["max_fevals"]
     if strategy_options and "time_limit" in strategy_options:
         tuning_options["time_limit"] = strategy_options["time_limit"]
-    if strategy_options and "ensemble" in strategy_options:
-        tuning_options["ensemble"] = strategy_options["ensemble"]
+    if strategy_options and "num_gpus" in strategy_options:
+        tuning_options["num_gpus"] = strategy_options["num_gpus"]
 
     logging.debug("tune_kernel called")
     logging.debug("kernel_options: %s", util.get_config_string(kernel_options))
@@ -661,7 +661,11 @@ def tune_kernel(
     # select the runner for this job based on input
     selected_runner = SimulationRunner if simulation_mode else (ParallelRunner if parallel_mode else SequentialRunner)
     tuning_options.simulated_time = 0
-    runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
+    if parallel_mode:
+         num_gpus = tuning_options['num_gpus'] if 'num_gpus' in tuning_options else None
+         runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers, num_gpus=num_gpus)
+    else:
+        runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
 
     # the user-specified function may or may not have an optional atol argument;
     # we normalize it so that it always accepts atol.
