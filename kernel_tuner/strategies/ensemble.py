@@ -57,11 +57,14 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, a
     clean_up = True if actors is None and cache_manager is None else False
     options = tuning_options.strategy_options
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
-    num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
+    initialize_ray()
+    num_devices = get_num_devices(simulation_mode=simulation_mode)
     
-    ensemble = options.get('ensemble', ["greedy_ils", "greedy_ils"])
+    ensemble = options.get('ensemble', ["diff_evo", "diff_evo"])
     ensemble_size = len(ensemble)
 
+    if 'bayes_opt' in ensemble: # All strategies start from a random sample except for BO
+        tuning_options.strategy_options["samplingmethod"] = 'random'
     tuning_options.strategy_options["max_fevals"] = options.get("max_fevals", 100 * ensemble_size)
 
     if num_devices < ensemble_size:
