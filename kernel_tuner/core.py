@@ -23,7 +23,7 @@ from kernel_tuner.backends.compiler import CompilerFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver
+from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
 
 try:
     import torch
@@ -314,11 +314,13 @@ class DeviceInterface(object):
             )
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
+        self.dev = dev
 
         # look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
         self.use_nvml = False
         self.continuous_observers = []
         self.output_observers = []
+        self.prologue_observers = []
         if observers:
             for obs in observers:
                 if isinstance(obs, NVMLObserver):
@@ -328,49 +330,61 @@ class DeviceInterface(object):
                     self.continuous_observers.append(obs.continuous_observer)
                 if isinstance(obs, OutputObserver):
                     self.output_observers.append(obs)
+                if isinstance(obs, PrologueObserver):
+                    self.prologue_observers.append(obs)
 
+        # Take list of observers from self.dev because Backends tend to add their own observer
+        self.benchmark_observers = [
+            obs for obs in self.dev.observers if not isinstance(obs, (ContinuousObserver, PrologueObserver))
+        ]
 
         self.iterations = iterations
 
         self.lang = lang
-        self.dev = dev
         self.units = dev.units
         self.name = dev.name
         self.max_threads = dev.max_threads
         if not quiet:
             print("Using: " + self.dev.name)
 
+    def benchmark_prologue(self, func, gpu_args, threads, grid, result):
+        """Benchmark prologue one kernel execution per PrologueObserver"""
+
+        for obs in self.prologue_observers:
+            self.dev.synchronize()
+            obs.before_start()
+            self.dev.run_kernel(func, gpu_args, threads, grid)
+            self.dev.synchronize()
+            obs.after_finish()
+            result.update(obs.get_results())
+
     def benchmark_default(self, func, gpu_args, threads, grid, result):
-        """Benchmark one kernel execution at a time."""
-        observers = [
-            obs for obs in self.dev.observers if not isinstance(obs, ContinuousObserver)
-        ]
+        """Benchmark one kernel execution for 'iterations' at a time"""
 
         self.dev.synchronize()
         for _ in range(self.iterations):
-            for obs in observers:
+            for obs in self.benchmark_observers:
                 obs.before_start()
             self.dev.synchronize()
             self.dev.start_event()
             self.dev.run_kernel(func, gpu_args, threads, grid)
             self.dev.stop_event()
-            for obs in observers:
+            for obs in self.benchmark_observers:
                 obs.after_start()
             while not self.dev.kernel_finished():
-                for obs in observers:
+                for obs in self.benchmark_observers:
                     obs.during()
                 time.sleep(1e-6)  # one microsecond
             self.dev.synchronize()
-            for obs in observers:
+            for obs in self.benchmark_observers:
                 obs.after_finish()
 
-        for obs in observers:
+        for obs in self.benchmark_observers:
             result.update(obs.get_results())
 
     def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
         """Benchmark continuously for at least 'duration' seconds"""
         iterations = int(np.ceil(duration / (result["time"] / 1000)))
-        # print(f"{iterations=} {(result['time']/1000)=}")
         self.dev.synchronize()
         for obs in self.continuous_observers:
             obs.before_start()
@@ -420,9 +434,8 @@ class DeviceInterface(object):
 
         result = {}
         try:
-            self.benchmark_default(
-                func, gpu_args, instance.threads, instance.grid, result
-            )
+            self.benchmark_prologue(func, gpu_args, instance.threads, instance.grid, result)
+            self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
 
             if self.continuous_observers:
                 duration = 1
