@@ -99,8 +99,8 @@ def test_wrap_timing():
 
 
 def test_wrap_data():
-    acc_cxx = Code(OpenACC(), Cxx())
-    acc_f90 = Code(OpenACC(), Fortran())
+    acc_cxx = DirectiveCode(OpenACC(), Cxx())
+    acc_f90 = DirectiveCode(OpenACC(), Fortran())
     code_cxx = "// this is a comment\n"
     code_f90 = "! this is a comment\n"
     data = {"array": ["int*", "size"]}
@@ -156,7 +156,7 @@ def test_extract_directive_code():
             for ( int i = 0; i < size; i++ ) {
                     c[i] = a[i] + b[i];
             }"""
-    acc_cxx = Code(OpenACC(), Cxx())
+    acc_cxx = DirectiveCode(OpenACC(), Cxx())
     returns = extract_directive_code(code, acc_cxx)
     assert len(returns) == 2
     assert expected_one in returns["initialize"]
@@ -179,7 +179,7 @@ def test_extract_directive_code():
       C(i) = A(i) + B(i)
     end do
     !$acc end parallel loop"""
-    returns = extract_directive_code(code, Code(OpenACC(), Fortran()), "vector_add")
+    returns = extract_directive_code(code, DirectiveCode(OpenACC(), Fortran()), "vector_add")
     assert len(returns) == 1
     assert expected in returns["vector_add"]
 
@@ -226,7 +226,7 @@ def test_extract_preprocessor():
 
 
 def test_extract_directive_signature():
-    acc_cxx = Code(OpenACC(), Cxx())
+    acc_cxx = DirectiveCode(OpenACC(), Cxx())
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)  \n#pragma acc"
     signatures = extract_directive_signature(code, acc_cxx)
     assert len(signatures) == 1
@@ -243,13 +243,13 @@ def test_extract_directive_signature():
     signatures = extract_directive_signature(code, acc_cxx, "vector_add_ext")
     assert len(signatures) == 0
     code = "!$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)\n!$acc"
-    signatures = extract_directive_signature(code, Code(OpenACC(), Fortran()))
+    signatures = extract_directive_signature(code, DirectiveCode(OpenACC(), Fortran()))
     assert len(signatures) == 1
     assert "function vector_add(A, B, C, n)" in signatures["vector_add"]
 
 
 def test_extract_directive_data():
-    acc_cxx = Code(OpenACC(), Cxx())
+    acc_cxx = DirectiveCode(OpenACC(), Cxx())
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)\n#pragma acc"
     data = extract_directive_data(code, acc_cxx)
     assert len(data) == 1
@@ -259,7 +259,7 @@ def test_extract_directive_data():
     assert "VECTOR_SIZE" in data["vector_add"]["size"]
     data = extract_directive_data(code, acc_cxx, "vector_add_double")
     assert len(data) == 0
-    acc_f90 = Code(OpenACC(), Fortran())
+    acc_f90 = DirectiveCode(OpenACC(), Fortran())
     code = "!$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)\n!$acc"
     data = extract_directive_data(code, acc_f90)
     assert len(data) == 1
@@ -279,7 +279,7 @@ def test_extract_directive_data():
 
 def test_allocate_signature_memory():
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)\n#pragma acc"
-    data = extract_directive_data(code, Code(OpenACC(), Cxx()))
+    data = extract_directive_data(code, DirectiveCode(OpenACC(), Cxx()))
     args = allocate_signature_memory(data["vector_add"])
     assert args[3] == 0
     preprocessor = ["#define VECTOR_SIZE 1024\n"]
@@ -299,7 +299,7 @@ def test_allocate_signature_memory():
     code = (
         "!$tuner start matrix_add A(float*:N_ROWS,N_COLS) B(float*:N_ROWS,N_COLS) nr(int:N_ROWS) nc(int:N_COLS)\n!$acc"
     )
-    data = extract_directive_data(code, Code(OpenACC(), Fortran()))
+    data = extract_directive_data(code, DirectiveCode(OpenACC(), Fortran()))
     preprocessor = ["#define N_ROWS 128\n", "#define N_COLS 512\n"]
     args = allocate_signature_memory(data["matrix_add"], preprocessor)
     assert args[2] == 128
@@ -315,13 +315,13 @@ def test_allocate_signature_memory():
 def test_extract_initialization_code():
     code_cpp = "#pragma tuner initialize\nconst int value = 42;\n#pragma tuner stop\n"
     code_f90 = "!$tuner initialize\ninteger :: value\n!$tuner stop\n"
-    assert extract_initialization_code(code_cpp, Code(OpenACC(), Cxx())) == "const int value = 42;\n"
-    assert extract_initialization_code(code_f90, Code(OpenACC(), Fortran())) == "integer :: value\n"
+    assert extract_initialization_code(code_cpp, DirectiveCode(OpenACC(), Cxx())) == "const int value = 42;\n"
+    assert extract_initialization_code(code_f90, DirectiveCode(OpenACC(), Fortran())) == "integer :: value\n"
 
 
 def test_add_present_openacc():
-    acc_cxx = Code(OpenACC(), Cxx())
-    acc_f90 = Code(OpenACC(), Fortran())
+    acc_cxx = DirectiveCode(OpenACC(), Cxx())
+    acc_f90 = DirectiveCode(OpenACC(), Fortran())
     code_cxx = "#pragma acc parallel num_gangs(32)\n#pragma acc\n"
     code_f90 = "!$acc parallel async num_workers(16)\n"
     data = {"array": ["int*", "size"]}

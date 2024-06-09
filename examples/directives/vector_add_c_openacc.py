@@ -3,7 +3,7 @@
 
 from kernel_tuner import tune_kernel
 from kernel_tuner.utils.directives import (
-    Code,
+    DirectiveCode,
     OpenACC,
     Cxx,
     extract_directive_signature,
@@ -40,7 +40,7 @@ int main(void) {
 """
 
 # Extract tunable directive
-app = Code(OpenACC(), Cxx())
+app = DirectiveCode(OpenACC(), Cxx())
 preprocessor = extract_preprocessor(code)
 signature = extract_directive_signature(code, app)
 body = extract_directive_code(code, app)
@@ -59,14 +59,16 @@ metrics["GB/s"] = lambda x: ((2 * 4 * len(args[0])) + (4 * len(args[0]))) / (x["
 
 answer = [None, None, args[0] + args[1], None]
 
-tune_kernel(
-    "vector_add",
-    kernel_string,
-    0,
-    args,
-    tune_params,
-    metrics=metrics,
-    answer=answer,
-    compiler_options=["-fast", "-acc=gpu"],
-    compiler="nvc++",
-)
+print(kernel_string)
+
+# tune_kernel(
+#     "vector_add",
+#     kernel_string,
+#     0,
+#     args,
+#     tune_params,
+#     metrics=metrics,
+#     answer=answer,
+#     compiler_options=["-fast", "-acc=gpu"],
+#     compiler="nvc++",
+# )
