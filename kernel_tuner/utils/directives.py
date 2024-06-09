@@ -24,6 +24,12 @@ class OpenACC(Directive):
 
     def get(self) -> str:
         return "openacc"
+    
+class OpenMP(Directive):
+    """Class to represent OpenMP"""
+
+    def get(self) -> str:
+        return "openmp"
 
 
 class Cxx(Language):
@@ -40,7 +46,7 @@ class Fortran(Language):
         return "fortran"
 
 
-class Code(object):
+class DirectiveCode(object):
     """Class to represent the directive and host code of the application"""
 
     def __init__(self, directive: Directive, lang: Language):
@@ -94,6 +100,9 @@ def is_openacc(directive: Directive) -> bool:
     """Check if a directive is OpenACC"""
     return isinstance(directive, OpenACC)
 
+def is_openmp(directive: Directive) -> bool:
+    """Check if a directive is OpenMP"""
+    return isinstance(directive, OpenMP)
 
 def is_cxx(lang: Language) -> bool:
     """Check if language is C++"""
@@ -142,25 +151,41 @@ def line_contains_openacc_parallel_directive_fortran(line: str) -> bool:
     """Check if a line of code contains a Fortran OpenACC parallel directive or not"""
     return line_contains(line, "!$acc parallel")
 
+def line_contains_openmp_directive(line: str, lang: Language) -> bool:
+    """Check if line contains an OpenMp parallel directive or not"""
+    if is_cxx(lang):
+        return line_contains_openmp_directive_cxx(line)
+    elif is_fortran(lang):
+        # TODO
+        return False
+    return False
+
+def line_contains_openmp_directive_cxx(line: str) -> bool:
+    """Check if a line of code contains any of a C++ OpenMP directives or not"""
+    clasuses = ['teams', 'distribute', 'parallel', 'simd']
+    return any(list(map(lambda x: line_contains(line, f'#pragma omp {x}'), clasuses)))
 
 def line_contains(line: str, target: str) -> bool:
     """Generic helper to check if a line contains the target"""
     return target in line
 
 
-def openacc_directive_contains_clause(line: str, clauses: list) -> bool:
+def directive_contains_clause(line: str, clauses: list) -> bool:
     """Check if an OpenACC directive contains one clause from a list"""
     for clause in clauses:
         if clause in line:
             return True
     return False
 
-
 def openacc_directive_contains_data_clause(line: str) -> bool:
     """Check if an OpenACC directive contains one data clause"""
     data_clauses = ["copy", "copyin", "copyout", "create", "no_create", "present", "device_ptr", "attach"]
-    return openacc_directive_contains_clause(line, data_clauses)
+    return directive_contains_clause(line, data_clauses)
 
+def openmp_directive_contains_data_clause(line: str) -> bool:
+    """Check if an OpenMP directive contains one data clause"""
+    data_clauses = ["target map", "target enter data", "target data map"]
+    return directive_contains_clause(line, data_clauses)
 
 def create_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
     """Create a data directive for a given language"""
@@ -175,6 +200,9 @@ def create_data_directive_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create C++ OpenACC code to allocate and copy data"""
     return f"#pragma acc enter data create({name}[:{size.get()}])\n#pragma acc update device({name}[:{size.get()}])\n"
 
+def create_data_directive_openmp_cxx(name: str, size: ArraySize) -> str:
+    """Create C++ OpenMP code to allocate and copy data"""
+    return f"#pragma omp target enter data map(to: {name}[0:{size.get()}])\n"
 
 def create_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create Fortran OpenACC code to allocate and copy data"""
@@ -200,6 +228,9 @@ def exit_data_directive_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create C++ OpenACC code to copy back data"""
     return f"#pragma acc exit data copyout({name}[:{size.get()}])\n"
 
+def exit_data_directive_openmp_cxx(name: str, size: ArraySize) -> str:
+    """Create C++ OpenMP code to copy back data"""
+    return f"#pragma omp target exit data map(from: {name}[0:{size.get()}])\n"
 
 def exit_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create Fortran OpenACC code to copy back data"""
@@ -228,7 +259,7 @@ def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
     return ret_size
 
 
-def extract_code(start: str, stop: str, code: str, langs: Code, kernel_name: str = None) -> dict:
+def extract_code(start: str, stop: str, code: str, directive_code: DirectiveCode, kernel_name: str = None) -> dict:
     """Extract an arbitrary section of code"""
     found_section = False
     sections = dict()
@@ -250,9 +281,9 @@ def extract_code(start: str, stop: str, code: str, langs: Code, kernel_name: str
                 if kernel_name is None or correct_kernel(kernel_name, line):
                     found_section = True
                     try:
-                        if is_cxx(langs.language):
+                        if is_cxx(directive_code.language):
                             name = line.strip().split(" ")[3]
-                        elif is_fortran(langs.language):
+                        elif is_fortran(directive_code.language):
                             name = line.strip().split(" ")[2]
                     except IndexError:
                         name = f"init_{init_found}"
@@ -336,49 +367,65 @@ def end_timing_cxx(code: str) -> str:
     return code + "\nreturn elapsed_time.count();\n"
 
 
-def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
+def wrap_data(code: str, directive_code: DirectiveCode, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
+    if(is_openacc(directive_code.directive)):
+        return wrap_data_openacc(code, directive_code, data, preprocessor, user_dimensions)
+    elif(is_openmp(directive_code.directive)):
+        return wrap_data_openmp(code, directive_code, data, preprocessor, user_dimensions)
+
+def wrap_data_openacc(code: str, directive_code: DirectiveCode, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
     """Insert data directives before and after the timed code"""
     intro = str()
     outro = str()
     for name in data.keys():
         if "*" in data[name][0]:
             size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
-            if is_openacc(langs.directive) and is_cxx(langs.language):
+            if is_cxx(directive_code.language):
                 intro += create_data_directive_openacc_cxx(name, size)
                 outro += exit_data_directive_openacc_cxx(name, size)
-            elif is_openacc(langs.directive) and is_fortran(langs.language):
-                if "," in data[name][1]:
-                    # Multi dimensional
-                    pass
-                else:
-                    # One dimensional
-                    intro += create_data_directive_openacc_fortran(name, size)
-                    outro += exit_data_directive_openacc_fortran(name, size)
+            elif is_fortran(directive_code.language):
+                intro += create_data_directive_openacc_fortran(name, size)
+                outro += exit_data_directive_openacc_fortran(name, size)
+    return intro + code + outro
+
+def wrap_data_openmp(code: str, directive_code: DirectiveCode, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
+    """Insert data directives before and after the timed code"""
+    intro = str()
+    outro = str()
+    for name in data.keys():
+        if "*" in data[name][0]:
+            size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
+            if is_cxx(directive_code.language):
+                intro += create_data_directive_openmp_cxx(name, size)
+                outro += exit_data_directive_openmp_cxx(name, size)
+            # elif is_fortran(langs.language):
+            #     intro += create_data_directive_openacc_fortran(name, size)
+            #     outro += exit_data_directive_openacc_fortran(name, size)
     return intro + code + outro
 
 
-def extract_directive_code(code: str, langs: Code, kernel_name: str = None) -> dict:
+def extract_directive_code(code: str, directive_code: DirectiveCode, kernel_name: str = None) -> dict:
     """Extract explicitly marked directive sections from code"""
-    if is_cxx(langs.language):
+    if is_cxx(directive_code.language):
         start_string = "#pragma tuner start"
         end_string = "#pragma tuner stop"
-    elif is_fortran(langs.language):
+    elif is_fortran(directive_code.language):
         start_string = "!$tuner start"
         end_string = "!$tuner stop"
 
-    return extract_code(start_string, end_string, code, langs, kernel_name)
+    return extract_code(start_string, end_string, code, directive_code, kernel_name)
 
 
-def extract_initialization_code(code: str, langs: Code) -> str:
+def extract_initialization_code(code: str, directive_code: DirectiveCode) -> str:
     """Extract the initialization section from code"""
-    if is_cxx(langs.language):
+    if is_cxx(directive_code.language):
         start_string = "#pragma tuner initialize"
         end_string = "#pragma tuner stop"
-    elif is_fortran(langs.language):
+    elif is_fortran(directive_code.language):
         start_string = "!$tuner initialize"
         end_string = "!$tuner stop"
 
-    init_code = extract_code(start_string, end_string, code, langs)
+    init_code = extract_code(start_string, end_string, code, directive_code)
     if len(init_code) >= 1:
         return "\n".join(init_code.values()) + "\n"
     else:
@@ -403,12 +450,12 @@ def format_argument_fortran(p_type: str, p_size: int, p_name: str) -> str:
     return argument
 
 
-def extract_directive_signature(code: str, langs: Code, kernel_name: str = None) -> dict:
+def extract_directive_signature(code: str, directive_code: DirectiveCode, kernel_name: str = None) -> dict:
     """Extract the user defined signature for directive sections"""
 
-    if is_cxx(langs.language):
+    if is_cxx(directive_code.language):
         start_string = "#pragma tuner start"
-    elif is_fortran(langs.language):
+    elif is_fortran(directive_code.language):
         start_string = "!$tuner start"
     signatures = dict()
 
@@ -416,10 +463,10 @@ def extract_directive_signature(code: str, langs: Code, kernel_name: str = None)
         if start_string in line:
             if kernel_name is None or correct_kernel(kernel_name, line):
                 tmp_string = line.strip().split(" ")
-                if is_cxx(langs.language):
+                if is_cxx(directive_code.language):
                     name = tmp_string[3]
                     tmp_string = tmp_string[4:]
-                elif is_fortran(langs.language):
+                elif is_fortran(directive_code.language):
                     name = tmp_string[2]
                     tmp_string = tmp_string[3:]
                 params = list()
@@ -432,13 +479,13 @@ def extract_directive_signature(code: str, langs: Code, kernel_name: str = None)
                     p_type = p_type.split(":")[0]
                     if "*" in p_type:
                         p_type = p_type.replace("*", " * restrict")
-                    if is_cxx(langs.language):
+                    if is_cxx(directive_code.language):
                         params.append(f"{p_type} {p_name}")
-                    elif is_fortran(langs.language):
+                    elif is_fortran(directive_code.language):
                         params.append(p_name)
-                if is_cxx(langs.language):
+                if is_cxx(directive_code.language):
                     signatures[name] = f"float {name}({', '.join(params)})"
-                elif is_fortran(langs.language):
+                elif is_fortran(directive_code.language):
                     signatures[
                         name
                     ] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\nimplicit none\n"
@@ -460,22 +507,22 @@ def extract_directive_signature(code: str, langs: Code, kernel_name: str = None)
     return signatures
 
 
-def extract_directive_data(code: str, langs: Code, kernel_name: str = None) -> dict:
+def extract_directive_data(code: str, directive_code: DirectiveCode, kernel_name: str = None) -> dict:
     """Extract the data used in the directive section"""
 
-    if is_cxx(langs.language):
+    if is_cxx(directive_code.language):
         start_string = "#pragma tuner start"
-    elif is_fortran(langs.language):
+    elif is_fortran(directive_code.language):
         start_string = "!$tuner start"
     data = dict()
 
     for line in code.replace("\\\n", "").split("\n"):
         if start_string in line:
             if kernel_name is None or correct_kernel(kernel_name, line):
-                if is_cxx(langs.language):
+                if is_cxx(directive_code.language):
                     name = line.strip().split(" ")[3]
                     tmp_string = line.strip().split(" ")[4:]
-                elif is_fortran(langs.language):
+                elif is_fortran(directive_code.language):
                     name = line.strip().split(" ")[2]
                     tmp_string = line.strip().split(" ")[3:]
                 data[name] = dict()
@@ -510,7 +557,7 @@ def generate_directive_function(
     preprocessor: list,
     signature: str,
     body: str,
-    langs: Code,
+    directive_code: DirectiveCode,
     data: dict = None,
     initialization: str = "",
     user_dimensions: dict = None,
@@ -522,29 +569,29 @@ def generate_directive_function(
         # add user dimensions to preprocessor
         for key, value in user_dimensions.items():
             code += f"#define {key} {value}\n"
-    if is_cxx(langs.language) and "#include <chrono>" not in preprocessor:
+    if is_cxx(directive_code.language) and "#include <chrono>" not in preprocessor:
         code += "\n#include <chrono>\n"
-    if is_cxx(langs.language):
+    if is_cxx(directive_code.language):
         code += 'extern "C" ' + signature + "{\n"
-    elif is_fortran(langs.language):
+    elif is_fortran(directive_code.language):
         code += "\nmodule kt\nuse iso_c_binding\ncontains\n"
         code += "\n" + signature
     if len(initialization) > 1:
         code += initialization + "\n"
     if data is not None:
-        body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
-    if is_cxx(langs.language):
+        body = process_data_on_device(body, directive_code, data, preprocessor, user_dimensions)
+    if is_cxx(directive_code.language):
         body = start_timing_cxx(body)
         if data is not None:
-            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
+            code += wrap_data(body + "\n", directive_code, data, preprocessor, user_dimensions)
         else:
             code += body
         code = end_timing_cxx(code)
         code += "\n}"
-    elif is_fortran(langs.language):
-        body = wrap_timing(body, langs.language)
+    elif is_fortran(directive_code.language):
+        body = wrap_timing(body, directive_code.language)
         if data is not None:
-            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
+            code += wrap_data(body + "\n", directive_code, data, preprocessor, user_dimensions)
         else:
             code += body
         name = signature.split(" ")[1].split("(")[0]
@@ -606,13 +653,35 @@ def add_new_line(line: str) -> str:
     return line
 
 
+def process_data_on_device(
+        code: str, directive_code: DirectiveCode, data: dict, preprocessor: list = None, user_dimensions: dict = None
+) -> str:
+    if(is_openacc(directive_code.directive)):
+        return add_present_openacc(code, directive_code, data, preprocessor, user_dimensions)
+    elif(is_openmp(directive_code.directive)):
+        return add_target_openmp(code, directive_code, data, preprocessor, user_dimensions)
+
+
+def add_target_openmp(code: str, directive_code: DirectiveCode, data: dict, preprocessor: list = None, user_dimensions: dict = None):
+    """Add the present clause to OpenACC directive"""
+    new_body = ""
+    for line in code.replace("\\\n", "").split("\n"):
+        if line_contains_openmp_directive(line, directive_code.language):
+            parts = line.split('#pragma omp')
+            new_line = f"{parts[0]}#pragma omp target {parts[1]}"
+            new_body += new_line
+        else:
+            new_body += line
+        new_body = add_new_line(new_body)
+    return new_body
+
 def add_present_openacc(
-    code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None
+    code: str, directive_code: DirectiveCode, data: dict, preprocessor: list = None, user_dimensions: dict = None
 ) -> str:
     """Add the present clause to OpenACC directive"""
     new_body = ""
     for line in code.replace("\\\n", "").split("\n"):
-        if not line_contains_openacc_parallel_directive(line, langs.language):
+        if not line_contains_openacc_parallel_directive(line, directive_code.language):
             new_body += line
         else:
             # The line contains an OpenACC directive
@@ -625,9 +694,9 @@ def add_present_openacc(
                 for name in data.keys():
                     if "*" in data[name][0]:
                         size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
-                        if is_cxx(langs.language):
+                        if is_cxx(directive_code.language):
                             present_clause += add_present_openacc_cxx(name, size)
-                        elif is_fortran(langs.language):
+                        elif is_fortran(directive_code.language):
                             present_clause += add_present_openacc_fortran(name, size)
                 new_body += new_line + present_clause.rstrip() + "\n"
         new_body = add_new_line(new_body)
@@ -638,6 +707,9 @@ def add_present_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create present clause for C++ OpenACC directive"""
     return f" present({name}[:{size.get()}]) "
 
+def add_target_openmp_cxx(name: str, size: ArraySize) -> str:
+    """Create present clause for C++ OpenMP directive"""
+    return f" omp target enter data map(to: {name}[0:{size.get()}]) "
 
 def add_present_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create present clause for Fortran OpenACC directive"""

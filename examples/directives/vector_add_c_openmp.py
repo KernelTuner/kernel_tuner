@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-"""This is a simple example for tuning Fortran OpenACC code with the kernel tuner"""
+"""This is a simple example for tuning C++ OpenACC code with the kernel tuner"""
 
 from kernel_tuner import tune_kernel
 from kernel_tuner.utils.directives import (
     DirectiveCode,
-    OpenACC,
-    Fortran,
+    OpenMP,
+    Cxx,
     extract_directive_signature,
     extract_directive_code,
     extract_preprocessor,
@@ -15,27 +15,23 @@ from kernel_tuner.utils.directives import (
 )
 
 code = """
-#define VECTOR_SIZE 1000000
+#include <stdlib.h>
+#include <omp.h>
 
-subroutine vector_add(A, B, C, n)
-    use iso_c_binding
-    real (c_float), intent(out), dimension(VECTOR_SIZE) :: C
-    real (c_float), intent(in), dimension(VECTOR_SIZE) :: A, B
-    integer (c_int), intent(in) :: n
+#define VECTOR_SIZE 100000000
 
-    !$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE) i(int:VECTOR_SIZE)
-    !$acc parallel loop vector_length(nthreads)
-    do i = 1, n
-      C(i) = A(i) + B(i)
-    end do
-    !$acc end parallel loop
-    !$tuner stop
-
-end subroutine vector_add
+void vector_add(float *a, float *b, float *c) {
+	#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)
+	#pragma omp parallel for num_threads(nthreads)
+	for ( int i = 0; i < size; i++ ) {
+		c[i] = a[i] + b[i];
+	}
+	#pragma tuner stop
+}
 """
 
 # Extract tunable directive
-app = DirectiveCode(OpenACC(), Fortran())
+app = DirectiveCode(OpenMP(), Cxx())
 preprocessor = extract_preprocessor(code)
 signature = extract_directive_signature(code, app)
 body = extract_directive_code(code, app)
@@ -48,11 +44,18 @@ kernel_string = generate_directive_function(
 )
 
 tune_params = dict()
-tune_params["nthreads"] = [32 * i for i in range(1, 33)]
+tune_params["nthreads"] = [16, 32]
 metrics = dict()
 metrics["GB/s"] = lambda x: ((2 * 4 * len(args[0])) + (4 * len(args[0]))) / (x["time"] / 10**3) / 10**9
 
-answer = [None, None, args[0] + args[1], None, None]
+# answer = [None, None, args[0] + args[1], None]
+
+# print(preprocessor)
+# print(signature)
+# print(body)
+# print(data)
+# print(args)
+print(kernel_string)
 
 tune_kernel(
     "vector_add",
@@ -61,7 +64,6 @@ tune_kernel(
     args,
     tune_params,
     metrics=metrics,
-    answer=answer,
-    compiler_options=["-fast", "-acc=gpu"],
-    compiler="nvfortran",
+    compiler_options=["-fopenmp", "-mp=gpu"],
+    compiler="nvc++",
 )
