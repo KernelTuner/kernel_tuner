@@ -125,7 +125,7 @@ class SequentialRunner(Runner):
         return results
 
     def config_in_cache(self, x_int, tuning_options):
-        if self.cache_manager:
+        if self.cache_manager and tuning_options.strategy_options['check_and_retrieve']:
             return ray.get(self.cache_manager.check_and_retrieve.remote(x_int))
         elif tuning_options.cache and x_int in tuning_options.cache:
             return tuning_options.cache[x_int]

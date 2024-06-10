@@ -66,6 +66,7 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, a
     if 'bayes_opt' in ensemble: # All strategies start from a random sample except for BO
         tuning_options.strategy_options["samplingmethod"] = 'random'
     tuning_options.strategy_options["max_fevals"] = options.get("max_fevals", 100 * ensemble_size)
+    tuning_options.strategy_options['check_and_retrieve'] = True
 
     if num_devices < ensemble_size:
         warnings.warn("Number of devices is less than the number of strategies in the ensemble. Some strategies will wait until devices are available.", UserWarning)
