@@ -82,5 +82,4 @@ class RemoteActor():
             self.observers.append(RegisterObserver(self.dev))
 
     def get_gpu_type(self, lang):
-        print(f"DEBUG:actor get_gpu_type called", file=sys.stderr)
         return get_gpu_type(lang)
