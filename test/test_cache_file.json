@@ -1,5 +1,5 @@
 {
-    "schema_version": "1.0.1",
+    "schema_version": "1.0.0",
     "device_name": "NVIDIA RTX A4000",
     "kernel_name": "vector_add",
     "problem_size": 100,
