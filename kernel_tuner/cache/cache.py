@@ -12,28 +12,30 @@ from functools import cached_property
 from functools import lru_cache as cache
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import cast, Any, Union, Optional, Dict, Iterable, Iterator
 
 import jsonschema
 from semver import Version
 
 import kernel_tuner.util as util
-
-from .file import append_cache_line, read_cache, write_cache
+from .convert import convert_cache
 from .json import CacheFileJSON, CacheLineJSON
 from .json_encoder import CacheLineEncoder
+from .file import read_cache, write_cache, append_cache_line
+from .versions import LATEST_VERSION, VERSIONS
 from .paths import get_schema_path
-from .versions import LATEST_VERSION
 
 
 class Cache:
     """Writes and reads cache files.
 
-    Cache files can be read using `Cache.read()` and created using `Cache.create()`. In both cases, a `Cache` instance
-    is returned. This object simultaneously keeps track of the file, as well as its json contents in an efficient
-    manner. Note that the cache file should not be changed during the Cache instance's lifetime, as the instance's state
-    would in that case not correspond to the file's JSON content. To automatically detect changes in the Cache instance,
-    one could use os.path.getmtime() in order to detect whenever the cache file changes.
+    Cache files can be opened using ``Cache.open()`` and created using ``Cache.create()``. In both cases, a ``Cache``
+    instance is returned. This object simultaneously keeps track of the file, as well as its json contents in an
+    efficient manner. To read cache files of any old version, use `Cache.read()`, which returns a ``Cache`` instance
+    which which won't be able to be mutated. Note that the cache file should not be changed during the Cache instance's
+    lifetime, as the instance's state would in that case not correspond to the file's JSON content. To automatically
+    detect changes in the Cache instance, one could use os.path.getmtime() in order to detect whenever the cache file
+    changes.
 
     The Cache class furthermore contains an easily usable interface for reading cache file properties, e.g.
     `Cache.kernel_name` or `Cache.version`, and an easily usable interface for matching cache lines from their
@@ -84,6 +86,8 @@ class Cache:
         """Creates a new cache file.
 
         For parameters of type Sequence, a list or tuple should be given as argument.
+
+        Returns a Cache instance of which the lines are modifiable.
         """
         if not isinstance(device_name, str):
             raise ValueError("Argument device_name should be a string")
@@ -106,7 +110,7 @@ class Cache:
         if len(cls.RESERVED_PARAM_KEYS & set(tune_params_keys)) > 0:
             raise ValueError("Found a reserved key in tune_params_keys")
 
-        cache_json = {
+        cache_json: CacheFileJSON = {
             "schema_version": str(LATEST_VERSION),
             "device_name": device_name,
             "kernel_name": kernel_name,
@@ -117,28 +121,76 @@ class Cache:
             "cache": {},
         }
         cls.validate_json(cache_json)  # NOTE: Validate the cache just to be sure
-        write_cache(cache_json, filename)
-        return cls(filename, cache_json)  # type: ignore
+        write_cache(cast(dict, cache_json), filename)
+        return cls(filename, cache_json, readonly=False)
+
+    @classmethod
+    def open(cls, filename: PathLike):
+        """Opens an existing cache file. Returns a Cache instance with modifiable lines.
+
+        This cache file should have the latest version
+        """
+        cache_json = read_cache(filename)
+        assert Version.parse(cache_json["schema_version"]) == LATEST_VERSION, "Cache file is not of the latest version."
+        cls.validate_json(cache_json)
+        return cls(filename, cache_json, readonly=False)
 
     @classmethod
     def read(cls, filename: PathLike):
-        """Reads an existing cache file."""
+        """Loads an existing cache. Returns a Cache instance which can only be read.
+
+        If the cache file does not have the latest version, then it will be read after virtually converting it to the
+        latest version. The file in this case is kept the same.
+        """
+        cache_json = read_cache(filename)
+        # If the cache is versioned, then validate it
+        if "schema_version" in cache_json:
+            cls.validate_json(cache_json)
+
+        cache_json = convert_cache(cache_json)
+        cls.validate_json(cache_json)  # NOTE: Validate the cache just to be sure
+        return cls(filename, cache_json, readonly=True)
+
+    @classmethod
+    def validate(cls, filename: PathLike):
+        """Validates a cache file and raises an error if invalid."""
         cache_json = read_cache(filename)
         cls.validate_json(cache_json)
-        return cls(filename, cache_json)
 
     @classmethod
     def validate_json(cls, cache_json: Any):
         """Validates cache json."""
-        schema_path = get_schema_path(cache_json["schema_version"])
-        with open(schema_path, "r") as file:
-            schema = json.load(file)
-        jsonschema.validate(instance=cache_json, schema=schema)
+        if "schema_version" not in cache_json:
+            raise jsonschema.ValidationError("Key 'schema_version' is not present in cache data")
+        schema_version = cache_json["schema_version"]
+        cls.__validate_json_schema_version(schema_version)
+        schema = cls.__get_schema_for_version(schema_version)
+        format_checker = _get_format_checker()
+        jsonschema.validate(instance=cache_json, schema=schema, format_checker=format_checker)
 
-    def __init__(self, filename: PathLike, cache_json: CacheFileJSON):
-        """Inits a cache file instance, given that the file referred to by ``filename`` contains data ``cache_json``."""
+    @classmethod
+    def __validate_json_schema_version(cls, version: str):
+        try:
+            if Version.parse(version) in VERSIONS:
+                return
+        except (ValueError, TypeError):
+            pass
+        raise jsonschema.ValidationError(f"Invalid version {repr(version)} found.")
+
+    @classmethod
+    def __get_schema_for_version(cls, version: str):
+        schema_path = get_schema_path(version)
+        with open(schema_path, "r") as file:
+            return json.load(file)
+
+    def __init__(self, filename: PathLike, cache_json: CacheFileJSON, *, readonly: bool):
+        """Inits a cache file instance, given that the file referred to by ``filename`` contains data ``cache_json``.
+
+        Argument ``cache_json`` is a cache dictionary expected to have the latest cache version.
+        """
         self._filename = Path(filename)
         self._cache_json = cache_json
+        self._readonly = readonly
 
     @cached_property
     def filepath(self) -> Path:
@@ -151,9 +203,12 @@ class Cache:
         return Version.parse(self._cache_json["schema_version"])
 
     @cached_property
-    def lines(self) -> Lines:
+    def lines(self) -> Union[Lines, ReadableLines]:
         """List of cache lines."""
-        return self.Lines(self, self._filename, self._cache_json)
+        if self._readonly:
+            return self.ReadableLines(self, self._filename, self._cache_json)
+        else:
+            return self.Lines(self, self._filename, self._cache_json)
 
     class Lines(Mapping):
         """Cache lines in a cache file.
@@ -187,19 +242,19 @@ class Cache:
             self._filename = filename
             self._lines = cache_json["cache"]
 
-        def __getitem__(self, line_id: str):
+        def __getitem__(self, line_id: str) -> Cache.Line:
             """Returns a cache line given the parameters (in order)."""
-            return self._lines[line_id]
+            return Cache.Line(self._cache, self._lines[line_id])
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[str]:
             """Returns an iterator over the keys of the cache lines."""
             return iter(self._lines)
 
-        def __len__(self):
+        def __len__(self) -> int:
             """Returns the number of cache lines."""
             return len(self._lines)
 
-        def __contains__(self, line_id):
+        def __contains__(self, line_id) -> bool:
             """Returns whether there exists a cache line with id ``line_id``."""
             return line_id in self._lines
 
@@ -216,7 +271,7 @@ class Cache:
             times: Optional[list[float]] = None,
             GFLOP_per_s: Optional[float] = None,
             **tune_params,
-        ):
+        ) -> None:
             """Appends a cache line to the cache lines."""
             if not (isinstance(time, float) or isinstance(time, util.ErrorConfig)):
                 raise ValueError("Argument time should be a float or an ErrorConfig")
@@ -243,6 +298,10 @@ class Cache:
             if GFLOP_per_s is not None and not isinstance(GFLOP_per_s, float):
                 raise ValueError("Argument GFLOP_per_s should be a float or None")
 
+            line_id = self.__get_line_id_from_tune_params_dict(tune_params)
+            if line_id in self._lines:
+                raise KeyError("Line with given tunable parameters already exists")
+
             line = self.__get_line_json_object(
                 time,
                 compile_time,
@@ -255,12 +314,10 @@ class Cache:
                 GFLOP_per_s,
                 tune_params,
             )
-
-            line_id = self.__get_line_id_from_tune_params_dict(tune_params)
             self._lines[line_id] = line
             append_cache_line(line_id, line, self._filename)
 
-        def get(self, line_id: Optional[str] = None, default=None, **params):
+        def get(self, line_id: Optional[str] = None, default=None, **params) -> Union[Cache.Line, list[Cache.Line]]:
             """Returns a cache line corresponding with ``line_id``.
 
             If the line_id is given and not None, the line corresponding to ``line_id`` is returned. Otherwise the
@@ -278,7 +335,7 @@ class Cache:
             If ``line_id`` is none and no parameters are defined, a list of all the lines is returned.
             """
             if line_id is None and len(params) == 0:
-                return list(self._lines.values())
+                return list(Cache.Line(self._cache, line) for line in self._lines.values())
             if not all(key in self._cache.tune_params_keys for key in params):
                 raise ValueError("The keys in the parameters should be in `tune_params_keys`")
 
@@ -301,8 +358,8 @@ class Cache:
                 return default
             return Cache.Line(self._cache, line_json)
 
-        def __get_line_id(self, param_list: list[Any]):
-            return ",".join(map(str, param_list))
+        def __get_line_id(self, param_list: list[Any]) -> str:
+            return json.dumps(param_list, separators=(",", ":"))[1:-1]
 
         def __get_matching_line_ids(self, params: dict[str, Any]):
             param_lists: list[list[Any]] = [[]]
@@ -361,6 +418,13 @@ class Cache:
             line = {**line, **tune_params}
 
             return line
+
+    class ReadableLines(Lines):
+        """Cache lines in a readonly cache file."""
+
+        def append(*args, **kwargs):
+            """Dummy method that does nothing."""
+            pass
 
     class Line(Mapping):
         """Cache line in a cache file.
@@ -454,6 +518,10 @@ class Cache:
             """Accesses members of the dict as if they were attributes."""
             return self[name]
 
+        def todict(self):
+            """Returns the cache line as a dictionary."""
+            return self._line.copy()
+
     @cached_property
     def device_name(self) -> str:
         """Name of the device."""
@@ -488,3 +556,19 @@ class Cache:
 @cache
 def _get_cache_line_json_encoder():
     return CacheLineEncoder()
+
+
+@cache
+def _get_format_checker():
+    """Returns a JSON format checker instance."""
+    format_checker = jsonschema.FormatChecker()
+
+    @format_checker.checks("date-time")
+    def _check_iso_datetime(instance):
+        try:
+            datetime.fromisoformat(instance)
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    return format_checker

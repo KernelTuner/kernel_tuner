@@ -35,8 +35,9 @@ DEFAULT_VALUES = {
 
 def convert_cache_file(filestr : PathLike, 
                        conversion_functions=None,
-                       versions=None):
-    """Convert a cache file to the newest version.
+                       versions=None,
+                       target_version=None):
+    """Convert a cache file to the latest/later version.
 
     Parameters:
         ``filestr`` is the name of the cachefile.
@@ -45,6 +46,46 @@ def convert_cache_file(filestr : PathLike,
         mapping a version to a corresponding conversion function.
 
         ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+
+        ``target`` is the version that the cache should be converted to. By
+        default it is the latest version in ``versions``.
+
+    Raises:
+        ``ValueError`` if:
+
+            given cachefile has no "schema_version" field and can not be converted
+            to version 1.0.0,
+
+            the cachefile's version is higher than the newest version,
+
+            the cachefile's version is not a real version.
+    """
+    # Load cache from file
+    cache = read_cache(filestr)
+
+    # Convert cache
+    cache = convert_cache(cache, conversion_functions, versions, target_version)
+
+    # Update cache file
+    write_cache(cache, filestr)
+
+
+def convert_cache(cache : dict, 
+                  conversion_functions=None,
+                  versions=None,
+                  target_version=None) -> dict:
+    """Convert a cache dict to the latest/later version.
+
+    Parameters:
+        ``cache`` is the cache dictionary
+
+        ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
+        mapping a version to a corresponding conversion function.
+
+        ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+
+        ``target`` is the version that the cache should be converted to. By
+        default it is the latest version in ``versions``.
 
     Raises:
         ``ValueError`` if:
@@ -60,16 +101,15 @@ def convert_cache_file(filestr : PathLike,
         conversion_functions = CONVERSION_FUNCTIONS
 
     if versions is None:
-        versions: list[str] = VERSIONS
+        versions = list(map(str, VERSIONS))
 
-    # Load cache
-    cache = read_cache(filestr)
+    if target_version is None:
+        target_version = versions[-1]
 
     if "schema_version" not in cache:
         cache = unversioned_convert(cache, CACHE_SCHEMAS_DIR)
     
     version = cache["schema_version"]
-    target_version = versions[-1]
 
     if semver.VersionInfo.parse(version).compare(target_version) > 0:
         raise ValueError(f"Target version ({target_version}) should not be "
@@ -78,6 +118,10 @@ def convert_cache_file(filestr : PathLike,
     if version not in versions:
         raise ValueError(f"Version ({version}) should be a real "
                          f"existing version")
+    
+    if target_version not in versions:
+        raise ValueError(f"Target version ({target_version}) should be "
+                         f"a real existing version")
     
     # Main convert loop
     while version != target_version:
@@ -89,8 +133,7 @@ def convert_cache_file(filestr : PathLike,
 
         version = cache["schema_version"]
 
-    # Update cache file
-    write_cache(cache, filestr)
+    return cache
 
 
 def default_convert(cache       : dict,

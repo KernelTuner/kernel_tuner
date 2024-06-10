@@ -144,3 +144,6 @@ select = [
 ]
 [tool.ruff.pydocstyle]
 convention = "google"
+
+[tool.poetry.scripts]
+"ktcache" = "kernel_tuner.scripts.ktcache:main"

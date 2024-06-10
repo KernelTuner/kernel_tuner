@@ -7,7 +7,11 @@ import pytest
 
 import kernel_tuner
 from kernel_tuner.cache.json import CacheFileJSON, CacheLineJSON
-from kernel_tuner.cache.validate import validate_data
+from kernel_tuner.cache.cache import Cache
+import jsonschema
+import pytest
+import kernel_tuner
+
 
 KERNEL_TUNER_PATH = Path(kernel_tuner.__file__).parent
 SCHEMA_PATH = KERNEL_TUNER_PATH / "schema/cache/1.0.0/schema.json"
@@ -22,14 +26,6 @@ with open(SMALL_CACHE_PATH) as f:
     SMALL_CACHE = json.load(f)
 with open(LARGE_CACHE_PATH) as f:
     LARGE_CACHE = json.load(f)
-
-
-@pytest.fixture(scope="session")
-def validator() -> jsonschema.Draft202012Validator:
-    with open(SCHEMA_PATH) as f:
-        schema_json = json.load(f)
-        jsonschema.Draft202012Validator.check_schema(schema_json)
-        return jsonschema.Draft202012Validator(schema_json)
 
 
 @pytest.fixture()
@@ -57,16 +53,18 @@ def cache_line(cache, request) -> CacheLineJSON:
 
 
 @pytest.fixture()
-def is_valid(validator, cache):
+def is_valid(cache):
     yield  # let the test apply some modifications
-    validator.validate(cache)  # assert the cache is valid
+
+    Cache.validate_json(cache)  # assert the cache is valid
 
 
 @pytest.fixture()
-def is_invalid(validator, cache):
+def is_invalid(cache):
     yield  # let the test apply some modifications
     with pytest.raises(jsonschema.exceptions.ValidationError):
-        validator.validate(cache)  # assert the cache is invalid
+        Cache.validate_json(cache)  # assert the cache is invalid
+
 
 @pytest.fixture()
 def invalid_timestamp_cache() -> dict:
@@ -87,13 +85,14 @@ def invalid_timestamp_cache() -> dict:
                 "benchmark_time": 126.3,
                 "strategy_time": 0,
                 "framework_time": 105.2,
-                "timestamp": "2023"
+                "timestamp": "2023",
             }
-        }
+        },
     }
 
+
 @pytest.fixture()
-def invalid_schemaversion() -> dict:
+def invalid_schemaversion_cache() -> dict:
     return {
         "schema_version": "20.9.8",
         "device_name": "Testing",
@@ -111,9 +110,9 @@ def invalid_schemaversion() -> dict:
                 "benchmark_time": 126.3,
                 "strategy_time": 0,
                 "framework_time": 105.2,
-                "timestamp": "2023-12-22T10:33:29.006875+00:00"
+                "timestamp": "2023-12-22T10:33:29.006875+00:00",
             }
-        }
+        },
     }
 
 
@@ -227,21 +226,9 @@ class TestCacheFileSchema:
     )
     def test_additional_props_allowed__in_cache_line(self, cache_line, is_valid, key, value):
         cache_line[key] = value
-    
 
-    def test_invalid_timestamp_cache(self, invalid_timestamp_cache, validator, capfd):
-        with open("invalid_timestamp_cache.json", "w") as f:
-            json.dump(invalid_timestamp_cache, f)
+    def test_invalid_timestamp_cache(self, cache, invalid_timestamp_cache, is_invalid):
+        cache.update(invalid_timestamp_cache)
 
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validate_data("invalid_timestamp_cache.json")
-   
-
-    def test_invalid_schema_version(self, invalid_schemaversion):
-        with open("invalid_schema_version.json", "w") as f:
-            json.dump(invalid_schemaversion, f)
-
-        with pytest.raises(ValueError) as excinfo:
-            validate_data("invalid_schema_version.json")
-
-        assert "Schema version '20.9.8' is not a valid version." in str(excinfo.value)
+    def test_invalid_schema_version(self, cache, invalid_schemaversion_cache, is_invalid):
+        cache.update(invalid_schemaversion_cache)
