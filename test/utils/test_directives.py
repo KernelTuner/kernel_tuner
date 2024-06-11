@@ -109,6 +109,14 @@ def test_wrap_data():
     assert wrap_data(code_cxx, acc_cxx, data, preprocessor, None) == expected_cxx
     expected_f90 = "!$acc enter data create(array(:42))\n!$acc update device(array(:42))\n! this is a comment\n!$acc exit data copyout(array(:42))\n"
     assert wrap_data(code_f90, acc_f90, data, preprocessor, None) == expected_f90
+    data = {"matrix": ["float*", "rows,cols"]}
+    preprocessor = ["#define rows 42", "#define cols 84"]
+    expected_f90 = "!$acc enter data create(matrix(:42,:84))\n!$acc update device(matrix(:42,:84))\n! this is a comment\n!$acc exit data copyout(matrix(:42,:84))\n"
+    assert wrap_data(code_f90, acc_f90, data, preprocessor, None) == expected_f90
+    dimensions = {"rows": 42, "cols": 84}
+    assert wrap_data(code_f90, acc_f90, data, user_dimensions=dimensions) == expected_f90
+    assert wrap_data(code_f90, acc_f90, data, preprocessor=[], user_dimensions=dimensions) == expected_f90
+
 
 
 def test_extract_directive_code():

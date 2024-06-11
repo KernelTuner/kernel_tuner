@@ -347,13 +347,8 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
                 intro += create_data_directive_openacc_cxx(name, size)
                 outro += exit_data_directive_openacc_cxx(name, size)
             elif is_openacc(langs.directive) and is_fortran(langs.language):
-                if "," in data[name][1]:
-                    # Multi dimensional
-                    pass
-                else:
-                    # One dimensional
-                    intro += create_data_directive_openacc_fortran(name, size)
-                    outro += exit_data_directive_openacc_fortran(name, size)
+                intro += create_data_directive_openacc_fortran(name, size)
+                outro += exit_data_directive_openacc_fortran(name, size)
     return intro + code + outro
 
 
