@@ -348,3 +348,6 @@ def test_add_present_openacc():
     preprocessor = ["#define cols 18\n", "#define rows 14\n"]
     expected_f90 = "!$acc parallel async num_workers(16) present(matrix(:14,:18))\n"
     assert add_present_openacc(code_f90, acc_f90, data, preprocessor, None) == expected_f90
+    dimensions = {"cols": 18, "rows": 14}
+    assert add_present_openacc(code_f90, acc_f90, data, user_dimensions=dimensions) == expected_f90
+    assert add_present_openacc(code_f90, acc_f90, data, preprocessor=[], user_dimensions=dimensions) == expected_f90
