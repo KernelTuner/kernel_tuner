@@ -118,7 +118,6 @@ def test_wrap_data():
     assert wrap_data(code_f90, acc_f90, data, preprocessor=[], user_dimensions=dimensions) == expected_f90
 
 
-
 def test_extract_directive_code():
     code = """
         #include <stdlib.h>
