@@ -203,7 +203,8 @@ class ParallelRunner(Runner):
     def _check_gpus_equals(self):
         gpu_types = []
         for actor in self.actors:
-            gpu_types.append(ray.get(actor.get_gpu_type.remote(self.kernel_source.lang)))
+            env = ray.get(actor.get_environment.remote())
+            gpu_types.append(env["device_name"])
         if len(set(gpu_types)) == 1:
             print(f"DEBUG: Running on {len(gpu_types)} {gpu_types[0]}", file=sys.stderr)
             return True

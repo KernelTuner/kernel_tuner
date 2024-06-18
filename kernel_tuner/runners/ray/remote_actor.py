@@ -26,15 +26,14 @@ class RemoteActor():
         self.cache_manager = cache_manager
         self.simulation_mode = simulation_mode
         self.runner = None
-        self.id = get_gpu_id(kernel_source.lang) if not simulation_mode else None
-        self.observers_initialized = False
-        self.observers_type_and_arguments = observers_type_and_arguments
-        
+        self.id = None
+        self._reinitialize_observers(observers_type_and_arguments)
+        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=self.observers, **device_options) if not simulation_mode else None
 
+    def get_environment(self):
+        return self.dev.get_environment()
+    
     def execute(self, tuning_options, strategy=None, searchspace=None, element=None):
-        if not self.observers_initialized:
-            self._reinitialize_observers(self.observers_type_and_arguments)
-            self.observers_initialized = True
         tuning_options['observers'] = self.observers
         if self.runner is None:
             self.init_runner()
@@ -66,25 +65,21 @@ class RemoteActor():
                                             self.iterations, self.observers)
         else:
             self.runner = SequentialRunner(self.kernel_source, self.kernel_options, self.device_options, 
-                                       self.iterations, self.observers, cache_manager=self.cache_manager)
+                                       self.iterations, self.observers, cache_manager=self.cache_manager, dev=self.dev)
 
     def _reinitialize_observers(self, observers_type_and_arguments):
         print("DEBUG: reinit observers called", file=sys.stderr)
         # observers can't be pickled to the actor so we need to re-initialize them
-        register_observer = False
         self.observers = []
         for (observer, arguments) in observers_type_and_arguments:
             if "device" in arguments:
+                self.id = get_gpu_id(self.kernel_source.lang) if self.id is None else self.id
                 arguments["device"] = self.id
             if isinstance(observer, RegisterObserver):
-                register_observer = True
+                self.observers.append(RegisterObserver())
             else:
                 self.observers.append(observer(**arguments))
-        # the register observer needs dev to be initialized, that's why its done later
-        if register_observer:
-            # we dont initialize the dev with observers, as this creates a 'invalid resource handle' error down the line
-            self.dev = DeviceInterface(self.kernel_source, iterations=self.iterations, **self.device_options) if not self.simulation_mode else None
-            self.observers.append(RegisterObserver(self.dev))
+        
 
     def get_gpu_type(self, lang):
         return get_gpu_type(lang)
