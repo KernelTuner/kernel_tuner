@@ -199,15 +199,33 @@ def unversioned_convert(cache       : dict,
     """
     cache["schema_version"] = "1.0.0"
 
+    if not "objective" in cache:
+        cache["objective"] = "time"
+
+    for key,entry in cache["cache"].items():
+        if "timestamp" not in entry:
+            cache["cache"][key]["timestamp"] =  "2024-06-18 11:36:56.137831+00:00"
+        if "compile_time" not in entry:
+            cache["cache"][key]["compile_time"] = 0
+        if "benchmark_time" not in entry:
+            cache["cache"][key]["benchmark_time"] = 0
+        if "framework_time" not in entry:
+            cache["cache"][key]["framework_time"] = 0
+        if "strategy_time" not in entry:
+            cache["cache"][key]["strategy_time"] = 0
+
     path = schema_path / "1.0.0/schema.json"
 
     with open(path) as s:
         versioned_schema = json.load(s)
 
     for key in versioned_schema["properties"]:
+        missing_keys = []
         if key not in cache:
-            raise ValueError("Cache file too old, no suitable conversion "
-                             "to version 1.0.0 exists.")
+            missing_keys.append(key)
+
+        if missing_keys:
+            raise ValueError(f"Cache file too old, missing key{'s' if len(missing_keys) > 1 else ''} {', '.join(missing_keys)}, no suitable conversion to version 1.0.0 exists.")
 
     return cache
 
