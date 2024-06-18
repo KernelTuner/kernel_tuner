@@ -27,10 +27,14 @@ class RemoteActor():
         self.simulation_mode = simulation_mode
         self.runner = None
         self.id = get_gpu_id(kernel_source.lang) if not simulation_mode else None
-        self._reinitialize_observers(observers_type_and_arguments)
+        self.observers_initialized = False
+        self.observers_type_and_arguments = observers_type_and_arguments
         
 
     def execute(self, tuning_options, strategy=None, searchspace=None, element=None):
+        if not self.observers_initialized:
+            self._reinitialize_observers(self.observers_type_and_arguments)
+            self.observers_initialized = True
         tuning_options['observers'] = self.observers
         if self.runner is None:
             self.init_runner()
@@ -65,6 +69,7 @@ class RemoteActor():
                                        self.iterations, self.observers, cache_manager=self.cache_manager)
 
     def _reinitialize_observers(self, observers_type_and_arguments):
+        print("DEBUG: reinit observers called", file=sys.stderr)
         # observers can't be pickled to the actor so we need to re-initialize them
         register_observer = False
         self.observers = []
@@ -75,10 +80,10 @@ class RemoteActor():
                 register_observer = True
             else:
                 self.observers.append(observer(**arguments))
-        # we dont initialize the dev with observers, as this creates a 'invalid resource handle' error down the line
-        self.dev = DeviceInterface(self.kernel_source, iterations=self.iterations, **self.device_options) if not self.simulation_mode else None
         # the register observer needs dev to be initialized, that's why its done later
         if register_observer:
+            # we dont initialize the dev with observers, as this creates a 'invalid resource handle' error down the line
+            self.dev = DeviceInterface(self.kernel_source, iterations=self.iterations, **self.device_options) if not self.simulation_mode else None
             self.observers.append(RegisterObserver(self.dev))
 
     def get_gpu_type(self, lang):
