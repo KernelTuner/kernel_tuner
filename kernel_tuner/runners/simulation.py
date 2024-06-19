@@ -128,7 +128,9 @@ class SimulationRunner(Runner):
                 continue
 
             # if the element is not in the cache, raise an error
-            logging.debug(f"kernel configuration {element} not in cache")
-            raise ValueError(f"Kernel configuration {element} not in cache - in simulation mode, all configurations must be present in the cache")
+            check = util.check_restrictions(tuning_options.restrictions, dict(zip(tuning_options['tune_params'].keys(), element)), True)
+            err_string = f"kernel configuration {element} not in cache, does {'' if check else 'not '}pass extra restriction check ({check})"
+            logging.debug(err_string)
+            raise ValueError(f"{err_string} - in simulation mode, all configurations must be present in the cache")
 
         return results

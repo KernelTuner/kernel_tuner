@@ -670,6 +670,8 @@ def tune_kernel(
 
     # create search space
     searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
+    restrictions = searchspace._modified_restrictions
+    tuning_options.restrictions = restrictions
     if verbose:
         print(f"Searchspace has {searchspace.size} configurations after restrictions.")
 

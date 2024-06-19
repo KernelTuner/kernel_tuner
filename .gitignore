@@ -1,4 +1,5 @@
 ### Project ###
+poetry.lock
 noxenv.txt
 noxsettings.toml
 

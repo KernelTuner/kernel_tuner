@@ -1,1 +1,1 @@
-from .observer import BenchmarkObserver, IterationObserver, ContinuousObserver, OutputObserver
+from .observer import BenchmarkObserver, IterationObserver, ContinuousObserver, OutputObserver, PrologueObserver

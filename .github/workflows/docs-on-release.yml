@@ -15,18 +15,18 @@ jobs:
             - name: Get Python 3.10
               uses: actions/setup-python@v4
               with:
-                python-version: '3.10' 
+                  python-version: "3.10"
             - name: Checkout
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
             - name: Get version set env, exit if beta release
               run: |
-                echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-                if [[ "$RELEASE_VERSION" == *"b"* ]]; then
-                  echo "Version is a beta release. Cancel workflow."
-                  exit 0
-                fi
+                  echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+                  if [[ "$RELEASE_VERSION" == *"b"* ]]; then
+                    echo "Version is a beta release. Cancel workflow."
+                    exit 0
+                  fi
             - name: Install dependencies
               run: |
                   sudo apt-get update;
