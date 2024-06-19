@@ -57,7 +57,7 @@ generate-setup-file = false
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"          # NOTE when changing the supported Python versions, also change the test versions in the noxfile
-numpy = "^=1.26.0"              # Python 3.12 requires numpy at least 1.26
+numpy = "^1.26.0"               # Python 3.12 requires numpy at least 1.26
 scipy = ">=1.11.0"
 packaging = "*"                 # required by file_utils
 jsonschema = "*"
