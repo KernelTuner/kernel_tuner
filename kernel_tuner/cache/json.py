@@ -34,7 +34,7 @@ class CacheFileJSON(TypedDict):
     kernel_name: str
     problem_size: str
     tune_params_keys: list[str]
-    tune_params: dict[str, list]  # is every param a number?
+    tune_params: dict[str, list]
     objective: str
     cache: dict[str, CacheLineJSON]
 
@@ -68,5 +68,5 @@ class T4ResultLineJSON(TypedDict):
 class T4FileJSON(TypedDict):
     """TypedDict for the contents of a T4 file."""
 
-    results: list[T4ResultLineJSON] 
+    results: list[T4ResultLineJSON]
     schema_version: str

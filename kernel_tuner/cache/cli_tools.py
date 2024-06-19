@@ -45,8 +45,8 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
     """Merges the actual files and writes to the file `ofile`.
 
     Assumes that all files have been validated.
+    Does not guarantee to preserve order within cache files.
     """
-    # FIXME: Cannot be guaranteed that the order of the cachelines in the files is also kept when merging
     # From cache.py (json.load).
 
     cache = Cache.read(cache_files[0])
@@ -62,9 +62,9 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
 
     # Now for each file add the cache content.
     for file in cache_files:
-        input = Cache.read(file)
-        for line in input.lines.values():
-            tune_params = {key: line[key] for key in input.tune_params_keys}
+        input_file = Cache.read(file)
+        for line in input_file.lines.values():
+            tune_params = {key: line[key] for key in input_file.tune_params_keys}
             output.lines.append(
                 time=line.time,
                 compile_time=line.compile_time,
@@ -85,7 +85,7 @@ def get_line(infile: PathLike, key: str):
 
     cache_line = cache_infile.lines[key]
 
-    print(f"[*] Cacheline entry '{key}' content [*]\n\n" f"************************")
+    print(f"[*] Cacheline entry '{key}' content [*]\n\n", f"************************")
     print(dict(cache_line))
     print("************************")
 

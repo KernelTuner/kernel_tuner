@@ -33,7 +33,7 @@ DEFAULT_VALUES = {
 
 
 
-def convert_cache_file(filestr : PathLike, 
+def convert_cache_file(filestr : PathLike,
                        conversion_functions=None,
                        versions=None,
                        target_version=None):
@@ -70,7 +70,7 @@ def convert_cache_file(filestr : PathLike,
     write_cache(cache, filestr)
 
 
-def convert_cache(cache : dict, 
+def convert_cache(cache : dict,
                   conversion_functions=None,
                   versions=None,
                   target_version=None) -> dict:
@@ -108,7 +108,7 @@ def convert_cache(cache : dict,
 
     if "schema_version" not in cache:
         cache = unversioned_convert(cache, CACHE_SCHEMAS_DIR)
-    
+
     version = cache["schema_version"]
 
     if semver.VersionInfo.parse(version).compare(target_version) > 0:
@@ -118,11 +118,11 @@ def convert_cache(cache : dict,
     if version not in versions:
         raise ValueError(f"Version ({version}) should be a real "
                          f"existing version")
-    
+
     if target_version not in versions:
         raise ValueError(f"Target version ({target_version}) should be "
                          f"a real existing version")
-    
+
     # Main convert loop
     while version != target_version:
         if version in conversion_functions:
@@ -168,7 +168,7 @@ def default_convert(cache       : dict,
     with open(old_schema_path) as o, open(new_schema_path) as n:
         old_schema = json.load(o)
         new_schema = json.load(n)
-        
+
     new_cache = dict()
     for key in new_schema["properties"]:
         # It may be the case that the cache does't have a key because it is not
@@ -199,7 +199,7 @@ def unversioned_convert(cache       : dict,
     """
     cache["schema_version"] = "1.0.0"
 
-    if not "objective" in cache:
+    if "objective" not in cache:
         cache["objective"] = "time"
 
     for key,entry in cache["cache"].items():
@@ -232,7 +232,7 @@ def unversioned_convert(cache       : dict,
 
 def convert_cache_to_t4(cache: CacheFileJSON) -> T4FileJSON:
     """Converts a cache file to the T4 auto-tuning format.
-    
+
     ``cache`` is a ``CacheFileJSON`` representing the cache file to convert.
 
     Returns a ``T4FileJSON`` representing the converted cache file.

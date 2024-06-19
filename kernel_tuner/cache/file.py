@@ -42,7 +42,8 @@ def read_cache(filename: PathLike):
     # Try to load the cache as both open and closed.
     # Store whether the cache was open and properly opened
     with open(filename, "r") as file:
-        try:  # Try load the cache as closed
+        # Try load the cache as closed
+        try:
             data = json.load(file)
         except json.JSONDecodeError as e:
             raise InvalidCacheError(filename, "Cache file is not parsable", e)
@@ -76,9 +77,7 @@ def append_cache_line(
     return _append_cache_line_at(key, cache_line, filename, p)
 
 
-def _append_cache_line_at(
-    key: str, cache_line: dict, filename: PathLike, position: CachedLinePosition
-) -> CachedLinePosition:
+def _append_cache_line_at(key: str, cache_line: dict, filename: PathLike, position: CachedLinePosition) -> CachedLinePosition:
     with open(filename, "r+") as file:
         # Save cache closing braces properties coming after "cache" as text in suffix
         file.seek(position.file_position)
@@ -106,7 +105,7 @@ def _append_cache_line_at(
     return next_pos
 
 
-# FIXME: This function is unsafe: it only works when "cache" property is stored last
+# This function is unsafe: it only works when "cache" property is stored last
 def _unsafe_get_next_cache_line_position(filename: PathLike, state: CachedLinePosition):
     with open(filename, "rb+") as file:
         # Seek the last `}` (root closing brace)

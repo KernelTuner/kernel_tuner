@@ -120,7 +120,8 @@ class Cache:
             "objective": objective,
             "cache": {},
         }
-        cls.validate_json(cache_json)  # NOTE: Validate the cache just to be sure
+        # NOTE: Validate the cache just to be sure
+        cls.validate_json(cache_json)
         write_cache(cast(dict, cache_json), filename)
         return cls(filename, cache_json, readonly=False)
 
@@ -148,7 +149,8 @@ class Cache:
             cls.validate_json(cache_json)
 
         cache_json = convert_cache(cache_json)
-        cls.validate_json(cache_json)  # NOTE: Validate the cache just to be sure
+        # NOTE: Validate the cache just to be sure
+        cls.validate_json(cache_json)
         return cls(filename, cache_json, readonly=True)
 
     @classmethod
