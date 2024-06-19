@@ -138,7 +138,7 @@ class CacheEncoder(json.JSONEncoder):
             # and/or platform-specific, so do tests which don't depend on the
             # internals.
 
-            if o != o:
+            if np.isnan(o):
                 text = "NaN"
             elif o == _inf:
                 text = "Infinity"
