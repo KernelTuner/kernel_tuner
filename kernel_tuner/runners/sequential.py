@@ -101,10 +101,10 @@ class SequentialRunner(Runner):
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
-            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time) 
+            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
             params['strategy_time'] = self.last_strategy_time
-            params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
-            params['timestamp'] = str(datetime.now(timezone.utc))
+            params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0.0)
+            params['timestamp'] = datetime.now(timezone.utc)
             self.start_time = perf_counter()
 
             if result:
@@ -113,7 +113,7 @@ class SequentialRunner(Runner):
 
                 # add configuration to cache
                 if isinstance(tuning_options.cache, Cache.Lines) and tuning_options.cache.get(x_int) is None:
-                    tuning_options.cache.append(params)
+                    tuning_options.cache.append(**params)
 
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
