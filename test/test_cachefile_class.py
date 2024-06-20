@@ -306,8 +306,9 @@ class TestCache:
             assert cache.read() == backup.read()
 
     def test_read__cannot_modify(self, cache_file, full_cache_line, assert_cache_unchanged):
-        cache = Cache.read(cache_file)
-        cache.lines.append(**vars(full_cache_line))
+        cache = Cache.read(cache_file, read_only=True)
+        with pytest.raises(ValueError):
+            cache.lines.append(**vars(full_cache_line))
 
     def test_read__outdated(self):
         cache = Cache.read(XXL_CACHE_PATH)
