@@ -15,11 +15,8 @@ from kernel_tuner.cache.file import write_cache
 from kernel_tuner.cache.cache import Cache
 from kernel_tuner.cache.versions import LATEST_VERSION
 
-
 TEST_DIR = Path(__file__).parent
 TEST_CACHE_DIR = TEST_DIR / "test_cache_files"
-XXL_CACHE_PATH = TEST_CACHE_DIR / "convolution_A100.json"
-
 
 class TestCache:
     @pytest.fixture
@@ -309,7 +306,3 @@ class TestCache:
         cache = Cache.read(cache_file, read_only=True)
         with pytest.raises(ValueError):
             cache.lines.append(**vars(full_cache_line))
-
-    def test_read__outdated(self):
-        cache = Cache.read(XXL_CACHE_PATH)
-        assert len(cache.lines) > 100

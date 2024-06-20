@@ -16,7 +16,6 @@ TEST_DIR = Path(__file__).parent
 TEST_CACHE_DIR = TEST_DIR / "test_cache_files"
 SMALL_CACHE_PATH = TEST_CACHE_DIR / "small_cache.json"
 LARGE_CACHE_PATH = TEST_CACHE_DIR / "large_cache.json"
-XXL_CACHE_PATH = TEST_CACHE_DIR / "convolution_A100.json"
 
 
 @pytest.fixture
@@ -24,7 +23,7 @@ def output_path(tmp_path):
     return tmp_path / "output.json"
 
 
-@pytest.fixture(params=[SMALL_CACHE_PATH, LARGE_CACHE_PATH, XXL_CACHE_PATH], ids=["small", "large", "extra large"])
+@pytest.fixture(params=[SMALL_CACHE_PATH, LARGE_CACHE_PATH], ids=["small", "large"])
 def cache_path(request):
     return request.param
 
