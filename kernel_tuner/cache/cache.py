@@ -292,7 +292,7 @@ class Cache:
             elif isinstance(strategy_time, bool):
                 strategy_time = int(strategy_time)
             if not isinstance(framework_time, float):
-                raise ValueError("Argument framework_time should be a float")
+                raise ValueError(f"Argument framework_time should be a float, received: {framework_time} ({type(framework_time)})")
             if not isinstance(timestamp, datetime):
                 raise ValueError("Argument timestamp should be a Python datetime")
             if times is not None and not (isinstance(times, list) and all(isinstance(time, float) for time in times)):
