@@ -134,6 +134,6 @@ class SequentialRunner(Runner):
 
     def store_in_cache(self, x_int, params, tuning_options):
         if self.cache_manager:
-            ray.get(self.cache_manager.store.remote(x_int, params))
+            self.cache_manager.store.remote(x_int, params)
         else:
             store_cache(x_int, params, tuning_options)

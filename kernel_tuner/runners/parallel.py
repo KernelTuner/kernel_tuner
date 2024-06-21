@@ -51,7 +51,11 @@ class ParallelRunner(Runner):
         if self.actors is None:
             runner_attributes = [self.kernel_source, self.kernel_options, self.device_options, self.iterations, self.observers]
             self.actors = [create_actor_on_device(*runner_attributes, id=_id, cache_manager=self.cache_manager, simulation_mode=self.simulation_mode) for _id in range(self.num_gpus)]
-        
+            # actors_ready_futures = [actor.__ray_ready__.remote() for actor in futures]
+            # ray.wait(actors_ready_futures, num_returns=len(actors_ready_futures), timeout=None)
+            # self.actors = futures
+
+
         # Check if all GPUs are of the same type
         if not self.simulation_mode and not self._check_gpus_equals():
             raise GPUTypeMismatchError(f"Different GPU types found") 
@@ -63,7 +67,7 @@ class ParallelRunner(Runner):
         
         # set the cache manager for each actor. Can't be done in constructor because we do not always yet have the tuning_options
         for actor in self.actors:
-            ray.get(actor.set_cache_manager.remote(self.cache_manager))
+            actor.set_cache_manager.remote(self.cache_manager)
     
         # Some observers can't be pickled
         run_tuning_options = copy.deepcopy(tuning_options)
@@ -202,8 +206,9 @@ class ParallelRunner(Runner):
 
     def _check_gpus_equals(self):
         gpu_types = []
-        for actor in self.actors:
-            env = ray.get(actor.get_environment.remote())
+        env_refs = [actor.get_environment.remote() for actor in self.actors]
+        environments = ray.get(env_refs)
+        for env in environments:
             gpu_types.append(env["device_name"])
         if len(set(gpu_types)) == 1:
             print(f"DEBUG: Running on {len(gpu_types)} {gpu_types[0]}", file=sys.stderr)
