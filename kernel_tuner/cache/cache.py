@@ -430,7 +430,7 @@ class Cache:
 
         def append(*args, **kwargs):
             """ Method to append lines to cache file, should not happen with read-only cache """
-            raise ValueError(f"Attempting to write to read-only cache")
+            raise ValueError("Attempting to write to read-only cache")
 
     class Line(Mapping):
         """Cache line in a cache file.

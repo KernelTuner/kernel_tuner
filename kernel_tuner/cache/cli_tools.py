@@ -85,7 +85,7 @@ def get_line(infile: PathLike, key: str):
 
     cache_line = cache_infile.lines[key]
 
-    print(f"[*] Cacheline entry '{key}' content [*]\n\n", f"************************")
+    print(f"[*] Cacheline entry '{key}' content [*]\n\n", "************************")
     print(dict(cache_line))
     print("************************")
 
