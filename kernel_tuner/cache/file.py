@@ -8,7 +8,7 @@ import os
 from os import PathLike
 from typing import Callable, Optional
 
-from kernel_tuner.cache.json_encoder import CacheEncoder, CacheLineEncoder
+from kernel_tuner.cache.json_encoder import CacheEncoder
 
 
 class InvalidCacheError(Exception):
@@ -58,7 +58,7 @@ def write_cache(cache_json: dict, filename: PathLike):
         filename (PathLike): The path to write the cache file.
     """
     with open(filename, "w") as file:
-        json.dump(cache_json, file, cls=CacheEncoder, indent=0)
+        json.dump(cache_json, file, cls=CacheEncoder, indent="  ")
 
 
 def append_cache_line(
@@ -89,7 +89,7 @@ def _append_cache_line_at(key: str, cache_line: dict, filename: PathLike, positi
         if not position.is_first_line:
             text += ","
         text += "\n"
-        text += json.dumps({key: cache_line}, cls=CacheLineEncoder).strip()[1:-1]
+        text += json.dumps({key: cache_line}, cls=CacheEncoder, indent=None).strip()[1:-1]
         file.write(text)
 
         # Update the position

@@ -20,7 +20,7 @@ from semver import Version
 import kernel_tuner.util as util
 from .convert import convert_cache
 from .json import CacheFileJSON, CacheLineJSON
-from .json_encoder import CacheLineEncoder
+from .json_encoder import CacheEncoder
 from .file import read_cache, write_cache, append_cache_line
 from .versions import LATEST_VERSION, VERSIONS
 from .paths import get_schema_path
@@ -561,7 +561,7 @@ class Cache:
 
 @cache
 def _get_cache_line_json_encoder():
-    return CacheLineEncoder()
+    return CacheEncoder(indent="")
 
 
 @cache

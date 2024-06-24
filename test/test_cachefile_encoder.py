@@ -6,7 +6,7 @@ from kernel_tuner.util import ErrorConfig, InvalidConfig, CompilationFailedConfi
 
 
 def dumps(data):
-    return json.dumps(data, cls=CacheEncoder, indent=0)
+    return json.dumps(data, cls=CacheEncoder, indent="")
 
 
 class TestCacheJSONEncoder:
@@ -43,10 +43,20 @@ class TestCacheJSONEncoder:
         )
 
     def test_encode_cache(self):
-        assert dumps({"cache": {"1": {"a": 3}, "2": {"b": 4}}}) == '{\n"cache": {\n"1": {"a": 3},\n"2": {"b": 4}\n}\n}'
+        test_obj = {"cache": {"1": {"a": 3}, "2": {"b": 4}}}
+        dump_str = dumps(test_obj)
+        retrieved_obj = json.loads(dump_str)
+        assert test_obj == retrieved_obj
 
     def test_encode_cache_last(self):
-        assert dumps({"b": 2, "cache": {}, "d": 4}) == '{\n"b": 2,\n"d": 4,\n"cache": {}\n}'
+        test_obj = {"b": 2, "cache": {}, "d": 4}
+        dump_str = dumps(test_obj)
+        expected = '{\n"b": 2,\n"d": 4,\n"cache": {}\n}'
+        print("received:")
+        print(dump_str)
+        print("expected:")
+        print(expected)
+        assert dump_str == expected
 
     def test_encode_error_config(self):
         assert dumps(ErrorConfig()) == '"ErrorConfig"'

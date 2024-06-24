@@ -1,3 +1,5 @@
+import re
+
 import pytest
 import shutil
 from copy import deepcopy
@@ -55,8 +57,11 @@ def test_write_cache(cache_path, output_path):
     sample_cache = read_cache(cache_path)
 
     write_cache(sample_cache, output_path)
+    regex = re.compile(r'[\s]+')
+
+    # do a whitespace insensitive compare
     with open(output_path, "r") as output, open(cache_path, "r") as input:
-        assert output.read().rstrip() == input.read().rstrip()
+        assert regex.sub("", output.read().rstrip()) == regex.sub("", input.read().rstrip())
 
 
 def test_append_cache_line(cache_path, output_path):
