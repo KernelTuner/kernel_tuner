@@ -524,6 +524,7 @@ def generate_directive_function(
     langs: Code,
     data: dict = None,
     initialization: str = "",
+    deinitialization: str = "",
     user_dimensions: dict = None,
 ) -> str:
     """Generate tunable function for one directive"""
@@ -551,6 +552,8 @@ def generate_directive_function(
         else:
             code += body
         code = end_timing_cxx(code)
+        if len(deinitialization) > 1:
+            code += deinitialization + "\n"
         code += "\n}"
     elif is_fortran(langs.language):
         body = wrap_timing(body, langs.language)
@@ -558,6 +561,8 @@ def generate_directive_function(
             code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
         else:
             code += body
+        if len(deinitialization) > 1:
+            code += deinitialization + "\n"
         name = signature.split(" ")[1].split("(")[0]
         code += f"\nend function {name}\nend module kt\n"
 
