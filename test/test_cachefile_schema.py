@@ -208,7 +208,6 @@ class TestCacheFileSchema:
             ("compile_time", None),
             ("verification_time", True),
             ("benchmark_time", "Invalid"),
-            ("GFLOP/s", False),
             ("strategy_time", "123"),
             ("framework_time", "15"),
             ("timestamp", 42),

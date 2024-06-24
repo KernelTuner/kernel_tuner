@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from typing import Any, TypedDict
 
-_CacheLineOptionalJSON = TypedDict("_CacheLineOptionalJSON", {"GFLOP/s": float})
+_CacheLineOptionalJSON = TypedDict("_CacheLineOptionalJSON", {})
 
 
 class CacheLineOptionalJSON(TypedDict, _CacheLineOptionalJSON, total=False):
     """TypedDict for optional data in a cache line."""
 
     times: list[float]
-    # "GFLOP/s": float
 
 
 class CacheLineJSON(TypedDict, CacheLineOptionalJSON):

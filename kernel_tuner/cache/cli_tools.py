@@ -64,19 +64,7 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
     for file in cache_files:
         input_file = Cache.read(file)
         for line in input_file.lines.values():
-            tune_params = {key: line[key] for key in input_file.tune_params_keys}
-            output.lines.append(
-                time=line.time,
-                compile_time=line.compile_time,
-                verification_time=line.verification_time,
-                benchmark_time=line.benchmark_time,
-                strategy_time=line.strategy_time,
-                framework_time=line.framework_time,
-                timestamp=line.timestamp,
-                times=line.times,
-                GFLOP_per_s=line.GFLOP_per_s,
-                **tune_params,
-            )
+            output.lines.append(**line)
 
 
 def get_line(infile: PathLike, key: str):
@@ -116,19 +104,7 @@ def delete_line(infile: PathLike, key: str, outfile):
 
     for k, line in cache_infile.lines.items():
         if k != key:
-            tune_params = {key: line[key] for key in cache_infile.tune_params_keys}
-            output.lines.append(
-                time=line.time,
-                compile_time=line.compile_time,
-                verification_time=line.verification_time,
-                benchmark_time=line.benchmark_time,
-                strategy_time=line.strategy_time,
-                framework_time=line.framework_time,
-                timestamp=line.timestamp,
-                times=line.times,
-                GFLOP_per_s=line.GFLOP_per_s,
-                **tune_params,
-            )
+            output.lines.append(**line)
 
 
 def convert(read_file: PathLike, write_file=None, target=None, allow_version_absence=False):

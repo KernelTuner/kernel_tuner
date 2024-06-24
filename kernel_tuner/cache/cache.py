@@ -67,8 +67,7 @@ class Cache:
         "strategy_time",
         "framework_time",
         "timestamp",
-        "times",
-        "GFLOP/s",
+        "times"
     }
 
     @classmethod
@@ -275,7 +274,6 @@ class Cache:
             framework_time: float,
             timestamp: datetime,
             times: Optional[list[float]] = None,
-            GFLOP_per_s: Optional[float] = None,
             **tune_params,
         ) -> None:
             """Appends a cache line to the cache lines."""
@@ -298,11 +296,10 @@ class Cache:
             if not isinstance(framework_time, float):
                 raise ValueError(f"Argument framework_time should be a float, received: {framework_time} ({type(framework_time)})")
             if not isinstance(timestamp, datetime):
-                raise ValueError("Argument timestamp should be a Python datetime")
+                # timestamp is not a Python datetime, try to convert string to datetime
+                timestamp = datetime.fromisoformat(timestamp)
             if times is not None and not (isinstance(times, list) and all(isinstance(time, float) for time in times)):
                 raise ValueError("Argument times should be a list of floats or None")
-            if GFLOP_per_s is not None and not isinstance(GFLOP_per_s, float):
-                raise ValueError("Argument GFLOP_per_s should be a float or None")
 
             line_id = self.__get_line_id_from_tune_params_dict(tune_params)
             if line_id in self._lines:
@@ -317,7 +314,6 @@ class Cache:
                 framework_time,
                 timestamp,
                 times,
-                GFLOP_per_s,
                 tune_params,
             )
             self._lines[line_id] = line
@@ -405,7 +401,6 @@ class Cache:
             framework_time: float,
             timestamp: datetime,
             times: Optional[list[float]],
-            GFLOP_per_s: Optional[float],
             tune_params,
         ):
             line: dict = {
@@ -419,8 +414,6 @@ class Cache:
             }
             if times is not None:
                 line["times"] = times
-            if GFLOP_per_s is not None:
-                line["GFLOP/s"] = GFLOP_per_s
             line = {**line, **tune_params}
 
             return line
@@ -445,16 +438,12 @@ class Cache:
             time: error `util.ErrorConfig` or a number `float`
             times: a list of floats (`float`) or `None`
             timestamp: a `datetime` object of the timestamp
-            GFLOP_per_s: alias of "GFLOP/s"
 
         Usage Example:
             from datetime import datetime
 
             cache: Cache = ...
             line = cache.lines[...]
-
-            # Useful alias for GFLOP/s
-            assert line.GFLOP_per_s == line["GFLOP/s"]
 
             # The timestamp attribute is automatically converted to a `datetime` object
             assert isinstance(line.timestamp, datetime)
@@ -487,11 +476,6 @@ class Cache:
         def timestamp(self) -> datetime:
             """The timestamp as a datetime object."""
             return datetime.fromisoformat(self["timestamp"])
-
-        @property
-        def GFLOP_per_s(self) -> Optional[float]:
-            """The number of GFLOPs per second."""
-            return self.get("GFLOP/s")
 
         def __init__(self, cache: Cache, line_json: CacheLineJSON):
             """Inits a new CacheLines instance."""

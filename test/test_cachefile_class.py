@@ -106,7 +106,6 @@ class TestCache:
             "framework_time",
             "timestamp",
             "times",
-            "GFLOP/s",
         ],
     )
     def test_create__invalid_tune_params__reserved_keys(self, header, key, assert_create__raises_ValueError):
@@ -174,13 +173,11 @@ class TestCache:
         assert cache_line_read.compile_time == 2
         assert cache_line_read.verification_time == 3
         assert cache_line_read.benchmark_time == 4
-        assert cache_line_read.GFLOP_per_s is None
         assert cache_line_read.strategy_time == 6
         assert cache_line_read.framework_time == 7
         assert cache_line_read.timestamp == now
 
     def test_line_dict(self, cache_line_read, cache_json, now):
-        assert "GFLOP/s" not in cache_line_read
         assert dict(cache_line_read) == {
             "a": 0,
             "b": 0,
