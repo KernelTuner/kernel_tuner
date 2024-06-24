@@ -272,7 +272,7 @@ class Cache:
             benchmark_time: float,
             strategy_time: int,
             framework_time: float,
-            timestamp: datetime,
+            timestamp,
             times: Optional[list[float]] = None,
             **tune_params,
         ) -> None:
@@ -297,7 +297,7 @@ class Cache:
                 raise ValueError(f"Argument framework_time should be a float, received: {framework_time} ({type(framework_time)})")
             if not isinstance(timestamp, datetime):
                 # timestamp is not a Python datetime, try to convert string to datetime
-                timestamp = datetime.fromisoformat(timestamp)
+                timestamp = datetime.fromisoformat(str(timestamp))
             if times is not None and not (isinstance(times, list) and all(isinstance(time, float) for time in times)):
                 raise ValueError("Argument times should be a list of floats or None")
 
