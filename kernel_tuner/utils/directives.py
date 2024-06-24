@@ -380,6 +380,22 @@ def extract_initialization_code(code: str, langs: Code) -> str:
         return ""
 
 
+def extract_deinitialization_code(code: str, langs: Code) -> str:
+    """Extract the deinitialization section from code"""
+    if is_cxx(langs.language):
+        start_string = "#pragma tuner deinitialize"
+        end_string = "#pragma tuner stop"
+    elif is_fortran(langs.language):
+        start_string = "!$tuner deinitialize"
+        end_string = "!$tuner stop"
+
+    init_code = extract_code(start_string, end_string, code, langs)
+    if len(init_code) >= 1:
+        return "\n".join(init_code.values()) + "\n"
+    else:
+        return ""
+
+
 def format_argument_fortran(p_type: str, p_size: int, p_name: str) -> str:
     """Format the argument for Fortran code"""
     argument = ""

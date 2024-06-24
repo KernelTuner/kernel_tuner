@@ -326,6 +326,13 @@ def test_extract_initialization_code():
     assert extract_initialization_code(code_f90, Code(OpenACC(), Fortran())) == "integer :: value\n"
 
 
+def test_extract_deinitialization_code():
+    code_cpp = "#pragma tuner deinitialize\nconst int value = 42;\n#pragma tuner stop\n"
+    code_f90 = "!$tuner deinitialize\ninteger :: value\n!$tuner stop\n"
+    assert extract_deinitialization_code(code_cpp, Code(OpenACC(), Cxx())) == "const int value = 42;\n"
+    assert extract_deinitialization_code(code_f90, Code(OpenACC(), Fortran())) == "integer :: value\n"
+
+
 def test_add_present_openacc():
     acc_cxx = Code(OpenACC(), Cxx())
     acc_f90 = Code(OpenACC(), Fortran())
