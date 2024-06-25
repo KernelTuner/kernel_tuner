@@ -560,7 +560,7 @@ def generate_directive_function(
         if data is not None:
             code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
         else:
-            code += body
+            code += body + "\n"
         if len(deinitialization) > 1:
             code += deinitialization + "\n"
         name = signature.split(" ")[1].split("(")[0]
