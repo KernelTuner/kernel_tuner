@@ -32,12 +32,18 @@ class Cxx(Language):
     def get(self) -> str:
         return "cxx"
 
+    def end_string(self) -> str:
+        return "#pragma tuner stop"
+
 
 class Fortran(Language):
     """Class to represent Fortran code"""
 
     def get(self) -> str:
         return "fortran"
+
+    def end_string(self) -> str:
+        return "!$tuner stop"
 
 
 class Code(object):
@@ -356,24 +362,20 @@ def extract_directive_code(code: str, langs: Code, kernel_name: str = None) -> d
     """Extract explicitly marked directive sections from code"""
     if is_cxx(langs.language):
         start_string = "#pragma tuner start"
-        end_string = "#pragma tuner stop"
     elif is_fortran(langs.language):
         start_string = "!$tuner start"
-        end_string = "!$tuner stop"
 
-    return extract_code(start_string, end_string, code, langs, kernel_name)
+    return extract_code(start_string, langs.language.end_string(), code, langs, kernel_name)
 
 
 def extract_initialization_code(code: str, langs: Code) -> str:
     """Extract the initialization section from code"""
     if is_cxx(langs.language):
         start_string = "#pragma tuner initialize"
-        end_string = "#pragma tuner stop"
     elif is_fortran(langs.language):
         start_string = "!$tuner initialize"
-        end_string = "!$tuner stop"
 
-    init_code = extract_code(start_string, end_string, code, langs)
+    init_code = extract_code(start_string, langs.language.end_string(), code, langs)
     if len(init_code) >= 1:
         return "\n".join(init_code.values()) + "\n"
     else:
@@ -384,12 +386,10 @@ def extract_deinitialization_code(code: str, langs: Code) -> str:
     """Extract the deinitialization section from code"""
     if is_cxx(langs.language):
         start_string = "#pragma tuner deinitialize"
-        end_string = "#pragma tuner stop"
     elif is_fortran(langs.language):
         start_string = "!$tuner deinitialize"
-        end_string = "!$tuner stop"
 
-    init_code = extract_code(start_string, end_string, code, langs)
+    init_code = extract_code(start_string, langs.language.end_string(), code, langs)
     if len(init_code) >= 1:
         return "\n".join(init_code.values()) + "\n"
     else:
