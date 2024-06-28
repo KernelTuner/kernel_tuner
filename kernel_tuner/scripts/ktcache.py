@@ -10,7 +10,7 @@ We can:
    - `convert`: using the functionality from convert.py one can convert to a specified version.
       Within conversion (all required yet nonpositional arguments):
          - `-i/--infile`: the input file to read from.
-         - `-T/--target`: The version to convert to. 
+         - `-T/--target`: The version to convert to.
          - `--out/--output`: The converted output file.
          - `--force-version-absence`: allow unversioned cachefiles to be converted.
 

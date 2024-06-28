@@ -69,14 +69,14 @@ def convert_cache(cache: dict, conversion_functions=None, versions=None, target_
 
     if semver.VersionInfo.parse(version).compare(target_version) > 0:
         raise ValueError(
-            f"Target version ({target_version}) should not be " f"smaller than the cache's version ({version})"
+            f"Target version ({target_version}) should not be smaller than the cache's version ({version})"
         )
 
     if version not in versions:
-        raise ValueError(f"Version ({version}) should be a real " f"existing version")
+        raise ValueError(f"Version ({version}) should be a real existing version")
 
     if target_version not in versions:
-        raise ValueError(f"Target version ({target_version}) should be " f"a real existing version")
+        raise ValueError(f"Target version ({target_version}) should be a real existing version")
 
     # Main convert loop
     while version != target_version:
