@@ -612,7 +612,7 @@ def test_process_cache():
             benchmark_time=0.1234,
             strategy_time=0,
             framework_time=0.1234,
-            timestamp=datetime.now(),
+            timestamp=str(datetime.now()),
             x = 4
         )
         assert len(tuning_options.cache) == 1

@@ -6,13 +6,10 @@ from copy import deepcopy
 from pathlib import Path
 
 from kernel_tuner.cache.file import (
-    InvalidCacheError,
     CachedLinePosition,
-    read_cache,
-    write_cache,
-    append_cache_line,
+    append_cache_line
 )
-
+from kernel_tuner.cache.cache import read_cache_file, write_cache_file, _encode_cache_line, InvalidCacheError
 
 TEST_DIR = Path(__file__).parent
 TEST_CACHE_DIR = TEST_DIR / "test_cache_files"
@@ -34,7 +31,7 @@ def test_read_cache(cache_path, output_path):
     shutil.copy(cache_path, output_path)
 
     # Read device name of the given file
-    file_content = read_cache(output_path)
+    file_content = read_cache_file(output_path)
     device_name = file_content.get("device_name")
 
     # Check if the expected value of device name is in the file
@@ -50,13 +47,13 @@ def test_read_cache__which_is_unparsable(output_path):
         file.write("INVALID")
 
     with pytest.raises(InvalidCacheError):
-        read_cache(output_path)
+        read_cache_file(output_path)
 
 
 def test_write_cache(cache_path, output_path):
-    sample_cache = read_cache(cache_path)
+    sample_cache = read_cache_file(cache_path)
 
-    write_cache(sample_cache, output_path)
+    write_cache_file(sample_cache, output_path)
     regex = re.compile(r'[\s]+')
 
     # do a whitespace insensitive compare
@@ -65,42 +62,43 @@ def test_write_cache(cache_path, output_path):
 
 
 def test_append_cache_line(cache_path, output_path):
-    sample_cache = read_cache(cache_path)
+    sample_cache = read_cache_file(cache_path)
 
     smaller_cache = deepcopy(sample_cache)
     key = next(iter(smaller_cache["cache"].keys()))
     line = smaller_cache["cache"].pop(key)
 
-    write_cache(smaller_cache, output_path)
-    append_cache_line(key, line, output_path)
+    write_cache_file(smaller_cache, output_path)
+    line_str = _encode_cache_line(key, line)
+    append_cache_line(key, line_str, output_path)
 
-    assert read_cache(output_path) == sample_cache
+    assert read_cache_file(output_path) == sample_cache
 
 
 def test_append_cache_line__with_position(cache_path, output_path):
-    sample_cache = read_cache(cache_path)
+    sample_cache = read_cache_file(cache_path)
 
     empty_cache = deepcopy(sample_cache)
     cache_lines = deepcopy(empty_cache["cache"])
     empty_cache["cache"].clear()
-    write_cache(empty_cache, output_path)
+    write_cache_file(empty_cache, output_path)
 
     pos = CachedLinePosition()
     for key, line in cache_lines.items():
-        pos = append_cache_line(key, line, output_path, pos)
+        pos = append_cache_line(key, _encode_cache_line(key, line), output_path, pos)
 
-    assert read_cache(output_path) == sample_cache
+    assert read_cache_file(output_path) == sample_cache
 
 
 def test_append_cache_line__to_empty_cache(cache_path, output_path):
-    sample_cache = read_cache(cache_path)
+    sample_cache = read_cache_file(cache_path)
 
     empty_cache = deepcopy(sample_cache)
     cache_lines = deepcopy(empty_cache["cache"])
     empty_cache["cache"].clear()
 
-    write_cache(empty_cache, output_path)
+    write_cache_file(empty_cache, output_path)
     for key, line in cache_lines.items():
-        append_cache_line(key, line, output_path)
+        append_cache_line(key, _encode_cache_line(key, line), output_path)
 
-    assert read_cache(output_path) == sample_cache
+    assert read_cache_file(output_path) == sample_cache

@@ -8,6 +8,7 @@ import pytest
 import kernel_tuner
 from kernel_tuner.cache.json import CacheFileJSON, CacheLineJSON
 from kernel_tuner.cache.cache import Cache
+from kernel_tuner.cache.cache import validate_json
 import jsonschema
 import pytest
 import kernel_tuner
@@ -56,14 +57,14 @@ def cache_line(cache, request) -> CacheLineJSON:
 def is_valid(cache):
     yield  # let the test apply some modifications
 
-    Cache.validate_json(cache)  # assert the cache is valid
+    validate_json(cache)  # assert the cache is valid
 
 
 @pytest.fixture()
 def is_invalid(cache):
     yield  # let the test apply some modifications
     with pytest.raises(jsonschema.exceptions.ValidationError):
-        Cache.validate_json(cache)  # assert the cache is invalid
+        validate_json(cache)  # assert the cache is invalid
 
 
 @pytest.fixture()

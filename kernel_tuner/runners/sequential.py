@@ -104,7 +104,7 @@ class SequentialRunner(Runner):
             total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
             params['strategy_time'] = self.last_strategy_time
             params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0.0)
-            params['timestamp'] = datetime.now(timezone.utc)
+            params['timestamp'] = str(datetime.now(timezone.utc))
             self.start_time = perf_counter()
 
             if result:

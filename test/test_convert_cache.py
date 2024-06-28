@@ -5,7 +5,8 @@ from shutil import copyfile
 import jsonschema
 import pytest
 
-from kernel_tuner.cache.convert import convert_cache_file, convert_cache_to_t4, default_convert, unversioned_convert
+from kernel_tuner.cache.cache import convert_cache_file
+from kernel_tuner.cache.convert import convert_cache_to_t4, default_convert, unversioned_convert
 from kernel_tuner.cache.paths import CACHE_SCHEMAS_DIR, SCHEMA_DIR
 from kernel_tuner.cache.versions import VERSIONS
 
@@ -145,17 +146,20 @@ class TestConvertCache:
     # Mock convert functions
     @staticmethod
     def _c1_0_0_to_1_1_0(cache):
+        cache["cache"] = {}
         cache["field2"] = dict()
         cache["schema_version"] = "1.1.0"
         return cache
 
     @staticmethod
     def _c1_1_0_to_1_1_1(cache):
+        cache["cache"] = {}
         cache["schema_version"] = "1.1.1"
         return cache
 
     @staticmethod
     def _c1_1_1_to_1_2_0(cache):
+        cache["cache"] = {}
         cache["field1"] = dict()
         cache["schema_version"] = "1.2.0"
         return cache

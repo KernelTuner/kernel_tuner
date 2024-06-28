@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import Callable
 
 import semver
-
-from kernel_tuner.cache.file import read_cache, write_cache
 from kernel_tuner.cache.json import (
     CacheFileJSON,
     T4FileJSON,
@@ -21,59 +19,18 @@ from kernel_tuner.cache.versions import VERSIONS
 CONVERSION_FUNCTIONS: dict[str, Callable[[dict], dict]]
 
 DEFAULT_VALUES = {
-    "object":   dict(),
-    "array":    list(),
-    "string":   "default string",
-    "integer":  0,
-    "number":   0,
-    "true":     True,
-    "false" :   False,
-    "null":     None
+    "object": dict(),
+    "array": list(),
+    "string": "default string",
+    "integer": 0,
+    "number": 0,
+    "true": True,
+    "false": False,
+    "null": None,
 }
 
 
-
-def convert_cache_file(filestr : PathLike,
-                       conversion_functions=None,
-                       versions=None,
-                       target_version=None):
-    """Convert a cache file to the latest/later version.
-
-    Parameters:
-        ``filestr`` is the name of the cachefile.
-
-        ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
-        mapping a version to a corresponding conversion function.
-
-        ``versions`` is a sorted ``list`` of ``str``s containing the versions.
-
-        ``target`` is the version that the cache should be converted to. By
-        default it is the latest version in ``versions``.
-
-    Raises:
-        ``ValueError`` if:
-
-            given cachefile has no "schema_version" field and can not be converted
-            to version 1.0.0,
-
-            the cachefile's version is higher than the newest version,
-
-            the cachefile's version is not a real version.
-    """
-    # Load cache from file
-    cache = read_cache(filestr)
-
-    # Convert cache
-    cache = convert_cache(cache, conversion_functions, versions, target_version)
-
-    # Update cache file
-    write_cache(cache, filestr)
-
-
-def convert_cache(cache : dict,
-                  conversion_functions=None,
-                  versions=None,
-                  target_version=None) -> dict:
+def convert_cache(cache: dict, conversion_functions=None, versions=None, target_version=None) -> dict:
     """Convert a cache dict to the latest/later version.
 
     Parameters:
@@ -112,34 +69,29 @@ def convert_cache(cache : dict,
     version = cache["schema_version"]
 
     if semver.VersionInfo.parse(version).compare(target_version) > 0:
-        raise ValueError(f"Target version ({target_version}) should not be "
-                         f"smaller than the cache's version ({version})")
+        raise ValueError(
+            f"Target version ({target_version}) should not be " f"smaller than the cache's version ({version})"
+        )
 
     if version not in versions:
-        raise ValueError(f"Version ({version}) should be a real "
-                         f"existing version")
+        raise ValueError(f"Version ({version}) should be a real " f"existing version")
 
     if target_version not in versions:
-        raise ValueError(f"Target version ({target_version}) should be "
-                         f"a real existing version")
+        raise ValueError(f"Target version ({target_version}) should be " f"a real existing version")
 
     # Main convert loop
     while version != target_version:
         if version in conversion_functions:
             cache = conversion_functions[version](cache)
         else:
-            cache = default_convert(cache, version, versions,
-                                    CACHE_SCHEMAS_DIR)
+            cache = default_convert(cache, version, versions, CACHE_SCHEMAS_DIR)
 
         version = cache["schema_version"]
 
     return cache
 
 
-def default_convert(cache       : dict,
-                    oldver      : str,
-                    versions    : list,
-                    schema_path : Path) -> dict:
+def default_convert(cache: dict, oldver: str, versions: list, schema_path: Path) -> dict:
     """Attempts a default conversion of ``cache`` to the next highest version.
 
     Parameters:
@@ -183,8 +135,7 @@ def default_convert(cache       : dict,
     return new_cache
 
 
-def unversioned_convert(cache       : dict,
-                        schema_path : Path) -> dict:
+def unversioned_convert(cache: dict, schema_path: Path) -> dict:
     """Attempts a conversion of an unversioned cache file to version 1.0.0.
 
     Parameters:
@@ -202,9 +153,9 @@ def unversioned_convert(cache       : dict,
     if "objective" not in cache:
         cache["objective"] = "time"
 
-    for key,entry in cache["cache"].items():
+    for key, entry in cache["cache"].items():
         if "timestamp" not in entry:
-            cache["cache"][key]["timestamp"] =  "2024-06-18 11:36:56.137831+00:00"
+            cache["cache"][key]["timestamp"] = "2024-06-18 11:36:56.137831+00:00"
         if "compile_time" not in entry:
             cache["cache"][key]["compile_time"] = 0
         if "benchmark_time" not in entry:
@@ -225,7 +176,9 @@ def unversioned_convert(cache       : dict,
             missing_keys.append(key)
 
         if missing_keys:
-            raise ValueError(f"Cache file too old, missing key{'s' if len(missing_keys) > 1 else ''} {', '.join(missing_keys)}, no suitable conversion to version 1.0.0 exists.")
+            raise ValueError(
+                f"Cache file too old, missing key{'s' if len(missing_keys) > 1 else ''} {', '.join(missing_keys)}, no suitable conversion to version 1.0.0 exists."
+            )
 
     return cache
 
@@ -237,34 +190,28 @@ def convert_cache_to_t4(cache: CacheFileJSON) -> T4FileJSON:
 
     Returns a ``T4FileJSON`` representing the converted cache file.
     """
-    t4 = T4FileJSON(results = [], schema_version = "1.0.0")
+    t4 = T4FileJSON(results=[], schema_version="1.0.0")
 
     for cache_line in cache["cache"].values():
         times = T4ResultTimesJSON(
-            compilation_time = cache_line["compile_time"],
-            framework = cache_line["framework_time"],
-            search_algorithm = cache_line["strategy_time"],
-            validation = cache_line["verification_time"],
-            runtimes = cache_line["times"]
+            compilation_time=cache_line["compile_time"],
+            framework=cache_line["framework_time"],
+            search_algorithm=cache_line["strategy_time"],
+            validation=cache_line["verification_time"],
+            runtimes=cache_line["times"],
         )
 
-        measurement = T4ResultMeasurementJSON(
-            name = cache["objective"],
-            value = cache_line[cache["objective"]],
-            unit = ""
-        )
+        measurement = T4ResultMeasurementJSON(name=cache["objective"], value=cache_line[cache["objective"]], unit="")
 
         result = T4ResultLineJSON(
-            timestamp = cache_line["timestamp"],
-            configuration = {
-                tune_param_key: cache_line[tune_param_key] for tune_param_key in cache["tune_params_keys"]
-            },
-            times = times,
+            timestamp=cache_line["timestamp"],
+            configuration={tune_param_key: cache_line[tune_param_key] for tune_param_key in cache["tune_params_keys"]},
+            times=times,
             # We assume that the supplied cache file is correct
-            invalidity = "correct",
-            correctness = 1,
-            measurements = [ measurement ],
-            objectives = [ cache["objective"] ]
+            invalidity="correct",
+            correctness=1,
+            measurements=[measurement],
+            objectives=[cache["objective"]],
         )
         t4["results"].append(result)
 
@@ -295,6 +242,4 @@ def convert_cache_to_t4(cache: CacheFileJSON) -> T4FileJSON:
 # }                                                                    #
 ########################################################################
 
-CONVERSION_FUNCTIONS = {
-
-}
+CONVERSION_FUNCTIONS = {}

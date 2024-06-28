@@ -18,9 +18,9 @@ class CacheLineJSON(TypedDict, CacheLineOptionalJSON):
 
     time: Any
     compile_time: float
-    verification_time: int
+    verification_time: float
     benchmark_time: float
-    strategy_time: int
+    strategy_time: float
     framework_time: float
     timestamp: str
 

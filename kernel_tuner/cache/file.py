@@ -8,18 +8,6 @@ import os
 from os import PathLike
 from typing import Callable, Optional
 
-from kernel_tuner.cache.json_encoder import CacheEncoder
-
-
-class InvalidCacheError(Exception):
-    """Cache file reading or writing failed."""
-
-    def __init__(self, filename: PathLike, message: str, error: Optional[Exception] = None):
-        """Constructor for the InvalidCacheError class."""
-        super().__init__(str(filename), message, error)
-        self.filename = str(filename)
-        self.message = message
-        self.error = error
 
 
 class CachedLinePosition:
@@ -30,39 +18,8 @@ class CachedLinePosition:
     file_position: int = 0
 
 
-def read_cache(filename: PathLike):
-    """Reads a cache file and returns its content as a dictionary.
-
-    Parameters:
-        filename (PathLike): The path to the cache file.
-
-    Returns:
-        dict: The content of the cache file.
-    """
-    # Try to load the cache as both open and closed.
-    # Store whether the cache was open and properly opened
-    with open(filename, "r") as file:
-        # Try load the cache as closed
-        try:
-            data = json.load(file)
-        except json.JSONDecodeError as e:
-            raise InvalidCacheError(filename, "Cache file is not parsable", e)
-    return data
-
-
-def write_cache(cache_json: dict, filename: PathLike):
-    """Writes a cache file with the given content.
-
-    Parameters:
-        cache_file (dict): The content to be written to the cache file.
-        filename (PathLike): The path to write the cache file.
-    """
-    with open(filename, "w") as file:
-        json.dump(cache_json, file, cls=CacheEncoder, indent="  ")
-
-
 def append_cache_line(
-    key: str, cache_line: dict, filename: PathLike, position: Optional[CachedLinePosition] = None
+    key: str, cache_line: str, filename: PathLike, position: Optional[CachedLinePosition] = None
 ) -> CachedLinePosition:
     """Appends a cache line to an open cache file.
 
@@ -77,7 +34,9 @@ def append_cache_line(
     return _append_cache_line_at(key, cache_line, filename, p)
 
 
-def _append_cache_line_at(key: str, cache_line: dict, filename: PathLike, position: CachedLinePosition) -> CachedLinePosition:
+def _append_cache_line_at(
+    key: str, cache_line: str, filename: PathLike, position: CachedLinePosition
+) -> CachedLinePosition:
     with open(filename, "r+") as file:
         # Save cache closing braces properties coming after "cache" as text in suffix
         file.seek(position.file_position)
@@ -89,7 +48,7 @@ def _append_cache_line_at(key: str, cache_line: dict, filename: PathLike, positi
         if not position.is_first_line:
             text += ","
         text += "\n"
-        text += json.dumps({key: cache_line}, cls=CacheEncoder, indent=None).strip()[1:-1]
+        text += cache_line
         file.write(text)
 
         # Update the position
@@ -105,7 +64,7 @@ def _append_cache_line_at(key: str, cache_line: dict, filename: PathLike, positi
     return next_pos
 
 
-# This function is unsafe: it only works when "cache" property is stored last
+# This function only works when "cache" property is stored last
 def _unsafe_get_next_cache_line_position(filename: PathLike, state: CachedLinePosition):
     with open(filename, "rb+") as file:
         # Seek the last `}` (root closing brace)

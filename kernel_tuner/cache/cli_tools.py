@@ -1,12 +1,19 @@
 """This module contains several functions used to perform several operations on cachefiles."""
 
+import json
 from os import PathLike
 from shutil import copyfile
-from typing import List, Any
+from typing import Any, List
 
-from .cache import Cache
-from .convert import convert_cache_file, convert_cache_to_t4
-from .file import read_cache, write_cache
+from .cache import (
+    Cache,
+    CacheEncoder,
+    convert_cache_file,
+    read_cache_file,
+    validate,
+    write_cache_file,
+)
+from .convert import convert_cache_to_t4
 
 
 def assert_cache_files_have_compatible_headers(file_list: List[PathLike]):
@@ -15,10 +22,10 @@ def assert_cache_files_have_compatible_headers(file_list: List[PathLike]):
     Assumes that all files have been validated.
     We use the first file (file_list[0]) as our base file, and compare everything with that.
     """
-    base_file = Cache.read(file_list[0])
+    base_file = Cache.read(file_list[0], read_only=True)
 
     for file in file_list[1:]:
-        temp_file = Cache.read(file)
+        temp_file = Cache.read(file, read_only=True)
 
         # Now the equivalence logic
 
@@ -49,7 +56,7 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
     """
     # From cache.py (json.load).
 
-    cache = Cache.read(cache_files[0])
+    cache = Cache.read(cache_files[0], read_only=True)
     output = Cache.create(
         output_path,
         device_name=cache.device_name,
@@ -62,14 +69,14 @@ def merge_files(cache_files: List[PathLike], output_path: PathLike):
 
     # Now for each file add the cache content.
     for file in cache_files:
-        input_file = Cache.read(file)
+        input_file = Cache.read(file, read_only=True)
         for line in input_file.lines.values():
             output.lines.append(**line)
 
 
 def get_line(infile: PathLike, key: str):
     """Checks if entry (string) `key` is inside file `in_file`, by using the `cache.py` library."""
-    cache_infile = Cache.read(infile)
+    cache_infile = Cache.read(infile, read_only=True)
 
     cache_line = cache_infile.lines[key]
 
@@ -88,7 +95,7 @@ def delete_line(infile: PathLike, key: str, outfile):
     if outfile is None:
         outfile = infile
 
-    cache_infile = Cache.read(infile)
+    cache_infile = Cache.read(infile, read_only=True)
     if cache_infile.lines.get(key) is None:
         raise KeyError(f"Entry '{key}' is not contained in cachefile '{infile}'.")
 
@@ -111,7 +118,7 @@ def convert(read_file: PathLike, write_file=None, target=None, allow_version_abs
     """The main function for handling the version conversion of a cachefile."""
     # Check if the `read_file` is actually a valid cachefile, in case it is versioned.
     if not allow_version_absence:
-        Cache.validate(read_file)
+        validate(read_file)
 
     # If no output file is specified, let the conversion overwrite the input file
     if write_file is None:
@@ -124,11 +131,12 @@ def convert(read_file: PathLike, write_file=None, target=None, allow_version_abs
 
 def convert_t4(read_file: PathLike, write_file: PathLike):
     """The main function for handling the T4 conversion of a cachefile."""
-    cache = read_cache(read_file)
+    cache = read_cache_file(read_file)
 
     t4_cache: Any = convert_cache_to_t4(cache)
 
-    write_cache(t4_cache, write_file)
+    with open(write_file, "w") as file:
+        json.dump(t4_cache, file, cls=CacheEncoder, indent="  ")
 
 
 def merge(file_list: List[PathLike], outfile: PathLike):
@@ -142,7 +150,7 @@ def merge(file_list: List[PathLike], outfile: PathLike):
     # Perform validation, conversion, equivalence check and after merge.
 
     for i in file_list:
-        Cache.validate(i)
+        validate(i)
 
     # Convert all files in `file_list` that are not matching the newest `schema_version` to the newest schema version.
     # Write the converted result to the same file.

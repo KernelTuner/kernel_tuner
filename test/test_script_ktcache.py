@@ -6,10 +6,9 @@ import jsonschema
 import pytest
 
 from kernel_tuner.scripts.ktcache import parse_args
-from kernel_tuner.cache.file import read_cache
 from kernel_tuner.cache.paths import CACHE_SCHEMAS_DIR
 from kernel_tuner.cache.versions import VERSIONS
-from kernel_tuner.cache.convert import convert_cache_file
+from kernel_tuner.cache.cache import convert_cache_file, read_cache_file
 
 TEST_PATH = Path(__file__).parent
 TEST_CACHE_PATH = TEST_PATH / "test_cache_files"
@@ -63,8 +62,8 @@ class TestCli:
         
         parser.func(parser)
 
-        convert_result = read_cache(UNVERSIONED_CONVERT_OUT)
-        small_content = read_cache(TEST_COPY_VERSIONED_DST)
+        convert_result = read_cache_file(UNVERSIONED_CONVERT_OUT)
+        small_content = read_cache_file(TEST_COPY_VERSIONED_DST)
 
         assert convert_result == small_content 
 
@@ -123,8 +122,8 @@ class TestCli:
 
         parser.func(parser)
 
-        delete_result = read_cache(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
-        small_content = read_cache(TEST_SMALL_CACHEFILE_DST)
+        delete_result = read_cache_file(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
+        small_content = read_cache_file(TEST_SMALL_CACHEFILE_DST)
 
         assert delete_result == small_content
 
@@ -222,9 +221,9 @@ class TestCli:
 
         parser.func(parser)
 
-        merge_result = read_cache(TEST_MERGE_OUTPUT)
+        merge_result = read_cache_file(TEST_MERGE_OUTPUT)
 
-        dest_output = read_cache(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
+        dest_output = read_cache_file(TEST_SMALL_CACHEFILE_THREE_ENTRIES_DST)
 
         assert merge_result == dest_output
 

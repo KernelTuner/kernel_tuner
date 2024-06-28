@@ -6,27 +6,53 @@ In order to modify and read cache files, the Cache class should be used, see its
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 from collections.abc import Mapping
 from datetime import datetime
 from functools import cached_property
 from functools import lru_cache as cache
 from os import PathLike
 from pathlib import Path
-from typing import cast, Any, Union, Optional, Dict, Iterable, Iterator
+from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Union, cast
 
 import jsonschema
+import kernel_tuner.util as util
+import numpy as np
 from semver import Version
 
-import kernel_tuner.util as util
 from .convert import convert_cache
+from .file import append_cache_line
 from .json import CacheFileJSON, CacheLineJSON
-from .json_encoder import CacheEncoder
-from .file import read_cache, write_cache, append_cache_line
-from .versions import LATEST_VERSION, VERSIONS
 from .paths import get_schema_path
+from .versions import LATEST_VERSION, VERSIONS
+
+INFINITY = float("inf")
 
 
-class Cache:
+def __get_schema_for_version(version: str):
+    schema_path = get_schema_path(version)
+    with open(schema_path, "r") as file:
+        return json.load(file)
+
+
+LATEST_SCHEMA = __get_schema_for_version(LATEST_VERSION)
+SCHEMA_REQUIRED_KEYS = LATEST_SCHEMA["required"]
+LINE_SCHEMA = LATEST_SCHEMA["properties"]["cache"]["additionalProperties"]
+RESERVED_PARAM_KEYS = set(LATEST_SCHEMA["properties"]["cache"]["additionalProperties"]["properties"].keys())
+
+
+class InvalidCacheError(Exception):
+    """Cache file reading or writing failed."""
+
+    def __init__(self, filename: PathLike, message: str, error: Optional[Exception] = None):
+        """Constructor for the InvalidCacheError class."""
+        super().__init__(str(filename), message, error)
+        self.filename = str(filename)
+        self.message = message
+        self.error = error
+
+
+class Cache(OrderedDict):
     """Writes and reads cache files.
 
     Cache files can be opened using ``Cache.open()`` and created using ``Cache.create()``. In both cases, a ``Cache``
@@ -59,17 +85,6 @@ class Cache:
         Docstring from `Cache.Line` explaining how to read properties from cache lines
     """
 
-    RESERVED_PARAM_KEYS: set = {
-        "time",
-        "compile_time",
-        "verification_time",
-        "benchmark_time",
-        "strategy_time",
-        "framework_time",
-        "timestamp",
-        "times"
-    }
-
     @classmethod
     def create(
         cls,
@@ -88,12 +103,6 @@ class Cache:
 
         Returns a Cache instance of which the lines are modifiable.
         """
-        if not isinstance(device_name, str):
-            raise ValueError("Argument device_name should be a string")
-        if not isinstance(kernel_name, str):
-            raise ValueError("Argument kernel_name should be a string")
-        if not isinstance(tune_params_keys, list) and not all(isinstance(key, str) for key in tune_params_keys):
-            raise ValueError("Argument tune_params_keys should be a list of strings")
         if not isinstance(tune_params, dict) or not all(
             isinstance(key, str) and isinstance(value, list) for key, value in tune_params.items()
         ):
@@ -102,39 +111,18 @@ class Cache:
                 "- keys being parameter keys (and all parameter keys should be used)\n"
                 "- values being the parameter's list of possible values"
             )
-        if not isinstance(objective, str):
-            raise ValueError("Expected objective to be a string")
         if set(tune_params_keys) != set(tune_params.keys()):
             raise ValueError("Expected tune_params to have exactly the same keys as in the list tune_params_keys")
-        if len(cls.RESERVED_PARAM_KEYS & set(tune_params_keys)) > 0:
+        if len(RESERVED_PARAM_KEYS & set(tune_params_keys)) > 0:
             raise ValueError("Found a reserved key in tune_params_keys")
 
         # main dictionary for new cache, note it is very important that 'cache' is the last key in the dict
-        cache_json: CacheFileJSON = {
-            "schema_version": str(LATEST_VERSION),
-            "device_name": device_name,
-            "kernel_name": kernel_name,
-            "problem_size": problem_size,
-            "tune_params_keys": tune_params_keys,
-            "tune_params": tune_params,
-            "objective": objective,
-            "cache": {},
-        }
+        schema_version = str(LATEST_VERSION)
+        inputs = {key: value for key, value in locals().items() if key in SCHEMA_REQUIRED_KEYS}
+        cache = Cache(filename=filename, read_only=False, **inputs)
 
-        cls.validate_json(cache_json)
-        write_cache(cast(dict, cache_json), filename)
-        return cls(filename, cache_json, read_only=False)
-
-    @classmethod
-    def open(cls, filename: PathLike):
-        """Opens an existing cache file. Returns a Cache instance with modifiable lines.
-
-        This cache file should have the latest version
-        """
-        cache_json = read_cache(filename)
-        assert Version.parse(cache_json["schema_version"]) == LATEST_VERSION, "Cache file is not of the latest version."
-        cls.validate_json(cache_json)
-        return cls(filename, cache_json, read_only=False)
+        write_cache_file(cache, filename)
+        return cache
 
     @classmethod
     def read(cls, filename: PathLike, read_only=False):
@@ -143,59 +131,36 @@ class Cache:
         If the cache file does not have the latest version, then it will be read after virtually converting it to the
         latest version. The file in this case is kept the same.
         """
-        cache_json = read_cache(filename)
+        cache_json = read_cache_file(filename)
 
-        # convert cache to latest schema if needed, then validate
+        # convert cache to latest schema if needed
         if "schema_version" not in cache_json or cache_json["schema_version"] != LATEST_VERSION:
             cache_json = convert_cache(cache_json)
             # if not read-only mode, update the file
             if not read_only:
-                write_cache(cast(dict, cache_json), filename)
+                write_cache_file(cast(dict, cache_json), filename)
 
-        cls.validate_json(cache_json)
+        cache = Cache(filename=filename, read_only=read_only, **cache_json)
+        return cache
 
-        return cls(filename, cache_json, read_only=read_only)
-
-    @classmethod
-    def validate(cls, filename: PathLike):
-        """Validates a cache file and raises an error if invalid."""
-        cache_json = read_cache(filename)
-        cls.validate_json(cache_json)
-
-    @classmethod
-    def validate_json(cls, cache_json: Any):
-        """Validates cache json."""
-        if "schema_version" not in cache_json:
-            raise jsonschema.ValidationError("Key 'schema_version' is not present in cache data")
-        schema_version = cache_json["schema_version"]
-        cls.__validate_json_schema_version(schema_version)
-        schema = cls.__get_schema_for_version(schema_version)
-        format_checker = _get_format_checker()
-        jsonschema.validate(instance=cache_json, schema=schema, format_checker=format_checker)
-
-    @classmethod
-    def __validate_json_schema_version(cls, version: str):
-        try:
-            if Version.parse(version) in VERSIONS:
-                return
-        except (ValueError, TypeError):
-            pass
-        raise jsonschema.ValidationError(f"Invalid version {repr(version)} found.")
-
-    @classmethod
-    def __get_schema_for_version(cls, version: str):
-        schema_path = get_schema_path(version)
-        with open(schema_path, "r") as file:
-            return json.load(file)
-
-    def __init__(self, filename: PathLike, cache_json: CacheFileJSON, *, read_only: bool):
-        """Inits a cache file instance, given that the file referred to by ``filename`` contains data ``cache_json``.
-
-        Argument ``cache_json`` is a cache dictionary expected to have the latest cache version.
-        """
+    def __init__(self, filename=None, read_only=False, **kwargs):
+        """Creates an instance of the Cache"""
         self._filename = Path(filename)
-        self._cache_json = cache_json
         self._read_only = read_only
+        super().__init__(**kwargs)
+        self.update(kwargs)
+
+        # ensure 'cache' key is present and is last in the dictionary
+        if "cache" not in self:
+            self["cache"] = {}
+        self.move_to_end("cache")
+
+        jsonschema.validate(instance=self, schema=LATEST_SCHEMA)
+
+        if read_only:
+            self.lines = Cache.ReadableLines(self, filename)
+        else:
+            self.lines = Cache.Lines(self, filename)
 
     @cached_property
     def filepath(self) -> Path:
@@ -205,17 +170,14 @@ class Cache:
     @cached_property
     def version(self) -> Version:
         """Version of the cache file."""
-        return Version.parse(self._cache_json["schema_version"])
+        return Version.parse(self["schema_version"])
 
-    @cached_property
-    def lines(self) -> Union[Lines, ReadableLines]:
-        """List of cache lines."""
-        if self._read_only:
-            return self.ReadableLines(self, self._filename, self._cache_json)
-        else:
-            return self.Lines(self, self._filename, self._cache_json)
+    def __getattr__(self, name):
+        if not name.startswith("_"):
+            return self[name]
+        return super(Cache, self).__getattr__(name)
 
-    class Lines(Mapping):
+    class Lines(dict):
         """Cache lines in a cache file.
 
         Behaves exactly like an only readable dict, except with an `append` method for appending lines.
@@ -241,85 +203,34 @@ class Cache:
             collections.abc.Mapping: https://docs.python.org/3/library/collections.abc.html
         """
 
-        def __init__(self, cache: Cache, filename: PathLike, cache_json: CacheFileJSON):
+        def __init__(self, cache: Cache, filename: PathLike):
             """Inits a new CacheLines instance."""
             self._cache = cache
             self._filename = filename
-            self._lines = cache_json["cache"]
+            super().__init__()
 
-        def __getitem__(self, line_id: str) -> Cache.Line:
-            """Returns a cache line given the parameters (in order)."""
-            return Cache.Line(self._cache, self._lines[line_id])
+            for key, value in cache["cache"].items():
+                if not isinstance(value, Cache.Line):
+                    self[key] = Cache.Line(value)
+                else:
+                    self[key] = value
 
-        def __iter__(self) -> Iterator[str]:
-            """Returns an iterator over the keys of the cache lines."""
-            return iter(self._lines)
-
-        def __len__(self) -> int:
-            """Returns the number of cache lines."""
-            return len(self._lines)
-
-        def __contains__(self, line_id) -> bool:
-            """Returns whether there exists a cache line with id ``line_id``."""
-            return line_id in self._lines
-
-        def append(
-            self,
-            *,
-            time: Union[float, util.ErrorConfig],
-            compile_time: float,
-            verification_time: int,
-            benchmark_time: float,
-            strategy_time: int,
-            framework_time: float,
-            timestamp,
-            times: Optional[list[float]] = None,
-            **tune_params,
-        ) -> None:
+        def append(self, **kwargs) -> None:
             """Appends a cache line to the cache lines."""
-            if not (isinstance(time, float) or isinstance(time, util.ErrorConfig)):
-                raise ValueError("Argument time should be a float or an ErrorConfig")
-            if not isinstance(compile_time, float):
-                raise ValueError("Argument compile_time should be a float")
-            if not isinstance(verification_time, (int, float)):
-                raise ValueError("Argument verification_time should be an int or float")
-            # It is possible that verification_time is a bool which is also of instance int. Check and cast to be sure.
-            elif isinstance(verification_time, bool):
-                verification_time = int(verification_time)
-            if not isinstance(benchmark_time, float):
-                raise ValueError("Argument benchmark_time should be a float")
-            if not isinstance(strategy_time, (int, float)):
-                raise ValueError("Argument strategy_time should be an int or float")
-            # It is possible that strategy_time is a bool which is also of instance int. Check and cast to be sure.
-            elif isinstance(strategy_time, bool):
-                strategy_time = int(strategy_time)
-            if not isinstance(framework_time, float):
-                raise ValueError(f"Argument framework_time should be a float, received: {framework_time} ({type(framework_time)})")
-            if not isinstance(timestamp, datetime):
-                # timestamp is not a Python datetime, try to convert string to datetime
-                timestamp = datetime.fromisoformat(str(timestamp))
-            if times is not None and not (isinstance(times, list) and all(isinstance(time, float) for time in times)):
-                raise ValueError("Argument times should be a list of floats or None")
+            if isinstance(kwargs[self._cache.objective], util.ErrorConfig):
+                kwargs[self._cache.objective] = str(kwargs[self._cache.objective])
+            line = Cache.Line(**kwargs)
 
+            tune_params = {key: value for key, value in kwargs.items() if key in self._cache.tune_params_keys}
             line_id = self.__get_line_id_from_tune_params_dict(tune_params)
-            if line_id in self._lines:
+            if line_id in self:
                 raise KeyError("Line with given tunable parameters already exists")
 
-            line = self.__get_line_json_object(
-                time,
-                compile_time,
-                verification_time,
-                benchmark_time,
-                strategy_time,
-                framework_time,
-                timestamp,
-                times,
-                tune_params,
-            )
-            self._lines[line_id] = line
-            append_cache_line(line_id, line, self._filename)
+            self[line_id] = line
+            line_str = _encode_cache_line(line_id, line)
+            append_cache_line(line_id, line_str, self._filename)
 
-        def get(self, line_id: Optional[str] = None, default=None, **params) -> Union[Cache.Line, list[Cache.Line]]:
+        def get_from_params(self, default=None, **params) -> Union[Cache.Line, list[Cache.Line]]:
             """Returns a cache line corresponding with ``line_id``.
 
             If the line_id is given and not None, the line corresponding to ``line_id`` is returned. Otherwise the
@@ -336,29 +247,21 @@ class Cache:
 
             If ``line_id`` is none and no parameters are defined, a list of all the lines is returned.
             """
-            if line_id is None and len(params) == 0:
-                return list(Cache.Line(self._cache, line) for line in self._lines.values())
+            if not default:
+                default = []
+
+            if len(params) == 0:
+                return list(Cache.Line(line) for line in self.values())
             if not all(key in self._cache.tune_params_keys for key in params):
                 raise ValueError("The keys in the parameters should be in `tune_params_keys`")
 
-            line_ids: Iterable[str]
-            if line_id is not None:
-                line_ids = (line_id,)
-                multiple = False
-            else:
-                line_ids = self.__get_matching_line_ids(params)
-                multiple = not all(key in params for key in self._cache.tune_params_keys)
-
-            if multiple:
-                lines_json_iter = (self._lines[k] for k in line_ids)
-                return list(Cache.Line(self._cache, line) for line in lines_json_iter)
-            line_id = next(iter(line_ids), None)
-            if line_id is None:
+            line_ids = self.__get_matching_line_ids(params)
+            results = [self[k] for k in line_ids]
+            if not results:
                 return default
-            line_json = self._lines.get(line_id)
-            if line_json is None:
-                return default
-            return Cache.Line(self._cache, line_json)
+            elif len(results) == 1:
+                results = results[0]
+            return results
 
         def __get_line_id(self, param_list: list[Any]) -> str:
             return json.dumps(param_list, separators=(",", ":"))[1:-1]
@@ -377,7 +280,7 @@ class Cache:
                     param_lists = []
                     for value in self._cache.tune_params[key]:
                         param_lists.extend(it + [value] for it in prev_lists)
-            return [line_id for line_id in map(self.__get_line_id, param_lists) if line_id in self._lines]
+            return [line_id for line_id in map(self.__get_line_id, param_lists) if line_id in self]
 
         def __get_line_id_from_tune_params_dict(self, tune_params: dict) -> str:
             param_list = []
@@ -391,161 +294,29 @@ class Cache:
                     raise ValueError(f"Expected tune param key {key} to be present in parameters")
             return self.__get_line_id(param_list)
 
-        def __get_line_json_object(
-            self,
-            time: Union[float, util.ErrorConfig],
-            compile_time: float,
-            verification_time: int,
-            benchmark_time: float,
-            strategy_time: int,
-            framework_time: float,
-            timestamp: datetime,
-            times: Optional[list[float]],
-            tune_params,
-        ):
-            line: dict = {
-                "time": time,
-                "compile_time": compile_time,
-                "verification_time": verification_time,
-                "benchmark_time": benchmark_time,
-                "strategy_time": strategy_time,
-                "framework_time": framework_time,
-                "timestamp": str(timestamp),
-            }
-            if times is not None:
-                line["times"] = times
-            line = {**line, **tune_params}
-
-            return line
-
     class ReadableLines(Lines):
         """Cache lines in a read_only cache file."""
 
         def append(*args, **kwargs):
-            """ Method to append lines to cache file, should not happen with read-only cache """
+            """Method to append lines to cache file, should not happen with read-only cache"""
             raise ValueError("Attempting to write to read-only cache")
 
-    class Line(Mapping):
-        """Cache line in a cache file.
+    class Line(dict):
+        """Cache line in a cache file"""
 
-        Every instance of this class behaves in principle as if it were a readable dict. Items can be accessed via the
-        instance's attributes, or via __getitem__ using the traditional brackets (`line[...]`). In addition, the aliased
-        properties automatically convert json data to python objects or can reference some dict item that does not have
-        a key that can be used as attribute. Items accessed using __getitem__ will always return a json serializable
-        object.
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # check if line has all the required fields and of correct types
+            jsonschema.validate(instance=self, schema=LINE_SCHEMA, format_checker=_get_format_checker())
 
-        Alias Properties:
-            time: error `util.ErrorConfig` or a number `float`
-            times: a list of floats (`float`) or `None`
-            timestamp: a `datetime` object of the timestamp
-
-        Usage Example:
-            from datetime import datetime
-
-            cache: Cache = ...
-            line = cache.lines[...]
-
-            # The timestamp attribute is automatically converted to a `datetime` object
-            assert isinstance(line.timestamp, datetime)
-            assert isinstance(line["timestamp"], str)
-
-        See Also:
-            collections.abc.Mapping: https://docs.python.org/3/library/collections.abc.html
-        """
-
-        compile_time: float
-        verification_time: int
-        benchmark_time: float
-        strategy_time: int
-        framework_time: float
-
-        @property
-        def time(self) -> Union[float, util.ErrorConfig]:
-            """The time of a cache line."""
-            time_or_error = self["time"]
-            if isinstance(time_or_error, str):
-                return util.ErrorConfig.from_str(time_or_error)
-            return time_or_error
-
-        @property
-        def times(self) -> Optional[list[float]]:
-            """The times attribute."""
-            return self.get("times")
-
-        @property
-        def timestamp(self) -> datetime:
-            """The timestamp as a datetime object."""
-            return datetime.fromisoformat(self["timestamp"])
-
-        def __init__(self, cache: Cache, line_json: CacheLineJSON):
-            """Inits a new CacheLines instance."""
-            self._cache = cache
-            self._line: Dict = line_json  # type: ignore
-
-        def __getitem__(self, key: str):
-            """Returns an item in a line."""
-            item = self._line[key]
-            if not (item is None or isinstance(item, (bool, int, float, str, list, dict))):
-                # FIX: This will convert the root object of any not json serializable object to a json serializable
-                # object, but it will not convert any items from the object returned to be json serializable.
-                encoder = _get_cache_line_json_encoder()
-                item = encoder.default(item)
-            return item
-
-        def __len__(self) -> int:
-            """Returns the number of attributes in a line."""
-            return len(self._line)
-
-        def __iter__(self):
-            """Returns an iterator over the line's keys."""
-            return iter(self._line)
-
-        def __contains__(self, key: object) -> bool:
-            """Returns whether a line contains a key."""
-            return key in self._line
-
-        def __getattr__(self, name: str):
-            """Accesses members of the dict as if they were attributes."""
-            return self[name]
-
-        def todict(self):
-            """Returns the cache line as a dictionary."""
-            return self._line.copy()
-
-    @cached_property
-    def device_name(self) -> str:
-        """Name of the device."""
-        return self._cache_json["device_name"]
-
-    @cached_property
-    def kernel_name(self) -> str:
-        """Name of the kernel."""
-        return self._cache_json["kernel_name"]
-
-    @cached_property
-    def problem_size(self) -> Any:
-        """Problem size of the kernel being tuned."""
-        return self._cache_json["problem_size"]
-
-    @cached_property
-    def tune_params_keys(self) -> list[str]:
-        """List of names (keys) of the tunable parameters."""
-        return self._cache_json["tune_params_keys"].copy()
-
-    @cached_property
-    def tune_params(self) -> dict[str, list[Any]]:
-        """Dictionary containing per tunable parameter a tuple of its possible values."""
-        return {key: value.copy() for key, value in self._cache_json["tune_params"].items()}
-
-    @cached_property
-    def objective(self) -> str:
-        """Objective of tuning the kernel."""
-        return self._cache_json["objective"]
+        def __getattr__(self, name):
+            if not name.startswith("_"):
+                return self[name]
+            return super(Line, self).__getattr__(name)
 
 
-@cache
-def _get_cache_line_json_encoder():
-    return CacheEncoder(indent="")
+def _encode_cache_line(line_id, line):
+    return json.dumps({line_id: line}, cls=CacheEncoder, indent=None).strip()[1:-1]
 
 
 @cache
@@ -562,3 +333,153 @@ def _get_format_checker():
             return False
 
     return format_checker
+
+
+class CacheEncoder(json.JSONEncoder):
+    """JSON encoder for Kernel Tuner cache lines.
+
+    Extend the default JSONEncoder with support for the following objects and types:
+
+    +-------------------+----------------------------------+
+    | Python            | JSON                             |
+    +===================+==================================+
+    | util.ErrorConfig  | str                              |
+    | np.integer        | int                              |
+    | np.floating       | float                            |
+    | np.ndarray        | list                             |
+    | dict              | object, with 'cache' as last key |
+    +-------------------+----------------------------------+
+
+    """
+
+    def __init__(self, *, indent=None, separators=None, **kwargs):
+        """Constructor for CacheJSONEncoder, with sensible defaults."""
+        if indent is None:
+            separators = (", ", ": ")
+
+        super().__init__(indent=indent, separators=separators, **kwargs)
+
+    def default(self, o):
+        """Converts non-jsonifiable objects to jsonifiable objects."""
+
+        if isinstance(o, util.ErrorConfig):
+            return str(o)
+        elif isinstance(o, np.integer):
+            return int(o)
+        elif isinstance(o, np.floating):
+            return float(o)
+        elif isinstance(o, np.ndarray):
+            return o.tolist()
+        super().default(o)
+
+    def iterencode(self, obj, *args, **kwargs):
+        """encode an iterator, ensuring 'cache' is the last entry for encoded dicts"""
+
+        # ensure key 'cache' is last in any encoded dictionary
+        if isinstance(obj, dict):
+            obj = OrderedDict(obj)
+            if "cache" in obj:
+                obj.move_to_end("cache")
+
+        yield from super().iterencode(obj, *args, **kwargs)
+
+
+def read_cache_file(filename: PathLike):
+    """Reads a cache file and returns its content as a dictionary.
+
+    Parameters:
+        filename (PathLike): The path to the cache file.
+
+    Returns:
+        dict: The content of the cache file.
+    """
+    with open(filename, "r") as file:
+        try:
+            data = json.load(file)
+        except json.JSONDecodeError as e:
+            raise InvalidCacheError(filename, "Cache file is not parsable", e)
+    return data
+
+
+def write_cache_file(cache_json: dict, filename: PathLike):
+    """Writes a cache file with the given content.
+
+    Parameters:
+        cache_file (dict): The content to be written to the cache file.
+        filename (PathLike): The path to write the cache file.
+    """
+
+    # extract entries from cache
+    cache_entries = cache_json["cache"]
+    cache_json["cache"] = {}
+
+    # first write cache without entries
+    with open(filename, "w") as file:
+        json.dump(cache_json, file, cls=CacheEncoder, indent="  ")
+
+    # restore internal state
+    cache_json["cache"] = cache_entries
+
+    # add entries line by line
+    for key, line in cache_entries.items():
+        line_str = _encode_cache_line(key, line)
+        append_cache_line(key, line_str, filename)
+
+
+def convert_cache_file(filestr: PathLike, conversion_functions=None, versions=None, target_version=None):
+    """Convert a cache file to the latest/later version.
+
+    Parameters:
+        ``filestr`` is the name of the cachefile.
+
+        ``conversion_functions`` is a ``dict[str, Callable[[dict], dict]]``
+        mapping a version to a corresponding conversion function.
+
+        ``versions`` is a sorted ``list`` of ``str``s containing the versions.
+
+        ``target`` is the version that the cache should be converted to. By
+        default it is the latest version in ``versions``.
+
+    Raises:
+        ``ValueError`` if:
+
+            given cachefile has no "schema_version" field and can not be converted
+            to version 1.0.0,
+
+            the cachefile's version is higher than the newest version,
+
+            the cachefile's version is not a real version.
+    """
+    # Load cache from file
+    cache = read_cache_file(filestr)
+
+    # Convert cache
+    cache = convert_cache(cache, conversion_functions, versions, target_version)
+
+    # Update cache file
+    write_cache_file(cache, filestr)
+
+
+def validate(filename: PathLike):
+    """Validates a cache file and raises an error if invalid."""
+    cache_json = read_cache_file(filename)
+    validate_json(cache_json)
+
+
+def validate_json(cache_json: Any):
+    """Validates cache json."""
+    if "schema_version" not in cache_json:
+        raise jsonschema.ValidationError("Key 'schema_version' is not present in cache data")
+    schema_version = cache_json["schema_version"]
+    __validate_json_schema_version(schema_version)
+    schema = __get_schema_for_version(schema_version)
+    jsonschema.validate(instance=cache_json, schema=schema, format_checker=_get_format_checker())
+
+
+def __validate_json_schema_version(version: str):
+    try:
+        if Version.parse(version) in VERSIONS:
+            return
+    except (ValueError, TypeError):
+        pass
+    raise jsonschema.ValidationError(f"Invalid version {repr(version)} found.")
