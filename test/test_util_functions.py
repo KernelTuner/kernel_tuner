@@ -1,8 +1,8 @@
 from __future__ import print_function
 
-import json
 import os
 import warnings
+from datetime import datetime
 
 import numpy as np
 import pytest
@@ -11,6 +11,7 @@ import kernel_tuner.backends.nvcuda as nvcuda
 import kernel_tuner.backends.opencl as opencl
 import kernel_tuner.backends.pycuda as pycuda
 import kernel_tuner.core as core
+from kernel_tuner.cache.cache import Cache
 from kernel_tuner.interface import Options
 from kernel_tuner.util import *
 
@@ -580,21 +581,11 @@ def test_normalize_verify_function():
 
 
 def test_process_cache():
-    def assert_open_cachefile_is_correctly_parsed(cache):
-        with open(cache, "r") as cachefile:
-            filestr = cachefile.read()
-            if filestr[-1] == ",":
-                filestr = filestr[:-1]
-            file_contents = filestr + "}\n}"
-        cache_object = json.loads(file_contents)
-        assert cache_object["device_name"] == "test_device"
-        assert cache_object["kernel_name"] == "test_kernel"
-
     # get temp filename, but remove the file
     cache = get_temp_filename(suffix=".json")
     delete_temp_file(cache)
 
-    kernel_options = Options(kernel_name="test_kernel", problem_size=(1, 2))
+    kernel_options = Options(kernel_name="test_kernel", problem_size=[1, 2])
     tuning_options = Options(
         cache=cache,
         tune_params=Options(x=[1, 2, 3, 4]),
@@ -609,24 +600,27 @@ def test_process_cache():
 
         # check if file has been created
         assert os.path.isfile(cache)
-        assert_open_cachefile_is_correctly_parsed(cache)
         assert tuning_options.cachefile == cache
-        assert isinstance(tuning_options.cache, dict)
+        assert isinstance(tuning_options.cache, Cache.Lines)
         assert len(tuning_options.cache) == 0
 
         # store one entry in the cache
-        params = {"x": 4, "time": np.float32(0.1234)}
-        store_cache("4", params, tuning_options)
+        tuning_options.cache.append(
+            time=0.1234,
+            compile_time=0.1234,
+            verification_time=0,
+            benchmark_time=0.1234,
+            strategy_time=0,
+            framework_time=0.1234,
+            timestamp=str(datetime.now()),
+            x = 4
+        )
         assert len(tuning_options.cache) == 1
-
-        # close the cache
-        close_cache(cache)
 
         # now test process cache with a pre-existing cache file
         process_cache(cache, kernel_options, tuning_options, runner)
-        assert_open_cachefile_is_correctly_parsed(cache)
 
-        assert tuning_options.cache["4"]["time"] == params["time"]
+        assert tuning_options.cache.get("4").time == 0.1234
 
         # check that exceptions are raised when using a cache file for
         # a different kernel, device, or parameter set

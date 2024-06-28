@@ -109,7 +109,9 @@ class CostFunc:
             self.runner.last_strategy_start_time = perf_counter()
 
         # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective] or sys.float_info.max
+        return_value = result[self.tuning_options.objective]
+        if isinstance(return_value, util.ErrorConfig) or not return_value:
+            return_value = sys.float_info.max
         return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
 
         return return_value

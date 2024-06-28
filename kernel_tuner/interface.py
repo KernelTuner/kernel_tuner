@@ -692,9 +692,6 @@ def tune_kernel(
     elif not device_options.quiet:
         print("no results to report")
 
-    if cache:
-        util.close_cache(cache)
-
     # get the seperate timings for the benchmarking process
     overhead_time = 1000 * (perf_counter() - start_overhead_time)
     env = util.get_total_timings(results, env, overhead_time)

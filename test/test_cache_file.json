@@ -1,6 +1,8 @@
 {
+    "schema_version": "1.0.0",
     "device_name": "NVIDIA RTX A4000",
     "kernel_name": "vector_add",
+    "problem_size": 100,
     "tune_params_keys": [
         "block_size_x"
     ],
@@ -23,6 +25,7 @@
             1024
         ]
     },
+    "objective": "time",
     "cache": {
         "128": {
             "block_size_x": 128,

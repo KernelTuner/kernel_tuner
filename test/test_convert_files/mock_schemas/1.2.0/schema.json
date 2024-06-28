@@ -1,0 +1,18 @@
+{
+    "description": "abc",
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "description": "The version of this JSON-schema, adhering to the Semantic Versioning specification.",
+            "const": "1.2.0"
+        },
+        "field1": {
+            "type": "object",
+            "description": "now an object"
+        },
+        "field2": {
+            "type": "object",
+            "description": "an object"
+        }
+    }
+}

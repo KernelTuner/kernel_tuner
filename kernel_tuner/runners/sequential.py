@@ -3,9 +3,10 @@ import logging
 from datetime import datetime, timezone
 from time import perf_counter
 
+from kernel_tuner.cache.cache import Cache
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
+from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics
 
 
 class SequentialRunner(Runner):
@@ -100,9 +101,9 @@ class SequentialRunner(Runner):
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
-            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time) 
+            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
             params['strategy_time'] = self.last_strategy_time
-            params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
+            params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0.0)
             params['timestamp'] = str(datetime.now(timezone.utc))
             self.start_time = perf_counter()
 
@@ -111,7 +112,8 @@ class SequentialRunner(Runner):
                 print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
 
                 # add configuration to cache
-                store_cache(x_int, params, tuning_options)
+                if isinstance(tuning_options.cache, Cache.Lines) and tuning_options.cache.get(x_int) is None:
+                    tuning_options.cache.append(**params)
 
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)

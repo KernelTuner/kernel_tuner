@@ -30,6 +30,7 @@ from constraint import (
 )
 
 from kernel_tuner.accuracy import Tunable
+from kernel_tuner.cache.cache import Cache
 
 try:
     import cupy as cp
@@ -45,7 +46,14 @@ from kernel_tuner.observers.nvml import NVMLObserver
 # number of special values to insert when a configuration cannot be measured
 
 
-class ErrorConfig(str):
+class ErrorConfig:
+    @classmethod
+    def from_str(cls, name: str):
+        """Creates an ErrorConfig subclass whieh has name ``name``."""
+        for SubClass in cls.__subclasses__():
+            if SubClass.__name__ == name:
+                return SubClass()
+
     def __str__(self):
         return self.__class__.__name__
 
@@ -1107,49 +1115,42 @@ def process_cache(cache, kernel_options, tuning_options, runner):
                 f"Simulation mode requires an existing cachefile: file {cache} does not exist"
             )
 
-        c = dict()
-        c["device_name"] = runner.dev.name
-        c["kernel_name"] = kernel_options.kernel_name
-        c["problem_size"] = (
-            kernel_options.problem_size
-            if not callable(kernel_options.problem_size)
-            else "callable"
+        c = Cache.create(
+            filename=cache,
+            device_name=runner.dev.name,
+            kernel_name=kernel_options.kernel_name,
+            problem_size=(
+                kernel_options.problem_size
+                if not callable(kernel_options.problem_size)
+                else "callable"
+            ),
+            tune_params_keys=list(tuning_options.tune_params.keys()),
+            tune_params=tuning_options.tune_params,
+            objective=tuning_options.objective
         )
-        c["tune_params_keys"] = list(tuning_options.tune_params.keys())
-        c["tune_params"] = tuning_options.tune_params
-        c["objective"] = tuning_options.objective
-        c["cache"] = {}
-
-        contents = json.dumps(c, cls=NpEncoder, indent="")[:-3]  # except the last "}\n}"
-
-        # write the header to the cachefile
-        with open(cache, "w") as cachefile:
-            cachefile.write(contents)
-
-        tuning_options.cachefile = cache
-        tuning_options.cache = {}
 
     # if file exists
     else:
-        cached_data = read_cache(cache)
+        # Read existing cache file, when using simulation_mode file is treated read_only
+        c = Cache.read(cache, read_only=tuning_options.simulation_mode)
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
-            runner.dev.name = cached_data["device_name"]
+            runner.dev.name = c.device_name
 
         # check if it is safe to continue tuning from this cache
-        if cached_data["device_name"] != runner.dev.name:
+        if c.device_name != runner.dev.name:
             raise ValueError(
                 "Cannot load cache which contains results for different device"
             )
-        if cached_data["kernel_name"] != kernel_options.kernel_name:
+        if c.kernel_name != kernel_options.kernel_name:
             raise ValueError(
                 "Cannot load cache which contains results for different kernel"
             )
-        if "problem_size" in cached_data and not callable(kernel_options.problem_size):
+        if not callable(kernel_options.problem_size):
             # if problem_size is not iterable, compare directly
             if not hasattr(kernel_options.problem_size, "__iter__"):
-                if cached_data["problem_size"] != kernel_options.problem_size:
+                if c.problem_size != kernel_options.problem_size:
                     raise ValueError(
                         "Cannot load cache which contains results for different problem_size"
                     )
@@ -1160,105 +1161,27 @@ def process_cache(cache, kernel_options, tuning_options, runner):
                 [
                     i == j
                     for i, j in zip(
-                        cached_data["problem_size"], kernel_options.problem_size
+                        c.problem_size, kernel_options.problem_size
                     )
                 ]
             ):
                 raise ValueError(
                     "Cannot load cache which contains results for different problem_size"
                 )
-        if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
-            if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
+        if c.tune_params_keys != list(tuning_options.tune_params.keys()):
+            if all(key in tuning_options.tune_params for key in c.tune_params_keys):
                 raise ValueError(
                     f"All tunable parameters are present, but the order is wrong. \
                     This is not possible because the order must be preserved to lookup the correct configuration in the cache. \
-                    Cache has order: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
+                    Cache has order: {c.tune_params_keys}, tuning_options has: {list(tuning_options.tune_params.keys())}"
                 )
             raise ValueError(
                 f"Cannot load cache which contains results obtained with different tunable parameters. \
-                Cache has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
+                Cache has: {c.tune_params_keys}, tuning_options has: {list(tuning_options.tune_params.keys())}"
             )
 
-        tuning_options.cachefile = cache
-        tuning_options.cache = cached_data["cache"]
-
-
-def correct_open_cache(cache, open_cache=True):
-    """If cache file was not properly closed, pretend it was properly closed."""
-    with open(cache, "r") as cachefile:
-        filestr = cachefile.read().strip()
-
-    # if file was not properly closed, pretend it was properly closed
-    if len(filestr) > 0 and not filestr[-3:] in ["}\n}", "}}}"]:
-        # remove the trailing comma if any, and append closing brackets
-        if filestr[-1] == ",":
-            filestr = filestr[:-1]
-        if len(filestr) > 0:
-            filestr = filestr + "}\n}"
-    else:
-        if open_cache:
-            # if it was properly closed, open it for appending new entries
-            with open(cache, "w") as cachefile:
-                cachefile.write(filestr[:-3] + ",")
-
-    return filestr
-
-def read_cache(cache, open_cache=True):
-    """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending."""
-    filestr = correct_open_cache(cache, open_cache)
-
-    error_configs = {
-        "InvalidConfig": InvalidConfig(),
-        "CompilationFailedConfig": CompilationFailedConfig(),
-        "RuntimeFailedConfig": RuntimeFailedConfig(),
-    }
-
-    # replace strings with ErrorConfig instances
-    cache_data = json.loads(filestr)
-    for element in cache_data["cache"].values():
-        for k, v in element.items():
-            if isinstance(v, str) and v in error_configs:
-                element[k] = error_configs[v]
-
-    return cache_data
-
-
-def close_cache(cache):
-    if not os.path.isfile(cache):
-        raise ValueError("close_cache expects cache file to exist")
-
-    with open(cache, "r") as fh:
-        contents = fh.read()
-
-    # close to file to make sure it can be read by JSON parsers
-    if contents[-1] == ",":
-        with open(cache, "w") as fh:
-            fh.write(contents[:-1] + "}\n}")
-
-
-def store_cache(key, params, tuning_options):
-    """Stores a new entry (key, params) to the cachefile."""
-    # logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
-    if isinstance(tuning_options.cache, dict):
-        if key not in tuning_options.cache:
-            tuning_options.cache[key] = params
-
-            # Convert ErrorConfig objects to string, wanted to do this inside the JSONconverter but couldn't get it to work
-            output_params = params.copy()
-            for k, v in output_params.items():
-                if isinstance(v, ErrorConfig):
-                    output_params[k] = str(v)
-
-            if tuning_options.cachefile:
-                with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({key: output_params}, cls=NpEncoder)[1:-1] + ",")
-
-
-def dump_cache(obj: str, tuning_options):
-    """Dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility!"""
-    if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
-        with open(tuning_options.cachefile, "a") as cachefile:
-            cachefile.write(obj)
+    tuning_options.cachefile = cache
+    tuning_options.cache = c.lines
 
 
 def cuda_error_check(error):

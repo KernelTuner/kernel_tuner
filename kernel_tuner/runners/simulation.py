@@ -88,7 +88,7 @@ class SimulationRunner(Runner):
             # check if element is in the cache
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
-                result = tuning_options.cache[x_int].copy()
+                result = tuning_options.cache[x_int]
 
                 # Simulate behavior of sequential runner that when a configuration is
                 # served from the cache by the sequential runner, the compile_time,
