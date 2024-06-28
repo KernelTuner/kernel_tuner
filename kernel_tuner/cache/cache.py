@@ -7,22 +7,20 @@ from __future__ import annotations
 
 import json
 from collections import OrderedDict
-from collections.abc import Mapping
 from datetime import datetime
 from functools import cached_property
 from functools import lru_cache as cache
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Union, cast
+from typing import Any, Optional, Union, cast
 
 import jsonschema
-import kernel_tuner.util as util
 import numpy as np
+from kernel_tuner import util
 from semver import Version
 
 from .convert import convert_cache
 from .file import append_cache_line
-from .json import CacheFileJSON, CacheLineJSON
 from .paths import get_schema_path
 from .versions import LATEST_VERSION, VERSIONS
 
@@ -259,7 +257,7 @@ class Cache(OrderedDict):
             results = [self[k] for k in line_ids]
             if not results:
                 return default
-            elif len(results) == 1:
+            if len(results) == 1:
                 results = results[0]
             return results
 
@@ -297,7 +295,7 @@ class Cache(OrderedDict):
     class ReadableLines(Lines):
         """Cache lines in a read_only cache file."""
 
-        def append(*args, **kwargs):
+        def append(self, *args, **kwargs):
             """Method to append lines to cache file, should not happen with read-only cache"""
             raise ValueError("Attempting to write to read-only cache")
 
@@ -312,7 +310,7 @@ class Cache(OrderedDict):
         def __getattr__(self, name):
             if not name.startswith("_"):
                 return self[name]
-            return super(Line, self).__getattr__(name)
+            return super(dict, self).__getattr__(name)
 
 
 def _encode_cache_line(line_id, line):
@@ -370,9 +368,9 @@ class CacheEncoder(json.JSONEncoder):
             return float(o)
         elif isinstance(o, np.ndarray):
             return o.tolist()
-        super().default(o)
+        return super().default(o)
 
-    def iterencode(self, obj, *args, **kwargs):
+    def iterencode(self, obj, **kwargs):
         """encode an iterator, ensuring 'cache' is the last entry for encoded dicts"""
 
         # ensure key 'cache' is last in any encoded dictionary
@@ -381,7 +379,7 @@ class CacheEncoder(json.JSONEncoder):
             if "cache" in obj:
                 obj.move_to_end("cache")
 
-        yield from super().iterencode(obj, *args, **kwargs)
+        yield from super().iterencode(obj, **kwargs)
 
 
 def read_cache_file(filename: PathLike):
@@ -397,7 +395,7 @@ def read_cache_file(filename: PathLike):
         try:
             data = json.load(file)
         except json.JSONDecodeError as e:
-            raise InvalidCacheError(filename, "Cache file is not parsable", e)
+            raise InvalidCacheError(filename, "Cache file is not parsable", e) from e
     return data
 
 
