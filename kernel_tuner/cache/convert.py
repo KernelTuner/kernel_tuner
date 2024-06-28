@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from os import PathLike
 from pathlib import Path
 from typing import Callable
 
@@ -19,8 +18,8 @@ from kernel_tuner.cache.versions import VERSIONS
 CONVERSION_FUNCTIONS: dict[str, Callable[[dict], dict]]
 
 DEFAULT_VALUES = {
-    "object": dict(),
-    "array": list(),
+    "object": {},
+    "array": [],
     "string": "default string",
     "integer": 0,
     "number": 0,
@@ -121,7 +120,7 @@ def default_convert(cache: dict, oldver: str, versions: list, schema_path: Path)
         old_schema = json.load(o)
         new_schema = json.load(n)
 
-    new_cache = dict()
+    new_cache = {}
     for key in new_schema["properties"]:
         # It may be the case that the cache does't have a key because it is not
         # required, so check if the key is in the cache
@@ -156,29 +155,21 @@ def unversioned_convert(cache: dict, schema_path: Path) -> dict:
     for key, entry in cache["cache"].items():
         if "timestamp" not in entry:
             cache["cache"][key]["timestamp"] = "2024-06-18 11:36:56.137831+00:00"
-        if "compile_time" not in entry:
-            cache["cache"][key]["compile_time"] = 0
-        if "benchmark_time" not in entry:
-            cache["cache"][key]["benchmark_time"] = 0
-        if "framework_time" not in entry:
-            cache["cache"][key]["framework_time"] = 0
-        if "strategy_time" not in entry:
-            cache["cache"][key]["strategy_time"] = 0
+        for missing_key in ["compile_time", "benchmark_time", "framework_time", "strategy_time"]:
+            if missing_key not in entry:
+                cache["cache"][key][missing_key] = 0
 
     path = schema_path / "1.0.0/schema.json"
 
     with open(path) as s:
         versioned_schema = json.load(s)
 
-    for key in versioned_schema["properties"]:
-        missing_keys = []
-        if key not in cache:
-            missing_keys.append(key)
-
-        if missing_keys:
-            raise ValueError(
-                f"Cache file too old, missing key{'s' if len(missing_keys) > 1 else ''} {', '.join(missing_keys)}, no suitable conversion to version 1.0.0 exists."
-            )
+    missing_keys = [key for key in versioned_schema["properties"] if key not in cache]
+    if missing_keys:
+        raise ValueError(
+            f"Cache file too old, missing key{'s' if len(missing_keys) > 1 else ''} "
+            + f"{', '.join(missing_keys)}, no suitable conversion to version 1.0.0 exists."
+        )
 
     return cache
 
