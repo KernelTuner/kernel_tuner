@@ -70,7 +70,7 @@ def test_append_cache_line(cache_path, output_path):
 
     write_cache_file(smaller_cache, output_path)
     line_str = _encode_cache_line(key, line)
-    append_cache_line(key, line_str, output_path)
+    append_cache_line(line_str, output_path)
 
     assert read_cache_file(output_path) == sample_cache
 
@@ -85,7 +85,7 @@ def test_append_cache_line__with_position(cache_path, output_path):
 
     pos = CachedLinePosition()
     for key, line in cache_lines.items():
-        pos = append_cache_line(key, _encode_cache_line(key, line), output_path, pos)
+        pos = append_cache_line(_encode_cache_line(key, line), output_path, pos)
 
     assert read_cache_file(output_path) == sample_cache
 
@@ -99,6 +99,6 @@ def test_append_cache_line__to_empty_cache(cache_path, output_path):
 
     write_cache_file(empty_cache, output_path)
     for key, line in cache_lines.items():
-        append_cache_line(key, _encode_cache_line(key, line), output_path)
+        append_cache_line(_encode_cache_line(key, line), output_path)
 
     assert read_cache_file(output_path) == sample_cache

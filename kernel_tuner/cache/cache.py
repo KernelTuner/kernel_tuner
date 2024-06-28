@@ -226,7 +226,7 @@ class Cache(OrderedDict):
 
             self[line_id] = line
             line_str = _encode_cache_line(line_id, line)
-            append_cache_line(line_id, line_str, self._filename)
+            append_cache_line(line_str, self._filename)
 
         def get_from_params(self, default=None, **params) -> Union[Cache.Line, list[Cache.Line]]:
             """Returns a cache line corresponding with ``line_id``.
@@ -421,7 +421,7 @@ def write_cache_file(cache_json: dict, filename: PathLike):
     # add entries line by line
     for key, line in cache_entries.items():
         line_str = _encode_cache_line(key, line)
-        append_cache_line(key, line_str, filename)
+        append_cache_line(line_str, filename)
 
 
 def convert_cache_file(filestr: PathLike, conversion_functions=None, versions=None, target_version=None):

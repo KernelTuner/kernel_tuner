@@ -19,7 +19,7 @@ class CachedLinePosition:
 
 
 def append_cache_line(
-    key: str, cache_line: str, filename: PathLike, position: Optional[CachedLinePosition] = None
+    cache_line: str, filename: PathLike, position: Optional[CachedLinePosition] = None
 ) -> CachedLinePosition:
     """Appends a cache line to an open cache file.
 
@@ -31,11 +31,11 @@ def append_cache_line(
     p = position or CachedLinePosition()
     if not p.is_initialized:
         _unsafe_get_next_cache_line_position(filename, p)
-    return _append_cache_line_at(key, cache_line, filename, p)
+    return _append_cache_line_at(cache_line, filename, p)
 
 
 def _append_cache_line_at(
-    key: str, cache_line: str, filename: PathLike, position: CachedLinePosition
+    cache_line: str, filename: PathLike, position: CachedLinePosition
 ) -> CachedLinePosition:
     with open(filename, "r+") as file:
         # Save cache closing braces properties coming after "cache" as text in suffix
