@@ -1288,7 +1288,6 @@ def get_num_devices(simulation_mode=False):
         num_devices = round(resources.get("CPU") * 0.8)
     else:
         num_devices = resources.get("GPU")
-    print(f"DEBUG: {num_devices} Ray devices detected", file=sys.stderr)
     return int(num_devices)
 
 def get_gpu_id(lang):

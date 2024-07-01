@@ -211,7 +211,7 @@ class ParallelRunner(Runner):
         for env in environments:
             gpu_types.append(env["device_name"])
         if len(set(gpu_types)) == 1:
-            print(f"DEBUG: Running on {len(gpu_types)} {gpu_types[0]}", file=sys.stderr)
+            print(f"Running on {len(gpu_types)} {gpu_types[0]}", file=sys.stderr)
             return True
         else:
             return False

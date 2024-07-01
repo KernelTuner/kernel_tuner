@@ -68,7 +68,6 @@ class RemoteActor():
                                        self.iterations, self.observers, cache_manager=self.cache_manager, dev=self.dev)
 
     def _reinitialize_observers(self, observers_type_and_arguments):
-        print("DEBUG: reinit observers called", file=sys.stderr)
         # observers can't be pickled to the actor so we need to re-initialize them
         self.observers = []
         for (observer, arguments) in observers_type_and_arguments:
