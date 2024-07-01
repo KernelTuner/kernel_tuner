@@ -1,6 +1,4 @@
 import ray
-import sys
-import copy
 
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner

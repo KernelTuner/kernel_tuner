@@ -1,7 +1,5 @@
-import logging
 import ray
 import sys
-import os
 from ray.util.actor_pool import ActorPool
 from time import perf_counter
 from collections import deque
@@ -9,7 +7,6 @@ import copy
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.runners.ray.remote_actor import RemoteActor
 from kernel_tuner.util import get_num_devices, GPUTypeMismatchError
 from kernel_tuner.runners.ray.cache_manager import CacheManager
 from kernel_tuner.strategies.common import create_actor_on_device, initialize_ray

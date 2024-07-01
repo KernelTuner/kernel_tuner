@@ -1,22 +1,9 @@
-import random
-import sys
-import os
-import ray
-import copy
-import logging
 import warnings
-from collections import deque
 
-import numpy as np
-
-from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies import common
-from kernel_tuner.strategies.common import CostFunc, scale_from_params, check_num_devices, create_actor_on_device, initialize_ray
+from kernel_tuner.strategies.common import initialize_ray
 from kernel_tuner.runners.simulation import SimulationRunner
-from kernel_tuner.runners.ray.remote_actor import RemoteActor
 from kernel_tuner.util import get_num_devices
-from kernel_tuner.runners.ray.cache_manager import CacheManager
 from kernel_tuner.runners.parallel import ParallelRunner
 
 from kernel_tuner.strategies import (
