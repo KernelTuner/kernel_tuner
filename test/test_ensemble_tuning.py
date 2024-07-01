@@ -17,9 +17,11 @@ except Exception:
 def env():
     kernel_string = """
     extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
-        int i = blockIdx.x * block_size_x + threadIdx.x;
-        if (i<n) {
-            c[i] = a[i] + b[i];
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        int j = blockIdx.y * blockDim.y + threadIdx.y;
+        int index = i + j * gridDim.x * blockDim.x;
+        if (index < n) {
+            c[index] = a[index] + b[index];
         }
     }
     """
@@ -32,11 +34,16 @@ def env():
 
     args = [c, a, b, n]
     tune_params = dict()
-    tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
+
+    # Extend the range of block sizes for a bigger search space
+    tune_params["block_size_x"] = [128 + 64 * i for i in range(30)]
+    tune_params["block_size_y"] = [1 + i for i in range(1, 16)]
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
 @skip_if_no_pycuda
 def test_parallel_tune_kernel(env):
-    result, _ = tune_kernel(*env, lang="CUDA", verbose=True, strategy="ensemble", parallel_mode=True)
+    strategy_options = {"ensemble": ["greedy_ils", "greedy_ils"]}
+    result, _ = tune_kernel(*env, lang="CUDA", verbose=True, strategy="ensemble", 
+                            parallel_mode=True, strategy_options=strategy_options)
     assert len(result) > 0
