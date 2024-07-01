@@ -144,6 +144,9 @@ class ParallelRunner(Runner):
         return new_tuning_options
     
     def _process_results_ensemble(self, all_results):
+        """
+        Process the results from the ensemble execution.
+        """
         results = []
         tuning_options_list = []
 
@@ -155,6 +158,9 @@ class ParallelRunner(Runner):
 
 
     def parallel_function_evaluation(self, tuning_options, parameter_space):
+        """
+        Perform parallel function evaluation.
+        """
         # Create a pool of RemoteActor actors
         self.actor_pool = ActorPool(self.actors)
         # Distribute execution of the `execute` method across the actor pool with varying parameters and tuning options, collecting the results asynchronously.
@@ -164,6 +170,9 @@ class ParallelRunner(Runner):
         return results, tuning_options_list
     
     def _process_results(self, all_results, searchspace):
+        """
+        Process the results and remove duplicates based on the searchspace.
+        """
         unique_configs = set()
         final_results = []
 
@@ -176,12 +185,18 @@ class ParallelRunner(Runner):
         return final_results
     
     def _calculate_simulated_time(self, tuning_options_list):
+        """
+        Calculate the maximum simulated time from the list of tuning options.
+        """
         simulated_times = []
         for tuning_options in tuning_options_list:
             simulated_times.append(tuning_options.simulated_time)
         return max(simulated_times)
 
     def _check_gpus_equals(self):
+        """
+        Check if all GPUs are of the same type.
+        """
         gpu_types = []
         env_refs = [actor.get_environment.remote() for actor in self.actors]
         environments = ray.get(env_refs)
@@ -194,6 +209,9 @@ class ParallelRunner(Runner):
             return False
 
     def clean_up_ray(self):
+        """
+        Clean up Ray actors and cache manager.
+        """
         if self.actors is not None:
             for actor in self.actors:
                 ray.kill(actor)
