@@ -36,7 +36,7 @@ def vector_add():
 @pytest.mark.parametrize('strategy', strategy_map)
 def test_strategies(vector_add, strategy):
 
-    options = dict(popsize=5, neighbor='adjacent')
+    options = dict(popsize=5)
 
     print(f"testing {strategy}")
 
