@@ -7,42 +7,39 @@ from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
-from kernel_tuner.runners.parallel import ParallelRunner
 
 _options = dict(
     popsize=("population size", 20),
     maxiter=("maximum number of generations", 100),
     method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
     mutation_chance=("chance to mutate is 1 in mutation_chance", 10),
-    population=("initial population", None),
 )
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
-    pop_size, generations, method, mutation_chance, population = common.get_options(options, _options)
+    pop_size, generations, method, mutation_chance = common.get_options(options, _options)
     crossover = supported_methods[method]
 
     best_score = 1e20
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
-    if not population:
-        population = list(list(p) for p in searchspace.get_random_sample(pop_size))
-    else:
-        pop_size = len(population)
-    
-    old_population = population
+    population = list(list(p) for p in searchspace.get_random_sample(pop_size))
+
     for generation in range(generations):
 
-        # Evaluate the entire population
-        try:
-            old_population = population
-            weighted_population = evaluate_population(runner, cost_func, population)
-        except util.StopCriterionReached as e:
-            if tuning_options.verbose:
-                print(e)
-            return cost_func.results
+        # determine fitness of population members
+        weighted_population = []
+        for dna in population:
+            try:
+                time = cost_func(dna, check_restrictions=False)
+            except util.StopCriterionReached as e:
+                if tuning_options.verbose:
+                    print(e)
+                return cost_func.results
+
+            weighted_population.append((dna, time))
 
         # population is sorted such that better configs have higher chance of reproducing
         weighted_population.sort(key=lambda x: x[1])
@@ -72,8 +69,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                     break
 
         # could combine old + new generation here and do a selection
-    tuning_options.strategy_options["population"] = old_population # for memetic strategy
-    tuning_options.strategy_options["candidates"] = population # for memetic strategy
+
     return cost_func.results
 
 
@@ -181,27 +177,3 @@ supported_methods = {
     "uniform": uniform_crossover,
     "disruptive_uniform": disruptive_uniform_crossover,
 }
-
-def evaluate_population(runner, cost_func, population):
-    """
-    Evaluate the population based on the type of runner.
-
-    Parameters:
-    - runner: The runner (ParallelRunner or SequentialRunner) determining how to process evaluations.
-    - cost_func: A function capable of evaluating the population.
-    - population: List of individuals to be evaluated.
-
-    Returns:
-    - List of tuples (dna, fitness_score) representing the population and their evaluation results.
-    """
-    if isinstance(runner, ParallelRunner):
-        # Process the whole population at once if using a ParallelRunner
-        results = cost_func(population, check_restrictions=False)
-        return list(zip(population, results))
-    else:
-        # Process each individual sequentially for SequentialRunner
-        weighted_population = []
-        for dna in population:
-            time = cost_func(dna, check_restrictions=False)  # Cost function called with a single-element list
-            weighted_population.append((dna, time))
-        return weighted_population

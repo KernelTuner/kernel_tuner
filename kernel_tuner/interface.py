@@ -58,8 +58,7 @@ from kernel_tuner.strategies import (
     pso,
     random_sample,
     simulated_annealing,
-    ensemble,
-    memetic
+    ensemble
 )
 
 strategy_map = {
@@ -79,7 +78,6 @@ strategy_map = {
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
     "ensemble": ensemble,
-    "memetic": memetic,
 }
 
 

@@ -52,8 +52,7 @@ def make_strategy_options_doc(strategy_options):
 
 def get_options(strategy_options, options):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
-    accepted = list(options.keys()) + ["max_fevals", "time_limit", "ensemble", "candidates", "candidate", "population", 
-                                       "maxiter", "lsd", "popsize", "alsd", "split_searchspace", "check_and_retrieve"]
+    accepted = list(options.keys()) + ["max_fevals", "time_limit", "ensemble", "check_and_retrieve"]
     for key in strategy_options:
         if key not in accepted:
             raise ValueError(f"Unrecognized option {key} in strategy_options")

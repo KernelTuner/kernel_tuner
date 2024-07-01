@@ -9,8 +9,7 @@ from kernel_tuner.strategies.hillclimbers import base_hillclimb
 _options = dict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
                        restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
                        no_improvement=("number of evaluations to exceed without improvement before restarting", 50),
-                       random_walk=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", 0.3),
-                       candidate=("initial candidate for the search", None))
+                       random_walk=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", 0.3))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
@@ -18,7 +17,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
 
-    neighbor, restart, no_improvement, randomwalk, candidate = common.get_options(options, _options)
+    neighbor, restart, no_improvement, randomwalk = common.get_options(options, _options)
 
     perm_size = int(randomwalk * dna_size)
     if perm_size == 0:
@@ -32,28 +31,16 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
     #while searching
-    if not candidate:
-        candidate = searchspace.get_random_sample(1)[0]
-    old_candidate = candidate # for memetic strategy
-    try:
-        best_score = cost_func(candidate, check_restrictions=False)
-    except util.StopCriterionReached as e:
-        tuning_options.strategy_options["old_candidate"] = old_candidate # for memetic strategy
-        tuning_options.strategy_options["candidate"] = candidate # for memetic strategy
-        if tuning_options.verbose:
-            print(e)
-        return cost_func.results
+    candidate = searchspace.get_random_sample(1)[0]
+    best_score = cost_func(candidate, check_restrictions=False)
 
     last_improvement = 0
     while fevals < max_fevals:
 
         try:
-            old_candidate = candidate # for memetic strategy
             candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=True)
             new_score = cost_func(candidate, check_restrictions=False)
         except util.StopCriterionReached as e:
-            tuning_options.strategy_options["old_candidate"] = old_candidate # for memetic strategy
-            tuning_options.strategy_options["candidate"] = candidate # for memetic strategy
             if tuning_options.verbose:
                 print(e)
             return cost_func.results
@@ -66,8 +53,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         # Instead of full restart, permute the starting candidate
         candidate = random_walk(candidate, perm_size, no_improvement, last_improvement, searchspace)
-    tuning_options.strategy_options["old_candidate"] = old_candidate # for memetic strategy
-    tuning_options.strategy_options["candidate"] = candidate # for memetic strategy
     return cost_func.results
 
 

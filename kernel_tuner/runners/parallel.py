@@ -51,11 +51,7 @@ class ParallelRunner(Runner):
         if self.actors is None:
             runner_attributes = [self.kernel_source, self.kernel_options, self.device_options, self.iterations, self.observers]
             self.actors = [create_actor_on_device(*runner_attributes, id=_id, cache_manager=self.cache_manager, simulation_mode=self.simulation_mode) for _id in range(self.num_gpus)]
-            # actors_ready_futures = [actor.__ray_ready__.remote() for actor in futures]
-            # ray.wait(actors_ready_futures, num_returns=len(actors_ready_futures), timeout=None)
-            # self.actors = futures
-
-
+            
         # Check if all GPUs are of the same type
         if not self.simulation_mode and not self._check_gpus_equals():
             raise GPUTypeMismatchError(f"Different GPU types found") 
@@ -137,43 +133,28 @@ class ParallelRunner(Runner):
                     task = actor.execute.remote(strategy=strategy, searchspace=searchspace, tuning_options=remote_tuning_options)
                     pending_tasks[task] = actor
         
-        # Process results to extract population and candidates for further use
-        results, tuning_options_list, population, candidates = self._process_results_ensemble(all_results)
-
-        # Update tuning options for memetic strategies
-        if population:
-            tuning_options.strategy_options["population"] = population
-        if candidates:
-            tuning_options.strategy_options["candidates"] = candidates
+        # Process results
+        results, tuning_options_list = self._process_results_ensemble(all_results)
         
         return results, tuning_options_list
 
     
     def _setup_tuning_options(self, tuning_options, evaluations_per_strategy):
         new_tuning_options = copy.deepcopy(tuning_options)
-        if "candidates" in tuning_options.strategy_options:
-            if len(tuning_options.strategy_options["candidates"]) > 0:
-                new_tuning_options.strategy_options["candidate"] = tuning_options.strategy_options["candidates"].pop(0)
         new_tuning_options.strategy_options["max_fevals"] = evaluations_per_strategy.pop(0)
         # the stop criterion uses the max feval in tuning options for some reason
         new_tuning_options["max_fevals"] = new_tuning_options.strategy_options["max_fevals"]
         return new_tuning_options
     
     def _process_results_ensemble(self, all_results):
-        population = [] # for memetic strategy
-        candidates = [] # for memetic strategy
         results = []
         tuning_options_list = []
 
         for (strategy_results, tuning_options) in all_results:
-            if "old_candidate" in tuning_options.strategy_options:
-                candidates.append(tuning_options.strategy_options["old_candidate"])
-            if "candidate" in tuning_options.strategy_options:
-                population.append(tuning_options.strategy_options["candidate"])
             results.extend(strategy_results)
             tuning_options_list.append(tuning_options)
 
-        return results, tuning_options_list, population, candidates
+        return results, tuning_options_list
 
 
     def parallel_function_evaluation(self, tuning_options, parameter_space):
@@ -201,7 +182,6 @@ class ParallelRunner(Runner):
         simulated_times = []
         for tuning_options in tuning_options_list:
             simulated_times.append(tuning_options.simulated_time)
-        #simulated_times = [tuning_options.simulated_time for tuning_options in tuning_options_list]
         return max(simulated_times)
 
     def _check_gpus_equals(self):
