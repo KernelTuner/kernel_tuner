@@ -194,7 +194,6 @@ class CostFunc:
             # in case of stop creterion reached, save the results so far
             self.results.append(result)
 
-        self.results.extend(final_results)
         # upon returning from this function control will be given back to the strategy, so reset the start time
         self.runner.last_strategy_start_time = perf_counter()
 
