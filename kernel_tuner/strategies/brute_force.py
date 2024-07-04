@@ -4,7 +4,7 @@ from kernel_tuner.strategies import common
 from kernel_tuner.runners.parallel import ParallelRunner
 from kernel_tuner.runners.ray.cache_manager import CacheManager
 
-_options = {}
+_options = dict(num_gpus=("Number of gpus to run parallel execution", None))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 

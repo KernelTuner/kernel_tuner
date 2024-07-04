@@ -28,6 +28,12 @@ class SequentialRunner(Runner):
         :param iterations: The number of iterations used for benchmarking
             each kernel instance.
         :type iterations: int
+
+        :param observers: List of observers.
+        :type observers: list
+
+        :param cache_manager: Cache manager instance. Defaults to None.
+        :type cache_manager: kernel_tuner.runners.ray.cache_manager.CacheManager, optional
         """
         #detect language and create high-level device interface
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options) if dev is None else dev

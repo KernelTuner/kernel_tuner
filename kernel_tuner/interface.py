@@ -467,6 +467,7 @@ _tuning_options = Options(
         ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
+        ("parallel_mode", ("Run the auto-tuning on multiple devices (brute-force execution)", "bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
     ]
 )

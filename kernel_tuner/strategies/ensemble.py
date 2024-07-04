@@ -1,6 +1,11 @@
+"""
+The ensemble strategy that optimizes the search through the parameter space using a combination of multiple strategies.
+"""
+
 import warnings
 
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import initialize_ray
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.util import get_num_devices
@@ -40,20 +45,26 @@ strategy_map = {
     "bayes_opt": bayes_opt,
 }
 
+_options = dict(
+    ensemble=("List of strategies to be used in the ensemble", ["random_sample", "random_sample"]),
+    max_fevals=("Maximum number of function evaluations", None),
+    num_gpus=("Number of gpus to run the parallel ensemble on", None)
+)
+
 def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, actors=None):
     clean_up = True if actors is None and cache_manager is None else False
     options = tuning_options.strategy_options
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     initialize_ray()
-    num_devices = tuning_options['num_gpus'] if 'num_gpus' in tuning_options else get_num_devices(simulation_mode=simulation_mode)
-    
-    ensemble = options.get('ensemble', ["diff_evo", "diff_evo"])
+
+    ensemble, max_fevals, num_gpus =common.get_options(tuning_options.strategy_options, _options)
+    num_devices = num_gpus if num_gpus is not None else get_num_devices(simulation_mode=simulation_mode)  
     ensemble_size = len(ensemble)
 
     # setup strategy options
     if 'bayes_opt' in ensemble: # All strategies start from a random sample except for BO
         tuning_options.strategy_options["samplingmethod"] = 'random'
-    tuning_options.strategy_options["max_fevals"] = options.get("max_fevals", 100 * ensemble_size)
+    tuning_options.strategy_options["max_fevals"] = 100 * ensemble_size if max_fevals is None else max_fevals
     tuning_options.strategy_options['check_and_retrieve'] = True
 
     # define number of ray actors needed
@@ -73,3 +84,5 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, a
         parallel_runner.clean_up_ray()
     
     return final_results
+
+tune.__doc__ = common.get_strategy_docstring("Ensemble", _options)

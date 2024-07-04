@@ -25,6 +25,7 @@ the ``strategy=`` optional argument of ``tune_kernel()``. Kernel Tuner currently
  * "pso" particle swarm optimization
  * "random_sample" takes a random sample of the search space
  * "simulated_annealing" simulated annealing strategy
+ * "ensemble" ensemble strategy
 
 Most strategies have some mechanism built in to detect when to stop tuning, which may be controlled through specific 
 parameters that can be passed to the strategies using the ``strategy_options=`` optional argument of ``tune_kernel()``. You 

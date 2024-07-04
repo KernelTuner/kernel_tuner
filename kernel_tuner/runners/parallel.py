@@ -12,9 +12,41 @@ from kernel_tuner.runners.ray.cache_manager import CacheManager
 from kernel_tuner.strategies.common import create_actor_on_device, initialize_ray
 
 class ParallelRunner(Runner):
+    """ParallelRunner is used for tuning with multiple processes/threads using Ray for distributed computing."""
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, 
                  num_gpus=None, cache_manager=None, actors=None, simulation_mode=False):
+        """Instantiate the ParallelRunner.
+
+        :param kernel_source: The kernel source
+        :type kernel_source: kernel_tuner.core.KernelSource
+
+        :param kernel_options: A dictionary with all options for the kernel.
+        :type kernel_options: kernel_tuner.interface.Options
+
+        :param device_options: A dictionary with all options for the device
+            on which the kernel should be tuned.
+        :type device_options: kernel_tuner.interface.Options
+
+        :param iterations: The number of iterations used for benchmarking
+            each kernel instance.
+        :type iterations: int
+
+        :param observers: List of observers.
+        :type observers: list
+
+        :param num_gpus: Number of GPUs to use. Defaults to None.
+        :type num_gpus: int, optional
+
+        :param cache_manager: Cache manager instance. Defaults to None.
+        :type cache_manager: kernel_tuner.runners.ray.cache_manager.CacheManager, optional
+
+        :param actors: List of pre-initialized actors. Defaults to None.
+        :type actors: list, optional
+
+        :param simulation_mode: Flag to indicate simulation mode. Defaults to False.
+        :type simulation_mode: bool, optional
+        """
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options) if not simulation_mode else None
         self.kernel_source = kernel_source
         self.simulation_mode = simulation_mode
@@ -41,6 +73,26 @@ class ParallelRunner(Runner):
         return self.dev.get_environment()
 
     def run(self, parameter_space=None, tuning_options=None, ensemble=None, searchspace=None, cache_manager=None):
+        """Run the tuning process with parallel execution.
+
+        :param parameter_space: The parameter space to explore.
+        :type parameter_space: iterable
+
+        :param tuning_options: Tuning options. Defaults to None.
+        :type tuning_options: dict, optional
+
+        :param ensemble: List of strategies for ensemble. Defaults to None.
+        :type ensemble: list, optional
+
+        :param searchspace: The search space to explore. Defaults to None.
+        :type searchspace: kernel_tuner.searchspace.Searchspace, optional
+
+        :param cache_manager: Cache manager instance. Defaults to None.
+        :type cache_manager: kernel_tuner.runners.ray.cache_manager.CacheManager, optional
+
+        :returns: Results of the tuning process.
+        :rtype: list of dict
+        """
         if tuning_options is None: #HACK as tuning_options can't be the first argument and parameter_space needs to be a default argument
             raise ValueError("tuning_options cannot be None")
         
@@ -84,9 +136,20 @@ class ParallelRunner(Runner):
         return results
 
     def multi_strategy_parallel_execution(self, ensemble, tuning_options, searchspace):
-        """
-        Runs strategies from the ensemble in parallel using distributed actors, 
+        """Runs strategies from the ensemble in parallel using distributed actors,
         manages dynamic task allocation, and collects results.
+
+        :param ensemble: List of strategies to execute.
+        :type ensemble: list
+
+        :param tuning_options: Tuning options.
+        :type tuning_options: dict
+
+        :param searchspace: Search space to explore.
+        :type searchspace: kernel_tuner.searchspace.Searchspace
+
+        :returns: Processed results and tuning options list.
+        :rtype: tuple
         """
         ensemble_queue = deque(ensemble)
         pending_tasks = {}
@@ -137,6 +200,17 @@ class ParallelRunner(Runner):
 
     
     def _setup_tuning_options(self, tuning_options, evaluations_per_strategy):
+        """Set up tuning options for each strategy in the ensemble.
+
+        :param tuning_options: Original tuning options.
+        :type tuning_options: dict
+
+        :param evaluations_per_strategy: Number of evaluations per strategy.
+        :type evaluations_per_strategy: list
+
+        :returns: Modified tuning options.
+        :rtype: dict
+        """
         new_tuning_options = copy.deepcopy(tuning_options)
         new_tuning_options.strategy_options["max_fevals"] = evaluations_per_strategy.pop(0)
         # the stop criterion uses the max feval in tuning options for some reason
@@ -144,8 +218,13 @@ class ParallelRunner(Runner):
         return new_tuning_options
     
     def _process_results_ensemble(self, all_results):
-        """
-        Process the results from the ensemble execution.
+        """Process the results from the ensemble execution.
+
+        :param all_results: List of results from all strategies.
+        :type all_results: list
+
+        :returns: Processed results and tuning options list.
+        :rtype: tuple
         """
         results = []
         tuning_options_list = []
@@ -158,8 +237,16 @@ class ParallelRunner(Runner):
 
 
     def parallel_function_evaluation(self, tuning_options, parameter_space):
-        """
-        Perform parallel function evaluation.
+        """Perform parallel function evaluation.
+
+        :param tuning_options: Tuning options.
+        :type tuning_options: dict
+
+        :param parameter_space: Parameter space to explore.
+        :type parameter_space: list
+
+        :returns: Results and tuning options list.
+        :rtype: tuple
         """
         # Create a pool of RemoteActor actors
         self.actor_pool = ActorPool(self.actors)
