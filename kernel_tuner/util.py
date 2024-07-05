@@ -788,14 +788,14 @@ def setup_block_and_grid(problem_size, grid_div, params, block_size_names=None):
     return threads, grid
 
 
-def write_file(filename, string):
+def write_file(filename, string, mode="w"):
     """Dump the contents of string to a file called filename."""
     # ugly fix, hopefully we can find a better one
     if sys.version_info[0] >= 3:
-        with open(filename, "w", encoding="utf-8") as f:
+        with open(filename, mode, encoding="utf-8") as f:
             f.write(string)
     else:
-        with open(filename, "w") as f:
+        with open(filename, mode) as f:
             f.write(string.encode("utf-8"))
 
 

@@ -2,16 +2,12 @@
 """This is a simple example for tuning C++ OpenACC code with the kernel tuner"""
 
 from kernel_tuner import tune_kernel
+from kernel_tuner.interface import auto_tune_kernel
 from kernel_tuner.utils.directives import (
     DirectiveCode,
     OpenACC,
     Cxx,
-    extract_directive_signature,
-    extract_directive_code,
-    extract_preprocessor,
-    generate_directive_function,
-    extract_directive_data,
-    allocate_signature_memory,
+    preprocess_directive_source,
 )
 
 code = """
@@ -40,35 +36,25 @@ int main(void) {
 """
 
 # Extract tunable directive
-app = DirectiveCode(OpenACC(), Cxx())
-preprocessor = extract_preprocessor(code)
-signature = extract_directive_signature(code, app)
-body = extract_directive_code(code, app)
-# Allocate memory on the host
-data = extract_directive_data(code, app)
-args = allocate_signature_memory(data["vector_add"], preprocessor)
-# Generate kernel string
-kernel_string = generate_directive_function(
-    preprocessor, signature["vector_add"], body["vector_add"], app, data=data["vector_add"]
-)
+directive = DirectiveCode(OpenACC(), Cxx())
+kernel_source, args = preprocess_directive_source("vector_add", code, directive)
+print(args)
 
 tune_params = dict()
-tune_params["nthreads"] = [32 * i for i in range(1, 33)]
+tune_params["nthreads"] = [32 * i for i in range(1, 3)]
 metrics = dict()
 metrics["GB/s"] = lambda x: ((2 * 4 * len(args[0])) + (4 * len(args[0]))) / (x["time"] / 10**3) / 10**9
 
 answer = [None, None, args[0] + args[1], None]
 
-print(kernel_string)
-
-# tune_kernel(
-#     "vector_add",
-#     kernel_string,
-#     0,
-#     args,
-#     tune_params,
-#     metrics=metrics,
-#     answer=answer,
-#     compiler_options=["-fast", "-acc=gpu"],
-#     compiler="nvc++",
-# )
+auto_tune_kernel(
+    "vector_add",
+    kernel_source,
+    0,    
+    tune_params,
+    arguments=args,
+    metrics=metrics,
+    answer=answer,
+    compiler_options=["-fast", "-acc=gpu"],
+    compiler="nvc++",
+)

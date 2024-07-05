@@ -1,0 +1,193 @@
+==========CODE==========
+#include <stdlib.h>
+#include <omp.h>
+#define VECTOR_SIZE 10000
+
+#include <chrono>
+extern "C" float vector_add(float * restrict a, float * restrict b, float * restrict c, int size){
+#pragma omp target enter data map(to: a[0:10000])
+#pragma omp target enter data map(to: b[0:10000])
+#pragma omp target enter data map(to: c[0:10000])
+auto kt_timing_start = std::chrono::steady_clock::now();
+#pragma omp target parallel for num_threads(nthreads)
+for ( int i = 0; i < VECTOR_SIZE; i++ ) {
+c[i] = a[i] + b[i];
+}
+
+auto kt_timing_end = std::chrono::steady_clock::now();
+std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;
+#pragma omp target exit data map(from: a[0:10000])
+#pragma omp target exit data map(from: b[0:10000])
+#pragma omp target exit data map(from: c[0:10000])
+
+return elapsed_time.count();
+
+}
+
+==========TREE==========
+
+id: 55
+type: TOKEN_TYPE.PRAGMA
+level: 0
+pragma_type: PRAGMA_TOKEN_TYPE.ROOT
+keywords: []
+META: {}
+line_start: 
+children: [62, 95, 42, 98, 6, 100, 38]
+content: 
+ 
+
+id: 62
+type: TOKEN_TYPE.PRAGMA
+level: 1
+pragma_type: PRAGMA_TOKEN_TYPE.DATA_ENTER
+keywords: ['DATA', 'MAP']
+META: {}
+line_start: #pragma omp target enter data map(to: a[0:10000])
+children: []
+content: 
+ enter data map(to: a[0:10000])
+
+id: 95
+type: TOKEN_TYPE.PRAGMA
+level: 1
+pragma_type: PRAGMA_TOKEN_TYPE.DATA_ENTER
+keywords: ['DATA', 'MAP']
+META: {}
+line_start: #pragma omp target enter data map(to: b[0:10000])
+children: []
+content: 
+ enter data map(to: b[0:10000])
+
+id: 42
+type: TOKEN_TYPE.PRAGMA
+level: 1
+pragma_type: PRAGMA_TOKEN_TYPE.DATA_ENTER
+keywords: ['DATA', 'MAP']
+META: {}
+line_start: #pragma omp target enter data map(to: c[0:10000])
+children: []
+content: 
+ enter data map(to: c[0:10000])
+
+id: 98
+type: TOKEN_TYPE.PRAGMA
+level: 1
+pragma_type: PRAGMA_TOKEN_TYPE.PARALLEL
+keywords: ['PARALLEL', 'FOR', 'NUM_THREADS']
+META: {<PRAGMA_KEYWORDS.NUM_THREADS: 'num_threads'>: 'nthreads'}
+line_start: #pragma omp target parallel for num_threads(nthreads)
+children: [28]
+content: 
+ #pragma omp target parallel for num_threads(nthreads)
+for ( int i = 0; i < VECTOR_SIZE; i++ ) {
+c[i] = a[i] + b[i];
+}
+
+id: 28
+type: TOKEN_TYPE.FOR
+line_start: for ( int i = 0; i < VECTOR_SIZE; i++ ) {
+children: []
+content: 
+ for ( int i = 0; i < VECTOR_SIZE; i++ ) {
+c[i] = a[i] + b[i];
+}
+
+id: 6
+type: TOKEN_TYPE.PRAGMA
+level: 1
+pragma_type: PRAGMA_TOKEN_TYPE.DATA_EXIT
+keywords: ['DATA', 'MAP']
+META: {}
+line_start: #pragma omp target exit data map(from: a[0:10000])
+children: []
+content: 
+ exit data map(from: a[0:10000])
+
+id: 100
+type: TOKEN_TYPE.PRAGMA
+level: 1
+pragma_type: PRAGMA_TOKEN_TYPE.DATA_EXIT
+keywords: ['DATA', 'MAP']
+META: {}
+line_start: #pragma omp target exit data map(from: b[0:10000])
+children: []
+content: 
+ exit data map(from: b[0:10000])
+
+id: 38
+type: TOKEN_TYPE.PRAGMA
+level: 1
+pragma_type: PRAGMA_TOKEN_TYPE.DATA_EXIT
+keywords: ['DATA', 'MAP']
+META: {}
+line_start: #pragma omp target exit data map(from: c[0:10000])
+children: []
+content: 
+ exit data map(from: c[0:10000])
+
+==========RULES==========
+
+==========LOOP==========
+
+==========CODE==========
+#include <stdlib.h>
+#include <omp.h>
+#define VECTOR_SIZE 10000
+
+#include <chrono>
+extern "C" float vector_add(float * restrict a, float * restrict b, float * restrict c, int size){
+#pragma omp target enter data map(to: a[0:10000])
+#pragma omp target enter data map(to: b[0:10000])
+#pragma omp target enter data map(to: c[0:10000])
+auto kt_timing_start = std::chrono::steady_clock::now();
+#pragma omp target parallel for num_threads(nthreads)
+for ( int i = 0; i < VECTOR_SIZE; i++ ) {
+c[i] = a[i] + b[i];
+}
+
+auto kt_timing_end = std::chrono::steady_clock::now();
+std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;
+#pragma omp target exit data map(from: a[0:10000])
+#pragma omp target exit data map(from: b[0:10000])
+#pragma omp target exit data map(from: c[0:10000])
+
+return elapsed_time.count();
+
+}
+
+
+'{'nthreads': [4, 8]}
+
+'[{'nthreads': 4, 'time': 0.08165500100169863, 'times': [0.1260250061750412, 0.07672300189733505, 0.07780499756336212, 0.07726400345563889, 0.07372699677944183, 0.07005099952220917, 0.06999000161886215], 'compile_time': 1799.757830798626, 'verification_time': 0, 'benchmark_time': 0.9146742522716522, 'strategy_time': 0, 'framework_time': 0, 'timestamp': '2024-07-04 21:50:02.637776+00:00'}, {'nthreads': 8, 'time': 0.14048899869833673, 'times': [0.572746992111206, 0.06971000134944916, 0.064860999584198, 0.060513000935316086, 0.06010200083255768, 0.06553199887275696, 0.08995799720287323], 'compile_time': 1737.5205904245377, 'verification_time': 0, 'benchmark_time': 1.3068746775388718, 'strategy_time': 0, 'framework_time': 0.36424025893211365, 'timestamp': '2024-07-04 21:50:04.377010+00:00'}]
+==========CODE==========
+#include <stdlib.h>
+#include <omp.h>
+#define VECTOR_SIZE 10000
+
+#include <chrono>
+extern "C" float vector_add(float * restrict a, float * restrict b, float * restrict c, int size){
+#pragma omp target enter data map(to: a[0:10000])
+#pragma omp target enter data map(to: b[0:10000])
+#pragma omp target enter data map(to: c[0:10000])
+auto kt_timing_start = std::chrono::steady_clock::now();
+#pragma omp target  parallel num_threads (nthreads)
+#pragma omp  for schedule (scedule_type)
+for ( int i = 0; i < VECTOR_SIZE; i++ ) {
+c[i] = a[i] + b[i];
+}
+
+auto kt_timing_end = std::chrono::steady_clock::now();
+std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;
+#pragma omp target exit data map(from: a[0:10000])
+#pragma omp target exit data map(from: b[0:10000])
+#pragma omp target exit data map(from: c[0:10000])
+
+return elapsed_time.count();
+
+}
+
+
+'{'nthreads': [4, 8], 'scedule_type': ['static']}
+
+'[{'nthreads': 4, 'scedule_type': 'static', 'time': 0.08587557183844703, 'times': [0.14716500043869019, 0.06352800130844116, 0.0857589989900589, 0.07673300057649612, 0.08159200102090836, 0.06972000002861023, 0.07663200050592422], 'compile_time': 1957.1005813777447, 'verification_time': 0, 'benchmark_time': 0.9234901517629623, 'strategy_time': 0, 'framework_time': 0, 'timestamp': '2024-07-04 21:50:08.375552+00:00'}, {'nthreads': 8, 'scedule_type': 'static', 'time': 0.10097399832946914, 'times': [0.3191649913787842, 0.04559500142931938, 0.08122099936008453, 0.06004200130701065, 0.07753399759531021, 0.05485299974679947, 0.06840799748897552], 'compile_time': 1985.8440440148115, 'verification_time': 0, 'benchmark_time': 1.0134782642126083, 'strategy_time': 0, 'framework_time': 0.32549723982810974, 'timestamp': '2024-07-04 21:50:10.362772+00:00'}]

@@ -31,10 +31,13 @@ import numpy
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
+import kernel_tuner.utils.directives as directives_util
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace
+
+from kernel_tuner.generation.generation import generate_kernel_sources
 
 try:
     import torch
@@ -546,8 +549,8 @@ def tune_kernel(
     kernel_name,
     kernel_source,
     problem_size,
-    arguments,
     tune_params,
+    arguments=None,    
     grid_div_x=None,
     grid_div_y=None,
     grid_div_z=None,
@@ -564,6 +567,7 @@ def tune_kernel(
     texmem_args=None,
     compiler=None,
     compiler_options=None,
+    directive=None,
     defines=None,
     log=None,
     iterations=7,
@@ -581,6 +585,9 @@ def tune_kernel(
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
+
+    if directive:
+        kernel_source, arguments = directives_util.preprocess_directive_source(kernel_name, kernel_source, directive)
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
@@ -735,13 +742,97 @@ _run_kernel_docstring = """Compile and run a single kernel
     _device_options
 )
 
+def auto_tune_kernel(
+    kernel_name,
+    kernel_source,
+    problem_size,
+    tune_params,
+    arguments=None,    
+    grid_div_x=None,
+    grid_div_y=None,
+    grid_div_z=None,
+    restrictions=None,
+    answer=None,
+    atol=1e-6,
+    verify=None,
+    verbose=False,
+    lang=None,
+    device=0,
+    platform=0,
+    smem_args=None,
+    cmem_args=None,
+    texmem_args=None,
+    compiler=None,
+    compiler_options=None,
+    directive=None,
+    defines=None,
+    log=None,
+    iterations=7,
+    block_size_names=None,
+    quiet=False,
+    strategy=None,
+    strategy_options=None,
+    cache=None,
+    metrics=None,
+    simulation_mode=False,
+    observers=None,
+    objective=None,
+    objective_higher_is_better=None,
+):
+    
+    initial_kernel_source, arguments = directives_util.preprocess_directive_source(kernel_name, kernel_source, directive)
+
+    debug_file = util.get_temp_filename()
+    
+
+    generated_sources = generate_kernel_sources(initial_kernel_source, tune_params, debug_file)
+    
+    opts = locals()
+    kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
+    device_options = Options([(k, opts[k]) for k in _device_options.keys()])
+    
+    strategy = brute_force
+    
+    util.write_file(debug_file, '='*10 + 'LOOP' + '='*10 + '\n\n', "a")
+    for (generated_code, generated_tune_params) in generated_sources:
+
+        util.write_file(debug_file, '='*10 + 'CODE' + '='*10 + f"\n{generated_code.to_text()}\n\n", "a")
+
+        kernelsource = core.KernelSource(kernel_name, generated_code.to_text(), lang, defines)
+        tune_params = generated_tune_params        
+
+        opts = locals()
+        tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
+        tuning_options["unique_results"] = {}
+        if strategy_options and "max_fevals" in strategy_options:
+            tuning_options["max_fevals"] = strategy_options["max_fevals"]
+        if strategy_options and "time_limit" in strategy_options:
+            tuning_options["time_limit"] = strategy_options["time_limit"]
+        tuning_options.simulated_time = 0
+
+        util.write_file(debug_file, f"\n'{generated_tune_params}\n", "a")
+
+        runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
+
+        tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
+
+        searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
+        restrictions = searchspace._modified_restrictions
+        tuning_options.restrictions = restrictions
+
+        results = strategy.tune(searchspace, runner, tuning_options)
+        util.write_file(debug_file, f"\n'{results}\n", "a")
+
+    print("Done!")
+
+
 
 def run_kernel(
     kernel_name,
     kernel_source,
     problem_size,
-    arguments,
     params,
+    arguments=None,
     grid_div_x=None,
     grid_div_y=None,
     grid_div_z=None,
@@ -753,6 +844,7 @@ def run_kernel(
     texmem_args=None,
     compiler=None,
     compiler_options=None,
+    directive=None,
     defines=None,
     block_size_names=None,
     quiet=False,
@@ -760,6 +852,9 @@ def run_kernel(
 ):
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
+
+    if directive:
+            kernel_source, arguments = directives_util.preprocess_directive_source(kernel_name, kernel_source, directive)
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 

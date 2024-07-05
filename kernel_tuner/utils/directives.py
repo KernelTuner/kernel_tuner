@@ -87,6 +87,19 @@ class ArraySize(object):
         if dim >= 1:
             self.size.append(dim)
 
+def preprocess_directive_source(kernel_name, kernel_source, directive_code):
+    preprocessor = extract_preprocessor(kernel_source)
+    signature = extract_directive_signature(kernel_source, directive_code)
+    body = extract_directive_code(kernel_source, directive_code)
+    # Allocate memory on the host
+    data = extract_directive_data(kernel_source, directive_code)
+    args = allocate_signature_memory(data[kernel_name], preprocessor)
+    # Generate kernel string
+    kernel_string = generate_directive_function(
+        preprocessor, signature[kernel_name], body[kernel_name], directive_code, data=data[kernel_name]
+    )
+    return kernel_string, args
+
 
 def fortran_md_size(size: ArraySize) -> list:
     """Format a multidimensional size into the correct Fortran string"""

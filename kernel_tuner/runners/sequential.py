@@ -69,6 +69,7 @@ class SequentialRunner(Runner):
         # iterate over parameter space
         for element in parameter_space:
             params = dict(zip(tuning_options.tune_params.keys(), element))
+            print(f"Params:    {params}")
 
             result = None
             warmup_time = 0

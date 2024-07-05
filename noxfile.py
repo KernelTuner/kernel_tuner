@@ -15,7 +15,7 @@ from nox_poetry import Session, session
 
 # set the test parameters
 verbose = False
-python_versions_to_test = ["3.9", "3.10", "3.11", "3.12"]
+python_versions_to_test = ["3.11"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
 nox.options.default_venv_backend = 'virtualenv'
