@@ -55,7 +55,7 @@ class tegra:
             with open(zone / Path("type")) as fp:
                 name = fp.read().strip()
             if name == "GPU-therm":
-                gpu_temp_path = zone + "/"
+                gpu_temp_path = str(zone) + "/"
                 break
         else:
             raise FileNotFoundError("No GPU sensor for temperature found")
