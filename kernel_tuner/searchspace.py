@@ -37,7 +37,6 @@ class Searchspace:
         framework="PythonConstraint",
         solver_method="PC_OptimizedBacktrackingSolver",
         path_to_ATF_cache: Path = None,
-        use_incremental_seed: bool = True,
     ) -> None:
         """Build a searchspace using the variables and constraints.
 
@@ -108,9 +107,6 @@ class Searchspace:
             self.__prepare_neighbors_index()
         if build_neighbors_index:
             self.neighbors_index = self.__build_neighbors_index(neighbor_method)
-        if use_incremental_seed:
-            self.incremental_seed = 11072024
-        self.use_incremental_seed = use_incremental_seed
 
     # def __build_searchspace_ortools(self, block_size_names: list, max_threads: int) -> Tuple[List[tuple], np.ndarray, dict, int]:
     #     # Based on https://developers.google.com/optimization/cp/cp_solver#python_2
@@ -614,9 +610,6 @@ class Searchspace:
             raise ValueError(
                 f"The number of samples requested ({num_samples}) is greater than the searchspace size ({self.size})"
             )
-        if self.use_incremental_seed:
-            np.random.seed(self.incremental_seed)
-            self.incremental_seed += 1
         return np.random.choice(self.indices, size=num_samples, replace=False)
 
     def get_random_sample(self, num_samples: int) -> List[tuple]:
