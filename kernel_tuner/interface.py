@@ -57,6 +57,7 @@ from kernel_tuner.strategies import (
     pso,
     random_sample,
     simulated_annealing,
+    trace_runner
 )
 
 strategy_map = {
@@ -75,6 +76,7 @@ strategy_map = {
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
+    "trace_runner": trace_runner,
 }
 
 
@@ -384,6 +386,7 @@ _tuning_options = Options(
             * "pso" particle swarm optimization
             * "random_sample" takes a random sample of the search space
             * "simulated_annealing" simulated annealing strategy
+            * "trace_runner" uses a fixed trace of configurations
 
         Strategy-specific parameters and options are explained under strategy_options.
 

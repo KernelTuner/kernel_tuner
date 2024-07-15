@@ -125,4 +125,9 @@ kernel_tuner.strategies.simulated_annealing
 .. automodule:: kernel_tuner.strategies.simulated_annealing
     :members:
 
+kernel_tuner.strategies.trace_runner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.strategies.trace_runner
+    :members:
+
 
