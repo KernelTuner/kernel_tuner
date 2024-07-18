@@ -12,56 +12,22 @@ class SequentialRunner(Runner):
     """SequentialRunner is used for tuning with a single process/thread."""
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
-        """Instantiate the SequentialRunner.
+        self.simulation_mode = False
+        super().__init__(kernel_source, kernel_options, device_options, iterations, observers)
 
-        :param kernel_source: The kernel source
-        :type kernel_source: kernel_tuner.core.KernelSource
-
-        :param kernel_options: A dictionary with all options for the kernel.
-        :type kernel_options: kernel_tuner.interface.Options
-
-        :param device_options: A dictionary with all options for the device
-            on which the kernel should be tuned.
-        :type device_options: kernel_tuner.interface.Options
-
-        :param iterations: The number of iterations used for benchmarking
-            each kernel instance.
-        :type iterations: int
-        """
         #detect language and create high-level device interface
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
-
         self.units = self.dev.units
-        self.quiet = device_options.quiet
-        self.kernel_source = kernel_source
         self.warmed_up = False
-        self.simulation_mode = False
-        self.start_time = perf_counter()
-        self.last_strategy_start_time = self.start_time
-        self.last_strategy_time = 0
-        self.kernel_options = kernel_options
 
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
     def get_environment(self, tuning_options):
+        super().get_environment()
         return self.dev.get_environment()
 
     def run(self, parameter_space, tuning_options):
-        """Iterate through the entire parameter space using a single Python process.
-
-        :param parameter_space: The parameter space as an iterable.
-        :type parameter_space: iterable
-
-        :param tuning_options: A dictionary with all options regarding the tuning
-            process.
-        :type tuning_options: kernel_tuner.iterface.Options
-
-        :returns: A list of dictionaries for executed kernel configurations and their
-            execution times.
-        :rtype: dict())
-
-        """
         logging.debug('sequential runner started for ' + self.kernel_options.kernel_name)
         super().run(parameter_space, tuning_options)
 
