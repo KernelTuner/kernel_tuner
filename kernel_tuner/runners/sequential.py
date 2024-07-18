@@ -63,6 +63,7 @@ class SequentialRunner(Runner):
 
         """
         logging.debug('sequential runner started for ' + self.kernel_options.kernel_name)
+        super().run(parameter_space, tuning_options)
 
         results = []
 

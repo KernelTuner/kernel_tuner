@@ -79,6 +79,7 @@ class SimulationRunner(Runner):
         :rtype: dict()
         """
         logging.debug('simulation runner started for ' + self.kernel_options.kernel_name)
+        super().run(parameter_space, tuning_options)
 
         results = []
 
