@@ -564,7 +564,7 @@ def generate_directive_function(
         body = start_timing_cxx(body)
         if data is not None:
             body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
-        body += end_timing_cxx(body)
+        body = end_timing_cxx(body)
     elif is_fortran(langs.language):
         code = acc_f90_template
         body = wrap_timing(body, langs.language)
