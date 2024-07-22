@@ -572,7 +572,7 @@ def generate_directive_function(
             body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
         name = signature.split(" ")[1].split("(")[0]
         code = code.replace("<!?NAME!?>", name)
-    code = code.replace("<!?PREPROCESSOR?!>", preprocessor)
+    code = code.replace("<!?PREPROCESSOR?!>", "\n".join(preprocessor))
     # if present, add user specific dimensions as defines
     if user_dimensions is not None:
         user_defines = ""
