@@ -2,6 +2,36 @@ from typing import Any
 from abc import ABC, abstractmethod
 import numpy as np
 
+# Function templates
+acc_cpp_template = """
+<!?PREPROCESSOR?!>
+<!?USER_DEFINES?!>
+#include <chrono>
+
+extern "C" <!?SIGNATURE?!> {
+<!?INITIALIZATION?!>
+<!?BODY!?>
+<!?DEINITIALIZATION?!>
+}
+"""
+
+acc_f90_template = """
+<!?PREPROCESSOR?!>
+<!?USER_DEFINES?!>
+
+module kt
+use iso_c_binding
+contains
+
+<!?SIGNATURE?!>
+<!?INITIALIZATION?!>
+<!?BODY!?>
+<!?DEINITIALIZATION?!>
+end function <!?NAME?!>
+
+end module kt
+"""
+
 
 class Directive(ABC):
     """Base class for all directives"""
@@ -529,42 +559,35 @@ def generate_directive_function(
 ) -> str:
     """Generate tunable function for one directive"""
 
-    code = "\n".join(preprocessor) + "\n"
-    if user_dimensions is not None:
-        # add user dimensions to preprocessor
-        for key, value in user_dimensions.items():
-            code += f"#define {key} {value}\n"
-    if is_cxx(langs.language) and "#include <chrono>" not in preprocessor:
-        code += "\n#include <chrono>\n"
     if is_cxx(langs.language):
-        code += 'extern "C" ' + signature + "{\n"
-    elif is_fortran(langs.language):
-        code += "\nmodule kt\nuse iso_c_binding\ncontains\n"
-        code += "\n" + signature
-    if len(initialization) > 1:
-        code += initialization + "\n"
-    if data is not None:
-        body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
-    if is_cxx(langs.language):
+        code = acc_cpp_template
         body = start_timing_cxx(body)
         if data is not None:
-            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
-        else:
-            code += body
-        code = end_timing_cxx(code)
-        if len(deinitialization) > 1:
-            code += deinitialization + "\n"
-        code += "\n}"
+            body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
+        body += end_timing_cxx(body)
     elif is_fortran(langs.language):
+        code = acc_f90_template
         body = wrap_timing(body, langs.language)
         if data is not None:
-            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
-        else:
-            code += body + "\n"
-        if len(deinitialization) > 1:
-            code += deinitialization + "\n"
+            body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
         name = signature.split(" ")[1].split("(")[0]
-        code += f"\nend function {name}\nend module kt\n"
+        code = code.replace("<!?NAME!?>", name)
+    code = code.replace("<!?PREPROCESSOR?!>", preprocessor)
+    # if present, add user specific dimensions as defines
+    if user_dimensions is not None:
+        user_defines = ""
+        for key, value in user_dimensions.items():
+            user_defines += f"#define {key} {value}\n"
+        code = code.replace("<!?USER_DEFINES?!>", user_defines)
+    else:
+        code = code.replace("<!?USER_DEFINES?!>", "")
+    code = code.replace("<!?SIGNATURE?!>", signature)
+    if len(initialization) > 1:
+        code = code.replace("<!?INITIALIZATION?!>", initialization)
+    if len(deinitialization) > 1:
+        code = code.replace("<!?DEINITIALIZATION?!>", deinitialization)
+    if data is not None:
+        body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
 
     return code
 
