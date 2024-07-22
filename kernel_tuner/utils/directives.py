@@ -10,7 +10,7 @@ acc_cpp_template = """
 
 extern "C" <!?SIGNATURE?!> {
 <!?INITIALIZATION?!>
-<!?BODY!?>
+<!?BODY?!>
 <!?DEINITIALIZATION?!>
 }
 """
@@ -25,7 +25,7 @@ contains
 
 <!?SIGNATURE?!>
 <!?INITIALIZATION?!>
-<!?BODY!?>
+<!?BODY?!>
 <!?DEINITIALIZATION?!>
 end function <!?NAME?!>
 
