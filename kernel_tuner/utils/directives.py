@@ -582,12 +582,11 @@ def generate_directive_function(
     else:
         code = code.replace("<!?USER_DEFINES?!>", "")
     code = code.replace("<!?SIGNATURE?!>", signature)
-    if len(initialization) > 1:
-        code = code.replace("<!?INITIALIZATION?!>", initialization)
-    if len(deinitialization) > 1:
-        code = code.replace("<!?DEINITIALIZATION?!>", deinitialization)
+    code = code.replace("<!?INITIALIZATION?!>", initialization)
+    code = code.replace("<!?DEINITIALIZATION?!>", deinitialization)
     if data is not None:
         body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
+    code = code.replace("<!?BODY?!>", body)
 
     return code
 
