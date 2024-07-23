@@ -13,28 +13,29 @@ from kernel_tuner.observers.powersensor import PowerSensorObserver
 class tegra:
     """Class that gathers the Tegra functionality for one device."""
 
-    def __init__(self, powerPath, tempPath):
-        self.has_changed_clocks = False
+    def __init__(self, power_path, temp_path):
         """Create object to control GPU core clock on a Tegra device."""
+        self.has_changed_clocks = False
+
         # Get paths
         self.dev_path = self.get_dev_path()
-        if tempPath == "":
+        if temp_path == "":
             self.gpu_temp_path = self.get_temp_path()
         else:
-            self.gpu_temp_path = tempPath
-        if powerPath == "":
+            self.gpu_temp_path = temp_path
+        if power_path == "":
             self.gpu_power_path = self.get_power_path()
         else:
-            self.gpu_power_path = powerPath
+            self.gpu_power_path = power_path
         self.gpu_channel = self.get_gpu_channel()
-        
+
         # Read default clock values
         self.default_min_gr_clock = self._read_clock_file("min_freq")
         self.default_max_gr_clock = self._read_clock_file("max_freq")
         self.supported_gr_clocks = self._read_clock_file("available_frequencies")
 
         self.default_railgate_status = self._read_railgate_file()
-    
+
     @staticmethod
     def get_dev_path():
         """Get the path to device core clock control in /sys"""
@@ -55,20 +56,20 @@ class tegra:
             with open(zone / Path("type")) as fp:
                 name = fp.read().strip()
             if name == "GPU-therm":
-                gpu_temp_path = str(zone) + "/"
+                gpu_temp_path = str(zone)
                 break
-        else:
+
+        if gpu_temp_path is None:
             raise FileNotFoundError("No GPU sensor for temperature found")
-        
+
         return gpu_temp_path
 
     def get_power_path(self, start_path="/sys/bus/i2c/drivers/ina3221"):
-        """Recursively search for a file which holds power readings 
-        starting from start_path."""
+        """Search for a file which holds power readings"""
         for entry in os.listdir(start_path):
             path = os.path.join(start_path, entry)
             if os.path.isfile(path) and entry == "curr1_input":
-                return start_path + "/"
+                return start_path
             elif entry in start_path:
                 continue
             elif os.path.isdir(path):
@@ -79,10 +80,9 @@ class tegra:
 
     def get_gpu_channel(self):
         """Get the channel number of the sensor which measures the GPU power"""
-        
-        # Iterate over all channels in the of_node dir of the power path to 
-        # find the channel which holds GPU power information   
-        for channel_dir in Path(self.gpu_power_path + "of_node/").iterdir():
+        # Iterate over all channels in the of_node dir of the power path to
+        # find the channel which holds GPU power information
+        for channel_dir in Path(self.gpu_power_path + "/of_node/").iterdir():
             if("channel@" in channel_dir.name):
                 with open(channel_dir / Path("label")) as fp:
                     channel_label = fp.read().strip()
@@ -173,18 +173,18 @@ class tegra:
 
     def read_gpu_temp(self):
         """Read GPU temperature"""
-        with open(self.gpu_temp_path + "temp") as fp:
+        with open(self.gpu_temp_path + "/temp") as fp:
             temp = int(fp.read())
         return temp / 1000
-            
+
     def read_gpu_power(self):
         """Read the current and voltage to calculate and return the power int watt"""
-        
-        result_cur = subprocess.run(["sudo", "cat", f"{self.gpu_power_path}curr{self.gpu_channel}_input"], capture_output=True, text=True)
+
+        result_cur = subprocess.run(["sudo", "cat", f"{self.gpu_power_path}/curr{self.gpu_channel}_input"], capture_output=True, text=True)
         current = int(result_cur.stdout.strip()) / 1000
-        result_vol = subprocess.run(["sudo", "cat", f"{self.gpu_power_path}in{self.gpu_channel}_input"], capture_output=True, text=True)
+        result_vol = subprocess.run(["sudo", "cat", f"{self.gpu_power_path}/in{self.gpu_channel}_input"], capture_output=True, text=True)
         voltage = int(result_vol.stdout.strip()) / 1000
-        
+
         return current * voltage
     
 class TegraObserver(BenchmarkObserver):
@@ -203,20 +203,20 @@ class TegraObserver(BenchmarkObserver):
         self,
         observables,
         save_all=False,
-        powerPath="",
-        tempPath=""
+        power_path="",
+        temp_path=""
     ):
         """Create a TegraObserver"""
-        self.tegra = tegra(powerPath=powerPath, tempPath=tempPath)
+        self.tegra = tegra(power_path=power_path, temp_path=temp_path)
         self.save_all = save_all
         self._set_units = False
-        
+
         supported = ["core_freq", "gpu_temp", "gpu_power", "gpu_energy"]
         for obs in observables:
             if obs not in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
         self.observables = observables
-        
+
         # Observe power measurements with the continuous observer
         self.measure_power = False
         self.needs_power = ["gpu_power", "gpu_energy"]
@@ -228,7 +228,7 @@ class TegraObserver(BenchmarkObserver):
             )
         # remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]
-        
+
         self.results = {}
         for obs in self.observables:
             self.results[obs + "s"] = []
@@ -309,13 +309,13 @@ class tegraPowerObserver(ContinuousObserver):
     """Observer that measures power using tegra and continuous benchmarking."""
     def __init__(self, observables, parent, continous_duration=1):
         self.parent = parent
-        
+
         supported = ["gpu_power", "gpu_energy"]
         for obs in observables:
             if obs not in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
         self.observables = observables
-        
+
         # duration in seconds
         self.continuous_duration = continous_duration
 
@@ -326,17 +326,17 @@ class tegraPowerObserver(ContinuousObserver):
 
         # results from the last iteration-based benchmark
         self.results = None
-    
+
     def before_start(self):
         self.parent.before_start()
         self.power = 0
         self.energy = 0
         self.power_readings = []
-        
+
     def after_start(self):
         self.parent.after_start()
         self.t0 = time.perf_counter()
-        
+
     def during(self):
         self.parent.during()
         power_usage = self.parent.tegra.read_gpu_power()
@@ -347,7 +347,7 @@ class tegraPowerObserver(ContinuousObserver):
             or timestamp - self.power_readings[-1][0] > 0.01
         ):
             self.power_readings.append([timestamp, power_usage])
-            
+
     def after_finish(self):
         self.parent.after_finish()
         # safeguard in case we have no measurements, perhaps the kernel was too short to measure anything
@@ -358,7 +358,7 @@ class tegraPowerObserver(ContinuousObserver):
         execution_time = self.results["time"] / 1e3
         self.power = np.median([d[1] for d in self.power_readings])
         self.energy = self.power * execution_time
-        
+
     def get_results(self):
         results = self.parent.get_results()
         keys = list(results.keys())
@@ -368,5 +368,5 @@ class tegraPowerObserver(ContinuousObserver):
             results["gpu_power"] = self.power
         if "gpu_energy" in self.observables:
             results["gpu_energy"] = self.energy
-        
+
         return results
