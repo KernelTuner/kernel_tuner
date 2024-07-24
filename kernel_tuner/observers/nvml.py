@@ -73,9 +73,9 @@ class nvml:
                 # try to set highest supported clocks
                 mem_clock = self.supported_mem_clocks[0]
                 gr_clock = self.supported_gr_clocks[mem_clock][0]
-                self.set_clocks(mem_clock, gr_clock)
                 self.locked_gr_clock = 0
                 self.locked_mem_clock = 0
+                self.set_clocks(mem_clock, gr_clock)
             except pynvml.NVMLError_NotSupported:
                 # switch to using application clocks
                 self.use_locked_clocks = False
