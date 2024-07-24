@@ -1,9 +1,13 @@
 """Special strategy that takes a trace of another strategy and repeats this exactly."""
 import json
+from pathlib import Path
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import get_options, get_strategy_docstring
 
-_options = dict(configurations=("Array of tuples denoting the configurations", []), path_to_configurations=("Path to a JSON trace file containing configurations", ''))
+_options = dict(
+    configurations=("Array of tuples denoting the configurations", []), 
+    path_to_cachefile=("Path to a cachefile to repeat the configurations", '')
+)
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
@@ -12,9 +16,20 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     if args[0] != _options[0]:
         configurations: list[tuple] = args[0]
     if args[1] != _options[1]:
-        path_to_configurations = args[1]
-        with open(path_to_configurations, 'rb') as fp:
-            configurations = [tuple(c) for c in list(json.load(fp))]
+        path_to_cachefile = Path(args[1])
+        assert path_to_cachefile.exists()
+        configurations: list[tuple] = list()
+        with open(path_to_cachefile, 'rb') as fp:
+            cache = dict(dict(json.load(fp))['cache'])
+            for key in cache.keys():
+                config = list()
+                for param in key.split(','):
+                    try:
+                        param = float(param) if '.' in param else int(param)
+                    except ValueError:
+                        param = str(param)
+                    config.append(param)
+                configurations.append(tuple(config))
     assert len(configurations) > 0
 
     # check that the configurations are in the searchspace
