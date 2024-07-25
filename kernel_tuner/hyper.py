@@ -1,7 +1,8 @@
-""" Module for functions related to hyperparameter optimization """
+"""Module for functions related to hyperparameter optimization."""
 
 import itertools
 import warnings
+
 import numpy as np
 
 import kernel_tuner
@@ -9,7 +10,7 @@ from kernel_tuner.util import get_config_string
 
 
 def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
-    """ Tune hyperparameters for a given strategy and kernel
+    """Tune hyperparameters for a given strategy and kernel.
 
     This function is to be called just like tune_kernel, except that you specify a strategy
     and a dictionary with hyperparameters in front of the arguments you pass to tune_kernel.

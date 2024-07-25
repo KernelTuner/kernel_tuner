@@ -72,8 +72,8 @@ class Searchspace:
             self.restrictions = compile_restrictions(
                 restrictions,
                 tune_params,
-                monolithic=framework_l == "pyatf",
-                format=framework_l if "pyatf" else None,
+                monolithic=False,
+                format=framework_l if framework_l == "pyatf" else None,
                 try_to_constraint=framework_l == "pythonconstraint",
             )
 
