@@ -57,11 +57,10 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
     put_if_not_present(kwargs, "verbose", False)
     put_if_not_present(kwargs, "quiet", True)
     kwargs['simulation_mode'] = False
-    kwargs['strategy'] = 'brute_force'
-    kwargs['backend'] = 'hypertuner'
+    kwargs['strategy'] = 'dual_annealing'
     kwargs['verify'] = None
 
-    return kernel_tuner.tune_kernel(lang='Hypertuner', *args, **kwargs)
+    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], [], hyper_params, lang='Hypertuner', *args, **kwargs)
 
 
 
@@ -110,3 +109,13 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
         all_results.append(strategy_options)
 
     return all_results
+
+if __name__ == "__main__":  # TODO remove in production
+    hyperparams = {
+        'popsize': [10, 20, 30],
+        'maxiter': [50, 100, 150],
+        'w': [0.25, 0.5, 0.75],
+        'c1': [1.0, 2.0, 3.0],
+        'c2': [0.5, 1.0, 1.5]
+    }
+    tune_hyper_params('pso', hyperparams)
