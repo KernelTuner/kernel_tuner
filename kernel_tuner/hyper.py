@@ -33,16 +33,37 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
     :type kwargs: dict
 
     """
-    if "cache" not in kwargs:
-        raise ValueError("Please specify a cachefile to store benchmarking data when tuning hyperparameters")
+    # v Have the methodology as a dependency
+    # - User inputs:
+    #     - a set of bruteforced cachefiles / template experiments file
+    #     - an optimization algorithm
+    #     - the hyperparameter values to try
+    #     - overarching optimization algorithm (meta-strategy)
+    # - At each round:
+    #     - The meta-strategy selects a hyperparameter configuration to try
+    #     - Kernel Tuner generates an experiments file with the hyperparameter configuration
+    #     - Kernel Tuner executes this experiments file using the methodology
+    #     - The methodology returns the fitness metric
+    #     - The fitness metric is fed back into the meta-strategy
+
+
+
+    if "cache" in kwargs:
+        del kwargs['cache']
 
     def put_if_not_present(target_dict, key, value):
         target_dict[key] = value if key not in target_dict else target_dict[key]
 
     put_if_not_present(kwargs, "verbose", False)
     put_if_not_present(kwargs, "quiet", True)
-    put_if_not_present(kwargs, "simulation_mode", True)
+    kwargs['simulation_mode'] = False
     kwargs['strategy'] = 'brute_force'
+    kwargs['backend'] = 'hypertuner'
+
+    return kernel_tuner.tune_kernel(lang='Hypertuner', *args, **kwargs)
+
+
+
 
     #last position argument is tune_params
     tune_params = args[-1]
