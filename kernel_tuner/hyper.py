@@ -59,6 +59,7 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
     kwargs['simulation_mode'] = False
     kwargs['strategy'] = 'brute_force'
     kwargs['backend'] = 'hypertuner'
+    kwargs['verify'] = None
 
     return kernel_tuner.tune_kernel(lang='Hypertuner', *args, **kwargs)
 

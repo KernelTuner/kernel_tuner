@@ -31,12 +31,13 @@ class HypertunerFunctions(Backend):
         return super().stop_event()
     
     def kernel_finished(self):
-        return super().kernel_finished()
+        super().kernel_finished()
+        return True
     
     def synchronize(self):
         return super().synchronize()
     
-    def run_kernel(self, func, gpu_args, threads, grid, stream):
+    def run_kernel(self, func, gpu_args=None, threads=None, grid=None, stream=None):
         # generate the experiments file
         experiments_filepath = Path('.')
 

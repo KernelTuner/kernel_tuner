@@ -105,6 +105,9 @@ class KernelSource(object):
         """
         logging.debug("get_kernel_string called")
 
+        if self.lang.upper() == "HYPERTUNER":
+            return ""
+
         kernel_source = self.kernel_sources[index]
         return util.get_kernel_string(kernel_source, params)
 
@@ -143,6 +146,9 @@ class KernelSource(object):
 
         """
         temp_files = dict()
+
+        if self.lang.upper() == "HYPERTUNER":
+            return tuple(["", "", temp_files])
 
         for i, f in enumerate(self.kernel_sources):
             if i > 0 and not util.looks_like_a_filename(f):
@@ -265,6 +271,7 @@ class DeviceInterface(object):
 
         """
         lang = kernel_source.lang
+        self.requires_warmup = True
 
         logging.debug("DeviceInterface instantiated, lang=%s", lang)
 
@@ -310,8 +317,9 @@ class DeviceInterface(object):
                 iterations=iterations,
                 observers=observers,
             )
-        elif lang.upper() == "Hypertuner":
+        elif lang.upper() == "HYPERTUNER":
             dev = HypertunerFunctions(iterations=iterations)
+            self.requires_warmup = False
         else:
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
         self.dev = dev
