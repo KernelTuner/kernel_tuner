@@ -369,7 +369,7 @@ def wrap_timing_fortran(code: str) -> str:
 
 def end_timing_cxx(code: str) -> str:
     """In C++ we need to return the measured time"""
-    return code + "\nreturn elapsed_time.count();\n"
+    return "\n".join([code, "return elapsed_time.count();\n"])
 
 
 def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
@@ -385,7 +385,7 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
             elif is_openacc(langs.directive) and is_fortran(langs.language):
                 intro += create_data_directive_openacc_fortran(name, size)
                 outro += exit_data_directive_openacc_fortran(name, size)
-    return intro + code + outro
+    return "\n".join([intro, code, outro])
 
 
 def extract_directive_code(code: str, langs: Code, kernel_name: str = None) -> dict:
