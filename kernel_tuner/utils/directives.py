@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Tuple
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -686,7 +686,7 @@ def add_present_openacc_fortran(name: str, size: ArraySize) -> str:
         return f" present({name}({','.join(md_size)})) "
 
 
-def process_directives(langs: Code, source: str, user_dimensions: dict = None) -> tuple(dict, dict):
+def process_directives(langs: Code, source: str, user_dimensions: dict = None) -> Tuple[dict, dict]:
     """Helper functions to process all the directives in the code and create tunable functions"""
     kernel_strings = dict()
     kernel_args = dict()
