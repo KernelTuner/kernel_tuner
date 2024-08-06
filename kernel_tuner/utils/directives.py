@@ -684,3 +684,19 @@ def add_present_openacc_fortran(name: str, size: ArraySize) -> str:
     else:
         md_size = fortran_md_size(size)
         return f" present({name}({','.join(md_size)})) "
+
+
+def process_directives(langs: Code, source: str, user_dimensions: dict = None) -> dict:
+    """Helper functions to process all the directives in the code and create tunable functions"""
+    kernel_strings = dict()
+    preprocessor = extract_preprocessor(source)
+    signatures = extract_directive_signature(source, langs)
+    bodies = extract_directive_code(source, langs)
+    data = extract_directive_data(source, langs)
+    init = extract_initialization_code(source, langs)
+    deinit = extract_deinitialization_code(source, langs)
+    for kernel in signatures.keys():
+        kernel_strings[kernel] = generate_directive_function(
+            preprocessor, signatures[kernel], bodies[kernel], langs, data[kernel], init, deinit, user_dimensions
+        )
+    return kernel_strings
