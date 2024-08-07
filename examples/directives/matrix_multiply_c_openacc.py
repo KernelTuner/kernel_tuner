@@ -10,19 +10,20 @@ from kernel_tuner.utils.directives import (
 )
 
 code = """
-#include <stdlib.h>
-
 #define N 4096
 
 void matrix_multiply(float *A, float *B, float *C) {
     #pragma tuner start mm A(float*:NN) B(float*:NN) C(float*:NN)
+    float temp_sum = 0.0f;
     #pragma acc parallel vector_length(nthreads)
-    #pragma acc loop
-    for ( i = 0; i < N; i++) {
-        for ( j = 0; j < N; j++ ) {
-            for ( k = 0; k < N; k++ ) {
-                C[i][j] += A[i][k] * B[k][j];
+    #pragma acc loop collapse(2) reduction(+:temp_sum)
+    for ( int i = 0; i < N; i++) {
+        for ( int j = 0; j < N; j++ ) {
+            temp_sum = 0.0f;
+            for ( int k = 0; k < N; k++ ) {
+                temp_sum += A[(i * N) + k] * B[(k * N) + j];
             }
+            C[(i * N) + j] = temp_sum;
         }
     }
     #pragma tuner stop
@@ -37,7 +38,7 @@ kernel_string, kernel_args = process_directives(app, code, user_dimensions=dims)
 tune_params = dict()
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
 metrics = dict()
-metrics["GB/s"] = lambda x: (4096 * 4096 * 4) / (x["time"] / 10**3) / 10**9
+metrics["GB/s"] = lambda x: ((4096 * 4096 * 4096 * 2 * 4) + (4096 * 4096 * 4)) / (x["time"] / 10**3) / 10**9
 
 tune_kernel(
     "mm",
