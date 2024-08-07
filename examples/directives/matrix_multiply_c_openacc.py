@@ -9,6 +9,8 @@ from kernel_tuner.utils.directives import (
     process_directives
 )
 
+N = 4096
+
 code = """
 #define N 4096
 
@@ -16,10 +18,11 @@ void matrix_multiply(float *A, float *B, float *C) {
     #pragma tuner start mm A(float*:NN) B(float*:NN) C(float*:NN)
     float temp_sum = 0.0f;
     #pragma acc parallel vector_length(nthreads)
-    #pragma acc loop collapse(2) reduction(+:temp_sum)
+    #pragma acc loop gang collapse(2)
     for ( int i = 0; i < N; i++) {
         for ( int j = 0; j < N; j++ ) {
             temp_sum = 0.0f;
+            #pragma acc loop vector reduction(+:temp_sum)
             for ( int k = 0; k < N; k++ ) {
                 temp_sum += A[(i * N) + k] * B[(k * N) + j];
             }
@@ -32,13 +35,15 @@ void matrix_multiply(float *A, float *B, float *C) {
 
 # Extract tunable directive
 app = Code(OpenACC(), Cxx())
-dims = {"NN": 4096*4096}
+dims = {"NN": N**2}
 kernel_string, kernel_args = process_directives(app, code, user_dimensions=dims)
 
 tune_params = dict()
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
 metrics = dict()
-metrics["GB/s"] = lambda x: ((4096 * 4096 * 4096 * 2 * 4) + (4096 * 4096 * 4)) / (x["time"] / 10**3) / 10**9
+metrics["time_s"] = lambda x: x["time"] / 10**3
+metrics["GB/s"] = lambda x: ((N**3 * 2 * 4) + (N**2 * 4)) / x["time_s"] / 10**9
+metrics["GFLOP/s"] = lambda x: (N**3 * 3) / x["time_s"] / 10**9
 
 tune_kernel(
     "mm",
