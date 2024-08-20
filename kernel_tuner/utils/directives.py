@@ -1,6 +1,36 @@
-from typing import Any
+from typing import Any, Tuple
 from abc import ABC, abstractmethod
 import numpy as np
+
+# Function templates
+cpp_template: str = """
+<!?PREPROCESSOR?!>
+<!?USER_DEFINES?!>
+#include <chrono>
+
+extern "C" <!?SIGNATURE?!> {
+<!?INITIALIZATION?!>
+<!?BODY?!>
+<!?DEINITIALIZATION?!>
+}
+"""
+
+f90_template: str = """
+<!?PREPROCESSOR?!>
+<!?USER_DEFINES?!>
+
+module kt
+use iso_c_binding
+contains
+
+<!?SIGNATURE?!>
+<!?INITIALIZATION?!>
+<!?BODY?!>
+<!?DEINITIALIZATION?!>
+end function <!?NAME?!>
+
+end module kt
+"""
 
 
 class Directive(ABC):
@@ -339,7 +369,7 @@ def wrap_timing_fortran(code: str) -> str:
 
 def end_timing_cxx(code: str) -> str:
     """In C++ we need to return the measured time"""
-    return code + "\nreturn elapsed_time.count();\n"
+    return "\n".join([code, "return elapsed_time.count();\n"])
 
 
 def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
@@ -355,7 +385,7 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
             elif is_openacc(langs.directive) and is_fortran(langs.language):
                 intro += create_data_directive_openacc_fortran(name, size)
                 outro += exit_data_directive_openacc_fortran(name, size)
-    return intro + code + outro
+    return "\n".join([intro, code, outro])
 
 
 def extract_directive_code(code: str, langs: Code, kernel_name: str = None) -> dict:
@@ -529,42 +559,34 @@ def generate_directive_function(
 ) -> str:
     """Generate tunable function for one directive"""
 
-    code = "\n".join(preprocessor) + "\n"
-    if user_dimensions is not None:
-        # add user dimensions to preprocessor
-        for key, value in user_dimensions.items():
-            code += f"#define {key} {value}\n"
-    if is_cxx(langs.language) and "#include <chrono>" not in preprocessor:
-        code += "\n#include <chrono>\n"
     if is_cxx(langs.language):
-        code += 'extern "C" ' + signature + "{\n"
-    elif is_fortran(langs.language):
-        code += "\nmodule kt\nuse iso_c_binding\ncontains\n"
-        code += "\n" + signature
-    if len(initialization) > 1:
-        code += initialization + "\n"
-    if data is not None:
-        body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
-    if is_cxx(langs.language):
+        code = cpp_template
         body = start_timing_cxx(body)
         if data is not None:
-            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
-        else:
-            code += body
-        code = end_timing_cxx(code)
-        if len(deinitialization) > 1:
-            code += deinitialization + "\n"
-        code += "\n}"
+            body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
+        body = end_timing_cxx(body)
     elif is_fortran(langs.language):
+        code = f90_template
         body = wrap_timing(body, langs.language)
         if data is not None:
-            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
-        else:
-            code += body + "\n"
-        if len(deinitialization) > 1:
-            code += deinitialization + "\n"
+            body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
         name = signature.split(" ")[1].split("(")[0]
-        code += f"\nend function {name}\nend module kt\n"
+        code = code.replace("<!?NAME?!>", name)
+    code = code.replace("<!?PREPROCESSOR?!>", "\n".join(preprocessor))
+    # if present, add user specific dimensions as defines
+    if user_dimensions is not None:
+        user_defines = ""
+        for key, value in user_dimensions.items():
+            user_defines += f"#define {key} {value}\n"
+        code = code.replace("<!?USER_DEFINES?!>", user_defines)
+    else:
+        code = code.replace("<!?USER_DEFINES?!>", "")
+    code = code.replace("<!?SIGNATURE?!>", signature)
+    code = code.replace("<!?INITIALIZATION?!>", initialization)
+    code = code.replace("<!?DEINITIALIZATION?!>", deinitialization)
+    if data is not None:
+        body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
+    code = code.replace("<!?BODY?!>", body)
 
     return code
 
@@ -662,3 +684,21 @@ def add_present_openacc_fortran(name: str, size: ArraySize) -> str:
     else:
         md_size = fortran_md_size(size)
         return f" present({name}({','.join(md_size)})) "
+
+
+def process_directives(langs: Code, source: str, user_dimensions: dict = None) -> Tuple[dict, dict]:
+    """Helper functions to process all the directives in the code and create tunable functions"""
+    kernel_strings = dict()
+    kernel_args = dict()
+    preprocessor = extract_preprocessor(source)
+    signatures = extract_directive_signature(source, langs)
+    bodies = extract_directive_code(source, langs)
+    data = extract_directive_data(source, langs)
+    init = extract_initialization_code(source, langs)
+    deinit = extract_deinitialization_code(source, langs)
+    for kernel in signatures.keys():
+        kernel_strings[kernel] = generate_directive_function(
+            preprocessor, signatures[kernel], bodies[kernel], langs, data[kernel], init, deinit, user_dimensions
+        )
+        kernel_args[kernel] = allocate_signature_memory(data[kernel], preprocessor, user_dimensions)
+    return (kernel_strings, kernel_args)
