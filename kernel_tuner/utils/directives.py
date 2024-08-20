@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 # Function templates
-acc_cpp_template = """
+cpp_template: str = """
 <!?PREPROCESSOR?!>
 <!?USER_DEFINES?!>
 #include <chrono>
@@ -15,7 +15,7 @@ extern "C" <!?SIGNATURE?!> {
 }
 """
 
-acc_f90_template = """
+f90_template: str = """
 <!?PREPROCESSOR?!>
 <!?USER_DEFINES?!>
 
@@ -560,13 +560,13 @@ def generate_directive_function(
     """Generate tunable function for one directive"""
 
     if is_cxx(langs.language):
-        code = acc_cpp_template
+        code = cpp_template
         body = start_timing_cxx(body)
         if data is not None:
             body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
         body = end_timing_cxx(body)
     elif is_fortran(langs.language):
-        code = acc_f90_template
+        code = f90_template
         body = wrap_timing(body, langs.language)
         if data is not None:
             body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
