@@ -296,7 +296,7 @@ def create_data_directive_openmp_cxx(name: str, size: ArraySize) -> str:
 def create_data_directive_openmp_fortran(name: str, size: ArraySize) -> str:
     """Create Fortran OpenMP code to allocate and copy data"""
     if len(size) == 1:
-        return f"!omp target enter data map(to: {name}(:{size.get()}))\n"
+        return f"!$omp target enter data map(to: {name}(:{size.get()}))\n"
     else:
         md_size = fortran_md_size(size)
         return f"!$omp target enter data map(to: {name}({','.join(md_size)}))\n"

@@ -67,8 +67,8 @@ def test_openacc_directive_contains_data_clause():
 
 
 def test_openmp_directive_contains_data_clause():
-    assert openacc_directive_contains_data_clause("#pragma omp target teams map(tofrom: A[:1089])")
-    assert not openacc_directive_contains_data_clause("#pragma omp target")
+    assert openmp_directive_contains_data_clause("#pragma omp target teams map(tofrom: A[:1089])")
+    assert not openmp_directive_contains_data_clause("#pragma omp target")
 
 
 def test_create_data_directive():
