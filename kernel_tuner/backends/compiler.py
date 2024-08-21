@@ -186,16 +186,13 @@ class CompilerFunctions(CompilerBackend):
         compiler_options = ["-fPIC"]
 
         # detect openmp
-        if "#include <omp.h>" in kernel_string or "use omp_lib" in kernel_string:
+        if "#pragma omp" in kernel_string or "!$omp" in kernel_string:
             logging.debug("set using_openmp to true")
             self.using_openmp = True
-            if self.compiler in ["nvc", "nvc++", "nvfortran"]:
-                compiler_options.append("-mp")
-            else:
-                compiler_options.append("-fopenmp")
 
         # detect openacc
         if "#pragma acc" in kernel_string or "!$acc" in kernel_string:
+            logging.debug("set using_openacc to true")
             self.using_openacc = True
 
         # if filename is known, use that one

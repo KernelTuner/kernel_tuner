@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""This is a simple example for tuning C++ OpenACC code with the kernel tuner"""
+"""This is a simple example for tuning C++ OpenMP code with the kernel tuner"""
 
 from kernel_tuner import tune_kernel
 from kernel_tuner.utils.directives import Code, OpenMP, Cxx, process_directives
@@ -16,8 +16,7 @@ int main(void) {
 	float * c = (float *) malloc(VECTOR_SIZE * sizeof(float));
 
 	#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)
-	#pragma omp target teams num_threads(nthreads)
-	#pragma omp distribute parallel for
+	#pragma omp target teams parallel for num_threads(nthreads)
 	for ( int i = 0; i < size; i++ ) {
 		c[i] = a[i] + b[i];
 	}
