@@ -56,6 +56,13 @@ class OpenACC(Directive):
         return "openacc"
 
 
+class OpenMP(Directive):
+    """Class to represent OpenMP"""
+
+    def get(self) -> str:
+        return "openmp"
+
+
 class Cxx(Language):
     """Class to represent C++ code"""
 
@@ -131,6 +138,11 @@ def is_openacc(directive: Directive) -> bool:
     return isinstance(directive, OpenACC)
 
 
+def is_openmp(directive: Directive) -> bool:
+    """Check if a directive is OpenMP"""
+    return isinstance(directive, OpenMP)
+
+
 def is_cxx(lang: Language) -> bool:
     """Check if language is C++"""
     return isinstance(lang, Cxx)
@@ -139,6 +151,19 @@ def is_cxx(lang: Language) -> bool:
 def is_fortran(lang: Language) -> bool:
     """Check if language is Fortran"""
     return isinstance(lang, Fortran)
+
+
+def line_contains(line: str, target: str) -> bool:
+    """Generic helper to check if a line contains the target"""
+    return target in line
+
+
+def directive_contains_clause(line: str, clauses: list) -> bool:
+    """Check if a directive contains one clause from a list"""
+    for clause in clauses:
+        if clause in line:
+            return True
+    return False
 
 
 def line_contains_openacc_directive(line: str, lang: Language) -> bool:
@@ -160,6 +185,25 @@ def line_contains_openacc_directive_fortran(line: str) -> bool:
     return line_contains(line, "!$acc")
 
 
+def line_contains_openmp_directive(line: str, lang: Language) -> bool:
+    """Check if line contains an OpenMP directive or not"""
+    if is_cxx(lang):
+        return line_contains_openmp_directive_cxx(line)
+    elif is_fortran(lang):
+        return line_contains_openmp_directive_fortran(line)
+    return False
+
+
+def line_contains_openmp_directive_cxx(line: str) -> bool:
+    """Check if a line of code contains a C++ OpenMP directive or not"""
+    return line_contains(line, "#pragma omp")
+
+
+def line_contains_openmp_directive_fortran(line: str) -> bool:
+    """Check if a line of code contains a Fortran OpenMP directive or not"""
+    return line_contains(line, "!$omp")
+
+
 def line_contains_openacc_parallel_directive(line: str, lang: Language) -> bool:
     """Check if line contains an OpenACC parallel directive or not"""
     if is_cxx(lang):
@@ -179,23 +223,35 @@ def line_contains_openacc_parallel_directive_fortran(line: str) -> bool:
     return line_contains(line, "!$acc parallel")
 
 
-def line_contains(line: str, target: str) -> bool:
-    """Generic helper to check if a line contains the target"""
-    return target in line
-
-
-def openacc_directive_contains_clause(line: str, clauses: list) -> bool:
-    """Check if an OpenACC directive contains one clause from a list"""
-    for clause in clauses:
-        if clause in line:
-            return True
+def line_contains_openmp_target_directive(line: str, lang: Language) -> bool:
+    """Check if line contains an OpenMP target directive or not"""
+    if is_cxx(lang):
+        return line_contains_openmp_target_directive_cxx(line)
+    elif is_fortran(lang):
+        return line_contains_openmp_target_directive_fortran(line)
     return False
+
+
+def line_contains_openmp_target_directive_cxx(line: str) -> bool:
+    """Check if a line of code contains a C++ OpenMP target directive or not"""
+    return line_contains(line, "#pragma omp target")
+
+
+def line_contains_openmp_target_directive_fortran(line: str) -> bool:
+    """Check if a line of code contains a Fortran OpenMP target directive or not"""
+    return line_contains(line, "!$omp target")
 
 
 def openacc_directive_contains_data_clause(line: str) -> bool:
     """Check if an OpenACC directive contains one data clause"""
     data_clauses = ["copy", "copyin", "copyout", "create", "no_create", "present", "device_ptr", "attach"]
-    return openacc_directive_contains_clause(line, data_clauses)
+    return directive_contains_clause(line, data_clauses)
+
+
+def openmp_directive_contains_data_clause(line: str) -> bool:
+    """Check if an OpenMP directive contains one data clause"""
+    data_clauses = ["map"]
+    return directive_contains_clause(line, data_clauses)
 
 
 def create_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
@@ -223,6 +279,29 @@ def create_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
         )
 
 
+def create_data_directive_openmp(name: str, size: ArraySize, lang: Language) -> str:
+    """Create a data directive for a given language"""
+    if is_cxx(lang):
+        return create_data_directive_openmp_cxx(name, size)
+    elif is_fortran(lang):
+        return create_data_directive_openmp_fortran(name, size)
+    return ""
+
+
+def create_data_directive_openmp_cxx(name: str, size: ArraySize) -> str:
+    """Create C++ OpenMP code to allocate and copy data"""
+    return f"#pragma omp target enter data map(to: {name}[:{size.get()}])\n"
+
+
+def create_data_directive_openmp_fortran(name: str, size: ArraySize) -> str:
+    """Create Fortran OpenMP code to allocate and copy data"""
+    if len(size) == 1:
+        return f"!omp target enter data map(to: {name}(:{size.get()}))\n"
+    else:
+        md_size = fortran_md_size(size)
+        return f"!$omp target enter data map(to: {name}({','.join(md_size)}))\n"
+
+
 def exit_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
     """Create code to copy data back for a given language"""
     if is_cxx(lang):
@@ -244,6 +323,29 @@ def exit_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
     else:
         md_size = fortran_md_size(size)
         return f"!$acc exit data copyout({name}({','.join(md_size)}))\n"
+
+
+def exit_data_directive_openmp(name: str, size: ArraySize, lang: Language) -> str:
+    """Create code to copy data back for a given language"""
+    if is_cxx(lang):
+        return exit_data_directive_openmp_cxx(name, size)
+    elif is_fortran(lang):
+        return exit_data_directive_openmp_fortran(name, size)
+    return ""
+
+
+def exit_data_directive_openmp_cxx(name: str, size: ArraySize) -> str:
+    """Create C++ OpenMP code to copy back data"""
+    return f"#pragma omp target exit data map(from: {name}[:{size.get()}])\n"
+
+
+def exit_data_directive_openmp_fortran(name: str, size: ArraySize) -> str:
+    """Create Fortran OpenMP code to copy back data"""
+    if len(size) == 1:
+        return f"!$omp target exit data map(from: {name}(:{size.get()}))\n"
+    else:
+        md_size = fortran_md_size(size)
+        return f"!$omp target exit data map(from: {name}({','.join(md_size)}))\n"
 
 
 def correct_kernel(kernel_name: str, line: str) -> bool:
