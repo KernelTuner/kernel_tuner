@@ -481,12 +481,21 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
     for name in data.keys():
         if "*" in data[name][0]:
             size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
-            if is_openacc(langs.directive) and is_cxx(langs.language):
-                intro += create_data_directive_openacc_cxx(name, size)
-                outro += exit_data_directive_openacc_cxx(name, size)
-            elif is_openacc(langs.directive) and is_fortran(langs.language):
-                intro += create_data_directive_openacc_fortran(name, size)
-                outro += exit_data_directive_openacc_fortran(name, size)
+            if is_openacc(langs.directive):
+                if is_cxx(langs.language):
+                    intro += create_data_directive_openacc_cxx(name, size)
+                    outro += exit_data_directive_openacc_cxx(name, size)
+                elif is_fortran(langs.language):
+                    intro += create_data_directive_openacc_fortran(name, size)
+                    outro += exit_data_directive_openacc_fortran(name, size)
+            elif is_openmp(langs.directive):
+                if is_cxx(langs.language):
+                    intro += create_data_directive_openmp_cxx(name, size)
+                    outro += exit_data_directive_openmp_cxx(name, size)
+                elif is_fortran(langs.language):
+                    intro += create_data_directive_openmp_fortran(name, size)
+                    outro += exit_data_directive_openmp_fortran(name, size)
+
     return "\n".join([intro, code, outro])
 
 
