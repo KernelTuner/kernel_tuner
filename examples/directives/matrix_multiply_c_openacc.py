@@ -2,12 +2,7 @@
 """This is an example tuning a naive matrix multiplication using the simplified directives interface"""
 
 from kernel_tuner import tune_kernel
-from kernel_tuner.utils.directives import (
-    Code,
-    OpenACC,
-    Cxx,
-    process_directives
-)
+from kernel_tuner.utils.directives import Code, OpenACC, Cxx, process_directives
 
 N = 4096
 
