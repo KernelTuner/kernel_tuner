@@ -427,7 +427,7 @@ def env():
 @skip_if_no_openmp
 @skip_if_no_gcc
 def test_benchmark(env):
-    results, _ = kernel_tuner.tune_kernel(*env, block_size_names=["nthreads"])
+    results, _ = kernel_tuner.tune_kernel(*env, compiler_options=["-fopenmp"], block_size_names=["nthreads"])
     assert len(results) == 3
     assert all(["nthreads" in result for result in results])
     assert all(["time" in result for result in results])
