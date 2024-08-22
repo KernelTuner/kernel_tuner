@@ -483,9 +483,9 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
             size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
             temp = []
             if is_openacc(langs.directive):
-                temp = wrap_data_openacc(name, size)
+                temp = wrap_data_openacc(name, size, langs)
             elif is_openmp(langs.directive):
-                temp = wrap_data_openmp(name, size)
+                temp = wrap_data_openmp(name, size, langs)
             intro += temp[0]
             outro += temp[1]
     return "\n".join([intro, code, outro])
