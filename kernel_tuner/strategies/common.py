@@ -1,11 +1,19 @@
 import logging
 import sys
 from time import perf_counter
+import warnings
+import ray
 
 import numpy as np
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.util import get_num_devices
+from kernel_tuner.runners.ray.remote_actor import RemoteActor
+from kernel_tuner.observers.nvml import NVMLObserver, NVMLPowerObserver
+from kernel_tuner.observers.pmt import PMTObserver
+from kernel_tuner.observers.powersensor import PowerSensorObserver
+from kernel_tuner.observers.register import RegisterObserver
 
 _docstring_template = """ Find the best performing kernel configuration in the parameter space
 
@@ -44,7 +52,7 @@ def make_strategy_options_doc(strategy_options):
 
 def get_options(strategy_options, options):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
-    accepted = list(options.keys()) + ["max_fevals", "time_limit"]
+    accepted = list(options.keys()) + ["max_fevals", "time_limit", "ensemble", "check_and_retrieve"]
     for key in strategy_options:
         if key not in accepted:
             raise ValueError(f"Unrecognized option {key} in strategy_options")
@@ -72,7 +80,57 @@ class CostFunc:
         # check if max_fevals is reached or time limit is exceeded
         util.check_stop_criterion(self.tuning_options)
 
-        # snap values in x to nearest actual value for each parameter, unscale x if needed
+        x_list = [x] if self._is_single_configuration(x) else x
+        configs = [self._prepare_config(cfg) for cfg in x_list]
+        
+        legal_configs = configs
+        illegal_results = []
+        if check_restrictions and self.searchspace.restrictions:
+            legal_configs, illegal_results = self._get_legal_configs(configs)
+        
+        final_results = self._evaluate_configs(legal_configs) if len(legal_configs) > 0 else []
+        # get numerical return values, taking optimization direction into account
+        all_results = final_results + illegal_results
+        return_values = []
+        for result in all_results:
+            return_value = result[self.tuning_options.objective] or sys.float_info.max
+            return_values.append(return_value if not self.tuning_options.objective_higher_is_better else -return_value)
+        
+        if len(return_values) == 1:
+            return return_values[0]
+        return return_values
+    
+    def _is_single_configuration(self, x):
+        """
+        Determines if the input is a single configuration based on its type and composition.
+        
+        Parameters:
+            x: The input to check, which can be an int, float, numpy array, list, or tuple.
+
+        Returns:
+            bool: True if `x` is a single configuration, which includes being a singular int or float, 
+                a numpy array of ints or floats, or a list or tuple where all elements are ints or floats.
+                Otherwise, returns False.
+        """
+        if isinstance(x, (int, float)):
+            return True
+        if isinstance(x, np.ndarray):
+            return x.dtype.kind in 'if'  # Checks for data type being integer ('i') or float ('f')
+        if isinstance(x, (list, tuple)):
+            return all(isinstance(item, (int, float)) for item in x)
+        return False
+    
+    def _prepare_config(self, x):
+        """
+        Prepare a single configuration by snapping to nearest values and/or scaling.
+
+        Args:
+            x (list): The input configuration to be prepared.
+
+        Returns:
+            list: The prepared configuration.
+
+        """
         if self.snap:
             if self.scaling:
                 params = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)
@@ -80,39 +138,66 @@ class CostFunc:
                 params = snap_to_nearest_config(x, self.searchspace.tune_params)
         else:
             params = x
-        logging.debug('params ' + str(params))
+        return params
+    
+    def _get_legal_configs(self, configs):
+        """
+        Filters and categorizes configurations into legal and illegal based on defined restrictions. 
+        Configurations are checked against restrictions; illegal ones are modified to indicate an invalid state and 
+        included in the results. Legal configurations are collected and returned for potential use.
 
-        legal = True
-        result = {}
-        x_int = ",".join([str(i) for i in params])
+        Parameters:
+            configs (list of tuple): Configurations to be checked, each represented as a tuple of parameter values.
 
-        # else check if this is a legal (non-restricted) configuration
-        if check_restrictions and self.searchspace.restrictions:
-            params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
+        Returns:
+            tuple: A pair containing a list of legal configurations and a list of results with illegal configurations marked.
+        """
+        results = []
+        legal_configs = []
+        for config in configs:
+            params_dict = dict(zip(self.searchspace.tune_params.keys(), config))
             legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
             if not legal:
-                result = params_dict
-                result[self.tuning_options.objective] = util.InvalidConfig()
+                params_dict[self.tuning_options.objective] = util.InvalidConfig()
+                results.append(params_dict)
+            else:
+                legal_configs.append(config)
+        return legal_configs, results
+    
+    def _evaluate_configs(self, configs):
+        """
+        Evaluate and manage configurations based on tuning options. Results are sorted by timestamp to maintain 
+        order during parallel processing. The function ensures no duplicates in results and checks for stop criteria 
+        post-processing. Strategy start time is updated upon completion.
 
-        if legal:
-            # compile and benchmark this instance
-            res = self.runner.run([params], self.tuning_options)
-            result = res[0]
+        Parameters:
+            configs (list): Configurations to be evaluated.
 
+        Returns:
+            list of dict: Processed results of the evaluations.
+        """
+        results = self.runner.run(configs, self.tuning_options)
+        # sort based on timestamp, needed because of parallel tuning of populations and restrospective stop criterion check
+        if "timestamp" in results[0]:
+            results.sort(key=lambda x: x['timestamp'])
+
+        final_results = []
+        for result in results:
+            config = tuple(result[key] for key in self.tuning_options.tune_params if key in result)
+            x_int = ",".join([str(i) for i in config])
             # append to tuning results
             if x_int not in self.tuning_options.unique_results:
                 self.tuning_options.unique_results[x_int] = result
-
+                # check retrospectively if max_fevals is reached or time limit is exceeded within the results
+                util.check_stop_criterion(self.tuning_options)
+            final_results.append(result)
+            # in case of stop creterion reached, save the results so far
             self.results.append(result)
 
-            # upon returning from this function control will be given back to the strategy, so reset the start time
-            self.runner.last_strategy_start_time = perf_counter()
+        # upon returning from this function control will be given back to the strategy, so reset the start time
+        self.runner.last_strategy_start_time = perf_counter()
 
-        # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective] or sys.float_info.max
-        return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
-
-        return return_value
+        return final_results
 
     def get_bounds_x0_eps(self):
         """Compute bounds, x0 (the initial guess), and eps."""
@@ -243,3 +328,45 @@ def scale_from_params(params, tune_params, eps):
     for i, v in enumerate(tune_params.values()):
         x[i] = 0.5 * eps + v.index(params[i])*eps
     return x
+
+def check_num_devices(ensemble_size: int, simulation_mode: bool, runner):
+    
+    num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
+    if num_devices < ensemble_size:
+         warnings.warn("Number of devices is less than the number of strategies in the ensemble. Some strategies will wait until devices are available.", UserWarning)
+
+def create_actor_on_device(kernel_source, kernel_options, device_options, iterations, observers, cache_manager, simulation_mode, id):
+    # Check if Ray is initialized, raise an error if not
+    if not ray.is_initialized():
+        raise RuntimeError("Ray is not initialized. Initialize Ray before creating an actor (remember to include resources).")
+
+    if simulation_mode:
+        resource_options = {"num_cpus": 1}
+    else:
+        resource_options = {"num_gpus": 1}
+    
+    observers_type_and_arguments = []
+    if observers is not None:
+        # observers can't be pickled so we will re-initialize them in the actors
+        # observers related to backends will be initialized once we call the device interface inside the actor, that is why we skip them here
+        for i, observer in enumerate(observers):
+            if isinstance(observer, (NVMLObserver, NVMLPowerObserver, PMTObserver, PowerSensorObserver)):
+                observers_type_and_arguments.append((observer.__class__, observer.init_arguments))
+            if isinstance(observer, RegisterObserver):
+                observers_type_and_arguments.append((observer.__class__, []))
+    
+    # Create the actor with the specified options and resources
+    return RemoteActor.options(**resource_options).remote(kernel_source, 
+                                                            kernel_options, 
+                                                            device_options, 
+                                                            iterations, 
+                                                            observers_type_and_arguments=observers_type_and_arguments,
+                                                            cache_manager=cache_manager,
+                                                            simulation_mode=simulation_mode,
+                                                            id=id)
+
+def initialize_ray():
+    # Initialize Ray
+    if not ray.is_initialized():
+        ray.init(include_dashboard=True, ignore_reinit_error=True)
+

@@ -58,6 +58,10 @@ class SimulationRunner(Runner):
         self.last_strategy_time = 0
         self.units = {}
 
+        self.device_options = device_options # needed for the ensemble strategy down the line
+        self.iterations = iterations # needed for the ensemble strategy down the line
+        self.observers = observers # needed for the ensemble strategy down the line
+
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
         env["simulation"] = True

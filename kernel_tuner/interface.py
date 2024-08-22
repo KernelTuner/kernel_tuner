@@ -34,6 +34,7 @@ import kernel_tuner.util as util
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
+from kernel_tuner.runners.parallel import ParallelRunner
 from kernel_tuner.searchspace import Searchspace
 
 try:
@@ -57,6 +58,7 @@ from kernel_tuner.strategies import (
     pso,
     random_sample,
     simulated_annealing,
+    ensemble
 )
 
 strategy_map = {
@@ -75,6 +77,7 @@ strategy_map = {
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
+    "ensemble": ensemble,
 }
 
 
@@ -384,6 +387,7 @@ _tuning_options = Options(
             * "pso" particle swarm optimization
             * "random_sample" takes a random sample of the search space
             * "simulated_annealing" simulated annealing strategy
+            * "ensemble" Ensemble Strategy
 
         Strategy-specific parameters and options are explained under strategy_options.
 
@@ -463,6 +467,7 @@ _tuning_options = Options(
         ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
+        ("parallel_mode", ("Run the auto-tuning on multiple devices (brute-force execution)", "bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
     ]
 )
@@ -574,6 +579,7 @@ def tune_kernel(
     cache=None,
     metrics=None,
     simulation_mode=False,
+    parallel_mode=False,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -611,6 +617,8 @@ def tune_kernel(
         tuning_options["max_fevals"] = strategy_options["max_fevals"]
     if strategy_options and "time_limit" in strategy_options:
         tuning_options["time_limit"] = strategy_options["time_limit"]
+    if strategy_options and "num_gpus" in strategy_options:
+        tuning_options["num_gpus"] = strategy_options["num_gpus"]
 
     logging.debug("tune_kernel called")
     logging.debug("kernel_options: %s", util.get_config_string(kernel_options))
@@ -650,9 +658,13 @@ def tune_kernel(
         strategy = brute_force
 
     # select the runner for this job based on input
-    selected_runner = SimulationRunner if simulation_mode else SequentialRunner
+    selected_runner = SimulationRunner if simulation_mode else (ParallelRunner if parallel_mode else SequentialRunner)
     tuning_options.simulated_time = 0
-    runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
+    if parallel_mode:
+         num_gpus = tuning_options['num_gpus'] if 'num_gpus' in tuning_options else None
+         runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers, num_gpus=num_gpus)
+    else:
+        runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
 
     # the user-specified function may or may not have an optional atol argument;
     # we normalize it so that it always accepts atol.

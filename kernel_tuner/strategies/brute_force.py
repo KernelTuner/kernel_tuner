@@ -1,13 +1,21 @@
 """ The default strategy that iterates through the whole parameter space """
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
+from kernel_tuner.runners.parallel import ParallelRunner
+from kernel_tuner.runners.ray.cache_manager import CacheManager
 
-_options = {}
+_options = dict(num_gpus=("Number of gpus to run parallel execution", None))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
-    # call the runner
-    return runner.run(searchspace.sorted_list(), tuning_options)
+    if isinstance(runner, ParallelRunner):
+        if tuning_options.strategy_options is None:
+            tuning_options.strategy_options = {}
+        tuning_options.strategy_options['check_and_retrieve'] = False
+        cache_manager = CacheManager.remote(tuning_options.cache, tuning_options.cachefile)
+        return runner.run(parameter_space=searchspace.sorted_list(), tuning_options=tuning_options, cache_manager=cache_manager)
+    else:
+        return runner.run(searchspace.sorted_list(), tuning_options)
 
 
 tune.__doc__ = common.get_strategy_docstring("Brute Force", _options)
