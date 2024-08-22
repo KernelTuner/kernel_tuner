@@ -505,11 +505,11 @@ def wrap_data_openacc(name: str, size: int, langs: Code) -> Tuple[str, str]:
 def wrap_data_openmp(name: str, size: int, langs: Code) -> Tuple[str, str]:
     """Create language specific data directives"""
     if is_cxx(langs.language):
-        intro += create_data_directive_openmp_cxx(name, size)
-        outro += exit_data_directive_openmp_cxx(name, size)
+        intro = create_data_directive_openmp_cxx(name, size)
+        outro = exit_data_directive_openmp_cxx(name, size)
     elif is_fortran(langs.language):
-        intro += create_data_directive_openmp_fortran(name, size)
-        outro += exit_data_directive_openmp_fortran(name, size)
+        intro = create_data_directive_openmp_fortran(name, size)
+        outro = exit_data_directive_openmp_fortran(name, size)
     return intro, outro
 
 
