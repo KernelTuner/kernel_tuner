@@ -481,7 +481,7 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
     for name in data.keys():
         if "*" in data[name][0]:
             size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
-            temp = None
+            temp = []
             if is_openacc(langs.directive):
                 temp = wrap_data_openacc(name, size)
             elif is_openmp(langs.directive):
@@ -491,7 +491,7 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
     return "\n".join([intro, code, outro])
 
 
-def wrap_data_openacc(name: str, size: int) -> Tuple[str, str]:
+def wrap_data_openacc(name: str, size: int, langs: Code) -> Tuple[str, str]:
     """Create language specific data directives"""
     if is_cxx(langs.language):
         intro = create_data_directive_openacc_cxx(name, size)
@@ -502,7 +502,7 @@ def wrap_data_openacc(name: str, size: int) -> Tuple[str, str]:
     return intro, outro
 
 
-def wrap_data_openmp(name: str, size: int) -> Tuple[str, str]:
+def wrap_data_openmp(name: str, size: int, langs: Code) -> Tuple[str, str]:
     """Create language specific data directives"""
     if is_cxx(langs.language):
         intro += create_data_directive_openmp_cxx(name, size)
