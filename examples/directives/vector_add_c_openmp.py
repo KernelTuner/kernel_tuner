@@ -16,7 +16,7 @@ int main(void) {
 	float * c = (float *) malloc(VECTOR_SIZE * sizeof(float));
 
 	#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)
-	#pragma omp target teams parallel for num_threads(nthreads)
+	#pragma omp target teams distribute parallel for num_teams(nteams) num_threads(nthreads)
 	for ( int i = 0; i < size; i++ ) {
 		c[i] = a[i] + b[i];
 	}
@@ -33,6 +33,7 @@ app = Code(OpenMP(), Cxx())
 kernel_string, kernel_args = process_directives(app, code)
 
 tune_params = dict()
+tune_params["nteams"] = [2**i for i in range(1,11)]
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
 metrics = dict()
 metrics["GB/s"] = (
