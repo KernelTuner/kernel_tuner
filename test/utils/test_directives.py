@@ -284,13 +284,13 @@ def test_extract_directive_signature():
     signatures = extract_directive_signature(code, acc_cxx)
     assert len(signatures) == 1
     assert (
-        "float vector_add(float * restrict a, float * restrict b, float * restrict c, int size)"
+        "float vector_add(float * a, float * b, float * c, int size)"
         in signatures["vector_add"]
     )
     signatures = extract_directive_signature(code, acc_cxx, "vector_add")
     assert len(signatures) == 1
     assert (
-        "float vector_add(float * restrict a, float * restrict b, float * restrict c, int size)"
+        "float vector_add(float * a, float * b, float * c, int size)"
         in signatures["vector_add"]
     )
     signatures = extract_directive_signature(code, acc_cxx, "vector_add_ext")

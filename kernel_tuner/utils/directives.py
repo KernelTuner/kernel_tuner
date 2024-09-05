@@ -597,7 +597,7 @@ def extract_directive_signature(code: str, langs: Code, kernel_name: str = None)
                     p_type = param[1:-1]
                     p_type = p_type.split(":")[0]
                     if "*" in p_type:
-                        p_type = p_type.replace("*", " * restrict")
+                        p_type = p_type.replace("*", " *")
                     if is_cxx(langs.language):
                         params.append(f"{p_type} {p_name}")
                     elif is_fortran(langs.language):
