@@ -52,6 +52,6 @@ tune_kernel(
     tune_params,
     metrics=metrics,
     answer=answer,
-    compiler_options=["-fast", "-mp=gpu"],
     compiler="nvc++",
+    compiler_options=["-fast", "-mp=gpu"],
 )
