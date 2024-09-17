@@ -60,7 +60,7 @@ tune_kernel(
     "histogram",
     kernel_string["histogram"],
     0,
-    kernel_args["vector_add"],
+    kernel_args["histogram"],
     tune_params,
     metrics=metrics,
     answer=answer,
