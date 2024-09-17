@@ -93,7 +93,6 @@ class CompilerFunctions(CompilerBackend):
         self.lib = None
         self.using_openmp = False
         self.using_openacc = False
-        self.observers = [CompilerRuntimeObserver(self)]
         self.last_result = None
 
         if self.compiler == "g++":
