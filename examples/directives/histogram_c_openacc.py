@@ -72,6 +72,8 @@ reference_hist = np.zeros_like(kernel_args["histogram"][1]).astype(np.int32)
 reference_hist = histogram(kernel_args["histogram"][0], reference_hist)
 answer = [None, reference_hist]
 
+mem_cleaner = MemoryReset([None, kernel_args["histogram"][1]])
+
 tune_kernel(
     "histogram",
     kernel_string["histogram"],
@@ -80,6 +82,7 @@ tune_kernel(
     tune_params,
     metrics=metrics,
     answer=answer,
+    observers=[mem_cleaner],
     compiler="nvc++",
     compiler_options=["-fast", "-acc=gpu"],
 )
