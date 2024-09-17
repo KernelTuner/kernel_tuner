@@ -50,6 +50,7 @@ metrics["GB/s"] = (
     / 10**9
 )
 
+kernel_args["histogram"][0] = np.random.randint(0, 255, len(kernel_args["histogram"][0]), dtype=np.int32)
 kernel_args["histogram"][1] = np.zeros(len(kernel_args["histogram"][1])).astype(np.int32)
 reference_hist = np.zeros_like(kernel_args["histogram"][1]).astype(np.int32)
 reference_hist = histogram(kernel_args["histogram"][0], reference_hist)
