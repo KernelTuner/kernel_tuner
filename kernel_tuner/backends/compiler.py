@@ -18,7 +18,6 @@ from kernel_tuner.util import (
     get_temp_filename,
     delete_temp_file,
     write_file,
-    SkippableFailure,
 )
 
 try:
@@ -82,8 +81,11 @@ class CompilerFunctions(CompilerBackend):
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        self.allocations = []
         self.observers = observers or []
         self.observers.append(CompilerRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
         self.iterations = iterations
         self.max_threads = 1024
@@ -162,6 +164,7 @@ class CompilerFunctions(CompilerBackend):
             elif is_cupy_array(arg):
                 data_ctypes = C.c_void_p(arg.data.ptr)
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
+            self.allocations.append(ctype_args[i])
         return ctype_args
 
     def compile(self, kernel_instance):
