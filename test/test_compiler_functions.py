@@ -371,11 +371,12 @@ def test_run_kernel():
 
 
 def test_refresh_memory():
-    arg1 = np.array([1, 2, 3]).astype(np.int8)
+    arg1 = np.array([1, 2, 3]).astype(np.int32)
+    arguments = [arg1]
     cfunc = CompilerFunctions()
-    output = cfunc.ready_argument_list([arg1])
-    assert np.all(output == arg1)
-    arg1 = np.array([0, 0, 0]).astype(np.int8)
-    assert np.all(arg1 == [0, 0, 0])
-    cfunc.refresh_memory(arg1, [True])
-    assert np.all(arg1 == [1, 2, 3])
+    _ = cfunc.ready_argument_list(arguments)
+    assert np.all(arguments[0] == [1, 2, 3])
+    arguments[0] = np.array([0, 0, 0]).astype(np.int8)
+    assert np.all(arguments[0] == [0, 0, 0])
+    cfunc.refresh_memory(arguments, [True])
+    assert np.all(arguments[0] == [1, 2, 3])
