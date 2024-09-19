@@ -387,7 +387,7 @@ def test_memcpy_dtoh():
     arguments = [arg1]
     cfunc = CompilerFunctions()
     ready_arguments = cfunc.ready_argument_list(arguments)
-    expected = np.array([0, 0, 0, 0]).astype(np.float32)
-    assert np.all(ready_arguments.numpy != expected)
-    cfunc.memcpy_dtoh(expected, ready_arguments)
-    assert np.all(ready_arguments.numpy == expected)
+    output = np.array([5, 0, 7, 0]).astype(np.int32)
+    assert np.all(ready_arguments[0].numpy != output)
+    cfunc.memcpy_dtoh(output, ready_arguments[0])
+    assert np.all(ready_arguments[0].numpy == output)
