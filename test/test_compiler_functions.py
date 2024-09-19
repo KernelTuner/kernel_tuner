@@ -380,3 +380,14 @@ def test_refresh_memory():
     assert np.all(arguments[0] == [0, 0, 0])
     cfunc.refresh_memory(arguments, [True])
     assert np.all(arguments[0] == [1, 2, 3])
+
+
+def test_memcpy_dtoh():
+    arg1 = np.array([0, 5, 0, 7]).astype(np.int32)
+    arguments = [arg1]
+    cfunc = CompilerFunctions()
+    ready_arguments = cfunc.ready_argument_list(arguments)
+    expected = np.array([0, 0, 0, 0]).astype(np.float32)
+    assert np.all(ready_arguments.numpy != expected)
+    cfunc.memcpy_dtoh(expected, ready_arguments)
+    assert np.all(ready_arguments.numpy == expected)

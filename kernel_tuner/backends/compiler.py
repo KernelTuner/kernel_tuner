@@ -356,24 +356,33 @@ class CompilerFunctions(CompilerBackend):
             C.memset(allocation.ctypes, value, size)
 
     def memcpy_dtoh(self, dest, src):
-        """There is no memcpy_dtoh for the compiler backend."""
-        pass
+        """This method implements the semantic of a device to host copy for the Compiler backend.
+        There is no actual copy from device to host happening, but host to host.
+
+        :param dest: A numpy or cupy array to store the data
+        :type dest: np.ndarray or cupy.ndarray
+
+        :param src: An Argument for some memory allocation
+        :type src: Argument
+        """
+        # there is no real copy from device to host, but host to host
+        if isinstance(dest, np.ndarray) and is_cupy_array(src.numpy):
+            # Implicit conversion to a NumPy array is not allowed.
+            value = src.numpy.get()
+        else:
+            value = src.numpy
+        xp = get_array_module(dest)
+        dest[:] = xp.asarray(value)
 
     def memcpy_htod(self, dest, src):
-        """There is no memcpy_htod for the compiler backend."""
+        """There is no memcpy_htod implemented for the compiler backend."""
         pass
 
     def refresh_memory(self, arguments, should_sync):
         """Copy the preserved content of the output memory to used arrays."""
         for i, arg in enumerate(arguments):
             if should_sync[i]:
-                if isinstance(arg, np.ndarray) and is_cupy_array(self.allocations[i].numpy):
-                    # Implicit conversion to a NumPy array is not allowed.
-                    value = self.allocations[i].numpy.get()
-                else:
-                    value = self.allocations[i].numpy
-                xp = get_array_module(arg)
-                arg[:] = xp.asarray(value)
+                self.memcpy_dtoh(arg, self.allocations[i])
 
     def cleanup_lib(self):
         """Unload the previously loaded shared library"""
