@@ -57,7 +57,7 @@ class Backend(ABC):
         """This method must implement a host to device copy."""
         pass
 
-    def reset(self, arguments, should_sync):
+    def refresh_memory(self, arguments, should_sync):
         """Copy the original content of the output memory to device memory."""
         for i, arg in enumerate(arguments):
             if should_sync[i]:

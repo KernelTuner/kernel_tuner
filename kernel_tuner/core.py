@@ -474,7 +474,7 @@ class DeviceInterface(object):
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
-        self.dev.reset(instance.arguments, should_sync)
+        self.dev.refresh_memory(instance.arguments, should_sync)
 
         # run the kernel
         check = self.run_kernel(func, gpu_args, instance)

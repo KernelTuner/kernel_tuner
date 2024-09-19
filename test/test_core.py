@@ -107,11 +107,12 @@ def test_check_kernel_output(dev_func_interface):
 
     dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
 
-    dfi.reset.assert_called()
+    dfi.refresh_memory.assert_called()
     dfi.run_kernel.assert_called_once_with('func', answer, (256, 1, 1), (1, 1, 1))
 
     print(dfi.mock_calls)
 
+    assert dfi.refresh_memory.called == 1
     assert dfi.memcpy_dtoh.called == 1
 
     for name, args, _ in dfi.mock_calls:

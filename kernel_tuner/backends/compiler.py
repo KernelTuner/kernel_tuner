@@ -356,44 +356,24 @@ class CompilerFunctions(CompilerBackend):
             C.memset(allocation.ctypes, value, size)
 
     def memcpy_dtoh(self, dest, src):
-        """a simple memcpy copying from an Argument to a numpy array
-
-        :param dest: A numpy or cupy array to store the data
-        :type dest: np.ndarray or cupy.ndarray
-
-        :param src: An Argument for some memory allocation
-        :type src: Argument
-        """
-        if isinstance(dest, np.ndarray) and is_cupy_array(src.numpy):
-            # Implicit conversion to a NumPy array is not allowed.
-            value = src.numpy.get()
-        else:
-            value = src.numpy
-        xp = get_array_module(dest)
-        dest[:] = xp.asarray(value)
+        """There is no memcpy_dtoh for the compiler backend."""
+        pass
 
     def memcpy_htod(self, dest, src):
-        """a simple memcpy copying from a numpy array to an Argument
+        """There is no memcpy_htod for the compiler backend."""
+        pass
 
-        :param dest: An Argument for some memory allocation
-        :type dest: Argument
-
-        :param src: A numpy or cupy array containing the source data
-        :type src: np.ndarray or cupy.ndarray
-        """
-        if isinstance(dest.numpy, np.ndarray) and is_cupy_array(src):
-            # Implicit conversion to a NumPy array is not allowed.
-            value = src.get()
-        else:
-            value = src
-        xp = get_array_module(dest.numpy)
-        dest.numpy[:] = xp.asarray(value)
-
-    def reset(self, arguments, should_sync):
+    def refresh_memory(self, arguments, should_sync):
         """Copy the preserved content of the output memory to device pointers."""
         for i, arg in enumerate(arguments):
             if should_sync[i]:
-                self.memcpy_htod(arg, self.allocations[i])
+                if isinstance(arg, np.ndarray) and is_cupy_array(self.allocations[i].numpy):
+                    # Implicit conversion to a NumPy array is not allowed.
+                    value = self.allocations[i].numpy.get()
+                else:
+                    value = self.allocations[i].numpy
+                xp = get_array_module(arg)
+                arg[:] = xp.asarray(value)
 
     def cleanup_lib(self):
         """Unload the previously loaded shared library"""
