@@ -364,7 +364,7 @@ class CompilerFunctions(CompilerBackend):
         pass
 
     def refresh_memory(self, arguments, should_sync):
-        """Copy the preserved content of the output memory to device pointers."""
+        """Copy the preserved content of the output memory to used arrays."""
         for i, arg in enumerate(arguments):
             if should_sync[i]:
                 if isinstance(arg, np.ndarray) and is_cupy_array(self.allocations[i].numpy):

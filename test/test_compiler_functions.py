@@ -368,3 +368,14 @@ def test_run_kernel():
         lang="C",
     )
     assert cp.all((a + b) == c)
+
+
+def test_refresh_memory():
+    arg1 = np.array([1, 2, 3]).astype(np.int8)
+    cfunc = CompilerFunctions()
+    output = cfunc.ready_argument_list([arg1])
+    assert np.all(output == arg1)
+    arg1 = np.array([0, 0, 0]).astype(np.int8)
+    assert np.all(arg1 == [0, 0, 0])
+    cfunc.refresh_memory(arg1, [True])
+    assert np.all(arg1 == [1, 2, 3])
