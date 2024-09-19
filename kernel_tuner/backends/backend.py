@@ -57,6 +57,12 @@ class Backend(ABC):
         """This method must implement a host to device copy."""
         pass
 
+    def reset(self, arguments, should_sync):
+        """Copy the original content of the output memory to device memory."""
+        for i, arg in enumerate(arguments):
+            if should_sync[i]:
+                self.memcpy_htod(self.allocations[i], arg)
+
 
 class GPUBackend(Backend):
     """Base class for GPU backends"""
@@ -86,4 +92,9 @@ class CompilerBackend(Backend):
 
     @abstractmethod
     def __init__(self, iterations, compiler_options, compiler):
+        pass
+
+    @abstractmethod
+    def cleanup_lib(self):
+        """Unload the previously loaded shared library"""
         pass

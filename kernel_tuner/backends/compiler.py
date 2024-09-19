@@ -81,6 +81,7 @@ class CompilerFunctions(CompilerBackend):
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        # allocations contains a clean copy of the memory
         self.allocations = []
         self.observers = observers or []
         self.observers.append(CompilerRuntimeObserver(self))
@@ -151,11 +152,6 @@ class CompilerFunctions(CompilerBackend):
             dtype_str = str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
-                    # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
-                    # to its underlying array, so we need to store a reference to arg.copy()
-                    # in the Argument object manually to avoid it being deleted.
-                    # (This changed in numpy > 1.15.)
-                    # data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                     data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
@@ -164,7 +160,7 @@ class CompilerFunctions(CompilerBackend):
             elif is_cupy_array(arg):
                 data_ctypes = C.c_void_p(arg.data.ptr)
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
-            self.allocations.append(ctype_args[i])
+            self.allocations.append(Argument(numpy=arg.copy(), ctypes=data_ctypes))
         return ctype_args
 
     def compile(self, kernel_instance):
@@ -393,8 +389,14 @@ class CompilerFunctions(CompilerBackend):
         xp = get_array_module(dest.numpy)
         dest.numpy[:] = xp.asarray(value)
 
+    def reset(self, arguments, should_sync):
+        """Copy the preserved content of the output memory to device pointers."""
+        for i, arg in enumerate(arguments):
+            if should_sync[i]:
+                self.memcpy_htod(arg, self.allocations[i])
+
     def cleanup_lib(self):
-        """unload the previously loaded shared library"""
+        """Unload the previously loaded shared library"""
         if not self.using_openmp and not self.using_openacc:
             # this if statement is necessary because shared libraries that use
             # OpenMP will core dump when unloaded, this is a well-known issue with OpenMP

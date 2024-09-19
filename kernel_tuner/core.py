@@ -474,14 +474,13 @@ class DeviceInterface(object):
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
-        for i, arg in enumerate(instance.arguments):
-            if should_sync[i]:
-                self.dev.memcpy_htod(gpu_args[i], arg)
+        self.dev.reset(instance.arguments, should_sync)
 
         # run the kernel
         check = self.run_kernel(func, gpu_args, instance)
         if not check:
-            return  # runtime failure occured that should be ignored, skip correctness check
+            # runtime failure occured that should be ignored, skip correctness check
+            return
 
         # retrieve gpu results to host memory
         result_host = []
