@@ -21,10 +21,16 @@ code = """
 #define VECTOR_SIZE 1000000
 
 #pragma tuner start histogram vector(int*:VECTOR_SIZE) hist(int*:HIST_SIZE)
+#if enable_reduction == 1
+#pragma acc parallel num_gangs(ngangs) vector_length(nthreads) reduction(+:hist[:HIST_SIZE])
+#else
 #pragma acc parallel num_gangs(ngangs) vector_length(nthreads)
+#endif
 #pragma acc loop independent
 for ( int i = 0; i < VECTOR_SIZE; i++ ) {
+#if enable_atomic == 1
     #pragma acc atomic update
+#endif
     hist[vector[i]] += 1;
 }
 #pragma tuner stop
@@ -37,6 +43,9 @@ kernel_string, kernel_args = process_directives(app, code)
 tune_params = dict()
 tune_params["ngangs"] = [2**i for i in range(1, 11)]
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
+tune_params["enable_reduction"] = [0, 1]
+tune_params["enable_atomic"] = [0, 1]
+constraints = ["enable_reduction != enable_atomic"]
 metrics = dict()
 metrics["GB/s"] = (
     lambda x: ((2 * 4 * len(kernel_args["histogram"][0])) + (4 * len(kernel_args["histogram"][0])))
@@ -56,6 +65,7 @@ tune_kernel(
     0,
     kernel_args["histogram"],
     tune_params,
+    restrictions=constraints,
     metrics=metrics,
     answer=answer,
     compiler="nvc++",
