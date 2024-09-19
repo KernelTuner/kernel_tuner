@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-"""This is a simple example for tuning C++ OpenACC code with the kernel tuner"""
+"""This is a simple example for tuning C++ OpenMP code with the kernel tuner"""
 import numpy as np
 
 from kernel_tuner import tune_kernel
-from kernel_tuner.utils.directives import Code, OpenACC, Cxx, process_directives
+from kernel_tuner.utils.directives import Code, OpenMP, Cxx, process_directives
 
 
 # Naive Python histogram implementation
@@ -21,14 +21,13 @@ code = """
 
 #pragma tuner start histogram vector(int*:VECTOR_SIZE) hist(int*:HIST_SIZE)
 #if enable_reduction == 1
-#pragma acc parallel num_gangs(ngangs) vector_length(nthreads) reduction(+:hist[:HIST_SIZE])
+#pragma omp target teams distribute parallel for num_teams(nteams) num_threads(nthreads) reduction(+:hist[:HIST_SIZE])
 #else
-#pragma acc parallel num_gangs(ngangs) vector_length(nthreads)
+#pragma omp target teams distribute parallel for num_teams(nteams) num_threads(nthreads)
 #endif
-#pragma acc loop independent
 for ( int i = 0; i < VECTOR_SIZE; i++ ) {
 #if enable_atomic == 1
-    #pragma acc atomic update
+    #pragma omp atomic update
 #endif
     hist[vector[i]] += 1;
 }
@@ -36,11 +35,11 @@ for ( int i = 0; i < VECTOR_SIZE; i++ ) {
 """
 
 # Extract tunable directive
-app = Code(OpenACC(), Cxx())
+app = Code(OpenMP(), Cxx())
 kernel_string, kernel_args = process_directives(app, code)
 
 tune_params = dict()
-tune_params["ngangs"] = [2**i for i in range(1, 11)]
+tune_params["nteams"] = [2**i for i in range(1, 11)]
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
 tune_params["enable_reduction"] = [0, 1]
 tune_params["enable_atomic"] = [0, 1]
@@ -68,5 +67,5 @@ tune_kernel(
     metrics=metrics,
     answer=answer,
     compiler="nvc++",
-    compiler_options=["-fast", "-acc=gpu"],
+    compiler_options=["-fast", "-mp=gpu"],
 )
