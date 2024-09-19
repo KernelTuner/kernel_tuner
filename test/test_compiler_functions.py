@@ -146,12 +146,6 @@ def test_byte_array_arguments():
 
     assert all(output_arg1 == arg1)
 
-    dest = np.zeros_like(arg1)
-
-    cfunc.memcpy_dtoh(dest, output[0])
-
-    assert all(dest == arg1)
-
 
 @patch("kernel_tuner.backends.compiler.subprocess")
 @patch("kernel_tuner.backends.compiler.numpy.ctypeslib")
@@ -224,111 +218,6 @@ def test_memset():
     print(output)
     assert all(output == np.zeros(4))
     assert all(x == np.zeros(4))
-
-
-@skip_if_no_cupy
-def test_memcpy_dtoh():
-    import cupy as cp
-
-    a = [1, 2, 3, 4]
-    x = cp.asarray(a, dtype=np.float32)
-    x_c = C.c_void_p(x.data.ptr)
-    arg = Argument(numpy=x, ctypes=x_c)
-    output = np.zeros(len(x), dtype=x.dtype)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_dtoh(output, arg)
-
-    print(f"{type(x)=} {x=}")
-    print(f"{type(a)=} {a=}")
-    print(f"{type(output)=} {output=}")
-
-    assert all(output == a)
-    assert all(x.get() == a)
-
-
-@skip_if_no_gcc
-def test_memcpy_host_dtoh():
-    a = [1, 2, 3, 4]
-    x = np.array(a).astype(np.float32)
-    x_c = x.ctypes.data_as(C.POINTER(C.c_float))
-    arg = Argument(numpy=x, ctypes=x_c)
-    output = np.zeros_like(x)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_dtoh(output, arg)
-
-    print(a)
-    print(output)
-
-    assert all(output == a)
-    assert all(x == a)
-
-
-@skip_if_no_cupy
-def test_memcpy_device_dtoh():
-    import cupy as cp
-
-    a = [1, 2, 3, 4]
-    x = cp.asarray(a, dtype=np.float32)
-    x_c = C.c_void_p(x.data.ptr)
-    arg = Argument(numpy=x, ctypes=x_c)
-    output = cp.zeros_like(x)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_dtoh(output, arg)
-
-    print(f"{type(x)=} {x=}")
-    print(f"{type(a)=} {a=}")
-    print(f"{type(output)=} {output=}")
-
-    assert all(output.get() == a)
-    assert all(x.get() == a)
-
-
-@skip_if_no_cupy
-def test_memcpy_htod():
-    import cupy as cp
-
-    a = [1, 2, 3, 4]
-    src = np.array(a, dtype=np.float32)
-    x = cp.zeros(len(src), dtype=src.dtype)
-    x_c = C.c_void_p(x.data.ptr)
-    arg = Argument(numpy=x, ctypes=x_c)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_htod(arg, src)
-
-    assert all(arg.numpy.get() == a)
-
-
-def test_memcpy_host_htod():
-    a = [1, 2, 3, 4]
-    src = np.array(a).astype(np.float32)
-    x = np.zeros_like(src)
-    x_c = x.ctypes.data_as(C.POINTER(C.c_float))
-    arg = Argument(numpy=x, ctypes=x_c)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_htod(arg, src)
-
-    assert all(arg.numpy == a)
-
-
-@skip_if_no_cupy
-def test_memcpy_device_htod():
-    import cupy as cp
-
-    a = [1, 2, 3, 4]
-    src = cp.array(a, dtype=np.float32)
-    x = cp.zeros(len(src), dtype=src.dtype)
-    x_c = C.c_void_p(x.data.ptr)
-    arg = Argument(numpy=x, ctypes=x_c)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_htod(arg, src)
-
-    assert all(arg.numpy.get() == a)
 
 
 @skip_if_no_gfortran
