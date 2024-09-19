@@ -4,7 +4,7 @@ import numpy as np
 
 from kernel_tuner import tune_kernel
 from kernel_tuner.utils.directives import Code, OpenACC, Cxx, process_directives
-from kernel_tuner.observers import BenchmarkObserver
+from kernel_tuner.observers.observer import BenchmarkObserver
 
 
 # Naive Python histogram implementation
@@ -14,42 +14,20 @@ def histogram(vector, hist):
     return hist
 
 
-# We use this observer to clean output memory in between kernel executions
-class MemoryReset(BenchmarkObserver):
-    def __init__(self, args):
-        self.args = args
-
-    def before_start(self):
-        for i, arg in enumerate(self.args):
-            if not arg is None:
-                self.dev.memcpy_htod(self.dev.allocations[i], arg)
-
-    def get_results(self):
-        return {}
-
-
 code = """
 #include <stdlib.h>
 
 #define HIST_SIZE 256
 #define VECTOR_SIZE 1000000
 
-int main(void) {
-	int * vector = (int *) malloc(VECTOR_SIZE * sizeof(int));
-	int * hist = (int *) malloc(HIST_SIZE * sizeof(int));
-
-	#pragma tuner start histogram vector(int*:VECTOR_SIZE) hist(int*:HIST_SIZE)
-	#pragma acc parallel num_gangs(ngangs) vector_length(nthreads)
-	#pragma acc loop independent
-	for ( int i = 0; i < VECTOR_SIZE; i++ ) {
-	    #pragma acc atomic update
-		hist[vector[i]] += 1;
-	}
-	#pragma tuner stop
-
-	free(vector);
-	free(hist);
+#pragma tuner start histogram vector(int*:VECTOR_SIZE) hist(int*:HIST_SIZE)
+#pragma acc parallel num_gangs(ngangs) vector_length(nthreads)
+#pragma acc loop independent
+for ( int i = 0; i < VECTOR_SIZE; i++ ) {
+    #pragma acc atomic update
+    hist[vector[i]] += 1;
 }
+#pragma tuner stop
 """
 
 # Extract tunable directive
@@ -72,8 +50,6 @@ reference_hist = np.zeros_like(kernel_args["histogram"][1]).astype(np.int32)
 reference_hist = histogram(kernel_args["histogram"][0], reference_hist)
 answer = [None, reference_hist]
 
-mem_cleaner = MemoryReset([None, kernel_args["histogram"][1]])
-
 tune_kernel(
     "histogram",
     kernel_string["histogram"],
@@ -82,7 +58,6 @@ tune_kernel(
     tune_params,
     metrics=metrics,
     answer=answer,
-    observers=[mem_cleaner],
     compiler="nvc++",
     compiler_options=["-fast", "-acc=gpu"],
 )
