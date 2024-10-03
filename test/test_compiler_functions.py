@@ -354,7 +354,7 @@ def test_complies_fortran_function_no_module():
     cfunc = CompilerFunctions(compiler="gfortran")
     func = cfunc.compile(kernel_instance)
 
-    result = cfunc.run_kernel(func, [], (), ())
+    result = cfunc.run_kernel(func, [], (), (), None)
 
     assert np.isclose(result, 42.0)
 
@@ -386,7 +386,7 @@ def test_complies_fortran_function_with_module():
         cfunc = CompilerFunctions(compiler="gfortran")
         func = cfunc.compile(kernel_instance)
 
-        result = cfunc.run_kernel(func, [], (), ())
+        result = cfunc.run_kernel(func, [], (), (), None)
 
         assert np.isclose(result, 42.0)
 
