@@ -186,7 +186,8 @@ class tegra:
         voltage = int(result_vol.stdout.strip()) / 1000
 
         return current * voltage
-    
+
+
 class TegraObserver(BenchmarkObserver):
     """Observer that uses /sys/ to monitor and control graphics clock frequencies on a Tegra device.
 
@@ -211,7 +212,7 @@ class TegraObserver(BenchmarkObserver):
         self.save_all = save_all
         self._set_units = False
 
-        supported = ["core_freq", "gpu_temp", "gpu_power", "gpu_energy"]
+        supported = ["core_freq", "tegra_temp", "tegra_power", "tegra_energy"]
         for obs in observables:
             if obs not in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
@@ -219,13 +220,12 @@ class TegraObserver(BenchmarkObserver):
 
         # Observe power measurements with the continuous observer
         self.measure_power = False
-        self.needs_power = ["gpu_power", "gpu_energy"]
+        self.needs_power = ["tegra_power", "tegra_energy"]
         if any([obs in self.needs_power for obs in observables]):
             self.measure_power = True
             power_observables = [obs for obs in observables if obs in self.needs_power]
-            self.continuous_observer = tegraPowerObserver(
-                power_observables, self, continous_duration=3
-            )
+            self.continuous_observer = ContinuousObserver("tegra", power_observables, self, continous_duration=3)
+
         # remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]
 
@@ -236,11 +236,15 @@ class TegraObserver(BenchmarkObserver):
         self.during_obs = [
             obs
             for obs in observables
-            if obs in ["core_freq", "gpu_temp"]
+            if obs in ["core_freq", "tegra_temp"]
         ]
 
         self.iteration = {obs: [] for obs in self.during_obs}
-        
+
+
+    def read_power(self):
+        return self.tegra.read_gpu_power()
+
 
     def before_start(self):
         # clear results of the observables for next measurement
@@ -266,7 +270,7 @@ class TegraObserver(BenchmarkObserver):
             self.results["core_freqs"].append(np.average(self.iteration["core_freq"]))
         if "gpu_temp" in self.observables:
             self.results["gpu_temps"].append(np.average(self.iteration["gpu_temp"]))
-            
+
     def get_results(self):
         averaged_results = {}
 
@@ -303,70 +307,3 @@ def get_tegra_gr_clocks(n=None, quiet=False):
     if not quiet:
         print("Using gr frequencies:", tune_params["tegra_gr_clock"])
     return tune_params
-
-
-class tegraPowerObserver(ContinuousObserver):
-    """Observer that measures power using tegra and continuous benchmarking."""
-    def __init__(self, observables, parent, continous_duration=1):
-        self.parent = parent
-
-        supported = ["gpu_power", "gpu_energy"]
-        for obs in observables:
-            if obs not in supported:
-                raise ValueError(f"Observable {obs} not in supported: {supported}")
-        self.observables = observables
-
-        # duration in seconds
-        self.continuous_duration = continous_duration
-
-        self.power = 0
-        self.energy = 0
-        self.power_readings = []
-        self.t0 = 0
-
-        # results from the last iteration-based benchmark
-        self.results = None
-
-    def before_start(self):
-        self.parent.before_start()
-        self.power = 0
-        self.energy = 0
-        self.power_readings = []
-
-    def after_start(self):
-        self.parent.after_start()
-        self.t0 = time.perf_counter()
-
-    def during(self):
-        self.parent.during()
-        power_usage = self.parent.tegra.read_gpu_power()
-        timestamp = time.perf_counter() - self.t0
-        # only store the result if we get a new measurement from tegra
-        if len(self.power_readings) == 0 or (
-            self.power_readings[-1][1] != power_usage
-            or timestamp - self.power_readings[-1][0] > 0.01
-        ):
-            self.power_readings.append([timestamp, power_usage])
-
-    def after_finish(self):
-        self.parent.after_finish()
-        # safeguard in case we have no measurements, perhaps the kernel was too short to measure anything
-        if not self.power_readings:
-            return
-
-        # convert to seconds from milliseconds
-        execution_time = self.results["time"] / 1e3
-        self.power = np.median([d[1] for d in self.power_readings])
-        self.energy = self.power * execution_time
-
-    def get_results(self):
-        results = self.parent.get_results()
-        keys = list(results.keys())
-        for key in keys:
-            results["pwr_" + key] = results.pop(key)
-        if "gpu_power" in self.observables:
-            results["gpu_power"] = self.power
-        if "gpu_energy" in self.observables:
-            results["gpu_energy"] = self.energy
-
-        return results

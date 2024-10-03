@@ -384,9 +384,7 @@ class NVMLObserver(BenchmarkObserver):
         if any([obs in self.needs_power for obs in observables]):
             self.measure_power = True
             power_observables = [obs for obs in observables if obs in self.needs_power]
-            self.continuous_observer = NVMLPowerObserver(
-                power_observables, self, self.nvml, continous_duration
-            )
+            self.continuous_observer = ContinuousObserver("nvml", self, power_observables, continous_duration=continuous_duration)
 
         # remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]
@@ -407,6 +405,9 @@ class NVMLObserver(BenchmarkObserver):
             if obs in ["core_freq", "mem_freq", "temperature"]
         ]
         self.iteration = {obs: [] for obs in self.during_obs}
+
+    def read_power(self):
+        return self.nvml.pwr_usage()
 
     def before_start(self):
         # clear results of the observables for next measurement
@@ -469,76 +470,6 @@ class NVMLObserver(BenchmarkObserver):
             self.results[obs + "s"] = []
 
         return averaged_results
-
-
-class NVMLPowerObserver(ContinuousObserver):
-    """Observer that measures power using NVML and continuous benchmarking."""
-
-    def __init__(self, observables, parent, nvml_instance, continous_duration=1):
-        self.parent = parent
-        self.nvml = nvml_instance
-
-        supported = ["power_readings", "nvml_power", "nvml_energy"]
-        for obs in observables:
-            if obs not in supported:
-                raise ValueError(f"Observable {obs} not in supported: {supported}")
-        self.observables = observables
-
-        # duration in seconds
-        self.continuous_duration = continous_duration
-
-        self.power = 0
-        self.energy = 0
-        self.power_readings = []
-        self.t0 = 0
-
-        # results from the last iteration-based benchmark
-        self.results = None
-
-    def before_start(self):
-        self.parent.before_start()
-        self.power = 0
-        self.energy = 0
-        self.power_readings = []
-
-    def after_start(self):
-        self.parent.after_start()
-        self.t0 = time.perf_counter()
-
-    def during(self):
-        self.parent.during()
-        power_usage = self.nvml.pwr_usage()
-        timestamp = time.perf_counter() - self.t0
-        # only store the result if we get a new measurement from NVML
-        if len(self.power_readings) == 0 or (
-            self.power_readings[-1][1] != power_usage
-            or timestamp - self.power_readings[-1][0] > 0.01
-        ):
-            self.power_readings.append([timestamp, power_usage])
-
-    def after_finish(self):
-        self.parent.after_finish()
-        # safeguard in case we have no measurements, perhaps the kernel was too short to measure anything
-        if not self.power_readings:
-            return
-
-        # convert to seconds from milliseconds
-        execution_time = self.results["time"] / 1e3
-        self.power = np.median([d[1] / 1e3 for d in self.power_readings])
-        self.energy = self.power * execution_time
-
-    def get_results(self):
-        results = self.parent.get_results()
-        keys = list(results.keys())
-        for key in keys:
-            results["pwr_" + key] = results.pop(key)
-        if "nvml_energy" in self.observables:
-            results["nvml_energy"] = self.energy
-        if "nvml_power" in self.observables:
-            results["nvml_power"] = self.power
-        if "power_readings" in self.observables:
-            results["power_readings"] = self.power_readings
-        return results
 
 
 # High-level Helper functions
