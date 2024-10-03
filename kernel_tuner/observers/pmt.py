@@ -1,6 +1,6 @@
 import numpy as np
 
-from kernel_tuner.observers.observer import BenchmarkObserver
+from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver
 
 # check if pmt is installed
 try:
@@ -94,12 +94,14 @@ class PMTContinuousObserver(ContinuousObserver):
         a .read_power() method, which the ContinuousObserver can call to read power in Watt
     """
     def before_start(self):
+        """ Override default method in ContinuousObserver """
         pass
 
     def after_start(self):
         self.parent.after_start()
 
     def during(self):
+        """ Override default method in ContinuousObserver """
         pass
 
     def after_finish(self):
@@ -113,7 +115,7 @@ class PMTContinuousObserver(ContinuousObserver):
 
         # correct energy measurement, because current _energy number is collected over the entire duration
         # we estimate energy as the average power over the continuous duration times the kernel execution time
-        for pm_name in pm_names:
+        for pm_name in self.parent.pm_names:
             energy_result_name = f"{pm_name}_energy"
             power_result_name = f"{pm_name}_power"
             averages[energy_result_name] = averages[power_result_name] * (average_kernel_execution_time_ms / 1e3)
