@@ -20,9 +20,8 @@ from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.compiler import CompilerFunctions
-from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.observers.nvml import NVMLObserver
+from kernel_tuner.observers.tegra import TegraObserver
 from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
 
 try:
@@ -316,8 +315,9 @@ class DeviceInterface(object):
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
         self.dev = dev
 
-        # look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
+        # look for NVMLObserver and TegraObserver in observers, if present, enable special tunable parameters through nvml/tegra
         self.use_nvml = False
+        self.use_tegra = False
         self.continuous_observers = []
         self.output_observers = []
         self.prologue_observers = []
@@ -326,6 +326,9 @@ class DeviceInterface(object):
                 if isinstance(obs, NVMLObserver):
                     self.nvml = obs.nvml
                     self.use_nvml = True
+                if isinstance(obs, TegraObserver):
+                    self.tegra = obs.tegra
+                    self.use_tegra = True
                 if hasattr(obs, "continuous_observer"):
                     self.continuous_observers.append(obs.continuous_observer)
                 if isinstance(obs, OutputObserver):
@@ -382,6 +385,7 @@ class DeviceInterface(object):
         for obs in self.benchmark_observers:
             result.update(obs.get_results())
 
+
     def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
         """Benchmark continuously for at least 'duration' seconds"""
         iterations = int(np.ceil(duration / (result["time"] / 1000)))
@@ -405,6 +409,7 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             result.update(obs.get_results())
 
+
     def set_nvml_parameters(self, instance):
         """Set the NVML parameters. Avoids setting time leaking into benchmark time."""
         if self.use_nvml:
@@ -418,6 +423,11 @@ class DeviceInterface(object):
                 self.nvml.gr_clock = instance.params["nvml_gr_clock"]
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
+
+        if self.use_tegra:
+            if "tegra_gr_clock" in instance.params:
+                self.tegra.gr_clock = instance.params["tegra_gr_clock"]
+
 
     def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False):
         """Benchmark the kernel instance."""
