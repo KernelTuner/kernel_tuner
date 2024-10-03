@@ -224,7 +224,7 @@ class TegraObserver(BenchmarkObserver):
         if any([obs in self.needs_power for obs in observables]):
             self.measure_power = True
             power_observables = [obs for obs in observables if obs in self.needs_power]
-            self.continuous_observer = ContinuousObserver("tegra", power_observables, self, continous_duration=3)
+            self.continuous_observer = ContinuousObserver("tegra", power_observables, self, continuous_duration=3)
 
         # remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]

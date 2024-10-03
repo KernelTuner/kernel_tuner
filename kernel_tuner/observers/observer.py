@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-
+import time
+import numpy as np
 
 class BenchmarkObserver(ABC):
     """Base class for Benchmark Observers"""
@@ -47,9 +48,9 @@ class ContinuousObserver(BenchmarkObserver):
     """Generic observer that measures power while and continuous benchmarking.
 
         To support continuous benchmarking an Observer should support:
-        a .read_power() method, which the ContinuousObserver can call to read power
+        a .read_power() method, which the ContinuousObserver can call to read power in Watt
     """
-    def __init__(self, name, observables, parent, continous_duration=1):
+    def __init__(self, name, observables, parent, continuous_duration=1):
         self.parent = parent
         self.name = name
 
@@ -60,7 +61,7 @@ class ContinuousObserver(BenchmarkObserver):
         self.observables = observables
 
         # duration in seconds
-        self.continuous_duration = continous_duration
+        self.continuous_duration = continuous_duration
 
         self.power = 0
         self.energy = 0

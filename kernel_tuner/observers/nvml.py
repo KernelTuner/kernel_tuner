@@ -352,7 +352,7 @@ class NVMLObserver(BenchmarkObserver):
         save_all=False,
         nvidia_smi_fallback=None,
         use_locked_clocks=False,
-        continous_duration=1,
+        continuous_duration=1,
     ):
         """Create an NVMLObserver."""
         if nvidia_smi_fallback:
@@ -384,7 +384,7 @@ class NVMLObserver(BenchmarkObserver):
         if any([obs in self.needs_power for obs in observables]):
             self.measure_power = True
             power_observables = [obs for obs in observables if obs in self.needs_power]
-            self.continuous_observer = ContinuousObserver("nvml", self, power_observables, continous_duration=continuous_duration)
+            self.continuous_observer = ContinuousObserver("nvml", power_observables, self, continuous_duration=continuous_duration)
 
         # remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]
@@ -407,7 +407,8 @@ class NVMLObserver(BenchmarkObserver):
         self.iteration = {obs: [] for obs in self.during_obs}
 
     def read_power(self):
-        return self.nvml.pwr_usage()
+        """ Return power in Watt """
+        return self.nvml.pwr_usage() / 1e3
 
     def before_start(self):
         # clear results of the observables for next measurement
