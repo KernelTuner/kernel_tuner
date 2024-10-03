@@ -55,7 +55,7 @@ class PMTObserver(BenchmarkObserver):
         self.initialize_results(self.pm_names)
 
         if use_continuous_observer:
-            self.continuous_observer = ContinuousObserver("pmt", [], self, continuous_duration=continuous_duration)
+            self.continuous_observer = PMTContinuousObserver("pmt", [], self, continuous_duration=continuous_duration)
 
     def initialize_results(self, pm_names):
         self.results = dict()
@@ -111,7 +111,7 @@ class PMTContinuousObserver(ContinuousObserver):
         average_kernel_execution_time_ms = self.results["time"]
 
         averages = {key: np.average(values) for key, values in self.results.items()}
-        self.parent.initialize_results(self.pm_names)
+        self.parent.initialize_results(self.parent.pm_names)
 
         # correct energy measurement, because current _energy number is collected over the entire duration
         # we estimate energy as the average power over the continuous duration times the kernel execution time
