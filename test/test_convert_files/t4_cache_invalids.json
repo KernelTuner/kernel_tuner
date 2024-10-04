@@ -1,0 +1,74 @@
+{
+    "schema_version": "1.0.0",
+    "device_name": "",
+    "kernel_name": "convolution_kernel",
+    "problem_size": [
+        4096,
+        4096
+    ],
+    "tune_params_keys": [
+        "block_size_x",
+        "block_size_y",
+        "tile_size_x",
+        "tile_size_y",
+        "read_only",
+        "use_padding",
+        "use_shmem",
+        "use_cmem",
+        "filter_height",
+        "filter_width"
+    ],
+    "tune_params": {
+        "block_size_x": [
+            16
+        ],
+        "block_size_y": [
+            1
+        ],
+        "tile_size_x": [
+            1
+        ],
+        "tile_size_y": [
+            1
+        ],
+        "read_only": [
+            0
+        ],
+        "use_padding": [
+            0
+        ],
+        "use_shmem": [
+            0
+        ],
+        "use_cmem": [
+            1
+        ],
+        "filter_height": [
+            15
+        ],
+        "filter_width": [
+            15
+        ]
+    },
+    "objective": "time",
+    "cache": {
+        "16,1,1,1,0,0,0,1,15,15": {
+            "block_size_x": 16,
+            "block_size_y": 1,
+            "tile_size_x": 1,
+            "tile_size_y": 1,
+            "read_only": 0,
+            "use_padding": 0,
+            "use_shmem": 0,
+            "use_cmem": 1,
+            "filter_height": 15,
+            "filter_width": 15,
+            "time": "CompilationFailedConfig",
+            "compile_time": 661.5392221137881,
+            "verification_time": 0,
+            "strategy_time": 0,
+            "framework_time": 53.12582431361079,
+            "timestamp": "2023-12-21 10:44:42.236642+00:00"
+        }
+    }
+}

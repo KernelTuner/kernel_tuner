@@ -189,18 +189,32 @@ def convert_cache_to_t4(cache: CacheFileJSON) -> T4FileJSON:
             framework=cache_line["framework_time"],
             search_algorithm=cache_line["strategy_time"],
             validation=cache_line["verification_time"],
-            runtimes=cache_line["times"],
         )
+        # In case of invalid configurations 'times' might be omitted in cache_line
+        if "times" in cache_line:
+            times["runtimes"] = cache_line["times"]
 
         measurement = T4ResultMeasurementJSON(name=cache["objective"], value=cache_line[cache["objective"]], unit="")
+
+        # Convert Kernel Tuner's ErrorConfig instances to 'invalidity' strings supported in T4
+        invalidity = "correct"
+        objective_value = cache_line[cache["objective"]]
+        if isinstance(objective_value, str):
+            # The kernel configuration is invalid
+            if objective_value == "CompilationFailedConfig":
+                invalidity = "compile"
+            elif objective_value == "RuntimeFailedConfig":
+                invalidity = "runtime"
+            elif objective_value == "InvalidConfig":
+                invalidity = "constraints"
 
         result = T4ResultLineJSON(
             timestamp=cache_line["timestamp"],
             configuration={tune_param_key: cache_line[tune_param_key] for tune_param_key in cache["tune_params_keys"]},
             times=times,
             # We assume that the supplied cache file is correct
-            invalidity="correct",
-            correctness=1,
+            invalidity=invalidity,
+            correctness=1 if invalidity == "correct" else 0,
             measurements=[measurement],
             objectives=[cache["objective"]],
         )
