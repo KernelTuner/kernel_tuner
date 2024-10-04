@@ -314,12 +314,13 @@ the RAPL interface, AMD ROCM, and Xilinx. It requires PMT to be installed, as we
 More information about PMT can be found here: <a class="reference external" href="https://git.astron.nl/RD/pmt/">https://git.astron.nl/RD/pmt/</a></p>
 <dl class="py class">
 <dt class="sig sig-object py" id="kernel_tuner.observers.pmt.PMTObserver">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.pmt.</span></span><span class="sig-name descname"><span class="pre">PMTObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.pmt.PMTObserver" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.pmt.</span></span><span class="sig-name descname"><span class="pre">PMTObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_continuous_observer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuous_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.pmt.PMTObserver" title="Link to this definition">¶</a></dt>
 <dd><p>Observer that uses the PMT library to measure power</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>observables</strong> (<em>string</em><em>,</em><em>list/dictionary</em>) – <p>One of:</p>
-<ul class="simple">
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>observables</strong> (<em>string</em><em>,</em><em>list/dictionary</em>) – <p>One of:</p>
+<ul>
 <li><p>A string specifying a single power meter to use</p></li>
 <li><p>A list of string, specifying one or more power meters to use</p></li>
 <li><p>A dictionary, specifying one or more power meters to use,
@@ -330,7 +331,14 @@ id is not used, it should be ‘None’ in those cases.</p></li>
 </ul>
 <p>This observer will report “&lt;platform&gt;_energy&gt;” and “&lt;platform&gt;_power” for
 all specified platforms.</p>
-</p>
+</p></li>
+<li><p><strong>use_continuous_observer</strong> (<em>boolean</em>) – Boolean to control whether or not to measure power/energy using
+Kernel Tuner’s continuous benchmarking mode. This improves measurement
+accuracy when using internal power sensors, such as NVML or ROCM,
+which have limited sampling frequency and might return averages
+instead of instantaneous power readings. Default value: False.</p></li>
+<li><p><strong>continuous_duration</strong> (<em>scalar</em>) – Number of seconds to measure continuously for.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
