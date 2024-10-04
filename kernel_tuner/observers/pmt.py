@@ -28,6 +28,22 @@ class PMTObserver(BenchmarkObserver):
 
     :type observables: string,list/dictionary
 
+
+    :param use_continuous_observer:
+        Boolean to control whether or not to measure power/energy using
+        Kernel Tuner's continuous benchmarking mode. This improves measurement
+        accuracy when using internal power sensors, such as NVML or ROCM,
+        which have limited sampling frequency and might return averages
+        instead of instantaneous power readings. Default value: False.
+
+    :type use_continuous_observer: boolean
+
+
+    :param continuous_duration:
+        Number of seconds to measure continuously for.
+
+    :type continuous_duration: scalar
+
     """
 
     def __init__(self, observable=None, use_continuous_observer=False, continuous_duration=1):
