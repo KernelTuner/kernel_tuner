@@ -24,13 +24,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
+from argparse import ArgumentParser
 from datetime import datetime
+from pathlib import Path
 from time import perf_counter
 
 import numpy
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
+from kernel_tuner.file_utils import get_input_file
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
@@ -835,3 +838,22 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
 
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)
+
+def tune_with_T1_input(input_filepath: Path):
+    """Call the tune function with a T1 input file."""
+    get_input_file(input_filepath)
+    # TODO pass to tune_kernel
+    tune_kernel()
+
+def entry_point(args=None):  #  pragma: no cover
+    """Command-line interface entry point."""
+    cli = ArgumentParser()
+    cli.add_argument(
+        "input_file", type=str, help="The path to the input json file to execute (T1 standard)"
+    )
+    args = cli.parse_args(args)
+    input_filepath_arg: str = args.input_file
+    if input_filepath_arg is None or input_filepath_arg == "":
+        raise ValueError("Invalid '--input_file' option. Run 'kernel_tuner -h' to read more.")
+    input_filepath = Path(input_filepath_arg)
+    tune_with_T1_input(input_filepath)

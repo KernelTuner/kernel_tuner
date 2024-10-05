@@ -1,7 +1,6 @@
 """This module contains utility functions for operations on files, mostly JSON cache files."""
 
 import json
-import os
 import subprocess
 from importlib.metadata import PackageNotFoundError, requires, version
 from pathlib import Path
@@ -12,8 +11,32 @@ from packaging.requirements import Requirement
 
 from kernel_tuner import util
 
-schema_dir = os.path.dirname(os.path.realpath(__file__)) + "/schema"
+schema_dir = Path(__file__).parent / "schema"
 
+def input_file_schema():
+    """Get the requested JSON input schema and the version number.
+
+    :returns: the current version of the T1 schemas and the JSON string of the schema
+    :rtype: string, string
+    """    
+    current_version = "1.0.0"
+    input_file = schema_dir / f"/T4/{current_version}/input-schema.json"
+    with input_file.open() as fh:
+        json_string = json.load(fh)
+    return current_version, json_string
+
+def get_input_file(filepath: Path, validate=True):
+    """Load the T1 input file from the given path, validates it and returns contents if valid.
+
+    :param filepath: Path to the input file to load. 
+    :returns: the contents of the file if valid. 
+    """    
+    with filepath.open() as fp:
+        input_file = json.load(fp)
+    if validate:
+        _, input_schema = input_file_schema()
+        validate(input_file, input_schema)
+    return input_file
 
 def output_file_schema(target):
     """Get the requested JSON schema and the version number.
@@ -26,8 +49,8 @@ def output_file_schema(target):
 
     """
     current_version = "1.0.0"
-    output_file = schema_dir + f"/T4/{current_version}/{target}-schema.json"
-    with open(output_file, "r") as fh:
+    output_file = schema_dir / f"/T4/{current_version}/{target}-schema.json"
+    with output_file.open() as fh:
         json_string = json.load(fh)
     return current_version, json_string
 
