@@ -25,6 +25,7 @@ limitations under the License.
 """
 import logging
 from argparse import ArgumentParser
+from ast import literal_eval
 from datetime import datetime
 from pathlib import Path
 from time import perf_counter
@@ -841,9 +842,56 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
 
 def tune_with_T1_input(input_filepath: Path):
     """Call the tune function with a T1 input file."""
-    get_input_file(input_filepath)
-    # TODO pass to tune_kernel
-    tune_kernel()
+    inputs = get_input_file(input_filepath)
+    kernel_name = inputs['General']['KernelName']
+    kernel_source = inputs['KernelSpecification']['KernelFile']
+    language = inputs['KernelSpecification']['Language']
+    problem_size = inputs['KernelSpecification']['ProblemSize']
+
+    # convert arguments
+    arguments = list() 
+    for arg in inputs['KernelSpecification']['Arguments']:
+        argument = None
+        if arg['Type'] == 'float' and arg['MemoryType'] == 'Vector':            
+            size = arg['Size']
+            if arg['FillType'] == 'Constant':
+                argument = numpy.full(size, arg['FillValue']).astype(numpy.float32)
+            elif arg['FillType'] == 'Random':
+                argument = numpy.random.randn(size).astype(numpy.float32)
+            else:
+                raise NotImplementedError(f"Conversion for fill type '{arg['FillType']}' has not yet been implemented")
+        if argument is not None:
+            arguments.append(argument)
+        else:
+            raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
+        
+    # convert tuneable parameters
+    tune_params = dict()
+    for param in inputs['ConfigurationSpace']['TuningParameters']:
+        tune_param = None
+        if param['Type'] in ['int', 'float']:
+            if param['Values'][:5] == 'list(':
+                tune_param = eval(param['Values'])
+            else:
+                tune_param = literal_eval(param['Values'])
+        if tune_param is not None:
+            tune_params[param['Name']] = tune_param
+        else:
+            raise NotImplementedError(f"Conversion for this type of parameter has not yet been implemented: {param}")
+        
+    # convert restrictions
+    restrictions = list()
+    for res in inputs['ConfigurationSpace']['Conditions']:
+        restriction = None
+        if isinstance(res['Expression'], str):
+            restriction = res['Expression']
+        if restriction is not None:
+            restrictions.append(restriction)
+        else:
+            raise NotImplementedError(f"Conversion for this type of restriction has not yet been implemented: {res}")
+    
+    # tune with the converted inputs
+    return tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, restrictions=restrictions, lang=language)
 
 def entry_point(args=None):  #  pragma: no cover
     """Command-line interface entry point."""

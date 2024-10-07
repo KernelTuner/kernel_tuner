@@ -6,6 +6,7 @@ from importlib.metadata import PackageNotFoundError, requires, version
 from pathlib import Path
 from sys import platform
 
+import jsonschema
 import xmltodict
 from packaging.requirements import Requirement
 
@@ -20,7 +21,7 @@ def input_file_schema():
     :rtype: string, string
     """    
     current_version = "1.0.0"
-    input_file = schema_dir / f"/T4/{current_version}/input-schema.json"
+    input_file = schema_dir.joinpath(f"T1/{current_version}/input-schema.json")
     with input_file.open() as fh:
         json_string = json.load(fh)
     return current_version, json_string
@@ -35,7 +36,7 @@ def get_input_file(filepath: Path, validate=True):
         input_file = json.load(fp)
     if validate:
         _, input_schema = input_file_schema()
-        validate(input_file, input_schema)
+        jsonschema.validate(input_file, input_schema)
     return input_file
 
 def output_file_schema(target):
