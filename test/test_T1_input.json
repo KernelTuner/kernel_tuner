@@ -1,0 +1,146 @@
+{
+    "General": {
+        "BenchmarkName": "convolution",
+        "OutputFormat": "JSON"
+    },
+    "ConfigurationSpace": {
+        "TuningParameters": [
+            {
+                "Name": "filter_width",
+                "Type": "int",
+                "Values": "[15]",
+                "Default": 15
+            },
+            {
+                "Name": "filter_height",
+                "Type": "int",
+                "Values": "[15]",
+                "Default": 15
+            },
+            {
+                "Name": "block_size_x",
+                "Type": "int",
+                "Values": "[1, 2, 4, 8, 16, 32, 48, 64, 96, 112, 128]",
+                "Default": 32
+            },
+            {
+                "Name": "block_size_y",
+                "Type": "int",
+                "Values": "[1, 2, 4, 8, 16, 32]",
+                "Default": 32
+            },
+            {
+                "Name": "tile_size_x",
+                "Type": "int",
+                "Values": "list(range(1, 9))",
+                "Default": 1
+            },
+            {
+                "Name": "tile_size_y",
+                "Type": "int",
+                "Values": "list(range(1, 9))",
+                "Default": 1
+            },
+            {
+                "Name": "use_padding",
+                "Type": "int",
+                "Values": "[0, 1]",
+                "Default": 1
+            },
+            {
+                "Name": "read_only",
+                "Type": "int",
+                "Values": "[0, 1]",
+                "Default": 0
+            }
+        ],
+        "Conditions": [
+            {
+                "Expression": "(block_size_x * block_size_y) >= 64",
+                "Parameters": [
+                    "block_size_x",
+                    "block_size_y"
+                ]
+            },
+            {
+                "Expression": "(block_size_x * block_size_y) <= 1024",
+                "Parameters": [
+                    "block_size_x",
+                    "block_size_y"
+                ]
+            },
+            {
+                "Expression": "(tile_size_x * tile_size_y) < 30",
+                "Parameters": [
+                    "tile_size_x",
+                    "tile_size_y"
+                ]
+            }
+        ]
+    },
+    "KernelSpecification": {
+        "Language": "CUDA",
+        "CompilerOptions": [
+            "-std=c++11"
+        ],
+        "BenchmarkName": "GEMM",
+        "KernelName": "convolution_kernel",
+        "KernelFile": "convolution.cu",
+        "GlobalSizeType": "CUDA",
+        "LocalSize": {
+            "X": "block_size_x",
+            "Y": "block_size_y",
+            "Z": "1"
+        },
+        "GlobalSize": {
+            "X": "(262144 // block_size_x) // tile_size_x",
+            "Y": "(262144 // block_size_y) // tile_size_y",
+            "Z": "1"
+        },
+        "GridDivX": [
+            "block_size_x",
+            "tile_size_x"
+        ],
+        "GridDivY": [
+            "block_size_y",
+            "tile_size_y"
+        ],
+        "ProblemSize": [
+            4096,
+            4096
+        ],
+        "SharedMemory": 0,
+        "Stream": null,
+        "Arguments": [
+            {
+                "Name": "output_image",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "WriteOnly",
+                "FillType": "Constant",
+                "Size": 16777216,
+                "FillValue": 0.0,
+                "Output": 1
+            },
+            {
+                "Name": "input_image",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "ReadOnly",
+                "FillType": "Random",
+                "Size": 16892100,
+                "FillValue": 1.0
+            },
+            {
+                "Name": "d_filter",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "ReadOnly",
+                "MemType": "Constant",
+                "FillType": "Random",
+                "Size": 225,
+                "FillValue": 1.0
+            }
+        ]
+    }
+}
