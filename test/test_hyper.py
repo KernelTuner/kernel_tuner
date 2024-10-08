@@ -1,8 +1,9 @@
 from kernel_tuner.hyper import tune_hyper_params
 
 from .test_runners import cache_filename, env  # noqa: F401
+from .context import skip_if_no_methodology
 
-
+@skip_if_no_methodology
 def test_hyper(env):
 
     hyper_params = dict()
