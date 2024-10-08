@@ -13,7 +13,7 @@ from .test_runners import cache_filename, env, tune_kernel  # noqa: F401
 def test_get_input_file(env):
     filename = Path(__file__).parent / "test_T1_input.json"
     assert filename.exists()
-    contents = get_input_file(filename)
+    contents = get_input_file(filename, validate=True)
     assert isinstance(contents, dict)
 
 def test_store_output_file(env):

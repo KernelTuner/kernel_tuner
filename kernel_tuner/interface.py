@@ -843,14 +843,15 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
 def tune_with_T1_input(input_filepath: Path):
     """Call the tune function with a T1 input file."""
     inputs = get_input_file(input_filepath)
-    kernel_name = inputs['General']['KernelName']
-    kernel_source = inputs['KernelSpecification']['KernelFile']
-    language = inputs['KernelSpecification']['Language']
-    problem_size = inputs['KernelSpecification']['ProblemSize']
+    kernelspec = kernelspec
+    kernel_name = kernelspec['KernelName']
+    kernel_source = kernelspec['KernelFile']
+    language = kernelspec['Language']
+    problem_size = kernelspec['ProblemSize']
 
     # convert arguments
     arguments = list() 
-    for arg in inputs['KernelSpecification']['Arguments']:
+    for arg in kernelspec['Arguments']:
         argument = None
         if arg['Type'] == 'float' and arg['MemoryType'] == 'Vector':            
             size = arg['Size']
