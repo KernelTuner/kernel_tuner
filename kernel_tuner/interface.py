@@ -843,7 +843,7 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
 def tune_with_T1_input(input_filepath: Path):
     """Call the tune function with a T1 input file."""
     inputs = get_input_file(input_filepath)
-    kernelspec = kernelspec
+    kernelspec = inputs['KernelSpecification']
     kernel_name = kernelspec['KernelName']
     kernel_source = kernelspec['KernelFile']
     language = kernelspec['Language']
