@@ -84,7 +84,7 @@ def check_development_environment(session: Session) -> None:
             return None
     output: str = session.run("poetry", "install", "--sync", "--dry-run", "--with", "test", silent=True, external=True)
     match = re.search(r"Package operations: (\d+) installs, (\d+) updates, (\d+) removals, \d+ skipped", output)
-    assert match is not None
+    assert match is not None, f"Could not check development environment, reason: {output}"
     groups = match.groups()
     installs, updates, removals = int(groups[0]), int(groups[1]), int(groups[2])
     if installs > 0 or updates > 0:
