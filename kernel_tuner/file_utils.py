@@ -26,7 +26,7 @@ def input_file_schema():
         json_string = json.load(fh)
     return current_version, json_string
 
-def get_input_file(filepath: Path, validate=True):
+def get_input_file(filepath: Path, validate=True) -> dict[str, any]:
     """Load the T1 input file from the given path, validates it and returns contents if valid.
 
     :param filepath: Path to the input file to load. 
