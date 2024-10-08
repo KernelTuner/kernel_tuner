@@ -50,7 +50,7 @@ def output_file_schema(target):
 
     """
     current_version = "1.0.0"
-    output_file = schema_dir / f"/T4/{current_version}/{target}-schema.json"
+    output_file = schema_dir.joinpath(f"T4/{current_version}/{target}-schema.json")
     with output_file.open() as fh:
         json_string = json.load(fh)
     return current_version, json_string
