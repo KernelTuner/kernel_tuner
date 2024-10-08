@@ -1,6 +1,6 @@
 import numpy as np
 
-from kernel_tuner.observers.observer import BenchmarkObserver
+from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver
 
 # check if pmt is installed
 try:
@@ -28,9 +28,25 @@ class PMTObserver(BenchmarkObserver):
 
     :type observables: string,list/dictionary
 
+
+    :param use_continuous_observer:
+        Boolean to control whether or not to measure power/energy using
+        Kernel Tuner's continuous benchmarking mode. This improves measurement
+        accuracy when using internal power sensors, such as NVML or ROCM,
+        which have limited sampling frequency and might return averages
+        instead of instantaneous power readings. Default value: False.
+
+    :type use_continuous_observer: boolean
+
+
+    :param continuous_duration:
+        Number of seconds to measure continuously for.
+
+    :type continuous_duration: scalar
+
     """
 
-    def __init__(self, observable=None):
+    def __init__(self, observable=None, use_continuous_observer=False, continuous_duration=1):
         if not pmt:
             raise ImportError("could not import pmt")
 
@@ -53,6 +69,9 @@ class PMTObserver(BenchmarkObserver):
 
         self.begin_states = [None] * len(self.pms)
         self.initialize_results(self.pm_names)
+
+        if use_continuous_observer:
+            self.continuous_observer = PMTContinuousObserver("pmt", [], self, continuous_duration=continuous_duration)
 
     def initialize_results(self, pm_names):
         self.results = dict()
@@ -81,4 +100,40 @@ class PMTObserver(BenchmarkObserver):
     def get_results(self):
         averages = {key: np.average(values) for key, values in self.results.items()}
         self.initialize_results(self.pm_names)
+        return averages
+
+
+class PMTContinuousObserver(ContinuousObserver):
+    """Generic observer that measures power while and continuous benchmarking.
+
+        To support continuous benchmarking an Observer should support:
+        a .read_power() method, which the ContinuousObserver can call to read power in Watt
+    """
+    def before_start(self):
+        """ Override default method in ContinuousObserver """
+        pass
+
+    def after_start(self):
+        self.parent.after_start()
+
+    def during(self):
+        """ Override default method in ContinuousObserver """
+        pass
+
+    def after_finish(self):
+        self.parent.after_finish()
+
+    def get_results(self):
+        average_kernel_execution_time_ms = self.results["time"]
+
+        averages = {key: np.average(values) for key, values in self.results.items()}
+        self.parent.initialize_results(self.parent.pm_names)
+
+        # correct energy measurement, because current _energy number is collected over the entire duration
+        # we estimate energy as the average power over the continuous duration times the kernel execution time
+        for pm_name in self.parent.pm_names:
+            energy_result_name = f"{pm_name}_energy"
+            power_result_name = f"{pm_name}_power"
+            averages[energy_result_name] = averages[power_result_name] * (average_kernel_execution_time_ms / 1e3)
+
         return averages

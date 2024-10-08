@@ -1,6 +1,36 @@
-from typing import Any
+from typing import Any, Tuple
 from abc import ABC, abstractmethod
 import numpy as np
+
+# Function templates
+cpp_template: str = """
+<!?PREPROCESSOR?!>
+<!?USER_DEFINES?!>
+#include <chrono>
+
+extern "C" <!?SIGNATURE?!> {
+<!?INITIALIZATION?!>
+<!?BODY?!>
+<!?DEINITIALIZATION?!>
+}
+"""
+
+f90_template: str = """
+<!?PREPROCESSOR?!>
+<!?USER_DEFINES?!>
+
+module kt
+use iso_c_binding
+contains
+
+<!?SIGNATURE?!>
+<!?INITIALIZATION?!>
+<!?BODY?!>
+<!?DEINITIALIZATION?!>
+end function <!?NAME?!>
+
+end module kt
+"""
 
 
 class Directive(ABC):
@@ -32,12 +62,18 @@ class Cxx(Language):
     def get(self) -> str:
         return "cxx"
 
+    def end_string(self) -> str:
+        return "#pragma tuner stop"
+
 
 class Fortran(Language):
     """Class to represent Fortran code"""
 
     def get(self) -> str:
         return "fortran"
+
+    def end_string(self) -> str:
+        return "!$tuner stop"
 
 
 class Code(object):
@@ -46,6 +82,48 @@ class Code(object):
     def __init__(self, directive: Directive, lang: Language):
         self.directive = directive
         self.language = lang
+
+
+class ArraySize(object):
+    """Size of an array"""
+
+    def __init__(self):
+        self.size = list()
+
+    def __iter__(self):
+        for i in self.size:
+            yield i
+
+    def __len__(self):
+        return len(self.size)
+
+    def clear(self):
+        self.size.clear()
+
+    def get(self) -> int:
+        length = len(self.size)
+        if length == 0:
+            return 0
+        elif length == 1:
+            return self.size[0]
+        else:
+            product = 1
+            for i in self.size:
+                product *= i
+            return product
+
+    def add(self, dim: int) -> None:
+        # Only allow adding valid dimensions
+        if dim >= 1:
+            self.size.append(dim)
+
+
+def fortran_md_size(size: ArraySize) -> list:
+    """Format a multidimensional size into the correct Fortran string"""
+    md_size = list()
+    for dim in size:
+        md_size.append(f":{dim}")
+    return md_size
 
 
 def is_openacc(directive: Directive) -> bool:
@@ -120,7 +198,7 @@ def openacc_directive_contains_data_clause(line: str) -> bool:
     return openacc_directive_contains_clause(line, data_clauses)
 
 
-def create_data_directive_openacc(name: str, size: int, lang: Language) -> str:
+def create_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
     """Create a data directive for a given language"""
     if is_cxx(lang):
         return create_data_directive_openacc_cxx(name, size)
@@ -129,17 +207,23 @@ def create_data_directive_openacc(name: str, size: int, lang: Language) -> str:
     return ""
 
 
-def create_data_directive_openacc_cxx(name: str, size: int) -> str:
+def create_data_directive_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create C++ OpenACC code to allocate and copy data"""
-    return f"#pragma acc enter data create({name}[:{size}])\n#pragma acc update device({name}[:{size}])\n"
+    return f"#pragma acc enter data create({name}[:{size.get()}])\n#pragma acc update device({name}[:{size.get()}])\n"
 
 
-def create_data_directive_openacc_fortran(name: str, size: int) -> str:
+def create_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create Fortran OpenACC code to allocate and copy data"""
-    return f"!$acc enter data create({name}(:{size}))\n!$acc update device({name}(:{size}))\n"
+    if len(size) == 1:
+        return f"!$acc enter data create({name}(:{size.get()}))\n!$acc update device({name}(:{size.get()}))\n"
+    else:
+        md_size = fortran_md_size(size)
+        return (
+            f"!$acc enter data create({name}({','.join(md_size)}))\n!$acc update device({name}({','.join(md_size)}))\n"
+        )
 
 
-def exit_data_directive_openacc(name: str, size: int, lang: Language) -> str:
+def exit_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
     """Create code to copy data back for a given language"""
     if is_cxx(lang):
         return exit_data_directive_openacc_cxx(name, size)
@@ -148,14 +232,18 @@ def exit_data_directive_openacc(name: str, size: int, lang: Language) -> str:
     return ""
 
 
-def exit_data_directive_openacc_cxx(name: str, size: int) -> str:
+def exit_data_directive_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create C++ OpenACC code to copy back data"""
-    return f"#pragma acc exit data copyout({name}[:{size}])\n"
+    return f"#pragma acc exit data copyout({name}[:{size.get()}])\n"
 
 
-def exit_data_directive_openacc_fortran(name: str, size: int) -> str:
+def exit_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create Fortran OpenACC code to copy back data"""
-    return f"!$acc exit data copyout({name}(:{size}))\n"
+    if len(size) == 1:
+        return f"!$acc exit data copyout({name}(:{size.get()}))\n"
+    else:
+        md_size = fortran_md_size(size)
+        return f"!$acc exit data copyout({name}({','.join(md_size)}))\n"
 
 
 def correct_kernel(kernel_name: str, line: str) -> bool:
@@ -165,7 +253,7 @@ def correct_kernel(kernel_name: str, line: str) -> bool:
 
 def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
     """Find the dimension of a directive defined value in the preprocessor"""
-    ret_size = None
+    ret_size = 0
     for line in preprocessor:
         if f"#define {dimension}" in line:
             try:
@@ -209,45 +297,43 @@ def extract_code(start: str, stop: str, code: str, langs: Code, kernel_name: str
     return sections
 
 
-def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) -> int:
+def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) -> ArraySize:
     """Converts an arbitrary object into an integer representing memory size"""
-    ret_size = None
+    ret_size = ArraySize()
     if type(size) is not int:
         try:
             # Try to convert the size to an integer
-            ret_size = int(size)
+            ret_size.add(int(size))
         except ValueError:
             # If size cannot be natively converted to an int, we try to derive it from the preprocessor
-            if preprocessor is not None:
-                try:
+            try:
+                if preprocessor is not None:
                     if "," in size:
-                        ret_size = 1
                         for dimension in size.split(","):
-                            ret_size *= find_size_in_preprocessor(dimension, preprocessor)
+                            ret_size.add(find_size_in_preprocessor(dimension, preprocessor))
                     else:
-                        ret_size = find_size_in_preprocessor(size, preprocessor)
-                except TypeError:
-                    # preprocessor is available but does not contain the dimensions
-                    pass
+                        ret_size.add(find_size_in_preprocessor(size, preprocessor))
+            except TypeError:
+                # At least one of the dimension cannot be derived from the preprocessor
+                pass
             # If size cannot be natively converted, nor retrieved from the preprocessor, we check user provided values
             if dimensions is not None:
                 if size in dimensions.keys():
                     try:
-                        ret_size = int(dimensions[size])
+                        ret_size.add(int(dimensions[size]))
                     except ValueError:
                         # User error, no mitigation
                         return ret_size
                 elif "," in size:
-                    ret_size = 1
                     for dimension in size.split(","):
                         try:
-                            ret_size *= int(dimensions[dimension])
+                            ret_size.add(int(dimensions[dimension]))
                         except ValueError:
                             # User error, no mitigation
-                            return None
+                            return ret_size
     else:
         # size is already an int. no need for conversion
-        ret_size = size
+        ret_size.add(size)
 
     return ret_size
 
@@ -283,7 +369,7 @@ def wrap_timing_fortran(code: str) -> str:
 
 def end_timing_cxx(code: str) -> str:
     """In C++ we need to return the measured time"""
-    return code + "\nreturn elapsed_time.count();\n"
+    return "\n".join([code, "return elapsed_time.count();\n"])
 
 
 def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
@@ -299,31 +385,41 @@ def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, use
             elif is_openacc(langs.directive) and is_fortran(langs.language):
                 intro += create_data_directive_openacc_fortran(name, size)
                 outro += exit_data_directive_openacc_fortran(name, size)
-    return intro + code + outro
+    return "\n".join([intro, code, outro])
 
 
 def extract_directive_code(code: str, langs: Code, kernel_name: str = None) -> dict:
     """Extract explicitly marked directive sections from code"""
     if is_cxx(langs.language):
         start_string = "#pragma tuner start"
-        end_string = "#pragma tuner stop"
     elif is_fortran(langs.language):
         start_string = "!$tuner start"
-        end_string = "!$tuner stop"
 
-    return extract_code(start_string, end_string, code, langs, kernel_name)
+    return extract_code(start_string, langs.language.end_string(), code, langs, kernel_name)
 
 
 def extract_initialization_code(code: str, langs: Code) -> str:
     """Extract the initialization section from code"""
     if is_cxx(langs.language):
         start_string = "#pragma tuner initialize"
-        end_string = "#pragma tuner stop"
     elif is_fortran(langs.language):
         start_string = "!$tuner initialize"
-        end_string = "!$tuner stop"
 
-    init_code = extract_code(start_string, end_string, code, langs)
+    init_code = extract_code(start_string, langs.language.end_string(), code, langs)
+    if len(init_code) >= 1:
+        return "\n".join(init_code.values()) + "\n"
+    else:
+        return ""
+
+
+def extract_deinitialization_code(code: str, langs: Code) -> str:
+    """Extract the deinitialization section from code"""
+    if is_cxx(langs.language):
+        start_string = "#pragma tuner deinitialize"
+    elif is_fortran(langs.language):
+        start_string = "!$tuner deinitialize"
+
+    init_code = extract_code(start_string, langs.language.end_string(), code, langs)
     if len(init_code) >= 1:
         return "\n".join(init_code.values()) + "\n"
     else:
@@ -458,42 +554,39 @@ def generate_directive_function(
     langs: Code,
     data: dict = None,
     initialization: str = "",
+    deinitialization: str = "",
     user_dimensions: dict = None,
 ) -> str:
     """Generate tunable function for one directive"""
 
-    code = "\n".join(preprocessor) + "\n"
-    if user_dimensions is not None:
-        # add user dimensions to preprocessor
-        for key, value in user_dimensions.items():
-            code += f"#define {key} {value}\n"
-    if is_cxx(langs.language) and "#include <chrono>" not in preprocessor:
-        code += "\n#include <chrono>\n"
     if is_cxx(langs.language):
-        code += 'extern "C" ' + signature + "{\n"
-    elif is_fortran(langs.language):
-        code += "\nmodule kt\nuse iso_c_binding\ncontains\n"
-        code += "\n" + signature
-    if len(initialization) > 1:
-        code += initialization + "\n"
-    if data is not None:
-        body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
-    if is_cxx(langs.language):
+        code = cpp_template
         body = start_timing_cxx(body)
         if data is not None:
-            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
-        else:
-            code += body
-        code = end_timing_cxx(code)
-        code += "\n}"
+            body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
+        body = end_timing_cxx(body)
     elif is_fortran(langs.language):
+        code = f90_template
         body = wrap_timing(body, langs.language)
         if data is not None:
-            code += wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
-        else:
-            code += body
+            body = wrap_data(body + "\n", langs, data, preprocessor, user_dimensions)
         name = signature.split(" ")[1].split("(")[0]
-        code += f"\nend function {name}\nend module kt\n"
+        code = code.replace("<!?NAME?!>", name)
+    code = code.replace("<!?PREPROCESSOR?!>", "\n".join(preprocessor))
+    # if present, add user specific dimensions as defines
+    if user_dimensions is not None:
+        user_defines = ""
+        for key, value in user_dimensions.items():
+            user_defines += f"#define {key} {value}\n"
+        code = code.replace("<!?USER_DEFINES?!>", user_defines)
+    else:
+        code = code.replace("<!?USER_DEFINES?!>", "")
+    code = code.replace("<!?SIGNATURE?!>", signature)
+    code = code.replace("<!?INITIALIZATION?!>", initialization)
+    code = code.replace("<!?DEINITIALIZATION?!>", deinitialization)
+    if data is not None:
+        body = add_present_openacc(body, langs, data, preprocessor, user_dimensions)
+    code = code.replace("<!?BODY?!>", body)
 
     return code
 
@@ -537,9 +630,9 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
         p_type = data[parameter][0]
         size = parse_size(data[parameter][1], preprocessor, user_dimensions)
         if "*" in p_type:
-            args.append(allocate_array(p_type, size))
+            args.append(allocate_array(p_type, size.get()))
         else:
-            args.append(allocate_scalar(p_type, size))
+            args.append(allocate_scalar(p_type, size.get()))
 
     return args
 
@@ -579,11 +672,33 @@ def add_present_openacc(
     return new_body
 
 
-def add_present_openacc_cxx(name: str, size: int) -> str:
+def add_present_openacc_cxx(name: str, size: ArraySize) -> str:
     """Create present clause for C++ OpenACC directive"""
-    return f" present({name}[:{size}]) "
+    return f" present({name}[:{size.get()}]) "
 
 
-def add_present_openacc_fortran(name: str, size: int) -> str:
+def add_present_openacc_fortran(name: str, size: ArraySize) -> str:
     """Create present clause for Fortran OpenACC directive"""
-    return f" present({name}(:{size})) "
+    if len(size) == 1:
+        return f" present({name}(:{size.get()})) "
+    else:
+        md_size = fortran_md_size(size)
+        return f" present({name}({','.join(md_size)})) "
+
+
+def process_directives(langs: Code, source: str, user_dimensions: dict = None) -> Tuple[dict, dict]:
+    """Helper functions to process all the directives in the code and create tunable functions"""
+    kernel_strings = dict()
+    kernel_args = dict()
+    preprocessor = extract_preprocessor(source)
+    signatures = extract_directive_signature(source, langs)
+    bodies = extract_directive_code(source, langs)
+    data = extract_directive_data(source, langs)
+    init = extract_initialization_code(source, langs)
+    deinit = extract_deinitialization_code(source, langs)
+    for kernel in signatures.keys():
+        kernel_strings[kernel] = generate_directive_function(
+            preprocessor, signatures[kernel], bodies[kernel], langs, data[kernel], init, deinit, user_dimensions
+        )
+        kernel_args[kernel] = allocate_signature_memory(data[kernel], preprocessor, user_dimensions)
+    return (kernel_strings, kernel_args)
