@@ -843,11 +843,14 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
 def tune_with_T1_input(input_filepath: Path):
     """Call the tune function with a T1 input file."""
     inputs = get_input_file(input_filepath)
-    kernelspec = inputs['KernelSpecification']
-    kernel_name = kernelspec['KernelName']
+    kernelspec: dict = inputs['KernelSpecification']
+    kernel_name: str = kernelspec['KernelName']
     kernel_source = Path(input_filepath).parent / Path(kernelspec['KernelFile'])
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
-    language = kernelspec['Language']
+    language: str = kernelspec['Language']
+    # if language.upper() == "CUDA":
+    #     language = "cupy"
+        # language = "nvcuda"
     problem_size = kernelspec['ProblemSize']
 
     # convert arguments
@@ -872,10 +875,11 @@ def tune_with_T1_input(input_filepath: Path):
     for param in inputs['ConfigurationSpace']['TuningParameters']:
         tune_param = None
         if param['Type'] in ['int', 'float']:
-            if param['Values'][:5] == 'list(':
-                tune_param = eval(param['Values'])
+            vals = param['Values']
+            if vals[:5] == 'list(' or (vals[0] == '[' and vals[-1] == ']'):
+                tune_param = eval(vals)
             else:
-                tune_param = literal_eval(param['Values'])
+                tune_param = literal_eval(vals)
         if tune_param is not None:
             tune_params[param['Name']] = tune_param
         else:
