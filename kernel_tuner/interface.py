@@ -852,23 +852,6 @@ def tune_with_T1_input(input_filepath: Path):
     #     language = "cupy"
         # language = "nvcuda"
     problem_size = kernelspec['ProblemSize']
-
-    # convert arguments
-    arguments = list() 
-    for arg in kernelspec['Arguments']:
-        argument = None
-        if arg['Type'] == 'float' and arg['MemoryType'] == 'Vector':            
-            size = arg['Size']
-            if arg['FillType'] == 'Constant':
-                argument = numpy.full(size, arg['FillValue']).astype(numpy.float32)
-            elif arg['FillType'] == 'Random':
-                argument = numpy.random.randn(size).astype(numpy.float32)
-            else:
-                raise NotImplementedError(f"Conversion for fill type '{arg['FillType']}' has not yet been implemented")
-        if argument is not None:
-            arguments.append(argument)
-        else:
-            raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
         
     # convert tuneable parameters
     tune_params = dict()
@@ -895,6 +878,29 @@ def tune_with_T1_input(input_filepath: Path):
             restrictions.append(restriction)
         else:
             raise NotImplementedError(f"Conversion for this type of restriction has not yet been implemented: {res}")
+
+    # convert arguments (must be after resolving tune_params)
+    arguments = list() 
+    for arg in kernelspec['Arguments']:
+        argument = None
+        if arg['Type'] == 'float' and arg['MemoryType'] == 'Vector':            
+            size = arg['Size']
+            if isinstance(size, str):
+                args = tune_params.copy()
+                args['ProblemSize'] = problem_size
+                size = int(eval(size, args))
+            if not isinstance(size, int):
+                raise TypeError(f"Size should be an integer, but is {size} (type ({type(size)}, from {arg['Size']}))")
+            if arg['FillType'] == 'Constant':
+                argument = numpy.full(size, arg['FillValue']).astype(numpy.float32)
+            elif arg['FillType'] == 'Random':
+                argument = numpy.random.randn(size).astype(numpy.float32)
+            else:
+                raise NotImplementedError(f"Conversion for fill type '{arg['FillType']}' has not yet been implemented")
+        if argument is not None:
+            arguments.append(argument)
+        else:
+            raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
     
     # tune with the converted inputs
     return tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, restrictions=restrictions, lang=language)

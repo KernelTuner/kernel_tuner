@@ -290,10 +290,14 @@
                                 ]
                             },
                             "Size": {
-                                "type": "integer",
+                                "type": [
+                                    "integer",
+                                    "string"
+                                ],
                                 "examples": [
                                     720,
-                                    26000
+                                    26000,
+                                    "ProblemSize[0]+max(filter_width)-1"
                                 ]
                             },
                             "TypeSize": {

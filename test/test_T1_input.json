@@ -115,7 +115,7 @@
                 "MemoryType": "Vector",
                 "AccessType": "ReadOnly",
                 "FillType": "Random",
-                "Size": 16892100,
+                "Size": "(ProblemSize[0]+max(filter_width)-1) * (ProblemSize[1]+max(filter_height)-1)",
                 "FillValue": 1.0
             },
             {
@@ -125,7 +125,7 @@
                 "AccessType": "ReadOnly",
                 "MemType": "Constant",
                 "FillType": "Random",
-                "Size": 225,
+                "Size": "max(filter_height) * max(filter_width)",
                 "FillValue": 1.0
             }
         ]
