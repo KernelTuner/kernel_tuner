@@ -848,10 +848,14 @@ def tune_with_T1_input(input_filepath: Path):
     kernel_source = Path(input_filepath).parent / Path(kernelspec['KernelFile'])
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
     language: str = kernelspec['Language']
-    # if language.upper() == "CUDA":
-    #     language = "cupy"
-        # language = "nvcuda"
     problem_size = kernelspec['ProblemSize']
+
+    # get the grid divisions
+    grid_divs = {}
+    for grid_div in ['GridDivX', 'GridDivY', 'GridDivZ']:
+        grid_divs[grid_div] = None
+        if grid_div in kernelspec and len(kernelspec[grid_div]) > 0:
+            grid_divs[grid_div] = kernelspec[grid_div]
         
     # convert tuneable parameters
     tune_params = dict()
@@ -881,6 +885,7 @@ def tune_with_T1_input(input_filepath: Path):
 
     # convert arguments (must be after resolving tune_params)
     arguments = list() 
+    cmem_arguments = {}
     for arg in kernelspec['Arguments']:
         argument = None
         if arg['Type'] == 'float' and arg['MemoryType'] == 'Vector':            
@@ -899,11 +904,15 @@ def tune_with_T1_input(input_filepath: Path):
                 raise NotImplementedError(f"Conversion for fill type '{arg['FillType']}' has not yet been implemented")
         if argument is not None:
             arguments.append(argument)
+            if 'MemType' in arg and arg['MemType'] == 'Constant':
+                cmem_arguments[arg['Name']] = argument
         else:
             raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
     
     # tune with the converted inputs
-    return tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, restrictions=restrictions, lang=language)
+    return tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, 
+                    grid_div_x=grid_divs['GridDivX'], grid_div_y=grid_divs['GridDivY'], grid_div_z=grid_divs['GridDivZ'], 
+                    cmem_args=cmem_arguments, restrictions=restrictions, lang=language)
 
 def entry_point(args=None):  #  pragma: no cover
     """Command-line interface entry point."""
