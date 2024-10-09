@@ -8,6 +8,7 @@ import sys
 import tempfile
 import time
 import warnings
+from pathlib import Path
 from inspect import signature
 from types import FunctionType
 from typing import Optional, Union
@@ -452,8 +453,9 @@ def get_kernel_string(kernel_source, params=None):
     after all.
 
     :param kernel_source: One of the sources for the kernel, could be a
-        function that generates the kernel code, a string containing a filename
-        that points to the kernel source, or just a string that contains the code.
+        function that generates the kernel code, a string or Path containing a 
+        filename that points to the kernel source, or just a string that
+        contains the code.
     :type kernel_source: string or callable
 
     :param params: Dictionary containing the tunable parameters for this specific
@@ -469,6 +471,8 @@ def get_kernel_string(kernel_source, params=None):
     kernel_string = None
     if callable(kernel_source):
         kernel_string = kernel_source(params)
+    elif isinstance(kernel_source, Path):
+        kernel_string = read_file(kernel_source)
     elif isinstance(kernel_source, str):
         if looks_like_a_filename(kernel_source):
             kernel_string = read_file(kernel_source) or kernel_source
@@ -761,7 +765,10 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
 def read_file(filename):
     """Return the contents of the file named filename or None if file not found."""
-    if os.path.isfile(filename):
+    if isinstance(filename, Path):
+        with filename.open() as f:
+            return f.read()
+    elif os.path.isfile(filename):
         with open(filename, "r") as f:
             return f.read()
 

@@ -845,7 +845,8 @@ def tune_with_T1_input(input_filepath: Path):
     inputs = get_input_file(input_filepath)
     kernelspec = inputs['KernelSpecification']
     kernel_name = kernelspec['KernelName']
-    kernel_source = kernelspec['KernelFile']
+    kernel_source = Path(input_filepath).parent / Path(kernelspec['KernelFile'])
+    assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
     language = kernelspec['Language']
     problem_size = kernelspec['ProblemSize']
 
