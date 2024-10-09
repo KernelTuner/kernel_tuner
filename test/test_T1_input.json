@@ -8,37 +8,37 @@
             {
                 "Name": "filter_width",
                 "Type": "int",
-                "Values": "[15]",
-                "Default": 15
+                "Values": "[i for i in range(3,35,2)]",
+                "Default": 17
             },
             {
                 "Name": "filter_height",
                 "Type": "int",
-                "Values": "[15]",
-                "Default": 15
+                "Values": "[i for i in range(3,35,2)]",
+                "Default": 17
             },
             {
                 "Name": "block_size_x",
                 "Type": "int",
-                "Values": "[1, 2, 4, 8, 16, 32, 48, 64, 96, 112, 128]",
-                "Default": 32
+                "Values": "[16*i for i in range(1,9)]",
+                "Default": 16
             },
             {
                 "Name": "block_size_y",
                 "Type": "int",
-                "Values": "[1, 2, 4, 8, 16, 32]",
-                "Default": 32
+                "Values": "[2**i for i in range(6)]",
+                "Default": 16
             },
             {
                 "Name": "tile_size_x",
                 "Type": "int",
-                "Values": "list(range(1, 9))",
+                "Values": "[i for i in range(1,9)]",
                 "Default": 1
             },
             {
                 "Name": "tile_size_y",
                 "Type": "int",
-                "Values": "list(range(1, 9))",
+                "Values": "[i for i in range(1,9)]",
                 "Default": 1
             },
             {
@@ -56,24 +56,11 @@
         ],
         "Conditions": [
             {
-                "Expression": "(block_size_x * block_size_y) >= 64",
+                "Expression": "use_padding==0 or (block_size_x % 32 != 0)",
                 "Parameters": [
+                    "use_padding",
                     "block_size_x",
                     "block_size_y"
-                ]
-            },
-            {
-                "Expression": "(block_size_x * block_size_y) <= 1024",
-                "Parameters": [
-                    "block_size_x",
-                    "block_size_y"
-                ]
-            },
-            {
-                "Expression": "(tile_size_x * tile_size_y) < 30",
-                "Parameters": [
-                    "tile_size_x",
-                    "tile_size_y"
                 ]
             }
         ]
