@@ -664,6 +664,8 @@ def tune_kernel(
 
     # process cache
     if cache:
+        if isinstance(cache, Path):
+            cache = str(cache.resolve())
         if cache[-5:] != ".json":
             cache += ".json"
 
@@ -840,7 +842,7 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)
 
-def tune_with_T1_input(input_filepath: Path):
+def tune_with_T1_input(input_filepath: Path, cache_filepath: Path = None):
     """Call the tune function with a T1 input file."""
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs['KernelSpecification']
@@ -912,7 +914,7 @@ def tune_with_T1_input(input_filepath: Path):
     # tune with the converted inputs
     return tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, 
                     grid_div_x=grid_divs['GridDivX'], grid_div_y=grid_divs['GridDivY'], grid_div_z=grid_divs['GridDivZ'], 
-                    cmem_args=cmem_arguments, restrictions=restrictions, lang=language)
+                    cmem_args=cmem_arguments, restrictions=restrictions, lang=language, cache=cache_filepath)
 
 def entry_point(args=None):  #  pragma: no cover
     """Command-line interface entry point."""
@@ -920,9 +922,15 @@ def entry_point(args=None):  #  pragma: no cover
     cli.add_argument(
         "input_file", type=str, help="The path to the input json file to execute (T1 standard)"
     )
+    cli.add_argument(
+        "cache_file", type=str, help="The path to the cachefile to use (optional)", required=False, default=None
+    )
     args = cli.parse_args(args)
     input_filepath_arg: str = args.input_file
     if input_filepath_arg is None or input_filepath_arg == "":
         raise ValueError("Invalid '--input_file' option. Run 'kernel_tuner -h' to read more.")
     input_filepath = Path(input_filepath_arg)
-    tune_with_T1_input(input_filepath)
+    cachefile_filepath_arg = args.cache_file
+    if cachefile_filepath_arg is not None:
+        cachefile_filepath_arg = Path(cachefile_filepath_arg)
+    tune_with_T1_input(input_filepath, cache_filepath=cachefile_filepath_arg)
