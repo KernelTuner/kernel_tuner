@@ -1177,10 +1177,17 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != runner.dev.name:
-            raise ValueError("Cannot load cache which contains results for different device")
+            raise ValueError(
+                f"Cannot load cache which contains results for different device (cache: {cached_data['device_name']}, actual: {runner.dev.name})"
+            )
         if cached_data["kernel_name"] != kernel_options.kernel_name:
-            raise ValueError("Cannot load cache which contains results for different kernel")
+            raise ValueError(
+                f"Cannot load cache which contains results for different kernel (cache: {cached_data['kernel_name']}, actual: {kernel_options.kernel_name})"
+            )
         if "problem_size" in cached_data and not callable(kernel_options.problem_size):
+            # if it's a single value, convert to an array
+            if isinstance(cached_data["problem_size"], int):
+                cached_data["problem_size"] = [cached_data["problem_size"]]
             # if problem_size is not iterable, compare directly
             if not hasattr(kernel_options.problem_size, "__iter__"):
                 if cached_data["problem_size"] != kernel_options.problem_size:
