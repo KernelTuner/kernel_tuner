@@ -842,7 +842,7 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)
 
-def tune_with_T1_input(input_filepath: Path, cache_filepath: Path = None):
+def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None):
     """Call the tune function with a T1 input file."""
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs['KernelSpecification']
