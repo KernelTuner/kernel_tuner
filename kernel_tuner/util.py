@@ -237,11 +237,22 @@ def check_block_size_params_names_list(block_size_names, tune_params):
                     "Block size name " + name + " is not specified in the tunable parameters list!", UserWarning
                 )
     else:  # if default block size names are used
-        if not any([k in default_block_size_names for k in tune_params.keys()]):
+        if not any([k.lower() in default_block_size_names for k in tune_params.keys()]):
             warnings.warn(
                 "None of the tunable parameters specify thread block dimensions!",
                 UserWarning,
             )
+        else:
+            # check for alternative case spelling of defaults such as BLOCK_SIZE_X or block_Size_X etc
+            result = []
+            for k in tune_params.keys():
+                if k.lower() in default_block_size_names and k not in default_block_size_names:
+                    result.append(k)
+            # ensure order of block_size_names is correct regardless of case used
+            block_size_names = sorted(result, key=str.casefold)
+
+    return block_size_names
+
 
 def check_restriction(restrict, params: dict) -> bool:
     """Check whether a configuration meets a search space restriction."""
