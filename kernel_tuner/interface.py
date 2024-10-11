@@ -23,6 +23,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import logging
 from argparse import ArgumentParser
 from ast import literal_eval
@@ -690,7 +691,7 @@ def tune_kernel(
     if results:  # checks if results is not empty
         best_config = util.get_best_config(results, objective, objective_higher_is_better)
         # add the best configuration to env
-        env['best_config'] = best_config
+        env["best_config"] = best_config
         if not device_options.quiet:
             units = getattr(runner, "units", None)
             print("best performing configuration:")
@@ -842,86 +843,104 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)
 
-def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None):
+
+def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation_mode = False):
     """Call the tune function with a T1 input file."""
     inputs = get_input_file(input_filepath)
-    kernelspec: dict = inputs['KernelSpecification']
-    kernel_name: str = kernelspec['KernelName']
-    kernel_source = Path(input_filepath).parent / Path(kernelspec['KernelFile'])
+    kernelspec: dict = inputs["KernelSpecification"]
+    kernel_name: str = kernelspec["KernelName"]
+    kernel_filepath = Path(kernelspec["KernelFile"])
+    kernel_source = (
+        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent.parent / kernel_filepath
+    )
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
-    language: str = kernelspec['Language']
-    problem_size = kernelspec['ProblemSize']
+    language: str = kernelspec["Language"]
+    problem_size = kernelspec["ProblemSize"]
+
+    if cache_filepath is None and "SimulationInput" in kernelspec:
+        cache_filepath = Path(kernelspec["SimulationInput"])
 
     # get the grid divisions
     grid_divs = {}
-    for grid_div in ['GridDivX', 'GridDivY', 'GridDivZ']:
+    for grid_div in ["GridDivX", "GridDivY", "GridDivZ"]:
         grid_divs[grid_div] = None
         if grid_div in kernelspec and len(kernelspec[grid_div]) > 0:
             grid_divs[grid_div] = kernelspec[grid_div]
-        
+
     # convert tuneable parameters
     tune_params = dict()
-    for param in inputs['ConfigurationSpace']['TuningParameters']:
+    for param in inputs["ConfigurationSpace"]["TuningParameters"]:
         tune_param = None
-        if param['Type'] in ['int', 'float']:
-            vals = param['Values']
-            if vals[:5] == 'list(' or (vals[0] == '[' and vals[-1] == ']'):
+        if param["Type"] in ["int", "float"]:
+            vals = param["Values"]
+            if vals[:5] == "list(" or (vals[0] == "[" and vals[-1] == "]"):
                 tune_param = eval(vals)
             else:
                 tune_param = literal_eval(vals)
         if tune_param is not None:
-            tune_params[param['Name']] = tune_param
+            tune_params[param["Name"]] = tune_param
         else:
             raise NotImplementedError(f"Conversion for this type of parameter has not yet been implemented: {param}")
-        
+
     # convert restrictions
     restrictions = list()
-    for res in inputs['ConfigurationSpace']['Conditions']:
+    for res in inputs["ConfigurationSpace"]["Conditions"]:
         restriction = None
-        if isinstance(res['Expression'], str):
-            restriction = res['Expression']
+        if isinstance(res["Expression"], str):
+            restriction = res["Expression"]
         if restriction is not None:
             restrictions.append(restriction)
         else:
             raise NotImplementedError(f"Conversion for this type of restriction has not yet been implemented: {res}")
 
     # convert arguments (must be after resolving tune_params)
-    arguments = list() 
+    arguments = list()
     cmem_arguments = {}
-    for arg in kernelspec['Arguments']:
+    for arg in kernelspec["Arguments"]:
         argument = None
-        if arg['Type'] == 'float' and arg['MemoryType'] == 'Vector':            
-            size = arg['Size']
+        if arg["Type"] == "float" and arg["MemoryType"] == "Vector":
+            size = arg["Size"]
             if isinstance(size, str):
                 args = tune_params.copy()
-                args['ProblemSize'] = problem_size
+                args["ProblemSize"] = problem_size
                 size = int(eval(size, args))
             if not isinstance(size, int):
                 raise TypeError(f"Size should be an integer, but is {size} (type ({type(size)}, from {arg['Size']}))")
-            if arg['FillType'] == 'Constant':
-                argument = numpy.full(size, arg['FillValue']).astype(numpy.float32)
-            elif arg['FillType'] == 'Random':
+            if arg["FillType"] == "Constant":
+                argument = numpy.full(size, arg["FillValue"]).astype(numpy.float32)
+            elif arg["FillType"] == "Random":
                 argument = numpy.random.randn(size).astype(numpy.float32)
             else:
                 raise NotImplementedError(f"Conversion for fill type '{arg['FillType']}' has not yet been implemented")
         if argument is not None:
             arguments.append(argument)
-            if 'MemType' in arg and arg['MemType'] == 'Constant':
-                cmem_arguments[arg['Name']] = argument
+            if "MemType" in arg and arg["MemType"] == "Constant":
+                cmem_arguments[arg["Name"]] = argument
         else:
             raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
-    
+
     # tune with the converted inputs
-    return tune_kernel(kernel_name, kernel_source, problem_size, arguments, tune_params, 
-                    grid_div_x=grid_divs['GridDivX'], grid_div_y=grid_divs['GridDivY'], grid_div_z=grid_divs['GridDivZ'], 
-                    cmem_args=cmem_arguments, restrictions=restrictions, lang=language, cache=cache_filepath)
+    return tune_kernel(
+        kernel_name,
+        kernel_source,
+        problem_size,
+        arguments,
+        tune_params,
+        grid_div_x=grid_divs["GridDivX"],
+        grid_div_y=grid_divs["GridDivY"],
+        grid_div_z=grid_divs["GridDivZ"],
+        cmem_args=cmem_arguments,
+        restrictions=restrictions,
+        lang=language,
+        cache=cache_filepath,
+        simulation_mode=simulation_mode
+    )
+
 
 def entry_point(args=None):  #  pragma: no cover
     """Command-line interface entry point."""
     cli = ArgumentParser()
-    cli.add_argument(
-        "input_file", type=str, help="The path to the input json file to execute (T1 standard)"
-    )
+    cli.add_argument("input_file", type=str, help="The path to the input json file to execute (T1 standard)")
     cli.add_argument(
         "cache_file", type=str, help="The path to the cachefile to use (optional)", required=False, default=None
     )
