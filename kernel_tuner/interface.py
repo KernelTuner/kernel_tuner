@@ -35,7 +35,7 @@ import numpy
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
-from kernel_tuner.file_utils import get_input_file
+from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
@@ -844,7 +844,7 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
     util.check_block_size_names(block_size_names)
 
 
-def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation_mode = False):
+def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation_mode = False, output_T4 = True, iterations = 7, strategy_options = None):
     """Call the tune function with a T1 input file."""
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs["KernelSpecification"]
@@ -856,6 +856,8 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
     language: str = kernelspec["Language"]
     problem_size = kernelspec["ProblemSize"]
+    device = kernelspec["Device"]["Name"]
+    strategy = inputs["Search"]["Name"]
 
     if cache_filepath is None and "SimulationInput" in kernelspec:
         cache_filepath = Path(kernelspec["SimulationInput"])
@@ -920,12 +922,14 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
             raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
 
     # tune with the converted inputs
-    return tune_kernel(
+    # TODO add objective to tune_kernel and get_t4_results calls once available in T1
+    results, env = tune_kernel(
         kernel_name,
         kernel_source,
         problem_size,
         arguments,
         tune_params,
+        device=device,
         grid_div_x=grid_divs["GridDivX"],
         grid_div_y=grid_divs["GridDivY"],
         grid_div_z=grid_divs["GridDivZ"],
@@ -933,8 +937,16 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
         restrictions=restrictions,
         lang=language,
         cache=cache_filepath,
-        simulation_mode=simulation_mode
+        simulation_mode=simulation_mode,
+        quiet=True,
+        verbose=False,
+        iterations=iterations,
+        strategy=strategy,
+        strategy_options=strategy_options
     )
+    if output_T4:
+        return get_t4_metadata(), get_t4_results(results, tune_params)
+    return results, env
 
 
 def entry_point(args=None):  #  pragma: no cover
@@ -952,4 +964,4 @@ def entry_point(args=None):  #  pragma: no cover
     cachefile_filepath_arg = args.cache_file
     if cachefile_filepath_arg is not None:
         cachefile_filepath_arg = Path(cachefile_filepath_arg)
-    tune_with_T1_input(input_filepath, cache_filepath=cachefile_filepath_arg)
+    tune_kernel_T1(input_filepath, cache_filepath=cachefile_filepath_arg)
