@@ -101,8 +101,8 @@ class HypertunerFunctions(Backend):
         # run the methodology to get a fitness score for this configuration
         scores = get_strategy_scores(str(experiments_filepath))
         raise ValueError(scores)
-        score = scores[list(scores.keys()[0])]['score']
-        return score
+        # score = scores[list(scores.keys()[0])]['score']
+        # return score
     
     def memset(self, allocation, value, size):
         return super().memset(allocation, value, size)

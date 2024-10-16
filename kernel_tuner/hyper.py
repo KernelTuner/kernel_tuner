@@ -1,12 +1,8 @@
 """Module for functions related to hyperparameter optimization."""
 
-import itertools
-import warnings
 
-import numpy as np
 
 import kernel_tuner
-from kernel_tuner.util import get_config_string
 
 
 def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs):
@@ -62,54 +58,6 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     arguments = [target_strategy]
 
     return kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, lang='Hypertuner', *args, **kwargs)
-
-
-
-
-    #last position argument is tune_params
-    tune_params = args[-1]
-
-    #find optimum
-    kwargs["strategy"] = "brute_force"
-    results, _ = kernel_tuner.tune_kernel(*args, **kwargs)
-    optimum = min(results, key=lambda p: p["time"])["time"]
-
-    #could throw a warning for the kwargs that will be overwritten, strategy(_options)
-    kwargs["strategy"] = target_strategy
-
-    parameter_space = itertools.product(*hyper_params.values())
-    all_results = []
-
-    for params in parameter_space:
-        strategy_options = dict(zip(hyper_params.keys(), params))
-
-        kwargs["strategy_options"] = strategy_options
-
-        fevals = []
-        p_of_opt = []
-        for _ in range(100):
-            #measure
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                results, _ = kernel_tuner.tune_kernel(*args, **kwargs)
-
-            #get unique function evaluations
-            unique_fevals = {",".join([str(v) for k, v in record.items() if k in tune_params])
-                             for record in results}
-
-            fevals.append(len(unique_fevals))
-            p_of_opt.append(min(results, key=lambda p: p["time"])["time"] / optimum * 100)
-
-        strategy_options["fevals"] = np.average(fevals)
-        strategy_options["fevals_std"] = np.std(fevals)
-
-        strategy_options["p_of_opt"] = np.average(p_of_opt)
-        strategy_options["p_of_opt_std"] = np.std(p_of_opt)
-
-        print(get_config_string(strategy_options))
-        all_results.append(strategy_options)
-
-    return all_results
 
 if __name__ == "__main__":  # TODO remove in production
     hyperparams = {
