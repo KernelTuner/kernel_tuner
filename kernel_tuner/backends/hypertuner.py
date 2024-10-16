@@ -7,6 +7,7 @@ from kernel_tuner.backends.backend import Backend
 
 try:
     methodology_available = True
+    from autotuning_methodology.experiments import generate_experiment_file
     from autotuning_methodology.report_experiments import get_strategy_scores
 except ImportError:
     methodology_available = False
@@ -38,11 +39,32 @@ class HypertunerFunctions(Backend):
     
     def compile(self, kernel_instance):
         super().compile(kernel_instance)
-        # TODO implement experiments file generation
-        params = kernel_instance.params
-        raise NotImplementedError(f'Not yet implemented: experiments generation for {params}')
-        experiments_filepath = Path('.')
+        # params = kernel_instance.params
+        path = Path(__file__).parent
+
+        # TODO: get applications & GPUs args from benchmark
+        applications = ['convolution', 'pnpoly']
+        gpus = ["RTX_3090", "RTX_2080_Ti"]
+
+        strategy = kernel_instance.arguments[0]
+        searchspace_strategies = [{
+            "autotuner": "KernelTuner",
+            "name": strategy,
+            "display_name": strategy,
+            "search_method": strategy,
+            'search_method_hyperparameters': kernel_instance.params
+        }]
+
+        override = { 
+            "experimental_groups_defaults": { 
+                "samples": kernel_instance.iterations 
+            } 
+        }
+
+        experiments_filepath = generate_experiment_file(kernel_instance.name, path, applications, gpus, searchspace_strategies, override=override)
         return str(experiments_filepath)
+        return lambda e: "not implemented"  # the compile function is expected to return a function
+        # raise NotImplementedError(f'Not yet implemented: experiments generation for {params}')
     
     def start_event(self):
         return super().start_event()
@@ -58,6 +80,7 @@ class HypertunerFunctions(Backend):
         return super().synchronize()
     
     def run_kernel(self, func, gpu_args=None, threads=None, grid=None, stream=None):
+        raise ValueError(func, gpu_args)
         # generate the experiments file
         experiments_filepath = Path(func)
 

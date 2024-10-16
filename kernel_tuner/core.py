@@ -14,17 +14,16 @@ except ImportError:
 
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.backends.pycuda import PyCudaFunctions
+from kernel_tuner.backends.compiler import CompilerFunctions
 from kernel_tuner.backends.cupy import CupyFunctions
 from kernel_tuner.backends.hip import HipFunctions
 from kernel_tuner.backends.hypertuner import HypertunerFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
-from kernel_tuner.backends.compiler import CompilerFunctions
 from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.tegra import TegraObserver
 from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
+from kernel_tuner.observers.tegra import TegraObserver
 
 try:
     import torch

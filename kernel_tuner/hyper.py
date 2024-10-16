@@ -9,7 +9,7 @@ import kernel_tuner
 from kernel_tuner.util import get_config_string
 
 
-def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
+def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs):
     """Tune hyperparameters for a given strategy and kernel.
 
     This function is to be called just like tune_kernel, except that you specify a strategy
@@ -54,13 +54,14 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
     def put_if_not_present(target_dict, key, value):
         target_dict[key] = value if key not in target_dict else target_dict[key]
 
-    put_if_not_present(kwargs, "verbose", False)
-    put_if_not_present(kwargs, "quiet", True)
+    put_if_not_present(kwargs, "verbose", True)
+    put_if_not_present(kwargs, "quiet", False)
     kwargs['simulation_mode'] = False
     kwargs['strategy'] = 'dual_annealing'
     kwargs['verify'] = None
+    arguments = [target_strategy]
 
-    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], [], hyper_params, lang='Hypertuner', *args, **kwargs)
+    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, lang='Hypertuner', *args, **kwargs)
 
 
 
