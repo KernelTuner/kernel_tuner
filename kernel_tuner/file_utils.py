@@ -298,7 +298,7 @@ def store_metadata_file(metadata_filename: str):
     """
     metadata_filenamepath = Path(filename_ensure_json_extension(metadata_filename))
     make_filenamepath(metadata_filenamepath)
-    metadata_json = get_T4_metadata()
+    metadata_json = get_t4_metadata()
     with open(metadata_filenamepath, "w+") as fh:
         json.dump(metadata_json, fh, indent="  ")
 
