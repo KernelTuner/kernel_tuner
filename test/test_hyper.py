@@ -15,5 +15,6 @@ def test_hyper(env):
 
     target_strategy = "genetic_algorithm"
 
-    result = tune_hyper_params(target_strategy, hyper_params, verbose=True, cache=cache_filename)
+    result = tune_hyper_params(target_strategy, hyper_params, iterations=1, verbose=True, cache=cache_filename)
+    raise ValueError(result)
     assert len(result) > 0

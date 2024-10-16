@@ -42,8 +42,6 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     #     - The methodology returns the fitness metric
     #     - The fitness metric is fed back into the meta-strategy
 
-
-
     if "cache" in kwargs:
         del kwargs['cache']
 
@@ -57,7 +55,8 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     kwargs['verify'] = None
     arguments = [target_strategy]
 
-    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, lang='Hypertuner', *args, **kwargs)
+    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, *args, lang='Hypertuner', 
+                                    objective='score', objective_higher_is_better=True, **kwargs)
 
 if __name__ == "__main__":  # TODO remove in production
     hyperparams = {

@@ -3,7 +3,10 @@
 import platform
 from pathlib import Path
 
+from numpy import mean
+
 from kernel_tuner.backends.backend import Backend
+from kernel_tuner.observers.observer import BenchmarkObserver
 
 try:
     methodology_available = True
@@ -12,13 +15,27 @@ try:
 except ImportError:
     methodology_available = False
 
+
+class ScoreObserver(BenchmarkObserver):
+    def __init__(self, dev):
+        self.dev = dev
+        self.scores = []
+
+    def after_finish(self):
+        self.scores.append(self.dev.last_score)
+
+    def get_results(self):
+        results = {'score': mean(self.scores), 'scores': self.scores.copy()}
+        self.scores = []
+        return results
+
 class HypertunerFunctions(Backend):
     """Class for executing hyperparameter tuning."""
     units = {}
 
     def __init__(self, iterations):
         self.iterations = iterations
-        self.observers = []
+        self.observers = [ScoreObserver(self)]
         self.name = platform.processor()
         self.max_threads = 1024
 
@@ -100,9 +117,7 @@ class HypertunerFunctions(Backend):
 
         # run the methodology to get a fitness score for this configuration
         scores = get_strategy_scores(str(experiments_filepath))
-        raise ValueError(scores)
-        # score = scores[list(scores.keys()[0])]['score']
-        # return score
+        self.last_score = scores[list(scores.keys())[0]]['score']
     
     def memset(self, allocation, value, size):
         return super().memset(allocation, value, size)
