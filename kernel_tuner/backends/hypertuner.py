@@ -39,32 +39,47 @@ class HypertunerFunctions(Backend):
     
     def compile(self, kernel_instance):
         super().compile(kernel_instance)
-        # params = kernel_instance.params
         path = Path(__file__).parent
 
-        # TODO: get applications & GPUs args from benchmark
-        applications = ['convolution', 'pnpoly']
+        # TODO get applications & GPUs args from benchmark
         gpus = ["RTX_3090", "RTX_2080_Ti"]
+        applications = None
+        # applications = [
+        #     {
+        #         "name": "convolution",
+        #         "folder": "./cached_data_used/kernels",
+        #         "input_file": "convolution.json"
+        #     },
+        #     {
+        #         "name": "pnpoly",
+        #         "folder": "./cached_data_used/kernels",
+        #         "input_file": "pnpoly.json"
+        #     }
+        # ]
 
-        strategy = kernel_instance.arguments[0]
+        # strategy settings
+        strategy: str = kernel_instance.arguments[0]
+        hyperparams = [{'name': k, 'value': v} for k, v in kernel_instance.params.items()]
         searchspace_strategies = [{
             "autotuner": "KernelTuner",
-            "name": strategy,
-            "display_name": strategy,
-            "search_method": strategy,
-            'search_method_hyperparameters': kernel_instance.params
+            "name": strategy.lower(),
+            "display_name": strategy.replace('_', ' ').capitalize(),
+            "search_method": strategy.lower(),
+            'search_method_hyperparameters': hyperparams
         }]
 
+        # any additional settings
         override = { 
             "experimental_groups_defaults": { 
-                "samples": kernel_instance.iterations 
-            } 
+                "samples": self.iterations 
+            }
         }
 
-        experiments_filepath = generate_experiment_file(kernel_instance.name, path, applications, gpus, searchspace_strategies, override=override)
+        name = kernel_instance.name if len(kernel_instance.name) > 0 else kernel_instance.kernel_source.kernel_name
+
+        experiments_filepath = generate_experiment_file(name, path, searchspace_strategies, applications, gpus, 
+                                                        override=override, overwrite_existing_file=True)
         return str(experiments_filepath)
-        return lambda e: "not implemented"  # the compile function is expected to return a function
-        # raise NotImplementedError(f'Not yet implemented: experiments generation for {params}')
     
     def start_event(self):
         return super().start_event()
@@ -80,12 +95,12 @@ class HypertunerFunctions(Backend):
         return super().synchronize()
     
     def run_kernel(self, func, gpu_args=None, threads=None, grid=None, stream=None):
-        raise ValueError(func, gpu_args)
         # generate the experiments file
         experiments_filepath = Path(func)
 
         # run the methodology to get a fitness score for this configuration
         scores = get_strategy_scores(str(experiments_filepath))
+        raise ValueError(scores)
         score = scores[list(scores.keys()[0])]['score']
         return score
     
