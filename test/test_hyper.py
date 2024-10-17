@@ -15,6 +15,6 @@ def test_hyper(env):
 
     target_strategy = "genetic_algorithm"
 
-    result = tune_hyper_params(target_strategy, hyper_params, iterations=1, verbose=True, cache=cache_filename)
-    raise ValueError(result)
-    assert len(result) > 0
+    result, env = tune_hyper_params(target_strategy, hyper_params, iterations=1, verbose=True, cache=cache_filename)
+    assert len(result) >= 2     # Look into why the hyperparamtuner returns more results than the searchspace size
+    assert 'best_config' in env

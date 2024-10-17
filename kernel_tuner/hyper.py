@@ -42,6 +42,10 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     #     - The methodology returns the fitness metric
     #     - The fitness metric is fed back into the meta-strategy
 
+    iterations = 1
+    if "iterations" in kwargs:
+        iterations = kwargs['iterations']
+        del kwargs['iterations']
     if "cache" in kwargs:
         del kwargs['cache']
 
@@ -55,15 +59,24 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     kwargs['verify'] = None
     arguments = [target_strategy]
 
-    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, *args, lang='Hypertuner', 
-                                    objective='score', objective_higher_is_better=True, **kwargs)
+    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, *args, lang='Hypertuner',
+                                    objective='score', objective_higher_is_better=True, iterations=iterations, **kwargs)
 
 if __name__ == "__main__":  # TODO remove in production
+    # hyperparams = {
+    #     'popsize': [10, 20, 30],
+    #     'maxiter': [50, 100, 150],
+    #     'w': [0.25, 0.5, 0.75],
+    #     'c1': [1.0, 2.0, 3.0],
+    #     'c2': [0.5, 1.0, 1.5]
+    # }
     hyperparams = {
-        'popsize': [10, 20, 30],
-        'maxiter': [50, 100, 150],
-        'w': [0.25, 0.5, 0.75],
-        'c1': [1.0, 2.0, 3.0],
-        'c2': [0.5, 1.0, 1.5]
+        'popsize': [10],
+        'maxiter': [50],
+        'w': [0.25, 0.5],
+        'c1': [1.0],
+        'c2': [0.5]
     }
-    tune_hyper_params('pso', hyperparams)
+    result, env = tune_hyper_params('pso', hyperparams)
+    print(result)
+    print(env['best_config'])

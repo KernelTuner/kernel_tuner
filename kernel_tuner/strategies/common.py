@@ -55,10 +55,12 @@ def get_options(strategy_options, options):
 class CostFunc:
     def __init__(self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True):
         self.runner = runner
-        self.tuning_options = tuning_options
         self.snap = snap
         self.scaling = scaling
         self.searchspace = searchspace
+        self.tuning_options = tuning_options
+        if isinstance(self.tuning_options, dict):
+            self.tuning_options['max_fevals'] = min(tuning_options['max_fevals'] if 'max_fevals' in tuning_options else np.inf, searchspace.size)
         self.results = []
 
     def __call__(self, x, check_restrictions=True):
@@ -104,9 +106,6 @@ class CostFunc:
                 self.tuning_options.unique_results[x_int] = result
 
             self.results.append(result)
-            if len(self.results) > 100:
-                print(result)
-                raise ValueError(self.results)
 
             # upon returning from this function control will be given back to the strategy, so reset the start time
             self.runner.last_strategy_start_time = perf_counter()
