@@ -93,6 +93,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     """
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
+    # limit max_fevals to max size of the parameter space
+    max_fevals = min(searchspace.size, max_fevals)
+
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
         raise ImportError(

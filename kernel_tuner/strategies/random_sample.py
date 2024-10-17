@@ -17,7 +17,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # override if max_fevals is specified
     if "max_fevals" in tuning_options:
-        num_samples = tuning_options.max_fevals
+        num_samples = min(tuning_options.max_fevals, searchspace.size)
 
     samples = searchspace.get_random_sample(num_samples)
 

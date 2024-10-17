@@ -104,6 +104,9 @@ class CostFunc:
                 self.tuning_options.unique_results[x_int] = result
 
             self.results.append(result)
+            if len(self.results) > 100:
+                print(result)
+                raise ValueError(self.results)
 
             # upon returning from this function control will be given back to the strategy, so reset the start time
             self.runner.last_strategy_start_time = perf_counter()
