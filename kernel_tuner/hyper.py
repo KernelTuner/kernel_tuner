@@ -1,9 +1,20 @@
 """Module for functions related to hyperparameter optimization."""
 
 
+from pathlib import Path
+from random import randint
 
 import kernel_tuner
 
+
+def get_random_unique_filename(prefix = '', suffix=''):
+    """Get a random, unique filename that does not yet exist."""
+    def randpath():
+        return Path(f"{prefix}{randint(1000, 9999)}{suffix}")
+    path = randpath()
+    while path.exists():
+        path = randpath()
+    return path
 
 def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs):
     """Tune hyperparameters for a given strategy and kernel.
@@ -46,8 +57,10 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     if "iterations" in kwargs:
         iterations = kwargs['iterations']
         del kwargs['iterations']
-    if "cache" in kwargs:
-        del kwargs['cache']
+
+    # pass a temporary cache file to avoid duplicate execution
+    cachefile = get_random_unique_filename('temp_', '.json')
+    kwargs['cache'] = str(cachefile)
 
     def put_if_not_present(target_dict, key, value):
         target_dict[key] = value if key not in target_dict else target_dict[key]
@@ -59,8 +72,18 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     kwargs['verify'] = None
     arguments = [target_strategy]
 
-    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, *args, lang='Hypertuner',
+    # execute the hyperparameter tuning
+    result, env = kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, *args, lang='Hypertuner',
                                     objective='score', objective_higher_is_better=True, iterations=iterations, **kwargs)
+    
+    # remove the temporary cachefile and return only unique results in order
+    cachefile.unlink()
+    result_unique = dict()
+    for r in result:
+        config_id = ",".join(str(r[k]) for k in hyper_params.keys())
+        if config_id not in result_unique:
+            result_unique[config_id] = r
+    return list(result_unique.values()), env
 
 if __name__ == "__main__":  # TODO remove in production
     # hyperparams = {

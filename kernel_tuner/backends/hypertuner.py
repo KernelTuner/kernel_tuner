@@ -38,6 +38,7 @@ class HypertunerFunctions(Backend):
         self.observers = [ScoreObserver(self)]
         self.name = platform.processor()
         self.max_threads = 1024
+        self.last_score = None
 
         # set the environment options
         env = dict()

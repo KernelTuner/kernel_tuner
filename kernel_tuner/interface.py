@@ -404,7 +404,7 @@ _tuning_options = Options(
             All strategies support the following two options:
 
             1. "max_fevals": the maximum number of unique valid function evaluations (i.e. compiling and
-            benchmarking a kernel configuration the strategy is allowed to perform as part of the optimization.
+            benchmarking a kernel configuration) the strategy is allowed to perform as part of the optimization.
             Note that some strategies implement a default max_fevals of 100.
 
             2. "time_limit": the maximum amount of time in seconds the strategy is allowed to spent on trying to
