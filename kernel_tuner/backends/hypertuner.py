@@ -57,7 +57,8 @@ class HypertunerFunctions(Backend):
     
     def compile(self, kernel_instance):
         super().compile(kernel_instance)
-        path = Path(__file__).parent
+        path = Path(__file__).parent.parent.parent / "hyperparamtuning"
+        path.mkdir(exist_ok=True)
 
         # TODO get applications & GPUs args from benchmark
         gpus = ["RTX_3090", "RTX_2080_Ti"]
@@ -78,9 +79,10 @@ class HypertunerFunctions(Backend):
         # strategy settings
         strategy: str = kernel_instance.arguments[0]
         hyperparams = [{'name': k, 'value': v} for k, v in kernel_instance.params.items()]
+        hyperparams_string = "_".join(f"{k}={str(v)}" for k, v in kernel_instance.params.items())
         searchspace_strategies = [{
             "autotuner": "KernelTuner",
-            "name": strategy.lower(),
+            "name": f"{strategy.lower()}_{hyperparams_string}",
             "display_name": strategy.replace('_', ' ').capitalize(),
             "search_method": strategy.lower(),
             'search_method_hyperparameters': hyperparams
@@ -94,7 +96,6 @@ class HypertunerFunctions(Backend):
         }
 
         name = kernel_instance.name if len(kernel_instance.name) > 0 else kernel_instance.kernel_source.kernel_name
-
         experiments_filepath = generate_experiment_file(name, path, searchspace_strategies, applications, gpus, 
                                                         override=override, overwrite_existing_file=True)
         return str(experiments_filepath)

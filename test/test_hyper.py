@@ -1,7 +1,7 @@
 from kernel_tuner.hyper import tune_hyper_params
 
 from .context import skip_if_no_methodology
-from .test_runners import cache_filename, env  # noqa: F401
+from .test_runners import env  # noqa: F401
 
 
 @skip_if_no_methodology
