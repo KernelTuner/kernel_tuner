@@ -53,6 +53,8 @@ repository = "https://github.com/KernelTuner/kernel_tuner"
 "Tracker" = "https://github.com/KernelTuner/kernel_tuner/issues"
 [tool.poetry.build]
 generate-setup-file = false
+[tool.poetry.scripts]
+kernel_tuner = "kernel_tuner.interface:entry_point"
 
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
