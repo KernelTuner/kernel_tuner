@@ -86,19 +86,12 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     return list(result_unique.values()), env
 
 if __name__ == "__main__":  # TODO remove in production
-    # hyperparams = {
-    #     'popsize': [10, 20, 30],
-    #     'maxiter': [50, 100, 150],
-    #     'w': [0.25, 0.5, 0.75],
-    #     'c1': [1.0, 2.0, 3.0],
-    #     'c2': [0.5, 1.0, 1.5]
-    # }
     hyperparams = {
-        'popsize': [10],
-        'maxiter': [50],
-        'w': [0.25, 0.5],
-        'c1': [1.0],
-        'c2': [0.5]
+        'popsize': [10, 20, 30],
+        'maxiter': [50, 100, 150],
+        'w': [0.25, 0.5, 0.75],
+        'c1': [1.0, 2.0, 3.0],
+        'c2': [0.5, 1.0, 1.5]
     }
     result, env = tune_hyper_params('pso', hyperparams)
     print(result)
