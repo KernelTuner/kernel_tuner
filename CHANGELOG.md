@@ -4,13 +4,81 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [1.0.0] - 2024-04-04
+- HIP backend to support tuning HIP kernels on AMD GPUs
+- Experimental features for mixed-precision and accuracy tuning
+- Experimental features for OpenACC tuning
+- Major speedup due to new parser and using revamped python-constraint for searchspace building
+- Implemented ability to use `PySMT` and `ATF` for searchspace building
+- Added Poetry for dependency and build management
+- Switched from `setup.py` and `setup.cfg` to `pyproject.toml` for centralized metadata, added relevant tests
+- Updated GitHub Action workflows to use Poetry
+- Updated dependencies, most notably NumPy is no longer version-locked as scikit-opt is no longer a dependency
+- Documentation now uses `pyproject.toml` metadata, minor fixes and changes to be compatible with updated dependencies
+- Set up Nox for testing on all supported Python versions in isolated environments
+- Added linting information, VS Code settings and recommendations
+- Discontinued use of `OrderedDict`, as all dictionaries in the Python versions used are already ordered
+- Dropped Python 3.7 support
+
+## [0.4.5] - 2023-06-01
+### Added
+- PMTObserver to measure power and energy on various platforms
+
+### Changed
+- Improved functionality for storing output and metadata files
+- Updated PowerSensorObserver to support PowerSensor3
+- Refactored interal interfaces of runners and backends
+- Bugfix in interface to set objective and optimization direction
+
+## [0.4.4] - 2023-03-09
+### Added
+- Support for using time_limit in simulation mode
+- Helper functions for energy tuning
+- Example to show ridge frequency and power-frequency model
+- Functions to store tuning output and metadata
+
+### Changed
+- Changed what timings are stored in cache files
+- No longer inserting partial loop unrolling factor of 0 in CUDA
+
+## [0.4.3] - 2022-10-19
+### Added
+- A new backend that uses Nvidia cuda-python
+- Support for locked clocks in NVMLObserver
+- Support for measuring core voltages using NVML
+- Support for custom preprocessor definitions
+- Support for boolean scalar arguments in PyCUDA backend
+
+### Changed
+- Migrated from github.com/benvanwerkhoven to github.com/KernelTuner
+- Significant update to the documentation pages
+- Unified benchmarking loops across backends
+- Backends are no longer context managers
+- Replaced the method for measuring power consumption using NVML
+- Improved NVML measurements of temperature and clock frequencies
+- bugfix in parse_restrictions when using and/or in expressions
+- bugfix in GreedyILS when using neighbor method "adjacent"
+- bugfix in Bayesian Optimization for small problems
+
+## [0.4.2] - 2022-05-23
 ### Added
 - new optimization strategies: dual annealing, greedly ILS, ordered greedy MLS, greedy MLS
 - support for constant memory in cupy backend
+- constraint solver to cut down time spent in creating search spaces
+- support for custom tuning objectives
+- support for max_fevals and time_limit in strategy_options of all strategies
 
 ### Removed
-- Alternative Bayesian Optimization strategies that could not be used directly
+- alternative Bayesian Optimization strategies that could not be used directly
 - C++ wrapper module that was too specific and hardly used
+
+### Changed
+- string-based restrictions are compiled into functions for improved performance
+- genetic algorithm, MLS, ILS, random, and simulated annealing use new search space object
+- diff evo, firefly, PSO are initialized using population of all valid configurations
+- all strategies except brute_force strictly adhere to max_fevals and time_limit
+- simulated annealing adapts annealing schedule to max_fevals if supplied
+- minimize, basinhopping, and dual annealing start from a random valid config
 
 ## [0.4.1] - 2021-09-10
 ### Added

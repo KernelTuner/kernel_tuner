@@ -1,13 +1,24 @@
+### Project ###
+poetry.lock
+noxenv.txt
+noxsettings.toml
+hyperparamtuning/
+
+### Python ###
 *.pyc
 __pycache__
 doc/build/*
 doc/create_doc.sh
-*coverage*
+push_to_pypi.sh
+.coverage
 /dist
+/build
 *.egg-info
 .nfs*
 *.log
 *.json
+!kernel_tuner/schema/T1/1.0.0/input-schema.json
+!test/test_T1_input.json
 *.csv
 .cache
 *.ipynb_checkpoints
@@ -16,3 +27,18 @@ deploy_key
 *.mod
 temp_*.*
 .DS_Store
+.python-version
+.nox
+
+### Visual Studio Code ###
+!.vscode/settings.json
+!.vscode/extensions.json
+
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+.vscode
+.idea

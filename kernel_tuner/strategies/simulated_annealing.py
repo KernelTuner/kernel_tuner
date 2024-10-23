@@ -1,70 +1,63 @@
-""" The strategy that uses particle swarm optimization"""
-
-from __future__ import print_function
+"""The strategy that uses particle swarm optimization."""
 import random
+import sys
+
 import numpy as np
 
-from kernel_tuner.strategies.minimize import _cost_func
-from kernel_tuner.strategies.genetic_algorithm import random_val
+from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import CostFunc
 
+_options = dict(T=("Starting temperature", 1.0),
+                       T_min=("End temperature", 0.001),
+                       alpha=("Alpha parameter", 0.995),
+                       maxiter=("Number of iterations within each annealing step", 1))
 
-def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
-
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: dict
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
-
-    results = []
-
+def tune(searchspace: Searchspace, runner, tuning_options):
     # SA works with real parameter values and does not need scaling
-    tuning_options["scaling"] = False
-    args = (kernel_options, tuning_options, runner, results)
-    tune_params = tuning_options.tune_params
+    cost_func = CostFunc(searchspace, tuning_options, runner)
 
     # optimization parameters
-    T = tuning_options.strategy_options.get("T", 1.0)
-    T_min = tuning_options.strategy_options.get("T_min", 0.001)
-    alpha = tuning_options.strategy_options.get("alpha", 0.9)
-    niter = tuning_options.strategy_options.get("maxiter", 20)
+    T, T_min, alpha, niter = common.get_options(tuning_options.strategy_options, _options)
+    T_start = T
 
-    # generate random starting point and evaluate cost
-    pos = []
-    for i, _ in enumerate(tune_params.keys()):
-        pos.append(random_val(i, tune_params))
-    old_cost = _cost_func(pos, *args)
+    # compute how many iterations would be needed to complete the annealing schedule
+    max_iter = int(np.ceil(np.log(T_min)/np.log(alpha)))
 
-    if tuning_options.verbose:
-        c = 0
+    # if user supplied max_fevals that is lower then max_iter we will
+    # scale the annealing schedule to fit max_fevals
+    max_fevals = tuning_options.strategy_options.get("max_fevals", max_iter)
+
+    # limit max_fevals to max size of the parameter space
+    max_fevals = min(searchspace.size, max_fevals)
+
+    # get random starting point and evaluate cost
+    pos = list(searchspace.get_random_sample(1)[0])
+    old_cost = cost_func(pos, check_restrictions=False)
+
     # main optimization loop
+    stuck = 0
+    iteration = 0
+    c = 0
+    c_old = 0
+
     while T > T_min:
         if tuning_options.verbose:
-            print("iteration: ", c, "T", T, "cost: ", old_cost)
-            c += 1
+            print("iteration: ", iteration, "T", T, "cost: ", old_cost)
+            iteration += 1
 
-        for i in range(niter):
+        for _ in range(niter):
 
-            new_pos = neighbor(pos, tune_params)
-            new_cost = _cost_func(new_pos, *args)
+            new_pos = neighbor(pos, searchspace)
+            try:
+                new_cost = cost_func(new_pos, check_restrictions=False)
+            except util.StopCriterionReached as e:
+                if tuning_options.verbose:
+                    print(e)
+                return cost_func.results
 
-            ap = acceptance_prob(old_cost, new_cost, T)
+            ap = acceptance_prob(old_cost, new_cost, T, tuning_options)
             r = random.random()
 
             if ap > r:
@@ -73,46 +66,51 @@ def tune(runner, kernel_options, device_options, tuning_options):
                 pos = new_pos
                 old_cost = new_cost
 
-        T = T * alpha
+        c = len(tuning_options.unique_results)
+        T = T_start * alpha**(max_iter/max_fevals*c)
 
-    return results, runner.dev.get_environment()
+        # check if solver gets stuck and if so restart from random position
+        if c == c_old:
+            stuck += 1
+        else:
+            stuck = 0
+        c_old = c
+        if stuck > 100:
+            pos = list(searchspace.get_random_sample(1)[0])
+            stuck = 0
+
+        # safeguard
+        if iteration > 10*max_iter:
+            break
+
+    return cost_func.results
 
 
-def acceptance_prob(old_cost, new_cost, T):
-    """annealing equation, with modifications to work towards a lower value"""
+tune.__doc__ = common.get_strategy_docstring("Simulated Annealing", _options)
+
+def acceptance_prob(old_cost, new_cost, T, tuning_options):
+    """Annealing equation, with modifications to work towards a lower value."""
+    error_val = sys.float_info.max if not tuning_options.objective_higher_is_better else -sys.float_info.max
     # if start pos is not valid, always move
-    if old_cost == 1e20:
+    if old_cost == error_val:
         return 1.0
     # if we have found a valid ps before, never move to nonvalid pos
-    if new_cost == 1e20:
+    if new_cost == error_val:
         return 0.0
     # always move if new cost is better
     if new_cost < old_cost:
         return 1.0
     # maybe move if old cost is better than new cost depending on T and random value
+    if tuning_options.objective_higher_is_better:
+        return np.exp(((new_cost-old_cost)/new_cost)/T)
     return np.exp(((old_cost-new_cost)/old_cost)/T)
 
 
-def neighbor(pos, tune_params):
-    """return a random neighbor of pos"""
-    size = len(pos)
-    pos_out = []
-    # random mutation
-    # expected value is set that values all dimensions attempt to get mutated
-    for i in range(size):
-        key = list(tune_params.keys())[i]
-        values = tune_params[key]
-
-        if random.random() < 0.2:  # replace with random value
-            new_value = random_val(i, tune_params)
-        else:  # adjacent value
-            ind = values.index(pos[i])
-            if random.random() > 0.5:
-                ind += 1
-            else:
-                ind -= 1
-            ind = min(max(ind, 0), len(values)-1)
-            new_value = values[ind]
-
-        pos_out.append(new_value)
-    return pos_out
+def neighbor(pos, searchspace: Searchspace):
+    """Return a random neighbor of pos."""
+    # Note: this is not the same as the previous implementation, because it is possible that non-edge parameters remain the same, but suggested configurations will all be within restrictions
+    neighbors = searchspace.get_neighbors(tuple(pos), neighbor_method='Hamming') if random.random() < 0.2 else searchspace.get_neighbors(tuple(pos), neighbor_method='strictly-adjacent')
+    if len(neighbors) > 0:
+        return list(random.choice(neighbors))
+    # if there are no neighbors, return a random configuration
+    return list(searchspace.get_random_sample(1)[0])

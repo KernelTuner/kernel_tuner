@@ -1,57 +1,43 @@
-""" A greedy multi-start local search algorithm for parameter search """
-
+"""A greedy multi-start local search algorithm for parameter search."""
 from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
-from kernel_tuner.strategies.genetic_algorithm import random_population
 
-def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
+_options = dict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
+                       restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
+                       order=("set a user-specified order to search among dimensions while hillclimbing", None),
+                       randomize=("use a random order to search among dimensions while hillclimbing", True))
 
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     # retrieve options with defaults
     options = tuning_options.strategy_options
-    neighbor = options.get("neighbor", "Hamming")
-    restart = options.get("restart", True)
-    order = options.get("order", None)
-    randomize = options.get("randomize", True)
+    neighbor, restart, order, randomize = common.get_options(options, _options)
+
     max_fevals = options.get("max_fevals", 100)
 
-    tuning_options["scaling"] = False
-    tune_params = tuning_options.tune_params
+    cost_func = common.CostFunc(searchspace, tuning_options, runner)
 
     # limit max_fevals to max size of the parameter space
-    max_threads = runner.dev.max_threads
-    max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
+    max_fevals = min(searchspace.size, max_fevals)
 
     fevals = 0
-    all_results = []
-    unique_results = {}
 
     #while searching
     while fevals < max_fevals:
-        candidate = random_population(1, tune_params, tuning_options, max_threads)[0]
+        candidate = searchspace.get_random_sample(1)[0]
 
-        base_hillclimb(candidate, neighbor, max_fevals, all_results, unique_results, kernel_options, tuning_options, runner, restart=restart, randomize=randomize, order=order)
-        fevals = len(unique_results)
+        try:
+            base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=randomize, order=order)
+        except util.StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return cost_func.results
 
-    return all_results, runner.dev.get_environment()
+        fevals = len(tuning_options.unique_results)
+
+    return cost_func.results
+
+
+tune.__doc__ = common.get_strategy_docstring("Greedy Multi-start Local Search (MLS)", _options)

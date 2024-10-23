@@ -1,12 +1,16 @@
 /**
  * The kernel is assumed to be tuned to each device by selecting
- * the best performing combination of thread block dimensions 
+ * the best performing combination of thread block dimensions
  * and tiling factors in X and Y. In this implementation tiling
  * in X increases the amount of work per thread block and tiling
- * in Y increases the amount of work per thread within the block. 
- * 
+ * in Y increases the amount of work per thread within the block.
+ *
+ * WARNING: THIS KERNEL IS FOR EDUCATIONAL PURPOSES ONLY.
+ *          PLEASE *DO NOT USE IT* IN PRODUCTION, USE A BLAS
+ *          LIBRARY SUCH AS CUBLAS, CLBLAST OR CUTLASS INSTEAD.
+ *
  * @author Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>
- * 
+ *
  */
 
 #define WIDTH 4096
@@ -17,7 +21,7 @@
  * in: "Better performance at lower occupancy" by V. Volkov,
  * GPU Technology Conference, GTC 2010.
  *
- * The thread block dimensions (block_size_x, block_size_y) 
+ * The thread block dimensions (block_size_x, block_size_y)
  * and tiling factors (tile_size_x, tile_size_y) are to be
  * tuned towards each GPU. This kernel assumes that
  * block_size_x = block_size_y * tile_size_y.

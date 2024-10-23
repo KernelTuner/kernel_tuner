@@ -1,79 +1,57 @@
-""" A simple genetic algorithm for parameter search """
-
+"""A simple genetic algorithm for parameter search."""
 import random
+
 import numpy as np
 
-from kernel_tuner.strategies.minimize import _cost_func
 from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import CostFunc
 
-def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
+_options = dict(
+    popsize=("population size", 20),
+    maxiter=("maximum number of generations", 100),
+    method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
+    mutation_chance=("chance to mutate is 1 in mutation_chance", 10),
+)
 
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
 
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
-    pop_size = options.get("popsize", 20)
-    generations = options.get("maxiter", 50)
-    crossover = supported_methods[options.get("method", "uniform")]
-    mutation_chance = options.get("mutation_chance", 10)
+    pop_size, generations, method, mutation_chance = common.get_options(options, _options)
+    crossover = supported_methods[method]
 
-    max_fevals = options.get("max_fevals", 100)
+    best_score = 1e20
+    cost_func = CostFunc(searchspace, tuning_options, runner)
 
-    # limit max_fevals to max size of the parameter space
-    max_threads = runner.dev.max_threads
-    max_fevals = min(util.get_number_of_valid_configs(tuning_options, max_threads), max_fevals)
-
-    tuning_options["scaling"] = False
-    tune_params = tuning_options.tune_params
-
-    best_time = 1e20
-    all_results = []
-    unique_results = {}
-
-    population = random_population(pop_size, tune_params, tuning_options, max_threads)
+    population = list(list(p) for p in searchspace.get_random_sample(pop_size))
 
     for generation in range(generations):
 
         # determine fitness of population members
         weighted_population = []
         for dna in population:
-            time = _cost_func(dna, kernel_options, tuning_options, runner, all_results)
+            try:
+                time = cost_func(dna, check_restrictions=False)
+            except util.StopCriterionReached as e:
+                if tuning_options.verbose:
+                    print(e)
+                return cost_func.results
+
             weighted_population.append((dna, time))
 
         # population is sorted such that better configs have higher chance of reproducing
         weighted_population.sort(key=lambda x: x[1])
 
-        # 'best_time' is used only for printing
-        if tuning_options.verbose and all_results:
-            best_time = min(all_results, key=lambda x: x["time"])["time"]
+        # 'best_score' is used only for printing
+        if tuning_options.verbose and cost_func.results:
+            best_score = util.get_best_config(cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better)[tuning_options.objective]
 
         if tuning_options.verbose:
-            print("Generation %d, best_time %f" % (generation, best_time))
+            print("Generation %d, best_score %f" % (generation, best_score))
 
         population = []
-
-        unique_results.update({",".join([str(i) for i in dna]): time for dna, time in weighted_population})
-        if len(unique_results) >= max_fevals:
-            break
 
         # crossover and mutate
         while len(population) < pop_size:
@@ -82,9 +60,9 @@ def tune(runner, kernel_options, device_options, tuning_options):
             children = crossover(dna1, dna2)
 
             for child in children:
-                child = mutate(child, tune_params, mutation_chance, tuning_options, max_threads)
+                child = mutate(child, mutation_chance, searchspace)
 
-                if child not in population and util.config_valid(child, tuning_options, max_threads):
+                if child not in population and searchspace.is_param_config_valid(tuple(child)):
                     population.append(child)
 
                 if len(population) >= pop_size:
@@ -92,17 +70,14 @@ def tune(runner, kernel_options, device_options, tuning_options):
 
         # could combine old + new generation here and do a selection
 
+    return cost_func.results
 
 
-
-
-
-
-    return all_results, runner.dev.get_environment()
+tune.__doc__ = common.get_strategy_docstring("Genetic Algorithm", _options)
 
 
 def weighted_choice(population, n):
-    """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected"""
+    """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected."""
 
     def random_index_betavariate(pop_size):
         # has a higher probability of returning index of item at the head of the list
@@ -111,7 +86,7 @@ def weighted_choice(population, n):
         return int(random.betavariate(alpha, beta) * pop_size)
 
     def random_index_weighted(pop_size):
-        """use weights to increase probability of selection"""
+        """Use weights to increase probability of selection."""
         weights = [w for _, w in population]
         # invert because lower is better
         inverted_weights = [1.0 / w for w in weights]
@@ -133,61 +108,40 @@ def weighted_choice(population, n):
     return [population[ind][0] for ind in chosen]
 
 
-def random_population(pop_size, tune_params, tuning_options, max_threads):
-    """create a random population of pop_size unique members"""
-    population = []
-    option_space = np.prod([len(v) for v in tune_params.values()])
-    assert pop_size < option_space
-    while len(population) < pop_size:
-        dna = [random.choice(v) for v in tune_params.values()]
-        if not dna in population and util.config_valid(dna, tuning_options, max_threads):
-            population.append(dna)
-    return population
-
-
-def random_val(index, tune_params):
-    """return a random value for a parameter"""
-    key = list(tune_params.keys())[index]
-    return random.choice(tune_params[key])
-
-
-def mutate(dna, tune_params, mutation_chance, tuning_options, max_threads):
-    """Mutate DNA with 1/mutation_chance chance"""
-    dna_out = dna[:]
+def mutate(dna, mutation_chance, searchspace: Searchspace, cache=True):
+    """Mutate DNA with 1/mutation_chance chance."""
+    # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
     if int(random.random() * mutation_chance) == 0:
-        attempts = 20
-        while attempts > 0:
-            #decide which parameter to mutate
-            i = random.choice(range(len(dna)))
-            dna_out = dna[:]
-            dna_out[i] = random_val(i, tune_params)
-
-            if not dna_out == dna and util.config_valid(dna_out, tuning_options, max_threads):
-                return dna_out
-            attempts = attempts - 1
+        if cache:
+            neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
+        else:
+            neighbors = searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
+        if len(neighbors) > 0:
+            return list(random.choice(neighbors))
     return dna
 
 
 def single_point_crossover(dna1, dna2):
-    """crossover dna1 and dna2 at a random index"""
+    """Crossover dna1 and dna2 at a random index."""
+    # check if you can do the crossovers using the neighbor index: check which valid parameter configuration is closest to the crossover, probably best to use "adjacent" as it is least strict?
     pos = int(random.random() * (len(dna1)))
     return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
 
 
 def two_point_crossover(dna1, dna2):
-    """crossover dna1 and dna2 at 2 random indices"""
+    """Crossover dna1 and dna2 at 2 random indices."""
     if len(dna1) < 5:
         start, end = 0, len(dna1)
     else:
-        start, end = 1, len(dna1)-1
-    pos1, pos2 = sorted(random.sample(list(range(start,end)), 2))
+        start, end = 1, len(dna1) - 1
+    pos1, pos2 = sorted(random.sample(list(range(start, end)), 2))
     child1 = dna1[:pos1] + dna2[pos1:pos2] + dna1[pos2:]
     child2 = dna2[:pos1] + dna1[pos1:pos2] + dna2[pos2:]
     return (child1, child2)
 
 
 def uniform_crossover(dna1, dna2):
-    """randomly crossover genes between dna1 and dna2"""
+    """Randomly crossover genes between dna1 and dna2."""
     ind = np.random.random(len(dna1)) > 0.5
     child1 = [dna1[i] if ind[i] else dna2[i] for i in range(len(ind))]
     child2 = [dna2[i] if ind[i] else dna1[i] for i in range(len(ind))]
@@ -195,7 +149,7 @@ def uniform_crossover(dna1, dna2):
 
 
 def disruptive_uniform_crossover(dna1, dna2):
-    """disruptive uniform crossover
+    """Disruptive uniform crossover.
 
     uniformly crossover genes between dna1 and dna2,
     with children guaranteed to be different from parents,
@@ -221,5 +175,5 @@ supported_methods = {
     "single_point": single_point_crossover,
     "two_point": two_point_crossover,
     "uniform": uniform_crossover,
-    "disruptive_uniform": disruptive_uniform_crossover
+    "disruptive_uniform": disruptive_uniform_crossover,
 }

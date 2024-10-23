@@ -1,6 +1,11 @@
+.. _contributing:
+
 Contribution guide
 ==================
 Thank you for considering to contribute to Kernel Tuner!
+
+.. role:: bash(code)
+   :language: bash
 
 Reporting Issues
 ----------------
@@ -9,63 +14,46 @@ Not all contributions are code, creating an issue also helps us to improve. When
 * Describe what you expected to happen.
 * If possible, include a minimal example to help us reproduce the issue.
 * Describe what actually happened, including the output of any errors printed.
-* List the version of Python, CUDA or OpenCL, and C compiler, if applicable. 
+* List the version of Python, CUDA or OpenCL, and C compiler, if applicable.
 
 Contributing Code
 -----------------
 For contributing code to Kernel Tuner please select an issue to work on or create a new issue to propose a change or addition. For significant changes, it is required to first create an issue and discuss the proposed changes. Then fork the repository, create a branch, one per change or addition, and create a pull request.
 
-Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings for module public functions. Please use `pylint` to check your Python changes.
+Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings for module public functions.
 
 Before creating a pull request please ensure the following:
 
-* You have written unit tests to test your additions and all unit tests pass
+* You are working in an up-to-date development environment
+* You have written unit tests to test your additions and all unit tests pass (run :bash:`nox`). If you do not have the required hardware, you can run :bash:`nox -- skip-gpu`, or :bash:`skip-cuda`, :bash:`skip-hip`, :bash:`skip-opencl`.
 * The examples still work and produce the same (or better) results
-* The code is compatible with Python 3.5 or newer
-* You have run `pylint` to check your code
-* An entry about the change or addition is created in CHANGELOG.md
-* Any matching entries in the roadmap.md are updated/removed
+* An entry about the change or addition is created in :bash:`CHANGELOG.md`
 
 If you are in doubt on where to put your additions to the Kernel Tuner, please
-have look at the `design documentation
-<http://benvanwerkhoven.github.io/kernel_tuner/design.html>`__, or discuss it in the issue regarding your additions.
+have look at the :ref:`design documentation <design documentation>`, or discuss it in the issue regarding your additions.
 
-Development setup
------------------
-You can install the packages required to run the tests using:
+.. _simple-dev-env:
 
-.. code-block:: bash
+Simple development setup
+------------------------
 
-    pip install -e .[dev]
+For small changes to the code you can setup a quick development environment with the following steps:
 
-After this command you should be able to run the tests and build the documentation.
-See below on how to do that. The ``-e`` flag installs the package in *development mode*.
-This means files are not copied, but linked to, such that your installation tracks
-changes in the source files.
+* :bash:`git clone git@github.com:KernelTuner/kernel_tuner.git`
+* :bash:`cd kernel_tuner`
+* :bash:`pip install -e .`
 
-Running tests
--------------
-To run the tests you can use ``pytest -v test/`` in the top-level directory.
+To run the tests in your local Python environment:
 
-Note that tests that require PyCuda and/or a CUDA capable GPU will be skipped if these
-are not installed/present. The same holds for tests that require PyOpenCL.
+* :bash:`pip install -r doc/requirements_test.txt`
+* :bash:`pytest -v test`
 
-Contributions you make to the Kernel Tuner should not break any of the tests
-even if you cannot run them locally.
+To build the documentation locally:
 
-The examples can be seen as *integration tests* for the Kernel Tuner. Note that
-these will also use the installed package.
+* :bash:`pip install -r doc/requirements.txt`
+* :bash:`cd doc`
+* :bash:`make html`
 
-Building documentation
-----------------------
-Documentation is located in the ``doc/`` directory. This is where you can type
-``make html`` to generate the html pages in the ``doc/build/html`` directory.
+These instructions should be enough for most small contributions. 
+For larger changes, or when you need to change the dependencies of Kernel Tuner, please see the documentation on setting up a `full development environment <https://kerneltuner.github.io/kernel_tuner/latest/dev-environment.html>`_.
 
-The source files used for building the documentation are located in
-``doc/source``. The tutorials should be included in the ``tutorials/`` directory
-and a symlink can be used to add them to the source file directory before building
-documentation.
-
-To update the documentation pages hosted on the GitHub the generated contents of
-``doc/build/html`` should be copied to the top-level directory of the
-``gh-pages`` branch.

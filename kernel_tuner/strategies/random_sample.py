@@ -1,51 +1,37 @@
-""" Iterate over a random sample of the parameter space """
-from __future__ import print_function
-
-import itertools
-import numpy
+"""Iterate over a random sample of the parameter space."""
+import numpy as np
 
 from kernel_tuner import util
-from time import perf_counter
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import CostFunc
+
+_options = dict(fraction=("Fraction of the search space to cover value in [0, 1]", 0.1))
 
 
-def tune(runner, kernel_options, device_options, tuning_options):
-    """ Tune a random sample of sample_fraction fraction in the parameter space
+def tune(searchspace: Searchspace, runner, tuning_options):
+    # get the samples
+    fraction = common.get_options(tuning_options.strategy_options, _options)[0]
+    assert 0 <= fraction <= 1.0
+    num_samples = int(np.ceil(searchspace.size * fraction))
 
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
+    # override if max_fevals is specified
+    if "max_fevals" in tuning_options:
+        num_samples = min(tuning_options.max_fevals, searchspace.size)
 
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: kernel_tuner.interface.Options
+    samples = searchspace.get_random_sample(num_samples)
 
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: kernel_tuner.interface.Options
+    cost_func = CostFunc(searchspace, tuning_options, runner)
 
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: kernel_tuner.interface.Options
+    for sample in samples:
+        try:
+            cost_func(sample, check_restrictions=False)
+        except util.StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return cost_func.results
 
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
+    return cost_func.results
 
-    """
 
-    tune_params = tuning_options.tune_params
-
-    fraction = tuning_options.strategy_options.get("fraction", 0.1)
-
-    parameter_space = util.get_valid_configs(tuning_options, runner.dev.max_threads)
-
-    # reduce parameter space to a random sample using sample_fraction
-    parameter_space = numpy.array(parameter_space)
-    size = len(parameter_space)
-    fraction = int(numpy.ceil(size * fraction))
-    sample_indices = numpy.random.choice(range(size), size=fraction, replace=False)
-    parameter_space = parameter_space[sample_indices]
-
-    # call the runner
-    results, env = runner.run(parameter_space, kernel_options, tuning_options)
-
-    return results, env
+tune.__doc__ = common.get_strategy_docstring("Random Sampling", _options)

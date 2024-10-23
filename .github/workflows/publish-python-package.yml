@@ -1,0 +1,56 @@
+# This workflow checks out a new release, builds it as a package (source and wheel) and publishes it to PyPI.
+
+name: Publish Package
+
+# Controls when the workflow will run
+on:
+    # Workflow will run when a release has been published for the package
+    release:
+        types:
+            - published
+
+    # Allows you to run this workflow manually from the Actions tab
+    workflow_dispatch:
+
+jobs:
+    build_and_publish_as_package:
+        name: Package and upload release to PyPI
+        runs-on: ubuntu-latest
+        environment:
+            name: pypi
+            url: https://pypi.org/p/kernel_tuner
+        permissions:
+            id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: "3.12"
+            - name: Setup Poetry
+              uses: Gr1N/setup-poetry@v9
+            - name: Build the source distribution and pure-Python wheel
+              run: |
+                  poetry install
+                  poetry build
+                  ls ./dist
+            - name: Check that the number of wheels is as expected and there is one source distribution
+              run: |
+                  SOURCES_COUNT=$(ls -lR ./dist/*.tar.gz | wc -l)
+                  echo "Number of source distributions: $SOURCES_COUNT"
+                  if [ "$SOURCES_COUNT" -ne 1 ]; then
+                    echo "::error::Number of source distributions $SOURCES_COUNT not equal to 1"
+                    exit 1;
+                  fi
+
+                  EXPECTED_WHEELS_COUNT=1
+                  WHEELS_COUNT=$(ls -lR ./dist/*.whl | wc -l)
+                  echo "Number of wheel distributions: $WHEELS_COUNT"
+                  if [ "$WHEELS_COUNT" -ne "$EXPECTED_WHEELS_COUNT" ]; then
+                    echo "::error::Number of wheel distributions $WHEELS_COUNT not equal to $EXPECTED_WHEELS_COUNT"
+                    exit 1;
+                  fi
+            - name: Publish package distributions to PyPI
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  skip-existing: true

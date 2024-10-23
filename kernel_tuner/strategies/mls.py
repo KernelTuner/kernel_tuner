@@ -1,37 +1,21 @@
-""" The strategy that uses multi-start local search """
-import itertools
-import random
-
-from kernel_tuner import util
-from kernel_tuner.strategies.minimize import _cost_func
+"""The strategy that uses multi-start local search."""
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
 from kernel_tuner.strategies.greedy_mls import tune as mls_tune
 
-def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
+_options = dict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
+                       restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", False),
+                       order=("set a user-specified order to search among dimensions while hillclimbing", None),
+                       randomize=("use a random order to search among dimensions while hillclimbing", True))
 
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
+def tune(searchspace: Searchspace, runner, tuning_options):
 
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
+    # Default MLS uses 'best improvement' hillclimbing, so greedy hillclimbing is disabled with restart defaulting to False
+    _, restart, _, _ = common.get_options(tuning_options.strategy_options, _options)
 
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: dict
+    # Delegate to greedy_mls.tune() but make sure restart uses our default, if not overwritten by the user
+    tuning_options.strategy_options["restart"] = restart
+    return mls_tune(searchspace, runner, tuning_options)
 
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
 
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
-
-    # Default MLS uses 'best improvement' hillclimbing, so disable greedy hillclimbing
-    options = tuning_options.strategy_options
-    options["restart"] = False
-    options["neighbor"] = "Hamming"
-    return mls_tune(runner, kernel_options, device_options, tuning_options)
+tune.__doc__ = common.get_strategy_docstring("Multi-start Local Search (MLS)", _options)

@@ -1,73 +1,62 @@
-""" The strategy that uses particle swarm optimization"""
-
-from __future__ import print_function
-from __future__ import division
+"""The strategy that uses particle swarm optimization."""
 import random
+import sys
+
 import numpy as np
 
-from kernel_tuner.strategies.minimize import _cost_func, get_bounds_x0_eps
+from kernel_tuner import util
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies import common
+from kernel_tuner.strategies.common import CostFunc, scale_from_params
 
-def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
+_options = dict(popsize=("Population size", 20),
+                       maxiter=("Maximum number of iterations", 100),
+                       w=("Inertia weight constant", 0.5),
+                       c1=("Cognitive constant", 2.0),
+                       c2=("Social constant", 1.0))
 
-    :params runner: A runner from kernel_tuner.runners
-    :type runner: kernel_tuner.runner
-
-    :param kernel_options: A dictionary with all options for the kernel.
-    :type kernel_options: dict
-
-    :param device_options: A dictionary with all options for the device
-        on which the kernel should be tuned.
-    :type device_options: dict
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
-
-    :returns: A list of dictionaries for executed kernel configurations and their
-        execution times. And a dictionary that contains a information
-        about the hardware/software environment on which the tuning took place.
-    :rtype: list(dict()), dict()
-
-    """
-
-    results = []
+def tune(searchspace: Searchspace, runner, tuning_options):
 
     #scale variables in x because PSO works with velocities to visit different configurations
-    tuning_options["scaling"] = True
+    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
     #using this instead of get_bounds because scaling is used
-    bounds, _, _ = get_bounds_x0_eps(tuning_options)
+    bounds, _, eps = cost_func.get_bounds_x0_eps()
 
-    args = (kernel_options, tuning_options, runner, results)
 
-    num_particles = tuning_options.strategy_options.get("popsize", 20)
-    maxiter = tuning_options.strategy_options.get("maxiter", 100)
+    num_particles, maxiter, w, c1, c2 = common.get_options(tuning_options.strategy_options, _options)
 
-    w = tuning_options.strategy_options.get("w", 0.5)       # inertia constant
-    c1 = tuning_options.strategy_options.get("c1", 2.0)     # cognitive constant
-    c2 = tuning_options.strategy_options.get("c2", 1.0)     # social constant
-
-    best_time_global = 1e20
+    best_score_global = sys.float_info.max
     best_position_global = []
 
     # init particle swarm
     swarm = []
     for i in range(0, num_particles):
-        swarm.append(Particle(bounds, args))
+        swarm.append(Particle(bounds))
 
+    # ensure particles start from legal points
+    population = list(list(p) for p in searchspace.get_random_sample(num_particles))
+    for i, particle in enumerate(swarm):
+        particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+
+    # start optimization
     for i in range(maxiter):
         if tuning_options.verbose:
-            print("start iteration ", i, "best time global", best_time_global)
+            print("start iteration ", i, "best time global", best_score_global)
 
         # evaluate particle positions
         for j in range(num_particles):
-            swarm[j].evaluate(_cost_func)
+            try:
+                swarm[j].evaluate(cost_func)
+            except util.StopCriterionReached as e:
+                if tuning_options.verbose:
+                    print(e)
+                return cost_func.results
 
             # update global best if needed
-            if swarm[j].time <= best_time_global:
+            if swarm[j].score <= best_score_global:
                 best_position_global = swarm[j].position
-                best_time_global = swarm[j].time
+                best_score_global = swarm[j].score
 
         # update particle velocities and positions
         for j in range(0, num_particles):
@@ -77,28 +66,29 @@ def tune(runner, kernel_options, device_options, tuning_options):
     if tuning_options.verbose:
         print('Final result:')
         print(best_position_global)
-        print(best_time_global)
+        print(best_score_global)
 
-    return results, runner.dev.get_environment()
+    return cost_func.results
 
+
+tune.__doc__ = common.get_strategy_docstring("Particle Swarm Optimization (PSO)", _options)
 
 class Particle:
-    def __init__(self, bounds, args):
+    def __init__(self, bounds):
         self.ndim = len(bounds)
-        self.args = args
 
         self.velocity = np.random.uniform(-1, 1, self.ndim)
         self.position = np.random.uniform([b[0] for b in bounds], [b[1] for b in bounds])
         self.best_pos = self.position
-        self.best_time = 1e20
-        self.time = 1e20
+        self.best_score = sys.float_info.max
+        self.score = sys.float_info.max
 
     def evaluate(self, cost_func):
-        self.time = cost_func(self.position, *self.args)
+        self.score = cost_func(self.position)
         # update best_pos if needed
-        if self.time < self.best_time:
+        if self.score < self.best_score:
             self.best_pos = self.position
-            self.best_time = self.time
+            self.best_score = self.score
 
     def update_velocity(self, best_position_global, w, c1, c2):
         r1 = random.random()

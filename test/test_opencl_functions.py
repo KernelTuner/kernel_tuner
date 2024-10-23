@@ -1,10 +1,11 @@
 import numpy as np
-from .context import skip_if_no_opencl
-
-from kernel_tuner import opencl
-from kernel_tuner.core import KernelSource, KernelInstance
-
 import pytest
+
+import kernel_tuner
+from kernel_tuner.backends import opencl
+from kernel_tuner.core import KernelInstance, KernelSource
+
+from .context import skip_if_no_opencl
 
 try:
     import pyopencl
@@ -49,33 +50,10 @@ def test_compile():
     kernel_string = original_kernel.replace("shared_size", str(1024))
     kernel_instance = KernelInstance("sum", kernel_sources, kernel_string, [], None, None, dict(), [])
 
-    with opencl.OpenCLFunctions(0) as dev:
-        func = dev.compile(kernel_instance)
+    dev = opencl.OpenCLFunctions(0)
+    func = dev.compile(kernel_instance)
 
-        assert isinstance(func, pyopencl.Kernel)
-
-
-def fun_test(queue, a, b, block=0, grid=0):
-    profile = type('profile', (object,), {'end': 0.1, 'start': 0})
-    return type(
-        'Event', (object,), {'wait': lambda self: 0, 'profile': profile(), 'get_info': lambda x,y: 0})()
-
-
-@pytest.fixture
-def create_benchmark_args():
-    with opencl.OpenCLFunctions(0) as dev:
-        args = [1, 2]
-        times = tuple(range(1, 4))
-
-        yield dev, args, times
-
-
-@skip_if_no_opencl
-def test_benchmark(create_benchmark_args):
-    dev, args, times = create_benchmark_args
-    res = dev.benchmark(fun_test, args, times, times)
-    assert res["time"] > 0
-    assert len(res["times"]) == dev.iterations
+    assert isinstance(func, pyopencl.Kernel)
 
 
 @skip_if_no_opencl
@@ -87,5 +65,37 @@ def test_run_kernel():
     def test_func(queue, global_size, local_size, arg):
         assert all(global_size == np.array([4, 10, 3]))
         return type('Event', (object,), {'wait': lambda self: 0})()
-    with opencl.OpenCLFunctions(0) as dev:
-        dev.run_kernel(test_func, [0], threads, grid)
+    dev = opencl.OpenCLFunctions(0)
+    dev.run_kernel(test_func, [0], threads, grid)
+
+
+@pytest.fixture
+def env():
+    kernel_string = """
+        __kernel void vector_add(__global float *c, __global const float *a, __global const float *b, int n) {
+            int i = get_global_id(0);
+            if (i<n) {
+                c[i] = a[i] + b[i];
+            }
+        }"""
+
+    size = 100
+    a = np.random.randn(size).astype(np.float32)
+    b = np.random.randn(size).astype(np.float32)
+    c = np.zeros_like(b)
+    n = np.int32(size)
+
+    args = [c, a, b, n]
+    tune_params = dict()
+    tune_params["block_size_x"] = [32, 64, 128]
+
+    return ["vector_add", kernel_string, size, args, tune_params]
+
+
+@skip_if_no_opencl
+def test_benchmark(env):
+    results, _ = kernel_tuner.tune_kernel(*env)
+    assert len(results) == 3
+    assert all(["block_size_x" in result for result in results])
+    assert all(["time" in result for result in results])
+    assert all([result["time"] > 0.0 for result in results])

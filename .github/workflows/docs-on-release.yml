@@ -1,0 +1,52 @@
+name: Build versioned documentation on release
+
+on:
+    release:
+        types: [published]
+
+    # Allows you to run this workflow manually from the Actions tab
+    workflow_dispatch:
+
+jobs:
+    build:
+        environment: dev_environment
+        runs-on: ubuntu-latest
+        steps:
+            - name: Get Python 3.10
+              uses: actions/setup-python@v4
+              with:
+                  python-version: "3.10"
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
+            - name: Get version set env, exit if beta release
+              run: |
+                  echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+                  if [[ "$RELEASE_VERSION" == *"b"* ]]; then
+                    echo "Version is a beta release. Cancel workflow."
+                    exit 0
+                  fi
+            - name: Install dependencies
+              run: |
+                  sudo apt-get update;
+                  sudo apt-get install pandoc;
+                  pip install -e .
+            - name: Build and Commit
+              uses: sphinx-notes/pages@v2
+              with:
+                  requirements_path: doc/requirements.txt
+                  documentation_path: doc/source
+                  target_path: ${{ env.RELEASE_VERSION }}
+            - name: Redirect stable to new release
+              run: |
+                  echo "Redirecting stable to newly released version " $RELEASE_VERSION
+                  rm -rf stable
+                  ln -s $RELEASE_VERSION stable
+                  git add stable
+                  git commit -m "redirect stable to new version $RELEASE_VERSION"
+            - name: Push changes
+              uses: ad-m/github-push-action@master
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  branch: gh-pages

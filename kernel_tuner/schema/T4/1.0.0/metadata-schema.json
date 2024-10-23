@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/odgaard/TuningSchema/blob/T4/metadata-schema.json",
+  "title": "Open Autotuning Metadata Schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "description": "The version number of the schema in major.minor.patch format.",
+      "type": "string",
+      "pattern": "^[0-9]{1,}.[0-9]{1,}.[0-9]{1,}$",
+      "example": "1.0.0"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "zenodo": {
+          "type": "object",
+          "description": "The zenodo metadata used to publish the artifact"
+        },
+        "hardware": {
+          "type": "object",
+          "properties": {
+            "hardware_description": {
+              "type": "array",
+              "description": "The hardware description in JSON, OS-dependent (e.g. lshw on Linux)"
+            },
+            "operating_system": {
+              "type": "string",
+              "description": "The operating system used"
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "properties": {
+            "device_query": {
+              "type": "object",
+              "description": "The output from tools such as nvidia-smi as JSON"
+            },
+            "requirements": {
+              "type": "array",
+              "description": "the python libraries used as a list of strings"
+            }
+          }
+        }
+      }
+    }
+  }
+}

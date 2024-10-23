@@ -24,10 +24,11 @@ objective_default_map = {
 def get_objective_defaults(objective, objective_higher_is_better):
     """ Uses time as default objective and attempts to lookup objective_higher_is_better for known objectives """
     objective = objective or "time"
-    if objective_higher_is_better is None and objective in objective_default_map:
-        objective_higher_is_better = objective_default_map[objective]
-    else:
-        raise ValueError(f"Please specify objective_higher_is_better for objective {objective}")
+    if objective_higher_is_better is None:
+        if objective in objective_default_map:
+            objective_higher_is_better = objective_default_map[objective]
+        else:
+            raise ValueError(f"Please specify objective_higher_is_better for objective {objective}")
     return objective, objective_higher_is_better
 
 schema_v1_0 = {

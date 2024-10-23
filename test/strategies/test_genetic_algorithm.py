@@ -1,18 +1,17 @@
-from collections import OrderedDict
+from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import genetic_algorithm as ga
-from kernel_tuner.interface import Options
 
-tune_params = OrderedDict()
+tune_params = dict()
 tune_params["x"] = [1, 2, 3]
 tune_params["y"] = [4, 5, 6]
 
-tuning_options = Options(dict(restrictions=[], tune_params= tune_params))
 max_threads = 1024
+searchspace = Searchspace(tune_params, [], max_threads)
 
 
 def test_weighted_choice():
     pop_size = 5
-    pop = ga.random_population(pop_size, tune_params, tuning_options, max_threads)
+    pop = searchspace.get_random_sample(pop_size)
     weighted_pop = [[p, i] for i, p in enumerate(pop)]
 
     result = ga.weighted_choice(weighted_pop, 1)
@@ -27,7 +26,7 @@ def test_weighted_choice():
 
 def test_random_population():
     pop_size = 8
-    pop = ga.random_population(pop_size, tune_params, tuning_options, max_threads)
+    pop = searchspace.get_random_sample(pop_size)
 
     assert len(pop) == pop_size
     assert len(pop[0]) == 2
@@ -41,18 +40,10 @@ def test_random_population():
                 assert dna1 != dna2
 
 
-def test_random_val():
-    val0 = ga.random_val(0, tune_params)
-    assert val0 in tune_params["x"]
-
-    val1 = ga.random_val(1, tune_params)
-    assert val1 in tune_params["y"]
-
-
 def test_mutate():
-    pop = ga.random_population(1, tune_params, tuning_options, max_threads)
+    pop = searchspace.get_random_sample(1)
 
-    mutant = ga.mutate(pop[0], tune_params, 10, tuning_options, max_threads)
+    mutant = ga.mutate(pop[0], 10, searchspace)
     assert len(pop[0]) == len(mutant)
     assert mutant[0] in tune_params["x"]
     assert mutant[1] in tune_params["y"]

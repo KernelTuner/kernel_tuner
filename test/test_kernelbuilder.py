@@ -1,10 +1,13 @@
 import numpy as np
-from .context import skip_if_no_cuda
+from .context import skip_backend
 
 import pytest
 from kernel_tuner import kernelbuilder
 from kernel_tuner import util
 from kernel_tuner import integration
+
+
+backends = ["cuda", "cupy"]
 
 
 @pytest.fixture()
@@ -23,16 +26,18 @@ def test_kernel():
     return "vector_add", kernel_string, n, [c, a, b, n], params
 
 
-@skip_if_no_cuda
-def test_PythonKernel(test_kernel):
+@pytest.mark.parametrize("backend", backends)
+def test_PythonKernel(test_kernel, backend):
+    skip_backend(backend)
     kernel_name, kernel_string, n, args, params = test_kernel
-    kernel_function = kernelbuilder.PythonKernel(*test_kernel)
+    kernel_function = kernelbuilder.PythonKernel(*test_kernel, lang=backend)
     reference = kernel_function(*args)
     assert np.allclose(reference[0], args[1]+args[2])
 
 
-@skip_if_no_cuda
-def test_PythonKernel_tuned(test_kernel):
+@pytest.mark.parametrize("backend", backends)
+def test_PythonKernel_tuned(test_kernel, backend):
+    skip_backend(backend)
     kernel_name, kernel_string, n, args, params = test_kernel
     c, a, b, n = args
     test_results_file = "test_results_file.json"
@@ -44,7 +49,7 @@ def test_PythonKernel_tuned(test_kernel):
         integration.store_results(test_results_file, kernel_name, kernel_string, params, n, [results], env)
 
         #create a kernel using the results
-        kernel_function = kernelbuilder.PythonKernel(kernel_name, kernel_string, n, args, results_file=test_results_file)
+        kernel_function = kernelbuilder.PythonKernel(kernel_name, kernel_string, n, args, results_file=test_results_file, lang=backend)
 
         #test if params were retrieved correctly
         assert kernel_function.params["block_size_x"] == 384
