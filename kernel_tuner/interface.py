@@ -50,6 +50,10 @@ except ImportError:
 from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
+    bayes_opt_alt_BOTorch,
+    bayes_opt_GPyTorch,
+    bayes_opt_GPyTorch_lean,
+    bayes_opt_old,
     brute_force,
     diff_evo,
     dual_annealing,

@@ -47,7 +47,8 @@ except Exception:
     cupy_present = False
 
 try:
-
+    import cuda
+    print(cuda)
     cuda_present = True
 except Exception:
     cuda_present = False
