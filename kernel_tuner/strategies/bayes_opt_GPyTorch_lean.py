@@ -1,22 +1,53 @@
-""" Lean implementation of Bayesian Optimization with GPyTorch """
+"""Lean implementation of Bayesian Optimization with GPyTorch."""
 # python
-from copy import deepcopy
-from typing import Tuple
-from random import randint, shuffle, choice
-from math import ceil
+import ast  # for casting strings to dict
 import warnings
-import ast    # for casting strings to dict
+from copy import deepcopy
+from math import ceil
+from random import choice, randint, shuffle
+from typing import Tuple
 
 # external
 import numpy as np
 from numpy.random import default_rng
-import torch
-import gpytorch
-import arviz as az
 
-# internal
-from kernel_tuner.util import get_valid_configs
-from kernel_tuner.strategies import minimize
+from kernel_tuner.runners.runner import Runner
+from kernel_tuner.searchspace import Searchspace
+
+# optional
+try:
+    import gpytorch
+    import torch
+    # import arviz as az
+    bayes_opt_present = True
+
+    from torch import Tensor
+
+    class ExactGPModel(gpytorch.models.ExactGP):
+        def __init__(self, train_x, train_y, likelihood, cov_kernel_name: str, cov_kernel_lengthscale: float):
+            super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+            self.mean_module = gpytorch.means.ZeroMean()
+            if cov_kernel_name == 'matern':
+                self.covar_module = gpytorch.kernels.MaternKernel(nu=cov_kernel_lengthscale)
+            elif cov_kernel_name == 'matern_scalekernel':
+                self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=cov_kernel_lengthscale))
+
+        def forward(self, x):
+            mean_x = self.mean_module(x)
+            covar_x = self.covar_module(x)
+            return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+except ImportError:
+    bayes_opt_present = False
+
+    class Tensor():
+        pass
+
+    class ExactGPModel():
+        def __init__(self, train_x, train_y, likelihood):
+            raise ImportError("GPyTorch not imported")
+        def forward(self, x):
+            raise ImportError("GPyTorch not imported")
+
 
 # set supported hyperparameter values
 supported_precisions = ['float', 'double']
@@ -39,8 +70,8 @@ def default_optimizer_learningrates(key):
     return defaults[key]
 
 
-def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
+def tune(searchspace: Searchspace, runner: Runner, tuning_options):
+    """Find the best performing kernel configuration in the parameter space.
 
     :params runner: A runner from kernel_tuner.runners
     :type runner: kernel_tuner.runner
@@ -62,6 +93,10 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :rtype: list(dict()), dict()
 
     """
+    if not bayes_opt_present:
+        raise ImportError(
+            "Error: optional dependencies for Bayesian Optimization not installed, please install torch and gpytorch"
+        )
 
     # set CUDA availability
     use_cuda = False
@@ -75,14 +110,13 @@ def tune(runner, kernel_options, device_options, tuning_options):
     optimization_direction = options.get("optimization_direction", 'min')
     num_initial_samples = int(options.get("popsize", 20))
     max_fevals = int(options.get("max_fevals", 220))
-    max_threads = runner.dev.max_threads
 
     # enabling scaling will unscale and snap inputs on evaluation, more efficient to scale all at once and keep unscaled values
     tuning_options["snap"] = False
     tuning_options["scaling"] = False
 
     # prune the search space using restrictions
-    parameter_space = get_valid_configs(tuning_options, max_threads)
+    parameter_space = searchspace.list.copy()
 
     # limit max_fevals to max size of the parameter space
     max_fevals = min(len(parameter_space), max_fevals)
@@ -92,32 +126,16 @@ def tune(runner, kernel_options, device_options, tuning_options):
         )
 
     # execute Bayesian Optimization
-    BO = BayesianOptimization(parameter_space, kernel_options, tuning_options, runner, num_initial_samples, optimization_direction, device)
+    BO = BayesianOptimization(parameter_space, tuning_options, runner, num_initial_samples, optimization_direction, device)
     all_results = BO.optimize(max_fevals)
 
     return all_results, runner.dev.get_environment()
 
 
-class ExactGPModel(gpytorch.models.ExactGP):
-
-    def __init__(self, train_x, train_y, likelihood, cov_kernel_name: str, cov_kernel_lengthscale: float):
-        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
-        self.mean_module = gpytorch.means.ZeroMean()
-        if cov_kernel_name == 'matern':
-            self.covar_module = gpytorch.kernels.MaternKernel(nu=cov_kernel_lengthscale)
-        elif cov_kernel_name == 'matern_scalekernel':
-            self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=cov_kernel_lengthscale))
-
-    def forward(self, x):
-        mean_x = self.mean_module(x)
-        covar_x = self.covar_module(x)
-        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-
-
 class BayesianOptimization:
 
-    def __init__(self, parameter_space: list, kernel_options, tuning_options, runner, num_initial_samples: int, optimization_direction: str,
-                 device: torch.device) -> None:
+    def __init__(self, parameter_space: list, tuning_options, runner: Runner, num_initial_samples: int, optimization_direction: str,
+                 device) -> None:
         self.animate = False    # TODO remove
 
         # set defaults
@@ -128,7 +146,6 @@ class BayesianOptimization:
         self.current_optimal_config = None
 
         # set Kernel Tuner data
-        self.kernel_options = kernel_options
         self.tuning_options = tuning_options
         self.runner = runner
         self.max_threads = runner.dev.max_threads
@@ -157,7 +174,7 @@ class BayesianOptimization:
         self.af_params = af_params
 
         # set Tensors
-        self.device = device
+        self.device: torch.device = device
         self.out_device = torch.device("cpu")
         self.size = len(parameter_space)
         self.index_counter = torch.arange(self.size)
@@ -216,12 +233,12 @@ class BayesianOptimization:
 
     @property
     def train_x(self):
-        """ Get the valid parameter configurations """
+        """Get the valid parameter configurations."""
         return self.param_configs_scaled[self.valid_configs].to(self.device)
 
     @property
     def train_y(self):
-        """ Get the valid results """
+        """Get the valid results."""
         outputs = self.results[self.valid_configs]
         if self.scaled_output:
             # z-score, remove mean and make unit variance to scale it to N(0,1)
@@ -231,7 +248,7 @@ class BayesianOptimization:
 
     @property
     def train_y_err(self):
-        """ Get the error on the valid results """
+        """Get the error on the valid results."""
         std = self.results_std[self.valid_configs]
         if self.scaled_output and std.std() > 0.0:
             std = (std - std.mean()) / std.std()    # use z-score to get normalized variability
@@ -239,39 +256,39 @@ class BayesianOptimization:
 
     @property
     def test_x(self):
-        """ Get the not yet visited parameter configurations """
+        """Get the not yet visited parameter configurations."""
         return self.param_configs_scaled[self.unvisited_configs].to(self.device)
 
     @property
     def test_x_unscaled(self):
-        """ Get the unscaled, not yet visited parameter configurations """
+        """Get the unscaled, not yet visited parameter configurations."""
         return self.param_configs[self.unvisited_configs]
 
     @property
     def test_y_err(self):
-        """ Get the expected error on the test set """
+        """Get the expected error on the test set."""
         train_y_err = self.train_y_err
         return torch.full((self.size - len(train_y_err), ), torch.mean(train_y_err))
 
     @property
     def invalid_x(self):
-        """ Get the invalid parameter configurations by checking which visited configs are not valid (equivalent to checking which unvisited configs are valid) """
+        """Get the invalid parameter configurations by checking which visited configs are not valid (equivalent to checking which unvisited configs are valid)."""
         invalid_mask = (self.unvisited_configs == self.valid_configs)
         return self.param_configs[invalid_mask]
 
     def true_param_config_index(self, target_index: int) -> int:
-        """ The index required to get the true config param index when dealing with test_x """
+        """The index required to get the true config param index when dealing with test_x."""
         # get the index of the #index-th True (for example the 9th+1 True could be index 13 because there are 4 Falses in between)
         masked_counter = self.index_counter[self.unvisited_configs]
         return masked_counter[target_index]
 
-    def true_param_config_indices(self, target_indices: torch.Tensor) -> torch.Tensor:
-        """ Same as true_param_config_index, but for an array of targets instead. """
+    def true_param_config_indices(self, target_indices: Tensor) -> Tensor:
+        """Same as true_param_config_index, but for an array of targets instead."""
         masked_counter = self.index_counter[self.unvisited_configs]
         return masked_counter.index_select(0, target_indices)
 
     def initialize_model(self, take_initial_sample=True, train_hyperparams=True):
-        """ Initialize the surrogate model """
+        """Initialize the surrogate model."""
         # self.initial_sample_std = self.min_std
         if take_initial_sample:
             self.initial_sample()
@@ -311,7 +328,7 @@ class BayesianOptimization:
             self.train_hyperparams(0)
 
     def import_cached_evaluations(self):
-        """ Import the previously evaluated configurations into this run """
+        """Import the previously evaluated configurations into this run."""
         # make strings of all the parameter configurations in the search space
         param_config_strings = list()
         for param_config in self.true_param_configs:
@@ -329,7 +346,7 @@ class BayesianOptimization:
         print(f"Imported {len(self.all_results)} previously evaluated configurations.")
 
     def initial_sample(self):
-        """ Take an initial sample of the parameter space """
+        """Take an initial sample of the parameter space."""
         list_param_config_indices = list(self.index_counter[~self.unvisited_configs])
 
         # generate a random offset from a normal distribution to add to the sample indices
@@ -378,8 +395,8 @@ class BayesianOptimization:
         # save a boolean mask of the initial samples
         self.inital_sample_configs = self.valid_configs.detach().clone()
 
-    def get_lhs_samples(self, random_offsets: np.ndarray) -> torch.Tensor:
-        """ Get a centered Latin Hypercube Sample with a random offset """
+    def get_lhs_samples(self, random_offsets: np.ndarray) -> Tensor:
+        """Get a centered Latin Hypercube Sample with a random offset."""
         n_samples = self.num_initial_samples - self.fevals
 
         # first get the seperate parameter values to make possibly fictional distributed parameter configurations
@@ -444,7 +461,7 @@ class BayesianOptimization:
         return param_configs_indices
 
     def take_min_max_initial_samples(self, list_param_config_indices: list, samples_per_parameter=1) -> list:
-        """ Take the minimum parameters and the maximum for each parameter to establish the effect of individual parameters """
+        """Take the minimum parameters and the maximum for each parameter to establish the effect of individual parameters."""
         # number of samples required is at least (samples_per_parameter) * (number of parameters) + 1
 
         # first get the individual parameter values and sort them
@@ -524,7 +541,7 @@ class BayesianOptimization:
         return list_param_config_indices
 
     def get_middle_index_of_least_evaluated_region(self) -> int:
-        """ Get the middle index of the region of parameter configurations that is the least visited """
+        """Get the middle index of the region of parameter configurations that is the least visited."""
         # This uses the largest distance between visited parameter configurations. That means it does not properly take the parameters into account, only the index of the parameter configurations, whereas LHS does.
         distance_tensor = torch.arange(self.size)
 
@@ -542,7 +559,7 @@ class BayesianOptimization:
         return middle_index
 
     def train_hyperparams(self, training_iter: int):
-        """ Optimize the surrogate model hyperparameters iteratively """
+        """Optimize the surrogate model hyperparameters iteratively."""
         self.model.train()
         self.likelihood.train()
 
@@ -601,7 +618,7 @@ class BayesianOptimization:
         self.likelihood.eval()
 
     def optimize(self, max_fevals: int) -> Tuple[tuple, float]:    #NOSONAR
-        """ Optimize the objective """
+        """Optimize the objective."""
         predictions_tuple = None
         short_param_config_index = None
         last_invalid = False
@@ -625,9 +642,9 @@ class BayesianOptimization:
                 param_config_index = least_evaluated_region_index
                 short_param_config_index = -1
                 if mean_has_NaN:
-                    warning_reason = f"there were NaN in the predicted mean"
+                    warning_reason = "there were NaN in the predicted mean"
                 elif std_has_NaN:
-                    warning_reason = f"there were NaN in the predicted std"
+                    warning_reason = "there were NaN in the predicted std"
                 else:
                     warning_reason = "all STDs were the same"
                 warnings.warn(
@@ -677,10 +694,10 @@ class BayesianOptimization:
         return self.all_results
 
     def objective_function(self, param_config: tuple) -> float:
-        return minimize._cost_func(param_config, self.kernel_options, self.tuning_options, self.runner, self.all_results, check_restrictions=False)
+        return self.runner.run(param_config, self.tuning_options)
 
     def evaluate_config(self, param_config_index: int) -> float:
-        """ Evaluates a parameter configuration, returns the time """
+        """Evaluates a parameter configuration, returns the time."""
         param_config = self.true_param_configs[param_config_index]
         time = self.objective_function(param_config)
         self.register_result(time, param_config_index)
@@ -689,9 +706,9 @@ class BayesianOptimization:
         return time
 
     def register_result(self, result: float, param_config_index: int):
-        """ Registers the result to the Tensors and adds the hyperparameters to the results dict """
+        """Registers the result to the Tensors and adds the hyperparameters to the results dict."""
         # set the unvisited Tensors
-        if self.unvisited_configs[param_config_index] == False:
+        if self.unvisited_configs[param_config_index] is False:
             raise ValueError(f"The param config index {param_config_index} was already set to False!")
         self.unvisited_configs[param_config_index] = False
 
@@ -712,13 +729,13 @@ class BayesianOptimization:
         # TODO check if it is possible to write the results with hyperparameters to the cache if not in simulation mode, maybe with observer?
 
     def update_unique_results(self):
-        """ Updates the unique results dictionary """
+        """Updates the unique results dictionary."""
         record = self.all_results[-1]
         # make a unique string by taking every value in a result, if it already exists, it is overwritten
         self.unique_results.update({",".join([str(v) for k, v in record.items() if k in self.tuning_options.tune_params]): record["time"]})
 
-    def predict_list(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        """ Returns the means and standard deviations predicted by the surrogate model for the unvisited parameter configurations """
+    def predict_list(self) -> Tuple[Tensor, Tensor]:
+        """Returns the means and standard deviations predicted by the surrogate model for the unvisited parameter configurations."""
         with torch.no_grad(), gpytorch.settings.fast_pred_samples(), gpytorch.settings.fast_pred_var():
             try:
                 observed_pred = self.likelihood(self.model(self.test_x))
@@ -735,16 +752,16 @@ class BayesianOptimization:
                 warnings.warn(str(e), RuntimeWarning)
                 return torch.ones_like(self.test_x), torch.zeros_like(self.test_x)
 
-    def get_diff_improvement(self, y_mu, y_std, fplus) -> torch.Tensor:
-        """ compute probability of improvement by assuming normality on the difference in improvement """
+    def get_diff_improvement(self, y_mu, y_std, fplus) -> Tensor:
+        """Compute probability of improvement by assuming normality on the difference in improvement."""
         diff_improvement = (y_mu - fplus) / y_std    # y_std can be very small, causing diff_improvement to be very large
         diff_improvement = (diff_improvement - diff_improvement.mean()) / max(diff_improvement.std(), self.min_std)    # force to N(0,1) with z-score
         if self.optimization_direction == 'max':
             diff_improvement = -diff_improvement
         return diff_improvement
 
-    def contextual_variance(self, mean: torch.Tensor, std: torch.Tensor):
-        """ Contextual improvement to decide explore / exploit, based on CI proposed by (Jasrasaria, 2018) """
+    def contextual_variance(self, mean: Tensor, std: Tensor):
+        """Contextual improvement to decide explore / exploit, based on CI proposed by (Jasrasaria, 2018)."""
         if not self.af_params['explorationfactor'] == 'CV':
             raise ValueError(f"Contextual Variance was called, but is not set as the exploration factor ({self.af_params['explorationfactor']})")
         if self.optimization_direction == 'max':
@@ -767,14 +784,13 @@ class BayesianOptimization:
             raise NotImplementedError("Contextual Variance has not yet been implemented for non-scaled outputs")
 
     def af_random(self, predictions=None, hyperparam=None) -> list:
-        """ Acquisition function returning a randomly shuffled list for comparison """
+        """Acquisition function returning a randomly shuffled list for comparison."""
         list_random = list(range(len(self.unvisited_param_configs)))
         shuffle(list_random)
         return list_random
 
-    def af_probability_of_improvement_tensor(self, predictions: Tuple[torch.Tensor, torch.Tensor], hyperparam=None) -> torch.Tensor:
-        """ Acquisition function Probability of Improvement (PoI) tensor-based """
-
+    def af_probability_of_improvement_tensor(self, predictions: Tuple[Tensor, Tensor], hyperparam=None) -> Tensor:
+        """Acquisition function Probability of Improvement (PoI) tensor-based."""
         # prefetch required data
         y_mu, y_std = predictions
         if hyperparam is None:
@@ -790,9 +806,8 @@ class BayesianOptimization:
         #     raise FloatingPointError("You need to scale the diff_improvement-values!")
         return cdf
 
-    def af_expected_improvement_tensor(self, predictions: Tuple[torch.Tensor, torch.Tensor], hyperparam=None) -> torch.Tensor:
-        """ Acquisition function Expected Improvement (EI) tensor-based """
-
+    def af_expected_improvement_tensor(self, predictions: Tuple[Tensor, Tensor], hyperparam=None) -> Tensor:
+        """Acquisition function Expected Improvement (EI) tensor-based."""
         # prefetch required data
         y_mu, y_std = predictions
         if hyperparam is None:
@@ -819,7 +834,7 @@ class BayesianOptimization:
     """                  """
 
     def apply_scaling_to_inputs(self):
-        """ Scale the inputs using min-max normalization (0-1) and remove constant parameters """
+        """Scale the inputs using min-max normalization (0-1) and remove constant parameters."""
         param_configs_scaled = torch.zeros_like(self.param_configs)
 
         # first get the scaling factors of each parameter
@@ -849,13 +864,13 @@ class BayesianOptimization:
             self.param_configs_scaled[param_config_index] = param_config[unchanging_params_tensor]
         self.nonstatic_params = unchanging_params_tensor
 
-    def find_nearest(self, value, array: torch.Tensor):
-        """ Find the value nearest to the given value in the array """
+    def find_nearest(self, value, array: Tensor):
+        """Find the value nearest to the given value in the array."""
         index = (torch.abs(array - value)).argmin()
         return array[index]
 
     def get_hyperparam(self, name: str, default, supported_values=list(), type=None, cast=None):
-        """ Retrieve the value of a hyperparameter based on the name - beware that cast can be a reference to any function """
+        """Retrieve the value of a hyperparameter based on the name - beware that cast can be a reference to any function."""
         value = self.tuning_options.strategy_options.get(name, default)
 
         # check with predifined value list
@@ -873,12 +888,12 @@ class BayesianOptimization:
             value = float(value)
         return value
 
-    def remove_from_predict_list(self, p: Tuple[torch.Tensor, torch.Tensor], i: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        """ Remove an index from a tuple of predictions """
+    def remove_from_predict_list(self, p: Tuple[Tensor, Tensor], i: int) -> Tuple[Tensor, Tensor]:
+        """Remove an index from a tuple of predictions."""
         return torch.cat([p[0][:i], p[0][i + 1:]]), torch.cat([p[1][:i], p[1][i + 1:]])
 
     def set_acquisition_function(self, acquisition_function: str):
-        """ Set the acquisition function based on the name """
+        """Set the acquisition function based on the name."""
         if acquisition_function not in supported_methods:
             raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_methods, acquisition_function))
 
@@ -889,8 +904,8 @@ class BayesianOptimization:
         elif acquisition_function == 'random':
             self.acquisition_function = self.af_random
 
-    def transform_nonnumerical_params(self, parameter_space: list) -> Tuple[torch.Tensor, dict]:
-        """ transform non-numerical or mixed-type parameters to numerical Tensor, also return new tune_params """
+    def transform_nonnumerical_params(self, parameter_space: list) -> Tuple[Tensor, dict]:
+        """Transform non-numerical or mixed-type parameters to numerical Tensor, also return new tune_params."""
         parameter_space = deepcopy(parameter_space)
         number_of_params = len(parameter_space[0])
 
@@ -920,7 +935,7 @@ class BayesianOptimization:
         return torch.tensor(parameter_space, dtype=self.dtype).to(self.device), tune_params
 
     def visualize(self):
-        """ Visualize the surrogate model and observations in a plot """
+        """Visualize the surrogate model and observations in a plot."""
         if self.fevals < 220:
             return None
         from matplotlib import pyplot as plt
