@@ -1,7 +1,7 @@
-import sys
-import subprocess
-import shutil
 import os
+import shutil
+import subprocess
+import sys
 
 import pytest
 
@@ -47,7 +47,6 @@ except Exception:
     cupy_present = False
 
 try:
-    import cuda
 
     cuda_present = True
 except Exception:
@@ -62,6 +61,20 @@ try:
     pyhip_present = True
 except ImportError:
     pyhip_present = False
+
+try:
+    import botorch
+    import torch
+    bayes_opt_botorch_present = True
+except ImportError:
+    bayes_opt_botorch_present = False
+
+try:
+    import gpytorch
+    import torch
+    bayes_opt_gpytorch_present = True
+except ImportError:
+    bayes_opt_gpytorch_present = False
 
 try:
     from autotuning_methodology.report_experiments import get_strategy_scores
@@ -89,6 +102,8 @@ skip_if_no_gfortran = pytest.mark.skipif(
 skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
 skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on PATH")
 skip_if_no_pyhip = pytest.mark.skipif(not pyhip_present, reason="No PyHIP found")
+skip_if_no_bayesopt_gpytorch = pytest.mark.skipif(not bayes_opt_gpytorch_present, reason="Torch and GPyTorch not installed")
+skip_if_no_bayesopt_botorch = pytest.mark.skipif(not bayes_opt_botorch_present, reason="Torch and BOTorch not installed")
 skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
 
 

@@ -7,6 +7,8 @@ import kernel_tuner
 from kernel_tuner import util
 from kernel_tuner.interface import strategy_map
 
+from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch
+
 cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/../test_cache_file.json"
 
 @pytest.fixture
@@ -32,8 +34,16 @@ def vector_add():
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
-
-@pytest.mark.parametrize('strategy', strategy_map)
+# skip some strategies if their dependencies are not installed
+strategies = []
+for s in strategy_map.keys():
+    if 'gpytorch' in s.lower():
+        strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_gpytorch))
+    elif 'botorch' in s.lower():
+        strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_botorch))
+    else:
+        strategies.append(s)
+@pytest.mark.parametrize('strategy', strategies)
 def test_strategies(vector_add, strategy):
 
     options = dict(popsize=5, neighbor='adjacent')
