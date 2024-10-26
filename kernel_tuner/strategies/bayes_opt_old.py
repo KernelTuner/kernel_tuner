@@ -1,32 +1,33 @@
-""" Bayesian Optimization implementation from the thesis by Willemsen """
+"""Bayesian Optimization implementation from the thesis by Willemsen."""
+import itertools
+import time
+import warnings
 from copy import deepcopy
 from random import randint, shuffle
-import itertools
-import warnings
-import time
 
 import numpy as np
 
 # BO imports
 try:
     from typing import Tuple
+
     from scipy.stats import norm
-    from sklearn.gaussian_process import GaussianProcessRegressor
-    from sklearn.gaussian_process.kernels import ConstantKernel, RBF, Matern
     from sklearn.exceptions import ConvergenceWarning
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    from sklearn.gaussian_process.kernels import RBF, ConstantKernel, Matern
     from skopt.sampler import Lhs
     bayes_opt_present = True
 except ImportError:
     bayes_opt_present = False
 
-from kernel_tuner.strategies import minimize
 from kernel_tuner import util
+from kernel_tuner.strategies import minimize
 
 supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast"]
 
 
 def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
-    """ Generates normalization and denormalization dictionaries """
+    """Generates normalization and denormalization dictionaries."""
     original_to_normalized = dict()
     normalized_to_original = dict()
     for param_name in tune_params.keys():
@@ -42,14 +43,14 @@ def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict
 
 
 def normalize_parameter_space(param_space: list, tune_params: dict, normalized: dict) -> list:
-    """ Normalize the parameter space given a normalization dictionary """
+    """Normalize the parameter space given a normalization dictionary."""
     keys = list(tune_params.keys())
     param_space_normalized = list(tuple(normalized[keys[i]][v] for i, v in enumerate(params)) for params in param_space)
     return param_space_normalized
 
 
 def prune_parameter_space(parameter_space, tuning_options, tune_params, normalize_dict):
-    """ Pruning of the parameter space to remove dimensions that have a constant parameter """
+    """Pruning of the parameter space to remove dimensions that have a constant parameter."""
     pruned_tune_params_mask = list()
     removed_tune_params = list()
     param_names = list(tune_params.keys())
@@ -68,7 +69,7 @@ def prune_parameter_space(parameter_space, tuning_options, tune_params, normaliz
 
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
+    """Find the best performing kernel configuration in the parameter space.
 
     :params runner: A runner from kernel_tuner.runners
     :type runner: kernel_tuner.runner
@@ -90,7 +91,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :rtype: list(dict()), dict()
 
     """
-
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
@@ -252,19 +252,19 @@ class BayesianOptimization():
         self.__current_optimum = value
 
     def is_better_than(self, a: float, b: float) -> bool:
-        """ Determines which one is better depending on optimization direction """
+        """Determines which one is better depending on optimization direction."""
         return a < b if self.opt_direction == 'min' else a > b
 
     def is_not_visited(self, index: int) -> bool:
-        """ Returns whether a searchspace index has not been visited """
+        """Returns whether a searchspace index has not been visited."""
         return not self.__visited_searchspace_indices[index]
 
     def is_valid(self, observation: float) -> bool:
-        """ Returns whether an observation is valid """
-        return not (observation == None or observation == self.invalid_value or observation == np.NaN)
+        """Returns whether an observation is valid."""
+        return not (observation is None or observation == self.invalid_value or observation == np.NaN)
 
     def get_af_by_name(self, name: str):
-        """ Get the basic acquisition functions by their name """
+        """Get the basic acquisition functions by their name."""
         basic_af_names = ['ei', 'poi', 'lcb']
         if name == 'ei':
             return self.af_expected_improvement
@@ -275,7 +275,7 @@ class BayesianOptimization():
         raise ValueError(f"{name} not in {basic_af_names}")
 
     def set_acquisition_function(self, acquisition_function: str):
-        """ Set the acquisition function """
+        """Set the acquisition function."""
         if acquisition_function == 'poi':
             self.__af = self.af_probability_of_improvement
         elif acquisition_function == 'ei':
@@ -296,7 +296,7 @@ class BayesianOptimization():
             raise ValueError("Acquisition function must be one of {}, is {}".format(self.supported_methods, acquisition_function))
 
     def set_surrogate_model(self, cov_kernel_name: str, cov_kernel_lengthscale: float):
-        """ Set the surrogate model with a covariance function and lengthscale """
+        """Set the surrogate model with a covariance function and lengthscale."""
         if cov_kernel_name == "constantrbf":
             kernel = ConstantKernel(1.0, constant_value_bounds="fixed") * RBF(cov_kernel_lengthscale, length_scale_bounds="fixed")
         elif cov_kernel_name == "rbf":
@@ -310,7 +310,7 @@ class BayesianOptimization():
         self.__model = GaussianProcessRegressor(kernel=kernel, alpha=1e-10, normalize_y=True)    # maybe change alpha to a higher value such as 1e-5?
 
     def valid_params_observations(self) -> Tuple[list, list]:
-        """ Returns a list of valid observations and their parameter configurations """
+        """Returns a list of valid observations and their parameter configurations."""
         # if you do this every iteration, better keep it as cache and update in update_after_evaluation
         params = list()
         observations = list()
@@ -321,30 +321,30 @@ class BayesianOptimization():
         return params, observations
 
     def unvisited(self) -> list:
-        """ Returns a list of unvisited parameter configurations - attention: cached version exists! """
+        """Returns a list of unvisited parameter configurations - attention: cached version exists!"""
         params = list(self.searchspace[index] for index, visited in enumerate(self.__visited_searchspace_indices) if visited is False)
         return params
 
     def find_param_config_index(self, param_config: tuple) -> int:
-        """ Find a parameter config index in the search space if it exists """
+        """Find a parameter config index in the search space if it exists."""
         return self.searchspace.index(param_config)
 
     def find_param_config_unvisited_index(self, param_config: tuple) -> int:
-        """ Find a parameter config index in the unvisited cache if it exists """
+        """Find a parameter config index in the unvisited cache if it exists."""
         return self.unvisited_cache.index(param_config)
 
     def normalize_param_config(self, param_config: tuple) -> tuple:
-        """ Normalizes a parameter configuration """
+        """Normalizes a parameter configuration."""
         normalized = tuple(self.normalized_dict[self.param_names[index]][param_value] for index, param_value in enumerate(param_config))
         return normalized
 
     def denormalize_param_config(self, param_config: tuple) -> tuple:
-        """ Denormalizes a parameter configuration """
+        """Denormalizes a parameter configuration."""
         denormalized = tuple(self.denormalized_dict[self.param_names[index]][param_value] for index, param_value in enumerate(param_config))
         return denormalized
 
     def unprune_param_config(self, param_config: tuple) -> tuple:
-        """ In case of pruned dimensions, adds the removed dimensions back in the param config """
+        """In case of pruned dimensions, adds the removed dimensions back in the param config."""
         unpruned = list()
         pruned_count = 0
         for removed in self.removed_tune_params:
@@ -356,7 +356,7 @@ class BayesianOptimization():
         return tuple(unpruned)
 
     def update_after_evaluation(self, observation: float, index: int, param_config: tuple):
-        """ Adjust the visited and valid index records accordingly """
+        """Adjust the visited and valid index records accordingly."""
         validity = self.is_valid(observation)
         self.__visited_num += 1
         self.__observations[index] = observation
@@ -371,22 +371,22 @@ class BayesianOptimization():
                 self.current_optimum = observation
 
     def predict(self, x) -> Tuple[float, float]:
-        """ Returns a mean and standard deviation predicted by the surrogate model for the parameter configuration """
+        """Returns a mean and standard deviation predicted by the surrogate model for the parameter configuration."""
         return self.__model.predict([x], return_std=True)
 
     def predict_list(self, lst: list) -> Tuple[list, list, list]:
-        """ Returns a list of means and standard deviations predicted by the surrogate model for the parameter configurations, and separate lists of means and standard deviations """
+        """Returns a list of means and standard deviations predicted by the surrogate model for the parameter configurations, and separate lists of means and standard deviations."""
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             mu, std = self.__model.predict(lst, return_std=True)
             return list(zip(mu, std)), mu, std
 
     def fit_observations_to_model(self):
-        """ Update the model based on the current list of observations """
+        """Update the model based on the current list of observations."""
         self.__model.fit(self.__valid_params, self.__valid_observations)
 
     def evaluate_objective_function(self, param_config: tuple) -> float:
-        """ Evaluates the objective function """
+        """Evaluates the objective function."""
         param_config = self.unprune_param_config(param_config)
         denormalized_param_config = self.denormalize_param_config(param_config)
         if not util.config_valid(denormalized_param_config, self.tuning_options, self.max_threads):
@@ -396,11 +396,11 @@ class BayesianOptimization():
         return val
 
     def dimensions(self) -> list:
-        """ List of parameter values per parameter """
+        """List of parameter values per parameter."""
         return self.tune_params.values()
 
     def draw_random_sample(self) -> Tuple[list, int]:
-        """ Draw a random sample from the unvisited parameter configurations """
+        """Draw a random sample from the unvisited parameter configurations."""
         if len(self.unvisited_cache) < 1:
             raise ValueError("Searchspace exhausted during random sample draw as no valid configurations were found")
         index = randint(0, len(self.unvisited_cache) - 1)    # NOSONAR
@@ -409,7 +409,7 @@ class BayesianOptimization():
         return param_config, actual_index
 
     def draw_latin_hypercube_samples(self, num_samples: int) -> list:
-        """ Draws an LHS-distributed sample from the search space """
+        """Draws an LHS-distributed sample from the search space."""
         if self.searchspace_size < num_samples:
             raise ValueError("Can't sample more than the size of the search space")
         if self.sampling_crit is None:
@@ -432,7 +432,7 @@ class BayesianOptimization():
         return list(zip(normalized_param_configs, indices))
 
     def initial_sample(self):
-        """ Draws an initial sample using random sampling """
+        """Draws an initial sample using random sampling."""
         if self.num_initial_samples <= 0:
             raise ValueError("At least one initial sample is required")
         if self.sampling_method == 'lhs':
@@ -466,7 +466,7 @@ class BayesianOptimization():
         self.cv_norm_maximum = self.initial_std
 
     def contextual_variance(self, std: list):
-        """ Contextual improvement to decide explore / exploit, based on CI proposed by (Jasrasaria, 2018) """
+        """Contextual improvement to decide explore / exploit, based on CI proposed by (Jasrasaria, 2018)."""
         if not self.af_params['explorationfactor'] == 'CV':
             return None
         if self.opt_direction == 'min':
@@ -484,7 +484,7 @@ class BayesianOptimization():
         return np.mean(std) / self.current_optimum
 
     def __optimize(self, max_fevals):
-        """ Find the next best candidate configuration(s), evaluate those and update the model accordingly """
+        """Find the next best candidate configuration(s), evaluate those and update the model accordingly."""
         while self.fevals < max_fevals:
             if self.__visited_num >= self.searchspace_size:
                 raise ValueError(self.error_message_searchspace_fully_observed)
@@ -501,7 +501,7 @@ class BayesianOptimization():
         return self.results
 
     def __optimize_multi(self, max_fevals):
-        """ Optimize with a portfolio of multiple acquisition functions. Predictions are always only taken once. Skips AFs if they suggest X/max_evals duplicates in a row, prefers AF with best discounted average. """
+        """Optimize with a portfolio of multiple acquisition functions. Predictions are always only taken once. Skips AFs if they suggest X/max_evals duplicates in a row, prefers AF with best discounted average."""
         if self.opt_direction != 'min':
             raise ValueError(f"Optimization direction must be minimization ('min'), is {self.opt_direction}")
         # calculate how many times an AF can suggest a duplicate candidate before the AF is skipped
@@ -612,7 +612,7 @@ class BayesianOptimization():
         return self.results
 
     def __optimize_multi_advanced(self, max_fevals, increase_precision=False):
-        """ Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once, unless increase_precision is true. Skips AFs if they are consistently worse than the mean of discounted observations, promotes AFs if they are consistently better than this mean. """
+        """Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once, unless increase_precision is true. Skips AFs if they are consistently worse than the mean of discounted observations, promotes AFs if they are consistently better than this mean."""
         if self.opt_direction != 'min':
             raise ValueError(f"Optimization direction must be minimization ('min'), is {self.opt_direction}")
         aqfs = self.multi_afs
@@ -713,7 +713,7 @@ class BayesianOptimization():
         return self.results
 
     def __optimize_multi_fast(self, max_fevals):
-        """ Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once. """
+        """Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once."""
         while self.fevals < max_fevals:
             aqfs = self.multi_afs
             # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
@@ -735,14 +735,13 @@ class BayesianOptimization():
         return self.results
 
     def af_random(self, predictions=None, hyperparam=None) -> list:
-        """ Acquisition function returning a randomly shuffled list for comparison """
+        """Acquisition function returning a randomly shuffled list for comparison."""
         list_random = range(len(self.unvisited_cache))
         shuffle(list_random)
         return list_random
 
     def af_probability_of_improvement(self, predictions=None, hyperparam=None) -> list:
-        """ Acquisition function Probability of Improvement (PI) """
-
+        """Acquisition function Probability of Improvement (PI)."""
         # prefetch required data
         if predictions is None:
             predictions, _, _ = self.predict_list(self.unvisited_cache)
@@ -759,8 +758,7 @@ class BayesianOptimization():
         return list_prob_improvement
 
     def af_expected_improvement(self, predictions=None, hyperparam=None) -> list:
-        """ Acquisition function Expected Improvement (EI) """
-
+        """Acquisition function Expected Improvement (EI)."""
         # prefetch required data
         if predictions is None:
             predictions, _, _ = self.predict_list(self.unvisited_cache)
@@ -784,8 +782,7 @@ class BayesianOptimization():
         return list_exp_improvement
 
     def af_lower_confidence_bound(self, predictions=None, hyperparam=None) -> list:
-        """ Acquisition function Lower Confidence Bound (LCB) """
-
+        """Acquisition function Lower Confidence Bound (LCB)."""
         # prefetch required data
         if predictions is None:
             predictions, _, _ = self.predict_list(self.unvisited_cache)
@@ -798,8 +795,7 @@ class BayesianOptimization():
         return list_lower_confidence_bound
 
     def af_lower_confidence_bound_srinivas(self, predictions=None, hyperparam=None) -> list:
-        """ Acquisition function Lower Confidence Bound (UCB-S) after Srinivas, 2010 / Brochu, 2010 """
-
+        """Acquisition function Lower Confidence Bound (UCB-S) after Srinivas, 2010 / Brochu, 2010."""
         # prefetch required data
         if predictions is None:
             predictions, _, _ = self.predict_list(self.unvisited_cache)
@@ -818,7 +814,7 @@ class BayesianOptimization():
         return list_lower_confidence_bound
 
     def visualize_after_opt(self):
-        """ Visualize the model after the optimization """
+        """Visualize the model after the optimization."""
         print(self.__model.kernel_.get_params())
         print(self.__model.log_marginal_likelihood())
         import matplotlib.pyplot as plt
