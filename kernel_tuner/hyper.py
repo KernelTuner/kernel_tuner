@@ -86,20 +86,20 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     return list(result_unique.values()), env
 
 if __name__ == "__main__":  # TODO remove in production
-    # hyperparams = {
-    #     'popsize': [10, 20, 30],
-    #     'maxiter': [50, 100, 150],
-    #     'w': [0.25, 0.5, 0.75],
-    #     'c1': [1.0, 2.0, 3.0],
-    #     'c2': [0.5, 1.0, 1.5]
-    # }
-    # result, env = tune_hyper_params('pso', hyperparams)
     hyperparams = {
-        'neighbor': ['Hamming', 'adjacent'],
-        'restart': [True, False],
-        'no_improvement': [1, 10, 25, 33, 50, 66, 75, 100, 200],
-        'random_walk': [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
+        'popsize': [10, 20, 30],
+        'maxiter': [50, 100, 150],
+        'w': [0.25, 0.5, 0.75],
+        'c1': [1.0, 2.0, 3.0],
+        'c2': [0.5, 1.0, 1.5]
     }
-    result, env = tune_hyper_params('greedy_ils', hyperparams)
+    result, env = tune_hyper_params('pso', hyperparams)
+    # hyperparams = {
+    #     'neighbor': ['Hamming', 'adjacent'],
+    #     'restart': [True, False],
+    #     'no_improvement': [1, 10, 25, 33, 50, 66, 75, 100, 200],
+    #     'random_walk': [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
+    # }
+    # result, env = tune_hyper_params('greedy_ils', hyperparams)
     print(result)
     print(env['best_config'])
