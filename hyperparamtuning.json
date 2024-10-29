@@ -1,0 +1,103 @@
+{
+    "version": "1.1.0",
+    "name": "hyperparamtuning",
+    "parent_folder": "/Users/fjwillemsen/University/PhD/OneDrive_Netherlands_eScience_Center/Projects/Bayesian Optimization in Kernel Tuner/Code/kernel_tuner/hyperparamtuning",
+    "experimental_groups_defaults": {
+        "applications": [
+            {
+                "name": "convolution",
+                "folder": "../autotuning_methodology/cached_data_used/kernels",
+                "input_file": "convolution.json"
+            },
+            {
+                "name": "pnpoly",
+                "folder": "../autotuning_methodology/cached_data_used/kernels",
+                "input_file": "pnpoly.json"
+            }
+        ],
+        "gpus": [
+            "RTX_3090",
+            "RTX_2080_Ti"
+        ],
+        "pattern_for_full_search_space_filenames": {
+            "regex": "../autotuning_methodology/cached_data_used/cachefiles/${applications}/${gpus}_T4.json"
+        },
+        "stochastic": true,
+        "repeats": 25,
+        "samples": 1,
+        "minimum_number_of_valid_search_iterations": 20,
+        "ignore_cache": false
+    },
+    "search_strategies": [
+        {
+            "autotuner": "KernelTuner",
+            "name": "genetic_algorithm_popsize=5_maxiter=5_method=uniform_mutation_chance=10",
+            "display_name": "Genetic algorithm",
+            "search_method": "genetic_algorithm",
+            "search_method_hyperparameters": [
+                {
+                    "name": "popsize",
+                    "value": 5
+                },
+                {
+                    "name": "maxiter",
+                    "value": 5
+                },
+                {
+                    "name": "method",
+                    "value": "uniform"
+                },
+                {
+                    "name": "mutation_chance",
+                    "value": 10
+                }
+            ]
+        }
+    ],
+    "statistics_settings": {
+        "minimization": true,
+        "cutoff_percentile": 0.96,
+        "cutoff_percentile_start": 0.5,
+        "cutoff_type": "fevals",
+        "objective_time_keys": [
+            "all"
+        ],
+        "objective_performance_keys": [
+            "time"
+        ]
+    },
+    "visualization_settings": {
+        "plots": [
+            {
+                "scope": "searchspace",
+                "style": "line",
+                "x_axis_value_types": [
+                    "fevals"
+                ],
+                "y_axis_value_types": [
+                    "normalized",
+                    "baseline"
+                ]
+            },
+            {
+                "scope": "searchspace",
+                "style": "line",
+                "x_axis_value_types": [
+                    "time"
+                ],
+                "y_axis_value_types": [
+                    "normalized",
+                    "baseline"
+                ]
+            },
+            {
+                "scope": "aggregate",
+                "style": "line"
+            }
+        ],
+        "resolution": 1000.0,
+        "confidence_level": 0.95,
+        "compare_baselines": false,
+        "compare_split_times": false
+    }
+}
