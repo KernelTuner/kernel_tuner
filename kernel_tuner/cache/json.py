@@ -47,7 +47,7 @@ class T4ResultMeasurementJSON(TypedDict):
 class T4ResultTimesJSON(TypedDict):
     """TypedDict for the times of a T4 result line."""
 
-    compilation_time: float
+    compilation: float
     framework: float
     search_algorithm: float
     validation: float

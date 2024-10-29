@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Callable
 
 import semver
+
 from kernel_tuner.cache.json import (
     CacheFileJSON,
     T4FileJSON,
@@ -185,7 +186,7 @@ def convert_cache_to_t4(cache: CacheFileJSON) -> T4FileJSON:
 
     for cache_line in cache["cache"].values():
         times = T4ResultTimesJSON(
-            compilation_time=cache_line["compile_time"],
+            compilation=cache_line["compile_time"],
             framework=cache_line["framework_time"],
             search_algorithm=cache_line["strategy_time"],
             validation=cache_line["verification_time"],
