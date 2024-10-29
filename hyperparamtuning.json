@@ -5,19 +5,32 @@
     "experimental_groups_defaults": {
         "applications": [
             {
-                "name": "convolution",
+                "name": "convolution_milo",
                 "folder": "../autotuning_methodology/cached_data_used/kernels",
-                "input_file": "convolution.json"
+                "input_file": "convolution_milo.json"
             },
             {
-                "name": "pnpoly",
+                "name": "dedisp_milo",
                 "folder": "../autotuning_methodology/cached_data_used/kernels",
-                "input_file": "pnpoly.json"
+                "input_file": "dedisp_milo.json"
+            },
+            {
+                "name": "gemm_milo",
+                "folder": "../autotuning_methodology/cached_data_used/kernels",
+                "input_file": "dedisp_milo.json"
+            },
+            {
+                "name": "hotspot_milo",
+                "folder": "../autotuning_methodology/cached_data_used/kernels",
+                "input_file": "dedisp_milo.json"
             }
         ],
         "gpus": [
-            "RTX_3090",
-            "RTX_2080_Ti"
+            "A100",
+            "A4000",
+            "MI50",
+            "MI250X",
+            "W6600"
         ],
         "pattern_for_full_search_space_filenames": {
             "regex": "../autotuning_methodology/cached_data_used/cachefiles/${applications}/${gpus}_T4.json"
@@ -31,27 +44,9 @@
     "search_strategies": [
         {
             "autotuner": "KernelTuner",
-            "name": "genetic_algorithm_popsize=5_maxiter=5_method=uniform_mutation_chance=10",
-            "display_name": "Genetic algorithm",
-            "search_method": "genetic_algorithm",
-            "search_method_hyperparameters": [
-                {
-                    "name": "popsize",
-                    "value": 5
-                },
-                {
-                    "name": "maxiter",
-                    "value": 5
-                },
-                {
-                    "name": "method",
-                    "value": "uniform"
-                },
-                {
-                    "name": "mutation_chance",
-                    "value": 10
-                }
-            ]
+            "name": "brute_force",
+            "display_name": "Brute force",
+            "search_method": "brute_force"
         }
     ],
     "statistics_settings": {
