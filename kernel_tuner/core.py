@@ -598,7 +598,7 @@ class DeviceInterface(object):
                     if kernel_options.texmem_args is not None:
                         self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
-                # stop compilation stopwatch and convert to miliseconds
+                # stop compilation stopwatch and convert to milliseconds
                 last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
                 # test kernel for correctness

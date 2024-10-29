@@ -613,8 +613,12 @@ def tune_kernel(
     util.append_default_block_size_names(block_size_names)
 
     # if the restrictions are not constraints or a callable, the restrictions are strings, so parse them to functions (increases restrictions check performance significantly)
-    if restrictions is not None and not callable(restrictions) and not any(isinstance(r, Constraint) for r in restrictions):
-        restrictions = util.parse_restrictions(restrictions)
+    if (
+        restrictions is not None
+        and not callable(restrictions)
+        and not any(isinstance(r, Constraint) for r in restrictions)
+    ):
+        restrictions = util.parse_restrictions(restrictions, tune_params)
 
     # sort all the options into separate dicts
     opts = locals()
@@ -854,7 +858,14 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
     util.check_block_size_names(block_size_names)
 
 
-def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation_mode = False, output_T4 = True, iterations = 7, strategy_options = None):
+def tune_kernel_T1(
+    input_filepath: Path,
+    cache_filepath: Path = None,
+    simulation_mode=False,
+    output_T4=True,
+    iterations=7,
+    strategy_options=None,
+):
     """Call the tune function with a T1 input file."""
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs["KernelSpecification"]
@@ -952,7 +963,7 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
         verbose=False,
         iterations=iterations,
         strategy=strategy,
-        strategy_options=strategy_options
+        strategy_options=strategy_options,
     )
     if output_T4:
         return get_t4_metadata(), get_t4_results(results, tune_params)

@@ -152,7 +152,7 @@ def get_t4_results(results, tune_params, objective="time"):
 
     # write output_data to a JSON file
     version, _ = output_file_schema("results")
-    output_json = dict(results=output_data, schema_version=version, metadata={'timeunit': 'miliseconds'})
+    output_json = dict(results=output_data, schema_version=version, metadata={'timeunit': 'milliseconds'})
     return output_json
 
 def store_output_file(output_filename: str, results, tune_params, objective="time"):
