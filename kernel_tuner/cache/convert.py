@@ -182,7 +182,7 @@ def convert_cache_to_t4(cache: CacheFileJSON) -> T4FileJSON:
 
     Returns a ``T4FileJSON`` representing the converted cache file.
     """
-    t4 = T4FileJSON(results=[], schema_version="1.0.0")
+    t4 = T4FileJSON(metadata={"timeunit": "miliseconds"}, results=[], schema_version="1.0.0")
 
     for cache_line in cache["cache"].values():
         times = T4ResultTimesJSON(
