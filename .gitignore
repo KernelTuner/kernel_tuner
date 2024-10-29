@@ -17,7 +17,6 @@ push_to_pypi.sh
 .nfs*
 *.log
 *.json
-!hyperparamtuning.json
 !kernel_tuner/schema/T1/1.0.0/input-schema.json
 !test/test_T1_input.json
 *.csv

@@ -60,6 +60,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
 
     # pass a temporary cache file to avoid duplicate execution
     cachefile = get_random_unique_filename('temp_', '.json')
+    cachefile = Path("hyperparamtuning_milo_bruteforce.json")
     kwargs['cache'] = str(cachefile)
 
     def put_if_not_present(target_dict, key, value):
@@ -68,7 +69,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     put_if_not_present(kwargs, "verbose", True)
     put_if_not_present(kwargs, "quiet", False)
     kwargs['simulation_mode'] = False
-    kwargs['strategy'] = 'dual_annealing'
+    kwargs['strategy'] = 'brute_force'
     kwargs['verify'] = None
     arguments = [target_strategy]
 

@@ -61,20 +61,17 @@ class HypertunerFunctions(Backend):
         path.mkdir(exist_ok=True)
 
         # TODO get applications & GPUs args from benchmark
-        gpus = ["RTX_3090", "RTX_2080_Ti"]
-        applications = None
-        # applications = [
-        #     {
-        #         "name": "convolution",
-        #         "folder": "./cached_data_used/kernels",
-        #         "input_file": "convolution.json"
-        #     },
-        #     {
-        #         "name": "pnpoly",
-        #         "folder": "./cached_data_used/kernels",
-        #         "input_file": "pnpoly.json"
-        #     }
-        # ]
+        # gpus = ["RTX_3090", "RTX_2080_Ti"]
+        # applications = None
+
+        gpus = ["A100", "A4000", "MI50", "MI250X", "W6600"]
+        applications = [
+            {
+                "name": "convolution_milo",
+                "folder": "../autotuning_methodology/cached_data_used/kernels",
+                "input_file": "convolution_milo.json"
+            }
+        ]
 
         # strategy settings
         strategy: str = kernel_instance.arguments[0]
