@@ -66,7 +66,8 @@ class Searchspace:
         restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
         if (
             len(restrictions) > 0
-            and any(isinstance(restriction, str) for restriction in restrictions)
+            and (any(isinstance(restriction, str) for restriction in restrictions)
+            or any(isinstance(restriction[0], str) for restriction in restrictions if isinstance(restriction, tuple)))
             and not (framework_l == "pysmt" or framework_l == "bruteforce")
         ):
             self.restrictions = compile_restrictions(
@@ -388,7 +389,7 @@ class Searchspace:
                     all_params_required = all(param_name in required_params for param_name in self.param_names)
                     parameter_space.addConstraint(restriction, None if all_params_required else required_params)
                 else:
-                    raise ValueError(f"Unrecognized restriction {restriction}")
+                    raise ValueError(f"Unrecognized restriction type {type(restriction)} ({restriction})")
 
         # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
         elif callable(self.restrictions):

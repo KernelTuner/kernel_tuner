@@ -1037,8 +1037,11 @@ def parse_restrictions(
                     # check if we can turn this into the built-in equality comparison constraint
                     finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
             if finalized_constraint is None:
-                # we must turn it into a general function
-                finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
+                if parsed_restriction.startswith("def r("):
+                    finalized_constraint = parsed_restriction
+                else:
+                    # we must turn it into a general function
+                    finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
             parsed_restrictions.append((finalized_constraint, params_used))
     else:
         # create one monolithic function
@@ -1075,6 +1078,8 @@ def compile_restrictions(
     restrictions: list, tune_params: dict, monolithic=False, format=None, try_to_constraint=True
 ) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
     """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
+    # change tuples consisting of strings and tunable parameters to only strings to compile
+    restrictions = [r[0] if isinstance(r, tuple) and len(r) == 2 and isinstance(r[0], str) and isinstance(r[1], list) else r for r in restrictions]
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
