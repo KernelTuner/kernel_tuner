@@ -93,9 +93,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     """
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
-    # limit max_fevals to max size of the parameter space
-    max_fevals = min(searchspace.size, max_fevals)
-
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
         raise ImportError(
@@ -571,8 +568,8 @@ class BayesianOptimization:
         while self.fevals < max_fevals:
             if self.__visited_num >= self.searchspace_size:
                 raise ValueError(self.error_message_searchspace_fully_observed)
-            predictions = self.predict_list(self.unvisited_cache)
-            hyperparam = self.contextual_variance(predictions[1])
+            predictions, _, std = self.predict_list(self.unvisited_cache)
+            hyperparam = self.contextual_variance(std)
             list_of_acquisition_values = self.__af(predictions, hyperparam)
             # afterwards select the best AF value
             best_af = self.argopt(list_of_acquisition_values)
@@ -606,8 +603,8 @@ class BayesianOptimization:
             time_start = time.perf_counter_ns()
             # the first acquisition function is never skipped, so that should be the best for the endgame (EI)
             aqfs = self.multi_afs
-            predictions = self.predict_list(self.unvisited_cache)
-            hyperparam = self.contextual_variance(predictions[1])
+            predictions, _, std = self.predict_list(self.unvisited_cache)
+            hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
                 raise ValueError(self.error_message_searchspace_fully_observed)
             time_predictions = time.perf_counter_ns()
@@ -728,19 +725,19 @@ class BayesianOptimization:
                 raise ValueError(self.error_message_searchspace_fully_observed)
             observations_median = np.median(self.__valid_observations)
             if increase_precision is False:
-                predictions = self.predict_list(self.unvisited_cache)
-                hyperparam = self.contextual_variance(predictions[1])
+                predictions, _, std = self.predict_list(self.unvisited_cache)
+                hyperparam = self.contextual_variance(std)
             for af_index, af in enumerate(aqfs):
                 if af_index in skip_af_index:
                     continue
                 if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
                     break
                 if increase_precision is True:
-                    predictions = self.predict_list(self.unvisited_cache)
+                    predictions, _, std = self.predict_list(self.unvisited_cache)
                     hyperparam = self.contextual_variance(std)
                 list_of_acquisition_values = af(predictions, hyperparam)
                 best_af = self.argopt(list_of_acquisition_values)
-                # del predictions[best_af]  # to avoid going out of bounds
+                del predictions[best_af]  # to avoid going out of bounds
                 candidate_params = self.unvisited_cache[best_af]
                 candidate_index = self.find_param_config_index(candidate_params)
                 observation = self.evaluate_objective_function(candidate_params)
@@ -830,8 +827,8 @@ class BayesianOptimization:
         while self.fevals < max_fevals:
             aqfs = self.multi_afs
             # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
-            predictions = self.predict_list(self.unvisited_cache)
-            hyperparam = self.contextual_variance(predictions[1])
+            predictions, _, std = self.predict_list(self.unvisited_cache)
+            hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
                 raise ValueError(self.error_message_searchspace_fully_observed)
             for af in aqfs:
@@ -855,37 +852,42 @@ class BayesianOptimization:
     def af_probability_of_improvement(self, predictions=None, hyperparam=None) -> list:
         """Acquisition function Probability of Improvement (PI)."""
         # prefetch required data
+        if predictions is None:
+            predictions, _, _ = self.predict_list(self.unvisited_cache)
         if hyperparam is None:
             hyperparam = self.af_params["explorationfactor"]
         fplus = self.current_optimum - hyperparam
 
         # precompute difference of improvement
-        list_diff_improvement = list(-((fplus - x_mu) / (x_std + 1e-9)) for x_mu, x_std in predictions[0])
+        list_diff_improvement = list(-((fplus - x_mu) / (x_std + 1e-9)) for (x_mu, x_std) in predictions)
 
         # compute probability of improvement with CDF in bulk
         list_prob_improvement = norm.cdf(list_diff_improvement)
+
         return list_prob_improvement
 
     def af_expected_improvement(self, predictions=None, hyperparam=None) -> list:
         """Acquisition function Expected Improvement (EI)."""
         # prefetch required data
+        if predictions is None:
+            predictions, _, _ = self.predict_list(self.unvisited_cache)
         if hyperparam is None:
             hyperparam = self.af_params["explorationfactor"]
         fplus = self.current_optimum - hyperparam
-        if len(predictions) == 3:
-            predictions, x_mu, x_std = predictions
-        elif len(predictions) == 2:
-            x_mu, x_std = predictions
-        else:
-            raise ValueError(f"Invalid predictions size {len(predictions)}")
 
         # precompute difference of improvement, CDF and PDF in bulk
         list_diff_improvement = list((fplus - x_mu) / (x_std + 1e-9) for (x_mu, x_std) in predictions)
         list_cdf = norm.cdf(list_diff_improvement)
         list_pdf = norm.pdf(list_diff_improvement)
 
-        # compute expected improvement in bulk
-        list_exp_improvement = -((fplus - x_mu) * list_cdf + x_std * list_pdf)
+        # specify AF calculation
+        def exp_improvement(index) -> float:
+            x_mu, x_std = predictions[index]
+            ei = (fplus - x_mu) * list_cdf[index] + x_std * list_pdf[index]
+            return -ei
+
+        # calculate AF
+        list_exp_improvement = list(map(exp_improvement, range(len(predictions))))
         return list_exp_improvement
 
     def af_lower_confidence_bound(self, predictions=None, hyperparam=None) -> list:
@@ -896,16 +898,16 @@ class BayesianOptimization:
         if hyperparam is None:
             hyperparam = self.af_params["explorationfactor"]
         beta = hyperparam
-        _, x_mu, x_std = predictions
 
         # compute LCB in bulk
-        list_lower_confidence_bound = (x_mu - beta * x_std)
+        list_lower_confidence_bound = list(x_mu - beta * x_std for (x_mu, x_std) in predictions)
         return list_lower_confidence_bound
 
     def af_lower_confidence_bound_srinivas(self, predictions=None, hyperparam=None) -> list:
         """Acquisition function Lower Confidence Bound (UCB-S) after Srinivas, 2010 / Brochu, 2010."""
         # prefetch required data
-        _, x_mu, x_std = predictions
+        if predictions is None:
+            predictions, _, _ = self.predict_list(self.unvisited_cache)
         if hyperparam is None:
             hyperparam = self.af_params["explorationfactor"]
 
@@ -917,7 +919,7 @@ class BayesianOptimization:
         beta = np.sqrt(zeta * (2 * np.log((t ** (d / 2.0 + 2)) * (np.pi**2) / (3.0 * delta))))
 
         # compute UCB in bulk
-        list_lower_confidence_bound = (x_mu - beta * x_std)
+        list_lower_confidence_bound = list(x_mu - beta * x_std for (x_mu, x_std) in predictions)
         return list_lower_confidence_bound
 
     def visualize_after_opt(self):
