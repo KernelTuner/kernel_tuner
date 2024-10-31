@@ -24,7 +24,7 @@ except ImportError:
 
 from kernel_tuner import util
 
-supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast"]
+supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"]
 
 
 def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
@@ -162,7 +162,7 @@ _options = dict(
     covariancelengthscale=("The covariance length scale", 1.5),
     method=(
         "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
-        "multi-advanced",
+        "multi-ultrafast",
     ),
     samplingmethod=(
         "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
@@ -199,7 +199,7 @@ class BayesianOptimization:
         # get hyperparameters
         cov_kernel_name = get_hyperparam("covariancekernel", "matern32", self.supported_cov_kernels)
         cov_kernel_lengthscale = get_hyperparam("covariancelengthscale", 1.5)
-        acquisition_function = get_hyperparam("method", "multi-advanced", self.supported_methods)
+        acquisition_function = get_hyperparam("method", "multi-ultrafast", self.supported_methods)
         acq = acquisition_function
         acq_params = get_hyperparam("methodparams", {})
         multi_af_names = get_hyperparam("multi_af_names", ["ei", "poi", "lcb"])
@@ -342,6 +342,8 @@ class BayesianOptimization:
             self.optimize = self.__optimize_multi_advanced
         elif acquisition_function == "multi-fast":
             self.optimize = self.__optimize_multi_fast
+        elif acquisition_function == "multi-ultrafast":
+            self.optimize = self.__optimize_multi_ultrafast
         else:
             raise ValueError(
                 "Acquisition function must be one of {}, is {}".format(self.supported_methods, acquisition_function)
@@ -842,6 +844,43 @@ class BayesianOptimization:
                 observation = self.evaluate_objective_function(candidate_params)
                 self.update_after_evaluation(observation, candidate_index, candidate_params)
             self.fit_observations_to_model()
+
+    def __optimize_multi_ultrafast(self, max_fevals, predict_eval_ratio=5):
+        """Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once, or fewer if predictions take too long.
+        
+        The `predict_eval_ratio` denotes the ratio between the duration of the predictions and the duration of evaluations, as updating the prediction every evaluation is not efficient when evaluation is quick. 
+        Predictions are only updated if the previous evaluation took more than `predict_eval_ratio` * the last prediction duration, or the last prediction is more than `predict_eval_ratio` evaluations ago. 
+        """
+        last_prediction_counter = 0
+        last_prediction_time = 0
+        last_eval_time = 0
+        while self.fevals < max_fevals:
+            aqfs = self.multi_afs
+            # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
+            if last_prediction_time * predict_eval_ratio <= last_eval_time or last_prediction_counter >= predict_eval_ratio:
+                last_prediction_counter = 0
+                pred_start = time.perf_counter()
+                if last_eval_time > 0.0:
+                    self.fit_observations_to_model()
+                predictions, _, std = self.predict_list(self.unvisited_cache)
+                last_prediction_time = time.perf_counter() - pred_start
+            else:
+                last_prediction_counter += 1
+            eval_start = time.perf_counter()
+            hyperparam = self.contextual_variance(std)
+            if self.__visited_num >= self.searchspace_size:
+                raise ValueError(self.error_message_searchspace_fully_observed)
+            for af in aqfs:
+                if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
+                    break
+                list_of_acquisition_values = af(predictions, hyperparam)
+                best_af = self.argopt(list_of_acquisition_values)
+                del predictions[best_af]  # to avoid going out of bounds
+                candidate_params = self.unvisited_cache[best_af]
+                candidate_index = self.find_param_config_index(candidate_params)
+                observation = self.evaluate_objective_function(candidate_params)
+                self.update_after_evaluation(observation, candidate_index, candidate_params)
+            last_eval_time = time.perf_counter() - eval_start
 
     def af_random(self, predictions=None, hyperparam=None) -> list:
         """Acquisition function returning a randomly shuffled list for comparison."""
