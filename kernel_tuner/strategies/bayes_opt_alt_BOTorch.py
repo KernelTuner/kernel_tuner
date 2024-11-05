@@ -1,17 +1,10 @@
-""" BOTorch package from https://github.com/pytorch/botorch """
+"""BOTorch package from https://github.com/pytorch/botorch."""
 from __future__ import print_function
 
 from collections import OrderedDict
-import numpy as np
 
 try:
-    import torch
-    from botorch.models import SingleTaskGP
-    from botorch.fit import fit_gpytorch_model
-    from botorch.utils import standardize
-    from gpytorch.mlls import ExactMarginalLogLikelihood
-    from botorch.acquisition import UpperConfidenceBound
-    from botorch.optim import optimize_acqf
+    pass
 except Exception:
     BayesianOptimization = None
     bayes_opt_present = False
@@ -22,7 +15,7 @@ supported_methods = ["poi", "ei", "ucb"]
 
 
 def tune(runner, kernel_options, device_options, tuning_options):
-    """ Find the best performing kernel configuration in the parameter space
+    """Find the best performing kernel configuration in the parameter space.
 
     :params runner: A runner from kernel_tuner.runners
     :type runner: kernel_tuner.runner
@@ -44,7 +37,6 @@ def tune(runner, kernel_options, device_options, tuning_options):
     :rtype: list(dict()), dict()
 
     """
-
     if not bayes_opt_present:
         raise ImportError("Error: optional dependency Bayesian Optimization not installed")
     init_points = tuning_options.strategy_options.get("popsize", 20)

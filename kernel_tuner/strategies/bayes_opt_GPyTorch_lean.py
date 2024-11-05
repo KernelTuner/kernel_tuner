@@ -694,7 +694,7 @@ class BayesianOptimization:
         return self.all_results
 
     def objective_function(self, param_config: tuple) -> float:
-        return self.runner.run(param_config, self.tuning_options)
+        return self.runner.run([param_config], self.tuning_options)
 
     def evaluate_config(self, param_config_index: int) -> float:
         """Evaluates a parameter configuration, returns the time."""
