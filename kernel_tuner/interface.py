@@ -51,6 +51,7 @@ from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
     bayes_opt_alt_BOTorch,
+    bayes_opt_BOTorch,
     bayes_opt_GPyTorch,
     bayes_opt_GPyTorch_lean,
     bayes_opt_old,
@@ -88,7 +89,8 @@ strategy_map = {
     "bayes_opt_old": bayes_opt_old,
     "bayes_opt_GPyTorch": bayes_opt_GPyTorch,
     "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
-    "bayes_opt_BOTorch": bayes_opt_alt_BOTorch,
+    "bayes_opt_BOTorch": bayes_opt_BOTorch,
+    "bayes_opt_BOTorch_alt": bayes_opt_alt_BOTorch,
 }
 
 
@@ -618,7 +620,7 @@ def tune_kernel(
         and not callable(restrictions)
         and not any(isinstance(r, Constraint) for r in restrictions)
     ):
-        restrictions = util.parse_restrictions(restrictions, tune_params)
+        restrictions = util.compile_restrictions(restrictions, tune_params)
 
     # sort all the options into separate dicts
     opts = locals()
