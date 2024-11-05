@@ -60,7 +60,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
 
     # pass a temporary cache file to avoid duplicate execution
     cachefile = get_random_unique_filename('temp_', '.json')
-    cachefile = Path("hyperparamtuning_milo_bruteforce.json")
+    cachefile = Path("hyperparamtuning_milo_bruteforce_greedy_ils.json")
     kwargs['cache'] = str(cachefile)
 
     def put_if_not_present(target_dict, key, value):
@@ -78,7 +78,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
                                     objective='score', objective_higher_is_better=True, iterations=iterations, **kwargs)
     
     # remove the temporary cachefile and return only unique results in order
-    cachefile.unlink()
+    # cachefile.unlink()
     result_unique = dict()
     for r in result:
         config_id = ",".join(str(r[k]) for k in hyper_params.keys())
@@ -87,14 +87,15 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     return list(result_unique.values()), env
 
 if __name__ == "__main__":  # TODO remove in production
-    hyperparams = {
-        'popsize': [10, 20, 30],
-        'maxiter': [50, 100, 150],
-        'w': [0.25, 0.5, 0.75],
-        'c1': [1.0, 2.0, 3.0],
-        'c2': [0.5, 1.0, 1.5]
-    }
-    result, env = tune_hyper_params('pso', hyperparams)
+    # hyperparams = {
+    #     'popsize': [10, 20, 30],
+    #     'maxiter': [50, 100, 150],
+    #     'w': [0.25, 0.5, 0.75],
+    #     'c1': [1.0, 2.0, 3.0],
+    #     'c2': [0.5, 1.0, 1.5]
+    # }
+    # result, env = tune_hyper_params('pso', hyperparams)
+
     # hyperparams = {
     #     'neighbor': ['Hamming', 'adjacent'],
     #     'restart': [True, False],
@@ -102,5 +103,11 @@ if __name__ == "__main__":  # TODO remove in production
     #     'random_walk': [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
     # }
     # result, env = tune_hyper_params('greedy_ils', hyperparams)
+
+    hyperparams = {
+        'method': ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr'],
+    }
+    result, env = tune_hyper_params('dual_annealing', hyperparams)
+
     print(result)
     print(env['best_config'])

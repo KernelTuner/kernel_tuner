@@ -1,4 +1,4 @@
-"""The strategy that uses particle swarm optimization."""
+"""Bayesian Optimization implementation using the Ax platform."""
 
 from ax import optimize
 

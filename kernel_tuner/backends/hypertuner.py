@@ -64,8 +64,13 @@ class HypertunerFunctions(Backend):
         # gpus = ["RTX_3090", "RTX_2080_Ti"]
         # applications = None
 
-        gpus = ["A100", "A4000", "MI50", "MI250X", "W6600"]
+        gpus = ["A100", "A4000", "MI250X", "W6600"]
         applications = [
+            {
+                "name": "dedispersion_milo",
+                "folder": "../autotuning_methodology/cached_data_used/kernels",
+                "input_file": "dedispersion_milo.json"
+            },
             {
                 "name": "convolution_milo",
                 "folder": "../autotuning_methodology/cached_data_used/kernels",
