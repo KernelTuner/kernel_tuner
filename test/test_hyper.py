@@ -15,6 +15,6 @@ def test_hyper(env):
 
     target_strategy = "genetic_algorithm"
 
-    result, env = tune_hyper_params(target_strategy, hyper_params, iterations=1, verbose=True)
+    result, env = tune_hyper_params(target_strategy, hyper_params, iterations=1, verbose=True, cache=None)
     assert len(result) == 2
     assert 'best_config' in env
