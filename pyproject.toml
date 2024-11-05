@@ -114,13 +114,14 @@ markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
 optional = true
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.0"
+pytest-timeout = "^2.3.1"
 pytest-cov = "^5.0.0"
 mock = "^5.1.0"
 nox = "^2024.4.15"
 nox-poetry = "^1.0.3"
 ruff = "^0.4.4"
 pep440 = "^0.1.2"
-tomli = "^2.0.1"      # held back by Python <= 3.10, can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
+tomli = "^2.0.1"          # held back by Python <= 3.10, can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
 
 # development dependencies are unused for now, as this is already covered by test and docs
 # # ATTENTION: if anything is changed here, run `poetry update`
