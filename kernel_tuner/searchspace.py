@@ -50,9 +50,9 @@ class Searchspace:
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
-        self.restrictions = restrictions
+        self.restrictions = restrictions.copy()
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
-        self._modified_restrictions = restrictions
+        self._modified_restrictions = restrictions.copy()
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
@@ -788,3 +788,36 @@ class Searchspace:
                 f"The number of ordered parameter configurations ({len(ordered_param_configs)}) differs from the original number of parameter configurations ({len(param_configs)})"
             )
         return ordered_param_configs
+    
+    def to_ax_searchspace(self):
+        """Convert this searchspace to an Ax SearchSpace."""
+        from ax import ChoiceParameter, FixedParameter, ParameterType, SearchSpace
+
+        # create searchspace
+        ax_searchspace = SearchSpace([])
+
+        # add the parameters
+        for param_name, param_values in self.tune_params.items():
+            if len(param_values) == 0:
+                continue
+
+            # convert the types
+            assert all(isinstance(param_values[0], type(v)) for v in param_values), f"Parameter values of mixed types are not supported: {param_values}"
+            param_type_mapping = {
+                str: ParameterType.STRING,
+                int: ParameterType.INT,
+                float: ParameterType.FLOAT,
+                bool: ParameterType.BOOL
+            }
+            param_type = param_type_mapping[type(param_values[0])]
+
+            # add the parameter
+            if len(param_values) == 1:
+                ax_searchspace.add_parameter(FixedParameter(param_name, param_type, param_values[0]))
+            else:
+                ax_searchspace.add_parameter(ChoiceParameter(param_name, param_type, param_values))
+
+        # add the constraints
+        raise NotImplementedError("Conversion to Ax SearchSpace has not been fully implemented as Ax Searchspaces can't capture full complexity.")
+
+        return ax_searchspace
