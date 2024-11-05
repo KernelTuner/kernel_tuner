@@ -50,9 +50,9 @@ class Searchspace:
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
-        self.restrictions = restrictions.copy()
+        self.restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
-        self._modified_restrictions = restrictions.copy()
+        self._modified_restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
