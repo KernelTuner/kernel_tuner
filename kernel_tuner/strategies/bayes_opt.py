@@ -1,4 +1,5 @@
 """Bayesian Optimization implementation from the thesis by Willemsen."""
+
 import itertools
 import time
 import warnings
@@ -13,6 +14,7 @@ from scipy.stats.qmc import LatinHypercube
 # BO imports
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import CostFunc
+from kernel_tuner.util import StopCriterionReached
 
 try:
     from sklearn.gaussian_process import GaussianProcessRegressor
@@ -137,11 +139,12 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         bo = BayesianOptimization(
             parameter_space, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
         )
-    except util.StopCriterionReached as e:
-        print(
+    except StopCriterionReached:
+        warnings.warn(
             "Stop criterion reached during initialization, was popsize (default 20) greater than max_fevals or the alotted time?"
         )
-        raise e
+        return cost_func.results
+        # raise e
     try:
         if max_fevals - bo.fevals <= 0:
             raise ValueError("No function evaluations left for optimization after sampling")
@@ -847,9 +850,9 @@ class BayesianOptimization:
 
     def __optimize_multi_ultrafast(self, max_fevals, predict_eval_ratio=5):
         """Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once, or fewer if predictions take too long.
-        
-        The `predict_eval_ratio` denotes the ratio between the duration of the predictions and the duration of evaluations, as updating the prediction every evaluation is not efficient when evaluation is quick. 
-        Predictions are only updated if the previous evaluation took more than `predict_eval_ratio` * the last prediction duration, or the last prediction is more than `predict_eval_ratio` evaluations ago. 
+
+        The `predict_eval_ratio` denotes the ratio between the duration of the predictions and the duration of evaluations, as updating the prediction every evaluation is not efficient when evaluation is quick.
+        Predictions are only updated if the previous evaluation took more than `predict_eval_ratio` * the last prediction duration, or the last prediction is more than `predict_eval_ratio` evaluations ago.
         """
         last_prediction_counter = 0
         last_prediction_time = 0
@@ -857,7 +860,10 @@ class BayesianOptimization:
         while self.fevals < max_fevals:
             aqfs = self.multi_afs
             # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
-            if last_prediction_time * predict_eval_ratio <= last_eval_time or last_prediction_counter >= predict_eval_ratio:
+            if (
+                last_prediction_time * predict_eval_ratio <= last_eval_time
+                or last_prediction_counter >= predict_eval_ratio
+            ):
                 last_prediction_counter = 0
                 pred_start = time.perf_counter()
                 if last_eval_time > 0.0:

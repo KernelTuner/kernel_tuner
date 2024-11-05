@@ -61,7 +61,7 @@ kernel_tuner = "kernel_tuner.interface:entry_point"
 python = ">=3.10,<3.14"         # NOTE when changing the supported Python versions, also change the test versions in the noxfile
 numpy = "^1.26.0"               # Python 3.12 requires numpy at least 1.26
 scipy = ">=1.11.0"
-ax = ">=0.4.3"
+ax-platform = ">=0.4.3"
 packaging = "*"                 # required by file_utils
 jsonschema = "*"
 python-constraint2 = "^2.0.0b8"
