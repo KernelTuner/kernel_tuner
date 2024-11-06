@@ -53,10 +53,11 @@ def get_options(strategy_options, options):
 
 
 class CostFunc:
-    def __init__(self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True):
+    def __init__(self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True, return_invalid=False):
         self.runner = runner
         self.snap = snap
         self.scaling = scaling
+        self.return_invalid = return_invalid
         self.searchspace = searchspace
         self.tuning_options = tuning_options
         if isinstance(self.tuning_options, dict):
@@ -111,8 +112,11 @@ class CostFunc:
             self.runner.last_strategy_start_time = perf_counter()
 
         # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective] or sys.float_info.max
-        return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
+        if self.return_invalid:
+            return_value = result[self.tuning_options.objective]
+        else:
+            return_value = result[self.tuning_options.objective] or sys.float_info.max
+        return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
 
         return return_value
 
