@@ -2,7 +2,7 @@ import ast
 import re
 from pathlib import Path
 from random import choice, shuffle
-from typing import List
+from typing import List, Union
 
 import numpy as np
 from constraint import (
@@ -16,6 +16,13 @@ from constraint import (
     RecursiveBacktrackingSolver,
     Solver,
 )
+
+try:
+    import torch
+    from torch import Tensor
+    torch_available = True
+except ImportError:
+    torch_available = False
 
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import compile_restrictions, default_block_size_names
@@ -50,6 +57,7 @@ class Searchspace:
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
+        self.tensorspace = None
         self.restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
         self._modified_restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
@@ -573,10 +581,40 @@ class Searchspace:
         # map(get) is ~40% faster than numpy[indices] (average based on six searchspaces with 10000, 100000 and 1000000 configs and 10 or 100 random indices)
         return list(map(self.list.__getitem__, indices))
 
-    def get_param_config_index(self, param_config: tuple):
+    def get_param_config_index(self, param_config: Union[tuple, Tensor]):
         """Lookup the index for a parameter configuration, returns None if not found."""
+        if torch_available and isinstance(param_config, Tensor):
+            param_config = self.tensor_to_param_config(param_config)
         # constant time O(1) access - much faster than any other method, but needs a shadow dict of the search space
         return self.__dict.get(param_config, None)
+    
+    def initialize_tensorspace(self):
+        """Encode the searchspace as floats in a Tensor. Save the mapping."""
+        self._map_tensor_to_param = []  # TODO
+        self._map_param_to_tensor = []  # TODO
+        numpy_repr = self.get_list_numpy()
+        numpy_repr = np.apply_along_axis(self.param_config_to_tensor, 0, numpy_repr)
+        self.tensorspace = torch.from_numpy(numpy_repr.astype(float))
+    
+    def get_tensorspace(self):
+        """Get the searchspace encoded in a Tensor."""
+        if self.tensorspace is None:
+            self.initialize_tensorspace()
+        return self.tensorspace
+    
+    def param_config_to_tensor(self, param_config: tuple):
+        """Convert from a parameter configuration to a Tensor."""
+        if self.tensorspace is None:
+            self.initialize_tensorspace()
+        # TODO
+        raise NotImplementedError()
+    
+    def tensor_to_param_config(self, tensor: Tensor):
+        """Convert from a Tensor to a parameter configuration."""
+        if self.tensorspace is None:
+            self.initialize_tensorspace()
+        # TODO
+        raise NotImplementedError()
 
     def __prepare_neighbors_index(self):
         """Prepare by calculating the indices for the individual parameters."""

@@ -37,7 +37,7 @@ class BayesianOptimization():
 
         # set up conversion to tensors
         self.searchspace = searchspace
-        self.searchspace_tensors = torch.from_numpy(searchspace.get_list_numpy().astype(float))
+        self.searchspace_tensors = searchspace.get_tensorspace()
         self.train_X = torch.empty_like(self.searchspace_tensors)
         self.train_Y = torch.empty(len(self.train_X))
 
@@ -63,6 +63,7 @@ class BayesianOptimization():
             if X.dim() == 1:
                 X = [X]
             for config in X:
+                assert isinstance(config, Tensor), f"Config must be a Tensor, but is of type {type(config)} ({config})"
                 res, valid = self.run_config(config)
                 if valid:
                     valid_configs.append([config])
