@@ -4,7 +4,7 @@ import numpy as np
 
 try:
     import torch
-    from botorch import fit_gpytorch_model
+    from botorch import fit_gpytorch_mll
     from botorch.acquisition import ExpectedImprovement
     from botorch.models import SingleTaskGP
     from botorch.optim import optimize_acqf_discrete
@@ -66,21 +66,29 @@ class BayesianOptimization():
         self.train_Y = self.evaluate_configs(self.train_X)
         self.initial_sample_taken = True
 
+    def initialize_model(self, state_dict=None):
+        """Initialize the model, possibly with a state dict for faster fitting."""
+        model = SingleTaskGP(self.train_X, self.train_Y)
+        mll = ExactMarginalLogLikelihood(model.likelihood, model)
+        # SumMarginalLogLikelihood
+        if state_dict is not None:
+            model.load_state_dict(state_dict)
+        return mll, model
+
     def run(self, max_fevals: int):
         """Run the Bayesian Optimization loop for at most `max_fevals`."""
         try:
             if not self.initial_sample_taken:
                 self.initial_sample()
+                mll, model = self.initialize_model()
 
             # Bayesian optimization loop
             for _ in range(max_fevals):
-                # Fit a Gaussian Process model
-                gp = SingleTaskGP(self.train_X, self.train_Y)
-                mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
-                fit_gpytorch_model(mll)
+                # fit a Gaussian Process model
+                fit_gpytorch_mll(mll)
                 
                 # Define the acquisition function
-                ei = ExpectedImprovement(model=gp, best_f=self.train_Y.min(), maximize=False)
+                ei = ExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
                 
                 # Optimize acquisition function to find the next evaluation point
                 candidate, _ = optimize_acqf_discrete(
@@ -93,6 +101,9 @@ class BayesianOptimization():
                 new_y = self.evaluate_configs(candidate)
                 self.train_X = torch.cat([self.train_X, candidate])
                 self.train_Y = torch.cat([self.train_Y, new_y])
+
+                # reinitialize the models so they are ready for fitting on next iteration
+                mll, model = self.initialize_model(model.state_dict())
         except util.StopCriterionReached as e:
             if self.tuning_options.verbose:
                 print(e)
