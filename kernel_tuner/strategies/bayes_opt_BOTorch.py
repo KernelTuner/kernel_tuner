@@ -33,7 +33,7 @@ class BayesianOptimization():
         self.initial_sample_taken = False
         self.initial_sample_size = tuning_options.strategy_options.get("popsize", 20)
         self.tuning_options = tuning_options
-        self.cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False)
+        self.cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, return_invalid=True)
 
         # set up conversion to tensors
         self.searchspace = searchspace
@@ -41,29 +41,47 @@ class BayesianOptimization():
         self.train_X = torch.empty_like(self.searchspace_tensors)
         self.train_Y = torch.empty(len(self.train_X))
 
-        # get bounds
-        bounds = []
-        for v in searchspace.params_values:
-            bounds.append([min(v), max(v)])
-        bounds = torch.from_numpy(np.array(bounds).transpose())
+        # # get bounds
+        # bounds = []
+        # for v in searchspace.params_values:
+        #     bounds.append([min(v), max(v)])
+        # bounds = torch.from_numpy(np.array(bounds).transpose())
+
+    def run_config(self, config):
+        """Run a single configuration. Returns the result and whether it is valid."""
+        result = self.cost_func(config)
+        valid = not isinstance(result, util.ErrorConfig)
+        if not valid:
+            result = np.nan
+        return result, valid
 
     def evaluate_configs(self, X: Tensor):
-        """Evaluate a tensor of one or multiple configurations."""
+        """Evaluate a tensor of one or multiple configurations. Modifies train_X and train_Y accordingly."""
         if isinstance(X, Tensor):
-            results = []
+            valid_configs = []
+            valid_results = []
             if X.dim() == 1:
-                results = [[self.cost_func(X)]]
-            else:
-                results = [[self.cost_func(c)] for c in X]
-            return torch.from_numpy(np.array(results))
+                X = [X]
+            for config in X:
+                res, valid = self.run_config(config)
+                if valid:
+                    valid_configs.append([config])
+                    valid_results.append([res])
+                else:
+                    # remove invalid configurations from the full searchspace
+                    index = self.searchspace.get_param_config_index(config)
+                    self.searchspace_tensors = torch.cat((self.searchspace_tensors[:index], self.searchspace_tensors[index+1:]))
+            # add valid results to the training set
+            self.train_X = torch.cat([self.train_X, torch.from_numpy(np.array(valid_configs))])
+            self.train_Y = torch.cat([self.train_Y, torch.from_numpy(np.array(valid_results))])
         else:
             raise NotImplementedError(f"Evaluation has not been implemented for type {type(X)}")
         
     def initial_sample(self):
         """Take an initial sample."""
         sample_indices = torch.from_numpy(self.searchspace.get_random_sample_indices(self.initial_sample_size))
-        self.train_X = self.searchspace_tensors.index_select(0, sample_indices)
-        self.train_Y = self.evaluate_configs(self.train_X)
+        sample_configs = self.searchspace_tensors.index_select(0, sample_indices)
+        self.evaluate_configs(sample_configs)
         self.initial_sample_taken = True
 
     def initialize_model(self, state_dict=None):
@@ -97,10 +115,8 @@ class BayesianOptimization():
                     choices=self.searchspace_tensors
                 )
                 
-                # Evaluate the new candidate and update the dataset
-                new_y = self.evaluate_configs(candidate)
-                self.train_X = torch.cat([self.train_X, candidate])
-                self.train_Y = torch.cat([self.train_Y, new_y])
+                # evaluate the new candidate
+                self.evaluate_configs(candidate)
 
                 # reinitialize the models so they are ready for fitting on next iteration
                 mll, model = self.initialize_model(model.state_dict())
