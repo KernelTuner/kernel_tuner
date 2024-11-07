@@ -863,6 +863,8 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
 def tune_kernel_T1(
     input_filepath: Path,
     cache_filepath: Path = None,
+    objective="time",
+    objective_higher_is_better=False,
     simulation_mode=False,
     output_T4=True,
     iterations=7,
@@ -945,7 +947,7 @@ def tune_kernel_T1(
             raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
 
     # tune with the converted inputs
-    # TODO add objective to tune_kernel and get_t4_results calls once available in T1
+    # TODO get_t4_results calls once available in T1
     results, env = tune_kernel(
         kernel_name,
         kernel_source,
@@ -966,9 +968,11 @@ def tune_kernel_T1(
         iterations=iterations,
         strategy=strategy,
         strategy_options=strategy_options,
+        objective=objective,
+        objective_higher_is_better=objective_higher_is_better,
     )
     if output_T4:
-        return get_t4_metadata(), get_t4_results(results, tune_params)
+        return get_t4_metadata(), get_t4_results(results, tune_params, objective=objective)
     return results, env
 
 

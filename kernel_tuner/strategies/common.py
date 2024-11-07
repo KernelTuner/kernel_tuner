@@ -30,7 +30,9 @@ $STRAT_OPT$
 
 def get_strategy_docstring(name, strategy_options):
     """Generate docstring for a 'tune' method of a strategy."""
-    return _docstring_template.replace("$NAME$", name).replace("$STRAT_OPT$", make_strategy_options_doc(strategy_options))
+    return _docstring_template.replace("$NAME$", name).replace(
+        "$STRAT_OPT$", make_strategy_options_doc(strategy_options)
+    )
 
 
 def make_strategy_options_doc(strategy_options):
@@ -53,7 +55,9 @@ def get_options(strategy_options, options):
 
 
 class CostFunc:
-    def __init__(self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True, return_invalid=False):
+    def __init__(
+        self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True, return_invalid=False
+    ):
         self.runner = runner
         self.snap = snap
         self.scaling = scaling
@@ -61,7 +65,9 @@ class CostFunc:
         self.searchspace = searchspace
         self.tuning_options = tuning_options
         if isinstance(self.tuning_options, dict):
-            self.tuning_options['max_fevals'] = min(tuning_options['max_fevals'] if 'max_fevals' in tuning_options else np.inf, searchspace.size)
+            self.tuning_options["max_fevals"] = min(
+                tuning_options["max_fevals"] if "max_fevals" in tuning_options else np.inf, searchspace.size
+            )
         self.results = []
 
     def __call__(self, x, check_restrictions=True):
@@ -69,8 +75,8 @@ class CostFunc:
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
 
         # error value to return for numeric optimizers that need a numerical value
-        logging.debug('_cost_func called')
-        logging.debug('x: ' + str(x))
+        logging.debug("_cost_func called")
+        logging.debug("x: " + str(x))
 
         # check if max_fevals is reached or time limit is exceeded
         util.check_stop_criterion(self.tuning_options)
@@ -83,7 +89,7 @@ class CostFunc:
                 params = snap_to_nearest_config(x, self.searchspace.tune_params)
         else:
             params = x
-        logging.debug('params ' + str(params))
+        logging.debug("params " + str(params))
 
         legal = True
         result = {}
@@ -152,10 +158,10 @@ class CostFunc:
                     eps = min(eps, np.amin(np.gradient(vals)))
 
         self.tuning_options["eps"] = eps
-        logging.debug('get_bounds_x0_eps called')
-        logging.debug('bounds ' + str(bounds))
-        logging.debug('x0 ' + str(x0))
-        logging.debug('eps ' + str(eps))
+        logging.debug("get_bounds_x0_eps called")
+        logging.debug("bounds " + str(bounds))
+        logging.debug("x0 " + str(x0))
+        logging.debug("eps " + str(eps))
 
         return bounds, x0, eps
 
@@ -173,7 +179,7 @@ def setup_method_arguments(method, bounds):
     kwargs = {}
     # pass bounds to methods that support it
     if method in ["L-BFGS-B", "TNC", "SLSQP"]:
-        kwargs['bounds'] = bounds
+        kwargs["bounds"] = bounds
     return kwargs
 
 
@@ -186,21 +192,21 @@ def setup_method_options(method, tuning_options):
         maxiter = tuning_options.strategy_options.maxiter
     else:
         maxiter = 100
-    kwargs['maxiter'] = maxiter
+    kwargs["maxiter"] = maxiter
     if method in ["Nelder-Mead", "Powell"]:
-        kwargs['maxfev'] = maxiter
+        kwargs["maxfev"] = maxiter
     elif method == "L-BFGS-B":
-        kwargs['maxfun'] = maxiter
+        kwargs["maxfun"] = maxiter
 
     # pass eps to methods that support it
     if method in ["CG", "BFGS", "L-BFGS-B", "TNC", "SLSQP"]:
-        kwargs['eps'] = tuning_options.eps
+        kwargs["eps"] = tuning_options.eps
     elif method == "COBYLA":
-        kwargs['rhobeg'] = tuning_options.eps
+        kwargs["rhobeg"] = tuning_options.eps
 
     # not all methods support 'disp' option
-    if method not in ['TNC']:
-        kwargs['disp'] = tuning_options.verbose
+    if method not in ["TNC"]:
+        kwargs["disp"] = tuning_options.verbose
 
     return kwargs
 
@@ -247,5 +253,5 @@ def scale_from_params(params, tune_params, eps):
     """Helper func to do the inverse of the 'unscale' function."""
     x = np.zeros(len(params))
     for i, v in enumerate(tune_params.values()):
-        x[i] = 0.5 * eps + v.index(params[i])*eps
+        x[i] = 0.5 * eps + v.index(params[i]) * eps
     return x
