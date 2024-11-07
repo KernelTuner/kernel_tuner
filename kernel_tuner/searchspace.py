@@ -1,4 +1,5 @@
 import ast
+import numbers
 import re
 from pathlib import Path
 from random import choice, shuffle
@@ -58,6 +59,9 @@ class Searchspace:
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.tensorspace = None
+        self.tensor_categorical_dimensions = []
+        self._map_tensor_to_param = []
+        self._map_param_to_tensor = []
         self.restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
         self._modified_restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
@@ -590,10 +594,21 @@ class Searchspace:
     
     def initialize_tensorspace(self):
         """Encode the searchspace as floats in a Tensor. Save the mapping."""
-        self._map_tensor_to_param = []  # TODO
-        self._map_param_to_tensor = []  # TODO
+        assert self.tensorspace is None, "Tensorspace is already initialized"
+
+        # generate the mappings to and from tensor values
+        for index, param_values in enumerate(self.params_values):
+            if all(isinstance(v, numbers.Real) for v in param_values):
+                tensor_values = np.array(param_values).astype(float)
+            else:
+                self.tensor_categorical_dimensions.append(index)
+                tensor_values = np.arange(len(param_values))
+            self._map_param_to_tensor.append(dict(zip(param_values, tensor_values)))
+            self._map_tensor_to_param.append(dict(zip(tensor_values, param_values)))
+
+        # apply the mappings on the full searchspace
         numpy_repr = self.get_list_numpy()
-        numpy_repr = np.apply_along_axis(self.param_config_to_tensor, 0, numpy_repr)
+        numpy_repr = np.apply_along_axis(self.param_config_to_tensor, 1, numpy_repr)
         self.tensorspace = torch.from_numpy(numpy_repr.astype(float))
     
     def get_tensorspace(self):
@@ -604,17 +619,24 @@ class Searchspace:
     
     def param_config_to_tensor(self, param_config: tuple):
         """Convert from a parameter configuration to a Tensor."""
-        if self.tensorspace is None:
+        if len(self._map_param_to_tensor) == 0:
             self.initialize_tensorspace()
-        # TODO
-        raise NotImplementedError()
+        array = []
+        for i, param in enumerate(param_config):
+            array.append(self._map_param_to_tensor[i][param])
+        # TODO write tests
+        return torch.from_numpy(np.array(array))
     
     def tensor_to_param_config(self, tensor: Tensor):
         """Convert from a Tensor to a parameter configuration."""
-        if self.tensorspace is None:
+        assert tensor.dim() == 1, f"Parameter configuration tensor must be 1-dimensional, is {tensor.dim()} ({tensor})"
+        if len(self._map_tensor_to_param) == 0:
             self.initialize_tensorspace()
-        # TODO
-        raise NotImplementedError()
+        config = []
+        for i, param in enumerate(tensor):
+            config.append(self._map_tensor_to_param[i][param])
+        # TODO write tests
+        return tuple(config)
 
     def __prepare_neighbors_index(self):
         """Prepare by calculating the indices for the individual parameters."""
