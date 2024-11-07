@@ -47,7 +47,7 @@ class BayesianOptimization():
         #     bounds.append([min(v), max(v)])
         # bounds = torch.from_numpy(np.array(bounds).transpose())
 
-    def run_config(self, config):
+    def run_config(self, config: tuple):
         """Run a single configuration. Returns the result and whether it is valid."""
         result = self.cost_func(config)
         valid = not isinstance(result, util.ErrorConfig)
@@ -64,14 +64,16 @@ class BayesianOptimization():
                 X = [X]
             for config in X:
                 assert isinstance(config, Tensor), f"Config must be a Tensor, but is of type {type(config)} ({config})"
-                res, valid = self.run_config(config)
+                param_config = self.searchspace.tensor_to_param_config(config)
+                res, valid = self.run_config(param_config)
                 if valid:
                     valid_configs.append([config])
                     valid_results.append([res])
-                else:
-                    # remove invalid configurations from the full searchspace
-                    index = self.searchspace.get_param_config_index(config)
-                    self.searchspace_tensors = torch.cat((self.searchspace_tensors[:index], self.searchspace_tensors[index+1:]))
+                
+                # remove evaluated configurations from the full searchspace
+                index = self.searchspace.get_param_config_index(param_config)
+                self.searchspace_tensors = torch.cat((self.searchspace_tensors[:index], self.searchspace_tensors[index+1:]))
+
             # add valid results to the training set
             self.train_X = torch.cat([self.train_X, torch.from_numpy(np.array(valid_configs))])
             self.train_Y = torch.cat([self.train_Y, torch.from_numpy(np.array(valid_results))])
@@ -110,6 +112,7 @@ class BayesianOptimization():
                 ei = ExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
                 
                 # Optimize acquisition function to find the next evaluation point
+                # TODO look into how to handle categorical parameters with MixedSingleTaskGP
                 candidate, _ = optimize_acqf_discrete(
                     ei, 
                     q=1, 

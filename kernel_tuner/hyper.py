@@ -61,7 +61,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     # pass a temporary cache file to avoid duplicate execution
     if 'cache' not in kwargs:
         cachefile = get_random_unique_filename('temp_', '.json')
-        cachefile = Path("hyperparamtuning_milo_bruteforce_greedy_ils.json")
+        cachefile = Path("hyperparamtuning_milo_bruteforce_dual_annealing.json")
         kwargs['cache'] = str(cachefile)
 
     def put_if_not_present(target_dict, key, value):

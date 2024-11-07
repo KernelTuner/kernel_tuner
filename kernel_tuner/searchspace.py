@@ -634,7 +634,7 @@ class Searchspace:
             self.initialize_tensorspace()
         config = []
         for i, param in enumerate(tensor):
-            config.append(self._map_tensor_to_param[i][param])
+            config.append(self._map_tensor_to_param[i][float(param)])
         # TODO write tests
         return tuple(config)
 
