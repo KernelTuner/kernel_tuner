@@ -1,3 +1,5 @@
+"""Module for functionality that is commonly used throughout Kernel Tuner."""
+
 import logging
 import numbers
 import sys
@@ -56,6 +58,8 @@ def get_options(strategy_options, options):
 
 
 class CostFunc:
+    """Class encapsulating the CostFunc method."""
+
     def __init__(
         self, searchspace: Searchspace, tuning_options, runner, *, 
         scaling=False, snap=True, encode_non_numeric=False, return_invalid=False
@@ -105,7 +109,7 @@ class CostFunc:
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug("_cost_func called")
-        logging.debug("x: " + str(x))
+        logging.debug("x: %s", str(x))
 
         # check if max_fevals is reached or time limit is exceeded
         util.check_stop_criterion(self.tuning_options)
@@ -118,7 +122,7 @@ class CostFunc:
                 params = snap_to_nearest_config(x, self.searchspace.tune_params)
         else:
             params = x
-        logging.debug("params " + str(params))
+        logging.debug("params %s", str(params))
 
         legal = True
         result = {}
@@ -188,9 +192,9 @@ class CostFunc:
 
         self.tuning_options["eps"] = eps
         logging.debug("get_bounds_x0_eps called")
-        logging.debug("bounds " + str(bounds))
-        logging.debug("x0 " + str(x0))
-        logging.debug("eps " + str(eps))
+        logging.debug("bounds %s", str(bounds))
+        logging.debug("x0 %s", str(x0))
+        logging.debug("eps %s", str(eps))
 
         return bounds, x0, eps
 
