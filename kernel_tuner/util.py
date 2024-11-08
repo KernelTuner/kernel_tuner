@@ -889,7 +889,7 @@ def parse_restrictions(
         if len(comparators_found) != 1:
             return None
         comparator = comparators_found[0]
-
+    
         # split the string on the comparison and remove leading and trailing whitespace
         left, right = tuple(s.strip() for s in restriction.split(comparator))
 
@@ -1032,7 +1032,8 @@ def parse_restrictions(
                 ):
                     parsed_restriction = parsed_restriction[1:-1]
                 # check if we can turn this into the built-in numeric comparison constraint
-                finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
+                if all(all(isinstance(v, (int, float)) and type(v) is not type(True) for v in tune_params[param]) for param in params_used):
+                    finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
                 if finalized_constraint is None:
                     # check if we can turn this into the built-in equality comparison constraint
                     finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
