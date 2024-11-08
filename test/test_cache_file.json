@@ -2,7 +2,10 @@
     "device_name": "NVIDIA RTX A4000",
     "kernel_name": "vector_add",
     "tune_params_keys": [
-        "block_size_x"
+        "block_size_x",
+        "test_string",
+        "test_bool",
+        "test_mixed"
     ],
     "tune_params": {
         "block_size_x": [
@@ -21,11 +24,28 @@
             896,
             960,
             1024
+        ],
+        "test_string": [
+            "alg_1",
+            "alg_2"
+        ],
+        "test_bool": [
+            true,
+            false
+        ],
+        "test_mixed": [
+            "test",
+            1,
+            true,
+            2.45
         ]
     },
     "cache": {
-        "128": {
+        "128,alg_2,True,2.45": {
             "block_size_x": 128,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04073600071881499,
             "times": [
                 0.1268800050020218,
@@ -43,8 +63,11 @@
             "framework_time": 0.8587837219238281,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "192": {
+        "192,alg_2,True,2.45": {
             "block_size_x": 192,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04095085710287094,
             "times": [
                 0.12908799946308136,
@@ -62,8 +85,11 @@
             "framework_time": 1.6656816005706787,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "256": {
+        "256,alg_2,True,2.45": {
             "block_size_x": 256,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04189257137477398,
             "times": [
                 0.13180799782276154,
@@ -81,8 +107,11 @@
             "framework_time": 1.6054585576057434,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "320": {
+        "320,alg_2,True,2.45": {
             "block_size_x": 320,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04208914376795292,
             "times": [
                 0.1358720064163208,
@@ -100,8 +129,11 @@
             "framework_time": 1.4494173228740692,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "384": {
+        "384,alg_2,True,2.45": {
             "block_size_x": 384,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04174171467976911,
             "times": [
                 0.13251200318336487,
@@ -119,8 +151,11 @@
             "framework_time": 1.682564616203308,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "448": {
+        "448,alg_2,True,2.45": {
             "block_size_x": 448,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.03249828570655414,
             "times": [
                 0.0647680014371872,
@@ -138,8 +173,11 @@
             "framework_time": 1.5890561044216156,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "512": {
+        "512,alg_2,True,2.45": {
             "block_size_x": 512,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04139885599059718,
             "times": [
                 0.13023999333381653,
@@ -157,8 +195,11 @@
             "framework_time": 1.853298395872116,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "576": {
+        "576,alg_2,True,2.45": {
             "block_size_x": 576,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04189257137477398,
             "times": [
                 0.12995199859142303,
@@ -176,8 +217,11 @@
             "framework_time": 1.8403716385364532,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "640": {
+        "640,alg_2,True,2.45": {
             "block_size_x": 640,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.0411702852163996,
             "times": [
                 0.12796799838542938,
@@ -195,8 +239,11 @@
             "framework_time": 1.8264725804328918,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "704": {
+        "704,alg_2,True,2.45": {
             "block_size_x": 704,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04184228580977235,
             "times": [
                 0.1343040019273758,
@@ -214,8 +261,11 @@
             "framework_time": 1.6709677875041962,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "768": {
+        "768,alg_2,True,2.45": {
             "block_size_x": 768,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.03175771422684193,
             "times": [
                 0.06230400130152702,
@@ -233,8 +283,11 @@
             "framework_time": 1.7531625926494598,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "832": {
+        "832,alg_2,True,2.45": {
             "block_size_x": 832,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.040941715240478516,
             "times": [
                 0.12998400628566742,
@@ -252,8 +305,11 @@
             "framework_time": 2.1368376910686493,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "896": {
+        "896,alg_2,True,2.45": {
             "block_size_x": 896,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04177371359297207,
             "times": [
                 0.12931199371814728,
@@ -271,8 +327,11 @@
             "framework_time": 2.03637033700943,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "960": {
+        "960,alg_2,True,2.45": {
             "block_size_x": 960,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.042189714631864,
             "times": [
                 0.1335040032863617,
@@ -290,8 +349,11 @@
             "framework_time": 1.7383433878421783,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "1024": {
+        "1024,alg_2,True,2.45": {
             "block_size_x": 1024,
+            "test_string": "alg_2",
+            "test_bool": true,
+            "test_mixed": 2.45,
             "time": 0.04114742816558906,
             "times": [
                 0.13087999820709229,

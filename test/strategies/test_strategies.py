@@ -31,6 +31,9 @@ def vector_add():
     args = [c, a, b, n]
     tune_params = dict()
     tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
+    tune_params["test_string"] = ["alg_1", "alg_2"]
+    tune_params["test_bool"] = [True, False]
+    tune_params["test_mixed"] = ["test", 1, True, 2.45]
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
@@ -58,7 +61,9 @@ def test_strategies(vector_add, strategy):
         filter_options = options
     filter_options["max_fevals"] = 10
 
-    results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+    restrictions = ["test_string == 'alg_2'", "test_bool == True", "test_mixed == 2.45"]
+
+    results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                          verbose=False, cache=cache_filename, simulation_mode=True)
 
     assert len(results) > 0
@@ -76,6 +81,9 @@ def test_strategies(vector_add, strategy):
     # check whether the returned dictionaries contain exactly the expected keys and the appropriate type
     expected_items = {
         'block_size_x': int,
+        'test_string': str,
+        'test_bool': bool,
+        'test_mixed': float,
         'time': (float, int),
         'times': list,
         'compile_time': (float, int),
