@@ -6,7 +6,7 @@ try:
     import torch
     from botorch import fit_gpytorch_mll
     from botorch.acquisition import ExpectedImprovement
-    from botorch.models import SingleTaskGP
+    from botorch.models import MixedSingleTaskGP, SingleTaskGP
     from botorch.optim import optimize_acqf_discrete
     from gpytorch.mlls import ExactMarginalLogLikelihood
     from torch import Tensor
@@ -87,7 +87,10 @@ class BayesianOptimization():
 
     def initialize_model(self, state_dict=None):
         """Initialize the model, possibly with a state dict for faster fitting."""
-        model = SingleTaskGP(self.train_X, self.train_Y)
+        if len(self.searchspace.tensor_categorical_dimensions) == 0:
+            model = SingleTaskGP(self.train_X, self.train_Y)
+        else:
+            model = MixedSingleTaskGP(self.train_X, self.train_Y, self.searchspace.tensor_categorical_dimensions)
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
         # SumMarginalLogLikelihood
         if state_dict is not None:
@@ -110,7 +113,6 @@ class BayesianOptimization():
                 ei = ExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
                 
                 # Optimize acquisition function to find the next evaluation point
-                # TODO look into how to handle categorical parameters with MixedSingleTaskGP
                 candidate, _ = optimize_acqf_discrete(
                     ei, 
                     q=1, 
