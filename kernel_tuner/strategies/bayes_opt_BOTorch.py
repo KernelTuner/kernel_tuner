@@ -5,7 +5,7 @@ import numpy as np
 try:
     import torch
     from botorch import fit_gpytorch_mll
-    from botorch.acquisition import ExpectedImprovement
+    from botorch.acquisition import LogExpectedImprovement
     from botorch.models import MixedSingleTaskGP, SingleTaskGP, SingleTaskVariationalGP
     from botorch.optim import optimize_acqf_discrete
     from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
@@ -120,7 +120,7 @@ class BayesianOptimization():
                 fit_gpytorch_mll(mll)
                 
                 # Define the acquisition function
-                ei = ExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
+                ei = LogExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
                 
                 # Optimize acquisition function to find the next evaluation point
                 candidate, _ = optimize_acqf_discrete(
