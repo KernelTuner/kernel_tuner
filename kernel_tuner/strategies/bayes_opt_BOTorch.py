@@ -6,9 +6,9 @@ try:
     import torch
     from botorch import fit_gpytorch_mll
     from botorch.acquisition import ExpectedImprovement
-    from botorch.models import MixedSingleTaskGP, SingleTaskGP
+    from botorch.models import MixedSingleTaskGP, SingleTaskGP, SingleTaskVariationalGP
     from botorch.optim import optimize_acqf_discrete
-    from gpytorch.mlls import ExactMarginalLogLikelihood
+    from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
     from torch import Tensor
     bayes_opt_present = True
 except ImportError:
@@ -85,16 +85,26 @@ class BayesianOptimization():
         self.evaluate_configs(sample_configs)
         self.initial_sample_taken = True
 
-    def initialize_model(self, state_dict=None):
-        """Initialize the model, possibly with a state dict for faster fitting."""
-        if len(self.searchspace.tensor_categorical_dimensions) == 0:
-            model = SingleTaskGP(self.train_X, self.train_Y)
+    def initialize_model(self, state_dict=None, exact=True):
+        """Initialize the model and likelihood, possibly with a state dict for faster fitting."""
+        # initialize the model
+        if exact:
+            if len(self.searchspace.tensor_categorical_dimensions) == 0:
+                model = SingleTaskGP(self.train_X, self.train_Y)
+            else:
+                model = MixedSingleTaskGP(self.train_X, self.train_Y, self.searchspace.tensor_categorical_dimensions)
         else:
-            model = MixedSingleTaskGP(self.train_X, self.train_Y, self.searchspace.tensor_categorical_dimensions)
-        mll = ExactMarginalLogLikelihood(model.likelihood, model)
-        # SumMarginalLogLikelihood
-        if state_dict is not None:
+            model = SingleTaskVariationalGP(self.train_X, self.train_Y)
+
+        # load the previous state
+        if exact and state_dict is not None:
             model.load_state_dict(state_dict)
+
+        # initialize the likelihood
+        if exact:
+            mll = ExactMarginalLogLikelihood(model.likelihood, model)
+        else:
+            mll = VariationalELBO(model.likelihood, model.model, num_data=self.train_Y.size(0))
         return mll, model
 
     def run(self, max_fevals: int):
