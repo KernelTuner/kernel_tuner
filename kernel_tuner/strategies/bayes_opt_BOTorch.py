@@ -38,8 +38,8 @@ class BayesianOptimization():
         # set up conversion to tensors
         self.searchspace = searchspace
         self.searchspace_tensors = searchspace.get_tensorspace()
-        self.train_X = torch.empty_like(self.searchspace_tensors)
-        self.train_Y = torch.empty(len(self.train_X))
+        self.train_X = torch.empty(0)
+        self.train_Y = torch.empty(0)
 
         # # get bounds
         # bounds = []
@@ -50,10 +50,10 @@ class BayesianOptimization():
     def run_config(self, config: tuple):
         """Run a single configuration. Returns the result and whether it is valid."""
         result = self.cost_func(config)
-        valid = not isinstance(result, util.ErrorConfig)
+        valid = not isinstance(result, util.ErrorConfig) and not np.isnan(result)
         if not valid:
             result = np.nan
-        return result, valid
+        return [result], valid
 
     def evaluate_configs(self, X: Tensor):
         """Evaluate a tensor of one or multiple configurations. Modifies train_X and train_Y accordingly."""
@@ -67,16 +67,17 @@ class BayesianOptimization():
                 param_config = self.searchspace.tensor_to_param_config(config)
                 res, valid = self.run_config(param_config)
                 if valid:
-                    valid_configs.append([config])
-                    valid_results.append([res])
+                    valid_configs.append(config)
+                    valid_results.append(res)
                 
                 # remove evaluated configurations from the full searchspace
                 index = self.searchspace.get_param_config_index(param_config)
                 self.searchspace_tensors = torch.cat((self.searchspace_tensors[:index], self.searchspace_tensors[index+1:]))
 
             # add valid results to the training set
-            self.train_X = torch.cat([self.train_X, torch.from_numpy(np.array(valid_configs))])
-            self.train_Y = torch.cat([self.train_Y, torch.from_numpy(np.array(valid_results))])
+            if len(valid_configs) > 0 and len(valid_results) > 0:
+                self.train_X = torch.cat([self.train_X, torch.from_numpy(np.array(valid_configs))])
+                self.train_Y = torch.cat([self.train_Y, torch.from_numpy(np.array(valid_results))])
         else:
             raise NotImplementedError(f"Evaluation has not been implemented for type {type(X)}")
         
