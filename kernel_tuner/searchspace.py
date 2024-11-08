@@ -633,8 +633,6 @@ class Searchspace:
                 except (KeyError, ValueError) as e:
                     if c == conversions[-1]:
                         raise KeyError(f"No variant of {param} could be found in {mapping}") from e
-
-        # TODO write tests
         return torch.from_numpy(np.array(array))
     
     def tensor_to_param_config(self, tensor: Tensor):
@@ -645,7 +643,6 @@ class Searchspace:
         config = []
         for i, param in enumerate(tensor):
             config.append(self._map_tensor_to_param[i][float(param)])
-        # TODO write tests
         return tuple(config)
 
     def __prepare_neighbors_index(self):

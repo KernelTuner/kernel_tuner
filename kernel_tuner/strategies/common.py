@@ -1,4 +1,4 @@
-"""Module for functionality that is commonly used throughout Kernel Tuner."""
+"""Module for functionality that is commonly used throughout the strategies."""
 
 import logging
 import numbers
