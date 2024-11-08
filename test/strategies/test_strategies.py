@@ -9,7 +9,7 @@ from kernel_tuner.interface import strategy_map
 
 from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch
 
-cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/../test_cache_file.json"
+cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
 
 @pytest.fixture
 def vector_add():
