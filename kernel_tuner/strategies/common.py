@@ -1,4 +1,5 @@
 import logging
+import numbers
 import sys
 from time import perf_counter
 
@@ -56,11 +57,24 @@ def get_options(strategy_options, options):
 
 class CostFunc:
     def __init__(
-        self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True, return_invalid=False
+        self, searchspace: Searchspace, tuning_options, runner, *, 
+        scaling=False, snap=True, encode_non_numeric=False, return_invalid=False
     ):
+        """An abstract method to handle evaluation of configurations.
+
+        Args:
+            searchspace: the Searchspace to evaluate on.
+            tuning_options: various tuning options.
+            runner: the runner to use.
+            scaling: whether to internally scale parameter values. Defaults to False.
+            snap: whether to snap given configurations to their closests equivalent in the space. Defaults to True.
+            encode_non_numeric: whether to externally encode non-numeric parameter values. Defaults to False.
+            return_invalid: whether to return the util.ErrorConfig of an invalid configuration. Defaults to False.
+        """        
         self.runner = runner
         self.snap = snap
         self.scaling = scaling
+        self.encode_non_numeric = encode_non_numeric
         self.return_invalid = return_invalid
         self.searchspace = searchspace
         self.tuning_options = tuning_options
@@ -70,9 +84,24 @@ class CostFunc:
             )
         self.results = []
 
+        # if enabled, encode non-numeric parameter values as a numeric value
+        if self.encode_non_numeric:
+            self._map_param_to_encoded = {}
+            self._map_encoded_to_param = {}
+            self.encoded_params_values = []
+            for i, param_values in enumerate(self.searchspace.params_values):
+                encoded_values = param_values
+                if not all(isinstance(v, numbers.Real) for v in param_values):
+                    encoded_values = np.arange(len(param_values))
+                    self._map_param_to_encoded[i] = dict(zip(param_values, encoded_values))
+                    self._map_encoded_to_param[i] = dict(zip(encoded_values, param_values))
+                self.encoded_params_values.append(encoded_values)
+
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
+        if self.encode_non_numeric:
+            x = self.encoded_to_params(x)
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug("_cost_func called")
@@ -168,10 +197,30 @@ class CostFunc:
     def get_bounds(self):
         """Create a bounds array from the tunable parameters."""
         bounds = []
-        for values in self.searchspace.tune_params.values():
+        for values in self.encoded_params_values if self.encode_non_numeric else  self.searchspace.params_values:
             sorted_values = np.sort(values)
             bounds.append((sorted_values[0], sorted_values[-1]))
         return bounds
+    
+    def encoded_to_params(self, config):
+        """Convert from an encoded configuration to the real parameters."""
+        if not self.encode_non_numeric:
+            raise ValueError("'encode_non_numeric' must be set to true to use this function.")
+        params = []
+        for i, v in enumerate(config):
+            params.append(self._map_encoded_to_param[i][v] if i in self._map_encoded_to_param else v)
+        assert len(params) == len(config)            
+        return params
+    
+    def params_to_encoded(self, config):
+        """Convert from a parameter configuration to the encoded configuration."""
+        if not self.encode_non_numeric:
+            raise ValueError("'encode_non_numeric' must be set to true to use this function.")
+        encoded = []
+        for i, v in enumerate(config):
+            encoded.append(self._map_param_to_encoded[i][v] if i in self._map_param_to_encoded else v)
+        assert len(encoded) == len(config)            
+        return encoded
 
 
 def setup_method_arguments(method, bounds):
