@@ -623,7 +623,17 @@ class Searchspace:
             self.initialize_tensorspace()
         array = []
         for i, param in enumerate(param_config):
-            array.append(self._map_param_to_tensor[i][param])
+            mapping = self._map_param_to_tensor[i]
+            conversions = [None, str, float, int, bool]
+            for c in conversions:
+                try:
+                    c_param = param if c is None else c(param)
+                    array.append(mapping[c_param])
+                    break
+                except (KeyError, ValueError) as e:
+                    if c == conversions[-1]:
+                        raise KeyError(f"No variant of {param} could be found in {mapping}") from e
+
         # TODO write tests
         return torch.from_numpy(np.array(array))
     
