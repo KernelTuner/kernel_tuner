@@ -22,6 +22,7 @@ from kernel_tuner.strategies.common import (
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
+    """The entry function for tuning a searchspace using this algorithm."""
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     bo = BayesianOptimization(searchspace, runner, tuning_options)
     return bo.run(max_fevals)
@@ -30,6 +31,7 @@ class BayesianOptimization():
     """Bayesian Optimization class."""
 
     def __init__(self, searchspace: Searchspace, runner, tuning_options):
+        """Initialization of the Bayesian Optimization class. Does not evaluate configurations."""
         self.initial_sample_taken = False
         self.initial_sample_size = tuning_options.strategy_options.get("popsize", 20)
         self.tuning_options = tuning_options
@@ -40,12 +42,6 @@ class BayesianOptimization():
         self.searchspace_tensors = searchspace.get_tensorspace()
         self.train_X = torch.empty(0)
         self.train_Y = torch.empty(0)
-
-        # # get bounds
-        # bounds = []
-        # for v in searchspace.params_values:
-        #     bounds.append([min(v), max(v)])
-        # bounds = torch.from_numpy(np.array(bounds).transpose())
 
     def run_config(self, config: tuple):
         """Run a single configuration. Returns the result and whether it is valid."""
@@ -72,7 +68,8 @@ class BayesianOptimization():
                 
                 # remove evaluated configurations from the full searchspace
                 index = self.searchspace.get_param_config_index(param_config)
-                self.searchspace_tensors = torch.cat((self.searchspace_tensors[:index], self.searchspace_tensors[index+1:]))
+                self.searchspace_tensors = torch.cat((self.searchspace_tensors[:index], 
+                                                      self.searchspace_tensors[index+1:]))
 
             # add valid results to the training set
             if len(valid_configs) > 0 and len(valid_results) > 0:
