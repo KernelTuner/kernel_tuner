@@ -598,6 +598,7 @@ class Searchspace:
     def initialize_tensorspace(self):
         """Encode the searchspace as floats in a Tensor. Save the mapping."""
         assert self._tensorspace is None, "Tensorspace is already initialized"
+        skipped_count = 0
         bounds = []
 
         # generate the mappings to and from tensor values
@@ -606,6 +607,7 @@ class Searchspace:
             if len(param_values) < 2 or all(p == param_values[0] for p in param_values):
                 # keep track of skipped parameters, add them back in conversion functions
                 self._tensorspace_param_config_structure.append(param_values[0])
+                skipped_count += 1
                 continue
             else:
                 self._tensorspace_param_config_structure.append(None)
@@ -614,7 +616,7 @@ class Searchspace:
             if all(isinstance(v, numbers.Real) for v in param_values):
                 tensor_values = np.array(param_values).astype(float)
             else:
-                self._tensorspace_categorical_dimensions.append(index)
+                self._tensorspace_categorical_dimensions.append(index-skipped_count)
                 tensor_values = np.arange(len(param_values))
 
             # write the mappings to the object
@@ -622,7 +624,7 @@ class Searchspace:
             self._map_tensor_to_param[index] = (dict(zip(tensor_values, param_values)))
             bounds.append((tensor_values.min(), tensor_values.max()))
             if tensor_values.min() < tensor_values.max():
-                self._tensorspace_bounds_indices.append(index)
+                self._tensorspace_bounds_indices.append(index-skipped_count)
 
         # do some checks
         assert len(self.params_values) == len(self._tensorspace_param_config_structure)
