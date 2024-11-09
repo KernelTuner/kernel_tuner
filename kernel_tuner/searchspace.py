@@ -58,8 +58,10 @@ class Searchspace:
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
-        self.tensorspace = None
-        self.tensor_categorical_dimensions = []
+        self._tensorspace = None
+        self._tensorspace_bounds = None
+        self._tensorspace_bounds_indices = []
+        self._tensorspace_categorical_dimensions = []
         self._map_tensor_to_param = []
         self._map_param_to_tensor = []
         self.restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
@@ -594,28 +596,42 @@ class Searchspace:
     
     def initialize_tensorspace(self):
         """Encode the searchspace as floats in a Tensor. Save the mapping."""
-        assert self.tensorspace is None, "Tensorspace is already initialized"
+        assert self._tensorspace is None, "Tensorspace is already initialized"
+        bounds = []
 
         # generate the mappings to and from tensor values
         for index, param_values in enumerate(self.params_values):
+            # convert numericals to float, or encode categorical
             if all(isinstance(v, numbers.Real) for v in param_values):
                 tensor_values = np.array(param_values).astype(float)
             else:
-                self.tensor_categorical_dimensions.append(index)
+                self._tensorspace_categorical_dimensions.append(index)
                 tensor_values = np.arange(len(param_values))
+
             self._map_param_to_tensor.append(dict(zip(param_values, tensor_values)))
             self._map_tensor_to_param.append(dict(zip(tensor_values, param_values)))
+            bounds.append((tensor_values.min(), tensor_values.max()))
+            if tensor_values.min() < tensor_values.max():
+                self._tensorspace_bounds_indices.append(index)
 
         # apply the mappings on the full searchspace
         numpy_repr = self.get_list_numpy()
         numpy_repr = np.apply_along_axis(self.param_config_to_tensor, 1, numpy_repr)
-        self.tensorspace = torch.from_numpy(numpy_repr.astype(float))
+        self._tensorspace = torch.from_numpy(numpy_repr.astype(float))
+
+        # set the bounds in the correct format (one array for the min, one for the max)
+        bounds = torch.from_numpy(np.array(bounds))
+        self._tensorspace_bounds = torch.cat([bounds[:,0], bounds[:,1]]).reshape((2, bounds.shape[0]))
     
     def get_tensorspace(self):
         """Get the searchspace encoded in a Tensor."""
-        if self.tensorspace is None:
+        if self._tensorspace is None:
             self.initialize_tensorspace()
-        return self.tensorspace
+        return self._tensorspace
+    
+    def get_tensorspace_categorical_dimensions(self):
+        """Get the a list of the categorical dimensions in the tensorspace."""
+        return self._tensorspace_categorical_dimensions
     
     def param_config_to_tensor(self, param_config: tuple):
         """Convert from a parameter configuration to a Tensor."""
@@ -644,6 +660,12 @@ class Searchspace:
         for i, param in enumerate(tensor):
             config.append(self._map_tensor_to_param[i][float(param)])
         return tuple(config)
+    
+    def get_tensorspace_bounds(self):
+        """Get the bounds to the tensorspace parameters, returned as a 2 x d dimensional tensor, and the indices of the parameters."""
+        if self._tensorspace is None:
+            self.initialize_tensorspace()
+        return self._tensorspace_bounds, self._tensorspace_bounds_indices
 
     def __prepare_neighbors_index(self):
         """Prepare by calculating the indices for the individual parameters."""
