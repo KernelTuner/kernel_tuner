@@ -62,8 +62,9 @@ class Searchspace:
         self._tensorspace_bounds = None
         self._tensorspace_bounds_indices = []
         self._tensorspace_categorical_dimensions = []
-        self._map_tensor_to_param = []
-        self._map_param_to_tensor = []
+        self._tensorspace_param_config_structure = []
+        self._map_tensor_to_param = {}
+        self._map_param_to_tensor = {}
         self.restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
         self._modified_restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
@@ -601,6 +602,14 @@ class Searchspace:
 
         # generate the mappings to and from tensor values
         for index, param_values in enumerate(self.params_values):
+            # filter out parameters that do not matter, more efficient and avoids bounds problem
+            if len(param_values) < 2 or all(p == param_values[0] for p in param_values):
+                # keep track of skipped parameters, add them back in conversion functions
+                self._tensorspace_param_config_structure.append(param_values[0])
+                continue
+            else:
+                self._tensorspace_param_config_structure.append(None)
+
             # convert numericals to float, or encode categorical
             if all(isinstance(v, numbers.Real) for v in param_values):
                 tensor_values = np.array(param_values).astype(float)
@@ -608,11 +617,17 @@ class Searchspace:
                 self._tensorspace_categorical_dimensions.append(index)
                 tensor_values = np.arange(len(param_values))
 
-            self._map_param_to_tensor.append(dict(zip(param_values, tensor_values)))
-            self._map_tensor_to_param.append(dict(zip(tensor_values, param_values)))
+            # write the mappings to the object
+            self._map_param_to_tensor[index] = (dict(zip(param_values, tensor_values)))
+            self._map_tensor_to_param[index] = (dict(zip(tensor_values, param_values)))
             bounds.append((tensor_values.min(), tensor_values.max()))
             if tensor_values.min() < tensor_values.max():
                 self._tensorspace_bounds_indices.append(index)
+
+        # do some checks
+        assert len(self.params_values) == len(self._tensorspace_param_config_structure)
+        assert len(self._map_param_to_tensor) == len(self._map_tensor_to_param) == len(bounds)
+        assert len(self._tensorspace_bounds_indices) <= len(bounds)
 
         # apply the mappings on the full searchspace
         numpy_repr = self.get_list_numpy()
@@ -639,6 +654,8 @@ class Searchspace:
             self.initialize_tensorspace()
         array = []
         for i, param in enumerate(param_config):
+            if self._tensorspace_param_config_structure[i] is not None:
+                continue    # skip over parameters not in the tensorspace
             mapping = self._map_param_to_tensor[i]
             conversions = [None, str, float, int, bool]
             for c in conversions:
@@ -656,9 +673,14 @@ class Searchspace:
         assert tensor.dim() == 1, f"Parameter configuration tensor must be 1-dimensional, is {tensor.dim()} ({tensor})"
         if len(self._map_tensor_to_param) == 0:
             self.initialize_tensorspace()
-        config = []
-        for i, param in enumerate(tensor):
-            config.append(self._map_tensor_to_param[i][float(param)])
+        config = self._tensorspace_param_config_structure.copy()
+        skip_counter = 0
+        for i, param in enumerate(config):
+            if param is not None:
+                skip_counter += 1
+            else:
+                value = float(tensor[i-skip_counter])
+                config[i] = self._map_tensor_to_param[i][value]
         return tuple(config)
     
     def get_tensorspace_bounds(self):
