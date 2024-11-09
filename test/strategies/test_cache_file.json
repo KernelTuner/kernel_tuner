@@ -4,6 +4,7 @@
     "tune_params_keys": [
         "block_size_x",
         "test_string",
+        "test_single",
         "test_bool",
         "test_mixed"
     ],
@@ -29,6 +30,9 @@
             "alg_1",
             "alg_2"
         ],
+        "test_single": [
+            15
+        ],
         "test_bool": [
             true,
             false
@@ -41,9 +45,10 @@
         ]
     },
     "cache": {
-        "128,alg_2,True,2.45": {
+        "128,alg_2,15,True,2.45": {
             "block_size_x": 128,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04073600071881499,
@@ -63,9 +68,10 @@
             "framework_time": 0.8587837219238281,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "192,alg_2,True,2.45": {
+        "192,alg_2,15,True,2.45": {
             "block_size_x": 192,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04095085710287094,
@@ -85,9 +91,10 @@
             "framework_time": 1.6656816005706787,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "256,alg_2,True,2.45": {
+        "256,alg_2,15,True,2.45": {
             "block_size_x": 256,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04189257137477398,
@@ -107,9 +114,10 @@
             "framework_time": 1.6054585576057434,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "320,alg_2,True,2.45": {
+        "320,alg_2,15,True,2.45": {
             "block_size_x": 320,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04208914376795292,
@@ -129,9 +137,10 @@
             "framework_time": 1.4494173228740692,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "384,alg_2,True,2.45": {
+        "384,alg_2,15,True,2.45": {
             "block_size_x": 384,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04174171467976911,
@@ -151,9 +160,10 @@
             "framework_time": 1.682564616203308,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "448,alg_2,True,2.45": {
+        "448,alg_2,15,True,2.45": {
             "block_size_x": 448,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.03249828570655414,
@@ -173,9 +183,10 @@
             "framework_time": 1.5890561044216156,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "512,alg_2,True,2.45": {
+        "512,alg_2,15,True,2.45": {
             "block_size_x": 512,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04139885599059718,
@@ -195,9 +206,10 @@
             "framework_time": 1.853298395872116,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "576,alg_2,True,2.45": {
+        "576,alg_2,15,True,2.45": {
             "block_size_x": 576,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04189257137477398,
@@ -217,9 +229,10 @@
             "framework_time": 1.8403716385364532,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "640,alg_2,True,2.45": {
+        "640,alg_2,15,True,2.45": {
             "block_size_x": 640,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.0411702852163996,
@@ -239,9 +252,10 @@
             "framework_time": 1.8264725804328918,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "704,alg_2,True,2.45": {
+        "704,alg_2,15,True,2.45": {
             "block_size_x": 704,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04184228580977235,
@@ -261,9 +275,10 @@
             "framework_time": 1.6709677875041962,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "768,alg_2,True,2.45": {
+        "768,alg_2,15,True,2.45": {
             "block_size_x": 768,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.03175771422684193,
@@ -283,9 +298,10 @@
             "framework_time": 1.7531625926494598,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "832,alg_2,True,2.45": {
+        "832,alg_2,15,True,2.45": {
             "block_size_x": 832,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.040941715240478516,
@@ -305,9 +321,10 @@
             "framework_time": 2.1368376910686493,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "896,alg_2,True,2.45": {
+        "896,alg_2,15,True,2.45": {
             "block_size_x": 896,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04177371359297207,
@@ -327,9 +344,10 @@
             "framework_time": 2.03637033700943,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "960,alg_2,True,2.45": {
+        "960,alg_2,15,True,2.45": {
             "block_size_x": 960,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.042189714631864,
@@ -349,9 +367,10 @@
             "framework_time": 1.7383433878421783,
             "timestamp": "2022-12-23 12:11:26.411558+00:00"
         },
-        "1024,alg_2,True,2.45": {
+        "1024,alg_2,15,True,2.45": {
             "block_size_x": 1024,
             "test_string": "alg_2",
+            "test_single": 15,
             "test_bool": true,
             "test_mixed": 2.45,
             "time": 0.04114742816558906,

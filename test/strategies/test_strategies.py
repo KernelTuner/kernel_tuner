@@ -32,6 +32,7 @@ def vector_add():
     tune_params = dict()
     tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
     tune_params["test_string"] = ["alg_1", "alg_2"]
+    tune_params["test_single"] = [15]
     tune_params["test_bool"] = [True, False]
     tune_params["test_mixed"] = ["test", 1, True, 2.45]
 
@@ -82,6 +83,7 @@ def test_strategies(vector_add, strategy):
     expected_items = {
         'block_size_x': int,
         'test_string': str,
+        'test_single': int,
         'test_bool': bool,
         'test_mixed': float,
         'time': (float, int),
