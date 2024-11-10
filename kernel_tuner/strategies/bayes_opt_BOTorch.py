@@ -42,7 +42,7 @@ class BayesianOptimization():
     def __init__(self, searchspace: Searchspace, runner, tuning_options):
         """Initialization of the Bayesian Optimization class. Does not evaluate configurations."""
         self.initial_sample_taken = False
-        self.initial_sample_size = tuning_options.strategy_options.get("popsize", 20)
+        self.initial_sample_size: int = tuning_options.strategy_options.get("popsize", 20)
         self.tuning_options = tuning_options
         self.cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, return_invalid=True)
 
@@ -123,12 +123,13 @@ class BayesianOptimization():
             mll = VariationalELBO(model.likelihood, model.model, num_data=train_Y.size(0))
         return mll, model
 
-    def run(self, max_fevals: int, feval_per_loop=1):
+    def run(self, max_fevals: int, feval_per_loop=5, max_batch_size=2048):
         """Run the Bayesian Optimization loop for at most `max_fevals`."""
         try:
             if not self.initial_sample_taken:
                 self.initial_sample()
             mll, model = self.initialize_model()
+            num_fevals = self.initial_sample_size
 
             # Bayesian optimization loop
             max_loops = ceil(max_fevals/feval_per_loop)
@@ -136,23 +137,37 @@ class BayesianOptimization():
                 # fit a Gaussian Process model
                 fit_gpytorch_mll(mll)
                 
-                # Define the acquisition function
+                # define the acquisition function
                 acqf = LogExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
                 # acqf = NoisyExpectedImprovement(model=model, , maximize=False)
                 # acqf = ProbabilityOfImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
                 # acqf = qLowerBoundMaxValueEntropy(model=model, candidate_set=self.searchspace_tensors, maximize=False)
                 # acqf = qLogExpectedImprovement(model=model, best_f=self.train_Y.min())
                 # acqf = qExpectedUtilityOfBestOption(pref_model=model)
+
+                # divide the optimization space into random chuncks
+                tensorspace_size = self.searchspace_tensors.size(0)
+                num_optimization_spaces = max(min(feval_per_loop, max_fevals-num_fevals), ceil(tensorspace_size / max_batch_size))
+                if num_optimization_spaces <= 1:
+                    optimization_spaces = [self.searchspace_tensors]
+                else:
+                    # shuffle the searchspace
+                    shuffled_indices = torch.randperm(tensorspace_size)
+                    tensorspace = self.searchspace_tensors[shuffled_indices]
+                    optimization_spaces = tensorspace.split(ceil(tensorspace_size / num_optimization_spaces))
                 
-                # Optimize acquisition function to find the next evaluation point
-                candidate, _ = optimize_acqf_discrete(
-                    acqf, 
-                    q=feval_per_loop, 
-                    choices=self.searchspace_tensors
-                )
-                
-                # evaluate the new candidate
-                self.evaluate_configs(candidate)
+                # optimize acquisition function to find the next evaluation point
+                for optimization_space in optimization_spaces:
+                    candidate, _ = optimize_acqf_discrete(
+                        acqf, 
+                        q=1, 
+                        choices=optimization_space,
+                        max_batch_size=max_batch_size
+                    )
+                    
+                    # evaluate the new candidate
+                    self.evaluate_configs(candidate)
+                    num_fevals += 1
 
                 # reinitialize the models so they are ready for fitting on next iteration
                 if f < max_loops - 1:
