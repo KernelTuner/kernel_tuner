@@ -1,11 +1,19 @@
 """Bayesian Optimization implementation using BO Torch."""
 
+from math import ceil
+
 import numpy as np
 
 try:
     import torch
     from botorch import fit_gpytorch_mll
-    from botorch.acquisition import LogExpectedImprovement
+    from botorch.acquisition import (
+        LogExpectedImprovement,
+        ProbabilityOfImprovement,
+        qExpectedUtilityOfBestOption,
+        qLogExpectedImprovement,
+        qLowerBoundMaxValueEntropy,
+    )
     from botorch.models import MixedSingleTaskGP, SingleTaskGP, SingleTaskVariationalGP
     from botorch.models.transforms import Normalize, Standardize
     from botorch.optim import optimize_acqf_discrete
@@ -115,25 +123,31 @@ class BayesianOptimization():
             mll = VariationalELBO(model.likelihood, model.model, num_data=train_Y.size(0))
         return mll, model
 
-    def run(self, max_fevals: int):
+    def run(self, max_fevals: int, feval_per_loop=1):
         """Run the Bayesian Optimization loop for at most `max_fevals`."""
         try:
             if not self.initial_sample_taken:
                 self.initial_sample()
-                mll, model = self.initialize_model()
+            mll, model = self.initialize_model()
 
             # Bayesian optimization loop
-            for _ in range(max_fevals):
+            max_loops = ceil(max_fevals/feval_per_loop)
+            for f in range(max_loops):
                 # fit a Gaussian Process model
                 fit_gpytorch_mll(mll)
                 
                 # Define the acquisition function
-                ei = LogExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
+                acqf = LogExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
+                # acqf = NoisyExpectedImprovement(model=model, , maximize=False)
+                # acqf = ProbabilityOfImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
+                # acqf = qLowerBoundMaxValueEntropy(model=model, candidate_set=self.searchspace_tensors, maximize=False)
+                # acqf = qLogExpectedImprovement(model=model, best_f=self.train_Y.min())
+                # acqf = qExpectedUtilityOfBestOption(pref_model=model)
                 
                 # Optimize acquisition function to find the next evaluation point
                 candidate, _ = optimize_acqf_discrete(
-                    ei, 
-                    q=1, 
+                    acqf, 
+                    q=feval_per_loop, 
                     choices=self.searchspace_tensors
                 )
                 
@@ -141,7 +155,8 @@ class BayesianOptimization():
                 self.evaluate_configs(candidate)
 
                 # reinitialize the models so they are ready for fitting on next iteration
-                mll, model = self.initialize_model(model.state_dict())
+                if f < max_loops - 1:
+                    mll, model = self.initialize_model(model.state_dict())
         except util.StopCriterionReached as e:
             if self.tuning_options.verbose:
                 print(e)
