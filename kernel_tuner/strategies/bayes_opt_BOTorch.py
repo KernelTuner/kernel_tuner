@@ -17,17 +17,29 @@ try:
     from botorch.models import MixedSingleTaskGP, SingleTaskGP, SingleTaskVariationalGP
     from botorch.models.transforms import Normalize, Standardize
     from botorch.optim import optimize_acqf_discrete
+    from botorch.optim.fit import fit_gpytorch_mll_torch
     from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
     from torch import Tensor
     bayes_opt_present = True
 except ImportError:
     bayes_opt_present = False
 
+import gpytorch.settings as gp_settings
+import linear_operator.settings as linop_settings
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import (
     CostFunc,
 )
+
+# set gpytorch to approximate mode for faster fitting
+linop_settings._fast_covar_root_decomposition._default = True
+linop_settings._fast_log_prob._default = True
+linop_settings._fast_solves._default = True
+linop_settings.cholesky_max_tries._global_value = 6
+linop_settings.max_cholesky_size._global_value = 800
+gp_settings.max_eager_kernel_size._global_value = 800
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
@@ -49,6 +61,7 @@ class BayesianOptimization():
         # set up conversion to tensors
         self.searchspace = searchspace
         self.searchspace_tensors = searchspace.get_tensorspace()
+        self.bounds, self.bounds_indices = self.searchspace.get_tensorspace_bounds()
         self.train_X = torch.empty(0)
         self.train_Y = torch.empty(0)
 
@@ -99,8 +112,7 @@ class BayesianOptimization():
         train_X = self.train_X
         train_Y = self.train_Y
         # transforms = dict(input_transform=Normalize(train_X.dim()), outcome_transform=Standardize(train_Y.dim()))
-        bounds, bounds_indices = self.searchspace.get_tensorspace_bounds()
-        transforms = dict(input_transform=Normalize(d=train_X.shape[-1], indices=bounds_indices, bounds=bounds))
+        transforms = dict(input_transform=Normalize(d=train_X.shape[-1], indices=self.bounds_indices, bounds=self.bounds))
 
         # initialize the model
         if exact:
@@ -135,7 +147,7 @@ class BayesianOptimization():
             max_loops = ceil(max_fevals/feval_per_loop)
             for f in range(max_loops):
                 # fit a Gaussian Process model
-                fit_gpytorch_mll(mll)
+                fit_gpytorch_mll(mll, optimizer=fit_gpytorch_mll_torch)
                 
                 # define the acquisition function
                 acqf = LogExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
