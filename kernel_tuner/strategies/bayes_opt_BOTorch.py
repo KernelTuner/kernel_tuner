@@ -59,7 +59,8 @@ class BayesianOptimization():
         self.cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, return_invalid=True)
 
         # select the device to use (CUDA or Apple Silicon MPS if available)
-        self.tensor_device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.mps.is_available() else "cpu")
+        # TODO keep an eye on Apple Silicon support. Currently `linalg_cholesky` is not yet implemented for MPS.
+        self.tensor_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # set up conversion to tensors
         self.searchspace = searchspace
