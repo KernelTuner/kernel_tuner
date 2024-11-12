@@ -121,7 +121,7 @@ class BayesianOptimization():
         train_Y = self.train_Y
         transforms = dict(
             input_transform=Normalize(d=train_X.shape[-1], indices=self.bounds_indices, bounds=self.bounds),
-            outcome_transform=Standardize(m=train_Y.size(-1))
+            outcome_transform=Standardize(m=train_Y.shape[-1], batch_shape=train_X.shape[:-2])
         )
 
         # initialize the model
