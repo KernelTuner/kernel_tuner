@@ -57,6 +57,7 @@ class BayesianOptimization():
         self.initial_sample_size: int = tuning_options.strategy_options.get("popsize", 20)
         self.tuning_options = tuning_options
         self.cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, return_invalid=True)
+        self.maximize = tuning_options['objective_higher_is_better']
 
         # select the device to use (CUDA or Apple Silicon MPS if available)
         # TODO keep an eye on Apple Silicon support. Currently `linalg_cholesky` is not yet implemented for MPS.
@@ -76,6 +77,8 @@ class BayesianOptimization():
         valid = not isinstance(result, util.ErrorConfig) and not np.isnan(result)
         if not valid:
             result = np.nan
+        elif not self.maximize:
+            result = -result
         return [result], valid
 
     def evaluate_configs(self, X: Tensor):
@@ -157,11 +160,11 @@ class BayesianOptimization():
                 fit_gpytorch_mll(mll, optimizer=fit_gpytorch_mll_torch)
                 
                 # define the acquisition function
-                acqf = LogExpectedImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
-                # acqf = NoisyExpectedImprovement(model=model, , maximize=False)
-                # acqf = ProbabilityOfImprovement(model=model, best_f=self.train_Y.min(), maximize=False)
-                # acqf = qLowerBoundMaxValueEntropy(model=model, candidate_set=self.searchspace_tensors, maximize=False)
-                # acqf = qLogExpectedImprovement(model=model, best_f=self.train_Y.min())
+                acqf = LogExpectedImprovement(model=model, best_f=self.train_Y.max(), maximize=True)
+                # acqf = NoisyExpectedImprovement(model=model, , maximize=True)
+                # acqf = ProbabilityOfImprovement(model=model, best_f=self.train_Y.max(), maximize=True)
+                # acqf = qLowerBoundMaxValueEntropy(model=model, candidate_set=self.searchspace_tensors, maximize=True)
+                # acqf = qLogExpectedImprovement(model=model, best_f=self.train_Y.max())
                 # acqf = qExpectedUtilityOfBestOption(pref_model=model)
 
                 # divide the optimization space into random chuncks
