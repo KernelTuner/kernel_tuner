@@ -16,7 +16,7 @@ try:
     )
     from botorch.models import MixedSingleTaskGP, SingleTaskGP, SingleTaskVariationalGP
     from botorch.models.transforms import Normalize, Standardize
-    from botorch.optim import optimize_acqf_discrete
+    from botorch.optim import optimize_acqf_discrete, optimize_acqf_discrete_local_search
     from botorch.optim.fit import fit_gpytorch_mll_torch
     from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
     from torch import Tensor
@@ -140,7 +140,7 @@ class BayesianOptimization():
             mll = VariationalELBO(model.likelihood, model.model, num_data=train_Y.size(0))
         return mll, model
 
-    def run(self, max_fevals: int, feval_per_loop=5, max_batch_size=2048):
+    def run(self, max_fevals: int, feval_per_loop=10, max_batch_size=2048):
         """Run the Bayesian Optimization loop for at most `max_fevals`."""
         try:
             if not self.initial_sample_taken:
@@ -175,12 +175,24 @@ class BayesianOptimization():
                 
                 # optimize acquisition function to find the next evaluation point
                 for optimization_space in optimization_spaces:
-                    candidate, _ = optimize_acqf_discrete(
-                        acqf, 
-                        q=1, 
-                        choices=optimization_space,
-                        max_batch_size=max_batch_size
-                    )
+
+                    # optimize over a lattice if the space is too large
+                    if max_batch_size < optimization_space.size(0):
+                        candidate, _ = optimize_acqf_discrete_local_search(
+                            acqf, 
+                            q=1,
+                            discrete_choices=optimization_space, 
+                            max_batch_size=max_batch_size,
+                            num_restarts=5,
+                            raw_samples=1024
+                        )
+                    else:
+                        candidate, _ = optimize_acqf_discrete(
+                            acqf, 
+                            q=1, 
+                            choices=optimization_space,
+                            max_batch_size=max_batch_size
+                        )
                     
                     # evaluate the new candidate
                     self.evaluate_configs(candidate)
