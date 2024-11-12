@@ -116,8 +116,10 @@ class BayesianOptimization():
         """Initialize the model and likelihood, possibly with a state dict for faster fitting."""
         train_X = self.train_X
         train_Y = self.train_Y
-        # transforms = dict(input_transform=Normalize(train_X.dim()), outcome_transform=Standardize(train_Y.dim()))
-        transforms = dict(input_transform=Normalize(d=train_X.shape[-1], indices=self.bounds_indices, bounds=self.bounds))
+        transforms = dict(
+            input_transform=Normalize(d=train_X.shape[-1], indices=self.bounds_indices, bounds=self.bounds),
+            outcome_transform=Standardize(m=train_Y.size(-1))
+        )
 
         # initialize the model
         if exact:
@@ -179,9 +181,9 @@ class BayesianOptimization():
                     # optimize over a lattice if the space is too large
                     if max_batch_size < optimization_space.size(0):
                         candidate, _ = optimize_acqf_discrete_local_search(
-                            acqf, 
+                            acqf,
                             q=1,
-                            discrete_choices=optimization_space, 
+                            discrete_choices=optimization_space,
                             max_batch_size=max_batch_size,
                             num_restarts=5,
                             raw_samples=1024
