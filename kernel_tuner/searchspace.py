@@ -59,6 +59,9 @@ class Searchspace:
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self._tensorspace = None
+        self.tensor_dtype = torch.float32 if torch_available else None
+        self.tensor_device = torch.device("cpu") if torch_available else None
+        self.tensor_kwargs = dict(dtype=self.tensor_dtype, device=self.tensor_device)
         self._tensorspace_bounds = None
         self._tensorspace_bounds_indices = []
         self._tensorspace_categorical_dimensions = []
@@ -595,11 +598,16 @@ class Searchspace:
         # constant time O(1) access - much faster than any other method, but needs a shadow dict of the search space
         return self.__dict.get(param_config, None)
     
-    def initialize_tensorspace(self):
-        """Encode the searchspace as floats in a Tensor. Save the mapping."""
+    def initialize_tensorspace(self, dtype = None, device = None):
+        """Encode the searchspace in a Tensor. Save the mapping. Call this function directly to control the precision or device used."""
         assert self._tensorspace is None, "Tensorspace is already initialized"
         skipped_count = 0
         bounds = []
+        if dtype is not None:
+            self.tensor_dtype = dtype
+        if device is not None:
+            self.tensor_device = device
+        self.tensor_kwargs = dict(dtype=self.tensor_dtype, device=self.tensor_device)
 
         # generate the mappings to and from tensor values
         for index, param_values in enumerate(self.params_values):
@@ -614,14 +622,15 @@ class Searchspace:
 
             # convert numericals to float, or encode categorical
             if all(isinstance(v, numbers.Real) for v in param_values):
-                tensor_values = np.array(param_values).astype(float)
+                tensor_values = torch.tensor(param_values, dtype=self.tensor_dtype)
             else:
                 self._tensorspace_categorical_dimensions.append(index-skipped_count)
-                tensor_values = np.arange(len(param_values))
+                # tensor_values = np.arange(len(param_values))
+                tensor_values = torch.arange(len(param_values), dtype=self.tensor_dtype)
 
             # write the mappings to the object
-            self._map_param_to_tensor[index] = (dict(zip(param_values, tensor_values)))
-            self._map_tensor_to_param[index] = (dict(zip(tensor_values, param_values)))
+            self._map_param_to_tensor[index] = (dict(zip(param_values, tensor_values.tolist())))
+            self._map_tensor_to_param[index] = (dict(zip(tensor_values.tolist(), param_values)))
             bounds.append((tensor_values.min(), tensor_values.max()))
             if tensor_values.min() < tensor_values.max():
                 self._tensorspace_bounds_indices.append(index-skipped_count)
@@ -632,16 +641,17 @@ class Searchspace:
         assert len(self._tensorspace_bounds_indices) <= len(bounds)
 
         # apply the mappings on the full searchspace
-        numpy_repr = self.get_list_numpy()
-        numpy_repr = np.apply_along_axis(self.param_config_to_tensor, 1, numpy_repr)
-        self._tensorspace = torch.from_numpy(numpy_repr.astype(float))
+        # numpy_repr = self.get_list_numpy()
+        # numpy_repr = np.apply_along_axis(self.param_config_to_tensor, 1, numpy_repr)
+        # self._tensorspace = torch.from_numpy(numpy_repr.astype(self.tensor_dtype)).to(self.tensor_device)
+        self._tensorspace = torch.stack(tuple(map(self.param_config_to_tensor, self.list)))
 
         # set the bounds in the correct format (one array for the min, one for the max)
-        bounds = torch.from_numpy(np.array(bounds))
+        bounds = torch.tensor(bounds, **self.tensor_kwargs)
         self._tensorspace_bounds = torch.cat([bounds[:,0], bounds[:,1]]).reshape((2, bounds.shape[0]))
     
     def get_tensorspace(self):
-        """Get the searchspace encoded in a Tensor."""
+        """Get the searchspace encoded in a Tensor. To use a non-default dtype or device, call `initialize_tensorspace` first."""
         if self._tensorspace is None:
             self.initialize_tensorspace()
         return self._tensorspace
@@ -668,7 +678,7 @@ class Searchspace:
                 except (KeyError, ValueError) as e:
                     if c == conversions[-1]:
                         raise KeyError(f"No variant of {param} could be found in {mapping}") from e
-        return torch.from_numpy(np.array(array))
+        return torch.tensor(array, **self.tensor_kwargs)
     
     def tensor_to_param_config(self, tensor: Tensor):
         """Convert from a Tensor to a parameter configuration."""
@@ -681,7 +691,7 @@ class Searchspace:
             if param is not None:
                 skip_counter += 1
             else:
-                value = float(tensor[i-skip_counter])
+                value = tensor[i-skip_counter].item()
                 config[i] = self._map_tensor_to_param[i][value]
         return tuple(config)
     

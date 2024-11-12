@@ -58,12 +58,16 @@ class BayesianOptimization():
         self.tuning_options = tuning_options
         self.cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, return_invalid=True)
 
+        # select the device to use (CUDA or Apple Silicon MPS if available)
+        self.tensor_device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.mps.is_available() else "cpu")
+
         # set up conversion to tensors
         self.searchspace = searchspace
+        self.searchspace.initialize_tensorspace(dtype=torch.float32, device=self.tensor_device)
         self.searchspace_tensors = searchspace.get_tensorspace()
         self.bounds, self.bounds_indices = self.searchspace.get_tensorspace_bounds()
-        self.train_X = torch.empty(0)
-        self.train_Y = torch.empty(0)
+        self.train_X = torch.empty(0, **self.searchspace.tensor_kwargs)
+        self.train_Y = torch.empty(0, **self.searchspace.tensor_kwargs)
 
     def run_config(self, config: tuple):
         """Run a single configuration. Returns the result and whether it is valid."""
@@ -95,14 +99,14 @@ class BayesianOptimization():
 
             # add valid results to the training set
             if len(valid_configs) > 0 and len(valid_results) > 0:
-                self.train_X = torch.cat([self.train_X, torch.from_numpy(np.array(valid_configs))])
-                self.train_Y = torch.cat([self.train_Y, torch.from_numpy(np.array(valid_results))])
+                self.train_X = torch.cat([self.train_X, torch.stack(valid_configs)])
+                self.train_Y = torch.cat([self.train_Y, torch.tensor(valid_results, **self.searchspace.tensor_kwargs)])
         else:
             raise NotImplementedError(f"Evaluation has not been implemented for type {type(X)}")
         
     def initial_sample(self):
         """Take an initial sample."""
-        sample_indices = torch.from_numpy(self.searchspace.get_random_sample_indices(self.initial_sample_size))
+        sample_indices = torch.from_numpy(self.searchspace.get_random_sample_indices(self.initial_sample_size)).to(self.tensor_device)
         sample_configs = self.searchspace_tensors.index_select(0, sample_indices)
         self.evaluate_configs(sample_configs)
         self.initial_sample_taken = True
