@@ -56,11 +56,11 @@ class BayesianOptimization():
         self.initial_sample_taken = False
         self.initial_sample_size: int = tuning_options.strategy_options.get("popsize", 20)
         self.tuning_options = tuning_options
-        self.cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, return_invalid=True)
+        self.cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, return_invalid=True, return_raw=True)
         self.maximize = tuning_options['objective_higher_is_better']
 
         # select the device to use (CUDA or Apple Silicon MPS if available)
-        # TODO keep an eye on Apple Silicon support. Currently `linalg_cholesky` is not yet implemented for MPS.
+        # TODO keep an eye on Apple Silicon support. Currently `linalg_cholesky` is not yet implemented for MPS (issue reported: https://github.com/pytorch/pytorch/issues/77764).
         self.tensor_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # set up conversion to tensors
@@ -70,31 +70,39 @@ class BayesianOptimization():
         self.bounds, self.bounds_indices = self.searchspace.get_tensorspace_bounds()
         self.train_X = torch.empty(0, **self.searchspace.tensor_kwargs)
         self.train_Y = torch.empty(0, **self.searchspace.tensor_kwargs)
+        self.train_Yvar = torch.empty(0, **self.searchspace.tensor_kwargs)
 
     def run_config(self, config: tuple):
         """Run a single configuration. Returns the result and whether it is valid."""
-        result = self.cost_func(config)
-        valid = not isinstance(result, util.ErrorConfig) and not np.isnan(result)
+        result, results = self.cost_func(config)
+        results = np.array(results)
+        var = np.nan
+        valid = not isinstance(result, util.ErrorConfig) and not np.isnan(result) and not any(np.isnan(results))
         if not valid:
             result = np.nan
         elif not self.maximize:
             result = -result
-        return [result], valid
+            results = -results
+        if valid:
+            var = np.var(results)
+        return [result], [var], valid
 
     def evaluate_configs(self, X: Tensor):
         """Evaluate a tensor of one or multiple configurations. Modifies train_X and train_Y accordingly."""
         if isinstance(X, Tensor):
             valid_configs = []
             valid_results = []
+            valid_vars = []
             if X.dim() == 1:
                 X = [X]
             for config in X:
                 assert isinstance(config, Tensor), f"Config must be a Tensor, but is of type {type(config)} ({config})"
                 param_config = self.searchspace.tensor_to_param_config(config)
-                res, valid = self.run_config(param_config)
+                res, var, valid = self.run_config(param_config)
                 if valid:
                     valid_configs.append(config)
                     valid_results.append(res)
+                    valid_vars.append(var)
                 
                 # remove evaluated configurations from the full searchspace
                 index = self.searchspace.get_param_config_index(param_config)
@@ -102,9 +110,10 @@ class BayesianOptimization():
                                                       self.searchspace_tensors[index+1:]))
 
             # add valid results to the training set
-            if len(valid_configs) > 0 and len(valid_results) > 0:
+            if len(valid_configs) > 0 and len(valid_results) > 0 and len(valid_vars) > 0:
                 self.train_X = torch.cat([self.train_X, torch.stack(valid_configs)])
                 self.train_Y = torch.cat([self.train_Y, torch.tensor(valid_results, **self.searchspace.tensor_kwargs)])
+                self.train_Yvar = torch.cat([self.train_Yvar, torch.tensor(valid_vars, **self.searchspace.tensor_kwargs)])
         else:
             raise NotImplementedError(f"Evaluation has not been implemented for type {type(X)}")
         
@@ -119,6 +128,7 @@ class BayesianOptimization():
         """Initialize the model and likelihood, possibly with a state dict for faster fitting."""
         train_X = self.train_X
         train_Y = self.train_Y
+        train_Yvar = self.train_Yvar
         transforms = dict(
             input_transform=Normalize(d=train_X.shape[-1], indices=self.bounds_indices, bounds=self.bounds),
             outcome_transform=Standardize(m=train_Y.shape[-1], batch_shape=train_X.shape[:-2])
@@ -128,9 +138,9 @@ class BayesianOptimization():
         if exact:
             catdims = self.searchspace.get_tensorspace_categorical_dimensions()
             if len(catdims) == 0:
-                model = SingleTaskGP(train_X, train_Y, **transforms)
+                model = SingleTaskGP(train_X, train_Y, train_Yvar=train_Yvar, **transforms)
             else:
-                model = MixedSingleTaskGP(train_X, train_Y, cat_dims=catdims, **transforms)
+                model = MixedSingleTaskGP(train_X, train_Y, train_Yvar=train_Yvar, cat_dims=catdims, **transforms)
         else:
             model = SingleTaskVariationalGP(train_X, train_Y, **transforms)
 

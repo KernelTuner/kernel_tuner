@@ -62,7 +62,7 @@ class CostFunc:
 
     def __init__(
         self, searchspace: Searchspace, tuning_options, runner, *, 
-        scaling=False, snap=True, encode_non_numeric=False, return_invalid=False
+        scaling=False, snap=True, encode_non_numeric=False, return_invalid=False, return_raw=None
     ):
         """An abstract method to handle evaluation of configurations.
 
@@ -74,12 +74,16 @@ class CostFunc:
             snap: whether to snap given configurations to their closests equivalent in the space. Defaults to True.
             encode_non_numeric: whether to externally encode non-numeric parameter values. Defaults to False.
             return_invalid: whether to return the util.ErrorConfig of an invalid configuration. Defaults to False.
+            return_raw: returns (result, results[raw]). Key inferred from objective if set to True. Defaults to None.
         """        
         self.runner = runner
         self.snap = snap
         self.scaling = scaling
         self.encode_non_numeric = encode_non_numeric
         self.return_invalid = return_invalid
+        self.return_raw = return_raw
+        if return_raw is True:
+            self.return_raw = f"{tuning_options['objective']}s"
         self.searchspace = searchspace
         self.tuning_options = tuning_options
         if isinstance(self.tuning_options, dict):
@@ -156,6 +160,13 @@ class CostFunc:
         else:
             return_value = result[self.tuning_options.objective] or sys.float_info.max
         return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
+
+        # include raw data in return if requested
+        if self.return_raw is not None:
+            try:
+                return return_value, result[self.return_raw]
+            except KeyError:
+                return return_value, [np.nan]
 
         return return_value
 
