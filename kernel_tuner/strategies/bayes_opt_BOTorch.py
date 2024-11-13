@@ -1,6 +1,6 @@
 """Bayesian Optimization implementation using BO Torch."""
 
-from math import ceil
+from math import ceil, sqrt
 
 import numpy as np
 
@@ -155,17 +155,32 @@ class BayesianOptimization():
             mll = VariationalELBO(model.likelihood, model.model, num_data=train_Y.size(0))
         return mll, model
 
-    def run(self, max_fevals: int, feval_per_loop=10, max_batch_size=2048):
+    def run(self, max_fevals: int, max_batch_size=2048):
         """Run the Bayesian Optimization loop for at most `max_fevals`."""
         try:
             if not self.initial_sample_taken:
                 self.initial_sample()
             mll, model = self.initialize_model()
-            num_fevals = self.initial_sample_size
+            fevals_left = max_fevals - self.initial_sample_size
+
+            # create array to gradually reduce number of optimization spaces as fewer fevals are left
+            tensorspace_size = self.searchspace_tensors.size(0)
+            reserve_final_loops = min(3, fevals_left)   # reserve some loops at the end that are never split
+            fevals_left -= reserve_final_loops
+            num_loops = min(max(round(sqrt(fevals_left)), 3), fevals_left)  # set the number of loops for the array
+            avg_optimization_spaces = round(tensorspace_size / max_batch_size)  # set the average number of optimization spaces
+            numspace = np.geomspace(start=avg_optimization_spaces, stop=0.1, num=num_loops)
+            nums_optimization_spaces = np.clip(np.round(numspace * (fevals_left / numspace.sum())), a_min=1, a_max=None)
+            # if there's a discrepency, add or subtract the difference from the first number
+            if np.sum(nums_optimization_spaces) != fevals_left:
+                nums_optimization_spaces[0] += fevals_left - np.sum(nums_optimization_spaces)
+            nums_optimization_spaces = np.concatenate([nums_optimization_spaces, np.full(reserve_final_loops, 1)])
+            fevals_left += reserve_final_loops
 
             # Bayesian optimization loop
-            max_loops = ceil(max_fevals/feval_per_loop)
-            for f in range(max_loops):
+            for loop_i, num_optimization_spaces in enumerate(nums_optimization_spaces):
+                num_optimization_spaces = min(num_optimization_spaces, fevals_left)
+
                 # fit a Gaussian Process model
                 fit_gpytorch_mll(mll, optimizer=fit_gpytorch_mll_torch)
                 
@@ -179,7 +194,6 @@ class BayesianOptimization():
 
                 # divide the optimization space into random chuncks
                 tensorspace_size = self.searchspace_tensors.size(0)
-                num_optimization_spaces = max(min(feval_per_loop, max_fevals-num_fevals), ceil(tensorspace_size / max_batch_size))
                 if num_optimization_spaces <= 1:
                     optimization_spaces = [self.searchspace_tensors]
                 else:
@@ -191,30 +205,31 @@ class BayesianOptimization():
                 # optimize acquisition function to find the next evaluation point
                 for optimization_space in optimization_spaces:
 
+                    # NOTE optimize_acqf_discrete_local_search does not work with variable optimization_space size
                     # optimize over a lattice if the space is too large
-                    if max_batch_size < optimization_space.size(0):
-                        candidate, _ = optimize_acqf_discrete_local_search(
-                            acqf,
-                            q=1,
-                            discrete_choices=optimization_space,
-                            max_batch_size=max_batch_size,
-                            num_restarts=5,
-                            raw_samples=1024
-                        )
-                    else:
-                        candidate, _ = optimize_acqf_discrete(
-                            acqf, 
-                            q=1, 
-                            choices=optimization_space,
-                            max_batch_size=max_batch_size
-                        )
+                    # if len(optimization_spaces) == 1 and max_batch_size < optimization_space.size(0):
+                    #     candidate, _ = optimize_acqf_discrete_local_search(
+                    #         acqf,
+                    #         q=1,
+                    #         discrete_choices=optimization_space,
+                    #         max_batch_size=max_batch_size,
+                    #         num_restarts=5,
+                    #         raw_samples=1024
+                    #     )
+                    # else:
+                    candidate, _ = optimize_acqf_discrete(
+                        acqf, 
+                        q=1, 
+                        choices=optimization_space,
+                        max_batch_size=max_batch_size
+                    )
                     
                     # evaluate the new candidate
                     self.evaluate_configs(candidate)
-                    num_fevals += 1
+                    fevals_left -= 1
 
                 # reinitialize the models so they are ready for fitting on next iteration
-                if f < max_loops - 1:
+                if loop_i < len(nums_optimization_spaces) - 1:
                     mll, model = self.initialize_model(model.state_dict())
         except util.StopCriterionReached as e:
             if self.tuning_options.verbose:
