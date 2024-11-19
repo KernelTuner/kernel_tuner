@@ -167,8 +167,8 @@ class BayesianOptimization():
             tensorspace_size = self.searchspace_tensors.size(0)
             reserve_final_loops = min(3, fevals_left)   # reserve some loops at the end that are never split
             fevals_left -= reserve_final_loops
-            num_loops = min(max(round(sqrt(fevals_left)), 3), fevals_left)  # set the number of loops for the array
-            avg_optimization_spaces = round(tensorspace_size / max_batch_size)  # set the average number of optimization spaces
+            num_loops = min(max(round(sqrt(fevals_left*2)), 3), fevals_left)  # set the number of loops for the array
+            avg_optimization_spaces = max(round(sqrt(tensorspace_size / max_batch_size)), 1)  # set the average number of optimization spaces
             numspace = np.geomspace(start=avg_optimization_spaces, stop=0.1, num=num_loops)
             nums_optimization_spaces = np.clip(np.round(numspace * (fevals_left / numspace.sum())), a_min=1, a_max=None)
             # if there's a discrepency, add or subtract the difference from the first number
