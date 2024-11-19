@@ -30,7 +30,7 @@ def tune(
     quiet=False,
     simulation_mode=True,
     lang="CUDA",
-    profiling=True,
+    profiling=False,
 ):  
     directory = Path(__file__).parent / "../autotuning_methodology/cached_data_used/"
     assert directory.exists()
