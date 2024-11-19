@@ -132,7 +132,8 @@ class PyCudaFunctions(GPUBackend):
 
         # setup observers
         self.observers = observers or []
-        self.observers.append(PyCudaRuntimeObserver(self))
+        #self.observers.append(PyCudaRuntimeObserver(self))
+        self.observers.insert(0, PyCudaRuntimeObserver(self)) # ensure RuntimeObserver is first in list
         for obs in self.observers:
             obs.register_device(self)
 
