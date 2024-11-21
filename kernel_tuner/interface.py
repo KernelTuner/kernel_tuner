@@ -477,6 +477,15 @@ _tuning_options = Options(
                 "string",
             ),
         ),
+        (
+            "transfer_learning_caches",
+            (
+                """Array of filepaths to caches to use for transfer learning.
+        Filename uses suffix ".json", which is appended if missing.
+        """,
+                "list(string) or list(Path)",
+            ),
+        ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
@@ -593,6 +602,7 @@ def tune_kernel(
     observers=None,
     objective=None,
     objective_higher_is_better=None,
+    transfer_learning_caches=[],
 ):
     start_overhead_time = perf_counter()
     if log:
@@ -679,17 +689,29 @@ def tune_kernel(
     # we normalize it so that it always accepts atol.
     tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
+    def preprocess_cache(filepath):
+        if isinstance(filepath, Path):
+            filepath = str(filepath.resolve())
+        if filepath[-5:] != ".json":
+            filepath += ".json"
+        return filepath
+
     # process cache
     if cache:
-        if isinstance(cache, Path):
-            cache = str(cache.resolve())
-        if cache[-5:] != ".json":
-            cache += ".json"
-
+        cache = preprocess_cache(cache)
         util.process_cache(cache, kernel_options, tuning_options, runner)
     else:
         tuning_options.cache = {}
         tuning_options.cachefile = None
+
+    # process transfer learning caches
+    tuning_options.transfer_learning_caches = []
+    if transfer_learning_caches and len(transfer_learning_caches) > 0:
+        for transfer_learning_cache in transfer_learning_caches:
+            cache = preprocess_cache(transfer_learning_cache)
+            assert cache != tuning_options.cache, "Transfer learning cache can not be the same as current cache"
+            cache_data = util.read_cache(cache, open_cache=False)
+            tuning_options.transfer_learning_caches.append(cache_data)
 
     # create search space
     searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)

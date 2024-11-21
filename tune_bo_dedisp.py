@@ -20,7 +20,7 @@ min_freq = 1425.0
 max_freq = min_freq + (nr_channels-1) * channel_bandwidth
 
 
-def tune(device, strategy="bayes_opt_BOTorch", strategy_options={ 'max_fevals': 1500 }, lang='HIP', verbose=True, quiet=False, simulation_mode=True, profiling=True):
+def tune(device_name, strategy="bayes_opt_BOTorch", strategy_options={ 'max_fevals': 1500 }, lang='HIP', verbose=True, quiet=False, simulation_mode=True, profiling=True):
 
     args = []
 
@@ -55,7 +55,10 @@ def tune(device, strategy="bayes_opt_BOTorch", strategy_options={ 'max_fevals': 
     metrics["GB/s"] = lambda p: gbytes / (p['time'] / 1e3)
 
     directory = Path(__file__).parent / "../autotuning_methodology/cached_data_used/"
-    cachefile = directory / f"cachefiles/dedispersion_milo/{device}.json"
+    cache_dir = directory / "cachefiles/dedispersion_milo"
+    cache_filename = f"{device_name}.json"
+    transfer_learning_caches = [p for p in cache_dir.iterdir() if not p.stem.endswith("_T4") and p.name != cache_filename]
+
     assert directory.exists()
     if lang == "CUDA":
         kernel_file = directory / "kernels/dedisp_milo/dedispersion.cu"
@@ -67,8 +70,9 @@ def tune(device, strategy="bayes_opt_BOTorch", strategy_options={ 'max_fevals': 
     def run():
         return kt.tune_kernel("dedispersion_kernel", kernel_file, problem_size, args, tune_params,
                                 answer=answer, compiler_options=cp, restrictions=config_valid, device=0,
-                                cache=cachefile, lang=lang, iterations=32, metrics=metrics, 
-                                simulation_mode=simulation_mode, verbose=verbose, quiet=quiet, strategy=strategy, strategy_options=strategy_options)
+                                cache=cache_dir / cache_filename, lang=lang, iterations=32, metrics=metrics, 
+                                simulation_mode=simulation_mode, verbose=verbose, quiet=quiet, strategy=strategy, 
+                                strategy_options=strategy_options, transfer_learning_caches=transfer_learning_caches)
     
     # start tuning
     if profiling:

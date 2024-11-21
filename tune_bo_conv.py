@@ -101,6 +101,10 @@ def tune(
     metrics = OrderedDict()
     metrics["GFLOP/s"] = lambda p: total_flops / (p["time"] / 1000.0)
 
+    cache_dir = directory / "cachefiles/convolution_milo"
+    cache_filename = f"{device_name}.json"
+    transfer_learning_caches = [p for p in cache_dir.iterdir() if not p.stem.endswith("_T4") and p.name != cache_filename]
+
     def run():
         return kernel_tuner.tune_kernel(
             "convolution_kernel",
@@ -112,7 +116,7 @@ def tune(
             grid_div_x=grid_div_x,
             cmem_args=cmem_args,
             restrictions=restrict,
-            cache=directory / f"cachefiles/convolution_milo/{device_name}.json",
+            cache=cache_dir / cache_filename,
             metrics=metrics,
             lang=lang,
             iterations=32,
@@ -122,6 +126,7 @@ def tune(
             strategy=strategy,
             strategy_options=strategy_options,
             simulation_mode=simulation_mode,
+            transfer_learning_caches=transfer_learning_caches
         )
 
     # start tuning
