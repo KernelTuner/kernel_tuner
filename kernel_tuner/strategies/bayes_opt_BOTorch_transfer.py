@@ -2,11 +2,11 @@
 
 try:
     import torch
-    from botorch.acquisition.logei import qLogNoisyExpectedImprovement
-    from botorch.fit import fit_gpytorch_mll
+    from botorch.acquisition import LogExpectedImprovement
+    from botorch.fit import fit_gpytorch_mll, fit_gpytorch_mll_torch
     from botorch.models import SingleTaskGP
     from botorch.models.gpytorch import GPyTorchModel
-    from botorch.optim.optimize import optimize_acqf
+    from botorch.optim.optimize import optimize_acqf_discrete, optimize_acqf_discrete_local_search
     from botorch.sampling.normal import SobolQMCNormalSampler
     from botorch.utils.sampling import draw_sobol_samples
     from botorch.utils.transforms import normalize, unnormalize
@@ -23,6 +23,7 @@ except ImportError:
 
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.bayes_opt_BOTorch import BayesianOptimization
+from kernel_tuner.util import StopCriterionReached
 
 # settings
 NUM_BASE_TASKS = 5
@@ -201,6 +202,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
             Tensor: `n_t`-dim tensor with the ranking weight for each model
         """
         ranking_losses = []
+        
         # compute ranking loss for each base model
         for task in range(len(base_models)):
             model = base_models[task]
@@ -210,6 +212,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
             base_f_samps = sampler(posterior).squeeze(-1).squeeze(-1)
             # compute and save ranking loss
             ranking_losses.append(self.compute_ranking_loss(base_f_samps, train_y))
+
         # compute ranking loss for target model using LOOCV
         # f_samps
         target_f_samps = self.get_target_model_loocv_sample_preds(
@@ -231,35 +234,19 @@ class BayesianOptimizationTransfer(BayesianOptimization):
         return rank_weights
     
     def run(self, max_fevals: int, max_batch_size=2048):
-        # Average over multiple trials
-        for trial in range(N_TRIALS):
-            print(f"Trial {trial + 1} of {N_TRIALS}")
-            best_rgpe = []
-            best_random = []
-            best_vanilla_nei = []
-            # Initial random observations
-            raw_x = draw_sobol_samples(
-                bounds=BOUNDS, n=RANDOM_INITIALIZATION_SIZE, q=1, seed=trial
-            ).squeeze(1)
-            train_x = normalize(raw_x, bounds=BOUNDS)
-            train_y_noiseless = f(raw_x)
-            train_y = train_y_noiseless + noise_std * torch.randn_like(train_y_noiseless)
-            train_yvar = torch.full_like(train_y, noise_std**2)
-            vanilla_nei_train_x = train_x.clone()
-            vanilla_nei_train_y = train_y.clone()
-            vanilla_nei_train_yvar = train_yvar.clone()
-            # keep track of the best observed point at each iteration
-            best_value = train_y.max().item()
-            best_rgpe.append(best_value)
-            best_random.append(best_value)
-            vanilla_nei_best_value = best_value
-            best_vanilla_nei.append(vanilla_nei_best_value)
+        """Run the Bayesian Optimization loop for at most `max_fevals`."""
+        try:
+            if not self.initial_sample_taken:
+                self.initial_sample()
+            mll, model = self.initialize_model()
+            fevals_left = max_fevals - self.initial_sample_size
 
-            # Run N_BATCH rounds of BayesOpt after the initial random batch
-            for iteration in range(N_BATCH):
-                target_model = self.get_fitted_model(train_x, train_y, train_yvar)
+            # Bayesian optimization loop
+            for _ in range(fevals_left):
+
+                target_model = get_fitted_model(train_x, train_y, train_yvar)
                 model_list = base_model_list + [target_model]
-                rank_weights = self.compute_rank_weights(
+                rank_weights = compute_rank_weights(
                     train_x,
                     train_y,
                     base_model_list,
@@ -267,90 +254,43 @@ class BayesianOptimizationTransfer(BayesianOptimization):
                     NUM_POSTERIOR_SAMPLES,
                 )
 
-                # create model and acquisition function
-                rgpe_model = RGPE(model_list, rank_weights)
-                sampler_qnei = SobolQMCNormalSampler(sample_shape=torch.Size([MC_SAMPLES]))
-                qNEI = qLogNoisyExpectedImprovement(
-                    model=rgpe_model,
-                    X_baseline=train_x,
-                    sampler=sampler_qnei,
-                    prune_baseline=False,
-                )
+                # fit a Gaussian Process model
+                fit_gpytorch_mll(mll, optimizer=fit_gpytorch_mll_torch)
+                
+                # define the acquisition function
+                acqf = LogExpectedImprovement(model=model, best_f=self.train_Y.max(), maximize=True)
+                
+                # optimize acquisition function to find the next evaluation point
+                if max_batch_size < self.searchspace_tensors.size(0):
+                    # optimize over a lattice if the space is too large
+                    candidate, _ = optimize_acqf_discrete_local_search(
+                        acqf,
+                        q=1,
+                        discrete_choices=self.searchspace_tensors,
+                        max_batch_size=max_batch_size,
+                        num_restarts=5,
+                        raw_samples=1024
+                    )
+                else:
+                    candidate, _ = optimize_acqf_discrete(
+                        acqf, 
+                        q=1, 
+                        choices=self.searchspace_tensors,
+                        max_batch_size=max_batch_size
+                    )
+                    
+                    # evaluate the new candidate
+                    self.evaluate_configs(candidate)
+                    fevals_left -= 1
 
-                # optimize
-                candidate, _ = optimize_acqf(
-                    acq_function=qNEI,
-                    bounds=torch.tensor([[0.0], [1.0]], **self.searchspace.tensor_kwargs),
-                    q=Q_BATCH_SIZE,
-                    num_restarts=N_RESTARTS,
-                    raw_samples=N_RESTART_CANDIDATES,
-                )
+                # reinitialize the models so they are ready for fitting on next iteration
+                if fevals_left > 0:
+                    mll, model = self.initialize_model(model.state_dict())
+        except StopCriterionReached as e:
+            if self.tuning_options.verbose:
+                print(e)
 
-                # fetch the new values
-                new_x = candidate.detach()
-                new_y_noiseless = f(unnormalize(new_x, bounds=BOUNDS))
-                new_y = new_y_noiseless + noise_std * torch.randn_like(new_y_noiseless)
-                new_yvar = torch.full_like(new_y, noise_std**2)
-
-                # update training points
-                train_x = torch.cat((train_x, new_x))
-                train_y = torch.cat((train_y, new_y))
-                train_yvar = torch.cat((train_yvar, new_yvar))
-                random_candidate = torch.rand(1, **self.searchspace.tensor_kwargs)
-                next_random_noiseless = f(unnormalize(random_candidate, bounds=BOUNDS))
-                next_random = next_random_noiseless + noise_std * torch.randn_like(
-                    next_random_noiseless
-                )
-                next_random_best = next_random.max().item()
-                best_random.append(max(best_random[-1], next_random_best))
-
-                # get the new best observed value
-                best_value = train_y.max().item()
-                best_rgpe.append(best_value)
-
-                # Run Vanilla NEI for comparison
-                vanilla_nei_model = self.get_fitted_model(
-                    vanilla_nei_train_x,
-                    vanilla_nei_train_y,
-                    vanilla_nei_train_yvar,
-                )
-                vanilla_nei_sampler = SobolQMCNormalSampler(
-                    sample_shape=torch.Size([MC_SAMPLES])
-                )
-                vanilla_qNEI = qLogNoisyExpectedImprovement(
-                    model=vanilla_nei_model,
-                    X_baseline=vanilla_nei_train_x,
-                    sampler=vanilla_nei_sampler,
-                )
-                vanilla_nei_candidate, _ = optimize_acqf(
-                    acq_function=vanilla_qNEI,
-                    bounds=torch.tensor([[0.0], [1.0]], **self.searchspace.tensor_kwargs),
-                    q=Q_BATCH_SIZE,
-                    num_restarts=N_RESTARTS,
-                    raw_samples=N_RESTART_CANDIDATES,
-                )
-                # fetch the new values
-                vanilla_nei_new_x = vanilla_nei_candidate.detach()
-                vanilla_nei_new_y_noiseless = f(unnormalize(vanilla_nei_new_x, bounds=BOUNDS))
-                vanilla_nei_new_y = vanilla_nei_new_y_noiseless + noise_std * torch.randn_like(
-                    new_y_noiseless
-                )
-                vanilla_nei_new_yvar = torch.full_like(vanilla_nei_new_y, noise_std**2)
-
-                # update training points
-                vanilla_nei_train_x = torch.cat([vanilla_nei_train_x, vanilla_nei_new_x])
-                vanilla_nei_train_y = torch.cat([vanilla_nei_train_y, vanilla_nei_new_y])
-                vanilla_nei_train_yvar = torch.cat(
-                    [vanilla_nei_train_yvar, vanilla_nei_new_yvar]
-                )
-
-                # get the new best observed value
-                vanilla_nei_best_value = vanilla_nei_train_y.max().item()
-                best_vanilla_nei.append(vanilla_nei_best_value)
-
-            self.best_rgpe_all.append(best_rgpe)
-            self.best_random_all.append(best_random)
-            self.best_vanilla_nei_all.append(best_vanilla_nei)
+        return self.cost_func.results
 
 
 class RGPE(GP, GPyTorchModel):
