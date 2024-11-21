@@ -27,9 +27,9 @@ except ImportError:
 import gpytorch.settings as gp_settings
 import linear_operator.settings as linop_settings
 
-from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import CostFunc
+from kernel_tuner.util import ErrorConfig, StopCriterionReached
 
 # set gpytorch to approximate mode for faster fitting
 linop_settings._fast_covar_root_decomposition._default = True
@@ -75,7 +75,7 @@ class BayesianOptimization():
         result, results = self.cost_func(config)
         results = np.array(results)
         var = np.nan
-        valid = not isinstance(result, util.ErrorConfig) and not np.isnan(result) and not any(np.isnan(results))
+        valid = not isinstance(result, ErrorConfig) and not np.isnan(result) and not any(np.isnan(results))
         if not valid:
             result = np.nan
         elif not self.maximize:
@@ -229,7 +229,7 @@ class BayesianOptimization():
                 # reinitialize the models so they are ready for fitting on next iteration
                 if loop_i < len(nums_optimization_spaces) - 1:
                     mll, model = self.initialize_model(model.state_dict())
-        except util.StopCriterionReached as e:
+        except StopCriterionReached as e:
             if self.tuning_options.verbose:
                 print(e)
 
