@@ -16,7 +16,7 @@ try:
     )
     from botorch.models import MixedSingleTaskGP, SingleTaskGP, SingleTaskVariationalGP
     from botorch.models.transforms import Normalize, Standardize
-    from botorch.optim import optimize_acqf_discrete, optimize_acqf_discrete_local_search
+    from botorch.optim import optimize_acqf_discrete
     from botorch.optim.fit import fit_gpytorch_mll_torch
     from gpytorch.mlls import ExactMarginalLogLikelihood, VariationalELBO
     from torch import Tensor
@@ -29,9 +29,7 @@ import linear_operator.settings as linop_settings
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies.common import (
-    CostFunc,
-)
+from kernel_tuner.strategies.common import CostFunc
 
 # set gpytorch to approximate mode for faster fitting
 linop_settings._fast_covar_root_decomposition._default = True
@@ -235,4 +233,4 @@ class BayesianOptimization():
             if self.tuning_options.verbose:
                 print(e)
 
-        return self.cost_func.results 
+        return self.cost_func.results
