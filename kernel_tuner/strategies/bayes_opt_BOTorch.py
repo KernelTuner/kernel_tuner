@@ -117,6 +117,7 @@ class BayesianOptimization():
                 self.train_X = torch.cat([self.train_X, torch.stack(valid_configs)])
                 self.train_Y = torch.cat([self.train_Y, torch.tensor(valid_results, **self.searchspace.tensor_kwargs)])
                 self.train_Yvar = torch.cat([self.train_Yvar, torch.tensor(valid_vars, **self.searchspace.tensor_kwargs)])
+            return valid_results
         else:
             raise NotImplementedError(f"Evaluation has not been implemented for type {type(X)}")
         
