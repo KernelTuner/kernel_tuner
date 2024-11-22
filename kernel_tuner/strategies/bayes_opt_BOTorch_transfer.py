@@ -50,70 +50,30 @@ class BayesianOptimizationTransfer(BayesianOptimization):
     def __init__(self, searchspace: Searchspace, runner, tuning_options):
         super().__init__(searchspace, runner, tuning_options)
 
-        # get input and outcome data for each task
+        # set up the data and model for each transfer learning base task
         self.searchspaces_transfer_learning: list[Searchspace] = []
         self.inputs_transfer_learning: list[Tensor] = []
         self.outcomes_transfer_learning: list[Tensor] = []
+        self.models_mlls_transfer_learning: list[tuple] = []
         for tl_cache in tuning_options.transfer_learning_caches:
+            # construct the searchspace for this task
             tensor_kwargs = searchspace.tensor_kwargs
             tl_searchspace = Searchspace(None, None, None, from_cache=tl_cache)
             tl_searchspace.initialize_tensorspace(**tensor_kwargs)
             self.searchspaces_transfer_learning.append(tl_searchspace)
-            self.inputs_transfer_learning.append(tl_searchspace.get_tensorspace())
-            tl_outcomes = [c[tuning_options.objective] for c in tl_cache["cache"].values()]
-            self.outcomes_transfer_learning.append(torch.tensor(tl_outcomes, **tensor_kwargs))
+
+            # get the inputs and outcomes for this task
+            tl_inputs = tl_searchspace.get_tensorspace()
+            self.inputs_transfer_learning.append(tl_inputs)
+            tl_outcomes = torch.tensor([c[tuning_options.objective] for c in tl_cache["cache"].values()], **tensor_kwargs).unsqueeze(-1)
+            self.outcomes_transfer_learning.append(tl_outcomes)
             assert self.inputs_transfer_learning[-1].shape[0] == self.outcomes_transfer_learning[-1].shape[0]
 
-        self.best_rgpe_all = []
-        self.best_random_all = []
-        self.best_vanilla_nei_all = []
-        self.noise_std = 0.05
-
-        # Sample data for each base task
-        data_by_task = {}
-        for task in range(NUM_BASE_TASKS):
-            num_training_points = 20
-            # draw points from a sobol sequence
-            raw_x = draw_sobol_samples(
-                bounds=BOUNDS,
-                n=num_training_points,
-                q=1,
-                seed=task + 5397923,
-            ).squeeze(1)
-            # get observed values
-            f_x = f(raw_x, task_shift(task + 1))
-            train_y = f_x + noise_std * torch.randn_like(f_x)
-            train_yvar = torch.full_like(train_y, noise_std**2)
-            # store training data
-            data_by_task[task] = {
-                # scale x to [0, 1]
-                "train_x": normalize(raw_x, bounds=BOUNDS),
-                "train_y": train_y,
-                "train_yvar": train_yvar,
-            }
-
-        # Fit base model
-        base_model_list = []
-        for task in range(NUM_BASE_TASKS):
-            print(f"Fitting base model {task}")
-            model = self.get_fitted_model(
-                data_by_task[task]["train_x"],
-                data_by_task[task]["train_y"],
-                data_by_task[task]["train_yvar"],
-            )
-            base_model_list.append(model)
-
-    def run_config(self, config: tuple):
-        return super().run_config(config)
-    
-    def evaluate_configs(self, X: Tensor):
-        return super().evaluate_configs(X)
-    
-    def initial_sample(self):
-        return super().initial_sample()
-    
-    def initialize_model(self, state_dict=None, exact=True):
-        return super().initialize_model(state_dict, exact)
+            # fit a model and likelihood for this task
+            model, mll = self.get_model_and_likelihood(tl_searchspace, tl_inputs, tl_outcomes)
+            mll = self.fit(mll)
+            self.models_mlls_transfer_learning.append((model, mll))
+        raise ValueError(self.models_mlls_transfer_learning)
     
     def get_fitted_model(self, train_X, train_Y, train_Yvar, state_dict=None):
         """Get a single task GP. The model will be fit unless a state_dict with model hyperparameters is provided."""

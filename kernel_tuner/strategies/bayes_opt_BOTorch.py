@@ -149,6 +149,10 @@ class BayesianOptimization():
         else:
             mll = VariationalELBO(model.likelihood, model.model, num_data=train_Y.size(0))
         return model, mll
+    
+    def fit(self, mll):
+        """Fit a Marginal Log Likelihood."""
+        return fit_gpytorch_mll(mll, optimizer=fit_gpytorch_mll_torch)
 
     def run(self, max_fevals: int, max_batch_size=2048):
         """Run the Bayesian Optimization loop for at most `max_fevals`."""
@@ -176,8 +180,8 @@ class BayesianOptimization():
             for loop_i, num_optimization_spaces in enumerate(nums_optimization_spaces):
                 num_optimization_spaces = min(num_optimization_spaces, fevals_left)
 
-                # fit a Gaussian Process model
-                fit_gpytorch_mll(mll, optimizer=fit_gpytorch_mll_torch)
+                # fit on a Gaussian Process model
+                mll = self.fit(mll)
                 
                 # define the acquisition function
                 acqf = LogExpectedImprovement(model=model, best_f=self.train_Y.max(), maximize=True)
