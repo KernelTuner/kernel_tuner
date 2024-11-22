@@ -20,7 +20,7 @@ min_freq = 1425.0
 max_freq = min_freq + (nr_channels-1) * channel_bandwidth
 
 
-def tune(device_name, strategy="bayes_opt_BOTorch", strategy_options={ 'max_fevals': 1500 }, lang='HIP', verbose=True, quiet=False, simulation_mode=True, profiling=True):
+def tune(device_name, strategy="bayes_opt_BOTorch_transfer", strategy_options={ 'max_fevals': 1500 }, lang='HIP', verbose=True, quiet=False, simulation_mode=True, profiling=True):
 
     args = []
 

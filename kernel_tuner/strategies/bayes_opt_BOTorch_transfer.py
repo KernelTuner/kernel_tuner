@@ -40,7 +40,7 @@ Q_BATCH_SIZE = 1
 def tune(searchspace: Searchspace, runner, tuning_options):
     """The entry function for tuning a searchspace using this algorithm."""
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
-    bo = BayesianOptimization(searchspace, runner, tuning_options)
+    bo = BayesianOptimizationTransfer(searchspace, runner, tuning_options)
     return bo.run(max_fevals)
 
 class BayesianOptimizationTransfer(BayesianOptimization):
@@ -48,6 +48,12 @@ class BayesianOptimizationTransfer(BayesianOptimization):
 
     def __init__(self, searchspace: Searchspace, runner, tuning_options):
         super().__init__(searchspace, runner, tuning_options)
+
+        self.searchspaces_transfer_learning = []
+        for tl_cache in tuning_options.transfer_learning_caches:
+            self.searchspaces_transfer_learning.append(Searchspace(None, None, None, from_cache=tl_cache))
+
+        raise ValueError(self.searchspaces_transfer_learning)
 
         self.best_rgpe_all = []
         self.best_random_all = []
@@ -202,7 +208,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
             Tensor: `n_t`-dim tensor with the ranking weight for each model
         """
         ranking_losses = []
-        
+
         # compute ranking loss for each base model
         for task in range(len(base_models)):
             model = base_models[task]
@@ -244,7 +250,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
             # Bayesian optimization loop
             for _ in range(fevals_left):
 
-                target_model = get_fitted_model(train_x, train_y, train_yvar)
+                target_model = self.get_fitted_model(train_x, train_y, train_yvar)
                 model_list = base_model_list + [target_model]
                 rank_weights = compute_rank_weights(
                     train_x,

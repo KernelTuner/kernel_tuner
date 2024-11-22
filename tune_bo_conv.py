@@ -21,10 +21,9 @@ inputs = [w, h, fw, fh]
 total_flops = ops(w, h, fw, fh)
 
 
-# def tune(inputs, lang, strategy):
 def tune(
     device_name: str,
-    strategy="bayes_opt_BOTorch",
+    strategy="bayes_opt_BOTorch_transfer",
     strategy_options={ 'max_fevals': 150 },
     verbose=True,
     quiet=False,
