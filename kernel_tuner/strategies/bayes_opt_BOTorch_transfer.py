@@ -49,11 +49,9 @@ class BayesianOptimizationTransfer(BayesianOptimization):
     def __init__(self, searchspace: Searchspace, runner, tuning_options):
         super().__init__(searchspace, runner, tuning_options)
 
-        self.searchspaces_transfer_learning = []
+        self.searchspaces_transfer_learning: list[Searchspace] = []
         for tl_cache in tuning_options.transfer_learning_caches:
             self.searchspaces_transfer_learning.append(Searchspace(None, None, None, from_cache=tl_cache))
-
-        raise ValueError(self.searchspaces_transfer_learning)
 
         self.best_rgpe_all = []
         self.best_random_all = []

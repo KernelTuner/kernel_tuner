@@ -107,9 +107,10 @@ class Searchspace:
 
         # if an imported cache, skip building and set the values directly
         if from_cache is not None:
-            configs = list(dict(from_cache["cache"]).keys())
-            self.list, self.__dict, self.size = None, None, len(configs)    # TODO
-            raise ValueError(configs)
+            configs = dict(from_cache["cache"]).values()
+            self.list = list(tuple([v for p, v in c.items() if p in self.tune_params]) for c in configs)
+            self.size = len(self.list)
+            self.__dict = dict(zip(self.list, range(self.size)))
         else:
             # get the framework given the framework argument
             if framework_l == "pythonconstraint":
