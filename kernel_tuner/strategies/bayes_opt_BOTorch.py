@@ -122,10 +122,11 @@ class BayesianOptimization():
         
     def initial_sample(self):
         """Take an initial sample."""
-        sample_indices = torch.from_numpy(self.searchspace.get_random_sample_indices(self.initial_sample_size)).to(self.tensor_device)
-        sample_configs = self.searchspace_tensors.index_select(0, sample_indices)
-        self.evaluate_configs(sample_configs)
         self.initial_sample_taken = True
+        if self.initial_sample_size > 0:
+            sample_indices = torch.from_numpy(self.searchspace.get_random_sample_indices(self.initial_sample_size)).to(self.tensor_device)
+            sample_configs = self.searchspace_tensors.index_select(0, sample_indices)
+            self.evaluate_configs(sample_configs)
 
     def get_model_and_likelihood(self, searchspace: Searchspace, train_X: Tensor, train_Y: Tensor, train_Yvar: Tensor=None, state_dict=None, exact=True):
         """Initialize a model and likelihood, possibly with a state dict for faster fitting."""
