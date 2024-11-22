@@ -125,7 +125,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
                 ).sum(dim=-1)
         return rank_loss
     
-    def get_target_model_loocv_sample_preds(self, train_x, train_y, train_yvar, target_model, num_samples):
+    def get_target_model_loocv_sample_preds(self, train_x, train_y, train_yvar, target_model, num_samples, no_state=False):
         """Create a batch-mode LOOCV GP and draw a joint sample across all points from the target task.
 
         Args:
@@ -141,15 +141,22 @@ class BayesianOptimizationTransfer(BayesianOptimization):
         masks = torch.eye(len(train_x), dtype=torch.uint8, device=self.tensor_device).bool()
         train_x_cv = torch.stack([train_x[~m] for m in masks])
         train_y_cv = torch.stack([train_y[~m] for m in masks])
-        train_yvar_cv = torch.stack([train_yvar[~m] for m in masks])
-        state_dict = target_model.state_dict()
-        # expand to batch size of batch_mode LOOCV model
-        state_dict_expanded = {
-            name: t.expand(batch_size, *[-1 for _ in range(t.ndim)])
-            for name, t in state_dict.items()
-        }
-        model = self.get_fitted_model(
-            train_x_cv, train_y_cv, train_yvar_cv, state_dict=state_dict_expanded
+        train_yvar_cv = torch.stack([train_yvar[~m] for m in masks]) if train_yvar is not None else None
+
+        # use a state dictionary for fast updates
+        if no_state:
+            state_dict_expanded = None
+        else:
+            state_dict = target_model.state_dict()
+
+            # expand to batch size of batch_mode LOOCV model
+            state_dict_expanded = {
+                name: t.expand(batch_size, *[-1 for _ in range(t.ndim)])
+                for name, t in state_dict.items()
+            }
+        
+        model, _ = self.get_model_and_likelihood(
+            self.searchspace, train_x_cv, train_y_cv, train_yvar_cv, state_dict=state_dict_expanded
         )
         with torch.no_grad():
             posterior = model.posterior(train_x)
@@ -159,7 +166,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
             sampler = SobolQMCNormalSampler(sample_shape=torch.Size([num_samples]))
             return sampler(posterior).squeeze(-1)
     
-    def compute_rank_weights(self, train_x, train_y, base_models, target_model, num_samples):
+    def compute_rank_weights(self, train_x, train_y, train_yvar, base_models, target_model, num_samples, no_state=False):
         """Compute ranking weights for each base model and the target model (using LOOCV for the target model).
         
         Note: This implementation does not currently address weight dilution, since we only have a small number of base models.
@@ -177,8 +184,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
         ranking_losses = []
 
         # compute ranking loss for each base model
-        for task in range(len(base_models)):
-            model = base_models[task]
+        for model in base_models:
             # compute posterior over training points for target task
             posterior = model.posterior(train_x)
             sampler = SobolQMCNormalSampler(sample_shape=torch.Size([num_samples]))
@@ -194,6 +200,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
             train_yvar,
             target_model,
             num_samples,
+            no_state=no_state,
         )
         ranking_losses.append(self.compute_ranking_loss(target_f_samps, train_y))
         ranking_loss_tensor = torch.stack(ranking_losses)
@@ -213,6 +220,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
                 self.initial_sample()
             model, mll = self.get_model_and_likelihood(self.searchspace, self.train_X, self.train_Y, self.train_Yvar)
             fevals_left = max_fevals - self.initial_sample_size
+            first_loop = self.initial_sample_size > 0
 
             # Bayesian optimization loop
             for _ in range(fevals_left):
@@ -225,9 +233,11 @@ class BayesianOptimizationTransfer(BayesianOptimization):
                 rank_weights = self.compute_rank_weights(
                     self.train_X,
                     self.train_Y,
+                    self.train_Yvar,
                     self.models_transfer_learning,
                     model,
                     NUM_POSTERIOR_SAMPLES,
+                    no_state=first_loop,
                 )
 
                 # create rank model and acquisition function
@@ -258,6 +268,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
                 # reinitialize the models so they are ready for fitting on next iteration
                 if fevals_left > 0:
                     model, mll = self.get_model_and_likelihood(self.searchspace, self.train_X, self.train_Y, self.train_Yvar)
+                    first_loop = False
         except StopCriterionReached as e:
             if self.tuning_options.verbose:
                 print(e)
