@@ -2,7 +2,7 @@
 
 try:
     import torch
-    from botorch.acquisition import LogExpectedImprovement
+    from botorch.acquisition import LogExpectedImprovement, qLogNoisyExpectedImprovement
     from botorch.fit import fit_gpytorch_mll, fit_gpytorch_mll_torch
     from botorch.models import SingleTaskGP
     from botorch.models.gpytorch import GPyTorchModel
@@ -54,7 +54,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
         self.searchspaces_transfer_learning: list[Searchspace] = []
         self.inputs_transfer_learning: list[Tensor] = []
         self.outcomes_transfer_learning: list[Tensor] = []
-        self.models_mlls_transfer_learning: list[tuple] = []
+        self.models_transfer_learning: list = []
         for tl_cache in tuning_options.transfer_learning_caches:
             print(f"Importing transfer learning for {tl_cache["kernel_name"]}-{tl_cache['device_name']}")
             # construct the searchspace for this task
@@ -81,17 +81,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
             # fit a model and likelihood for this task
             model, mll = self.get_model_and_likelihood(tl_searchspace, tl_inputs, tl_outcomes)
             mll = self.fit(mll)
-            self.models_mlls_transfer_learning.append((model, mll))
-    
-    def get_fitted_model(self, train_X, train_Y, train_Yvar, state_dict=None):
-        """Get a single task GP. The model will be fit unless a state_dict with model hyperparameters is provided."""
-        model = SingleTaskGP(train_X=train_X, train_Y=train_Y, train_Yvar=train_Yvar)
-        if state_dict is None:
-            mll = ExactMarginalLogLikelihood(model.likelihood, model).to(train_X)
-            fit_gpytorch_mll(mll)
-        else:
-            model.load_state_dict(state_dict)
-        return model
+            self.models_transfer_learning.append(model)
     
     def roll_col(self, X, shift):
         """Rotate columns to right by shift."""
@@ -221,54 +211,53 @@ class BayesianOptimizationTransfer(BayesianOptimization):
         try:
             if not self.initial_sample_taken:
                 self.initial_sample()
-            mll, model = self.initialize_model()
+            model, mll = self.get_model_and_likelihood(self.searchspace, self.train_X, self.train_Y, self.train_Yvar)
             fevals_left = max_fevals - self.initial_sample_size
 
             # Bayesian optimization loop
             for _ in range(fevals_left):
 
-                target_model = self.get_fitted_model(train_x, train_y, train_yvar)
-                model_list = base_model_list + [target_model]
-                rank_weights = compute_rank_weights(
-                    train_x,
-                    train_y,
-                    base_model_list,
-                    target_model,
+                # fit a Gaussian Process model
+                fit_gpytorch_mll(mll, optimizer=fit_gpytorch_mll_torch)
+
+                # calculate the rank weights
+                model_list = self.models_transfer_learning + [model]
+                rank_weights = self.compute_rank_weights(
+                    self.train_X,
+                    self.train_Y,
+                    self.models_transfer_learning,
+                    model,
                     NUM_POSTERIOR_SAMPLES,
                 )
 
-                # fit a Gaussian Process model
-                fit_gpytorch_mll(mll, optimizer=fit_gpytorch_mll_torch)
-                
-                # define the acquisition function
-                acqf = LogExpectedImprovement(model=model, best_f=self.train_Y.max(), maximize=True)
-                
-                # optimize acquisition function to find the next evaluation point
-                if max_batch_size < self.searchspace_tensors.size(0):
-                    # optimize over a lattice if the space is too large
-                    candidate, _ = optimize_acqf_discrete_local_search(
-                        acqf,
-                        q=1,
-                        discrete_choices=self.searchspace_tensors,
-                        max_batch_size=max_batch_size,
-                        num_restarts=5,
-                        raw_samples=1024
-                    )
-                else:
-                    candidate, _ = optimize_acqf_discrete(
-                        acqf, 
-                        q=1, 
-                        choices=self.searchspace_tensors,
-                        max_batch_size=max_batch_size
-                    )
+                # create rank model and acquisition function
+                rgpe_model = RGPE(model_list, rank_weights)
+                # acqf = LogExpectedImprovement(model=rgpe_model, best_f=self.train_Y.max(), maximize=True)
+                sampler_qnei = SobolQMCNormalSampler(sample_shape=torch.Size([MC_SAMPLES]))
+                qNEI = qLogNoisyExpectedImprovement(
+                    model=rgpe_model,
+                    X_baseline=self.train_X,
+                    sampler=sampler_qnei,
+                    prune_baseline=False,
+                )
+
+                # optimize
+                candidate, _ = optimize_acqf_discrete_local_search(
+                    acq_function=qNEI,
+                    discrete_choices=self.searchspace_tensors,
+                    q=Q_BATCH_SIZE,
+                    num_restarts=N_RESTARTS,
+                    raw_samples=N_RESTART_CANDIDATES,
+                    max_batch_size=max_batch_size
+                )
                     
-                    # evaluate the new candidate
-                    self.evaluate_configs(candidate)
-                    fevals_left -= 1
+                # evaluate the new candidate
+                self.evaluate_configs(candidate)
+                fevals_left -= 1
 
                 # reinitialize the models so they are ready for fitting on next iteration
                 if fevals_left > 0:
-                    mll, model = self.initialize_model(model.state_dict())
+                    model, mll = self.get_model_and_likelihood(self.searchspace, self.train_X, self.train_Y, self.train_Yvar)
         except StopCriterionReached as e:
             if self.tuning_options.verbose:
                 print(e)
