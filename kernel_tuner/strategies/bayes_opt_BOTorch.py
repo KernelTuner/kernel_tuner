@@ -66,7 +66,7 @@ class BayesianOptimization():
         self.searchspace.initialize_tensorspace(dtype=torch.float32, device=self.tensor_device)
         self.searchspace_tensors = searchspace.get_tensorspace()
         self.bounds, self.bounds_indices = self.searchspace.get_tensorspace_bounds()
-        self.train_X = torch.empty(0, **self.searchspace.tensor_kwargs)
+        self.train_X = torch.empty(0, **self.searchspace.tensor_kwargs) # TODO implement continuing from cache
         self.train_Y = torch.empty(0, **self.searchspace.tensor_kwargs)
         self.train_Yvar = torch.empty(0, **self.searchspace.tensor_kwargs)
 

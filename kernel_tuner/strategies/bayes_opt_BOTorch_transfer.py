@@ -21,6 +21,7 @@ try:
 except ImportError:
     bayes_opt_present = False
 
+
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.bayes_opt_BOTorch import BayesianOptimization
 from kernel_tuner.util import StopCriterionReached
@@ -49,9 +50,19 @@ class BayesianOptimizationTransfer(BayesianOptimization):
     def __init__(self, searchspace: Searchspace, runner, tuning_options):
         super().__init__(searchspace, runner, tuning_options)
 
+        # get input and outcome data for each task
         self.searchspaces_transfer_learning: list[Searchspace] = []
+        self.inputs_transfer_learning: list[Tensor] = []
+        self.outcomes_transfer_learning: list[Tensor] = []
         for tl_cache in tuning_options.transfer_learning_caches:
-            self.searchspaces_transfer_learning.append(Searchspace(None, None, None, from_cache=tl_cache))
+            tensor_kwargs = searchspace.tensor_kwargs
+            tl_searchspace = Searchspace(None, None, None, from_cache=tl_cache)
+            tl_searchspace.initialize_tensorspace(**tensor_kwargs)
+            self.searchspaces_transfer_learning.append(tl_searchspace)
+            self.inputs_transfer_learning.append(tl_searchspace.get_tensorspace())
+            tl_outcomes = [c[tuning_options.objective] for c in tl_cache["cache"].values()]
+            self.outcomes_transfer_learning.append(torch.tensor(tl_outcomes, **tensor_kwargs))
+            assert self.inputs_transfer_learning[-1].shape[0] == self.outcomes_transfer_learning[-1].shape[0]
 
         self.best_rgpe_all = []
         self.best_random_all = []
