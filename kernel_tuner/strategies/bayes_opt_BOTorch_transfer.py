@@ -56,6 +56,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
         self.outcomes_transfer_learning: list[Tensor] = []
         self.models_mlls_transfer_learning: list[tuple] = []
         for tl_cache in tuning_options.transfer_learning_caches:
+            print(f"Importing transfer learning for {tl_cache["kernel_name"]}-{tl_cache['device_name']}")
             # construct the searchspace for this task
             tensor_kwargs = searchspace.tensor_kwargs
             tl_searchspace = Searchspace(None, None, None, from_cache=tl_cache)
@@ -63,17 +64,24 @@ class BayesianOptimizationTransfer(BayesianOptimization):
             self.searchspaces_transfer_learning.append(tl_searchspace)
 
             # get the inputs and outcomes for this task
-            tl_inputs = tl_searchspace.get_tensorspace()
+            inputs = []
+            outcomes = []
+            for c in tl_cache["cache"].values():
+                result = c[tuning_options.objective]
+                if self.is_valid_result(result):
+                    config = tuple(c[p] for p in tl_searchspace.tune_params.keys())
+                    inputs.append(tl_searchspace.param_config_to_tensor(config))
+                    outcomes.append(result)
+            tl_inputs = torch.stack(inputs).to(tl_searchspace.tensor_device)
+            tl_outcomes = torch.tensor(outcomes, **tensor_kwargs).unsqueeze(-1)
+            assert tl_inputs.shape[0] == tl_outcomes.shape[0]
             self.inputs_transfer_learning.append(tl_inputs)
-            tl_outcomes = torch.tensor([c[tuning_options.objective] for c in tl_cache["cache"].values()], **tensor_kwargs).unsqueeze(-1)
             self.outcomes_transfer_learning.append(tl_outcomes)
-            assert self.inputs_transfer_learning[-1].shape[0] == self.outcomes_transfer_learning[-1].shape[0]
 
             # fit a model and likelihood for this task
             model, mll = self.get_model_and_likelihood(tl_searchspace, tl_inputs, tl_outcomes)
             mll = self.fit(mll)
             self.models_mlls_transfer_learning.append((model, mll))
-        raise ValueError(self.models_mlls_transfer_learning)
     
     def get_fitted_model(self, train_X, train_Y, train_Yvar, state_dict=None):
         """Get a single task GP. The model will be fit unless a state_dict with model hyperparameters is provided."""

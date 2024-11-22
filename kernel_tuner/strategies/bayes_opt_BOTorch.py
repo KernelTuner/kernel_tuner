@@ -69,12 +69,18 @@ class BayesianOptimization():
         self.train_Y = torch.empty(0, **self.searchspace.tensor_kwargs)
         self.train_Yvar = torch.empty(0, **self.searchspace.tensor_kwargs)
 
+    def is_valid_result(self, result, results=None):
+        """Returns whether the result is valid."""
+        if results is None:
+            results = []
+        return not isinstance(result, ErrorConfig) and not np.isnan(result) and not any(np.isnan(results))
+
     def run_config(self, config: tuple):
         """Run a single configuration. Returns the result and whether it is valid."""
         result, results = self.cost_func(config)
         results = np.array(results)
         var = np.nan
-        valid = not isinstance(result, ErrorConfig) and not np.isnan(result) and not any(np.isnan(results))
+        valid = self.is_valid_result(result, results)
         if not valid:
             result = np.nan
         elif not self.maximize:
