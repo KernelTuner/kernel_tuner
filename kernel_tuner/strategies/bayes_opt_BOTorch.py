@@ -65,7 +65,6 @@ class BayesianOptimization():
         self.searchspace = searchspace
         self.searchspace.initialize_tensorspace(dtype=torch.float32, device=self.tensor_device)
         self.searchspace_tensors = searchspace.get_tensorspace()
-        self.bounds, self.bounds_indices = self.searchspace.get_tensorspace_bounds()
         self.train_X = torch.empty(0, **self.searchspace.tensor_kwargs) # TODO implement continuing from cache
         self.train_Y = torch.empty(0, **self.searchspace.tensor_kwargs)
         self.train_Yvar = torch.empty(0, **self.searchspace.tensor_kwargs)
@@ -122,19 +121,17 @@ class BayesianOptimization():
         self.evaluate_configs(sample_configs)
         self.initial_sample_taken = True
 
-    def initialize_model(self, state_dict=None, exact=True):
-        """Initialize the model and likelihood, possibly with a state dict for faster fitting."""
-        train_X = self.train_X
-        train_Y = self.train_Y
-        train_Yvar = self.train_Yvar
+    def get_model_and_likelihood(self, searchspace: Searchspace, train_X: Tensor, train_Y: Tensor, train_Yvar: Tensor=None, state_dict=None, exact=True):
+        """Initialize a model and likelihood, possibly with a state dict for faster fitting."""
+        bounds, bounds_indices = searchspace.get_tensorspace_bounds()
         transforms = dict(
-            input_transform=Normalize(d=train_X.shape[-1], indices=self.bounds_indices, bounds=self.bounds),
+            input_transform=Normalize(d=train_X.shape[-1], indices=bounds_indices, bounds=bounds),
             outcome_transform=Standardize(m=train_Y.shape[-1], batch_shape=train_X.shape[:-2])
         )
 
         # initialize the model
         if exact:
-            catdims = self.searchspace.get_tensorspace_categorical_dimensions()
+            catdims = searchspace.get_tensorspace_categorical_dimensions()
             if len(catdims) == 0:
                 model = SingleTaskGP(train_X, train_Y, train_Yvar=train_Yvar, **transforms)
             else:
@@ -151,14 +148,14 @@ class BayesianOptimization():
             mll = ExactMarginalLogLikelihood(model.likelihood, model)
         else:
             mll = VariationalELBO(model.likelihood, model.model, num_data=train_Y.size(0))
-        return mll, model
+        return model, mll
 
     def run(self, max_fevals: int, max_batch_size=2048):
         """Run the Bayesian Optimization loop for at most `max_fevals`."""
         try:
             if not self.initial_sample_taken:
                 self.initial_sample()
-            mll, model = self.initialize_model()
+            model, mll = self.get_model_and_likelihood(self.searchspace, self.train_X, self.train_Y, self.train_Yvar)
             fevals_left = max_fevals - self.initial_sample_size
 
             # create array to gradually reduce number of optimization spaces as fewer fevals are left
@@ -228,7 +225,7 @@ class BayesianOptimization():
 
                 # reinitialize the models so they are ready for fitting on next iteration
                 if loop_i < len(nums_optimization_spaces) - 1:
-                    mll, model = self.initialize_model(model.state_dict())
+                    model, mll = self.get_model_and_likelihood(self.searchspace, self.train_X, self.train_Y, self.train_Yvar, state_dict=model.state_dict())
         except StopCriterionReached as e:
             if self.tuning_options.verbose:
                 print(e)
