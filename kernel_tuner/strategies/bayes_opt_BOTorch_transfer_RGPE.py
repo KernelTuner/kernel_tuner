@@ -1,19 +1,15 @@
-"""Bayesian Optimization implementation using BO Torch."""
+"""Bayesian Optimization implementation using BO Torch and transfer learning with RGPE."""
 
 try:
     import torch
-    from botorch.acquisition import LogExpectedImprovement, qLogNoisyExpectedImprovement
+    from botorch.acquisition import qLogNoisyExpectedImprovement
     from botorch.fit import fit_gpytorch_mll, fit_gpytorch_mll_torch
-    from botorch.models import SingleTaskGP
     from botorch.models.gpytorch import GPyTorchModel
-    from botorch.optim.optimize import optimize_acqf_discrete, optimize_acqf_discrete_local_search
+    from botorch.optim.optimize import optimize_acqf_discrete_local_search
     from botorch.sampling.normal import SobolQMCNormalSampler
-    from botorch.utils.sampling import draw_sobol_samples
-    from botorch.utils.transforms import normalize, unnormalize
     from gpytorch.distributions import MultivariateNormal
     from gpytorch.lazy import PsdSumLazyTensor
     from gpytorch.likelihoods import LikelihoodList
-    from gpytorch.mlls import ExactMarginalLogLikelihood
     from gpytorch.models import GP
     from torch import Tensor
     from torch.nn import ModuleList

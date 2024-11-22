@@ -52,7 +52,8 @@ from kernel_tuner.strategies import (
     bayes_opt,
     bayes_opt_alt_BOTorch,
     bayes_opt_BOTorch,
-    bayes_opt_BOTorch_transfer,
+    bayes_opt_BOTorch_transfer_RGPE,
+    bayes_opt_BOTorch_transfer_weighted,
     bayes_opt_GPyTorch,
     bayes_opt_GPyTorch_lean,
     bayes_opt_old,
@@ -92,7 +93,8 @@ strategy_map = {
     "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
     "bayes_opt_BOTorch": bayes_opt_BOTorch,
     "bayes_opt_BOTorch_alt": bayes_opt_alt_BOTorch,
-    "bayes_opt_BOTorch_transfer": bayes_opt_BOTorch_transfer,
+    "bayes_opt_BOTorch_transfer": bayes_opt_BOTorch_transfer_weighted,
+    "bayes_opt_BOTorch_transfer_RGPE": bayes_opt_BOTorch_transfer_RGPE,
 }
 
 
