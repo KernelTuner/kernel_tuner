@@ -42,6 +42,7 @@ class Searchspace:
         block_size_names=default_block_size_names,
         build_neighbors_index=False,
         neighbor_method=None,
+        from_cache: dict=None,
         framework="PythonConstraint",
         solver_method="PC_OptimizedBacktrackingSolver",
         path_to_ATF_cache: Path = None,
@@ -53,7 +54,15 @@ class Searchspace:
             adjacent: picks closest parameter value in both directions for each parameter
             Hamming: any parameter config with 1 different parameter value is a neighbor
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
+        Optionally an imported cache can be used instead with `from_cache`, in which case the `tune_params`, `restrictions` and `max_threads` arguments can be set to None, and construction is skipped.
         """
+        # check the arguments
+        if from_cache is not None:
+            assert tune_params is None and restrictions is None and max_threads is None, "When `from_cache` is used, the positional arguments must be set to None."
+            tune_params = from_cache["tune_params"]
+        if from_cache is None:
+            assert tune_params is not None and restrictions is not None and max_threads is not None, "Must specify positional arugments ."
+
         # set the object attributes using the arguments
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
@@ -96,36 +105,44 @@ class Searchspace:
                 try_to_constraint=framework_l == "pythonconstraint",
             )
 
-        # get the framework given the framework argument
-        if framework_l == "pythonconstraint":
-            searchspace_builder = self.__build_searchspace
-        elif framework_l == "pysmt":
-            searchspace_builder = self.__build_searchspace_pysmt
-        elif framework_l == "pyatf":
-            searchspace_builder = self.__build_searchspace_pyATF
-        elif framework_l == "atf_cache":
-            searchspace_builder = self.__build_searchspace_ATF_cache
-            self.path_to_ATF_cache = path_to_ATF_cache
-        elif framework_l == "bruteforce":
-            searchspace_builder = self.__build_searchspace_bruteforce
+        # if an imported cache, skip building and set the values directly
+        if from_cache is not None:
+            configs = list(dict(from_cache["cache"]).keys())
+            self.list, self.__dict, self.size = None, None, len(configs)    # TODO
+            raise ValueError(configs)
         else:
-            raise ValueError(f"Invalid framework parameter {framework}")
+            # get the framework given the framework argument
+            if framework_l == "pythonconstraint":
+                searchspace_builder = self.__build_searchspace
+            elif framework_l == "pysmt":
+                searchspace_builder = self.__build_searchspace_pysmt
+            elif framework_l == "pyatf":
+                searchspace_builder = self.__build_searchspace_pyATF
+            elif framework_l == "atf_cache":
+                searchspace_builder = self.__build_searchspace_ATF_cache
+                self.path_to_ATF_cache = path_to_ATF_cache
+            elif framework_l == "bruteforce":
+                searchspace_builder = self.__build_searchspace_bruteforce
+            else:
+                raise ValueError(f"Invalid framework parameter {framework}")
 
-        # get the solver given the solver method argument
-        solver = ""
-        if solver_method.lower() == "pc_backtrackingsolver":
-            solver = BacktrackingSolver()
-        elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
-            solver = OptimizedBacktrackingSolver(forwardcheck=False)
-        elif solver_method.lower() == "pc_recursivebacktrackingsolver":
-            solver = RecursiveBacktrackingSolver()
-        elif solver_method.lower() == "pc_minconflictssolver":
-            solver = MinConflictsSolver()
-        else:
-            raise ValueError(f"Solver method {solver_method} not recognized.")
+            # get the solver given the solver method argument
+            solver = ""
+            if solver_method.lower() == "pc_backtrackingsolver":
+                solver = BacktrackingSolver()
+            elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
+                solver = OptimizedBacktrackingSolver(forwardcheck=False)
+            elif solver_method.lower() == "pc_recursivebacktrackingsolver":
+                solver = RecursiveBacktrackingSolver()
+            elif solver_method.lower() == "pc_minconflictssolver":
+                solver = MinConflictsSolver()
+            else:
+                raise ValueError(f"Solver method {solver_method} not recognized.")
 
-        # build the search space
-        self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
+            # build the search space
+            self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
+
+        # finalize construction
         self.__numpy = None
         self.num_params = len(self.tune_params)
         self.indices = np.arange(self.size)
