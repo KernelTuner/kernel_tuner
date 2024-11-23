@@ -121,8 +121,6 @@ class BayesianOptimizationTransfer(BayesianOptimization):
                 else:
                     # only select the target + best performing models (can include target as well)
                     acqfs_means = np.array([np.mean(r) for r in acqfs_results])
-                    if not self.tuning_options["objective_higher_is_better"]:
-                        acqfs_means = -acqfs_means
                     selected_acqfs = [0] + np.argpartition(acqfs_means, -num_optimization_spaces-1)[-num_optimization_spaces-1:]
                     selected_acqfs = selected_acqfs.round(0).astype(int).clip(0, num_optimization_spaces-1)
 
