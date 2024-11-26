@@ -51,6 +51,8 @@ class BayesianOptimizationTransfer(BayesianOptimization):
                 if self.is_valid_result(result):
                     config = tuple(c[p] for p in tl_searchspace.tune_params.keys())
                     inputs.append(tl_searchspace.param_config_to_tensor(config))
+                    if not self.maximize:
+                        result = -result
                     outcomes.append(result)
             tl_inputs = torch.stack(inputs).to(tl_searchspace.tensor_device)
             tl_outcomes = torch.tensor(outcomes, **tensor_kwargs).unsqueeze(-1)
