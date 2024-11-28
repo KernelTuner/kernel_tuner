@@ -34,7 +34,7 @@ class SequentialRunner(Runner):
         self.units = self.dev.units
         self.quiet = device_options.quiet
         self.kernel_source = kernel_source
-        self.warmed_up = False
+        self.warmed_up = False if self.dev.requires_warmup else True
         self.simulation_mode = False
         self.start_time = perf_counter()
         self.last_strategy_start_time = self.start_time

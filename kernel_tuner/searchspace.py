@@ -47,6 +47,7 @@ class Searchspace:
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         """
         # set the object attributes using the arguments
+        framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.restrictions = restrictions
@@ -66,21 +67,27 @@ class Searchspace:
         if (
             len(restrictions) > 0
             and any(isinstance(restriction, str) for restriction in restrictions)
-            and not (framework.lower() == "pysmt" or framework.lower() == "bruteforce")
+            and not (framework_l == "pysmt" or framework_l == "bruteforce")
         ):
             self.restrictions = compile_restrictions(
-                restrictions, tune_params, monolithic=False, try_to_constraint=framework.lower() == "pythonconstraint"
+                restrictions,
+                tune_params,
+                monolithic=False,
+                format=framework_l if framework_l == "pyatf" else None,
+                try_to_constraint=framework_l == "pythonconstraint",
             )
 
         # get the framework given the framework argument
-        if framework.lower() == "pythonconstraint":
+        if framework_l == "pythonconstraint":
             searchspace_builder = self.__build_searchspace
-        elif framework.lower() == "pysmt":
+        elif framework_l == "pysmt":
             searchspace_builder = self.__build_searchspace_pysmt
-        elif framework.lower() == "atf_cache":
+        elif framework_l == "pyatf":
+            searchspace_builder = self.__build_searchspace_pyATF
+        elif framework_l == "atf_cache":
             searchspace_builder = self.__build_searchspace_ATF_cache
             self.path_to_ATF_cache = path_to_ATF_cache
-        elif framework.lower() == "bruteforce":
+        elif framework_l == "bruteforce":
             searchspace_builder = self.__build_searchspace_bruteforce
         else:
             raise ValueError(f"Invalid framework parameter {framework}")
@@ -142,7 +149,7 @@ class Searchspace:
     #         num_solutions: int = csp.n_solutions()  # number of solutions
     #         solutions = [csp.values(sol=i) for i in range(num_solutions)]  # list of solutions
 
-    def __build_searchspace_bruteforce(self, block_size_names: list, max_threads: int, solver = None):
+    def __build_searchspace_bruteforce(self, block_size_names: list, max_threads: int, solver=None):
         # bruteforce solving of the searchspace
 
         from itertools import product
@@ -164,9 +171,15 @@ class Searchspace:
                 restrictions = [restrictions]
             block_size_restriction_spaced = f"{' * '.join(used_block_size_names)} <= {max_threads}"
             block_size_restriction_unspaced = f"{'*'.join(used_block_size_names)} <= {max_threads}"
-            if block_size_restriction_spaced not in restrictions and block_size_restriction_unspaced not in restrictions:
+            if (
+                block_size_restriction_spaced not in restrictions
+                and block_size_restriction_unspaced not in restrictions
+            ):
                 restrictions.append(block_size_restriction_spaced)
-                if isinstance(self._modified_restrictions, list) and block_size_restriction_spaced not in self._modified_restrictions:
+                if (
+                    isinstance(self._modified_restrictions, list)
+                    and block_size_restriction_spaced not in self._modified_restrictions
+                ):
                     self._modified_restrictions.append(block_size_restriction_spaced)
                     if isinstance(self.restrictions, list):
                         self.restrictions.append(block_size_restriction_spaced)
@@ -247,6 +260,53 @@ class Searchspace:
 
         return self.__parameter_space_list_to_lookup_and_return_type(parameter_space_list)
 
+    def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
+        """Builds the searchspace using pyATF."""
+        from pyatf import TP, Set, Tuner
+        from pyatf.cost_functions.generic import CostFunction
+        from pyatf.search_techniques import Exhaustive
+
+        # Define a bogus cost function
+        costfunc = CostFunction(":")  # bash no-op
+
+        # build a dictionary of the restrictions
+        print(self.restrictions)
+        assert isinstance(self.restrictions, list)
+        res_dict = dict()
+        # for res, params in self.restrictions:
+        #     key = params[0]
+        #     assert callable(res)
+        #     assert key not in res_dict
+        #     res_dict[key] = res
+        # print(res_dict)
+
+        # define the Tunable Parameters
+        def get_params():
+            params = list()
+            print("get_params")
+            for index, (key, values) in enumerate(self.tune_params.items()):
+                vals = Set(*values.flatten())  # TODO check if can be interval
+                constraint = res_dict.get(key, None)
+                if index == len(self.tune_params) - 1 and constraint is None:
+                    res = self.restrictions[0][0]
+                    assert callable(res)
+                    constraint = res
+                params.append(TP(key, vals, constraint))
+            return params
+
+        # tune
+        _, _, tuning_data = (
+            Tuner().silent(True).tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
+        )
+
+        # transform the result into a list of parameter configurations for validation
+        tune_params = self.tune_params
+        parameter_tuple_list = list()
+        for entry in tuning_data.history._entries:
+            parameter_tuple_list.append(tuple(entry.configuration[p] for p in tune_params.keys()))
+        pl = self.__parameter_space_list_to_lookup_and_return_type(parameter_tuple_list)
+        return pl
+
     def __build_searchspace_ATF_cache(self, block_size_names: list, max_threads: int, solver: Solver):
         """Imports the valid configurations from an ATF CSV file, returns the searchspace, a dict of the searchspace for fast lookups and the size."""
         if block_size_names != default_block_size_names or max_threads != 1024:
@@ -298,7 +358,10 @@ class Searchspace:
         if len(valid_block_size_names) > 0:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
             max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
-            if isinstance(self._modified_restrictions, list) and max_block_size_product not in self._modified_restrictions:
+            if (
+                isinstance(self._modified_restrictions, list)
+                and max_block_size_product not in self._modified_restrictions
+            ):
                 self._modified_restrictions.append(max_block_size_product)
                 if isinstance(self.restrictions, list):
                     self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names))
@@ -323,10 +386,7 @@ class Searchspace:
                     parameter_space.addConstraint(restriction, required_params)
                 elif isinstance(restriction, Constraint):
                     all_params_required = all(param_name in required_params for param_name in self.param_names)
-                    parameter_space.addConstraint(
-                        restriction,
-                        None if all_params_required else required_params
-                    )
+                    parameter_space.addConstraint(restriction, None if all_params_required else required_params)
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
 
