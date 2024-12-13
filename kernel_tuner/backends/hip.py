@@ -19,6 +19,7 @@ dtype_map = {
     "bool": ctypes.c_bool,
     "int8": ctypes.c_int8,
     "int16": ctypes.c_int16,
+    "float16": ctypes.c_int16,
     "int32": ctypes.c_int32,
     "int64": ctypes.c_int64,
     "uint8": ctypes.c_uint8,

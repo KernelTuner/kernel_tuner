@@ -16,6 +16,7 @@ authors = [
     "Willem-Jan Palenstijn <w.j.palenstijn@liacs.leidenuniv.nl>",
     "Bram Veenboer <veenboer@astron.nl>",
     "Richard Schoonhoven <Richard.Schoonhoven@cwi.nl>",
+    "Leon Oostrum <l.oostrum@esciencecenter.nl",
 ]
 
 readme = "README.md"
