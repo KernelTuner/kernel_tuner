@@ -268,19 +268,19 @@ class CompilerFunctions(CompilerBackend):
             subprocess.run(
                 [self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, 
-                text=True,          
-                check=True         
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
             )
-            
+
             subprocess.run(
                 [self.compiler, filename + ".o"]
                 + compiler_options
                 + ["-shared", "-o", filename + lib_extension]
                 + lib_args,
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.PIPE,  
-                text=True,            
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
                 check=True
             )
 
