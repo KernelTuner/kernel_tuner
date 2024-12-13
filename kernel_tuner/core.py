@@ -647,8 +647,10 @@ class DeviceInterface(object):
             shared_mem_error_messages = [
                 "uses too much shared data",
                 "local memory limit exceeded",
+                r"local memory \(\d+\) exceeds limit \(\d+\)",
             ]
-            if any(msg in str(e) for msg in shared_mem_error_messages):
+            error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
+            if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
                 logging.debug(
                     "compile_kernel failed due to kernel using too much shared memory"
                 )
@@ -715,7 +717,7 @@ class DeviceInterface(object):
         )
 
         # check for templated kernel
-        if kernel_source.lang in ["CUDA", "NVCUDA"] and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA", "NVCUDA", "HIP"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments

@@ -265,12 +265,23 @@ class CompilerFunctions(CompilerBackend):
             if platform.system() == "Darwin":
                 lib_extension = ".dylib"
 
-            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
-            subprocess.check_call(
+            subprocess.run(
+                [self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
+            )
+
+            subprocess.run(
                 [self.compiler, filename + ".o"]
                 + compiler_options
                 + ["-shared", "-o", filename + lib_extension]
-                + lib_args
+                + lib_args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
             )
 
             self.lib = np.ctypeslib.load_library(filename, ".")
@@ -396,10 +407,16 @@ class CompilerFunctions(CompilerBackend):
 
     def cleanup_lib(self):
         """unload the previously loaded shared library"""
+        if self.lib is None:
+            return
+        
         if not self.using_openmp and not self.using_openacc:
             # this if statement is necessary because shared libraries that use
             # OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
             logging.debug("unloading shared library")
-            _ctypes.dlclose(self.lib._handle)
+            try:
+                _ctypes.dlclose(self.lib._handle)
+            finally:
+                self.lib = None
 
     units = {}
