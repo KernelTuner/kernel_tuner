@@ -651,7 +651,6 @@ class DeviceInterface(object):
             ]
             error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
             if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
-                print("DEBUG: SHARED MEM ERROR")
                 logging.debug(
                     "compile_kernel failed due to kernel using too much shared memory"
                 )
