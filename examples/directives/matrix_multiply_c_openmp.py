@@ -2,7 +2,7 @@
 """This is an example tuning a naive matrix multiplication using the simplified directives interface"""
 
 from kernel_tuner import tune_kernel, run_kernel
-from kernel_tuner.utils.directives import Code, OpenACC, Cxx, process_directives
+from kernel_tuner.utils.directives import Code, OpenMP, Cxx, process_directives
 
 N = 4096
 
@@ -12,12 +12,12 @@ code = """
 void matrix_multiply(float *A, float *B, float *C) {
     #pragma tuner start mm A(float*:NN) B(float*:NN) C(float*:NN)
     float temp_sum = 0.0f;
-    #pragma acc parallel vector_length(nthreads)
-    #pragma acc loop gang collapse(2)
+    #pragma omp target
+    #pragma omp teams distribute collapse(2)
     for ( int i = 0; i < N; i++) {
         for ( int j = 0; j < N; j++ ) {
             temp_sum = 0.0f;
-            #pragma acc loop vector reduction(+:temp_sum)
+            #pragma omp parallel for num_threads(nthreads) reduction(+:temp_sum)
             for ( int k = 0; k < N; k++ ) {
                 temp_sum += A[(i * N) + k] * B[(k * N) + j];
             }
@@ -29,7 +29,7 @@ void matrix_multiply(float *A, float *B, float *C) {
 """
 
 # Extract tunable directive
-app = Code(OpenACC(), Cxx())
+app = Code(OpenMP(), Cxx())
 dims = {"NN": N**2}
 kernel_string, kernel_args = process_directives(app, code, user_dimensions=dims)
 
@@ -55,5 +55,5 @@ tune_kernel(
     metrics=metrics,
     answer=answer,
     compiler="nvc++",
-    compiler_options=["-fast", "-acc=gpu"],
+    compiler_options=["-fast", "-mp=gpu"],
 )

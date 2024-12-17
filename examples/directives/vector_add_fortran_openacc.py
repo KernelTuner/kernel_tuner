@@ -62,6 +62,6 @@ tune_kernel(
     tune_params,
     metrics=metrics,
     answer=answer,
-    compiler_options=["-fast", "-acc=gpu"],
     compiler="nvfortran",
+    compiler_options=["-fast", "-acc=gpu"],
 )

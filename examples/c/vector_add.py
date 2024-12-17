@@ -26,7 +26,7 @@ extern "C" float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
 }
 """
 
-size = 72*1024*1024
+size = 72 * 1024 * 1024
 
 a = numpy.random.randn(size).astype(numpy.float32)
 b = numpy.random.randn(size).astype(numpy.float32)
@@ -39,7 +39,6 @@ tune_params = OrderedDict()
 tune_params["nthreads"] = [1, 2, 3, 4, 8, 12, 16, 24, 32]
 tune_params["vecsize"] = [1, 2, 4, 8, 16]
 
-answer = [a+b, None, None, None]
+answer = [a + b, None, None, None]
 
-tune_kernel("vector_add", kernel_string, size, args, tune_params,
-    answer=answer, compiler_options=['-O3'])
+tune_kernel("vector_add", kernel_string, size, args, tune_params, answer=answer, compiler_options=["-fopenmp", "-O3"])
