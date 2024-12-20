@@ -27,7 +27,7 @@ except ImportError:
     cp = None
 
 try:
-    from jip import hip
+    from hip import hip
 except ImportError:
     hip = None
 

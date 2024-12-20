@@ -174,12 +174,14 @@ def check_argument_list(kernel_name, kernel_string, args):
 
             if correct and check_argument_type(str_dtype, kernel_argument):
                 continue
-            
+
             collected_errors[arguments_set].append(
                 f"Argument at position {i} of dtype: {str_dtype} does not match {kernel_argument}."
             )
 
         if not collected_errors[arguments_set]:
+            # We assume that if there is a possible list of arguments that matches with the provided one
+            # it is the right one
             return
 
     for errors in collected_errors:
