@@ -53,6 +53,8 @@ try:
 except Exception:
     cuda_present = False
 
+try:
+    from hip import hip
     hip_present = True
 except ImportError:
     hip_present = False
