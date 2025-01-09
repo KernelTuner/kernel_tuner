@@ -18,7 +18,7 @@ from constraint import (
 )
 
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
-from kernel_tuner.util import compile_restrictions, default_block_size_names
+from kernel_tuner.util import compile_restrictions, default_block_size_names, get_interval
 
 supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming"]
 
@@ -262,7 +262,7 @@ class Searchspace:
 
     def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
         """Builds the searchspace using pyATF."""
-        from pyatf import TP, Set, Tuner
+        from pyatf import TP, Set, Interval, Tuner
         from pyatf.cost_functions.generic import CostFunction
         from pyatf.search_techniques import Exhaustive
 
@@ -289,7 +289,8 @@ class Searchspace:
             params = list()
             print("get_params")
             for index, (key, values) in enumerate(self.tune_params.items()):
-                vals = Set(*np.array(values).flatten())  # TODO check if can be interval
+                vi = get_interval(values)
+                vals = Interval(vi[0], vi[1], vi[2]) if vi is not None else Set(*np.array(values).flatten())
                 constraint = res_dict.get(key, None)
                 if len(res_dict) == 0 and index == len(self.tune_params) - 1 and constraint is None:
                     res = self.restrictions[0][0]

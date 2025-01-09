@@ -439,6 +439,23 @@ def get_instance_string(params):
     return "_".join([str(i) for i in params.values()])
 
 
+def get_interval(a: list):
+    """Checks if an array can be an interval. Returns (start, end, step) if interval, otherwise None."""
+    if not all(isinstance(e, (int, float)) for e in a):
+        return None
+    a_min = min(a)
+    a_max = max(a)
+    if len(a) <= 2:
+        return (a_min, a_max, a_max-a_min)
+    # determine the first step size
+    step = a[1]-a_min
+    # for each element, the step size should be equal to the first step
+    for i, e in enumerate(a):
+        if e-a[i-1] != step:
+            return None 
+    return (a_min, a_max, step)
+
+
 def get_kernel_string(kernel_source, params=None):
     """Retrieve the kernel source and return as a string.
 
