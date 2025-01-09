@@ -1007,8 +1007,6 @@ def parse_restrictions(
             return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
         return None
 
-    # TODO if format == "pyatf", combine based on last parameter
-
     # create the parsed restrictions
     if monolithic is False:
         # split into multiple restrictions where possible
@@ -1085,8 +1083,6 @@ def compile_restrictions(
     parsed_restrictions = parse_restrictions(
         restrictions_str, tune_params, monolithic=monolithic, format=format, try_to_constraint=try_to_constraint
     )
-
-    # TODO if format == "pyatf", return a dictionary instead of a list
 
     # compile the parsed restrictions into a function
     compiled_restrictions: list[tuple] = list()

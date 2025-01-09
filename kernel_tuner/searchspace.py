@@ -269,25 +269,29 @@ class Searchspace:
         # Define a bogus cost function
         costfunc = CostFunction(":")  # bash no-op
 
-        # build a dictionary of the restrictions
+        # build a dictionary of the restrictions, combined based on last parameter
         print(self.restrictions)
         assert isinstance(self.restrictions, list)
         res_dict = dict()
-        # for res, params in self.restrictions:
-        #     key = params[0]
-        #     assert callable(res)
-        #     assert key not in res_dict
-        #     res_dict[key] = res
-        # print(res_dict)
+        registered_params = list()
+        registered_restrictions = list()
+        for param in self.tune_params.keys():
+            registered_params.append(param)
+            for index, (res, params) in enumerate(self.restrictions):
+                if index in registered_restrictions:
+                    continue
+                if all(p in registered_params for p in params):
+                    res_dict[param] = res
+                    registered_restrictions.append(index)
 
         # define the Tunable Parameters
         def get_params():
             params = list()
             print("get_params")
             for index, (key, values) in enumerate(self.tune_params.items()):
-                vals = Set(*values.flatten())  # TODO check if can be interval
+                vals = Set(*np.array(values).flatten())  # TODO check if can be interval
                 constraint = res_dict.get(key, None)
-                if index == len(self.tune_params) - 1 and constraint is None:
+                if len(res_dict) == 0 and index == len(self.tune_params) - 1 and constraint is None:
                     res = self.restrictions[0][0]
                     assert callable(res)
                     constraint = res
@@ -296,7 +300,7 @@ class Searchspace:
 
         # tune
         _, _, tuning_data = (
-            Tuner().silent(True).tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
+            Tuner().verbosity(0).tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
         )
 
         # transform the result into a list of parameter configurations for validation
