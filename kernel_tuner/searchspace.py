@@ -289,7 +289,7 @@ class Searchspace:
             params = list()
             for index, (key, values) in enumerate(self.tune_params.items()):
                 vi = get_interval(values)
-                vals = Interval(vi[0], vi[1], vi[2]) if vi is not None else Set(*np.array(values).flatten())
+                vals = Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
                 constraint = res_dict.get(key, None)
                 # in case of a leftover monolithic restriction, append at the last parameter
                 if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
