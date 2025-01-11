@@ -1052,8 +1052,35 @@ def parse_restrictions(
                     finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
             if finalized_constraint is None:
                 # we must turn it into a general function
-                finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
+                if format.lower() == "pyatf":
+                    finalized_constraint = parsed_restriction
+                else:
+                    finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
             parsed_restrictions.append((finalized_constraint, params_used))
+
+        # if pyATF, restrictions that are set on the same parameter must be combined into one
+        if format.lower() == "pyatf":
+            res_dict = dict()
+            registered_params = list()
+            registered_restrictions = list()
+            for param in tune_params.keys():
+                registered_params.append(param)
+                for index, (res, params) in enumerate(parsed_restrictions):
+                    if index in registered_restrictions:
+                        continue
+                    if all(p in registered_params for p in params):
+                        if param not in res_dict:
+                            res_dict[param] = (list(), list())
+                        res_dict[param][0].append(res)
+                        res_dict[param][1].extend(params)
+                        registered_restrictions.append(index)
+            # combine multiple restrictions into one
+            parsed_restrictions_pyatf = list()
+            for res_tuple in res_dict.values():
+                res, params_used = res_tuple
+                params_used = list(dict.fromkeys(params_used))   # param_used should only contain unique, dict preserves order
+                parsed_restrictions_pyatf.append((f"def r({', '.join(params_used)}): return {' and '.join(res)} \n", params_used))
+            return parsed_restrictions_pyatf
     else:
         # create one monolithic function
         parsed_restrictions = ") and (".join(

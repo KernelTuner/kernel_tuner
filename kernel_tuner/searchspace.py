@@ -287,12 +287,12 @@ class Searchspace:
         # define the Tunable Parameters
         def get_params():
             params = list()
-            print("get_params")
             for index, (key, values) in enumerate(self.tune_params.items()):
                 vi = get_interval(values)
                 vals = Interval(vi[0], vi[1], vi[2]) if vi is not None else Set(*np.array(values).flatten())
                 constraint = res_dict.get(key, None)
-                if len(res_dict) == 0 and index == len(self.tune_params) - 1 and constraint is None:
+                # in case of a leftover monolithic restriction, append at the last parameter
+                if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
                     res = self.restrictions[0][0]
                     assert callable(res)
                     constraint = res
