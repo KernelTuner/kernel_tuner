@@ -250,12 +250,15 @@ def check_restriction(restrict, params: dict) -> bool:
     # if it's a tuple, use only the parameters in the second argument to call the restriction
     elif (
         isinstance(restrict, tuple)
-        and len(restrict) == 2
+        and (len(restrict) == 2 or len(restrict) == 3)
         and callable(restrict[0])
         and isinstance(restrict[1], (list, tuple))
     ):
         # unpack the tuple
-        restrict, selected_params = restrict
+        if len(restrict) == 2:
+            restrict, selected_params = restrict
+        else:
+            restrict, selected_params, source = restrict
         # look up the selected parameters and their value
         selected_params = dict((key, params[key]) for key in selected_params)
         # call the restriction
@@ -1061,14 +1064,14 @@ def parse_restrictions(
                     finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
             if finalized_constraint is None:
                 # we must turn it into a general function
-                if format.lower() == "pyatf":
+                if format is not None and format.lower() == "pyatf":
                     finalized_constraint = parsed_restriction
                 else:
                     finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
             parsed_restrictions.append((finalized_constraint, params_used))
 
         # if pyATF, restrictions that are set on the same parameter must be combined into one
-        if format.lower() == "pyatf":
+        if format is not None and format.lower() == "pyatf":
             res_dict = dict()
             registered_params = list()
             registered_restrictions = list()
