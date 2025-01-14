@@ -1023,6 +1023,15 @@ def parse_restrictions(
                 return AllDifferentConstraint()
             return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
         return None
+    
+    # remove functionally duplicate restrictions (preserves order and whitespace)
+    if all(isinstance(r, str) for r in restrictions):
+        # clean the restriction strings to functional equivalence
+        restrictions_cleaned = [r.replace(' ', '') for r in restrictions]
+        restrictions_cleaned_unique = list(dict.fromkeys(restrictions_cleaned)) # dict preserves order
+        # get the indices of the unique restrictions, use these to build a new list of restrictions
+        restrictions_unique_indices = [restrictions_cleaned.index(r) for r in restrictions_cleaned_unique]
+        restrictions = [restrictions[i] for i in restrictions_unique_indices]
 
     # create the parsed restrictions
     if monolithic is False:
