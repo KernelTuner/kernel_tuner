@@ -269,19 +269,31 @@ class Searchspace:
         # Define a bogus cost function
         costfunc = CostFunction(":")  # bash no-op
 
-        # build a dictionary of the restrictions, combined based on last parameter
-        print(self.restrictions)
+        # add the Kernel Tuner default blocksize threads restrictions
         assert isinstance(self.restrictions, list)
+        valid_block_size_names = list(
+            block_size_name for block_size_name in block_size_names if block_size_name in self.param_names
+        )
+        if len(valid_block_size_names) > 0:
+            # adding the default blocksize restriction requires recompilation because pyATF requires combined restrictions for the same parameter
+            max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
+            restrictions = self._modified_restrictions.copy() + [max_block_size_product]
+            self.restrictions = compile_restrictions(restrictions, self.tune_params, format="pyatf", try_to_constraint=False)
+
+        # build a dictionary of the restrictions, combined based on last parameter
         res_dict = dict()
         registered_params = list()
         registered_restrictions = list()
         for param in self.tune_params.keys():
             registered_params.append(param)
-            for index, (res, params) in enumerate(self.restrictions):
+            for index, (res, params, source) in enumerate(self.restrictions):
                 if index in registered_restrictions:
                     continue
                 if all(p in registered_params for p in params):
-                    res_dict[param] = res
+                    if param in res_dict:
+                        raise KeyError(f"`{param}` is already in res_dict with `{res_dict[param][1]}`, can't add `{source}`")
+                    res_dict[param] = (res, source)
+                    print(source, res, param, params)
                     registered_restrictions.append(index)
 
         # define the Tunable Parameters
@@ -291,12 +303,15 @@ class Searchspace:
                 vi = get_interval(values)
                 vals = Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
                 constraint = res_dict.get(key, None)
+                constraint_source = None
+                if constraint is not None:
+                    constraint, constraint_source = constraint
                 # in case of a leftover monolithic restriction, append at the last parameter
                 if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
-                    res = self.restrictions[0][0]
+                    res, params, source = self.restrictions[0]
                     assert callable(res)
                     constraint = res
-                params.append(TP(key, vals, constraint))
+                params.append(TP(key, vals, constraint, constraint_source))
             return params
 
         # tune
@@ -369,7 +384,7 @@ class Searchspace:
             ):
                 self._modified_restrictions.append(max_block_size_product)
                 if isinstance(self.restrictions, list):
-                    self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names))
+                    self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names, None))
 
         # construct the parameter space with the constraints applied
         return parameter_space.getSolutionsAsListDict(order=self.param_names)
@@ -382,7 +397,7 @@ class Searchspace:
 
                 # convert to a Constraint type if necessary
                 if isinstance(restriction, tuple):
-                    restriction, required_params = restriction
+                    restriction, required_params, _ = restriction
                 if callable(restriction) and not isinstance(restriction, Constraint):
                     restriction = FunctionConstraint(restriction)
 
