@@ -1063,6 +1063,7 @@ def parse_restrictions(
             res_dict = dict()
             registered_params = list()
             registered_restrictions = list()
+            parsed_restrictions_pyatf = list()
             for param in tune_params.keys():
                 registered_params.append(param)
                 for index, (res, params) in enumerate(parsed_restrictions):
@@ -1075,12 +1076,11 @@ def parse_restrictions(
                         res_dict[param][1].extend(params)
                         registered_restrictions.append(index)
             # combine multiple restrictions into one
-            parsed_restrictions_pyatf = list()
             for res_tuple in res_dict.values():
                 res, params_used = res_tuple
                 params_used = list(dict.fromkeys(params_used))   # param_used should only contain unique, dict preserves order
-                parsed_restrictions_pyatf.append((f"def r({', '.join(params_used)}): return {' and '.join(res)} \n", params_used))
-            return parsed_restrictions_pyatf
+                parsed_restrictions_pyatf.append((f"def r({', '.join(params_used)}): return ({') and ('.join(res)}) \n", params_used))
+            parsed_restrictions = parsed_restrictions_pyatf
     else:
         # create one monolithic function
         parsed_restrictions = ") and (".join(
@@ -1114,8 +1114,8 @@ def parse_restrictions(
 
 def compile_restrictions(
     restrictions: list, tune_params: dict, monolithic=False, format=None, try_to_constraint=True
-) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
-    """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
+) -> list[tuple[Union[str, Constraint, FunctionType], list[str], Union[str, None]]]:
+    """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used and source, or a single Function if monolithic is true."""
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
@@ -1135,10 +1135,10 @@ def compile_restrictions(
             # if it's a string, parse it to a function
             code_object = compile(restriction, "<string>", "exec")
             func = FunctionType(code_object.co_consts[0], globals())
-            compiled_restrictions.append((func, params_used))
+            compiled_restrictions.append((func, params_used, restriction))
         elif isinstance(restriction, Constraint):
             # otherwise it already is a Constraint, pass it directly
-            compiled_restrictions.append((restriction, params_used))
+            compiled_restrictions.append((restriction, params_used, None))
         else:
             raise ValueError(f"Restriction {restriction} is neither a string or Constraint {type(restriction)}")
 
@@ -1150,9 +1150,10 @@ def compile_restrictions(
     noncompiled_restrictions = []
     for r in restrictions_ignore:
         if isinstance(r, tuple) and len(r) == 2 and isinstance(r[1], (list, tuple)):
-            noncompiled_restrictions.append(r)
+            restriction, params_used = r
+            noncompiled_restrictions.append((restriction, params_used, restriction))
         else:
-            noncompiled_restrictions.append((r, ()))
+            noncompiled_restrictions.append((r, [], r))
     return noncompiled_restrictions + compiled_restrictions
 
 
