@@ -1,4 +1,5 @@
 """Module for kernel tuner utility functions."""
+
 import errno
 import json
 import logging
@@ -105,7 +106,8 @@ default_block_size_names = [
 try:
     from hip._util.types import DeviceArray
 except ImportError:
-    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+    DeviceArray = Exception  # using Exception here as a type that will never be among kernel arguments
+
 
 def check_argument_type(dtype, kernel_argument):
     """Check if the numpy.dtype matches the type used in the code."""
@@ -129,11 +131,12 @@ def check_argument_type(dtype, kernel_argument):
         return any([substr in kernel_argument for substr in types_map[dtype]])
     return False  # unknown dtype. do not throw exception to still allow kernel to run.
 
+
 def check_argument_list(kernel_name, kernel_string, args):
     """Raise an exception if kernel arguments do not match host arguments."""
     kernel_arguments = list()
     collected_errors = list()
-    
+
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
         kernel_end = kernel_string.find(")", kernel_start)
@@ -143,9 +146,7 @@ def check_argument_list(kernel_name, kernel_string, args):
     for arguments_set, arguments in enumerate(kernel_arguments):
         collected_errors.append(list())
         if len(arguments) != len(args):
-            collected_errors[arguments_set].append(
-                "Kernel and host argument lists do not match in size."
-            )
+            collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
             continue
 
         for i, arg in enumerate(args):
@@ -154,7 +155,7 @@ def check_argument_list(kernel_name, kernel_string, args):
             # Handle tunable arguments
             if isinstance(arg, Tunable):
                 continue
-                
+
             # Handle numpy arrays and other array types
             if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
                 raise TypeError(
@@ -166,7 +167,7 @@ def check_argument_list(kernel_name, kernel_string, args):
             if isinstance(arg, np.ndarray):
                 if "*" not in kernel_argument:
                     correct = False
-            
+
             if isinstance(arg, DeviceArray):
                 str_dtype = str(np.dtype(arg.typestr))
             else:
@@ -192,10 +193,7 @@ def check_stop_criterion(to):
     """Checks if max_fevals is reached or time limit is exceeded."""
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
         raise StopCriterionReached("max_fevals reached")
-    if "time_limit" in to and (
-        ((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3))
-        > to.time_limit
-    ):
+    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
         raise StopCriterionReached("time limit exceeded")
 
 
@@ -204,13 +202,7 @@ def check_tune_params_list(tune_params, observers, simulation_mode=False):
     forbidden_names = ("grid_size_x", "grid_size_y", "grid_size_z", "time")
     for name, param in tune_params.items():
         if name in forbidden_names:
-            raise ValueError(
-                "Tune parameter "
-                + name
-                + " with value "
-                + str(param)
-                + " has a forbidden name!"
-            )
+            raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
     if any("nvml_" in param for param in tune_params):
         if not simulation_mode and (not observers or not any(isinstance(obs, NVMLObserver) for obs in observers)):
             raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
@@ -249,6 +241,7 @@ def check_block_size_params_names_list(block_size_names, tune_params):
                 UserWarning,
             )
 
+
 def check_restriction(restrict, params: dict) -> bool:
     """Check whether a configuration meets a search space restriction."""
     # if it's a python-constraint, convert to function and execute
@@ -262,8 +255,12 @@ def check_restriction(restrict, params: dict) -> bool:
     elif callable(restrict):
         return restrict(**params)
     # if it's a tuple, use only the parameters in the second argument to call the restriction
-    elif (isinstance(restrict, tuple) and len(restrict) == 2
-        and callable(restrict[0]) and isinstance(restrict[1], (list, tuple))):
+    elif (
+        isinstance(restrict, tuple)
+        and len(restrict) == 2
+        and callable(restrict[0])
+        and isinstance(restrict[1], (list, tuple))
+    ):
         # unpack the tuple
         restrict, selected_params = restrict
         # look up the selected parameters and their value
@@ -277,6 +274,7 @@ def check_restriction(restrict, params: dict) -> bool:
     # otherwise, raise an error
     else:
         raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")
+
 
 def check_restrictions(restrictions, params: dict, verbose: bool) -> bool:
     """Check whether a configuration meets the search space restrictions."""
@@ -302,29 +300,45 @@ def check_restrictions(restrictions, params: dict, verbose: bool) -> bool:
 def convert_constraint_restriction(restrict: Constraint):
     """Convert the python-constraint to a function for backwards compatibility."""
     if isinstance(restrict, FunctionConstraint):
+
         def f_restrict(p):
             return restrict._func(*p)
+
     elif isinstance(restrict, AllDifferentConstraint):
+
         def f_restrict(p):
             return len(set(p)) == len(p)
+
     elif isinstance(restrict, AllEqualConstraint):
+
         def f_restrict(p):
             return all(x == p[0] for x in p)
+
     elif isinstance(restrict, MaxProdConstraint):
+
         def f_restrict(p):
             return np.prod(p) <= restrict._maxprod
+
     elif isinstance(restrict, MinProdConstraint):
+
         def f_restrict(p):
             return np.prod(p) >= restrict._minprod
+
     elif isinstance(restrict, MaxSumConstraint):
+
         def f_restrict(p):
             return sum(p) <= restrict._maxsum
+
     elif isinstance(restrict, ExactSumConstraint):
+
         def f_restrict(p):
             return sum(p) == restrict._exactsum
+
     elif isinstance(restrict, MinSumConstraint):
+
         def f_restrict(p):
             return sum(p) >= restrict._minsum
+
     elif isinstance(restrict, (InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint)):
         raise NotImplementedError(
             f"Restriction of the type {type(restrict)} is explicitely not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
@@ -349,9 +363,7 @@ def config_valid(config, tuning_options, max_threads):
         if not legal:
             return False
     block_size_names = tuning_options.get("block_size_names", None)
-    valid_thread_block_dimensions = check_thread_block_dimensions(
-        params, max_threads, block_size_names
-    )
+    valid_thread_block_dimensions = check_thread_block_dimensions(params, max_threads, block_size_names)
     return valid_thread_block_dimensions
 
 
@@ -378,9 +390,7 @@ def detect_language(kernel_string):
 def get_best_config(results, objective, objective_higher_is_better=False):
     """Returns the best configuration from a list of results according to some objective."""
     func = max if objective_higher_is_better else min
-    ignore_val = (
-        sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
-    )
+    ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
     best_config = func(
         results,
         key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val,
@@ -425,18 +435,10 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
         if callable(divisor_list):
             return divisor_list(params)
         else:
-            return np.prod(
-                [int(eval(replace_param_occurrences(s, params))) for s in divisor_list]
-            )
+            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
 
-    divisors = [
-        get_dimension_divisor(d, block_size_names[i], params)
-        for i, d in enumerate(grid_div)
-    ]
-    return tuple(
-        int(np.ceil(float(current_problem_size[i]) / float(d)))
-        for i, d in enumerate(divisors)
-    )
+    divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
+    return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
 
 
 def get_instance_string(params):
@@ -498,9 +500,7 @@ def get_problem_size(problem_size, params):
         elif isinstance(s, (int, np.integer)):
             current_problem_size[i] = s
         else:
-            raise TypeError(
-                "Error: problem_size should only contain strings or integers"
-            )
+            raise TypeError("Error: problem_size should only contain strings or integers")
     return current_problem_size
 
 
@@ -575,11 +575,12 @@ def get_total_timings(results, env, overhead_time):
     return env
 
 
-NVRTC_VALID_CC = np.array(['50', '52', '53', '60', '61', '62', '70', '72', '75', '80', '87', '89', '90', '90a'])
+NVRTC_VALID_CC = np.array(["50", "52", "53", "60", "61", "62", "70", "72", "75", "80", "87", "89", "90", "90a"])
+
 
 def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
     """Returns a valid Compute Capability for NVRTC `--gpu-architecture=`, as per https://docs.nvidia.com/cuda/nvrtc/index.html#group__options."""
-    return max(NVRTC_VALID_CC[NVRTC_VALID_CC<=compute_capability], default='52')
+    return max(NVRTC_VALID_CC[NVRTC_VALID_CC <= compute_capability], default="52")
 
 
 def print_config(config, tuning_options, runner):
@@ -828,7 +829,9 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
-def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = False, try_to_constraint = True) -> list[tuple[Union[Constraint, str], list[str]]]:
+def parse_restrictions(
+    restrictions: list[str], tune_params: dict, monolithic=False, try_to_constraint=True
+) -> list[tuple[Union[Constraint, str], list[str]]]:
     """Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters."""
     # rewrite the restrictions so variables are singled out
     regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
@@ -860,8 +863,8 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
                 split_restrictions.append(res)
                 continue
             # find the indices of splittable comparators
-            comparators = ['<=', '>=', '>', '<']
-            comparators_indices = [(m.start(0), m.end(0)) for m in re.finditer('|'.join(comparators), res)]
+            comparators = ["<=", ">=", ">", "<"]
+            comparators_indices = [(m.start(0), m.end(0)) for m in re.finditer("|".join(comparators), res)]
             if len(comparators_indices) <= 1:
                 # this can't be split further
                 split_restrictions.append(res)
@@ -869,15 +872,19 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
             # split the restrictions from the previous to the next comparator
             for index in range(len(comparators_indices)):
                 temp_copy = res
-                prev_stop = comparators_indices[index-1][1] + 1 if index > 0 else 0
-                next_stop = comparators_indices[index+1][0] if index < len(comparators_indices) - 1 else len(temp_copy)
+                prev_stop = comparators_indices[index - 1][1] + 1 if index > 0 else 0
+                next_stop = (
+                    comparators_indices[index + 1][0] if index < len(comparators_indices) - 1 else len(temp_copy)
+                )
                 split_restrictions.append(temp_copy[prev_stop:next_stop].strip())
         return split_restrictions
 
-    def to_numeric_constraint(restriction: str, params: list[str]) -> Optional[Union[MinSumConstraint, ExactSumConstraint, MaxSumConstraint, MaxProdConstraint]]:
+    def to_numeric_constraint(
+        restriction: str, params: list[str]
+    ) -> Optional[Union[MinSumConstraint, ExactSumConstraint, MaxSumConstraint, MaxProdConstraint]]:
         """Converts a restriction to a built-in numeric constraint if possible."""
-        comparators = ['<=', '==', '>=', '>', '<']
-        comparators_found = re.findall('|'.join(comparators), restriction)
+        comparators = ["<=", "==", ">=", ">", "<"]
+        comparators_found = re.findall("|".join(comparators), restriction)
         # check if there is exactly one comparator, if not, return None
         if len(comparators_found) != 1:
             return None
@@ -903,19 +910,21 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
         if (left_num is None and right_num is None) or (left_num is not None and right_num is not None):
             # left_num and right_num can't be both None or both a constant
             return None
-        number, variables, variables_on_left = (left_num, right.strip(), False) if left_num is not None else (right_num, left.strip(), True)
+        number, variables, variables_on_left = (
+            (left_num, right.strip(), False) if left_num is not None else (right_num, left.strip(), True)
+        )
 
         # if the number is an integer, we can map '>' to '>=' and '<' to '<=' by changing the number (does not work with floating points!)
         number_is_int = isinstance(number, int)
         if number_is_int:
-            if comparator == '<':
+            if comparator == "<":
                 if variables_on_left:
                     # (x < 2) == (x <= 2-1)
                     number -= 1
                 else:
                     # (2 < x) == (2+1 <= x)
                     number += 1
-            elif comparator == '>':
+            elif comparator == ">":
                 if variables_on_left:
                     # (x > 2) == (x >= 2+1)
                     number += 1
@@ -924,8 +933,8 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
                     number -= 1
 
         # check if an operator is applied on the variables, if not return
-        operators = [r'\*\*', r'\*', r'\+']
-        operators_found = re.findall(str('|'.join(operators)), variables)
+        operators = [r"\*\*", r"\*", r"\+"]
+        operators_found = re.findall(str("|".join(operators)), variables)
         if len(operators_found) == 0:
             # no operators found, return only based on comparator
             if len(params) != 1 or variables not in params:
@@ -933,12 +942,12 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
                 return None
             # map to a Constraint
             # if there are restrictions with a single variable, it will be used to prune the domain at the start
-            elif comparator == '==':
+            elif comparator == "==":
                 return ExactSumConstraint(number)
-            elif comparator == '<=' or (comparator == '<' and number_is_int):
-                return  MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
-            elif comparator == '>=' or (comparator == '>' and number_is_int):
-                return  MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
+            elif comparator == "<=" or (comparator == "<" and number_is_int):
+                return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
+            elif comparator == ">=" or (comparator == ">" and number_is_int):
+                return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
             raise ValueError(f"Invalid comparator {comparator}")
 
         # check which operator is applied on the variables
@@ -952,34 +961,36 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
         # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
         if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
             # map to a Constraint
-            if operator == '**':
+            if operator == "**":
                 # power operations are not (yet) supported, added to avoid matching the double asterisk
                 return None
-            elif operator == '*':
-                if comparator == '<=' or (comparator == '<' and number_is_int):
+            elif operator == "*":
+                if comparator == "<=" or (comparator == "<" and number_is_int):
                     return MaxProdConstraint(number) if variables_on_left else MinProdConstraint(number)
-                elif comparator == '>=' or (comparator == '>' and number_is_int):
+                elif comparator == ">=" or (comparator == ">" and number_is_int):
                     return MinProdConstraint(number) if variables_on_left else MaxProdConstraint(number)
-            elif operator == '+':
-                if comparator == '==':
+            elif operator == "+":
+                if comparator == "==":
                     return ExactSumConstraint(number)
-                elif comparator == '<=' or (comparator == '<' and number_is_int):
+                elif comparator == "<=" or (comparator == "<" and number_is_int):
                     return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
-                elif comparator == '>=' or (comparator == '>' and number_is_int):
+                elif comparator == ">=" or (comparator == ">" and number_is_int):
                     return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
             else:
                 raise ValueError(f"Invalid operator {operator}")
         return None
 
-    def to_equality_constraint(restriction: str, params: list[str]) -> Optional[Union[AllEqualConstraint, AllDifferentConstraint]]:
+    def to_equality_constraint(
+        restriction: str, params: list[str]
+    ) -> Optional[Union[AllEqualConstraint, AllDifferentConstraint]]:
         """Converts a restriction to either an equality or inequality constraint on all the parameters if possible."""
         # check if all parameters are involved
         if len(params) != len(tune_params):
             return None
 
         # find whether (in)equalities appear in this restriction
-        equalities_found = re.findall('==', restriction)
-        inequalities_found = re.findall('!=', restriction)
+        equalities_found = re.findall("==", restriction)
+        inequalities_found = re.findall("!=", restriction)
         # check if one of the two have been found, if none or both have been found, return None
         if not (len(equalities_found) > 0 ^ len(inequalities_found) > 0):
             return None
@@ -990,9 +1001,9 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
         # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
         if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
             # map to a Constraint
-            if comparator == '==':
+            if comparator == "==":
                 return AllEqualConstraint()
-            elif comparator == '!=':
+            elif comparator == "!=":
                 return AllDifferentConstraint()
             return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
         return None
@@ -1011,7 +1022,12 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
             finalized_constraint = None
             if try_to_constraint and " or " not in res and " and " not in res:
                 # if applicable, strip the outermost round brackets
-                while parsed_restriction[0] == '(' and parsed_restriction[-1] == ')' and '(' not in parsed_restriction[1:] and ')' not in parsed_restriction[:1]:
+                while (
+                    parsed_restriction[0] == "("
+                    and parsed_restriction[-1] == ")"
+                    and "(" not in parsed_restriction[1:]
+                    and ")" not in parsed_restriction[:1]
+                ):
                     parsed_restriction = parsed_restriction[1:-1]
                 # check if we can turn this into the built-in numeric comparison constraint
                 finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
@@ -1024,7 +1040,9 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
             parsed_restrictions.append((finalized_constraint, params_used))
     else:
         # create one monolithic function
-        parsed_restrictions = ") and (".join([re.sub(regex_match_variable, replace_params, res) for res in restrictions])
+        parsed_restrictions = ") and (".join(
+            [re.sub(regex_match_variable, replace_params, res) for res in restrictions]
+        )
 
         # tidy up the code by removing the last suffix and unnecessary spaces
         parsed_restrictions = "(" + parsed_restrictions.strip() + ")"
@@ -1033,12 +1051,19 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
         # provide a mapping of the parameter names to the index in the tuple received
         params_index = dict(zip(tune_params.keys(), range(len(tune_params.keys()))))
 
-        parsed_restrictions = [(f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n", list(tune_params.keys()))]
+        parsed_restrictions = [
+            (
+                f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n",
+                list(tune_params.keys()),
+            )
+        ]
 
     return parsed_restrictions
 
 
-def compile_restrictions(restrictions: list, tune_params: dict, monolithic = False, try_to_constraint = True) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
+def compile_restrictions(
+    restrictions: list, tune_params: dict, monolithic=False, try_to_constraint=True
+) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
     """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
@@ -1048,7 +1073,9 @@ def compile_restrictions(restrictions: list, tune_params: dict, monolithic = Fal
         return restrictions_ignore
 
     # parse the strings
-    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, monolithic=monolithic, try_to_constraint=try_to_constraint)
+    parsed_restrictions = parse_restrictions(
+        restrictions_str, tune_params, monolithic=monolithic, try_to_constraint=try_to_constraint
+    )
 
     # compile the parsed restrictions into a function
     compiled_restrictions: list[tuple] = list()
@@ -1109,18 +1136,12 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     # if file does not exist, create new cache
     if not os.path.isfile(cache):
         if tuning_options.simulation_mode:
-            raise ValueError(
-                f"Simulation mode requires an existing cachefile: file {cache} does not exist"
-            )
+            raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
 
         c = dict()
         c["device_name"] = runner.dev.name
         c["kernel_name"] = kernel_options.kernel_name
-        c["problem_size"] = (
-            kernel_options.problem_size
-            if not callable(kernel_options.problem_size)
-            else "callable"
-        )
+        c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"
         c["tune_params_keys"] = list(tuning_options.tune_params.keys())
         c["tune_params"] = tuning_options.tune_params
         c["objective"] = tuning_options.objective
@@ -1145,34 +1166,19 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != runner.dev.name:
-            raise ValueError(
-                "Cannot load cache which contains results for different device"
-            )
+            raise ValueError("Cannot load cache which contains results for different device")
         if cached_data["kernel_name"] != kernel_options.kernel_name:
-            raise ValueError(
-                "Cannot load cache which contains results for different kernel"
-            )
+            raise ValueError("Cannot load cache which contains results for different kernel")
         if "problem_size" in cached_data and not callable(kernel_options.problem_size):
             # if problem_size is not iterable, compare directly
             if not hasattr(kernel_options.problem_size, "__iter__"):
                 if cached_data["problem_size"] != kernel_options.problem_size:
-                    raise ValueError(
-                        "Cannot load cache which contains results for different problem_size"
-                    )
+                    raise ValueError("Cannot load cache which contains results for different problem_size")
             # else (problem_size is iterable)
             # cache returns list, problem_size is likely a tuple. Therefore, the next check
             # checks the equality of all items in the list/tuples individually
-            elif not all(
-                [
-                    i == j
-                    for i, j in zip(
-                        cached_data["problem_size"], kernel_options.problem_size
-                    )
-                ]
-            ):
-                raise ValueError(
-                    "Cannot load cache which contains results for different problem_size"
-                )
+            elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
+                raise ValueError("Cannot load cache which contains results for different problem_size")
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
             if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
                 raise ValueError(
@@ -1208,6 +1214,7 @@ def correct_open_cache(cache, open_cache=True):
                 cachefile.write(filestr[:-3] + ",")
 
     return filestr
+
 
 def read_cache(cache, open_cache=True):
     """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending."""
