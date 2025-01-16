@@ -444,6 +444,8 @@ def get_instance_string(params):
 
 def get_interval(a: list):
     """Checks if an array can be an interval. Returns (start, end, step) if interval, otherwise None."""
+    if len(a) < 3:
+        return None
     if not all(isinstance(e, (int, float)) for e in a):
         return None
     a_min = min(a)
@@ -456,7 +458,10 @@ def get_interval(a: list):
     for i, e in enumerate(a):
         if e-a[i-1] != step:
             return None 
-    return (a_min, a_max, step)
+    result = (a_min, a_max, step)
+    if not all(isinstance(e, (int, float)) for e in result):
+        return None
+    return result
 
 
 def get_kernel_string(kernel_source, params=None):
