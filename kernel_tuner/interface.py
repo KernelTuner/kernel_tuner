@@ -273,6 +273,25 @@ _kernel_options = Options(
                 "dict",
             ),
         ),
+        ("setup_dict", ("""Used only with the Compiler backend, it allows the user to run code before
+                        benchmarking a config. The dictionary should contain:
+                        - 'source': the C/C++ source code to be compiled and executed. 
+                                    Needs to be the same source code as the kernel and cleanup.
+                        - 'args_len': number of arguments to pass from the kernel arguments
+                        - 'kernel_name': name of the setup function in the source
+                        The arguments passed to the setup source are the first 'args_len' arguments
+                        from the kernel arguments list. Any modifications made to these arguments
+                        by the setup code will be visible to the kernel.""", "dict")),
+
+        ("cleanup_dict", ("""Used only with the Compiler backend, it allows the user to run code after
+                        benchmarking a config. The dictionary should contain:
+                        - 'source': the C/C++ source code to be compiled and executed. 
+                                    Needs to be the same source code as the kernel and setup.
+                        - 'args_len': number of arguments to pass from the kernel arguments
+                        - 'kernel_name': name of the cleanup function in the source
+                        The arguments passed to the cleanup source are the first 'args_len' arguments
+                        from the kernel arguments list, which typically include resources allocated
+                        during setup that need to be freed.""", "dict"))
     ]
 )
 
@@ -577,6 +596,8 @@ def tune_kernel(
     observers=None,
     objective=None,
     objective_higher_is_better=None,
+    setup_dict=None,
+    cleanup_dict=None
 ):
     start_overhead_time = perf_counter()
     if log:

@@ -614,10 +614,33 @@ class DeviceInterface(object):
                     if self.use_nvml:
                         self.set_nvml_parameters(instance)
                     start_benchmark = time.perf_counter()
+
+                    # Run code before benchmarking when using the compiler backend
+                    if "setup_dict" in kernel_options and isinstance(self.dev, CompilerFunctions):
+                        setup_dict = kernel_options["setup_dict"]
+                        args_len = setup_dict["args_len"]
+                        kernel_name = kernel_options["kernel_name"]
+                        kernel_options["kernel_name"] = setup_dict["func_name"]
+                        setup_instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
+                        setup_func = self.compile_kernel(setup_instance, verbose)
+                        setup_func(*[arg.ctypes for arg in gpu_args[:args_len]])
+                        kernel_options["kernel_name"] = kernel_name
+
                     result.update(
                         self.benchmark(func, gpu_args, instance, verbose, to.objective, skip_nvml_setting=False)
                     )
                     last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
+
+                    # Run code after benchmarking when using the compiler backend
+                    if "cleanup_dict" in kernel_options and isinstance(self.dev, CompilerFunctions):
+                        cleanup_dict = kernel_options["cleanup_dict"]
+                        args_len = cleanup_dict["args_len"]
+                        kernel_name = kernel_options["kernel_name"]
+                        kernel_options["kernel_name"] = cleanup_dict["func_name"]
+                        setup_instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
+                        setup_func = self.compile_kernel(setup_instance, verbose)
+                        setup_func(*[arg.ctypes for arg in gpu_args[:args_len]])
+                        kernel_options["kernel_name"] = kernel_name
 
             except Exception as e:
                 # dump kernel sources to temp file

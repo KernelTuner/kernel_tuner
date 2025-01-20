@@ -12,6 +12,7 @@ import warnings
 from inspect import signature
 from types import FunctionType
 from typing import Optional, Union
+import ctypes as C
 
 import numpy as np
 from constraint import (
@@ -155,12 +156,16 @@ def check_argument_list(kernel_name, kernel_string, args):
             # Handle tunable arguments
             if isinstance(arg, Tunable):
                 continue
+            
+            if isinstance(arg, (C._SimpleCData, C.Array, C._Pointer, type(C.byref(C.c_int())))):
+                continue
 
             # Handle numpy arrays and other array types
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
+            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray,
+                                    C._SimpleCData, C.Array, C._Pointer, type(C.byref(C.c_int())))):
                 raise TypeError(
                     f"Argument at position {i} of type: {type(arg)} should be of type "
-                    "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
+                    "np.ndarray, numpy scalar, HIP Python DeviceArray type, or ctypes"
                 )
 
             correct = True

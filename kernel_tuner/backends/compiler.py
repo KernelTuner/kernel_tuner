@@ -156,10 +156,11 @@ class CompilerFunctions(CompilerBackend):
         ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg)):
-                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}")
-            dtype_str = arg.typestr if isinstance(arg, DeviceArray) else str(arg.dtype)
+            if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg) or
+                    isinstance(arg, (C._SimpleCData, C.Array, C._Pointer, type(C.byref(C.c_int()))))):
+                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray or ctypes but a {type(arg)}")
             if isinstance(arg, np.ndarray):
+                dtype_str = str(arg.dtype)
                 if dtype_str in dtype_map.keys():
                     # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
                     # to its underlying array, so we need to store a reference to arg.copy()
@@ -171,13 +172,16 @@ class CompilerFunctions(CompilerBackend):
                 else:
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
-                data_ctypes = dtype_map[dtype_str](arg)
+                data_ctypes = dtype_map[str(arg.dtype)](arg)
                 numpy_arg = arg
             elif is_cupy_array(arg):
                 data_ctypes = C.c_void_p(arg.data.ptr)
                 numpy_arg = arg
             elif isinstance(arg, DeviceArray):
                 data_ctypes = arg.as_c_void_p()
+                numpy_arg = None
+            elif isinstance(arg, (C._SimpleCData, C.Array, C._Pointer, type(C.byref(C.c_int())))):
+                data_ctypes = arg
                 numpy_arg = None
 
             ctype_args[i] = Argument(numpy=numpy_arg, ctypes=data_ctypes)
