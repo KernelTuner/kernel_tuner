@@ -286,7 +286,7 @@ only uses data in shared memory. The <code class="docutils literal notranslate">
 </div>
 </div>
 <p>This kernel drastically reduces memory bandwidth consumption. Compared to our naive kernel, it is about three times faster now, which comes from the highly increased memory utilization:</p>
-<p><img alt="matmul_shared" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul_shared.png" /></p>
+<img alt="matmul_shared" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul_shared.png" />
 <p>The compute utilization has actually decreased slightly, which is due to the synchronization overhead, because <code class="docutils literal notranslate"><span class="pre">__syncthread()</span></code> is called frequently.</p>
 <p>The restriction we have introduced has limited the number of kernel configurations benchmarked by the tuner significantly. Because the thread block size needs to be a square, there only a handful of configurations we can try. Fortunately, we can add several more optimizations to the code that also open the parameter space for tuning.</p>
 </section>
@@ -404,7 +404,7 @@ again.</p>
 </div>
 </div>
 <p>As we can see the number of kernel configurations evaluated by the tuner has increased again. Also the performance has increased quite dramatically with roughly another factor 3. If we look at the Nvidia Visual Profiler output of our kernel we see the following:</p>
-<p><img alt="matmul" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul.png" /></p>
+<img alt="matmul" src="https://raw.githubusercontent.com/kerneltuner/kernel_tuner/master/doc/source/matmul/matmul.png" />
 <p>As expected, the compute utilization of our kernel has improved. There may even be some more room for improvement, but our tutorial on how to use Kernel Tuner ends here. In this tutorial, we have seen how you can use Kernel Tuner to tune kernels with a small number of tunable parameters, how to impose restrictions on the parameter space, and how to use grid divisor lists to specify how grid dimensions are computed.</p>
 </section>
 </section>
@@ -420,7 +420,7 @@ again.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2024, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

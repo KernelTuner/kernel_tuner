@@ -253,7 +253,7 @@ moves data to the GPU, and functions like <code class="docutils literal notransl
 building blocks for implementing runners.</p>
 <p>The observers are explained in <a class="reference internal" href="observers.html#observers"><span class="std std-ref">Observers</span></a>.</p>
 <p>At the bottom, the backends are shown.
-PyCUDA, CuPy, cuda-python, PyOpenCL and PyHIP are for tuning either CUDA, OpenCL, or HIP kernels.
+PyCUDA, CuPy, cuda-python, PyOpenCL and HIP Python are for tuning either CUDA, OpenCL, or HIP kernels.
 The CompilerFunctions implementation can call any compiler, typically NVCC
 or GCC is used. There is limited support for tuning Fortran kernels.
 This backend was created not just to be able to tune C
@@ -1478,10 +1478,10 @@ source module for copying data to constant memory before kernel launch.</p>
 in the parameter space.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>An ctypes function that can be called directly.</p>
+<dd class="field-even"><p>A HIP kernel function that can be called.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>ctypes._FuncPtr</p>
+<dd class="field-odd"><p>hipFunction_t</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1492,7 +1492,7 @@ in the parameter space.</p>
 <dd><p>Adds constant memory arguments to the most recently compiled module.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>cmem_args</strong> (<em>dict</em><em>( </em><em>string: numpy.ndarray</em><em>, </em><em>...</em><em> )</em>) – A dictionary containing the data to be passed to the
+<dd class="field-odd"><p><strong>cmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy.ndarray</em><em>, </em><em>...</em><em>)</em>) – A dictionary containing the data to be passed to the
 device constant memory. The format to be used is as follows: A
 string key is used to name the constant memory symbol to which the
 value needs to be copied. Similar to regular arguments, these need
@@ -1527,7 +1527,7 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dest</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
-<li><p><strong>src</strong> (<em>ctypes ptr</em>) – A GPU memory allocation unit</p></li>
+<li><p><strong>src</strong> (<em>DeviceArray</em><em> or </em><em>int</em>) – A GPU memory allocation unit</p></li>
 </ul>
 </dd>
 </dl>
@@ -1540,8 +1540,8 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dest</strong> (<em>ctypes ptr</em>) – A GPU memory allocation unit</p></li>
-<li><p><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to store the data</p></li>
+<li><p><strong>dest</strong> (<em>DeviceArray</em><em> or </em><em>int</em>) – A GPU memory allocation unit</p></li>
+<li><p><strong>src</strong> (<em>numpy.ndarray</em>) – A numpy array in host memory to copy from</p></li>
 </ul>
 </dd>
 </dl>
@@ -1554,8 +1554,8 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>allocation</strong> (<em>ctypes ptr</em>) – A GPU memory allocation unit</p></li>
-<li><p><strong>value</strong> (<em>a single 8-bit unsigned int</em>) – The value to set the memory to</p></li>
+<li><p><strong>allocation</strong> (<em>DeviceArray</em><em> or </em><em>int</em>) – A GPU memory allocation (DeviceArray)</p></li>
+<li><p><strong>value</strong> (<em>int</em><em> (</em><em>8-bit unsigned</em><em>)</em>) – The value to set the memory to</p></li>
 <li><p><strong>size</strong> (<em>int</em>) – The size of to the allocation unit in bytes</p></li>
 </ul>
 </dd>
@@ -1565,18 +1565,18 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.hip.HipFunctions.ready_argument_list">
 <span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.hip.HipFunctions.ready_argument_list" title="Link to this definition">¶</a></dt>
-<dd><p>Ready argument list to be passed to the HIP function.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy objects</em><em>)</em>) – List of arguments to be passed to the HIP function.
-The order should match the argument list on the HIP function.
+<dd><p>Ready argument list to be passed to the HIP function.
+:param arguments: List of arguments to be passed to the HIP function.</p>
+<blockquote>
+<div><p>The order should match the argument list on the HIP function.
 Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of arguments to be passed to the HIP function.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Ctypes structure of arguments to be passed to the HIP function.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>ctypes structure</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1588,10 +1588,9 @@ Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>func</strong> (<em>ctypes pionter</em>) – A HIP kernel compiled for this specific kernel configuration</p></li>
-<li><p><strong>gpu_args</strong> (<em>ctypes structure</em>) – A ctypes structure of arguments to the kernel, order should match the
-order in the code. Allowed values are either variables in global memory
-or single values passed by value.</p></li>
+<li><p><strong>func</strong> (<em>hipFunction_t</em>) – A HIP kernel compiled for this specific kernel configuration</p></li>
+<li><p><strong>gpu_args</strong> (<em>list</em>) – List of arguments to pass to the kernel. Can be DeviceArray
+objects or ctypes values</p></li>
 <li><p><strong>threads</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of threads in each dimension of
 the thread block</p></li>
 <li><p><strong>grid</strong> (<em>tuple</em><em>(</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>)</em>) – A tuple listing the number of thread blocks in each dimension
@@ -1690,7 +1689,7 @@ implement default like this:</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.check_argument_list">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_list" title="Link to this definition">¶</a></dt>
-<dd><p>Raise an exception if a kernel arguments do not match host arguments.</p>
+<dd><p>Raise an exception if kernel arguments do not match host arguments.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -2046,7 +2045,7 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2024, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

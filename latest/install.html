@@ -55,7 +55,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#cuda-and-pycuda">CUDA and PyCUDA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#other-cuda-backends">Other CUDA Backends</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#opencl-and-pyopencl">OpenCL and PyOpenCL</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#hip-and-pyhip">HIP and PyHIP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hip-and-hip-python">HIP and HIP Python</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installing-the-git-version">Installing the git version</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#dependencies-for-the-guides">Dependencies for the guides</a></li>
 </ul>
@@ -204,25 +204,22 @@ PyOpenCL are recommended to support all features of the Kernel Tuner.</p>
 </div>
 <p>If this fails, please see the PyOpenCL installation guide (<a class="reference external" href="https://wiki.tiker.net/PyOpenCL/Installation">https://wiki.tiker.net/PyOpenCL/Installation</a>)</p>
 </section>
-<section id="hip-and-pyhip">
-<h2>HIP and PyHIP<a class="headerlink" href="#hip-and-pyhip" title="Link to this heading">¶</a></h2>
-<p>Before we can install PyHIP, you’ll need to have the HIP runtime and compiler installed on your system.
+<section id="hip-and-hip-python">
+<h2>HIP and HIP Python<a class="headerlink" href="#hip-and-hip-python" title="Link to this heading">¶</a></h2>
+<p>Before we can install HIP Python, you’ll need to have the HIP runtime and compiler installed on your system.
 The HIP compiler is included as part of the ROCm software stack. Here is AMD’s installation guide:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://docs.amd.com/bundle/HIP-Installation-Guide-v5.3/page/Introduction_to_HIP_Installation_Guide.html">ROCm Documentation: HIP Installation Guide</a></p></li>
 </ul>
-<p>After you’ve installed HIP, you will need to install PyHIP. Run the following command in your terminal to install:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>pyhip-interface
+<p>After you’ve installed HIP, you will need to install HIP Python. Run the following command in your terminal to install:</p>
+<p>First identify the first three digits of the version number of your ROCm™ installation.
+Then install the HIP Python package(s) as follows:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-i<span class="w"> </span>https://test.pypi.org/simple<span class="w"> </span>hip-python~<span class="o">=</span><span class="nv">$rocm_version</span>
+<span class="c1"># if you want to install the CUDA Python interoperability package too, run:</span>
+python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-i<span class="w"> </span>https://test.pypi.org/simple<span class="w"> </span>hip-python-as-cuda~<span class="o">=</span><span class="nv">$rocm_version</span>
 </pre></div>
 </div>
-<p>Alternatively, you can install PyHIP from the source code. First, clone the repository from GitHub:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/jatinx/PyHIP
-</pre></div>
-</div>
-<p>Then, navigate to the repository directory and run the following command to install:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>setup.py<span class="w"> </span>install
-</pre></div>
-</div>
+<p>For other installation options check <a class="reference external" href="https://github.com/ROCm/hip-python">hip-python on GitHub</a></p>
 </section>
 <section id="installing-the-git-version">
 <h2>Installing the git version<a class="headerlink" href="#installing-the-git-version" title="Link to this heading">¶</a></h2>
@@ -242,7 +239,7 @@ The runtime dependencies are:</p>
 <ul class="simple">
 <li><p><cite>cuda</cite>: install pycuda along with kernel_tuner</p></li>
 <li><p><cite>opencl</cite>: install pycuda along with kernel_tuner</p></li>
-<li><p><cite>hip</cite>: install pyhip along with kernel_tuner</p></li>
+<li><p><cite>hip</cite>: install HIP Python along with kernel_tuner</p></li>
 <li><p><cite>tutorial</cite>: install packages required to run the guides</p></li>
 </ul>
 <p>These can be installed by appending e.g. <code class="docutils literal notranslate"><span class="pre">-E</span> <span class="pre">cuda</span> <span class="pre">-E</span> <span class="pre">opencl</span> <span class="pre">-E</span> <span class="pre">hip</span></code>.
@@ -281,7 +278,7 @@ you could use:</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2024, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
