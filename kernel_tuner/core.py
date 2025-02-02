@@ -29,6 +29,11 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
+try:
+    from hip._util.types import DeviceArray
+except ImportError:
+    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+
 _KernelInstance = namedtuple(
     "_KernelInstance",
     [
@@ -495,7 +500,7 @@ class DeviceInterface(object):
 
             should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
         else:
-            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)) for arg in instance.arguments]
+            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
@@ -659,7 +664,7 @@ class DeviceInterface(object):
                         f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
                     )
             else:
-                logging.debug("compile_kernel failed due to error: " + str(e))
+                print("compile_kernel failed due to error: " + error_message)
                 print("Error while compiling:", instance.name)
                 raise e
         return func
