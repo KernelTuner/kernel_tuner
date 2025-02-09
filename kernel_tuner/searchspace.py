@@ -12,6 +12,7 @@ from constraint import (
     MaxProdConstraint,
     MinConflictsSolver,
     OptimizedBacktrackingSolver,
+    ParallelSolver,
     Problem,
     RecursiveBacktrackingSolver,
     Solver,
@@ -57,6 +58,7 @@ class Searchspace:
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
+        self.solver_method = solver_method
         self.__neighbor_cache = dict()
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
@@ -67,7 +69,7 @@ class Searchspace:
         if (
             len(restrictions) > 0
             and any(isinstance(restriction, str) for restriction in restrictions)
-            and not (framework_l == "pysmt" or framework_l == "bruteforce")
+            and not (framework_l == "pysmt" or framework_l == "bruteforce" or solver_method.lower() == "pc_parallelsolver")
         ):
             self.restrictions = compile_restrictions(
                 restrictions,
@@ -98,6 +100,8 @@ class Searchspace:
             solver = BacktrackingSolver()
         elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
             solver = OptimizedBacktrackingSolver(forwardcheck=False)
+        elif solver_method.lower() == "pc_parallelsolver":
+            solver = ParallelSolver()
         elif solver_method.lower() == "pc_recursivebacktrackingsolver":
             solver = RecursiveBacktrackingSolver()
         elif solver_method.lower() == "pc_minconflictssolver":
@@ -407,6 +411,8 @@ class Searchspace:
                 elif isinstance(restriction, Constraint):
                     all_params_required = all(param_name in required_params for param_name in self.param_names)
                     parameter_space.addConstraint(restriction, None if all_params_required else required_params)
+                elif isinstance(restriction, str) and self.solver_method.lower() == "pc_parallelsolver":
+                    parameter_space.addConstraint(restriction)
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
 
