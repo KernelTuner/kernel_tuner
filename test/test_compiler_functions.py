@@ -487,3 +487,65 @@ def test_run_kernel():
         lang="C",
     )
     assert cp.all((a + b) == c)
+
+@skip_if_no_gcc
+def test_setup_cleanup():
+    source_string = """
+#include <stdlib.h>
+#include <stdio.h>
+
+extern "C" void setup_function(void** array_ptr, size_t& size) {
+    size = 5;  
+    *array_ptr = malloc(size * sizeof(size_t));
+    int* local_array = (int*)*array_ptr;
+        
+    for (int i = 0; i < size; i++) {
+        local_array[i] = i + 1;
+    }
+}
+
+extern "C" void cleanup_function(void** array_ptr, size_t& size) { 
+    if (array_ptr) {
+        free(*array_ptr);
+    }
+}
+
+extern "C" float test_kernel(void** array_ptr, size_t& size) { 
+    float result = 0.0f;
+    int* array = (int*)*array_ptr;
+        
+    result = array[0] + array[size/2] + array[size-1];
+
+    return result;
+}
+    """
+
+    array = C.byref(C.c_void_p())
+    size = C.byref(C.c_size_t(0))
+    arguments = [array, size]
+    
+    tune_params = {"block_size_x": [1]}
+    
+    setup_dict = {
+        "source": source_string,
+        "func_name": "setup_function",
+        "args_len": 2
+    }
+    
+    cleanup_dict = {
+        "source": source_string,
+        "func_name": "cleanup_function",
+        "args_len": 2
+    }
+    
+    result, env = kernel_tuner.tune_kernel(
+        "test_kernel",
+        source_string,
+        1,
+        arguments,
+        tune_params,
+        setup_dict=setup_dict,
+        cleanup_dict=cleanup_dict,
+        verbose=True
+    )
+    
