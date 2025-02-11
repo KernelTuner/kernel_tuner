@@ -5,11 +5,11 @@ import numpy
 from kernel_tuner import run_kernel
 import pytest
 
-#Check pyhip is installed and if a HIP capable device is present, if not skip the test
+#Check hip is installed and if a HIP capable device is present, if not skip the test
 try:
-    from pyhip import hip, hiprtc
+    from hip import hip, hiprtc
 except ImportError:
-    pytest.skip("PyHIP not installed or PYTHONPATH does not includes PyHIP")
+    pytest.skip("HIP Python not installed or PYTHONPATH does not includes HIP Python")
     hip = None
     hiprtc = None
 

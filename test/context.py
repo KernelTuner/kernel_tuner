@@ -53,15 +53,11 @@ try:
 except Exception:
     cuda_present = False
 
-PYHIP_PATH = os.environ.get("PYHIP_PATH")  # get the PYHIP_PATH environment variable
 try:
-    if PYHIP_PATH is not None:
-        sys.path.insert(0, PYHIP_PATH)
-    from pyhip import hip, hiprtc
-
-    pyhip_present = True
+    from hip import hip
+    hip_present = True
 except ImportError:
-    pyhip_present = False
+    hip_present = False
 
 try:
     from autotuning_methodology.report_experiments import get_strategy_scores
@@ -88,7 +84,7 @@ skip_if_no_gfortran = pytest.mark.skipif(
 )
 skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
 skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on PATH")
-skip_if_no_pyhip = pytest.mark.skipif(not pyhip_present, reason="No PyHIP found")
+skip_if_no_pyhip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
 skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
 
 
@@ -107,3 +103,5 @@ def skip_backend(backend: str):
         pytest.skip("No gfortran on PATH")
     elif backend.upper() == "OPENACC" and not openacc_present:
         pytest.skip("No nvc++ on PATH")
+    elif backend.upper() == "HIP" and not hip_present:
+        pytest.skip("HIP Python not installed")

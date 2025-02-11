@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 <!-- ## [1.1.0] - 2025 ?? -->
 - Additional improvements to search space construction
+- changed HIP python bindings from pyhip-interface to the official hip-python
 - Added Python 3.13 and experimental 3.14 support
 - Dropped Python 3.8 support
 

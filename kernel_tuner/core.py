@@ -30,6 +30,11 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
+try:
+    from hip._util.types import DeviceArray
+except ImportError:
+    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+
 _KernelInstance = namedtuple(
     "_KernelInstance",
     [
@@ -503,7 +508,7 @@ class DeviceInterface(object):
 
             should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
         else:
-            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)) for arg in instance.arguments]
+            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
@@ -655,8 +660,10 @@ class DeviceInterface(object):
             shared_mem_error_messages = [
                 "uses too much shared data",
                 "local memory limit exceeded",
+                r"local memory \(\d+\) exceeds limit \(\d+\)",
             ]
-            if any(msg in str(e) for msg in shared_mem_error_messages):
+            error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
+            if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
                 logging.debug(
                     "compile_kernel failed due to kernel using too much shared memory"
                 )
@@ -665,7 +672,7 @@ class DeviceInterface(object):
                         f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
                     )
             else:
-                logging.debug("compile_kernel failed due to error: " + str(e))
+                print("compile_kernel failed due to error: " + error_message)
                 print("Error while compiling:", instance.name)
                 raise e
         return func
@@ -723,7 +730,7 @@ class DeviceInterface(object):
         )
 
         # check for templated kernel
-        if kernel_source.lang in ["CUDA", "NVCUDA"] and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA", "NVCUDA", "HIP"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments

@@ -104,6 +104,11 @@ default_block_size_names = [
     "block_size_z",
 ]
 
+try:
+    from hip._util.types import DeviceArray
+except ImportError:
+    DeviceArray = Exception  # using Exception here as a type that will never be among kernel arguments
+
 
 def check_argument_type(dtype, kernel_argument):
     """Check if the numpy.dtype matches the type used in the code."""
@@ -129,55 +134,58 @@ def check_argument_type(dtype, kernel_argument):
 
 
 def check_argument_list(kernel_name, kernel_string, args):
-    """Raise an exception if a kernel arguments do not match host arguments."""
+    """Raise an exception if kernel arguments do not match host arguments."""
     kernel_arguments = list()
     collected_errors = list()
+
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
         kernel_end = kernel_string.find(")", kernel_start)
         if kernel_start != 0:
             kernel_arguments.append(kernel_string[kernel_start:kernel_end].split(","))
+
     for arguments_set, arguments in enumerate(kernel_arguments):
         collected_errors.append(list())
         if len(arguments) != len(args):
             collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
             continue
+
         for i, arg in enumerate(args):
             kernel_argument = arguments[i]
 
-            # Fix to deal with tunable arguments
+            # Handle tunable arguments
             if isinstance(arg, Tunable):
                 continue
 
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
+            # Handle numpy arrays and other array types
+            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
                 raise TypeError(
-                    "Argument at position "
-                    + str(i)
-                    + " of type: "
-                    + str(type(arg))
-                    + " should be of type np.ndarray or numpy scalar"
+                    f"Argument at position {i} of type: {type(arg)} should be of type "
+                    "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
                 )
 
             correct = True
-            if isinstance(arg, np.ndarray) and "*" not in kernel_argument:
-                correct = False  # array is passed to non-pointer kernel argument
+            if isinstance(arg, np.ndarray):
+                if "*" not in kernel_argument:
+                    correct = False
 
-            if correct and check_argument_type(str(arg.dtype), kernel_argument):
+            if isinstance(arg, DeviceArray):
+                str_dtype = str(np.dtype(arg.typestr))
+            else:
+                str_dtype = str(arg.dtype)
+
+            if correct and check_argument_type(str_dtype, kernel_argument):
                 continue
 
             collected_errors[arguments_set].append(
-                "Argument at position "
-                + str(i)
-                + " of dtype: "
-                + str(arg.dtype)
-                + " does not match "
-                + kernel_argument
-                + "."
+                f"Argument at position {i} of dtype: {str_dtype} does not match {kernel_argument}."
             )
+
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one
             # it is the right one
             return
+
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
 
