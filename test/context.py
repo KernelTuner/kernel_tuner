@@ -59,6 +59,12 @@ try:
 except ImportError:
     hip_present = False
 
+try:
+    from autotuning_methodology.report_experiments import get_strategy_scores
+    methodology_present = True
+except ImportError:
+    methodology_present = False
+
 skip_if_no_pycuda = pytest.mark.skipif(
     not pycuda_present, reason="PyCuda not installed or no CUDA device detected"
 )
@@ -78,7 +84,8 @@ skip_if_no_gfortran = pytest.mark.skipif(
 )
 skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
 skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on PATH")
-skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
+skip_if_no_pyhip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
+skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
 
 
 def skip_backend(backend: str):
