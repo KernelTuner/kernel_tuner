@@ -13,7 +13,7 @@ except:
 
 from kernel_tuner.file_utils import get_input_file, output_file_schema, store_metadata_file, store_output_file
 from kernel_tuner.util import delete_temp_file, check_argument_list
-from .context import skip_if_no_hip
+from .context import skip_if_no_pyhip
 
 from .test_runners import cache_filename, env, tune_kernel  # noqa: F401
 
@@ -80,7 +80,7 @@ def hip_check(call_result):
         raise RuntimeError(str(err))
     return result
 
-@skip_if_no_hip
+@skip_if_no_pyhip
 def test_check_argument_list_device_array():
     """Test check_argument_list with DeviceArray"""
     float_kernel = """
