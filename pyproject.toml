@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 name = "kernel_tuner"
 packages = [{ include = "kernel_tuner", from = "." }]
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.1.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 license = "Apache-2.0"
 authors = [
     "Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>",
@@ -58,12 +58,12 @@ kernel_tuner = "kernel_tuner.interface:entry_point"
 
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"          # NOTE when changing the supported Python versions, also change the test versions in the noxfile
+python = ">=3.9,<3.15"          # NOTE when changing the supported Python versions, also change the test versions in the noxfile
 numpy = "^1.26.0"              # Python 3.12 requires numpy at least 1.26
 scipy = ">=1.11.0"
 packaging = "*"                 # required by file_utils
 jsonschema = "*"
-python-constraint2 = "^2.0.0b5"
+python-constraint2 = "^2.1.0"
 xmltodict = "*"
 pandas = ">=2.0.0"
 scikit-learn = ">=1.0.2"
@@ -108,7 +108,7 @@ markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
 # sphinx-autodoc-typehints = "^1.24.0"
 
 # ATTENTION: if anything is changed here, run `poetry update`
-# Please also run `poetry export -f requirements.txt --output doc/requirements_test.txt --with test`
+# Please also run `poetry export -f requirements.txt --output docs/requirements_test.txt --with test`
 [tool.poetry.group.test]
 optional = true
 [tool.poetry.group.test.dependencies]
