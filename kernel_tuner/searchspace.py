@@ -12,14 +12,18 @@ from constraint import (
     MaxProdConstraint,
     MinConflictsSolver,
     OptimizedBacktrackingSolver,
-    ParallelSolver,
+    # ParallelSolver,
     Problem,
     RecursiveBacktrackingSolver,
     Solver,
 )
 
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
-from kernel_tuner.util import compile_restrictions, default_block_size_names, get_interval
+from kernel_tuner.util import (
+    compile_restrictions,
+    default_block_size_names,
+    get_interval,
+)
 
 supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming"]
 
@@ -69,7 +73,9 @@ class Searchspace:
         if (
             len(restrictions) > 0
             and any(isinstance(restriction, str) for restriction in restrictions)
-            and not (framework_l == "pysmt" or framework_l == "bruteforce" or solver_method.lower() == "pc_parallelsolver")
+            and not (
+                framework_l == "pysmt" or framework_l == "bruteforce" or solver_method.lower() == "pc_parallelsolver"
+            )
         ):
             self.restrictions = compile_restrictions(
                 restrictions,
@@ -101,7 +107,8 @@ class Searchspace:
         elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
             solver = OptimizedBacktrackingSolver(forwardcheck=False)
         elif solver_method.lower() == "pc_parallelsolver":
-            solver = ParallelSolver()
+            raise NotImplementedError("ParallelSolver is not yet implemented")
+            # solver = ParallelSolver()
         elif solver_method.lower() == "pc_recursivebacktrackingsolver":
             solver = RecursiveBacktrackingSolver()
         elif solver_method.lower() == "pc_minconflictssolver":
@@ -266,7 +273,7 @@ class Searchspace:
 
     def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
         """Builds the searchspace using pyATF."""
-        from pyatf import TP, Set, Interval, Tuner
+        from pyatf import TP, Interval, Set, Tuner
         from pyatf.cost_functions.generic import CostFunction
         from pyatf.search_techniques import Exhaustive
 
@@ -282,7 +289,9 @@ class Searchspace:
             # adding the default blocksize restriction requires recompilation because pyATF requires combined restrictions for the same parameter
             max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
             restrictions = self._modified_restrictions.copy() + [max_block_size_product]
-            self.restrictions = compile_restrictions(restrictions, self.tune_params, format="pyatf", try_to_constraint=False)
+            self.restrictions = compile_restrictions(
+                restrictions, self.tune_params, format="pyatf", try_to_constraint=False
+            )
 
         # build a dictionary of the restrictions, combined based on last parameter
         res_dict = dict()
@@ -295,7 +304,9 @@ class Searchspace:
                     continue
                 if all(p in registered_params for p in params):
                     if param in res_dict:
-                        raise KeyError(f"`{param}` is already in res_dict with `{res_dict[param][1]}`, can't add `{source}`")
+                        raise KeyError(
+                            f"`{param}` is already in res_dict with `{res_dict[param][1]}`, can't add `{source}`"
+                        )
                     res_dict[param] = (res, source)
                     print(source, res, param, params)
                     registered_restrictions.append(index)
@@ -305,7 +316,9 @@ class Searchspace:
             params = list()
             for index, (key, values) in enumerate(self.tune_params.items()):
                 vi = get_interval(values)
-                vals = Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
+                vals = (
+                    Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
+                )
                 constraint = res_dict.get(key, None)
                 constraint_source = None
                 if constraint is not None:
