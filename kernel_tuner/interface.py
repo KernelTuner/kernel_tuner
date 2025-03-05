@@ -52,6 +52,7 @@ from kernel_tuner.strategies import (
     bayes_opt,
     bayes_opt_alt_BOTorch,
     bayes_opt_BOTorch,
+    bayes_opt_BOTorch_transfer_direct,
     bayes_opt_BOTorch_transfer_RGPE,
     bayes_opt_BOTorch_transfer_weighted,
     bayes_opt_GPyTorch,
@@ -93,7 +94,8 @@ strategy_map = {
     "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
     "bayes_opt_BOTorch": bayes_opt_BOTorch,
     "bayes_opt_BOTorch_alt": bayes_opt_alt_BOTorch,
-    "bayes_opt_BOTorch_transfer": bayes_opt_BOTorch_transfer_weighted,
+    "bayes_opt_BOTorch_transfer_direct": bayes_opt_BOTorch_transfer_direct,
+    "bayes_opt_BOTorch_transfer_weighted": bayes_opt_BOTorch_transfer_weighted,
     "bayes_opt_BOTorch_transfer_RGPE": bayes_opt_BOTorch_transfer_RGPE,
 }
 
@@ -910,8 +912,14 @@ def tune_kernel_T1(
     device = kernelspec["Device"]["Name"]
     strategy = inputs["Search"]["Name"]
 
+    # set the cache and transfer learning cache paths
     if cache_filepath is None and "SimulationInput" in kernelspec:
         cache_filepath = Path(kernelspec["SimulationInput"])
+    cache_dir = Path(cache_filepath).parent
+    # TODO remove in production!
+    transfer_learning_caches = [
+        p for p in cache_dir.iterdir() if not p.stem.endswith("_T4") and p.name != cache_filepath.name
+    ]
 
     # get the grid divisions
     grid_divs = {}
@@ -996,6 +1004,7 @@ def tune_kernel_T1(
         strategy_options=strategy_options,
         objective=objective,
         objective_higher_is_better=objective_higher_is_better,
+        transfer_learning_caches=transfer_learning_caches,
     )
     if output_T4:
         return get_t4_metadata(), get_t4_results(results, tune_params, objective=objective)

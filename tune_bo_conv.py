@@ -23,13 +23,13 @@ total_flops = ops(w, h, fw, fh)
 
 def tune(
     device_name: str,
-    strategy="bayes_opt_BOTorch_transfer",
+    strategy="bayes_opt_BOTorch_transfer_weighted",
     strategy_options={ 'max_fevals': 150 },
     verbose=True,
     quiet=False,
     simulation_mode=True,
     lang="CUDA",
-    profiling=False,
+    profiling=True,
 ):  
     directory = Path(__file__).parent / "../autotuning_methodology/cached_data_used/"
     assert directory.exists()
@@ -135,7 +135,7 @@ def tune(
         with cProfile.Profile() as pr:
             results, env = run()
             if profiling:
-                pr.dump_stats('bo_prof.prof')
+                pr.dump_stats('bo_prof_tl2.prof')
     else:
         results, env = run()
 
