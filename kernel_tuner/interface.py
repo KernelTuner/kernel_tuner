@@ -934,7 +934,7 @@ def tune_kernel_T1(
         tune_param = None
         if param["Type"] in ["int", "float"]:
             vals = param["Values"]
-            if vals[:5] == "list(" or (vals[0] == "[" and vals[-1] == "]"):
+            if "list(" in vals or "range(" in vals or (vals[0] == "[" and vals[-1] == "]"):
                 tune_param = eval(vals)
             else:
                 tune_param = literal_eval(vals)
