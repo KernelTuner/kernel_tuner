@@ -959,7 +959,11 @@ def tune_kernel_T1(
     cmem_arguments = {}
     for arg in kernelspec["Arguments"]:
         argument = None
-        if arg["Type"] == "float" and arg["MemoryType"] == "Vector":
+        if arg["MemoryType"] == "Vector":
+            if arg["Type"] != "float":
+                raise NotImplementedError(
+                    f"Conversion for vector type '{arg['Type']}' has not yet been implemented: {arg}"
+                )
             size = arg["Size"]
             if isinstance(size, str):
                 args = tune_params.copy()
@@ -973,6 +977,11 @@ def tune_kernel_T1(
                 argument = numpy.random.randn(size).astype(numpy.float32)
             else:
                 raise NotImplementedError(f"Conversion for fill type '{arg['FillType']}' has not yet been implemented")
+        elif arg["MemoryType"] == "Scalar":
+            if arg["Type"] == "float":
+                argument = numpy.float32(arg["FillValue"])
+            else:
+                raise NotImplementedError()
         if argument is not None:
             arguments.append(argument)
             if "MemType" in arg and arg["MemType"] == "Constant":

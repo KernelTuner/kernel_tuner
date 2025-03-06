@@ -85,7 +85,6 @@ class TorchPlaceHolder:
         self.Tensor = Exception  # using Exception here as a type that will never be among kernel arguments
 
 
-
 class SkippableFailure(Exception):
     """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected."""
 
@@ -889,7 +888,7 @@ def parse_restrictions(
         if len(comparators_found) != 1:
             return None
         comparator = comparators_found[0]
-    
+
         # split the string on the comparison and remove leading and trailing whitespace
         left, right = tuple(s.strip() for s in restriction.split(comparator))
 
@@ -1032,7 +1031,10 @@ def parse_restrictions(
                 ):
                     parsed_restriction = parsed_restriction[1:-1]
                 # check if we can turn this into the built-in numeric comparison constraint
-                if all(all(isinstance(v, (int, float)) and type(v) is not type(True) for v in tune_params[param]) for param in params_used):
+                if all(
+                    all(isinstance(v, (int, float)) and type(v) is not type(True) for v in tune_params[param])
+                    for param in params_used
+                ):
                     finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
                 if finalized_constraint is None:
                     # check if we can turn this into the built-in equality comparison constraint
@@ -1080,7 +1082,10 @@ def compile_restrictions(
 ) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
     """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
     # change tuples consisting of strings and tunable parameters to only strings to compile
-    restrictions = [r[0] if isinstance(r, tuple) and len(r) == 2 and isinstance(r[0], str) and isinstance(r[1], list) else r for r in restrictions]
+    restrictions = [
+        r[0] if isinstance(r, tuple) and len(r) == 2 and isinstance(r[0], str) and isinstance(r[1], list) else r
+        for r in restrictions
+    ]
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
@@ -1176,7 +1181,9 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     # if file exists
     else:
-        cached_data = read_cache(cache, not tuning_options.simulation_mode)    # don't open the cache in (parallel) simulation mode to avoid race conditions
+        cached_data = read_cache(
+            cache, not tuning_options.simulation_mode
+        )  # don't open the cache in (parallel) simulation mode to avoid race conditions
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
@@ -1203,7 +1210,9 @@ def process_cache(cache, kernel_options, tuning_options, runner):
             # cache returns list, problem_size is likely a tuple. Therefore, the next check
             # checks the equality of all items in the list/tuples individually
             elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
-                raise ValueError("Cannot load cache which contains results for different problem_size")
+                raise ValueError(
+                    f"Cannot load cache which contains results for different problem_size ({cached_data["problem_size"]=} != {kernel_options.problem_size=})"
+                )
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
             if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
                 raise ValueError(
