@@ -707,7 +707,7 @@ class Searchspace:
                         raise KeyError(f"No variant of {param} could be found in {mapping}") from e
         return torch.tensor(array, **self.tensor_kwargs)
 
-    def tensor_to_param_config(self, tensor: Tensor):
+    def tensor_to_param_config(self, tensor):
         """Convert from a Tensor to a parameter configuration."""
         assert tensor.dim() == 1, f"Parameter configuration tensor must be 1-dimensional, is {tensor.dim()} ({tensor})"
         if len(self._map_tensor_to_param) == 0:
