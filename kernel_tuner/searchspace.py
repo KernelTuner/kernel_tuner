@@ -144,21 +144,21 @@ class Searchspace:
             else:
                 raise ValueError(f"Invalid framework parameter {framework}")
 
-        # get the solver given the solver method argument
-        solver = ""
-        if solver_method.lower() == "pc_backtrackingsolver":
-            solver = BacktrackingSolver()
-        elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
-            solver = OptimizedBacktrackingSolver(forwardcheck=False)
-        elif solver_method.lower() == "pc_parallelsolver":
-            raise NotImplementedError("ParallelSolver is not yet implemented")
-            # solver = ParallelSolver()
-        elif solver_method.lower() == "pc_recursivebacktrackingsolver":
-            solver = RecursiveBacktrackingSolver()
-        elif solver_method.lower() == "pc_minconflictssolver":
-            solver = MinConflictsSolver()
-        else:
-            raise ValueError(f"Solver method {solver_method} not recognized.")
+            # get the solver given the solver method argument
+            solver = ""
+            if solver_method.lower() == "pc_backtrackingsolver":
+                solver = BacktrackingSolver()
+            elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
+                solver = OptimizedBacktrackingSolver(forwardcheck=False)
+            elif solver_method.lower() == "pc_parallelsolver":
+                raise NotImplementedError("ParallelSolver is not yet implemented")
+                # solver = ParallelSolver()
+            elif solver_method.lower() == "pc_recursivebacktrackingsolver":
+                solver = RecursiveBacktrackingSolver()
+            elif solver_method.lower() == "pc_minconflictssolver":
+                solver = MinConflictsSolver()
+            else:
+                raise ValueError(f"Solver method {solver_method} not recognized.")
 
             # build the search space
             self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
