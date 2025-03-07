@@ -61,7 +61,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     # pass a temporary cache file to avoid duplicate execution
     if 'cache' not in kwargs:
         cachefile = get_random_unique_filename('temp_', '.json')
-        cachefile = Path("hyperparamtuning_milo_bruteforce_dual_annealing.json")
+        cachefile = Path(f"hyperparamtuning_paper_bruteforce_{target_strategy}.json")
         kwargs['cache'] = str(cachefile)
 
     def put_if_not_present(target_dict, key, value):
@@ -88,14 +88,14 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     return list(result_unique.values()), env
 
 if __name__ == "__main__":  # TODO remove in production
-    # hyperparams = {
-    #     'popsize': [10, 20, 30],
-    #     'maxiter': [50, 100, 150],
-    #     'w': [0.25, 0.5, 0.75],
-    #     'c1': [1.0, 2.0, 3.0],
-    #     'c2': [0.5, 1.0, 1.5]
-    # }
-    # result, env = tune_hyper_params('pso', hyperparams)
+    hyperparams = {
+        'popsize': [10, 20, 30],
+        'maxiter': [50, 100, 150],
+        'w': [0.25, 0.5, 0.75],
+        'c1': [1.0, 2.0, 3.0],
+        'c2': [0.5, 1.0, 1.5]
+    }
+    result, env = tune_hyper_params('pso', hyperparams)
 
     # hyperparams = {
     #     'neighbor': ['Hamming', 'adjacent'],
@@ -105,10 +105,10 @@ if __name__ == "__main__":  # TODO remove in production
     # }
     # result, env = tune_hyper_params('greedy_ils', hyperparams)
 
-    hyperparams = {
-        'method': ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr'],
-    }
-    result, env = tune_hyper_params('dual_annealing', hyperparams)
+    # hyperparams = {
+    #     'method': ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr'],
+    # }
+    # result, env = tune_hyper_params('dual_annealing', hyperparams)
 
     print(result)
     print(env['best_config'])
