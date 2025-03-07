@@ -26,6 +26,17 @@ try:
 except ImportError:
     cp = None
 
+try:
+    from hip import hip
+except ImportError:
+    hip = None
+
+try:
+    from hip._util.types import DeviceArray
+except ImportError:
+    Pointer = Exception # using Exception here as a type that will never be among kernel arguments
+    DeviceArray = Exception
+
 
 def is_cupy_array(array):
     """Check if something is a cupy array.
@@ -145,9 +156,9 @@ class CompilerFunctions(CompilerBackend):
         ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not (isinstance(arg, (np.ndarray, np.number)) or is_cupy_array(arg)):
-                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}")
-            dtype_str = str(arg.dtype)
+            if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg)):
+                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}")
+            dtype_str = arg.typestr if isinstance(arg, DeviceArray) else str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
                     # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
@@ -156,13 +167,20 @@ class CompilerFunctions(CompilerBackend):
                     # (This changed in numpy > 1.15.)
                     # data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                     data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+                    numpy_arg = arg
                 else:
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
+                numpy_arg = arg
             elif is_cupy_array(arg):
                 data_ctypes = C.c_void_p(arg.data.ptr)
-            ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
+                numpy_arg = arg
+            elif isinstance(arg, DeviceArray):
+                data_ctypes = arg.as_c_void_p()
+                numpy_arg = None
+
+            ctype_args[i] = Argument(numpy=numpy_arg, ctypes=data_ctypes)
         return ctype_args
 
     def compile(self, kernel_instance):
@@ -265,12 +283,23 @@ class CompilerFunctions(CompilerBackend):
             if platform.system() == "Darwin":
                 lib_extension = ".dylib"
 
-            subprocess.check_call([self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"])
-            subprocess.check_call(
+            subprocess.run(
+                [self.compiler, "-c", source_file] + compiler_options + ["-o", filename + ".o"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
+            )
+
+            subprocess.run(
                 [self.compiler, filename + ".o"]
                 + compiler_options
                 + ["-shared", "-o", filename + lib_extension]
-                + lib_args
+                + lib_args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
             )
 
             self.lib = np.ctypeslib.load_library(filename, ".")
@@ -369,6 +398,12 @@ class CompilerFunctions(CompilerBackend):
         :param src: An Argument for some memory allocation
         :type src: Argument
         """
+        # If src.numpy is None, it means we're dealing with a HIP Python DeviceArray
+        if src.numpy is None:
+            # Skip memory copies for HIP Python DeviceArray
+            # This is because DeviceArray manages its own memory and donesn't need
+            # explicit copies like numpy arrays do
+            return
         if isinstance(dest, np.ndarray) and is_cupy_array(src.numpy):
             # Implicit conversion to a NumPy array is not allowed.
             value = src.numpy.get()
@@ -386,6 +421,12 @@ class CompilerFunctions(CompilerBackend):
         :param src: A numpy or cupy array containing the source data
         :type src: np.ndarray or cupy.ndarray
         """
+        # If src.numpy is None, it means we're dealing with a HIP Python DeviceArray
+        if dest.numpy is None:
+            # Skip memory copies for HIP Python DeviceArray
+            # This is because DeviceArray manages its own memory and donesn't need
+            # explicit copies like numpy arrays do
+            return
         if isinstance(dest.numpy, np.ndarray) and is_cupy_array(src):
             # Implicit conversion to a NumPy array is not allowed.
             value = src.get()
@@ -396,10 +437,16 @@ class CompilerFunctions(CompilerBackend):
 
     def cleanup_lib(self):
         """unload the previously loaded shared library"""
+        if self.lib is None:
+            return
+        
         if not self.using_openmp and not self.using_openacc:
             # this if statement is necessary because shared libraries that use
             # OpenMP will core dump when unloaded, this is a well-known issue with OpenMP
             logging.debug("unloading shared library")
-            _ctypes.dlclose(self.lib._handle)
+            try:
+                _ctypes.dlclose(self.lib._handle)
+            finally:
+                self.lib = None
 
     units = {}

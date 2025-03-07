@@ -13,6 +13,7 @@ from constraint import (
     MaxProdConstraint,
     MinConflictsSolver,
     OptimizedBacktrackingSolver,
+    # ParallelSolver,
     Problem,
     RecursiveBacktrackingSolver,
     Solver,
@@ -27,7 +28,11 @@ except ImportError:
     torch_available = False
 
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
-from kernel_tuner.util import compile_restrictions, default_block_size_names
+from kernel_tuner.util import (
+    compile_restrictions,
+    default_block_size_names,
+    get_interval,
+)
 
 supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming"]
 
@@ -89,6 +94,7 @@ class Searchspace:
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
+        self.solver_method = solver_method
         self.__neighbor_cache = dict()
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
@@ -104,7 +110,9 @@ class Searchspace:
                     isinstance(restriction[0], str) for restriction in restrictions if isinstance(restriction, tuple)
                 )
             )
-            and not (framework_l == "pysmt" or framework_l == "bruteforce")
+            and not (
+                framework_l == "pysmt" or framework_l == "bruteforce" or solver_method.lower() == "pc_parallelsolver"
+            )
         ):
             self.restrictions = compile_restrictions(
                 restrictions,
@@ -136,18 +144,21 @@ class Searchspace:
             else:
                 raise ValueError(f"Invalid framework parameter {framework}")
 
-            # get the solver given the solver method argument
-            solver = ""
-            if solver_method.lower() == "pc_backtrackingsolver":
-                solver = BacktrackingSolver()
-            elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
-                solver = OptimizedBacktrackingSolver(forwardcheck=False)
-            elif solver_method.lower() == "pc_recursivebacktrackingsolver":
-                solver = RecursiveBacktrackingSolver()
-            elif solver_method.lower() == "pc_minconflictssolver":
-                solver = MinConflictsSolver()
-            else:
-                raise ValueError(f"Solver method {solver_method} not recognized.")
+        # get the solver given the solver method argument
+        solver = ""
+        if solver_method.lower() == "pc_backtrackingsolver":
+            solver = BacktrackingSolver()
+        elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
+            solver = OptimizedBacktrackingSolver(forwardcheck=False)
+        elif solver_method.lower() == "pc_parallelsolver":
+            raise NotImplementedError("ParallelSolver is not yet implemented")
+            # solver = ParallelSolver()
+        elif solver_method.lower() == "pc_recursivebacktrackingsolver":
+            solver = RecursiveBacktrackingSolver()
+        elif solver_method.lower() == "pc_minconflictssolver":
+            solver = MinConflictsSolver()
+        else:
+            raise ValueError(f"Solver method {solver_method} not recognized.")
 
             # build the search space
             self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
@@ -308,41 +319,67 @@ class Searchspace:
 
     def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
         """Builds the searchspace using pyATF."""
-        from pyatf import TP, Set, Tuner
+        from pyatf import TP, Interval, Set, Tuner
         from pyatf.cost_functions.generic import CostFunction
         from pyatf.search_techniques import Exhaustive
 
         # Define a bogus cost function
         costfunc = CostFunction(":")  # bash no-op
 
-        # build a dictionary of the restrictions
-        print(self.restrictions)
+        # add the Kernel Tuner default blocksize threads restrictions
         assert isinstance(self.restrictions, list)
+        valid_block_size_names = list(
+            block_size_name for block_size_name in block_size_names if block_size_name in self.param_names
+        )
+        if len(valid_block_size_names) > 0:
+            # adding the default blocksize restriction requires recompilation because pyATF requires combined restrictions for the same parameter
+            max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
+            restrictions = self._modified_restrictions.copy() + [max_block_size_product]
+            self.restrictions = compile_restrictions(
+                restrictions, self.tune_params, format="pyatf", try_to_constraint=False
+            )
+
+        # build a dictionary of the restrictions, combined based on last parameter
         res_dict = dict()
-        # for res, params in self.restrictions:
-        #     key = params[0]
-        #     assert callable(res)
-        #     assert key not in res_dict
-        #     res_dict[key] = res
-        # print(res_dict)
+        registered_params = list()
+        registered_restrictions = list()
+        for param in self.tune_params.keys():
+            registered_params.append(param)
+            for index, (res, params, source) in enumerate(self.restrictions):
+                if index in registered_restrictions:
+                    continue
+                if all(p in registered_params for p in params):
+                    if param in res_dict:
+                        raise KeyError(
+                            f"`{param}` is already in res_dict with `{res_dict[param][1]}`, can't add `{source}`"
+                        )
+                    res_dict[param] = (res, source)
+                    print(source, res, param, params)
+                    registered_restrictions.append(index)
 
         # define the Tunable Parameters
         def get_params():
             params = list()
-            print("get_params")
             for index, (key, values) in enumerate(self.tune_params.items()):
-                vals = Set(*values.flatten())  # TODO check if can be interval
+                vi = get_interval(values)
+                vals = (
+                    Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
+                )
                 constraint = res_dict.get(key, None)
-                if index == len(self.tune_params) - 1 and constraint is None:
-                    res = self.restrictions[0][0]
+                constraint_source = None
+                if constraint is not None:
+                    constraint, constraint_source = constraint
+                # in case of a leftover monolithic restriction, append at the last parameter
+                if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
+                    res, params, source = self.restrictions[0]
                     assert callable(res)
                     constraint = res
-                params.append(TP(key, vals, constraint))
+                params.append(TP(key, vals, constraint, constraint_source))
             return params
 
         # tune
         _, _, tuning_data = (
-            Tuner().silent(True).tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
+            Tuner().verbosity(0).tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
         )
 
         # transform the result into a list of parameter configurations for validation
@@ -410,7 +447,7 @@ class Searchspace:
             ):
                 self._modified_restrictions.append(max_block_size_product)
                 if isinstance(self.restrictions, list):
-                    self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names))
+                    self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names, None))
 
         # construct the parameter space with the constraints applied
         return parameter_space.getSolutionsAsListDict(order=self.param_names)
@@ -423,7 +460,7 @@ class Searchspace:
 
                 # convert to a Constraint type if necessary
                 if isinstance(restriction, tuple):
-                    restriction, required_params = restriction
+                    restriction, required_params, _ = restriction
                 if callable(restriction) and not isinstance(restriction, Constraint):
                     restriction = FunctionConstraint(restriction)
 
@@ -433,6 +470,8 @@ class Searchspace:
                 elif isinstance(restriction, Constraint):
                     all_params_required = all(param_name in required_params for param_name in self.param_names)
                     parameter_space.addConstraint(restriction, None if all_params_required else required_params)
+                elif isinstance(restriction, str) and self.solver_method.lower() == "pc_parallelsolver":
+                    parameter_space.addConstraint(restriction)
                 else:
                     raise ValueError(f"Unrecognized restriction type {type(restriction)} ({restriction})")
 

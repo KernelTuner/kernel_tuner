@@ -198,11 +198,11 @@ def test_compile_detects_device_code(npct, subprocess):
     cfunc = CompilerFunctions()
     cfunc.compile(kernel_instance)
 
-    print(subprocess.check_call.call_args_list)
+    print(subprocess.run.call_args_list)
 
     # assert the filename suffix used for source compilation is .cu
     dot_cu_used = False
-    for call in subprocess.check_call.call_args_list:
+    for call in subprocess.run.call_args_list:
         args, kwargs = call
         args = args[0]
         print(args)

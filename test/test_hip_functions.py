@@ -1,5 +1,4 @@
 import ctypes
-
 import numpy as np
 import pytest
 
@@ -10,10 +9,21 @@ from kernel_tuner.core import KernelInstance, KernelSource
 from .context import skip_if_no_pyhip
 
 try:
-    from pyhip import hip, hiprtc
+    from hip import hip, hiprtc
     hip_present = True
 except ImportError:
     pass
+
+def hip_check(call_result):
+    err = call_result[0]
+    result = call_result[1:]
+    if len(result) == 1:
+        result = result[0]
+    if isinstance(err, hip.hipError_t) and err != hip.hipError_t.hipSuccess:
+        raise RuntimeError(str(err))
+    elif isinstance(err, hiprtc.hiprtcResult) and err != hiprtc.hiprtcResult.HIPRTC_SUCCESS:
+        raise RuntimeError(str(err))
+    return result
 
 @pytest.fixture
 def env():
@@ -40,7 +50,6 @@ def env():
 
 @skip_if_no_pyhip
 def test_ready_argument_list():
-
     size = 1000
     a = np.int32(75)
     b = np.random.randn(size).astype(np.float32)
@@ -53,14 +62,13 @@ def test_ready_argument_list():
     gpu_args = dev.ready_argument_list(arguments)
 
     # ctypes have no equality defined, so indirect comparison for type and value
-    assert(isinstance(gpu_args[1], ctypes.c_int))
-    assert(isinstance(gpu_args[3], ctypes.c_bool))
-    assert(gpu_args[1] == a)
-    assert(gpu_args[3] == c)
+    assert isinstance(gpu_args[1], ctypes.c_int)
+    assert isinstance(gpu_args[3], ctypes.c_bool)
+    assert gpu_args[1].value == a
+    assert gpu_args[3].value == c
 
 @skip_if_no_pyhip
 def test_compile():
-
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -79,12 +87,11 @@ def test_compile():
     except Exception as e:
         pytest.fail("Did not expect any exception:" + str(e))
 
-
 @skip_if_no_pyhip
 def test_memset_and_memcpy_dtoh():
     a = [1, 2, 3, 4]
     x = np.array(a).astype(np.int8)
-    x_d = hip.hipMalloc(x.nbytes)
+    x_d = hip_check(hip.hipMalloc(x.nbytes))
 
     dev = kt_hip.HipFunctions()
     dev.memset(x_d, 4, x.nbytes)
@@ -98,7 +105,7 @@ def test_memset_and_memcpy_dtoh():
 def test_memcpy_htod():
     a = [1, 2, 3, 4]
     x = np.array(a).astype(np.float32)
-    x_d = hip.hipMalloc(x.nbytes)
+    x_d = hip_check(hip.hipMalloc(x.nbytes))
     output = np.empty(4, dtype=np.float32)
 
     dev = kt_hip.HipFunctions()
@@ -138,13 +145,13 @@ def test_copy_constant_memory_args():
 
     dev.memcpy_dtoh(output, gpu_args[0])
 
-    assert(my_constant_data == output).all()
+    assert (my_constant_data == output).all()
 
 @skip_if_no_pyhip
 def test_smem_args(env):
     result, _ = tune_kernel(*env,
-                            smem_args=dict(size="block_size_x*4"),
-                            verbose=True, lang="HIP")
+                          smem_args=dict(size="block_size_x*4"),
+                          verbose=True, lang="HIP")
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])
     result, _ = tune_kernel(
@@ -153,5 +160,3 @@ def test_smem_args(env):
         verbose=True, lang="HIP")
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])
-
-

@@ -104,6 +104,11 @@ default_block_size_names = [
     "block_size_z",
 ]
 
+try:
+    from hip._util.types import DeviceArray
+except ImportError:
+    DeviceArray = Exception  # using Exception here as a type that will never be among kernel arguments
+
 
 def check_argument_type(dtype, kernel_argument):
     """Check if the numpy.dtype matches the type used in the code."""
@@ -129,55 +134,58 @@ def check_argument_type(dtype, kernel_argument):
 
 
 def check_argument_list(kernel_name, kernel_string, args):
-    """Raise an exception if a kernel arguments do not match host arguments."""
+    """Raise an exception if kernel arguments do not match host arguments."""
     kernel_arguments = list()
     collected_errors = list()
+
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
         kernel_end = kernel_string.find(")", kernel_start)
         if kernel_start != 0:
             kernel_arguments.append(kernel_string[kernel_start:kernel_end].split(","))
+
     for arguments_set, arguments in enumerate(kernel_arguments):
         collected_errors.append(list())
         if len(arguments) != len(args):
             collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
             continue
+
         for i, arg in enumerate(args):
             kernel_argument = arguments[i]
 
-            # Fix to deal with tunable arguments
+            # Handle tunable arguments
             if isinstance(arg, Tunable):
                 continue
 
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor)):
+            # Handle numpy arrays and other array types
+            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
                 raise TypeError(
-                    "Argument at position "
-                    + str(i)
-                    + " of type: "
-                    + str(type(arg))
-                    + " should be of type np.ndarray or numpy scalar"
+                    f"Argument at position {i} of type: {type(arg)} should be of type "
+                    "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
                 )
 
             correct = True
-            if isinstance(arg, np.ndarray) and "*" not in kernel_argument:
-                correct = False  # array is passed to non-pointer kernel argument
+            if isinstance(arg, np.ndarray):
+                if "*" not in kernel_argument:
+                    correct = False
 
-            if correct and check_argument_type(str(arg.dtype), kernel_argument):
+            if isinstance(arg, DeviceArray):
+                str_dtype = str(np.dtype(arg.typestr))
+            else:
+                str_dtype = str(arg.dtype)
+
+            if correct and check_argument_type(str_dtype, kernel_argument):
                 continue
 
             collected_errors[arguments_set].append(
-                "Argument at position "
-                + str(i)
-                + " of dtype: "
-                + str(arg.dtype)
-                + " does not match "
-                + kernel_argument
-                + "."
+                f"Argument at position {i} of dtype: {str_dtype} does not match {kernel_argument}."
             )
+
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one
             # it is the right one
             return
+
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
 
@@ -250,12 +258,15 @@ def check_restriction(restrict, params: dict) -> bool:
     # if it's a tuple, use only the parameters in the second argument to call the restriction
     elif (
         isinstance(restrict, tuple)
-        and len(restrict) == 2
+        and (len(restrict) == 2 or len(restrict) == 3)
         and callable(restrict[0])
         and isinstance(restrict[1], (list, tuple))
     ):
         # unpack the tuple
-        restrict, selected_params = restrict
+        if len(restrict) == 2:
+            restrict, selected_params = restrict
+        else:
+            restrict, selected_params, source = restrict
         # look up the selected parameters and their value
         selected_params = dict((key, params[key]) for key in selected_params)
         # call the restriction
@@ -437,6 +448,28 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
 def get_instance_string(params):
     """Combine the parameters to a string mostly used for debug output use of dict is advised."""
     return "_".join([str(i) for i in params.values()])
+
+
+def get_interval(a: list):
+    """Checks if an array can be an interval. Returns (start, end, step) if interval, otherwise None."""
+    if len(a) < 3:
+        return None
+    if not all(isinstance(e, (int, float)) for e in a):
+        return None
+    a_min = min(a)
+    a_max = max(a)
+    if len(a) <= 2:
+        return (a_min, a_max, a_max-a_min)
+    # determine the first step size
+    step = a[1]-a_min
+    # for each element, the step size should be equal to the first step
+    for i, e in enumerate(a):
+        if e-a[i-1] != step:
+            return None 
+    result = (a_min, a_max, step)
+    if not all(isinstance(e, (int, float)) for e in result):
+        return None
+    return result
 
 
 def get_kernel_string(kernel_source, params=None):
@@ -1006,8 +1039,15 @@ def parse_restrictions(
                 return AllDifferentConstraint()
             return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
         return None
-
-    # TODO if format == "pyatf", combine based on last parameter
+    
+    # remove functionally duplicate restrictions (preserves order and whitespace)
+    if all(isinstance(r, str) for r in restrictions):
+        # clean the restriction strings to functional equivalence
+        restrictions_cleaned = [r.replace(' ', '') for r in restrictions]
+        restrictions_cleaned_unique = list(dict.fromkeys(restrictions_cleaned)) # dict preserves order
+        # get the indices of the unique restrictions, use these to build a new list of restrictions
+        restrictions_unique_indices = [restrictions_cleaned.index(r) for r in restrictions_cleaned_unique]
+        restrictions = [restrictions[i] for i in restrictions_unique_indices]
 
     # create the parsed restrictions
     if monolithic is False:
@@ -1040,12 +1080,36 @@ def parse_restrictions(
                     # check if we can turn this into the built-in equality comparison constraint
                     finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
             if finalized_constraint is None:
-                if parsed_restriction.startswith("def r("):
+                # we must turn it into a general function
+                if format is not None and format.lower() == "pyatf":
                     finalized_constraint = parsed_restriction
                 else:
-                    # we must turn it into a general function
                     finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
             parsed_restrictions.append((finalized_constraint, params_used))
+
+        # if pyATF, restrictions that are set on the same parameter must be combined into one
+        if format is not None and format.lower() == "pyatf":
+            res_dict = dict()
+            registered_params = list()
+            registered_restrictions = list()
+            parsed_restrictions_pyatf = list()
+            for param in tune_params.keys():
+                registered_params.append(param)
+                for index, (res, params) in enumerate(parsed_restrictions):
+                    if index in registered_restrictions:
+                        continue
+                    if all(p in registered_params for p in params):
+                        if param not in res_dict:
+                            res_dict[param] = (list(), list())
+                        res_dict[param][0].append(res)
+                        res_dict[param][1].extend(params)
+                        registered_restrictions.append(index)
+            # combine multiple restrictions into one
+            for res_tuple in res_dict.values():
+                res, params_used = res_tuple
+                params_used = list(dict.fromkeys(params_used))   # param_used should only contain unique, dict preserves order
+                parsed_restrictions_pyatf.append((f"def r({', '.join(params_used)}): return ({') and ('.join(res)}) \n", params_used))
+            parsed_restrictions = parsed_restrictions_pyatf
     else:
         # create one monolithic function
         parsed_restrictions = ") and (".join(
@@ -1079,13 +1143,8 @@ def parse_restrictions(
 
 def compile_restrictions(
     restrictions: list, tune_params: dict, monolithic=False, format=None, try_to_constraint=True
-) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
-    """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
-    # change tuples consisting of strings and tunable parameters to only strings to compile
-    restrictions = [
-        r[0] if isinstance(r, tuple) and len(r) == 2 and isinstance(r[0], str) and isinstance(r[1], list) else r
-        for r in restrictions
-    ]
+) -> list[tuple[Union[str, Constraint, FunctionType], list[str], Union[str, None]]]:
+    """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used and source, or a single Function if monolithic is true."""
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
@@ -1098,8 +1157,6 @@ def compile_restrictions(
         restrictions_str, tune_params, monolithic=monolithic, format=format, try_to_constraint=try_to_constraint
     )
 
-    # TODO if format == "pyatf", return a dictionary instead of a list
-
     # compile the parsed restrictions into a function
     compiled_restrictions: list[tuple] = list()
     for restriction, params_used in parsed_restrictions:
@@ -1107,10 +1164,10 @@ def compile_restrictions(
             # if it's a string, parse it to a function
             code_object = compile(restriction, "<string>", "exec")
             func = FunctionType(code_object.co_consts[0], globals())
-            compiled_restrictions.append((func, params_used))
+            compiled_restrictions.append((func, params_used, restriction))
         elif isinstance(restriction, Constraint):
             # otherwise it already is a Constraint, pass it directly
-            compiled_restrictions.append((restriction, params_used))
+            compiled_restrictions.append((restriction, params_used, None))
         else:
             raise ValueError(f"Restriction {restriction} is neither a string or Constraint {type(restriction)}")
 
@@ -1122,9 +1179,10 @@ def compile_restrictions(
     noncompiled_restrictions = []
     for r in restrictions_ignore:
         if isinstance(r, tuple) and len(r) == 2 and isinstance(r[1], (list, tuple)):
-            noncompiled_restrictions.append(r)
+            restriction, params_used = r
+            noncompiled_restrictions.append((restriction, params_used, restriction))
         else:
-            noncompiled_restrictions.append((r, ()))
+            noncompiled_restrictions.append((r, [], r))
     return noncompiled_restrictions + compiled_restrictions
 
 
