@@ -35,7 +35,7 @@ class BayesianOptimizationTransfer(BayesianOptimization):
         self.inputs_transfer_learning: list[Tensor] = []
         self.outcomes_transfer_learning: list[Tensor] = []
         for tl_cache in tuning_options.transfer_learning_caches:
-            print(f"Importing transfer learning for {tl_cache["kernel_name"]}-{tl_cache['device_name']}")
+            print(f"Importing transfer learning for {tl_cache['kernel_name']}-{tl_cache['device_name']}")
             # construct the searchspace for this task
             tensor_kwargs = searchspace.tensor_kwargs
             tl_searchspace = Searchspace(None, None, None, from_cache=tl_cache)
