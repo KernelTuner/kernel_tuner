@@ -621,29 +621,15 @@ def tune_kernel(
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
         else:
-            raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
+            # check for user-defined strategy
+            if hasattr(strategy, "tune") and callable(strategy.tune):
+                # user-defined strategy
+                pass
+            else:
+                raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
 
-        # make strategy_options into an Options object
-        if tuning_options.strategy_options:
-            if not isinstance(strategy_options, Options):
-                tuning_options.strategy_options = Options(strategy_options)
-
-            # select strategy based on user options
-            if "fraction" in tuning_options.strategy_options and not tuning_options.strategy == "random_sample":
-                raise ValueError(
-                    'It is not possible to use fraction in combination with strategies other than "random_sample". '
-                    'Please set strategy="random_sample", when using "fraction" in strategy_options'
-                )
-
-            # check if method is supported by the selected strategy
-            if "method" in tuning_options.strategy_options:
-                method = tuning_options.strategy_options.method
-                if method not in strategy.supported_methods:
-                    raise ValueError("Method %s is not supported for strategy %s" % (method, tuning_options.strategy))
-
-        # if no strategy_options dict has been passed, create empty dictionary
-        else:
-            tuning_options.strategy_options = Options({})
+        # ensure strategy_options is an Options object
+        tuning_options.strategy_options = Options(strategy_options or {})
 
     # if no strategy selected
     else:
