@@ -91,7 +91,7 @@ matplotlib = { version = "^3.5.0", optional = true }
 cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
 opencl = ["pyopencl"]
 cuda_opencl = ["pycuda", "pyopencl"]
-hip = ["hip-python"]
+hip = ["hip-python-fork"]
 tutorial = ["jupyter", "matplotlib", "nvidia-ml-py"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
