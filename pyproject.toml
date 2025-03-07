@@ -16,6 +16,7 @@ authors = [
     "Willem-Jan Palenstijn <w.j.palenstijn@liacs.leidenuniv.nl>",
     "Bram Veenboer <veenboer@astron.nl>",
     "Richard Schoonhoven <Richard.Schoonhoven@cwi.nl>",
+    "Leon Oostrum <l.oostrum@esciencecenter.nl",
 ]
 
 readme = "README.md"
@@ -57,7 +58,7 @@ generate-setup-file = false
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"          # NOTE when changing the supported Python versions, also change the test versions in the noxfile
-numpy = ">=1.26.0"              # Python 3.12 requires numpy at least 1.26
+numpy = "^1.26.0"              # Python 3.12 requires numpy at least 1.26
 scipy = ">=1.11.0"
 packaging = "*"                 # required by file_utils
 jsonschema = "*"
@@ -79,7 +80,7 @@ pynvml = { version = "^11.4.1", optional = true }
 # OpenCL
 pyopencl = { version = "*", optional = true } # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 # HIP
-pyhip-interface = { version = "*", optional = true }
+hip-python = { version = "*", optional = true }
 # Tutorial (for the notebooks used in the examples)
 jupyter = { version = "^1.0.0", optional = true }
 matplotlib = { version = "^3.5.0", optional = true }
@@ -88,7 +89,7 @@ matplotlib = { version = "^3.5.0", optional = true }
 cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
 opencl = ["pyopencl"]
 cuda_opencl = ["pycuda", "pyopencl"]
-hip = ["pyhip-interface"]
+hip = ["hip-python"]
 tutorial = ["jupyter", "matplotlib", "nvidia-ml-py"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`

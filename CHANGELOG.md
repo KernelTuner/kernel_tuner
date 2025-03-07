@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+- changed HIP python bindings from pyhip-interface to the official hip-python
 
 ## [1.0.0] - 2024-04-04
 - HIP backend to support tuning HIP kernels on AMD GPUs
