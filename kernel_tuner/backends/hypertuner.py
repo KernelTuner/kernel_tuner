@@ -68,12 +68,12 @@ class HypertunerFunctions(Backend):
         applications = [
             {
                 "name": "dedispersion_milo",
-                "folder": "../autotuning_methodology/cached_data_used/kernels",
+                "folder": "../autotuning_methodology/benchmark_hub/kernels",
                 "input_file": "dedispersion_milo.json"
             },
             {
                 "name": "convolution_milo",
-                "folder": "../autotuning_methodology/cached_data_used/kernels",
+                "folder": "../autotuning_methodology/benchmark_hub/kernels",
                 "input_file": "convolution_milo.json"
             }
         ]
