@@ -70,8 +70,8 @@ class Searchspace:
             tune_params = from_cache["tune_params"]
         if from_cache is None:
             assert (
-                tune_params is not None and restrictions is not None and max_threads is not None
-            ), "Must specify positional arugments ."
+                tune_params is not None and max_threads is not None
+            ), "Must specify positional arguments."
 
         # set the object attributes using the arguments
         framework_l = framework.lower()
