@@ -1211,7 +1211,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
             # checks the equality of all items in the list/tuples individually
             elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
                 raise ValueError(
-                    f"Cannot load cache which contains results for different problem_size ({cached_data["problem_size"]=} != {kernel_options.problem_size=})"
+                    f"Cannot load cache which contains results for different problem_size ({cached_data['problem_size']=} != {kernel_options.problem_size=})"
                 )
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
             if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
