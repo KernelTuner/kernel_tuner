@@ -21,6 +21,7 @@ from constraint import (
 try:
     import torch
     from torch import Tensor
+
     torch_available = True
 except ImportError:
     torch_available = False
@@ -42,7 +43,7 @@ class Searchspace:
         block_size_names=default_block_size_names,
         build_neighbors_index=False,
         neighbor_method=None,
-        from_cache: dict=None,
+        from_cache: dict = None,
         framework="PythonConstraint",
         solver_method="PC_OptimizedBacktrackingSolver",
         path_to_ATF_cache: Path = None,
@@ -58,10 +59,14 @@ class Searchspace:
         """
         # check the arguments
         if from_cache is not None:
-            assert tune_params is None and restrictions is None and max_threads is None, "When `from_cache` is used, the positional arguments must be set to None."
+            assert (
+                tune_params is None and restrictions is None and max_threads is None
+            ), "When `from_cache` is used, the positional arguments must be set to None."
             tune_params = from_cache["tune_params"]
         if from_cache is None:
-            assert tune_params is not None and restrictions is not None and max_threads is not None, "Must specify positional arugments ."
+            assert (
+                tune_params is not None and restrictions is not None and max_threads is not None
+            ), "Must specify positional arugments ."
 
         # set the object attributes using the arguments
         framework_l = framework.lower()
@@ -77,9 +82,9 @@ class Searchspace:
         self._tensorspace_param_config_structure = []
         self._map_tensor_to_param = {}
         self._map_param_to_tensor = {}
-        self.restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
+        self.restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
-        self._modified_restrictions = restrictions.copy() if hasattr(restrictions, 'copy') else restrictions
+        self._modified_restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
@@ -93,8 +98,12 @@ class Searchspace:
         restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
         if (
             len(restrictions) > 0
-            and (any(isinstance(restriction, str) for restriction in restrictions)
-            or any(isinstance(restriction[0], str) for restriction in restrictions if isinstance(restriction, tuple)))
+            and (
+                any(isinstance(restriction, str) for restriction in restrictions)
+                or any(
+                    isinstance(restriction[0], str) for restriction in restrictions if isinstance(restriction, tuple)
+                )
+            )
             and not (framework_l == "pysmt" or framework_l == "bruteforce")
         ):
             self.restrictions = compile_restrictions(
@@ -609,14 +618,14 @@ class Searchspace:
         # map(get) is ~40% faster than numpy[indices] (average based on six searchspaces with 10000, 100000 and 1000000 configs and 10 or 100 random indices)
         return list(map(self.list.__getitem__, indices))
 
-    def get_param_config_index(self, param_config: Union[tuple, Tensor]):
+    def get_param_config_index(self, param_config: Union[tuple, any]):
         """Lookup the index for a parameter configuration, returns None if not found."""
         if torch_available and isinstance(param_config, Tensor):
             param_config = self.tensor_to_param_config(param_config)
         # constant time O(1) access - much faster than any other method, but needs a shadow dict of the search space
         return self.__dict.get(param_config, None)
-    
-    def initialize_tensorspace(self, dtype = None, device = None):
+
+    def initialize_tensorspace(self, dtype=None, device=None):
         """Encode the searchspace in a Tensor. Save the mapping. Call this function directly to control the precision or device used."""
         assert self._tensorspace is None, "Tensorspace is already initialized"
         skipped_count = 0
@@ -642,16 +651,16 @@ class Searchspace:
             if all(isinstance(v, numbers.Real) for v in param_values):
                 tensor_values = torch.tensor(param_values, dtype=self.tensor_dtype)
             else:
-                self._tensorspace_categorical_dimensions.append(index-skipped_count)
+                self._tensorspace_categorical_dimensions.append(index - skipped_count)
                 # tensor_values = np.arange(len(param_values))
                 tensor_values = torch.arange(len(param_values), dtype=self.tensor_dtype)
 
             # write the mappings to the object
-            self._map_param_to_tensor[index] = (dict(zip(param_values, tensor_values.tolist())))
-            self._map_tensor_to_param[index] = (dict(zip(tensor_values.tolist(), param_values)))
+            self._map_param_to_tensor[index] = dict(zip(param_values, tensor_values.tolist()))
+            self._map_tensor_to_param[index] = dict(zip(tensor_values.tolist(), param_values))
             bounds.append((tensor_values.min(), tensor_values.max()))
             if tensor_values.min() < tensor_values.max():
-                self._tensorspace_bounds_indices.append(index-skipped_count)
+                self._tensorspace_bounds_indices.append(index - skipped_count)
 
         # do some checks
         assert len(self.params_values) == len(self._tensorspace_param_config_structure)
@@ -666,18 +675,18 @@ class Searchspace:
 
         # set the bounds in the correct format (one array for the min, one for the max)
         bounds = torch.tensor(bounds, **self.tensor_kwargs)
-        self._tensorspace_bounds = torch.cat([bounds[:,0], bounds[:,1]]).reshape((2, bounds.shape[0]))
-    
+        self._tensorspace_bounds = torch.cat([bounds[:, 0], bounds[:, 1]]).reshape((2, bounds.shape[0]))
+
     def get_tensorspace(self):
         """Get the searchspace encoded in a Tensor. To use a non-default dtype or device, call `initialize_tensorspace` first."""
         if self._tensorspace is None:
             self.initialize_tensorspace()
         return self._tensorspace
-    
+
     def get_tensorspace_categorical_dimensions(self):
         """Get the a list of the categorical dimensions in the tensorspace."""
         return self._tensorspace_categorical_dimensions
-    
+
     def param_config_to_tensor(self, param_config: tuple):
         """Convert from a parameter configuration to a Tensor."""
         if len(self._map_param_to_tensor) == 0:
@@ -685,7 +694,7 @@ class Searchspace:
         array = []
         for i, param in enumerate(param_config):
             if self._tensorspace_param_config_structure[i] is not None:
-                continue    # skip over parameters not in the tensorspace
+                continue  # skip over parameters not in the tensorspace
             mapping = self._map_param_to_tensor[i]
             conversions = [None, str, float, int, bool]
             for c in conversions:
@@ -697,7 +706,7 @@ class Searchspace:
                     if c == conversions[-1]:
                         raise KeyError(f"No variant of {param} could be found in {mapping}") from e
         return torch.tensor(array, **self.tensor_kwargs)
-    
+
     def tensor_to_param_config(self, tensor: Tensor):
         """Convert from a Tensor to a parameter configuration."""
         assert tensor.dim() == 1, f"Parameter configuration tensor must be 1-dimensional, is {tensor.dim()} ({tensor})"
@@ -709,10 +718,10 @@ class Searchspace:
             if param is not None:
                 skip_counter += 1
             else:
-                value = tensor[i-skip_counter].item()
+                value = tensor[i - skip_counter].item()
                 config[i] = self._map_tensor_to_param[i][value]
         return tuple(config)
-    
+
     def get_tensorspace_bounds(self):
         """Get the bounds to the tensorspace parameters, returned as a 2 x d dimensional tensor, and the indices of the parameters."""
         if self._tensorspace is None:
@@ -929,7 +938,7 @@ class Searchspace:
                 f"The number of ordered parameter configurations ({len(ordered_param_configs)}) differs from the original number of parameter configurations ({len(param_configs)})"
             )
         return ordered_param_configs
-    
+
     def to_ax_searchspace(self):
         """Convert this searchspace to an Ax SearchSpace."""
         from ax import ChoiceParameter, FixedParameter, ParameterType, SearchSpace
@@ -943,12 +952,14 @@ class Searchspace:
                 continue
 
             # convert the types
-            assert all(isinstance(param_values[0], type(v)) for v in param_values), f"Parameter values of mixed types are not supported: {param_values}"
+            assert all(
+                isinstance(param_values[0], type(v)) for v in param_values
+            ), f"Parameter values of mixed types are not supported: {param_values}"
             param_type_mapping = {
                 str: ParameterType.STRING,
                 int: ParameterType.INT,
                 float: ParameterType.FLOAT,
-                bool: ParameterType.BOOL
+                bool: ParameterType.BOOL,
             }
             param_type = param_type_mapping[type(param_values[0])]
 
@@ -959,6 +970,8 @@ class Searchspace:
                 ax_searchspace.add_parameter(ChoiceParameter(param_name, param_type, param_values))
 
         # add the constraints
-        raise NotImplementedError("Conversion to Ax SearchSpace has not been fully implemented as Ax Searchspaces can't capture full complexity.")
+        raise NotImplementedError(
+            "Conversion to Ax SearchSpace has not been fully implemented as Ax Searchspaces can't capture full complexity."
+        )
 
         return ax_searchspace
