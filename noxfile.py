@@ -84,7 +84,7 @@ def check_development_environment(session: Session) -> None:
             session.log("Skipping development environment check on the GitHub Actions runner, as this is always up to date.")
             return None
     output: str = session.run("poetry", "install", "--sync", "--dry-run", "--with", "test", silent=True, external=True)
-    match = re.search(r"Package operations: (\d+) installs, (\d+) updates, (\d+) removals, \d+ skipped", output)
+    match = re.search(r"Package operations: (\d+) (?:install|installs), (\d+) (?:update|updates), (\d+) (?:removal|removals), \d+ skipped", output)
     assert match is not None, f"Could not check development environment, reason: {output}"
     groups = match.groups()
     installs, updates, removals = int(groups[0]), int(groups[1]), int(groups[2])
