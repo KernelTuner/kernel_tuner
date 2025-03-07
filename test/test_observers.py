@@ -10,7 +10,7 @@ from .context import (
     skip_if_no_cupy,
     skip_if_no_opencl,
     skip_if_no_pycuda,
-    skip_if_no_hip,
+    skip_if_no_pyhip,
     skip_if_no_pynvml,
 )
 from .test_hip_functions import env as env_hip  # noqa: F401
@@ -68,7 +68,7 @@ def test_register_observer_opencl(env_opencl):
     assert err.errisinstance(NotImplementedError)
     assert "OpenCL" in str(err.value)
 
-@skip_if_no_hip
+@skip_if_no_pyhip
 def test_register_observer_hip(env_hip):
     with raises(NotImplementedError) as err:
         kernel_tuner.tune_kernel(*env_hip, observers=[RegisterObserver()], lang='HIP')
