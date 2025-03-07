@@ -52,9 +52,6 @@ from kernel_tuner.strategies import (
     bayes_opt,
     bayes_opt_alt_BOTorch,
     bayes_opt_BOTorch,
-    bayes_opt_BOTorch_transfer_direct,
-    bayes_opt_BOTorch_transfer_RGPE,
-    bayes_opt_BOTorch_transfer_weighted,
     bayes_opt_GPyTorch,
     bayes_opt_GPyTorch_lean,
     bayes_opt_old,
@@ -94,9 +91,6 @@ strategy_map = {
     "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
     "bayes_opt_BOTorch": bayes_opt_BOTorch,
     "bayes_opt_BOTorch_alt": bayes_opt_alt_BOTorch,
-    "bayes_opt_BOTorch_transfer_direct": bayes_opt_BOTorch_transfer_direct,
-    "bayes_opt_BOTorch_transfer_weighted": bayes_opt_BOTorch_transfer_weighted,
-    "bayes_opt_BOTorch_transfer_RGPE": bayes_opt_BOTorch_transfer_RGPE,
 }
 
 
@@ -483,15 +477,6 @@ _tuning_options = Options(
                 "string",
             ),
         ),
-        (
-            "transfer_learning_caches",
-            (
-                """Array of filepaths to caches to use for transfer learning.
-        Filename uses suffix ".json", which is appended if missing.
-        """,
-                "list(string) or list(Path)",
-            ),
-        ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
@@ -608,7 +593,6 @@ def tune_kernel(
     observers=None,
     objective=None,
     objective_higher_is_better=None,
-    transfer_learning_caches=[],
 ):
     start_overhead_time = perf_counter()
     if log:
@@ -709,15 +693,6 @@ def tune_kernel(
     else:
         tuning_options.cache = {}
         tuning_options.cachefile = None
-
-    # process transfer learning caches
-    tuning_options.transfer_learning_caches = []
-    if transfer_learning_caches and len(transfer_learning_caches) > 0:
-        for transfer_learning_cache in transfer_learning_caches:
-            cache = preprocess_cache(transfer_learning_cache)
-            assert cache != tuning_options.cache, "Transfer learning cache can not be the same as current cache"
-            cache_data = util.read_cache(cache, open_cache=False)
-            tuning_options.transfer_learning_caches.append(cache_data)
 
     # create search space
     searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
@@ -912,19 +887,9 @@ def tune_kernel_T1(
     device = kernelspec["Device"]["Name"]
     strategy = inputs["Search"]["Name"]
 
-    # set the cache and transfer learning cache paths
+    # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:
         cache_filepath = Path(kernelspec["SimulationInput"])
-    cache_dir = Path(cache_filepath).parent
-    # TODO remove in production!
-    transfer_learning_caches = [
-        p
-        for p in cache_dir.iterdir()
-        if len(p.suffixes) > 0
-        and p.suffixes[-1].endswith(".json")
-        and not p.stem.endswith("_T4")
-        and p.name != cache_filepath.name
-    ]
 
     # get the grid divisions
     grid_divs = {}
@@ -1018,7 +983,6 @@ def tune_kernel_T1(
         strategy_options=strategy_options,
         objective=objective,
         objective_higher_is_better=objective_higher_is_better,
-        transfer_learning_caches=transfer_learning_caches,
     )
     if output_T4:
         return get_t4_metadata(), get_t4_results(results, tune_params, objective=objective)
