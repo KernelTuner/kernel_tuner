@@ -918,7 +918,12 @@ def tune_kernel_T1(
     cache_dir = Path(cache_filepath).parent
     # TODO remove in production!
     transfer_learning_caches = [
-        p for p in cache_dir.iterdir() if not p.stem.endswith("_T4") and p.name != cache_filepath.name
+        p
+        for p in cache_dir.iterdir()
+        if len(p.suffixes) > 0
+        and p.suffixes[-1].endswith(".json")
+        and not p.stem.endswith("_T4")
+        and p.name != cache_filepath.name
     ]
 
     # get the grid divisions
