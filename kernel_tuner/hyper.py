@@ -75,8 +75,12 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     kwargs['verify'] = None
     arguments = [target_strategy]
 
+    # IMPORTANT when running this script in parallel, always make sure the below name is unique among your runs!
+    # e.g. when parallalizing over the hypertuning of multiple strategies, use the strategy name
+    name = f"hyperparamtuning_{target_strategy.lower()}"
+
     # execute the hyperparameter tuning
-    result, env = kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, *args, lang='Hypertuner',
+    result, env = kernel_tuner.tune_kernel(name, None, [], arguments, hyper_params, *args, lang='Hypertuner',
                                     objective='score', objective_higher_is_better=True, iterations=iterations, **kwargs)
     
     # remove the temporary cachefile and return only unique results in order

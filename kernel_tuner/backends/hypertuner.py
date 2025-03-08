@@ -111,7 +111,7 @@ class HypertunerFunctions(Backend):
 
         name = kernel_instance.name if len(kernel_instance.name) > 0 else kernel_instance.kernel_source.kernel_name
         experiments_filepath = generate_experiment_file(name, path, searchspace_strategies, applications, gpus, 
-                                                        override=override, overwrite_existing_file=True)
+                                                        override=override, generate_unique_file=True, overwrite_existing_file=True)
         return str(experiments_filepath)
     
     def start_event(self):
@@ -134,6 +134,9 @@ class HypertunerFunctions(Backend):
         # run the methodology to get a fitness score for this configuration
         scores = get_strategy_scores(str(experiments_filepath))
         self.last_score = scores[list(scores.keys())[0]]['score']
+
+        # remove the experiments file
+        experiments_filepath.unlink()
     
     def memset(self, allocation, value, size):
         return super().memset(allocation, value, size)
