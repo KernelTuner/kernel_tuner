@@ -114,6 +114,30 @@ if __name__ == "__main__":
         hyperparams = {
             'method': ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr'],
         }
+    elif strategy_to_tune.lower() == "diff_evo":
+        hyperparams = {
+            'method': ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"],
+            'popsize': [10, 20, 30],
+            'maxiter': [50, 100, 150],
+        }
+    elif strategy_to_tune.lower() == "basinhopping":
+        hyperparams = {
+            'method': ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"],
+            'T': [0.5, 1.0, 1.5],
+        }
+    elif strategy_to_tune.lower() == "genetic_algorithm":
+        hyperparams = {
+            'method': ["single_point", "two_point", "uniform", "disruptive_uniform"],
+            'popsize': [10, 20, 30],
+            'maxiter': [50, 100, 150],
+            'mutation_chance': [5, 10, 20]
+        }
+    elif strategy_to_tune.lower() == "mls":
+        hyperparams = {
+            'neighbor': ["Hamming", "adjacent"],
+            'restart': [True, False],
+            'randomize': [True, False]
+        }
     else:
         raise ValueError(f"Invalid argument {strategy_to_tune=}")
 
