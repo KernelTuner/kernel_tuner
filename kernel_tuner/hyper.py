@@ -3,6 +3,7 @@
 
 from pathlib import Path
 from random import randint
+from argparse import ArgumentParser
 
 import kernel_tuner
 
@@ -87,28 +88,36 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
             result_unique[config_id] = r
     return list(result_unique.values()), env
 
-if __name__ == "__main__":  # TODO remove in production
-    hyperparams = {
-        'popsize': [10, 20, 30],
-        'maxiter': [50, 100, 150],
-        'w': [0.25, 0.5, 0.75],
-        'c1': [1.0, 2.0, 3.0],
-        'c2': [0.5, 1.0, 1.5]
-    }
-    result, env = tune_hyper_params('pso', hyperparams)
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("strategy_to_tune")
+    args = parser.parse_args()
+    strategy_to_tune = args.strategy_to_tune
 
-    # hyperparams = {
-    #     'neighbor': ['Hamming', 'adjacent'],
-    #     'restart': [True, False],
-    #     'no_improvement': [1, 10, 25, 33, 50, 66, 75, 100, 200],
-    #     'random_walk': [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
-    # }
-    # result, env = tune_hyper_params('greedy_ils', hyperparams)
+    # select the hyperparameter parameters for the selected optimization algorithm
+    if strategy_to_tune.lower() == "pso":
+        hyperparams = {
+            'popsize': [10, 20, 30],
+            'maxiter': [50, 100, 150],
+            'w': [0.25, 0.5, 0.75],
+            'c1': [1.0, 2.0, 3.0],
+            'c2': [0.5, 1.0, 1.5]
+        }
+    elif strategy_to_tune.lower() == "greedy_ils":
+        hyperparams = {
+            'neighbor': ['Hamming', 'adjacent'],
+            'restart': [True, False],
+            'no_improvement': [1, 10, 25, 33, 50, 66, 75, 100, 200],
+            'random_walk': [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
+        }
+    elif strategy_to_tune.lower() == "dual_annealing":
+        hyperparams = {
+            'method': ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr'],
+        }
+    else:
+        raise ValueError(f"Invalid argument {strategy_to_tune=}")
 
-    # hyperparams = {
-    #     'method': ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr'],
-    # }
-    # result, env = tune_hyper_params('dual_annealing', hyperparams)
-
+    # run the hyperparameter tuning
+    result, env = tune_hyper_params(strategy_to_tune.lower(), hyperparams)
     print(result)
     print(env['best_config'])
