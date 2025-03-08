@@ -5,7 +5,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Observers &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
   
@@ -207,8 +207,8 @@ See for example a RegisterObserver that observes the number of
 registers per thread used by the compiled kernel configuration shown below.
 There are many more possible observers that could be implemented, for example an observer could be created to
 track performance counters during auto-tuning..</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">RegisterObserver</span><span class="p">(</span><span class="n">BenchmarkObserver</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">get_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RegisterObserver</span><span class="p">(</span><span class="n">BenchmarkObserver</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;num_regs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dev</span><span class="o">.</span><span class="n">current_module</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">num_regs</span><span class="p">}</span>
 </pre></div>
 </div>

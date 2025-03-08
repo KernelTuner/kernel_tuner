@@ -5,7 +5,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Using structs &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
   
@@ -113,11 +113,11 @@ For performance reasons, it is also recommended to not use arrays of structs for
 describes the simulation or experimental setup. For these use cases, it is possible to use Python’s built-in <code class="docutils literal notranslate"><span class="pre">struct</span></code> library, in particular the function <code class="docutils literal notranslate"><span class="pre">struct.pack()</span></code>. For how to use
 <code class="docutils literal notranslate"><span class="pre">struct.pack</span></code>, please consult the <a class="reference external" href="https://docs.python.org/3/library/struct.html">Python documentation</a>. In the code below we show part of Python script that uses <code class="docutils literal notranslate"><span class="pre">struct.pack</span></code>,
 Numpy, and Kernel Tuner to call a CUDA kernel that uses a struct as kernel argument.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">struct</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">kernel_tuner</span> <span class="k">as</span> <span class="nn">kt</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">struct</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">kernel_tuner</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">kt</span>
 
-<span class="k">def</span> <span class="nf">create_receive_spec_struct</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_receive_spec_struct</span><span class="p">():</span>
     <span class="o">...</span>
 
     <span class="c1"># Use struct.pack to create a byte representation of our struct</span>

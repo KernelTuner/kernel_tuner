@@ -5,7 +5,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Correctness Verification &mdash; Kernel Tuner 1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
   
@@ -124,8 +124,8 @@ with an maximum allowed absolute error of 1e-6. If you want to use a
 difference tolerance value, use the optional argument <code class="docutils literal notranslate"><span class="pre">atol</span></code>.</p>
 <p>The example in <code class="docutils literal notranslate"><span class="pre">examples/cuda/convolution_correct.py</span></code> demonstrates how
 to use the <code class="docutils literal notranslate"><span class="pre">answer</span></code> option of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">numpy</span>
-<span class="linenos"> 2</span><span class="kn">import</span> <span class="nn">kernel_tuner</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span>
+<span class="linenos"> 2</span><span class="kn">import</span><span class="w"> </span><span class="nn">kernel_tuner</span>
 <span class="linenos"> 3</span>
 <span class="linenos"> 4</span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;convolution.cu&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
 <span class="linenos"> 5</span>    <span class="n">kernel_string</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
@@ -189,7 +189,7 @@ what follows is a snippet from the example:</p>
 <span class="linenos"> 3</span><span class="c1"># cpu_result</span>
 <span class="linenos"> 4</span><span class="n">reference</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
 <span class="linenos"> 5</span><span class="c1"># custom verify function</span>
-<span class="linenos"> 6</span><span class="k">def</span> <span class="nf">verify_partial_reduce</span><span class="p">(</span><span class="n">cpu_result</span><span class="p">,</span> <span class="n">gpu_result</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="linenos"> 6</span><span class="k">def</span><span class="w"> </span><span class="nf">verify_partial_reduce</span><span class="p">(</span><span class="n">cpu_result</span><span class="p">,</span> <span class="n">gpu_result</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="linenos"> 7</span>    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">cpu_result</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gpu_result</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">)</span>
 <span class="linenos"> 8</span><span class="c1"># call to tune_kernel()</span>
 <span class="linenos"> 9</span><span class="n">first_kernel</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s2">&quot;sum_floats&quot;</span><span class="p">,</span> <span class="n">kernel_string</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span>
