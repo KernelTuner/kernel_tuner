@@ -111,8 +111,8 @@ if __name__ == "__main__":
         hyperparams = {
             'neighbor': ['Hamming', 'adjacent'],
             'restart': [True, False],
-            'no_improvement': [1, 10, 25, 33, 50, 66, 75, 100, 200],
-            'random_walk': [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
+            'no_improvement': [10, 25, 50, 75],
+            'random_walk': [0.1, 0.2, 0.3, 0.4, 0.5]
         }
     elif strategy_to_tune.lower() == "dual_annealing":
         hyperparams = {
@@ -141,6 +141,13 @@ if __name__ == "__main__":
             'neighbor': ["Hamming", "adjacent"],
             'restart': [True, False],
             'randomize': [True, False]
+        }
+    elif strategy_to_tune.lower() == "simulated_annealing":
+        hyperparams = {
+            'T': [0.5, 1.0, 1.5],
+            'T_min': [0.0001, 0.001, 0.01],
+            'alpha': [0.9925, 0.995, 0.9975],
+            'maxiter': [1, 2, 3]
         }
     else:
         raise ValueError(f"Invalid argument {strategy_to_tune=}")
