@@ -28,6 +28,7 @@ venvbackend_values = ('none', 'virtualenv', 'conda', 'mamba', 'venv')  # from ht
 @session    # to only run on the current python interpreter
 def create_settings(session: Session) -> None:
     """One-time creation of noxsettings.toml."""
+    arg_trigger = False
     if session.posargs:
         # check if the trigger argument was used
         arg_trigger = any(arg.lower() == "create-settings-file" for arg in session.posargs)
@@ -83,8 +84,8 @@ def check_development_environment(session: Session) -> None:
             session.log("Skipping development environment check on the GitHub Actions runner, as this is always up to date.")
             return None
     output: str = session.run("poetry", "install", "--sync", "--dry-run", "--with", "test", silent=True, external=True)
-    match = re.search(r"Package operations: (\d+) installs, (\d+) updates, (\d+) removals, \d+ skipped", output)
-    assert match is not None
+    match = re.search(r"Package operations: (\d+) (?:install|installs), (\d+) (?:update|updates), (\d+) (?:removal|removals), \d+ skipped", output)
+    assert match is not None, f"Invalid output: {output}"
     groups = match.groups()
     installs, updates, removals = int(groups[0]), int(groups[1]), int(groups[2])
     if installs > 0 or updates > 0:
