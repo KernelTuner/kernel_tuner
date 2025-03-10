@@ -61,10 +61,7 @@ class HypertunerFunctions(Backend):
         path.mkdir(exist_ok=True)
 
         # TODO get applications & GPUs args from benchmark
-        # gpus = ["RTX_3090", "RTX_2080_Ti"]
-        # applications = None
-
-        gpus = ["A100", "W6600"]
+        gpus = ["A100", "A4000", "MI250X", "W6600"]
         folder = "../../autotuning_methodology/benchmark_hub/kernels"
         applications = [
             {
@@ -72,21 +69,21 @@ class HypertunerFunctions(Backend):
                 "folder": folder,
                 "input_file": "dedispersion_milo.json"
             },
-            {
-                "name": "convolution_milo",
-                "folder": folder,
-                "input_file": "convolution_milo.json"
-            },
+            # {
+            #     "name": "convolution_milo",
+            #     "folder": folder,
+            #     "input_file": "convolution_milo.json"
+            # },
             {
                 "name": "hotspot_milo",
                 "folder": folder,
                 "input_file": "hotspot_milo.json"
             },
-            {
-                "name": "gemm_milo",
-                "folder": folder,
-                "input_file": "gemm_milo.json"
-            }
+            # {
+            #     "name": "gemm_milo",
+            #     "folder": folder,
+            #     "input_file": "gemm_milo.json"
+            # }
         ]
 
         # strategy settings
@@ -104,7 +101,7 @@ class HypertunerFunctions(Backend):
         # any additional settings
         override = { 
             "experimental_groups_defaults": { 
-                "repeats": 10,
+                "repeats": 20,
                 "samples": self.iterations 
             }
         }
