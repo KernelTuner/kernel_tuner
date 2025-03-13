@@ -103,7 +103,7 @@ if __name__ == "__main__":
         hyperparams = {
             'popsize': [10, 20, 30],
             'maxiter': [50, 100, 150],
-            'w': [0.25, 0.5, 0.75],
+            # 'w': [0.25, 0.5, 0.75],   # disabled due to low influence according to KW-test (H=0.0215) and mutual information
             'c1': [1.0, 2.0, 3.0],
             'c2': [0.5, 1.0, 1.5]
         }
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     elif strategy_to_tune.lower() == "basinhopping":
         hyperparams = {
             'method': ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"],
-            'T': [0.5, 1.0, 1.5],
+            'T': [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5],
         }
     elif strategy_to_tune.lower() == "genetic_algorithm":
         hyperparams = {
