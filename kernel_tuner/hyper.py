@@ -149,6 +149,14 @@ if __name__ == "__main__":
             'alpha': [0.9925, 0.995, 0.9975],
             'maxiter': [1, 2, 3]
         }
+    elif strategy_to_tune.lower() == "bayes_opt":
+        hyperparams = {
+            # 'covariancekernel': ["constantrbf", "rbf", "matern32", "matern52"],
+            # 'covariancelengthscale': [1.0, 1.5, 2.0],
+            'method': ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"],
+            'samplingmethod': ["random", "LHS"],
+            'popsize': [10, 20, 30]
+        }
     else:
         raise ValueError(f"Invalid argument {strategy_to_tune=}")
 
