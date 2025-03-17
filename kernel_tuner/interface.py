@@ -886,6 +886,16 @@ def tune_kernel_T1(
     problem_size = kernelspec["ProblemSize"]
     device = kernelspec["Device"]["Name"]
     strategy = inputs["Search"]["Name"]
+    if "Attributes" in inputs["Search"]:
+        strategy_options = {}
+        for attribute in inputs["Search"]["Attributes"]:
+            strategy_options[attribute["Name"]] = attribute["Value"]
+    if "Budget" in inputs:
+        budget = inputs["Budget"][0]
+        assert budget["Type"] == "ConfigurationCount"
+        if strategy_options is None:
+            strategy_options = {}
+        strategy_options["max_fevals"] = budget["BudgetValue"]
 
     # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:
