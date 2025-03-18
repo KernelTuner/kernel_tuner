@@ -136,7 +136,7 @@ if __name__ == "__main__":
             'maxiter': [50, 100, 150],
             'mutation_chance': [5, 10, 20]
         }
-    elif strategy_to_tune.lower() == "mls":
+    elif strategy_to_tune.lower() == "greedy_mls":
         hyperparams = {
             'neighbor': ["Hamming", "adjacent"],
             'restart': [True, False],
