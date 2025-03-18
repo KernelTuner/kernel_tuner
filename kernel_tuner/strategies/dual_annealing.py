@@ -8,7 +8,7 @@ from kernel_tuner.strategies.common import CostFunc, setup_method_arguments, set
 
 supported_methods = ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr']
 
-_options = dict(method=(f"Local optimization method to use, choose any from {supported_methods}", "Powell"))
+_options = dict(method=(f"Local optimization method to use, choose any from {supported_methods}", "COBYLA"))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 

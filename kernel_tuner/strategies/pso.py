@@ -12,10 +12,10 @@ from kernel_tuner.strategies.common import CostFunc, scale_from_params
 
 _options = dict(
     popsize=("Population size", 20),
-    maxiter=("Maximum number of iterations", 100),
+    maxiter=("Maximum number of iterations", 150),
     w=("Inertia weight constant", 0.5),
-    c1=("Cognitive constant", 2.0),
-    c2=("Social constant", 1.0),
+    c1=("Cognitive constant", 3.0),
+    c2=("Social constant", 1.5),
 )
 
 
