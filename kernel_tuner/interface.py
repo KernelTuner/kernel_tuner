@@ -918,6 +918,8 @@ def tune_kernel_T1(
                 tune_param = eval(vals)
             else:
                 tune_param = literal_eval(vals)
+        if param["Type"] == "string":
+            tune_param = eval(param["Values"])
         if tune_param is not None:
             tune_params[param["Name"]] = tune_param
         else:
