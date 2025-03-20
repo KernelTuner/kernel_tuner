@@ -236,6 +236,7 @@ class Searchspace:
                     isinstance(self._modified_restrictions, list)
                     and block_size_restriction_spaced not in self._modified_restrictions
                 ):
+                    print(f"added default block size restriction '{block_size_restriction_spaced}'")
                     self._modified_restrictions.append(block_size_restriction_spaced)
                     if isinstance(self.restrictions, list):
                         self.restrictions.append(block_size_restriction_spaced)
