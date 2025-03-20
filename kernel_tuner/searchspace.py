@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from random import choice, shuffle
 from typing import List, Union
+from warnings import warn
 
 import numpy as np
 from constraint import (
@@ -69,9 +70,7 @@ class Searchspace:
             ), "When `from_cache` is used, the positional arguments must be set to None."
             tune_params = from_cache["tune_params"]
         if from_cache is None:
-            assert (
-                tune_params is not None and max_threads is not None
-            ), "Must specify positional arguments."
+            assert tune_params is not None and max_threads is not None, "Must specify positional arguments."
 
         # set the object attributes using the arguments
         framework_l = framework.lower()
@@ -864,6 +863,11 @@ class Searchspace:
 
     def get_random_sample(self, num_samples: int) -> List[tuple]:
         """Get the parameter configurations for a random, non-conflicting sample (caution: not unique in consecutive calls)."""
+        if self.size < num_samples:
+            warn(
+                f"Too many samples requested ({num_samples}), reducing the number of samples to the searchspace size ({self.size})"
+            )
+            num_samples = self.size
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
 
     def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None) -> List[int]:
