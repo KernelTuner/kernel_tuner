@@ -193,9 +193,9 @@ def check_argument_list(kernel_name, kernel_string, args):
 def check_stop_criterion(to):
     """Checks if max_fevals is reached or time limit is exceeded."""
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
-        raise StopCriterionReached("max_fevals reached")
+        raise StopCriterionReached(f"max_fevals reached ({len(to.unique_results)} >= {to.max_fevals})")
     if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
-        raise StopCriterionReached("time limit exceeded")
+        raise StopCriterionReached(f"time limit ({to.time_limit}) exceeded")
 
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
@@ -459,13 +459,13 @@ def get_interval(a: list):
     a_min = min(a)
     a_max = max(a)
     if len(a) <= 2:
-        return (a_min, a_max, a_max-a_min)
+        return (a_min, a_max, a_max - a_min)
     # determine the first step size
-    step = a[1]-a_min
+    step = a[1] - a_min
     # for each element, the step size should be equal to the first step
     for i, e in enumerate(a):
-        if e-a[i-1] != step:
-            return None 
+        if e - a[i - 1] != step:
+            return None
     result = (a_min, a_max, step)
     if not all(isinstance(e, (int, float)) for e in result):
         return None
@@ -1039,12 +1039,12 @@ def parse_restrictions(
                 return AllDifferentConstraint()
             return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
         return None
-    
+
     # remove functionally duplicate restrictions (preserves order and whitespace)
     if all(isinstance(r, str) for r in restrictions):
         # clean the restriction strings to functional equivalence
-        restrictions_cleaned = [r.replace(' ', '') for r in restrictions]
-        restrictions_cleaned_unique = list(dict.fromkeys(restrictions_cleaned)) # dict preserves order
+        restrictions_cleaned = [r.replace(" ", "") for r in restrictions]
+        restrictions_cleaned_unique = list(dict.fromkeys(restrictions_cleaned))  # dict preserves order
         # get the indices of the unique restrictions, use these to build a new list of restrictions
         restrictions_unique_indices = [restrictions_cleaned.index(r) for r in restrictions_cleaned_unique]
         restrictions = [restrictions[i] for i in restrictions_unique_indices]
@@ -1107,8 +1107,12 @@ def parse_restrictions(
             # combine multiple restrictions into one
             for res_tuple in res_dict.values():
                 res, params_used = res_tuple
-                params_used = list(dict.fromkeys(params_used))   # param_used should only contain unique, dict preserves order
-                parsed_restrictions_pyatf.append((f"def r({', '.join(params_used)}): return ({') and ('.join(res)}) \n", params_used))
+                params_used = list(
+                    dict.fromkeys(params_used)
+                )  # param_used should only contain unique, dict preserves order
+                parsed_restrictions_pyatf.append(
+                    (f"def r({', '.join(params_used)}): return ({') and ('.join(res)}) \n", params_used)
+                )
             parsed_restrictions = parsed_restrictions_pyatf
     else:
         # create one monolithic function

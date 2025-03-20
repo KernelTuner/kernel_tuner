@@ -61,20 +61,28 @@ class HypertunerFunctions(Backend):
         path.mkdir(exist_ok=True)
 
         # TODO get applications & GPUs args from benchmark
-        # gpus = ["RTX_3090", "RTX_2080_Ti"]
-        # applications = None
-
-        gpus = ["A100", "A4000", "MI250X", "W6600"]
+        gpus = ["A100", "A4000", "MI250X"]
+        folder = "../autotuning_methodology/benchmark_hub/kernels"
         applications = [
             {
                 "name": "dedispersion_milo",
-                "folder": "../autotuning_methodology/benchmark_hub/kernels",
+                "folder": folder,
                 "input_file": "dedispersion_milo.json"
             },
             {
+                "name": "hotspot_milo",
+                "folder": folder,
+                "input_file": "hotspot_milo.json"
+            },
+            {
                 "name": "convolution_milo",
-                "folder": "../autotuning_methodology/benchmark_hub/kernels",
+                "folder": folder,
                 "input_file": "convolution_milo.json"
+            },
+            {
+                "name": "gemm_milo",
+                "folder": folder,
+                "input_file": "gemm_milo.json"
             }
         ]
 
@@ -93,13 +101,14 @@ class HypertunerFunctions(Backend):
         # any additional settings
         override = { 
             "experimental_groups_defaults": { 
+                "repeats": 10,
                 "samples": self.iterations 
             }
         }
 
         name = kernel_instance.name if len(kernel_instance.name) > 0 else kernel_instance.kernel_source.kernel_name
         experiments_filepath = generate_experiment_file(name, path, searchspace_strategies, applications, gpus, 
-                                                        override=override, overwrite_existing_file=True)
+                                                        override=override, generate_unique_file=True, overwrite_existing_file=True)
         return str(experiments_filepath)
     
     def start_event(self):
@@ -122,6 +131,9 @@ class HypertunerFunctions(Backend):
         # run the methodology to get a fitness score for this configuration
         scores = get_strategy_scores(str(experiments_filepath))
         self.last_score = scores[list(scores.keys())[0]]['score']
+
+        # remove the experiments file
+        experiments_filepath.unlink()
     
     def memset(self, allocation, value, size):
         return super().memset(allocation, value, size)

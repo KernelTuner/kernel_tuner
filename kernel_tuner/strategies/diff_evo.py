@@ -9,7 +9,7 @@ from kernel_tuner.strategies.common import CostFunc
 supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp",
                      "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
 
-_options = dict(method=(f"Creation method for new population, any of {supported_methods}", "best1bin"),
+_options = dict(method=(f"Creation method for new population, any of {supported_methods}", "randtobest1bin"),
                        popsize=("Population size", 20),
                        maxiter=("Number of generations", 100))
 

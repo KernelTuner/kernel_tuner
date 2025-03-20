@@ -3,6 +3,7 @@
 
 from pathlib import Path
 from random import randint
+from argparse import ArgumentParser
 
 import kernel_tuner
 
@@ -61,7 +62,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     # pass a temporary cache file to avoid duplicate execution
     if 'cache' not in kwargs:
         cachefile = get_random_unique_filename('temp_', '.json')
-        cachefile = Path("hyperparamtuning_milo_bruteforce_dual_annealing.json")
+        cachefile = Path(f"hyperparamtuning_paper_bruteforce_{target_strategy}.json")
         kwargs['cache'] = str(cachefile)
 
     def put_if_not_present(target_dict, key, value):
@@ -74,8 +75,12 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     kwargs['verify'] = None
     arguments = [target_strategy]
 
+    # IMPORTANT when running this script in parallel, always make sure the below name is unique among your runs!
+    # e.g. when parallalizing over the hypertuning of multiple strategies, use the strategy name
+    name = f"hyperparamtuning_{target_strategy.lower()}"
+
     # execute the hyperparameter tuning
-    result, env = kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, *args, lang='Hypertuner',
+    result, env = kernel_tuner.tune_kernel(name, None, [], arguments, hyper_params, *args, lang='Hypertuner',
                                     objective='score', objective_higher_is_better=True, iterations=iterations, **kwargs)
     
     # remove the temporary cachefile and return only unique results in order
@@ -87,28 +92,75 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
             result_unique[config_id] = r
     return list(result_unique.values()), env
 
-if __name__ == "__main__":  # TODO remove in production
-    # hyperparams = {
-    #     'popsize': [10, 20, 30],
-    #     'maxiter': [50, 100, 150],
-    #     'w': [0.25, 0.5, 0.75],
-    #     'c1': [1.0, 2.0, 3.0],
-    #     'c2': [0.5, 1.0, 1.5]
-    # }
-    # result, env = tune_hyper_params('pso', hyperparams)
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("strategy_to_tune")
+    args = parser.parse_args()
+    strategy_to_tune = args.strategy_to_tune
 
-    # hyperparams = {
-    #     'neighbor': ['Hamming', 'adjacent'],
-    #     'restart': [True, False],
-    #     'no_improvement': [1, 10, 25, 33, 50, 66, 75, 100, 200],
-    #     'random_walk': [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
-    # }
-    # result, env = tune_hyper_params('greedy_ils', hyperparams)
+    # select the hyperparameter parameters for the selected optimization algorithm
+    if strategy_to_tune.lower() == "pso":
+        hyperparams = {
+            'popsize': [10, 20, 30],
+            'maxiter': [50, 100, 150],
+            # 'w': [0.25, 0.5, 0.75],   # disabled due to low influence according to KW-test (H=0.0215) and mutual information
+            'c1': [1.0, 2.0, 3.0],
+            'c2': [0.5, 1.0, 1.5]
+        }
+    elif strategy_to_tune.lower() == "greedy_ils":
+        hyperparams = {
+            'neighbor': ['Hamming', 'adjacent'],
+            'restart': [True, False],
+            'no_improvement': [10, 25, 50, 75],
+            'random_walk': [0.1, 0.2, 0.3, 0.4, 0.5]
+        }
+    elif strategy_to_tune.lower() == "dual_annealing":
+        hyperparams = {
+            'method': ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr'],
+        }
+    elif strategy_to_tune.lower() == "diff_evo":
+        hyperparams = {
+            'method': ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"],
+            'popsize': [10, 20, 30],
+            'maxiter': [50, 100, 150],
+        }
+    elif strategy_to_tune.lower() == "basinhopping":
+        hyperparams = {
+            'method': ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"],
+            'T': [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5],
+        }
+    elif strategy_to_tune.lower() == "genetic_algorithm":
+        hyperparams = {
+            'method': ["single_point", "two_point", "uniform", "disruptive_uniform"],
+            'popsize': [10, 20, 30],
+            'maxiter': [50, 100, 150],
+            'mutation_chance': [5, 10, 20]
+        }
+    elif strategy_to_tune.lower() == "greedy_mls":
+        hyperparams = {
+            'neighbor': ["Hamming", "adjacent"],
+            'restart': [True, False],
+            'randomize': [True, False]
+        }
+    elif strategy_to_tune.lower() == "simulated_annealing":
+        hyperparams = {
+            'T': [0.5, 1.0, 1.5],
+            'T_min': [0.0001, 0.001, 0.01],
+            'alpha': [0.9925, 0.995, 0.9975],
+            'maxiter': [1, 2, 3]
+        }
+    elif strategy_to_tune.lower() == "bayes_opt":
+        hyperparams = {
+            # 'covariancekernel': ["constantrbf", "rbf", "matern32", "matern52"],
+            # 'covariancelengthscale': [1.0, 1.5, 2.0],
+            'method': ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"],
+            'samplingmethod': ["random", "LHS"],
+            'popsize': [10, 20, 30]
+        }
+    else:
+        raise ValueError(f"Invalid argument {strategy_to_tune=}")
 
-    hyperparams = {
-        'method': ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr'],
-    }
-    result, env = tune_hyper_params('dual_annealing', hyperparams)
-
+    # run the hyperparameter tuning
+    result, env = tune_hyper_params(strategy_to_tune.lower(), hyperparams)
     print(result)
     print(env['best_config'])

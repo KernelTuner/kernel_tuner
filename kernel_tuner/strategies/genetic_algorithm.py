@@ -1,4 +1,5 @@
 """A simple genetic algorithm for parameter search."""
+
 import random
 
 import numpy as np
@@ -9,10 +10,10 @@ from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
 _options = dict(
-    popsize=("population size", 20),
-    maxiter=("maximum number of generations", 100),
+    popsize=("population size", 30),
+    maxiter=("maximum number of generations", 30),
     method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
-    mutation_chance=("chance to mutate is 1 in mutation_chance", 10),
+    mutation_chance=("chance to mutate is 1 in mutation_chance", 20),
 )
 
 
@@ -21,6 +22,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     options = tuning_options.strategy_options
     pop_size, generations, method, mutation_chance = common.get_options(options, _options)
     crossover = supported_methods[method]
+
+    # if left to the default, adjust the popsize to a sensible value for small search spaces
+    if pop_size == _options["popsize"][1]:
+        pop_size = min(round(searchspace.size / 2), pop_size)
+    else:
+        # otherwise, just make sure it doesn't exceed the search space size
+        pop_size = min(searchspace.size, pop_size)
 
     best_score = 1e20
     cost_func = CostFunc(searchspace, tuning_options, runner)
@@ -46,7 +54,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         # 'best_score' is used only for printing
         if tuning_options.verbose and cost_func.results:
-            best_score = util.get_best_config(cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better)[tuning_options.objective]
+            best_score = util.get_best_config(
+                cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better
+            )[tuning_options.objective]
 
         if tuning_options.verbose:
             print("Generation %d, best_score %f" % (generation, best_score))
