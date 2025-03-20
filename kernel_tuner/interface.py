@@ -50,11 +50,6 @@ except ImportError:
 from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
-    bayes_opt_alt_BOTorch,
-    bayes_opt_BOTorch,
-    bayes_opt_GPyTorch,
-    bayes_opt_GPyTorch_lean,
-    bayes_opt_old,
     brute_force,
     diff_evo,
     dual_annealing,
@@ -85,12 +80,7 @@ strategy_map = {
     "pso": pso,
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt,
-    "bayes_opt_old": bayes_opt_old,
-    "bayes_opt_GPyTorch": bayes_opt_GPyTorch,
-    "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
-    "bayes_opt_BOTorch": bayes_opt_BOTorch,
-    "bayes_opt_BOTorch_alt": bayes_opt_alt_BOTorch,
+    "bayes_opt": bayes_opt
 }
 
 
