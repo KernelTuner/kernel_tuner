@@ -202,7 +202,7 @@ class BayesianOptimization:
         self.optimization_direction = optimization_direction
         if self.optimization_direction == 'min':
             self.is_better_than = lambda a, b: a < b
-            self.inf_value = np.PINF
+            self.inf_value = np.inf
             self.opt = torch.min
             self.argopt = torch.argmin
         elif self.optimization_direction == 'max':
