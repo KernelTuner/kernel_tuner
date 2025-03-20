@@ -193,9 +193,9 @@ def check_argument_list(kernel_name, kernel_string, args):
 def check_stop_criterion(to):
     """Checks if max_fevals is reached or time limit is exceeded."""
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
-        raise StopCriterionReached("max_fevals reached")
+        raise StopCriterionReached(f"max_fevals reached ({len(to.unique_results)} >= {to.max_fevals})")
     if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
-        raise StopCriterionReached("time limit exceeded")
+        raise StopCriterionReached(f"time limit ({to.time_limit}) exceeded")
 
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
