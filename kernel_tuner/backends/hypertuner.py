@@ -62,7 +62,7 @@ class HypertunerFunctions(Backend):
 
         # TODO get applications & GPUs args from benchmark
         gpus = ["A100", "A4000", "MI250X"]
-        folder = "../../autotuning_methodology/benchmark_hub/kernels"
+        folder = "../autotuning_methodology/benchmark_hub/kernels"
         applications = [
             {
                 "name": "dedispersion_milo",
