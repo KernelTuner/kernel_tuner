@@ -13,7 +13,7 @@ except ImportError:
 import kernel_tuner
 from kernel_tuner.backends.compiler import CompilerFunctions, Argument, is_cupy_array, get_array_module
 from kernel_tuner.core import KernelSource, KernelInstance
-from kernel_tuner import util
+from kernel_tuner.util import delete_temp_file
 
 from .context import skip_if_no_gfortran, skip_if_no_gcc, skip_if_no_openmp, skip_if_no_cupy
 from .test_runners import env as cuda_env  # noqa: F401
@@ -391,7 +391,7 @@ def test_complies_fortran_function_with_module():
         assert np.isclose(result, 42.0)
 
     finally:
-        util.delete_temp_file("my_fancy_module.mod")
+        delete_temp_file("my_fancy_module.mod")
 
 
 @pytest.fixture

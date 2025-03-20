@@ -149,7 +149,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         if max_fevals - bo.fevals <= 0:
             raise ValueError("No function evaluations left for optimization after sampling")
         bo.optimize(max_fevals)
-    except util.StopCriterionReached as e:
+    except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
 

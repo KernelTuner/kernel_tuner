@@ -4,7 +4,7 @@ import random
 
 import numpy as np
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached, get_best_config
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
@@ -42,7 +42,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         for dna in population:
             try:
                 time = cost_func(dna, check_restrictions=False)
-            except util.StopCriterionReached as e:
+            except StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
                 return cost_func.results
@@ -54,7 +54,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         # 'best_score' is used only for printing
         if tuning_options.verbose and cost_func.results:
-            best_score = util.get_best_config(
+            best_score = get_best_config(
                 cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better
             )[tuning_options.objective]
 
