@@ -21,8 +21,14 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
     pop_size, generations, method, mutation_chance = common.get_options(options, _options)
-    pop_size = min(round(searchspace.size / 2), pop_size)
     crossover = supported_methods[method]
+
+    # if left to the default, adjust the popsize to a sensible value for small search spaces
+    if pop_size == _options["popsize"][1]:
+        pop_size = min(round(searchspace.size / 2), pop_size)
+    else:
+        # otherwise, just make sure it doesn't exceed the search space size
+        pop_size = min(searchspace.size, pop_size)
 
     best_score = 1e20
     cost_func = CostFunc(searchspace, tuning_options, runner)
