@@ -26,6 +26,17 @@ try:
 except ImportError:
     cp = None
 
+try:
+    from hip import hip
+except ImportError:
+    hip = None
+
+try:
+    from hip._util.types import DeviceArray
+except ImportError:
+    Pointer = Exception # using Exception here as a type that will never be among kernel arguments
+    DeviceArray = Exception
+
 
 def is_cupy_array(array):
     """Check if something is a cupy array.
@@ -148,18 +159,24 @@ class CompilerFunctions(CompilerBackend):
         ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not (isinstance(arg, (np.ndarray, np.number)) or is_cupy_array(arg)):
-                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar but a {type(arg)}")
-            dtype_str = str(arg.dtype)
+            if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg)):
+                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}")
+            dtype_str = arg.typestr if isinstance(arg, DeviceArray) else str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
                     data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+                    numpy_arg = arg
                 else:
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
+                numpy_arg = arg
             elif is_cupy_array(arg):
                 data_ctypes = C.c_void_p(arg.data.ptr)
+            elif isinstance(arg, DeviceArray):
+                data_ctypes = arg.as_c_void_p()
+                numpy_arg = None
+
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
             self.allocations.append(Argument(numpy=arg.copy(), ctypes=data_ctypes))
         return ctype_args
@@ -377,6 +394,12 @@ class CompilerFunctions(CompilerBackend):
         :param src: An Argument for some memory allocation
         :type src: Argument
         """
+        # If src.numpy is None, it means we're dealing with a HIP Python DeviceArray
+        if src.numpy is None:
+            # Skip memory copies for HIP Python DeviceArray
+            # This is because DeviceArray manages its own memory and donesn't need
+            # explicit copies like numpy arrays do
+            return
         # there is no real copy from device to host, but host to host
         if isinstance(dest, np.ndarray) and is_cupy_array(src.numpy):
             # Implicit conversion to a NumPy array is not allowed.

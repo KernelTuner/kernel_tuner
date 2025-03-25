@@ -124,31 +124,26 @@ Or you could install Kernel Tuner and PyOpenCL together if you haven't done so a
 
 If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.net/PyOpenCL/Installation)
 
-HIP and PyHIP
+HIP and HIP Python
 -------------
 
-Before we can install PyHIP, you'll need to have the HIP runtime and compiler installed on your system.
+Before we can install HIP Python, you'll need to have the HIP runtime and compiler installed on your system.
 The HIP compiler is included as part of the ROCm software stack. Here is AMD's installation guide:
 
 * `ROCm Documentation: HIP Installation Guide <https://docs.amd.com/bundle/HIP-Installation-Guide-v5.3/page/Introduction_to_HIP_Installation_Guide.html>`__
 
-After you've installed HIP, you will need to install PyHIP. Run the following command in your terminal to install:
+After you've installed HIP, you will need to install HIP Python. Run the following command in your terminal to install:
 
-.. code-block:: bash
+First identify the first three digits of the version number of your ROCm™ installation.
+Then install the HIP Python package(s) as follows:
 
-    pip install pyhip-interface
+.. code-block:: shell
 
-Alternatively, you can install PyHIP from the source code. First, clone the repository from GitHub:
+    python3 -m pip install -i https://test.pypi.org/simple hip-python~=$rocm_version
+    # if you want to install the CUDA Python interoperability package too, run:
+    python3 -m pip install -i https://test.pypi.org/simple hip-python-as-cuda~=$rocm_version
 
-.. code-block:: bash
-
-    git clone https://github.com/jatinx/PyHIP
-
-Then, navigate to the repository directory and run the following command to install:
-
-.. code-block:: bash
-
-    python setup.py install
+For other installation options check `hip-python on GitHub <https://github.com/ROCm/hip-python>`_
 
 Installing the git version
 --------------------------
@@ -171,7 +166,7 @@ The runtime dependencies are:
 
 - `cuda`: install pycuda along with kernel_tuner
 - `opencl`: install pycuda along with kernel_tuner
-- `hip`: install pyhip along with kernel_tuner
+- `hip`: install HIP Python along with kernel_tuner
 - `tutorial`: install packages required to run the guides
 
 These can be installed by appending e.g. ``-E cuda -E opencl -E hip``.
