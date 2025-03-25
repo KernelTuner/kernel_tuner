@@ -350,7 +350,7 @@ def create_actor_on_device(kernel_source, kernel_options, device_options, iterat
         # observers can't be pickled so we will re-initialize them in the actors
         # observers related to backends will be initialized once we call the device interface inside the actor, that is why we skip them here
         for i, observer in enumerate(observers):
-            if isinstance(observer, (NVMLObserver, NVMLPowerObserver, PMTObserver, PowerSensorObserver)):
+            if isinstance(observer, (NVMLObserver, PMTObserver, PowerSensorObserver)):
                 observers_type_and_arguments.append((observer.__class__, observer.init_arguments))
             if isinstance(observer, RegisterObserver):
                 observers_type_and_arguments.append((observer.__class__, []))
