@@ -32,7 +32,7 @@ What Kernel Tuner does:
 
 ## Installation
 
-- First, make sure you have your [CUDA](https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda), [OpenCL](https://kerneltuner.github.io/kernel_tuner/stable/install.html#opencl-and-pyopencl), or [HIP](https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-pyhipl) compiler installed
+- First, make sure you have your [CUDA](https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda), [OpenCL](https://kerneltuner.github.io/kernel_tuner/stable/install.html#opencl-and-pyopencl), or [HIP](https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-hip-python) compiler installed
 - Then type: `pip install kernel_tuner[cuda]`, `pip install kernel_tuner[opencl]`, or `pip install kernel_tuner[hip]`
 - or why not all of them: `pip install kernel_tuner[cuda,opencl,hip]`
 

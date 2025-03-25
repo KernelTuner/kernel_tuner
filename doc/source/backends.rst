@@ -58,7 +58,7 @@ used to compile the kernels.
   :header: Feature, PyCUDA, CuPy, CUDA-Python, HIP
   :widths: auto
 
-  Python package,      "pycuda", "cupy", "cuda-python", "pyhip-interface"
+  Python package,      "pycuda", "cupy", "cuda-python", "hip-python"
   Selected with lang=, "CUDA", "CUPY", "NVCUDA", "HIP"
   Compiler used,       "nvcc", "nvrtc", "nvrtc", "hiprtc"
 
