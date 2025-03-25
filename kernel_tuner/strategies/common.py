@@ -10,7 +10,7 @@ from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.util import get_num_devices
 from kernel_tuner.runners.ray.remote_actor import RemoteActor
-from kernel_tuner.observers.nvml import NVMLObserver, NVMLPowerObserver
+from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.pmt import PMTObserver
 from kernel_tuner.observers.powersensor import PowerSensorObserver
 from kernel_tuner.observers.register import RegisterObserver
