@@ -12,6 +12,8 @@ import warnings
 from inspect import signature
 from types import FunctionType
 from typing import Optional, Union
+import ray
+import subprocess
 
 import numpy as np
 from constraint import (
@@ -90,6 +92,9 @@ class SkippableFailure(Exception):
 
 class StopCriterionReached(Exception):
     """Exception thrown when a stop criterion has been reached."""
+
+class GPUTypeMismatchError(Exception):
+    """Exception thrown when GPU types are not the same in parallel execution"""
 
 
 try:
@@ -903,6 +908,7 @@ def parse_restrictions(
             except Exception:
                 # it's not a solvable subexpression, return None
                 return None
+            
 
         # either the left or right side of the equation must evaluate to a constant number
         left_num = is_or_evals_to_number(left)
@@ -1288,3 +1294,26 @@ def cuda_error_check(error):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
+
+def get_num_devices(simulation_mode=False):
+    resources = ray.cluster_resources()
+    if simulation_mode:
+        num_devices = round(resources.get("CPU") * 0.8)
+    else:
+        num_devices = resources.get("GPU")
+    return int(num_devices)
+
+def get_gpu_id(lang):
+    if lang == "CUDA" or lang == "CUPY" or lang == "NVCUDA":
+        gpu_id = os.environ.get("CUDA_VISIBLE_DEVICES") or os.environ.get("NVIDIA_VISIBLE_DEVICES") or "No GPU assigned"
+    else:
+        raise NotImplementedError("TODO: implement other languages")
+    return int(gpu_id)
+
+def get_gpu_type(lang):
+    gpu_id = get_gpu_id(lang)
+    if lang == "CUDA" or lang == "CUPY" or lang == "NVCUDA":
+        result = subprocess.run(['nvidia-smi', '--query-gpu=gpu_name', '--format=csv,noheader', '-i', str(gpu_id)], capture_output=True, text=True)
+        return result.stdout.strip()
+    else:
+        raise NotImplementedError("TODO: implement other languages")

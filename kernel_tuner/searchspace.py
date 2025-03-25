@@ -51,6 +51,11 @@ class Searchspace:
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.restrictions = restrictions
+        self.max_threads = max_threads
+        self.block_size_names = block_size_names
+        self.framework = framework
+        self.solver_method = solver_method
+        self.path_to_ATF_cache = path_to_ATF_cache
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
         self._modified_restrictions = restrictions
         self.param_names = list(self.tune_params.keys())

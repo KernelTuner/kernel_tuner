@@ -326,6 +326,15 @@ class NVMLObserver(BenchmarkObserver):
         continuous_duration=1,
     ):
         """Create an NVMLObserver."""
+        # needed for re-initializing observer on ray actor
+        self.init_arguments = {
+            "observables": observables,
+            "device": device,
+            "save_all": save_all,
+            "nvidia_smi_fallback": nvidia_smi_fallback,
+            "use_locked_clocks": use_locked_clocks,
+            "continous_duration": continous_duration
+        }
         if nvidia_smi_fallback:
             self.nvml = nvml(
                 device,

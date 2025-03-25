@@ -49,6 +49,11 @@ class PMTObserver(BenchmarkObserver):
     def __init__(self, observable=None, use_continuous_observer=False, continuous_duration=1):
         if not pmt:
             raise ImportError("could not import pmt")
+        
+        # needed for re-initializing observer on ray actor
+        self.init_arguments = {
+            "observable": observable
+        }
 
         # User specifices a dictonary of platforms and corresponding device
         if type(observable) is dict:
