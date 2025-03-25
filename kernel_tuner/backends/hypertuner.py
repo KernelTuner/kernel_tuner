@@ -101,8 +101,9 @@ class HypertunerFunctions(Backend):
         # any additional settings
         override = { 
             "experimental_groups_defaults": { 
-                "repeats": 10,
-                "samples": self.iterations 
+                "repeats": 25,
+                "samples": self.iterations,
+                "minimum_fraction_of_budget_valid": 0.01, 
             }
         }
 
