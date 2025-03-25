@@ -331,7 +331,7 @@ def scale_from_params(params, tune_params, eps):
 
 def check_num_devices(ensemble_size: int, simulation_mode: bool, runner):
     
-    num_devices = get_num_devices(runner.kernel_source.lang, simulation_mode=simulation_mode)
+    num_devices = get_num_devices(simulation_mode=simulation_mode)
     if num_devices < ensemble_size:
          warnings.warn("Number of devices is less than the number of strategies in the ensemble. Some strategies will wait until devices are available.", UserWarning)
 
