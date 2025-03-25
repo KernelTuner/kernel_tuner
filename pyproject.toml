@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "kernel_tuner"
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.1.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.2.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -80,7 +80,7 @@ include = [
 # cupy-cuda12x = { version = "*", optional = true }
 # cuda-python = { version = "*", optional = true }
 [project.optional-dependencies]
-cuda = ["pycuda>=2024.1", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
+cuda = ["pycuda>=2025.1", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 opencl = ["pyopencl"]                                                   # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 cuda_opencl = ["pycuda>=2024.1", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 hip = ["hip-python-fork"]
