@@ -58,7 +58,7 @@ from kernel_tuner.strategies import (
     pso,
     random_sample,
     simulated_annealing,
-    ensemble
+    ensemble,
 )
 
 strategy_map = {
@@ -661,8 +661,8 @@ def tune_kernel(
     selected_runner = SimulationRunner if simulation_mode else (ParallelRunner if parallel_mode else SequentialRunner)
     tuning_options.simulated_time = 0
     if parallel_mode:
-         num_gpus = tuning_options['num_gpus'] if 'num_gpus' in tuning_options else None
-         runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers, num_gpus=num_gpus)
+        num_gpus = tuning_options["num_gpus"] if "num_gpus" in tuning_options else None
+        runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers, num_gpus=num_gpus)
     else:
         runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
 
@@ -696,7 +696,7 @@ def tune_kernel(
     if results:  # checks if results is not empty
         best_config = util.get_best_config(results, objective, objective_higher_is_better)
         # add the best configuration to env
-        env['best_config'] = best_config
+        env["best_config"] = best_config
         if not device_options.quiet:
             units = getattr(runner, "units", None)
             print("best performing configuration:")

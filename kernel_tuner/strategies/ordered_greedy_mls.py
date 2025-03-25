@@ -3,13 +3,15 @@ from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.greedy_mls import tune as mls_tune
 
-_options = dict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
-                       restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
-                       order=("set a user-specified order to search among dimensions while hillclimbing", None),
-                       randomize=("use a random order to search among dimensions while hillclimbing", False))
+_options = dict(
+    neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
+    restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
+    order=("set a user-specified order to search among dimensions while hillclimbing", None),
+    randomize=("use a random order to search among dimensions while hillclimbing", False),
+)
+
 
 def tune(searchspace: Searchspace, runner, tuning_options):
-
     _, restart, _, randomize = common.get_options(tuning_options.strategy_options, _options)
 
     # Delegate to Greedy MLS, but make sure our defaults are used if not overwritten by the user

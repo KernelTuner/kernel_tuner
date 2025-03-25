@@ -16,9 +16,7 @@ except ImportError:
 class OpenCLFunctions(GPUBackend):
     """Class that groups the OpenCL functions on maintains some state about the device."""
 
-    def __init__(
-        self, device=0, platform=0, iterations=7, compiler_options=None, observers=None
-    ):
+    def __init__(self, device=0, platform=0, iterations=7, compiler_options=None, observers=None):
         """Creates OpenCL device context and reads device properties.
 
         :param device: The ID of the OpenCL device to use for benchmarking
@@ -37,14 +35,10 @@ class OpenCLFunctions(GPUBackend):
         platforms = cl.get_platforms()
         self.ctx = cl.Context(devices=[platforms[platform].get_devices()[device]])
 
-        self.queue = cl.CommandQueue(
-            self.ctx, properties=cl.command_queue_properties.PROFILING_ENABLE
-        )
+        self.queue = cl.CommandQueue(self.ctx, properties=cl.command_queue_properties.PROFILING_ENABLE)
         self.mf = cl.mem_flags
         # inspect device properties
-        self.max_threads = self.ctx.devices[0].get_info(
-            cl.device_info.MAX_WORK_GROUP_SIZE
-        )
+        self.max_threads = self.ctx.devices[0].get_info(cl.device_info.MAX_WORK_GROUP_SIZE)
         self.compiler_options = compiler_options or []
 
         # observer stuff
@@ -108,9 +102,7 @@ class OpenCLFunctions(GPUBackend):
         :returns: An OpenCL kernel that can be called directly.
         :rtype: pyopencl.Kernel
         """
-        prg = cl.Program(self.ctx, kernel_instance.kernel_string).build(
-            options=self.compiler_options
-        )
+        prg = cl.Program(self.ctx, kernel_instance.kernel_string).build(options=self.compiler_options)
         func = getattr(prg, kernel_instance.name)
         return func
 

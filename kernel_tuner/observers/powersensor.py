@@ -27,12 +27,9 @@ class PowerSensorObserver(BenchmarkObserver):
     def __init__(self, observables=None, device=None):
         if not powersensor:
             raise ImportError("could not import powersensor")
-        
+
         # needed for re-initializing observer on ray actor
-        self.init_arguments = {
-            "observables": observables,
-            "device": device
-        }
+        self.init_arguments = {"observables": observables, "device": device}
 
         supported = ["ps_energy", "ps_power"]
         for obs in observables:
@@ -52,14 +49,10 @@ class PowerSensorObserver(BenchmarkObserver):
     def after_finish(self):
         end_state = self.ps.read()
         if "ps_energy" in self.observables:
-            ps_measured_e = powersensor.Joules(
-                self.begin_state, end_state, -1
-            )  # Joules
+            ps_measured_e = powersensor.Joules(self.begin_state, end_state, -1)  # Joules
             self.results["ps_energy"].append(ps_measured_e)
         if "ps_power" in self.observables:
-            ps_measured_t = (
-                    end_state.time_at_read - self.begin_state.time_at_read
-            )  # seconds
+            ps_measured_t = end_state.time_at_read - self.begin_state.time_at_read  # seconds
             self.results["ps_power"].append(ps_measured_e / ps_measured_t)  # Watt
 
     def get_results(self):

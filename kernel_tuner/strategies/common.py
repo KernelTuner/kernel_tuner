@@ -38,7 +38,9 @@ $STRAT_OPT$
 
 def get_strategy_docstring(name, strategy_options):
     """Generate docstring for a 'tune' method of a strategy."""
-    return _docstring_template.replace("$NAME$", name).replace("$STRAT_OPT$", make_strategy_options_doc(strategy_options))
+    return _docstring_template.replace("$NAME$", name).replace(
+        "$STRAT_OPT$", make_strategy_options_doc(strategy_options)
+    )
 
 
 def make_strategy_options_doc(strategy_options):
@@ -74,20 +76,20 @@ class CostFunc:
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
 
         # error value to return for numeric optimizers that need a numerical value
-        logging.debug('_cost_func called')
-        logging.debug('x: ' + str(x))
+        logging.debug("_cost_func called")
+        logging.debug("x: " + str(x))
 
         # check if max_fevals is reached or time limit is exceeded
         util.check_stop_criterion(self.tuning_options)
 
         x_list = [x] if self._is_single_configuration(x) else x
         configs = [self._prepare_config(cfg) for cfg in x_list]
-        
+
         legal_configs = configs
         illegal_results = []
         if check_restrictions and self.searchspace.restrictions:
             legal_configs, illegal_results = self._get_legal_configs(configs)
-        
+
         final_results = self._evaluate_configs(legal_configs) if len(legal_configs) > 0 else []
         # get numerical return values, taking optimization direction into account
         all_results = final_results + illegal_results
@@ -95,31 +97,31 @@ class CostFunc:
         for result in all_results:
             return_value = result[self.tuning_options.objective] or sys.float_info.max
             return_values.append(return_value if not self.tuning_options.objective_higher_is_better else -return_value)
-        
+
         if len(return_values) == 1:
             return return_values[0]
         return return_values
-    
+
     def _is_single_configuration(self, x):
         """
         Determines if the input is a single configuration based on its type and composition.
-        
+
         Parameters:
             x: The input to check, which can be an int, float, numpy array, list, or tuple.
 
         Returns:
-            bool: True if `x` is a single configuration, which includes being a singular int or float, 
+            bool: True if `x` is a single configuration, which includes being a singular int or float,
                 a numpy array of ints or floats, or a list or tuple where all elements are ints or floats.
                 Otherwise, returns False.
         """
         if isinstance(x, (int, float)):
             return True
         if isinstance(x, np.ndarray):
-            return x.dtype.kind in 'if'  # Checks for data type being integer ('i') or float ('f')
+            return x.dtype.kind in "if"  # Checks for data type being integer ('i') or float ('f')
         if isinstance(x, (list, tuple)):
             return all(isinstance(item, (int, float)) for item in x)
         return False
-    
+
     def _prepare_config(self, x):
         """
         Prepare a single configuration by snapping to nearest values and/or scaling.
@@ -139,11 +141,11 @@ class CostFunc:
         else:
             params = x
         return params
-    
+
     def _get_legal_configs(self, configs):
         """
-        Filters and categorizes configurations into legal and illegal based on defined restrictions. 
-        Configurations are checked against restrictions; illegal ones are modified to indicate an invalid state and 
+        Filters and categorizes configurations into legal and illegal based on defined restrictions.
+        Configurations are checked against restrictions; illegal ones are modified to indicate an invalid state and
         included in the results. Legal configurations are collected and returned for potential use.
 
         Parameters:
@@ -163,11 +165,11 @@ class CostFunc:
             else:
                 legal_configs.append(config)
         return legal_configs, results
-    
+
     def _evaluate_configs(self, configs):
         """
-        Evaluate and manage configurations based on tuning options. Results are sorted by timestamp to maintain 
-        order during parallel processing. The function ensures no duplicates in results and checks for stop criteria 
+        Evaluate and manage configurations based on tuning options. Results are sorted by timestamp to maintain
+        order during parallel processing. The function ensures no duplicates in results and checks for stop criteria
         post-processing. Strategy start time is updated upon completion.
 
         Parameters:
@@ -179,7 +181,7 @@ class CostFunc:
         results = self.runner.run(configs, self.tuning_options)
         # sort based on timestamp, needed because of parallel tuning of populations and restrospective stop criterion check
         if "timestamp" in results[0]:
-            results.sort(key=lambda x: x['timestamp'])
+            results.sort(key=lambda x: x["timestamp"])
 
         final_results = []
         for result in results:
@@ -231,10 +233,10 @@ class CostFunc:
                     eps = min(eps, np.amin(np.gradient(vals)))
 
         self.tuning_options["eps"] = eps
-        logging.debug('get_bounds_x0_eps called')
-        logging.debug('bounds ' + str(bounds))
-        logging.debug('x0 ' + str(x0))
-        logging.debug('eps ' + str(eps))
+        logging.debug("get_bounds_x0_eps called")
+        logging.debug("bounds " + str(bounds))
+        logging.debug("x0 " + str(x0))
+        logging.debug("eps " + str(eps))
 
         return bounds, x0, eps
 
@@ -252,7 +254,7 @@ def setup_method_arguments(method, bounds):
     kwargs = {}
     # pass bounds to methods that support it
     if method in ["L-BFGS-B", "TNC", "SLSQP"]:
-        kwargs['bounds'] = bounds
+        kwargs["bounds"] = bounds
     return kwargs
 
 
@@ -265,21 +267,21 @@ def setup_method_options(method, tuning_options):
         maxiter = tuning_options.strategy_options.maxiter
     else:
         maxiter = 100
-    kwargs['maxiter'] = maxiter
+    kwargs["maxiter"] = maxiter
     if method in ["Nelder-Mead", "Powell"]:
-        kwargs['maxfev'] = maxiter
+        kwargs["maxfev"] = maxiter
     elif method == "L-BFGS-B":
-        kwargs['maxfun'] = maxiter
+        kwargs["maxfun"] = maxiter
 
     # pass eps to methods that support it
     if method in ["CG", "BFGS", "L-BFGS-B", "TNC", "SLSQP"]:
-        kwargs['eps'] = tuning_options.eps
+        kwargs["eps"] = tuning_options.eps
     elif method == "COBYLA":
-        kwargs['rhobeg'] = tuning_options.eps
+        kwargs["rhobeg"] = tuning_options.eps
 
     # not all methods support 'disp' option
-    if method not in ['TNC']:
-        kwargs['disp'] = tuning_options.verbose
+    if method not in ["TNC"]:
+        kwargs["disp"] = tuning_options.verbose
 
     return kwargs
 
@@ -326,25 +328,33 @@ def scale_from_params(params, tune_params, eps):
     """Helper func to do the inverse of the 'unscale' function."""
     x = np.zeros(len(params))
     for i, v in enumerate(tune_params.values()):
-        x[i] = 0.5 * eps + v.index(params[i])*eps
+        x[i] = 0.5 * eps + v.index(params[i]) * eps
     return x
 
+
 def check_num_devices(ensemble_size: int, simulation_mode: bool, runner):
-    
     num_devices = get_num_devices(simulation_mode=simulation_mode)
     if num_devices < ensemble_size:
-         warnings.warn("Number of devices is less than the number of strategies in the ensemble. Some strategies will wait until devices are available.", UserWarning)
+        warnings.warn(
+            "Number of devices is less than the number of strategies in the ensemble. Some strategies will wait until devices are available.",
+            UserWarning,
+        )
 
-def create_actor_on_device(kernel_source, kernel_options, device_options, iterations, observers, cache_manager, simulation_mode, id):
+
+def create_actor_on_device(
+    kernel_source, kernel_options, device_options, iterations, observers, cache_manager, simulation_mode, id
+):
     # Check if Ray is initialized, raise an error if not
     if not ray.is_initialized():
-        raise RuntimeError("Ray is not initialized. Initialize Ray before creating an actor (remember to include resources).")
+        raise RuntimeError(
+            "Ray is not initialized. Initialize Ray before creating an actor (remember to include resources)."
+        )
 
     if simulation_mode:
         resource_options = {"num_cpus": 1}
     else:
         resource_options = {"num_gpus": 1}
-    
+
     observers_type_and_arguments = []
     if observers is not None:
         # observers can't be pickled so we will re-initialize them in the actors
@@ -354,19 +364,21 @@ def create_actor_on_device(kernel_source, kernel_options, device_options, iterat
                 observers_type_and_arguments.append((observer.__class__, observer.init_arguments))
             if isinstance(observer, RegisterObserver):
                 observers_type_and_arguments.append((observer.__class__, []))
-    
+
     # Create the actor with the specified options and resources
-    return RemoteActor.options(**resource_options).remote(kernel_source, 
-                                                            kernel_options, 
-                                                            device_options, 
-                                                            iterations, 
-                                                            observers_type_and_arguments=observers_type_and_arguments,
-                                                            cache_manager=cache_manager,
-                                                            simulation_mode=simulation_mode,
-                                                            id=id)
+    return RemoteActor.options(**resource_options).remote(
+        kernel_source,
+        kernel_options,
+        device_options,
+        iterations,
+        observers_type_and_arguments=observers_type_and_arguments,
+        cache_manager=cache_manager,
+        simulation_mode=simulation_mode,
+        id=id,
+    )
+
 
 def initialize_ray():
     # Initialize Ray
     if not ray.is_initialized():
         ray.init(include_dashboard=True, ignore_reinit_error=True)
-

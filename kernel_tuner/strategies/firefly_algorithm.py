@@ -9,14 +9,16 @@ from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc, scale_from_params
 from kernel_tuner.strategies.pso import Particle
 
-_options = dict(popsize=("Population size", 20),
-                       maxiter=("Maximum number of iterations", 100),
-                       B0=("Maximum attractiveness", 1.0),
-                       gamma=("Light absorption coefficient", 1.0),
-                       alpha=("Randomization parameter", 0.2))
+_options = dict(
+    popsize=("Population size", 20),
+    maxiter=("Maximum number of iterations", 100),
+    B0=("Maximum attractiveness", 1.0),
+    gamma=("Light absorption coefficient", 1.0),
+    alpha=("Randomization parameter", 0.2),
+)
+
 
 def tune(searchspace: Searchspace, runner, tuning_options):
-
     # scale variables in x because PSO works with velocities to visit different configurations
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
@@ -57,7 +59,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         # compare all to all and compute attractiveness
         for i in range(num_particles):
             for j in range(num_particles):
-
                 if swarm[i].intensity < swarm[j].intensity:
                     dist = swarm[i].distance_to(swarm[j])
                     beta = B0 * np.exp(-gamma * dist * dist)
@@ -78,7 +79,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         swarm.sort(key=lambda x: x.score)
 
     if tuning_options.verbose:
-        print('Final result:')
+        print("Final result:")
         print(best_position_global)
         print(best_score_global)
 
@@ -86,6 +87,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
 
 tune.__doc__ = common.get_strategy_docstring("firefly algorithm", _options)
+
 
 class Firefly(Particle):
     """Firefly object for use in the Firefly Algorithm."""
@@ -98,7 +100,7 @@ class Firefly(Particle):
 
     def distance_to(self, other):
         """Return Euclidian distance between self and other Firefly."""
-        return np.linalg.norm(self.position-other.position)
+        return np.linalg.norm(self.position - other.position)
 
     def compute_intensity(self, fun):
         """Evaluate cost function and compute intensity at this position."""

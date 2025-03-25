@@ -6,13 +6,18 @@ from kernel_tuner.strategies.common import CostFunc
 from kernel_tuner.strategies.genetic_algorithm import mutate
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
 
-_options = dict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
-                       restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
-                       no_improvement=("number of evaluations to exceed without improvement before restarting", 50),
-                       random_walk=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", 0.3))
+_options = dict(
+    neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
+    restart=("controls greedyness, i.e. whether to restart from a position as soon as an improvement is found", True),
+    no_improvement=("number of evaluations to exceed without improvement before restarting", 50),
+    random_walk=(
+        "controls greedyness, i.e. whether to restart from a position as soon as an improvement is found",
+        0.3,
+    ),
+)
+
 
 def tune(searchspace: Searchspace, runner, tuning_options):
-
     dna_size = len(searchspace.tune_params.keys())
 
     options = tuning_options.strategy_options
@@ -30,15 +35,16 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     fevals = 0
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
-    #while searching
+    # while searching
     candidate = searchspace.get_random_sample(1)[0]
     best_score = cost_func(candidate, check_restrictions=False)
 
     last_improvement = 0
     while fevals < max_fevals:
-
         try:
-            candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=True)
+            candidate = base_hillclimb(
+                candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=True
+            )
             new_score = cost_func(candidate, check_restrictions=False)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
@@ -57,6 +63,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
 
 tune.__doc__ = common.get_strategy_docstring("Greedy Iterative Local Search (ILS)", _options)
+
 
 def random_walk(indiv, permutation_size, no_improve, last_improve, searchspace: Searchspace):
     if last_improve >= no_improve:

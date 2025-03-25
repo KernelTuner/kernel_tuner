@@ -14,11 +14,11 @@ class SimulationDevice(_SimulationDevice):
 
     @property
     def name(self):
-        return self.env['device_name']
+        return self.env["device_name"]
 
     @name.setter
     def name(self, value):
-        self.env['device_name'] = value
+        self.env["device_name"] = value
         if not self.quiet:
             print("Simulating: " + value)
 
@@ -58,9 +58,9 @@ class SimulationRunner(Runner):
         self.last_strategy_time = 0
         self.units = {}
 
-        self.device_options = device_options # needed for the ensemble strategy down the line
-        self.iterations = iterations # needed for the ensemble strategy down the line
-        self.observers = observers # needed for the ensemble strategy down the line
+        self.device_options = device_options  # needed for the ensemble strategy down the line
+        self.iterations = iterations  # needed for the ensemble strategy down the line
+        self.observers = observers  # needed for the ensemble strategy down the line
 
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
@@ -82,13 +82,12 @@ class SimulationRunner(Runner):
             execution times.
         :rtype: dict()
         """
-        logging.debug('simulation runner started for ' + self.kernel_options.kernel_name)
+        logging.debug("simulation runner started for " + self.kernel_options.kernel_name)
 
         results = []
 
         # iterate over parameter space
         for element in parameter_space:
-
             # check if element is in the cache
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
@@ -102,21 +101,22 @@ class SimulationRunner(Runner):
                 # configuration is already counted towards the unique_results.
                 # It is the responsibility of cost_func to add configs to unique_results.
                 if x_int in tuning_options.unique_results:
-
-                    result['compile_time'] = 0
-                    result['verification_time'] = 0
-                    result['benchmark_time'] = 0
+                    result["compile_time"] = 0
+                    result["verification_time"] = 0
+                    result["benchmark_time"] = 0
 
                 else:
                     # configuration is evaluated for the first time, print to the console
-                    util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
+                    util.print_config_output(
+                        tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units
+                    )
 
                 # Everything but the strategy time and framework time are simulated,
                 # self.last_strategy_time is set by cost_func
-                result['strategy_time'] = self.last_strategy_time
+                result["strategy_time"] = self.last_strategy_time
 
                 try:
-                    simulated_time = result['compile_time'] + result['verification_time'] + result['benchmark_time']
+                    simulated_time = result["compile_time"] + result["verification_time"] + result["benchmark_time"]
                     tuning_options.simulated_time += simulated_time
                 except KeyError:
                     if "time_limit" in tuning_options:
@@ -126,13 +126,15 @@ class SimulationRunner(Runner):
 
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
-                result['framework_time'] = total_time - self.last_strategy_time
+                result["framework_time"] = total_time - self.last_strategy_time
 
                 results.append(result)
                 continue
 
             # if the element is not in the cache, raise an error
-            check = util.check_restrictions(tuning_options.restrictions, dict(zip(tuning_options['tune_params'].keys(), element)), True)
+            check = util.check_restrictions(
+                tuning_options.restrictions, dict(zip(tuning_options["tune_params"].keys(), element)), True
+            )
             err_string = f"kernel configuration {element} not in cache, does {'' if check else 'not '}pass extra restriction check ({check})"
             logging.debug(err_string)
             raise ValueError(f"{err_string} - in simulation mode, all configurations must be present in the cache")

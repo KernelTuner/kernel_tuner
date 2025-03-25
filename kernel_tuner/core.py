@@ -32,7 +32,7 @@ except ImportError:
 try:
     from hip._util.types import DeviceArray
 except ImportError:
-    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+    DeviceArray = Exception  # using Exception here as a type that will never be among kernel arguments
 
 _KernelInstance = namedtuple(
     "_KernelInstance",
@@ -84,9 +84,7 @@ class KernelSource(object):
         self.defines = defines
         if lang is None:
             if callable(self.kernel_sources[0]):
-                raise TypeError(
-                    "Please specify language when using a code generator function"
-                )
+                raise TypeError("Please specify language when using a code generator function")
             kernel_string = self.get_kernel_string(0)
             lang = util.detect_language(kernel_string)
 
@@ -113,9 +111,7 @@ class KernelSource(object):
         kernel_source = self.kernel_sources[index]
         return util.get_kernel_string(kernel_source, params)
 
-    def prepare_list_of_files(
-        self, kernel_name, params, grid, threads, block_size_names
-    ):
+    def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
         """prepare the kernel string along with any additional files
 
         The first file in the list is allowed to include or read in the others
@@ -151,9 +147,7 @@ class KernelSource(object):
 
         for i, f in enumerate(self.kernel_sources):
             if i > 0 and not util.looks_like_a_filename(f):
-                raise ValueError(
-                    "When passing multiple kernel sources, the secondary entries must be filenames"
-                )
+                raise ValueError("When passing multiple kernel sources, the secondary entries must be filenames")
 
             ks = self.get_kernel_string(i, params)
             # add preprocessor statements
@@ -187,9 +181,7 @@ class KernelSource(object):
 
     def get_user_suffix(self, index=0):
         """Get the suffix of the kernel filename, if the user specified one. Return None otherwise."""
-        if util.looks_like_a_filename(self.kernel_sources[index]) and (
-            "." in self.kernel_sources[index]
-        ):
+        if util.looks_like_a_filename(self.kernel_sources[index]) and ("." in self.kernel_sources[index]):
             return "." + self.kernel_sources[index].split(".")[-1]
         return None
 
@@ -218,13 +210,9 @@ class KernelSource(object):
         """
         for i, f in enumerate(self.kernel_sources):
             if not callable(f):
-                util.check_argument_list(
-                    kernel_name, self.get_kernel_string(i), arguments
-                )
+                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments)
             else:
-                logging.debug(
-                    "Checking of arguments list not supported yet for code generators."
-                )
+                logging.debug("Checking of arguments list not supported yet for code generators.")
 
 
 class DeviceInterface(object):
@@ -317,7 +305,9 @@ class DeviceInterface(object):
                 observers=observers,
             )
         else:
-            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
+            raise ValueError(
+                "Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet"
+            )
         self.dev = dev
 
         # look for NVMLObserver and TegraObserver in observers, if present, enable special tunable parameters through nvml/tegra
@@ -390,7 +380,6 @@ class DeviceInterface(object):
         for obs in self.benchmark_observers:
             result.update(obs.get_results())
 
-
     def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
         """Benchmark continuously for at least 'duration' seconds"""
         iterations = int(np.ceil(duration / (result["time"] / 1000)))
@@ -414,7 +403,6 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             result.update(obs.get_results())
 
-
     def set_nvml_parameters(self, instance):
         """Set the NVML parameters. Avoids setting time leaking into benchmark time."""
         if self.use_nvml:
@@ -432,7 +420,6 @@ class DeviceInterface(object):
         if self.use_tegra:
             if "tegra_gr_clock" in instance.params:
                 self.tegra.gr_clock = instance.params["tegra_gr_clock"]
-
 
     def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False):
         """Benchmark the kernel instance."""
@@ -458,9 +445,7 @@ class DeviceInterface(object):
                     obs.results = result
                     duration = max(duration, obs.continuous_duration)
 
-                self.benchmark_continuous(
-                    func, gpu_args, instance.threads, instance.grid, result, duration
-                )
+                self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, duration)
 
         except Exception as e:
             # some launches may fail because too many registers are required
@@ -473,9 +458,7 @@ class DeviceInterface(object):
                 "INVALID_WORK_GROUP_SIZE",
             ]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
-                logging.debug(
-                    "benchmark fails due to runtime failure too many resources required"
-                )
+                logging.debug("benchmark fails due to runtime failure too many resources required")
                 if verbose:
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
@@ -487,20 +470,20 @@ class DeviceInterface(object):
                 raise e
         return result
 
-    def check_kernel_output(
-        self, func, gpu_args, instance, answer, atol, verify, verbose
-    ):
+    def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """runs the kernel once and checks the result against answer"""
         logging.debug("check_kernel_output")
 
-        #if not using custom verify function, check if the length is the same
+        # if not using custom verify function, check if the length is the same
         if answer:
             if len(instance.arguments) != len(answer):
                 raise TypeError("The length of argument list and provided results do not match.")
 
             should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
         else:
-            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments]
+            should_sync = [
+                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments
+            ]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
@@ -522,7 +505,7 @@ class DeviceInterface(object):
                     self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
                 elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
                     if not answer[i].is_cuda:
-                        #if the answer is on the host, copy gpu output to host as well
+                        # if the answer is on the host, copy gpu output to host as well
                         result_host.append(torch.zeros_like(answer[i]))
                         self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
                     else:
@@ -550,10 +533,7 @@ class DeviceInterface(object):
             correct = True
 
         if not correct:
-            raise RuntimeError(
-                "Kernel result verification failed for: "
-                + util.get_config_string(instance.params)
-            )
+            raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
         # reset previous timers
@@ -567,7 +547,7 @@ class DeviceInterface(object):
         # Compile and benchmark a kernel instance based on kernel strings and parameters
         instance_string = util.get_instance_string(params)
 
-        logging.debug('compile_and_benchmark ' + instance_string)
+        logging.debug("compile_and_benchmark " + instance_string)
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
@@ -585,9 +565,7 @@ class DeviceInterface(object):
                 else:
                     # add shared memory arguments to compiled module
                     if kernel_options.smem_args is not None:
-                        self.dev.copy_shared_memory_args(
-                            util.get_smem_args(kernel_options.smem_args, params)
-                        )
+                        self.dev.copy_shared_memory_args(util.get_smem_args(kernel_options.smem_args, params))
                     # add constant memory arguments to compiled module
                     if kernel_options.cmem_args is not None:
                         self.dev.copy_constant_memory_args(kernel_options.cmem_args)
@@ -601,12 +579,8 @@ class DeviceInterface(object):
                 # test kernel for correctness
                 if func and (to.answer or to.verify or self.output_observers):
                     start_verification = time.perf_counter()
-                    self.check_kernel_output(
-                        func, gpu_args, instance, to.answer, to.atol, to.verify, verbose
-                    )
-                    last_verification_time = 1000 * (
-                        time.perf_counter() - start_verification
-                    )
+                    self.check_kernel_output(func, gpu_args, instance, to.answer, to.atol, to.verify, verbose)
+                    last_verification_time = 1000 * (time.perf_counter() - start_verification)
 
                 # benchmark
                 if func:
@@ -622,10 +596,7 @@ class DeviceInterface(object):
             except Exception as e:
                 # dump kernel sources to temp file
                 temp_filenames = instance.prepare_temp_files_for_error_msg()
-                print(
-                    "Error while compiling or benchmarking, see source files: "
-                    + " ".join(temp_filenames)
-                )
+                print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
                 raise e
 
             # clean up any temporary files, if no error occured
@@ -656,9 +627,7 @@ class DeviceInterface(object):
             ]
             error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
             if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
-                logging.debug(
-                    "compile_kernel failed due to kernel using too much shared memory"
-                )
+                logging.debug("compile_kernel failed due to kernel using too much shared memory")
                 if verbose:
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
@@ -671,7 +640,7 @@ class DeviceInterface(object):
 
     @staticmethod
     def preprocess_gpu_arguments(old_arguments, params):
-        """ Get a flat list of arguments based on the configuration given by `params` """
+        """Get a flat list of arguments based on the configuration given by `params`"""
         return _preprocess_gpu_arguments(old_arguments, params)
 
     def copy_shared_memory_args(self, smem_args):
@@ -707,9 +676,7 @@ class DeviceInterface(object):
         )
         if np.prod(threads) > self.dev.max_threads:
             if verbose:
-                print(
-                    f"skipping config {util.get_instance_string(params)} reason: too many threads per block"
-                )
+                print(f"skipping config {util.get_instance_string(params)} reason: too many threads per block")
             return util.InvalidConfig()
 
         # obtain the kernel_string and prepare additional files, if any
@@ -728,7 +695,7 @@ class DeviceInterface(object):
         # Preprocess GPU arguments. Require for handling `Tunable` arguments
         arguments = _preprocess_gpu_arguments(kernel_options.arguments, params)
 
-        #collect everything we know about this instance and return it
+        # collect everything we know about this instance and return it
         return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, arguments)
 
     def get_environment(self):
@@ -775,12 +742,8 @@ class DeviceInterface(object):
         try:
             self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid)
         except Exception as e:
-            if "too many resources requested for launch" in str(
-                e
-            ) or "OUT_OF_RESOURCES" in str(e):
-                logging.debug(
-                    "ignoring runtime failure due to too many resources required"
-                )
+            if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
+                logging.debug("ignoring runtime failure due to too many resources required")
                 return False
             else:
                 logging.debug("encountered unexpected runtime failure: " + str(e))
@@ -789,7 +752,7 @@ class DeviceInterface(object):
 
 
 def _preprocess_gpu_arguments(old_arguments, params):
-    """ Get a flat list of arguments based on the configuration given by `params` """
+    """Get a flat list of arguments based on the configuration given by `params`"""
     new_arguments = []
 
     for argument in old_arguments:
@@ -806,15 +769,11 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
 
     # first check if the length is the same
     if len(instance.arguments) != len(answer):
-        raise TypeError(
-            "The length of argument list and provided results do not match."
-        )
+        raise TypeError("The length of argument list and provided results do not match.")
     # for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
-            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(
-                arg, (np.ndarray, cp.ndarray)
-            ):
+            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
                 if answer[i].dtype != arg.dtype:
                     raise TypeError(
                         f"Element {i} of the expected results list is not of the same dtype as the kernel output: "
@@ -862,16 +821,14 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                     )
             else:
                 # either answer[i] and argument have different types or answer[i] is not a numpy type
-                if not isinstance(
-                    answer[i], (np.ndarray, cp.ndarray, torch.Tensor)
-                ) or not isinstance(answer[i], np.number):
+                if not isinstance(answer[i], (np.ndarray, cp.ndarray, torch.Tensor)) or not isinstance(
+                    answer[i], np.number
+                ):
                     raise TypeError(
                         f"Element {i} of expected results list is not a numpy/cupy ndarray, torch Tensor or numpy scalar."
                     )
                 else:
-                    raise TypeError(
-                        f"Element {i} of expected results list and kernel arguments have different types."
-                    )
+                    raise TypeError(f"Element {i} of expected results list and kernel arguments have different types.")
 
     def _ravel(a):
         if hasattr(a, "ravel") and len(a.shape) > 1:
@@ -891,26 +848,15 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             expected = _flatten(expected)
             if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
                 output_test = cp.allclose(expected, result, atol=atol)
-            elif isinstance(expected, torch.Tensor) and isinstance(
-                result, torch.Tensor
-            ):
+            elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
                 output_test = torch.allclose(expected, result, atol=atol)
             else:
                 output_test = np.allclose(expected, result, atol=atol)
 
             if not output_test and verbose:
-                print(
-                    "Error: "
-                    + util.get_config_string(instance.params)
-                    + " detected during correctness check"
-                )
-                print(
-                    "this error occured when checking value of the %oth kernel argument"
-                    % (i,)
-                )
-                print(
-                    "Printing kernel output and expected result, set verbose=False to suppress this debug print"
-                )
+                print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
+                print("this error occured when checking value of the %oth kernel argument" % (i,))
+                print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
                 np.set_printoptions(edgeitems=50)
                 print("Kernel output:")
                 print(result)
@@ -945,11 +891,7 @@ def apply_template_typenames(type_list, templated_typenames):
     def replace_typename_token(matchobj):
         """function for a whitespace preserving token regex replace"""
         # replace only the match, leaving the whitespace around it as is
-        return (
-            matchobj.group(1)
-            + templated_typenames[matchobj.group(2)]
-            + matchobj.group(3)
-        )
+        return matchobj.group(1) + templated_typenames[matchobj.group(2)] + matchobj.group(3)
 
     for i, arg_type in enumerate(type_list):
         for k, v in templated_typenames.items():
@@ -980,9 +922,7 @@ def wrap_templated_kernel(kernel_string, kernel_name):
     # relatively strict regex that does not allow nested template parameters like vector<TF>
     # within the template parameter list
     regex = (
-        r"template\s*<([^>]*?)>\s*__global__\s+void\s+(__launch_bounds__\([^\)]+?\)\s+)?"
-        + name
-        + r"\s*\((.*?)\)\s*\{"
+        r"template\s*<([^>]*?)>\s*__global__\s+void\s+(__launch_bounds__\([^\)]+?\)\s+)?" + name + r"\s*\((.*?)\)\s*\{"
     )
     match = re.search(regex, kernel_string, re.S)
     if not match:
@@ -990,15 +930,11 @@ def wrap_templated_kernel(kernel_string, kernel_name):
 
     template_parameters = match.group(1).split(",")
     argument_list = match.group(3).split(",")
-    argument_list = [
-        s.strip() for s in argument_list
-    ]  # remove extra whitespace around 'type name' strings
+    argument_list = [s.strip() for s in argument_list]  # remove extra whitespace around 'type name' strings
 
     type_list, name_list = split_argument_list(argument_list)
 
-    templated_typenames = get_templated_typenames(
-        template_parameters, template_arguments
-    )
+    templated_typenames = get_templated_typenames(template_parameters, template_arguments)
     apply_template_typenames(type_list, templated_typenames)
 
     # replace __global__ with __device__ in the templated kernel definition
@@ -1012,9 +948,7 @@ def wrap_templated_kernel(kernel_string, kernel_name):
         launch_bounds = match.group(2)
 
     # generate code for the compile-time template instantiation
-    template_instantiation = (
-        f"template __device__ void {kernel_name}(" + ", ".join(type_list) + ");\n"
-    )
+    template_instantiation = f"template __device__ void {kernel_name}(" + ", ".join(type_list) + ");\n"
 
     # generate code for the wrapper kernel
     new_arg_list = ", ".join([" ".join((a, b)) for a, b in zip(type_list, name_list)])

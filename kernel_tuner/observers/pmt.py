@@ -49,11 +49,9 @@ class PMTObserver(BenchmarkObserver):
     def __init__(self, observable=None, use_continuous_observer=False, continuous_duration=1):
         if not pmt:
             raise ImportError("could not import pmt")
-        
+
         # needed for re-initializing observer on ray actor
-        self.init_arguments = {
-            "observable": observable
-        }
+        self.init_arguments = {"observable": observable}
 
         # User specifices a dictonary of platforms and corresponding device
         if type(observable) is dict:
@@ -111,18 +109,19 @@ class PMTObserver(BenchmarkObserver):
 class PMTContinuousObserver(ContinuousObserver):
     """Generic observer that measures power while and continuous benchmarking.
 
-        To support continuous benchmarking an Observer should support:
-        a .read_power() method, which the ContinuousObserver can call to read power in Watt
+    To support continuous benchmarking an Observer should support:
+    a .read_power() method, which the ContinuousObserver can call to read power in Watt
     """
+
     def before_start(self):
-        """ Override default method in ContinuousObserver """
+        """Override default method in ContinuousObserver"""
         pass
 
     def after_start(self):
         self.parent.after_start()
 
     def during(self):
-        """ Override default method in ContinuousObserver """
+        """Override default method in ContinuousObserver"""
         pass
 
     def after_finish(self):

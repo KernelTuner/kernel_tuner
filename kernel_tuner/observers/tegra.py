@@ -83,11 +83,11 @@ class tegra:
         # Iterate over all channels in the of_node dir of the power path to
         # find the channel which holds GPU power information
         for channel_dir in Path(self.gpu_power_path + "/of_node/").iterdir():
-            if("channel@" in channel_dir.name):
+            if "channel@" in channel_dir.name:
                 with open(channel_dir / Path("label")) as fp:
                     channel_label = fp.read().strip()
                 if "GPU" in channel_label:
-                    return str(int(channel_dir.name[-1])+1)
+                    return str(int(channel_dir.name[-1]) + 1)
 
         # If this statement is reached, no channel for the GPU was found
         raise FileNotFoundError("No channel found with GPU power readings")
@@ -103,12 +103,7 @@ class tegra:
         if value not in (0, 1):
             raise ValueError(f"Illegal governor value {value}, must be 0 or 1")
         full_path = self.dev_path / Path("device/railgate_enable")
-        args = [
-            "sudo",
-            "sh",
-            "-c",
-            f"echo {value} > {str(full_path)}"
-        ]
+        args = ["sudo", "sh", "-c", f"echo {value} > {str(full_path)}"]
         subprocess.run(args, check=True)
 
     def _read_clock_file(self, fname):
@@ -132,12 +127,7 @@ class tegra:
             raise ValueError(f"Illegal frequency value {value}, must be one of {self.supported_gr_clocks}")
 
         full_path = self.dev_path / Path(fname)
-        args = [
-            "sudo",
-            "sh",
-            "-c",
-            f"echo {value} > {str(full_path)}"
-        ]
+        args = ["sudo", "sh", "-c", f"echo {value} > {str(full_path)}"]
         subprocess.run(args, check=True)
 
     @property
@@ -157,8 +147,8 @@ class tegra:
             self._write_clock_file("min_freq", new_clock)
             self._write_clock_file("max_freq", new_clock)
         # wait for the new clock to be applied
-        while (self._read_clock_file("cur_freq") != new_clock):
-            time.sleep(.001)
+        while self._read_clock_file("cur_freq") != new_clock:
+            time.sleep(0.001)
 
     def reset_clock(self):
         """Reset the core clock frequency to the original values"""
@@ -180,9 +170,13 @@ class tegra:
     def read_gpu_power(self):
         """Read the current and voltage to calculate and return the power int watt"""
 
-        result_cur = subprocess.run(["sudo", "cat", f"{self.gpu_power_path}/curr{self.gpu_channel}_input"], capture_output=True, text=True)
+        result_cur = subprocess.run(
+            ["sudo", "cat", f"{self.gpu_power_path}/curr{self.gpu_channel}_input"], capture_output=True, text=True
+        )
         current = int(result_cur.stdout.strip()) / 1000
-        result_vol = subprocess.run(["sudo", "cat", f"{self.gpu_power_path}/in{self.gpu_channel}_input"], capture_output=True, text=True)
+        result_vol = subprocess.run(
+            ["sudo", "cat", f"{self.gpu_power_path}/in{self.gpu_channel}_input"], capture_output=True, text=True
+        )
         voltage = int(result_vol.stdout.strip()) / 1000
 
         return current * voltage
@@ -200,13 +194,7 @@ class TegraObserver(BenchmarkObserver):
 
     """
 
-    def __init__(
-        self,
-        observables,
-        save_all=False,
-        power_path="",
-        temp_path=""
-    ):
+    def __init__(self, observables, save_all=False, power_path="", temp_path=""):
         """Create a TegraObserver"""
         self.tegra = tegra(power_path=power_path, temp_path=temp_path)
         self.save_all = save_all
@@ -233,18 +221,12 @@ class TegraObserver(BenchmarkObserver):
         for obs in self.observables:
             self.results[obs + "s"] = []
 
-        self.during_obs = [
-            obs
-            for obs in observables
-            if obs in ["core_freq", "tegra_temp"]
-        ]
+        self.during_obs = [obs for obs in observables if obs in ["core_freq", "tegra_temp"]]
 
         self.iteration = {obs: [] for obs in self.during_obs}
 
-
     def read_power(self):
         return self.tegra.read_gpu_power()
-
 
     def before_start(self):
         # clear results of the observables for next measurement

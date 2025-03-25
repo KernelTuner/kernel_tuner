@@ -12,7 +12,9 @@ from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics,
 class SequentialRunner(Runner):
     """SequentialRunner is used for tuning with a single process/thread."""
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, cache_manager=None, dev=None):
+    def __init__(
+        self, kernel_source, kernel_options, device_options, iterations, observers, cache_manager=None, dev=None
+    ):
         """Instantiate the SequentialRunner.
 
         :param kernel_source: The kernel source
@@ -35,8 +37,12 @@ class SequentialRunner(Runner):
         :param cache_manager: Cache manager instance. Defaults to None.
         :type cache_manager: kernel_tuner.runners.ray.cache_manager.CacheManager, optional
         """
-        #detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options) if dev is None else dev
+        # detect language and create high-level device interface
+        self.dev = (
+            DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
+            if dev is None
+            else dev
+        )
 
         self.units = self.dev.units
         self.quiet = device_options.quiet
@@ -47,12 +53,12 @@ class SequentialRunner(Runner):
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
         self.kernel_options = kernel_options
-        self.device_options = device_options # needed for the ensemble strategy down the line
-        self.iterations = iterations # needed for the ensemble strategy down the line
-        self.observers = observers # needed for the ensemble strategy down the line
+        self.device_options = device_options  # needed for the ensemble strategy down the line
+        self.iterations = iterations  # needed for the ensemble strategy down the line
+        self.observers = observers  # needed for the ensemble strategy down the line
         self.cache_manager = cache_manager
 
-        #move data to the GPU
+        # move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
     def get_environment(self, tuning_options):
@@ -73,7 +79,7 @@ class SequentialRunner(Runner):
         :rtype: dict())
 
         """
-        logging.debug('sequential runner started for ' + self.kernel_options.kernel_name)
+        logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
 
         results = []
 
@@ -89,33 +95,46 @@ class SequentialRunner(Runner):
             cache_result = self.config_in_cache(x_int, tuning_options)
             if cache_result:
                 params.update(cache_result)
-                params['compile_time'] = 0
-                params['verification_time'] = 0
-                params['benchmark_time'] = 0
+                params["compile_time"] = 0
+                params["verification_time"] = 0
+                params["benchmark_time"] = 0
             else:
                 # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
                 if not self.warmed_up:
                     warmup_time = perf_counter()
-                    self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
+                    self.dev.compile_and_benchmark(
+                        self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
+                    )
                     self.warmed_up = True
                     warmup_time = 1e3 * (perf_counter() - warmup_time)
 
-                result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
+                result = self.dev.compile_and_benchmark(
+                    self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
+                )
 
                 params.update(result)
 
                 if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
-                    logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
+                    logging.debug("kernel configuration was skipped silently due to compile or runtime failure")
 
             # only compute metrics on configs that have not errored
             if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
-            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time) 
-            params['strategy_time'] = self.last_strategy_time
-            params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
-            params['timestamp'] = str(datetime.now(timezone.utc))
+            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
+            params["strategy_time"] = self.last_strategy_time
+            params["framework_time"] = max(
+                total_time
+                - (
+                    params["compile_time"]
+                    + params["verification_time"]
+                    + params["benchmark_time"]
+                    + params["strategy_time"]
+                ),
+                0,
+            )
+            params["timestamp"] = str(datetime.now(timezone.utc))
             self.start_time = perf_counter()
 
             if result:
@@ -131,7 +150,7 @@ class SequentialRunner(Runner):
         return results
 
     def config_in_cache(self, x_int, tuning_options):
-        if self.cache_manager and tuning_options.strategy_options['check_and_retrieve']:
+        if self.cache_manager and tuning_options.strategy_options["check_and_retrieve"]:
             return ray.get(self.cache_manager.check_and_retrieve.remote(x_int))
         elif tuning_options.cache and x_int in tuning_options.cache:
             return tuning_options.cache[x_int]

@@ -34,7 +34,7 @@ except ImportError:
 try:
     from hip._util.types import DeviceArray
 except ImportError:
-    Pointer = Exception # using Exception here as a type that will never be among kernel arguments
+    Pointer = Exception  # using Exception here as a type that will never be among kernel arguments
     DeviceArray = Exception
 
 
@@ -157,7 +157,9 @@ class CompilerFunctions(CompilerBackend):
 
         for i, arg in enumerate(arguments):
             if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg)):
-                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}")
+                raise TypeError(
+                    f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}"
+                )
             dtype_str = arg.typestr if isinstance(arg, DeviceArray) else str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
@@ -288,7 +290,7 @@ class CompilerFunctions(CompilerBackend):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                check=True
+                check=True,
             )
 
             subprocess.run(
@@ -299,7 +301,7 @@ class CompilerFunctions(CompilerBackend):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                check=True
+                check=True,
             )
 
             self.lib = np.ctypeslib.load_library(filename, ".")
@@ -439,7 +441,7 @@ class CompilerFunctions(CompilerBackend):
         """unload the previously loaded shared library"""
         if self.lib is None:
             return
-        
+
         if not self.using_openmp and not self.using_openacc:
             # this if statement is necessary because shared libraries that use
             # OpenMP will core dump when unloaded, this is a well-known issue with OpenMP

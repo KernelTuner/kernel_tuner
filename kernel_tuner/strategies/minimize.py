@@ -16,8 +16,8 @@ supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "
 
 _options = dict(method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "L-BFGS-B"))
 
-def tune(searchspace: Searchspace, runner, tuning_options):
 
+def tune(searchspace: Searchspace, runner, tuning_options):
     method = get_options(tuning_options.strategy_options, _options)[0]
 
     # scale variables in x to make 'eps' relevant for multiple variables

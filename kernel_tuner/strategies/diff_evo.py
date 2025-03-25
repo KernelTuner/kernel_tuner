@@ -6,16 +6,27 @@ from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
-supported_methods = ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"]
+supported_methods = [
+    "best1bin",
+    "best1exp",
+    "rand1exp",
+    "randtobest1exp",
+    "best2exp",
+    "rand2exp",
+    "randtobest1bin",
+    "best2bin",
+    "rand2bin",
+    "rand1bin",
+]
 
-_options = dict(method=(f"Creation method for new population, any of {supported_methods}", "best1bin"),
-                       popsize=("Population size", 20),
-                       maxiter=("Number of generations", 100))
+_options = dict(
+    method=(f"Creation method for new population, any of {supported_methods}", "best1bin"),
+    popsize=("Population size", 20),
+    maxiter=("Number of generations", 100),
+)
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
-
-
     method, popsize, maxiter = common.get_options(tuning_options.strategy_options, _options)
 
     # build a bounds array as needed for the optimizer
@@ -28,8 +39,16 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # call the differential evolution optimizer
     opt_result = None
     try:
-        opt_result = differential_evolution(cost_func, bounds, maxiter=maxiter, popsize=popsize, init=population,
-                                        polish=False, strategy=method, disp=tuning_options.verbose)
+        opt_result = differential_evolution(
+            cost_func,
+            bounds,
+            maxiter=maxiter,
+            popsize=popsize,
+            init=population,
+            polish=False,
+            strategy=method,
+            disp=tuning_options.verbose,
+        )
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)

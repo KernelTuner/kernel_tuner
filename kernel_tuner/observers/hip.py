@@ -14,7 +14,9 @@ class HipRuntimeObserver(BenchmarkObserver):
 
     def __init__(self, dev):
         if not hip or not hiprtc:
-            raise ImportError("Unable to import HIP Python, or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-hip-python.")
+            raise ImportError(
+                "Unable to import HIP Python, or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-hip-python."
+            )
 
         self.dev = dev
         self.stream = dev.stream

@@ -5,9 +5,18 @@ from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import CostFunc
 
 
-def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, tuning_options,
-                   cost_func: CostFunc, restart=True, randomize=True, order=None):
-    """ Hillclimbing search until max_fevals is reached or no improvement is found
+def base_hillclimb(
+    base_sol: tuple,
+    neighbor_method: str,
+    max_fevals: int,
+    searchspace: Searchspace,
+    tuning_options,
+    cost_func: CostFunc,
+    restart=True,
+    randomize=True,
+    order=None,
+):
+    """Hillclimbing search until max_fevals is reached or no improvement is found
 
     Base hillclimber that evaluates neighbouring solutions in a random or fixed order
     and possibly immediately moves to the neighbour if it is an improvement.

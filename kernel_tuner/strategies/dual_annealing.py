@@ -6,23 +6,22 @@ from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc, setup_method_arguments, setup_method_options
 
-supported_methods = ['COBYLA', 'L-BFGS-B', 'SLSQP', 'CG', 'Powell', 'Nelder-Mead', 'BFGS', 'trust-constr']
+supported_methods = ["COBYLA", "L-BFGS-B", "SLSQP", "CG", "Powell", "Nelder-Mead", "BFGS", "trust-constr"]
 
 _options = dict(method=(f"Local optimization method to use, choose any from {supported_methods}", "Powell"))
 
-def tune(searchspace: Searchspace, runner, tuning_options):
 
+def tune(searchspace: Searchspace, runner, tuning_options):
     method = common.get_options(tuning_options.strategy_options, _options)[0]
 
-    #scale variables in x to make 'eps' relevant for multiple variables
+    # scale variables in x to make 'eps' relevant for multiple variables
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
     bounds, x0, _ = cost_func.get_bounds_x0_eps()
 
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
-    kwargs['options'] = options
-
+    kwargs["options"] = options
 
     minimizer_kwargs = {}
     minimizer_kwargs["method"] = method

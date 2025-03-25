@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import time
 import numpy as np
 
+
 class BenchmarkObserver(ABC):
     """Base class for Benchmark Observers"""
 
@@ -47,9 +48,10 @@ class IterationObserver(BenchmarkObserver):
 class ContinuousObserver(BenchmarkObserver):
     """Generic observer that measures power while and continuous benchmarking.
 
-        To support continuous benchmarking an Observer should support:
-        a .read_power() method, which the ContinuousObserver can call to read power in Watt
+    To support continuous benchmarking an Observer should support:
+    a .read_power() method, which the ContinuousObserver can call to read power in Watt
     """
+
     def __init__(self, name, observables, parent, continuous_duration=1):
         self.parent = parent
         self.name = name
@@ -89,8 +91,7 @@ class ContinuousObserver(BenchmarkObserver):
         timestamp = time.perf_counter() - self.t0
         # only store the result if we get a new measurement from the GPU
         if len(self.power_readings) == 0 or (
-            self.power_readings[-1][1] != power_usage
-            or timestamp - self.power_readings[-1][0] > 0.01
+            self.power_readings[-1][1] != power_usage or timestamp - self.power_readings[-1][0] > 0.01
         ):
             self.power_readings.append([timestamp, power_usage])
 
@@ -118,6 +119,7 @@ class ContinuousObserver(BenchmarkObserver):
             results["power_readings"] = self.power_readings
         return results
 
+
 class OutputObserver(BenchmarkObserver):
     """Observer that can verify or measure something about the output produced by a kernel."""
 
@@ -127,6 +129,7 @@ class OutputObserver(BenchmarkObserver):
         provided are the `answer` as passed `tune_kernel` and the `output` produced by the kernel
         """
         pass
+
 
 class PrologueObserver(BenchmarkObserver):
     """Observer that measures something in a seperate kernel invocation prior to the normal benchmark."""
