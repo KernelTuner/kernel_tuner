@@ -41,8 +41,8 @@ def vector_add():
 # skip some strategies if their dependencies are not installed
 strategies = []
 for s in strategy_map.keys():
-    if 'gpytorch' in s.lower() or 'botorch_alt' in s.lower() or 'bayes_opt_old' in s.lower():
-        continue
+    if 'gpytorch' in s.lower() or 'botorch_alt' in s.lower():
+        continue    # TODO issue warning for uninstalled dependencies?
     if 'gpytorch' in s.lower():
         strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_gpytorch))
     elif 'botorch' in s.lower():
