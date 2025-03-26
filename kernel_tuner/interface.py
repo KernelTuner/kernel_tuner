@@ -50,11 +50,6 @@ except ImportError:
 from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
-    bayes_opt_alt_BOTorch,
-    bayes_opt_BOTorch,
-    bayes_opt_GPyTorch,
-    bayes_opt_GPyTorch_lean,
-    bayes_opt_old,
     brute_force,
     diff_evo,
     dual_annealing,
@@ -85,12 +80,7 @@ strategy_map = {
     "pso": pso,
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt,
-    "bayes_opt_old": bayes_opt_old,
-    "bayes_opt_GPyTorch": bayes_opt_GPyTorch,
-    "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
-    "bayes_opt_BOTorch": bayes_opt_BOTorch,
-    "bayes_opt_BOTorch_alt": bayes_opt_alt_BOTorch,
+    "bayes_opt": bayes_opt
 }
 
 
@@ -886,6 +876,16 @@ def tune_kernel_T1(
     problem_size = kernelspec["ProblemSize"]
     device = kernelspec["Device"]["Name"]
     strategy = inputs["Search"]["Name"]
+    if "Attributes" in inputs["Search"]:
+        strategy_options = {}
+        for attribute in inputs["Search"]["Attributes"]:
+            strategy_options[attribute["Name"]] = attribute["Value"]
+    if "Budget" in inputs:
+        budget = inputs["Budget"][0]
+        assert budget["Type"] == "ConfigurationCount"
+        if strategy_options is None:
+            strategy_options = {}
+        strategy_options["max_fevals"] = budget["BudgetValue"]
 
     # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:
@@ -908,6 +908,8 @@ def tune_kernel_T1(
                 tune_param = eval(vals)
             else:
                 tune_param = literal_eval(vals)
+        if param["Type"] == "string":
+            tune_param = eval(param["Values"])
         if tune_param is not None:
             tune_params[param["Name"]] = tune_param
         else:

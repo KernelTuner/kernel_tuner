@@ -187,7 +187,7 @@ class BayesianOptimization():
         self.invalid_value = 1e20
         self.opt_direction = opt_direction
         if opt_direction == 'min':
-            self.worst_value = np.PINF
+            self.worst_value = np.inf
             self.argopt = np.argmin
         elif opt_direction == 'max':
             self.worst_value = np.NINF

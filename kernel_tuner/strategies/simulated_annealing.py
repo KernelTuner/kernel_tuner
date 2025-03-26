@@ -4,15 +4,15 @@ import sys
 
 import numpy as np
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
-_options = dict(T=("Starting temperature", 1.0),
-                       T_min=("End temperature", 0.001),
-                       alpha=("Alpha parameter", 0.995),
-                       maxiter=("Number of iterations within each annealing step", 1))
+_options = dict(T=("Starting temperature", 0.5),
+                       T_min=("End temperature", 0.0001),
+                       alpha=("Alpha parameter", 0.9975),
+                       maxiter=("Number of iterations within each annealing step", 2))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     # SA works with real parameter values and does not need scaling
@@ -52,7 +52,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             new_pos = neighbor(pos, searchspace)
             try:
                 new_cost = cost_func(new_pos, check_restrictions=False)
-            except util.StopCriterionReached as e:
+            except StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
                 return cost_func.results

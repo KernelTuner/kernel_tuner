@@ -2,7 +2,7 @@
 poetry.lock
 noxenv.txt
 noxsettings.toml
-hyperparamtuning/*
+hyperparamtuning*/*
 *.prof
 
 ### Python ###

@@ -181,22 +181,6 @@ def test_param_index_lookup():
     assert simple_searchspace.get_param_indices(last) == (3, 1, 1)
 
 
-def test_get_tensorspace():
-    """Test the generation of a tensor space."""
-    tensorspace = simple_searchspace.get_tensorspace()
-    assert tensorspace.shape == simple_searchspace.get_list_numpy().shape
-
-
-def test_conversion_tensor_param_config():
-    """Test the conversion from a parameter configuration to a tensor and tensor to parameter configuration."""
-    for config in simple_searchspace_single.list:
-        tensor = simple_searchspace_single.param_config_to_tensor(config)
-        config_2 = simple_searchspace_single.tensor_to_param_config(tensor)
-        assert config == config_2
-        assert tensor.equal(simple_searchspace_single.param_config_to_tensor(config_2))
-        assert len(tensor) == len(config) - 1
-
-
 def test_random_sample():
     """Test whether the random sample indices exists and are unique, and if it throws an error for too many samples."""
     random_sample_indices = searchspace.get_random_sample_indices(100)

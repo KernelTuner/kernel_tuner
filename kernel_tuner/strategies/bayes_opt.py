@@ -149,7 +149,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         if max_fevals - bo.fevals <= 0:
             raise ValueError("No function evaluations left for optimization after sampling")
         bo.optimize(max_fevals)
-    except util.StopCriterionReached as e:
+    except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
 
@@ -238,7 +238,7 @@ class BayesianOptimization:
         self.invalid_value = 1e20
         self.opt_direction = opt_direction
         if opt_direction == "min":
-            self.worst_value = np.PINF
+            self.worst_value = np.inf
             self.argopt = np.argmin
         elif opt_direction == "max":
             self.worst_value = np.NINF
@@ -265,7 +265,7 @@ class BayesianOptimization:
         self.__visited_num = 0
         self.__visited_valid_num = 0
         self.__visited_searchspace_indices = [False] * self.searchspace_size
-        self.__observations = [np.NaN] * self.searchspace_size
+        self.__observations = [np.nan] * self.searchspace_size
         self.__valid_observation_indices = [False] * self.searchspace_size
         self.__valid_params = list()
         self.__valid_observations = list()
@@ -314,7 +314,7 @@ class BayesianOptimization:
 
     def is_valid(self, observation: float) -> bool:
         """Returns whether an observation is valid."""
-        return not (observation is None or observation == self.invalid_value or observation == np.NaN)
+        return not (observation is None or observation == self.invalid_value or observation == np.nan)
 
     def get_af_by_name(self, name: str):
         """Get the basic acquisition functions by their name."""

@@ -61,8 +61,16 @@ class CostFunc:
     """Class encapsulating the CostFunc method."""
 
     def __init__(
-        self, searchspace: Searchspace, tuning_options, runner, *, 
-        scaling=False, snap=True, encode_non_numeric=False, return_invalid=False, return_raw=None
+        self,
+        searchspace: Searchspace,
+        tuning_options,
+        runner,
+        *,
+        scaling=False,
+        snap=True,
+        encode_non_numeric=False,
+        return_invalid=False,
+        return_raw=None,
     ):
         """An abstract method to handle evaluation of configurations.
 
@@ -75,7 +83,7 @@ class CostFunc:
             encode_non_numeric: whether to externally encode non-numeric parameter values. Defaults to False.
             return_invalid: whether to return the util.ErrorConfig of an invalid configuration. Defaults to False.
             return_raw: returns (result, results[raw]). Key inferred from objective if set to True. Defaults to None.
-        """        
+        """
         self.runner = runner
         self.snap = snap
         self.scaling = scaling
@@ -100,7 +108,9 @@ class CostFunc:
             for i, param_values in enumerate(self.searchspace.params_values):
                 encoded_values = param_values
                 if not all(isinstance(v, numbers.Real) for v in param_values):
-                    encoded_values = np.arange(len(param_values))
+                    encoded_values = np.arange(
+                        len(param_values)
+                    )  # NOTE when changing this, adjust the rounding in encoded_to_params
                     self._map_param_to_encoded[i] = dict(zip(param_values, encoded_values))
                     self._map_encoded_to_param[i] = dict(zip(encoded_values, param_values))
                 self.encoded_params_values.append(encoded_values)
@@ -215,17 +225,29 @@ class CostFunc:
         for values in self.encoded_params_values if self.encode_non_numeric else self.searchspace.params_values:
             bounds.append((min(values), max(values)))
         return bounds
-    
+
     def encoded_to_params(self, config):
         """Convert from an encoded configuration to the real parameters."""
         if not self.encode_non_numeric:
             raise ValueError("'encode_non_numeric' must be set to true to use this function.")
         params = []
         for i, v in enumerate(config):
-            params.append(self._map_encoded_to_param[i][v] if i in self._map_encoded_to_param else v)
-        assert len(params) == len(config)            
+            # params.append(self._map_encoded_to_param[i][v] if i in self._map_encoded_to_param else v)
+            if i in self._map_encoded_to_param:
+                encoding = self._map_encoded_to_param[i]
+                if v in encoding:
+                    param = encoding[v]
+                elif isinstance(v, float):
+                    # try to resolve a rounding error due to floating point arithmetic / continous solver
+                    param = encoding[round(v)]
+                else:
+                    raise ValueError(f"Encoded value {v} not found in {self._map_encoded_to_param[i]}")
+            else:
+                param = v
+            params.append(param)
+        assert len(params) == len(config)
         return params
-    
+
     def params_to_encoded(self, config):
         """Convert from a parameter configuration to the encoded configuration."""
         if not self.encode_non_numeric:
@@ -233,7 +255,7 @@ class CostFunc:
         encoded = []
         for i, v in enumerate(config):
             encoded.append(self._map_param_to_encoded[i][v] if i in self._map_param_to_encoded else v)
-        assert len(encoded) == len(config)            
+        assert len(encoded) == len(config)
         return encoded
 
 

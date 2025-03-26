@@ -103,7 +103,7 @@ if __name__ == "__main__":
         hyperparams = {
             'popsize': [10, 20, 30],
             'maxiter': [50, 100, 150],
-            'w': [0.25, 0.5, 0.75],
+            # 'w': [0.25, 0.5, 0.75],   # disabled due to low influence according to KW-test (H=0.0215) and mutual information
             'c1': [1.0, 2.0, 3.0],
             'c2': [0.5, 1.0, 1.5]
         }
@@ -111,8 +111,8 @@ if __name__ == "__main__":
         hyperparams = {
             'neighbor': ['Hamming', 'adjacent'],
             'restart': [True, False],
-            'no_improvement': [1, 10, 25, 33, 50, 66, 75, 100, 200],
-            'random_walk': [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
+            'no_improvement': [10, 25, 50, 75],
+            'random_walk': [0.1, 0.2, 0.3, 0.4, 0.5]
         }
     elif strategy_to_tune.lower() == "dual_annealing":
         hyperparams = {
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     elif strategy_to_tune.lower() == "basinhopping":
         hyperparams = {
             'method': ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"],
-            'T': [0.5, 1.0, 1.5],
+            'T': [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5],
         }
     elif strategy_to_tune.lower() == "genetic_algorithm":
         hyperparams = {
@@ -136,11 +136,26 @@ if __name__ == "__main__":
             'maxiter': [50, 100, 150],
             'mutation_chance': [5, 10, 20]
         }
-    elif strategy_to_tune.lower() == "mls":
+    elif strategy_to_tune.lower() == "greedy_mls":
         hyperparams = {
             'neighbor': ["Hamming", "adjacent"],
             'restart': [True, False],
             'randomize': [True, False]
+        }
+    elif strategy_to_tune.lower() == "simulated_annealing":
+        hyperparams = {
+            'T': [0.5, 1.0, 1.5],
+            'T_min': [0.0001, 0.001, 0.01],
+            'alpha': [0.9925, 0.995, 0.9975],
+            'maxiter': [1, 2, 3]
+        }
+    elif strategy_to_tune.lower() == "bayes_opt":
+        hyperparams = {
+            # 'covariancekernel': ["constantrbf", "rbf", "matern32", "matern52"],
+            'covariancelengthscale': [1.0, 1.5, 2.0],
+            'method': ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"],
+            'samplingmethod': ["random", "LHS"],
+            'popsize': [10, 20, 30]
         }
     else:
         raise ValueError(f"Invalid argument {strategy_to_tune=}")

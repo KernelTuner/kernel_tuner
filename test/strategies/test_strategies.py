@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import kernel_tuner
-from kernel_tuner import util
+from kernel_tuner.util import InvalidConfig
 from kernel_tuner.interface import strategy_map
 
 from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch
@@ -75,7 +75,7 @@ def test_strategies(vector_add, strategy):
         unique_results = {}
         for result in results:
             x_int = ",".join([str(v) for k, v in result.items() if k in tune_params])
-            if not isinstance(result["time"], util.InvalidConfig):
+            if not isinstance(result["time"], InvalidConfig):
                 unique_results[x_int] = result["time"]
         assert len(unique_results) <= filter_options["max_fevals"]
 
