@@ -860,10 +860,8 @@ class BayesianOptimization:
         while self.fevals < max_fevals:
             aqfs = self.multi_afs
             # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
-            if (
-                last_prediction_time * predict_eval_ratio <= last_eval_time
-                or last_prediction_counter >= predict_eval_ratio
-            ):
+            fit_observations = last_prediction_time * predict_eval_ratio <= last_eval_time or last_prediction_counter >= predict_eval_ratio
+            if fit_observations:
                 last_prediction_counter = 0
                 pred_start = time.perf_counter()
                 if last_eval_time > 0.0:
