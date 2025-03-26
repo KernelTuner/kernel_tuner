@@ -9,8 +9,9 @@ from kernel_tuner.util import get_gpu_id, get_gpu_type
 
 
 @ray.remote
-class RemoteActor:
+class RemoteActor(object):
     """Remote actor for the parallel tuner."""
+
     def __init__(
         self,
         kernel_source,
@@ -61,7 +62,7 @@ class RemoteActor:
         if self.cache_manager is None:
             self.cache_manager = cache_manager
 
-    def get_cache_magaer(self):
+    def get_cache_manager(self):
         return self.cache_manager
 
     def init_runner(self):
@@ -94,5 +95,6 @@ class RemoteActor:
             else:
                 self.observers.append(observer(**arguments))
 
-    def get_gpu_type(self, lang):
+    @staticmethod
+    def get_gpu_type(lang):
         return get_gpu_type(lang)

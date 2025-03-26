@@ -10,9 +10,11 @@ from .context import skip_if_no_hip
 
 try:
     from hip import hip, hiprtc
+
     hip_present = True
 except ImportError:
     pass
+
 
 def hip_check(call_result):
     err = call_result[0]
@@ -24,6 +26,7 @@ def hip_check(call_result):
     elif isinstance(err, hiprtc.hiprtcResult) and err != hiprtc.hiprtcResult.HIPRTC_SUCCESS:
         raise RuntimeError(str(err))
     return result
+
 
 @pytest.fixture
 def env():
@@ -48,6 +51,7 @@ def env():
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
+
 @skip_if_no_hip
 def test_ready_argument_list():
     size = 1000
@@ -66,6 +70,7 @@ def test_ready_argument_list():
     assert isinstance(gpu_args[3], ctypes.c_bool)
     assert gpu_args[1].value == a
     assert gpu_args[3].value == c
+
 
 @skip_if_no_hip
 def test_compile():
@@ -87,6 +92,7 @@ def test_compile():
     except Exception as e:
         pytest.fail("Did not expect any exception:" + str(e))
 
+
 @skip_if_no_hip
 def test_memset_and_memcpy_dtoh():
     a = [1, 2, 3, 4]
@@ -101,6 +107,7 @@ def test_memset_and_memcpy_dtoh():
 
     assert all(output == np.full(4, 4))
 
+
 @skip_if_no_hip
 def test_memcpy_htod():
     a = [1, 2, 3, 4]
@@ -113,6 +120,7 @@ def test_memcpy_htod():
     dev.memcpy_dtoh(output, x_d)
 
     assert all(output == x)
+
 
 @skip_if_no_hip
 def test_copy_constant_memory_args():
@@ -133,7 +141,7 @@ def test_copy_constant_memory_args():
     kernel = dev.compile(kernel_instance)
 
     my_constant_data = np.full(100, 23).astype(np.float32)
-    cmem_args = {'my_constant_data': my_constant_data}
+    cmem_args = {"my_constant_data": my_constant_data}
     dev.copy_constant_memory_args(cmem_args)
 
     output = np.full(100, 0).astype(np.float32)
@@ -147,16 +155,12 @@ def test_copy_constant_memory_args():
 
     assert (my_constant_data == output).all()
 
+
 @skip_if_no_hip
 def test_smem_args(env):
-    result, _ = tune_kernel(*env,
-                          smem_args=dict(size="block_size_x*4"),
-                          verbose=True, lang="HIP")
+    result, _ = tune_kernel(*env, smem_args=dict(size="block_size_x*4"), verbose=True, lang="HIP")
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])
-    result, _ = tune_kernel(
-        *env,
-        smem_args=dict(size=lambda p: p['block_size_x'] * 4),
-        verbose=True, lang="HIP")
+    result, _ = tune_kernel(*env, smem_args=dict(size=lambda p: p["block_size_x"] * 4), verbose=True, lang="HIP")
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])

@@ -47,9 +47,7 @@ def test_tunable_precision():
     from kernel_tuner.accuracy import TunablePrecision
 
     inputs = np.array([1, 2, 3], dtype=np.float64)
-    x = TunablePrecision(
-        "foo", inputs, dict(float16=np.half, float32=np.float32, float64=np.double)
-    )
+    x = TunablePrecision("foo", inputs, dict(float16=np.half, float32=np.float32, float64=np.double))
 
     assert np.all(x(dict(foo="float16")) == inputs)
     assert x(dict(foo="float16")).dtype == np.half

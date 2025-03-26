@@ -56,7 +56,7 @@ schema_v1_0 = {
 }
 
 
-class TuneResults:
+class TuneResults(object):
     """Object to represent the tuning results stored to file"""
 
     def __init__(self, results_filename):

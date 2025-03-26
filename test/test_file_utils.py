@@ -5,6 +5,7 @@ import ctypes
 from jsonschema import validate
 import numpy as np
 import warnings
+
 try:
     from hip import hip
 except:
@@ -64,6 +65,7 @@ def test_store_metadata_file():
         # clean up
         delete_temp_file(filename)
 
+
 def hip_check(call_result):
     err = call_result[0]
     result = call_result[1:]
@@ -72,6 +74,7 @@ def hip_check(call_result):
     if isinstance(err, hip.hipError_t) and err != hip.hipError_t.hipSuccess:
         raise RuntimeError(str(err))
     return result
+
 
 @skip_if_no_hip
 def test_check_argument_list_device_array():
@@ -84,12 +87,8 @@ def test_check_argument_list_device_array():
     host_array = np.ones((100,), dtype=np.float32)
     num_bytes = host_array.size * host_array.itemsize
     device_array = hip_check(hip.hipMalloc(num_bytes))
-    device_array.configure(
-        typestr="float32",
-        shape=host_array.shape,
-        itemsize=host_array.itemsize
-    )
-    
+    device_array.configure(typestr="float32", shape=host_array.shape, itemsize=host_array.itemsize)
+
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         check_argument_list("simple_kernel", float_kernel, [device_array])

@@ -109,9 +109,7 @@ class ParallelRunner(Runner):
         :returns: Results of the tuning process.
         :rtype: list of dict
         """
-        if (
-            tuning_options is None
-        ):
+        if tuning_options is None:
             # HACK as tuning_options can't be the first argument and parameter_space needs to be a default argument
             raise ValueError("tuning_options cannot be None")
 
@@ -126,7 +124,10 @@ class ParallelRunner(Runner):
             ]
             self.actors = [
                 create_actor_on_device(
-                    *runner_attributes, identifier=_id, cache_manager=self.cache_manager, simulation_mode=self.simulation_mode
+                    *runner_attributes,
+                    identifier=_id,
+                    cache_manager=self.cache_manager,
+                    simulation_mode=self.simulation_mode,
                 )
                 for _id in range(self.num_gpus)
             ]

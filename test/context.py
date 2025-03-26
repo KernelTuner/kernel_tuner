@@ -39,9 +39,7 @@ openacc_present = shutil.which("nvc++") is not None
 try:
     import cupy
 
-    cupy.cuda.Device(
-        0
-    ).attributes  # triggers exception if there are no CUDA-capable devices
+    cupy.cuda.Device(0).attributes  # triggers exception if there are no CUDA-capable devices
     cupy_present = True
 except Exception:
     cupy_present = False
@@ -55,27 +53,18 @@ except Exception:
 
 try:
     from hip import hip
+
     hip_present = True
 except ImportError:
     hip_present = False
 
-skip_if_no_pycuda = pytest.mark.skipif(
-    not pycuda_present, reason="PyCuda not installed or no CUDA device detected"
-)
+skip_if_no_pycuda = pytest.mark.skipif(not pycuda_present, reason="PyCuda not installed or no CUDA device detected")
 skip_if_no_pynvml = pytest.mark.skipif(not pynvml_present, reason="NVML not installed")
-skip_if_no_cupy = pytest.mark.skipif(
-    not cupy_present, reason="CuPy not installed or no CUDA device detected"
-)
-skip_if_no_cuda = pytest.mark.skipif(
-    not cuda_present, reason="NVIDIA CUDA not installed"
-)
-skip_if_no_opencl = pytest.mark.skipif(
-    not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected"
-)
+skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed or no CUDA device detected")
+skip_if_no_cuda = pytest.mark.skipif(not cuda_present, reason="NVIDIA CUDA not installed")
+skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected")
 skip_if_no_gcc = pytest.mark.skipif(not gcc_present, reason="No gcc on PATH")
-skip_if_no_gfortran = pytest.mark.skipif(
-    not gfortran_present, reason="No gfortran on PATH"
-)
+skip_if_no_gfortran = pytest.mark.skipif(not gfortran_present, reason="No gfortran on PATH")
 skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
 skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on PATH")
 skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")

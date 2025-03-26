@@ -9,6 +9,7 @@ from kernel_tuner.interface import strategy_map
 
 cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/../test_cache_file.json"
 
+
 @pytest.fixture
 def vector_add():
     kernel_string = """
@@ -33,21 +34,28 @@ def vector_add():
     return ["vector_add", kernel_string, size, args, tune_params]
 
 
-@pytest.mark.parametrize('strategy', strategy_map)
+@pytest.mark.parametrize("strategy", strategy_map)
 def test_strategies(vector_add, strategy):
-
     options = dict(popsize=5)
 
     print(f"testing {strategy}")
 
     if hasattr(kernel_tuner.interface.strategy_map[strategy], "_options"):
-        filter_options = {opt:val for opt, val in options.items() if opt in kernel_tuner.interface.strategy_map[strategy]._options}
+        filter_options = {
+            opt: val for opt, val in options.items() if opt in kernel_tuner.interface.strategy_map[strategy]._options
+        }
     else:
         filter_options = options
     filter_options["max_fevals"] = 10
 
-    results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
-                                         verbose=False, cache=cache_filename, simulation_mode=True)
+    results, _ = kernel_tuner.tune_kernel(
+        *vector_add,
+        strategy=strategy,
+        strategy_options=filter_options,
+        verbose=False,
+        cache=cache_filename,
+        simulation_mode=True,
+    )
 
     assert len(results) > 0
 
@@ -63,15 +71,15 @@ def test_strategies(vector_add, strategy):
 
     # check whether the returned dictionaries contain exactly the expected keys and the appropriate type
     expected_items = {
-        'block_size_x': int,
-        'time': (float, int),
-        'times': list,
-        'compile_time': (float, int),
-        'verification_time': (float, int),
-        'benchmark_time': (float, int),
-        'strategy_time': (float, int),
-        'framework_time': (float, int),
-        'timestamp': str
+        "block_size_x": int,
+        "time": (float, int),
+        "times": list,
+        "compile_time": (float, int),
+        "verification_time": (float, int),
+        "benchmark_time": (float, int),
+        "strategy_time": (float, int),
+        "framework_time": (float, int),
+        "timestamp": str,
     }
     for res in results:
         assert len(res) == len(expected_items)

@@ -53,9 +53,12 @@ class SequentialRunner(Runner):
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
         self.kernel_options = kernel_options
-        self.device_options = device_options  # needed for the ensemble strategy down the line
-        self.iterations = iterations  # needed for the ensemble strategy down the line
-        self.observers = observers  # needed for the ensemble strategy down the line
+        # needed for the ensemble strategy down the line
+        self.device_options = device_options
+        # needed for the ensemble strategy down the line
+        self.iterations = iterations
+        # needed for the ensemble strategy down the line
+        self.observers = observers
         self.cache_manager = cache_manager
 
         # move data to the GPU

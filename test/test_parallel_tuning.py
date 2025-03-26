@@ -13,6 +13,7 @@ try:
 except Exception:
     pass
 
+
 @pytest.fixture
 def env():
     kernel_string = """
@@ -35,6 +36,7 @@ def env():
     tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
 
     return ["vector_add", kernel_string, size, args, tune_params]
+
 
 @skip_if_no_pycuda
 def test_parallel_tune_kernel(env):
