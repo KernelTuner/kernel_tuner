@@ -17,6 +17,8 @@ except ImportError:
 
 
 class ScoreObserver(BenchmarkObserver):
+    """BenchmarkObserver subclass for registering the hyperparameter tuning score."""
+
     def __init__(self, dev):
         self.dev = dev
         self.scores = []
