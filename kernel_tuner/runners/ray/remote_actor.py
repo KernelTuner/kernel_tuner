@@ -18,7 +18,7 @@ class RemoteActor:
         device_options,
         iterations,
         observers_type_and_arguments,
-        id,
+        identifier,
         cache_manager=None,
         simulation_mode=False,
     ):
@@ -29,7 +29,7 @@ class RemoteActor:
         self.cache_manager = cache_manager
         self.simulation_mode = simulation_mode
         self.runner = None
-        self.id = None
+        self.identifier = None
         self._reinitialize_observers(observers_type_and_arguments)
         self.dev = (
             DeviceInterface(kernel_source, iterations=iterations, observers=self.observers, **device_options)
@@ -87,8 +87,8 @@ class RemoteActor:
         self.observers = []
         for observer, arguments in observers_type_and_arguments:
             if "device" in arguments:
-                self.id = get_gpu_id(self.kernel_source.lang) if self.id is None else self.id
-                arguments["device"] = self.id
+                self.identifier = get_gpu_id(self.kernel_source.lang) if self.identifier is None else self.identifier
+                arguments["device"] = self.identifier
             if isinstance(observer, RegisterObserver):
                 self.observers.append(RegisterObserver())
             else:
