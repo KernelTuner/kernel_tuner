@@ -31,7 +31,7 @@ invalid_value = 1e20
 
 
 class PythonFunctions(object):
-    """Class that groups the code for running and compiling C functions"""
+    """Class that groups the code for running Python"""
 
     def __init__(self, iterations=7, observers=None, parallel_mode=False, hyperparam_mode=False, show_progressbar=False):
         """instantiate PythonFunctions object used for interacting with Python code
@@ -217,59 +217,61 @@ class PythonFunctions(object):
         # print(f"In {round(benchmark_time, 3)} seconds, mean: {round(np.mean(self.benchmark_times), 3)}")
         return result
 
-        start_time = perf_counter()
-        if self.parallel_mode:
-            num_procs = max(cpu_count() - 1, 1)
-            logging.debug(f"Running benchmark in parallel on {num_procs} processors")
-            manager = Manager()
-            MRE_values = manager.list()
-            runtimes = manager.list()
-            with get_context('spawn').Pool(num_procs) as pool:    # spawn alternative is forkserver, creates a reusable server
-                args = func, args, self.params
-                MRE_values, runtimes = zip(*pool.starmap(run_kernel_and_observers, zip(iterator, repeat(args))))
-                MRE_values, runtimes = list(MRE_values), list(runtimes)
-                print(MRE_values)
-            result["times"] = values
-            result["strategy_time"] = np.mean(runtimes)
-            np_results = np.array(values)
-        else:
-            # sequential implementation
-            np_results = np.array([])
-            for iter in iterator:
-                for obs in self.observers:
-                    obs.before_start()
-                value = self.run_kernel(func, args)
-                for obs in self.observers:
-                    obs.after_finish()
+        # old implementation
 
-                if value < 0.0:
-                    raise ValueError("Invalid benchmark result")
+        # start_time = perf_counter()
+        # if self.parallel_mode:
+        #     num_procs = max(cpu_count() - 1, 1)
+        #     logging.debug(f"Running benchmark in parallel on {num_procs} processors")
+        #     manager = Manager()
+        #     MRE_values = manager.list()
+        #     runtimes = manager.list()
+        #     with get_context('spawn').Pool(num_procs) as pool:    # spawn alternative is forkserver, creates a reusable server
+        #         args = func, args, self.params
+        #         MRE_values, runtimes = zip(*pool.starmap(run_kernel_and_observers, zip(iterator, repeat(args))))
+        #         MRE_values, runtimes = list(MRE_values), list(runtimes)
+        #         print(MRE_values)
+        #     result["times"] = values
+        #     result["strategy_time"] = np.mean(runtimes)
+        #     np_results = np.array(values)
 
-                result["times"].append(value)
-                np_results = np.append(np_results, value)
-                if value >= invalid_value and iter >= min_valid_iterations and len(np_results[np_results < invalid_value]) < min_valid_iterations:
-                    break
+        # # sequential implementation
+        # np_results = np.array([])
+        # for iter in iterator:
+        #     for obs in self.observers:
+        #         obs.before_start()
+        #     value = self.run_kernel(func, args)
+        #     for obs in self.observers:
+        #         obs.after_finish()
 
-            # fill up the remaining iters with invalid in case of a break
-            result["times"] += [invalid_value] * (self.iterations - len(result["times"]))
+        #     if value < 0.0:
+        #         raise ValueError("Invalid benchmark result")
 
-            # finish by instrumenting the results with the observers
-            for obs in self.observers:
-                result.update(obs.get_results())
+        #     result["times"].append(value)
+        #     np_results = np.append(np_results, value)
+        #     if value >= invalid_value and iter >= min_valid_iterations and len(np_results[np_results < invalid_value]) < min_valid_iterations:
+        #         break
 
-        benchmark_time = perf_counter() - start_time
-        self.benchmark_times.append(benchmark_time)
-        print(f"Time taken: {round(benchmark_time, 3)} seconds, mean: {round(np.mean(self.benchmark_times), 3)}")
+        # # fill up the remaining iters with invalid in case of a break
+        # result["times"] += [invalid_value] * (self.iterations - len(result["times"]))
 
-        # calculate the mean of the means of the Mean Relative Error over the valid results
-        valid_results = np_results[np_results < invalid_value]
-        mean_mean_MRE = np.mean(valid_results) if len(valid_results) > 0 else np.nan
+        # # finish by instrumenting the results with the observers
+        # for obs in self.observers:
+        #     result.update(obs.get_results())
 
-        # write the 'time' to the results and return
-        if np.isnan(mean_mean_MRE) or len(valid_results) < min_valid_iterations:
-            mean_mean_MRE = invalid_value
-        result["time"] = mean_mean_MRE
-        return result
+        # benchmark_time = perf_counter() - start_time
+        # self.benchmark_times.append(benchmark_time)
+        # print(f"Time taken: {round(benchmark_time, 3)} seconds, mean: {round(np.mean(self.benchmark_times), 3)}")
+
+        # # calculate the mean of the means of the Mean Relative Error over the valid results
+        # valid_results = np_results[np_results < invalid_value]
+        # mean_mean_MRE = np.mean(valid_results) if len(valid_results) > 0 else np.nan
+
+        # # write the 'time' to the results and return
+        # if np.isnan(mean_mean_MRE) or len(valid_results) < min_valid_iterations:
+        #     mean_mean_MRE = invalid_value
+        # result["time"] = mean_mean_MRE
+        # return result
 
     def run_kernel(self, func, args, threads, grid):
         """runs the kernel once, returns whatever the kernel returns

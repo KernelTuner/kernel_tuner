@@ -1017,5 +1017,4 @@ class Searchspace:
         raise NotImplementedError(
             "Conversion to Ax SearchSpace has not been fully implemented as Ax Searchspaces can't capture full complexity."
         )
-
-        return ax_searchspace
+        # return ax_searchspace
