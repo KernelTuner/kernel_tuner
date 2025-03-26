@@ -78,7 +78,7 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
     * Verify that your development environment has no missing installs or updates with :bash:`poetry install --sync --dry-run --with test`. 
 #. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if you're not on a GPU node, or one or more extras has been left out in the previous step, then these tests will skip gracefully.
 #. Set Nox to use the correct backend and location:
-    * Run :bash:`conda -- create-settings-file` to automatically create a settings file. 
+    * Run :bash:`nox -- create-settings-file` to automatically create a settings file. 
     * In this settings file :bash:`noxsettings.toml`, change the :bash:`venvbackend`:
         * If you used Mamba in step 2, to :bash:`mamba`.
         * If you used Miniconda or Anaconda in step 2, to :bash:`conda`.
