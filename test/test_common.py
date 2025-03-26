@@ -9,7 +9,7 @@ from kernel_tuner.searchspace import Searchspace
 
 def test_get_bounds_x0_eps():
     tune_params = dict()
-    tune_params['x'] = [0, 1, 2, 3, 4]
+    tune_params["x"] = [0, 1, 2, 3, 4]
     searchspace = Searchspace(tune_params, [], 1024)
 
     tuning_options = Options()
@@ -28,11 +28,10 @@ def test_get_bounds_x0_eps():
 
 
 def test_get_bounds():
-
     tune_params = dict()
-    tune_params['x'] = [0, 1, 2, 3, 4]
-    tune_params['y'] = [i for i in range(0, 10000, 100)]
-    tune_params['z'] = [-11.2, 55.67, 123.27]
+    tune_params["x"] = [0, 1, 2, 3, 4]
+    tune_params["y"] = [i for i in range(0, 10000, 100)]
+    tune_params["z"] = [-11.2, 55.67, 123.27]
 
     for k in tune_params.keys():
         random.shuffle(tune_params[k])
@@ -45,30 +44,28 @@ def test_get_bounds():
 
 
 def test_snap_to_nearest_config():
-
     tune_params = dict()
-    tune_params['x'] = [0, 1, 2, 3, 4, 5]
-    tune_params['y'] = [0, 1, 2, 3, 4, 5]
-    tune_params['z'] = [0, 1, 2, 3, 4, 5]
-    tune_params['w'] = ['a', 'b', 'c']
+    tune_params["x"] = [0, 1, 2, 3, 4, 5]
+    tune_params["y"] = [0, 1, 2, 3, 4, 5]
+    tune_params["z"] = [0, 1, 2, 3, 4, 5]
+    tune_params["w"] = ["a", "b", "c"]
 
-    x = [-5.7, 3.14, 1e6, 'b']
-    expected = [0, 3, 5, 'b']
+    x = [-5.7, 3.14, 1e6, "b"]
+    expected = [0, 3, 5, "b"]
 
     answer = common.snap_to_nearest_config(x, tune_params)
     assert answer == expected
 
 
 def test_unscale():
-
     params = dict()
-    params['x'] = [2**i for i in range(4, 9)]
-    eps = 1.0 / len(params['x'])
+    params["x"] = [2**i for i in range(4, 9)]
+    eps = 1.0 / len(params["x"])
 
-    assert common.unscale_and_snap_to_nearest([0], params, eps)[0] == params['x'][0]
-    assert common.unscale_and_snap_to_nearest([1], params, eps)[0] == params['x'][-1]
+    assert common.unscale_and_snap_to_nearest([0], params, eps)[0] == params["x"][0]
+    assert common.unscale_and_snap_to_nearest([1], params, eps)[0] == params["x"][-1]
 
-    intervals = np.linspace(0, 1, len(params['x']) * 10)
+    intervals = np.linspace(0, 1, len(params["x"]) * 10)
 
     freq = dict()
     for i in intervals:
@@ -82,6 +79,6 @@ def test_unscale():
     print(freq)
 
     for v in freq.values():
-        assert v == freq[params['x'][0]]
+        assert v == freq[params["x"][0]]
 
-    assert len(freq.keys()) == len(params['x'])
+    assert len(freq.keys()) == len(params["x"])

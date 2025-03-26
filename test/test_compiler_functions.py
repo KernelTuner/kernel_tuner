@@ -159,9 +159,7 @@ def test_compile(npct, subprocess):
     kernel_string = "this is a fake C program"
     kernel_name = "blabla"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(
-        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
-    )
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     cfunc = CompilerFunctions()
     f = cfunc.compile(kernel_instance)
@@ -191,9 +189,7 @@ def test_compile_detects_device_code(npct, subprocess):
     kernel_string = "this code clearly contains device code __global__ kernel(float* arg){ return; }"
     kernel_name = "blabla"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(
-        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
-    )
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     cfunc = CompilerFunctions()
     cfunc.compile(kernel_instance)
@@ -347,9 +343,7 @@ def test_complies_fortran_function_no_module():
     """
     kernel_name = "my_test_function"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(
-        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
-    )
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     cfunc = CompilerFunctions(compiler="gfortran")
     func = cfunc.compile(kernel_instance)
@@ -378,9 +372,7 @@ def test_complies_fortran_function_with_module():
     """
     kernel_name = "my_test_function"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(
-        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
-    )
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     try:
         cfunc = CompilerFunctions(compiler="gfortran")

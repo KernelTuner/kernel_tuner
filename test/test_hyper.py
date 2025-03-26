@@ -4,7 +4,6 @@ from .test_runners import cache_filename, env  # noqa: F401
 
 
 def test_hyper(env):
-
     hyper_params = dict()
     hyper_params["popsize"] = [5]
     hyper_params["maxiter"] = [5, 10]
@@ -15,4 +14,3 @@ def test_hyper(env):
 
     result = tune_hyper_params(target_strategy, hyper_params, *env, verbose=True, cache=cache_filename)
     assert len(result) > 0
-

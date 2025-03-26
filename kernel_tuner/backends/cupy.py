@@ -70,9 +70,7 @@ class CupyFunctions(GPUBackend):
         # collect environment information
         env = dict()
         cupy_info = str(cp._cupyx.get_runtime_info()).split("\n")[:-1]
-        info_dict = {
-            s.split(":")[0].strip(): s.split(":")[1].strip() for s in cupy_info
-        }
+        info_dict = {s.split(":")[0].strip(): s.split(":")[1].strip() for s in cupy_info}
         env["device_name"] = info_dict[f"Device {device} Name"]
 
         env["cuda_version"] = cp.cuda.runtime.driverGetVersion()
@@ -129,9 +127,7 @@ class CupyFunctions(GPUBackend):
 
         options = tuple(compiler_options)
 
-        self.current_module = cp.RawModule(
-            code=kernel_string, options=options, name_expressions=[kernel_name]
-        )
+        self.current_module = cp.RawModule(code=kernel_string, options=options, name_expressions=[kernel_name])
 
         self.func = self.current_module.get_function(kernel_name)
         self.num_regs = self.func.num_regs

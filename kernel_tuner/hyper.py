@@ -9,7 +9,7 @@ from kernel_tuner.util import get_config_string
 
 
 def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
-    """ Tune hyperparameters for a given strategy and kernel
+    """Tune hyperparameters for a given strategy and kernel
 
     This function is to be called just like tune_kernel, except that you specify a strategy
     and a dictionary with hyperparameters in front of the arguments you pass to tune_kernel.
@@ -41,17 +41,17 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
     put_if_not_present(kwargs, "verbose", False)
     put_if_not_present(kwargs, "quiet", True)
     put_if_not_present(kwargs, "simulation_mode", True)
-    kwargs['strategy'] = 'brute_force'
+    kwargs["strategy"] = "brute_force"
 
-    #last position argument is tune_params
+    # last position argument is tune_params
     tune_params = args[-1]
 
-    #find optimum
+    # find optimum
     kwargs["strategy"] = "brute_force"
     results, _ = kernel_tuner.tune_kernel(*args, **kwargs)
     optimum = min(results, key=lambda p: p["time"])["time"]
 
-    #could throw a warning for the kwargs that will be overwritten, strategy(_options)
+    # could throw a warning for the kwargs that will be overwritten, strategy(_options)
     kwargs["strategy"] = target_strategy
 
     parameter_space = itertools.product(*hyper_params.values())
@@ -65,14 +65,13 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
         fevals = []
         p_of_opt = []
         for _ in range(100):
-            #measure
+            # measure
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 results, _ = kernel_tuner.tune_kernel(*args, **kwargs)
 
-            #get unique function evaluations
-            unique_fevals = {",".join([str(v) for k, v in record.items() if k in tune_params])
-                             for record in results}
+            # get unique function evaluations
+            unique_fevals = {",".join([str(v) for k, v in record.items() if k in tune_params]) for record in results}
 
             fevals.append(len(unique_fevals))
             p_of_opt.append(min(results, key=lambda p: p["time"])["time"] / optimum * 100)

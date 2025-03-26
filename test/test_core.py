@@ -14,9 +14,12 @@ from kernel_tuner.interface import Options
 from .context import skip_if_no_pycuda
 
 
-mock_config = {"return_value.compile.return_value": "compile",
-               "return_value.ready_argument_list.return_value": "ready_argument_list",
-               "return_value.max_threads": 1024}
+mock_config = {
+    "return_value.compile.return_value": "compile",
+    "return_value.ready_argument_list.return_value": "ready_argument_list",
+    "return_value.max_threads": 1024,
+}
+
 
 def get_vector_add_args():
     size = int(1e6)
@@ -42,9 +45,19 @@ def env():
     lang = "CUDA"
     kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
     verbose = True
-    kernel_options = Options(kernel_name=kernel_name, kernel_string=kernel_string, problem_size=args[-1],
-                             arguments=args, lang=lang, grid_div_x=None, grid_div_y=None, grid_div_z=None,
-                             cmem_args=None, texmem_args=None, block_size_names=None)
+    kernel_options = Options(
+        kernel_name=kernel_name,
+        kernel_string=kernel_string,
+        problem_size=args[-1],
+        arguments=args,
+        lang=lang,
+        grid_div_x=None,
+        grid_div_y=None,
+        grid_div_z=None,
+        cmem_args=None,
+        texmem_args=None,
+        block_size_names=None,
+    )
     device_options = Options(device=0, platform=0, quiet=False, compiler=None, compiler_options=None)
     dev = core.DeviceInterface(kernel_source, iterations=7, **device_options)
     instance = dev.create_kernel_instance(kernel_source, kernel_options, params, verbose)
@@ -54,7 +67,6 @@ def env():
 
 @skip_if_no_pycuda
 def test_default_verify_function(env):
-
     # gpu_args = dev.ready_argument_list(args)
     # func = dev.compile_kernel(instance, verbose)
 
@@ -93,7 +105,7 @@ def test_default_verify_function(env):
     assert True
 
 
-@patch('kernel_tuner.core.PyCudaFunctions')
+@patch("kernel_tuner.core.PyCudaFunctions")
 def test_check_kernel_output(dev_func_interface):
     dev_func_interface.configure_mock(**mock_config)
 
@@ -105,17 +117,17 @@ def test_check_kernel_output(dev_func_interface):
     wrong = [np.array([1, 2, 3, 4]).astype(np.float32)]
     atol = 1e-6
 
-    dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
+    dev.check_kernel_output("func", answer, instance, answer, atol, None, True)
 
     dfi.memcpy_htod.assert_called_once_with(answer[0], answer[0])
-    dfi.run_kernel.assert_called_once_with('func', answer, (256, 1, 1), (1, 1, 1))
+    dfi.run_kernel.assert_called_once_with("func", answer, (256, 1, 1), (1, 1, 1))
 
     print(dfi.mock_calls)
 
     assert dfi.memcpy_dtoh.called == 1
 
     for name, args, _ in dfi.mock_calls:
-        if name == 'memcpy_dtoh':
+        if name == "memcpy_dtoh":
             assert all(args[0] == answer[0])
             assert all(args[1] == answer[0])
 
@@ -124,7 +136,7 @@ def test_check_kernel_output(dev_func_interface):
     # obviously does not result in the result_host array containing anything
     # non-zero
     try:
-        dev.check_kernel_output('func', wrong, instance, wrong, atol, None, True)
+        dev.check_kernel_output("func", wrong, instance, wrong, atol, None, True)
         print("check_kernel_output failed to throw an exception")
         assert False
     except Exception:
@@ -132,7 +144,6 @@ def test_check_kernel_output(dev_func_interface):
 
 
 def test_default_verify_function_arrays():
-
     answer = [np.zeros(4).astype(np.float32), None, np.ones(5).astype(np.int32)]
 
     answer_type_error1 = [np.zeros(4).astype(np.float32)]
@@ -157,7 +168,6 @@ def test_default_verify_function_arrays():
 
 
 def test_default_verify_function_scalar():
-
     answer = [np.zeros(4).astype(np.float32), None, np.int64(42)]
 
     instance = core.KernelInstance("name", None, "kernel_string", [], (256, 1, 1), (1, 1, 1), {}, answer)
@@ -198,15 +208,17 @@ def test_preprocess_gpu_arguments():
 
 def test_split_argument_list():
     test_string = "T *c, const T *__restrict__ a, T\n *\n b\n , int n"
-    ans1, ans2 = core.split_argument_list([s.strip() for s in test_string.split(',')])
+    ans1, ans2 = core.split_argument_list([s.strip() for s in test_string.split(",")])
     assert ans1 == ["T *", "const T *__restrict__", "T *", "int"]
     assert ans2 == ["c", "a", "b", "n"]
+
 
 def test_apply_template_typenames():
     type_list = ["T *", "CONST __restrict__", "double"]
     templated_typenames = {"T": "test"}
     core.apply_template_typenames(type_list, templated_typenames)
     assert type_list == ["test *", "CONST __restrict__", "double"]
+
 
 def test_get_templated_typenames():
     template_arguments = ["double", "32"]
@@ -216,6 +228,7 @@ def test_get_templated_typenames():
 
     assert len(ans) == 1
     assert ans["TF"] == "double"
+
 
 def test_wrap_templated_kernel():
     kernel_string = """
@@ -228,14 +241,15 @@ template<typename TF> __global__ void vector_add(TF *c, const TF *__restrict__ a
 """
     kernel_name = "vector_add<float>"
     ans, _ = core.wrap_templated_kernel(kernel_string, kernel_name)
-    #check __global__ in templated definition is replaced with __device__
+    # check __global__ in templated definition is replaced with __device__
     assert "template<typename TF> __device__ void vector_add" in ans
-    #check if template instantiation is inserted
+    # check if template instantiation is inserted
     assert "template __device__ void vector_add<float>(float *, const float *__restrict__, float *, int);" in ans
-    #check if wrapper functions with C linkage is inserted
-    assert "extern \"C\" __global__ void vector_add" in ans
-    #check if original kernel is called
+    # check if wrapper functions with C linkage is inserted
+    assert 'extern "C" __global__ void vector_add' in ans
+    # check if original kernel is called
     assert "vector_add<float>(c, a, b, n);" in ans
+
 
 def test_wrap_templated_kernel2():
     kernel_string = """
@@ -250,6 +264,7 @@ template<typename TF> __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCK
     # test no exception is thrown
     ans, _ = core.wrap_templated_kernel(kernel_string, kernel_name)
     assert True
+
 
 def test_wrap_templated_kernel3():
     kernel_string = """
@@ -271,7 +286,10 @@ template<typename TF> __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCK
     ans, _ = core.wrap_templated_kernel(kernel_string, kernel_name)
 
     # test that the template wrapper matches the right kernel (the first and not the second)
-    assert 'extern "C" __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add1_wrapper(float * c, const float *__restrict__ a, float * b, int n)' in ans
+    assert (
+        'extern "C" __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add1_wrapper(float * c, const float *__restrict__ a, float * b, int n)'
+        in ans
+    )
 
 
 def test_wrap_templated_kernel4():
@@ -295,4 +313,7 @@ template<typename TF> __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCK
     ans, _ = core.wrap_templated_kernel(kernel_string, kernel_name)
 
     # test that the template wrapper matches the right kernel (the second not the first)
-    assert 'extern "C" __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add1_wrapper(float * c, const float *__restrict__ a, float * b, int n)' in ans
+    assert (
+        'extern "C" __global__ void __launch_bounds__(THREADS_PER_BLOCK, BLOCKS_PER_SM) vector_add1_wrapper(float * c, const float *__restrict__ a, float * b, int n)'
+        in ans
+    )

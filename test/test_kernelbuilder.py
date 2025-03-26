@@ -32,7 +32,7 @@ def test_PythonKernel(test_kernel, backend):
     kernel_name, kernel_string, n, args, params = test_kernel
     kernel_function = kernelbuilder.PythonKernel(*test_kernel, lang=backend)
     reference = kernel_function(*args)
-    assert np.allclose(reference[0], args[1]+args[2])
+    assert np.allclose(reference[0], args[1] + args[2])
 
 
 @pytest.mark.parametrize("backend", backends)
@@ -42,21 +42,23 @@ def test_PythonKernel_tuned(test_kernel, backend):
     c, a, b, n = args
     test_results_file = "test_results_file.json"
     results = params.copy()
-    results['time'] = 1.0
+    results["time"] = 1.0
     env = {"device_name": "bogus GPU"}
     try:
-        #create a fake results file
+        # create a fake results file
         integration.store_results(test_results_file, kernel_name, kernel_string, params, n, [results], env)
 
-        #create a kernel using the results
-        kernel_function = kernelbuilder.PythonKernel(kernel_name, kernel_string, n, args, results_file=test_results_file, lang=backend)
+        # create a kernel using the results
+        kernel_function = kernelbuilder.PythonKernel(
+            kernel_name, kernel_string, n, args, results_file=test_results_file, lang=backend
+        )
 
-        #test if params were retrieved correctly
+        # test if params were retrieved correctly
         assert kernel_function.params["block_size_x"] == 384
 
-        #see if it functions properly
+        # see if it functions properly
         reference = kernel_function(c, a, b, n)
-        assert np.allclose(reference[0], a+b)
+        assert np.allclose(reference[0], a + b)
 
     finally:
         util.delete_temp_file(test_results_file)

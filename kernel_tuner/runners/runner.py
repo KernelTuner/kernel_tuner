@@ -8,13 +8,11 @@ class Runner(ABC):
     """Base class for kernel_tuner runners"""
 
     @abstractmethod
-    def __init__(
-        self, kernel_source, kernel_options, device_options, iterations, observers
-    ):
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
         pass
 
     @abstractmethod
-    def get_environment(self):
+    def get_environment(self, tuning_options):
         pass
 
     @abstractmethod

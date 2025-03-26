@@ -326,6 +326,15 @@ class NVMLObserver(BenchmarkObserver):
         continuous_duration=1,
     ):
         """Create an NVMLObserver."""
+        # needed for re-initializing observer on ray actor
+        self.init_arguments = {
+            "observables": observables,
+            "device": device,
+            "save_all": save_all,
+            "nvidia_smi_fallback": nvidia_smi_fallback,
+            "use_locked_clocks": use_locked_clocks,
+            "continous_duration": continuous_duration,
+        }
         if nvidia_smi_fallback:
             self.nvml = nvml(
                 device,
@@ -355,7 +364,9 @@ class NVMLObserver(BenchmarkObserver):
         if any([obs in self.needs_power for obs in observables]):
             self.measure_power = True
             power_observables = [obs for obs in observables if obs in self.needs_power]
-            self.continuous_observer = ContinuousObserver("nvml", power_observables, self, continuous_duration=continuous_duration)
+            self.continuous_observer = ContinuousObserver(
+                "nvml", power_observables, self, continuous_duration=continuous_duration
+            )
 
         # remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]
@@ -374,7 +385,7 @@ class NVMLObserver(BenchmarkObserver):
         self.iteration = {obs: [] for obs in self.during_obs}
 
     def read_power(self):
-        """ Return power in Watt """
+        """Return power in Watt"""
         return self.nvml.pwr_usage() / 1e3
 
     def before_start(self):

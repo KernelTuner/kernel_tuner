@@ -51,6 +51,11 @@ class Searchspace:
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.restrictions = restrictions
+        self.max_threads = max_threads
+        self.block_size_names = block_size_names
+        self.framework = framework
+        self.solver_method = solver_method
+        self.path_to_ATF_cache = path_to_ATF_cache
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
         self._modified_restrictions = restrictions
         self.param_names = list(self.tune_params.keys())
@@ -145,7 +150,7 @@ class Searchspace:
     #         num_solutions: int = csp.n_solutions()  # number of solutions
     #         solutions = [csp.values(sol=i) for i in range(num_solutions)]  # list of solutions
 
-    def __build_searchspace_bruteforce(self, block_size_names: list, max_threads: int, solver = None):
+    def __build_searchspace_bruteforce(self, block_size_names: list, max_threads: int, solver=None):
         # bruteforce solving of the searchspace
 
         from itertools import product
@@ -167,9 +172,15 @@ class Searchspace:
                 restrictions = [restrictions]
             block_size_restriction_spaced = f"{' * '.join(used_block_size_names)} <= {max_threads}"
             block_size_restriction_unspaced = f"{'*'.join(used_block_size_names)} <= {max_threads}"
-            if block_size_restriction_spaced not in restrictions and block_size_restriction_unspaced not in restrictions:
+            if (
+                block_size_restriction_spaced not in restrictions
+                and block_size_restriction_unspaced not in restrictions
+            ):
                 restrictions.append(block_size_restriction_spaced)
-                if isinstance(self._modified_restrictions, list) and block_size_restriction_spaced not in self._modified_restrictions:
+                if (
+                    isinstance(self._modified_restrictions, list)
+                    and block_size_restriction_spaced not in self._modified_restrictions
+                ):
                     self._modified_restrictions.append(block_size_restriction_spaced)
                     if isinstance(self.restrictions, list):
                         self.restrictions.append(block_size_restriction_spaced)
@@ -264,12 +275,7 @@ class Searchspace:
                 TP(key, Set(values))
             return params
 
-        tuning_result = (
-            Tuner()
-            .tuning_parameters(*get_params())
-            .search_technique(Exhaustive())
-            .tune(costfunc)
-        )
+        tuning_result = Tuner().tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
         return tuning_result
 
     def __build_searchspace_ATF_cache(self, block_size_names: list, max_threads: int, solver: Solver):
@@ -323,7 +329,10 @@ class Searchspace:
         if len(valid_block_size_names) > 0:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
             max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
-            if isinstance(self._modified_restrictions, list) and max_block_size_product not in self._modified_restrictions:
+            if (
+                isinstance(self._modified_restrictions, list)
+                and max_block_size_product not in self._modified_restrictions
+            ):
                 self._modified_restrictions.append(max_block_size_product)
                 if isinstance(self.restrictions, list):
                     self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names))
@@ -348,10 +357,7 @@ class Searchspace:
                     parameter_space.addConstraint(restriction, required_params)
                 elif isinstance(restriction, Constraint):
                     all_params_required = all(param_name in required_params for param_name in self.param_names)
-                    parameter_space.addConstraint(
-                        restriction,
-                        None if all_params_required else required_params
-                    )
+                    parameter_space.addConstraint(restriction, None if all_params_required else required_params)
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
 

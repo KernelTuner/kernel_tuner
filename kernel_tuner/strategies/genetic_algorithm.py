@@ -17,7 +17,6 @@ _options = dict(
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
-
     options = tuning_options.strategy_options
     pop_size, generations, method, mutation_chance = common.get_options(options, _options)
     crossover = supported_methods[method]
@@ -28,7 +27,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     population = list(list(p) for p in searchspace.get_random_sample(pop_size))
 
     for generation in range(generations):
-
         # determine fitness of population members
         weighted_population = []
         for dna in population:
@@ -46,7 +44,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         # 'best_score' is used only for printing
         if tuning_options.verbose and cost_func.results:
-            best_score = util.get_best_config(cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better)[tuning_options.objective]
+            best_score = util.get_best_config(
+                cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better
+            )[tuning_options.objective]
 
         if tuning_options.verbose:
             print("Generation %d, best_score %f" % (generation, best_score))

@@ -37,6 +37,7 @@ tune_params["gpu4"] = list(range(num_layers))
 
 # each GPU must have at least one layer and the sum of all layers must not exceed the total number of layers
 
+
 def _min_func(gpu1, gpu2, gpu3, gpu4):
     return min([gpu1, gpu2, gpu3, gpu4]) >= 1
 
@@ -79,12 +80,13 @@ def test_internal_representation():
     for index, dict_config in enumerate(searchspace.get_list_dict().keys()):
         assert dict_config == searchspace.list[index]
 
+
 def test_check_restrictions():
     """Test whether the outcome of restrictions is as expected when using check_restrictions."""
     from kernel_tuner.util import check_restrictions
 
-    param_config_false = {'x': 1, 'y': 4, 'z': "string_1" }
-    param_config_true = {'x': 3, 'y': 4, 'z': "string_1" }
+    param_config_false = {"x": 1, "y": 4, "z": "string_1"}
+    param_config_true = {"x": 3, "y": 4, "z": "string_1"}
 
     assert check_restrictions(simple_searchspace.restrictions, param_config_false, verbose=False) is False
     assert check_restrictions(simple_searchspace.restrictions, param_config_true, verbose=False) is True
@@ -95,12 +97,11 @@ def test_against_bruteforce():
     compare_two_searchspace_objects(simple_searchspace, simple_searchspace_bruteforce)
     compare_two_searchspace_objects(searchspace, searchspace_bruteforce)
 
+
 def test_sort():
     """Test that the sort searchspace option works as expected."""
     simple_searchspace_sort = Searchspace(
-        simple_tuning_options.tune_params,
-        simple_tuning_options.restrictions,
-        max_threads
+        simple_tuning_options.tune_params, simple_tuning_options.restrictions, max_threads
     )
 
     expected = [
@@ -130,9 +131,7 @@ def test_sort():
 def test_sort_reversed():
     """Test that the sort searchspace option with the sort_last_param_first option enabled works as expected."""
     simple_searchspace_sort_reversed = Searchspace(
-        simple_tuning_options.tune_params,
-        simple_tuning_options.restrictions,
-        max_threads
+        simple_tuning_options.tune_params, simple_tuning_options.restrictions, max_threads
     )
 
     expected = [
@@ -200,7 +199,9 @@ def test_random_sample():
         print(value_error_expectation_message)
         assert False
     except ValueError as e:
-        assert "number of samples requested" in str(e) and "is greater than the searchspace size" in str(e), f"Expected string not in error {e}"
+        assert "number of samples requested" in str(e) and "is greater than the searchspace size" in str(
+            e
+        ), f"Expected string not in error {e}"
     except Exception:
         print(value_error_expectation_message)
         assert False
@@ -238,8 +239,8 @@ def test_neighbors_hamming():
     """Test whether the neighbors with Hamming distance are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
-        (1.5, 4, 'string_1'),
-        (3, 4, 'string_1'),
+        (1.5, 4, "string_1"),
+        (3, 4, "string_1"),
     ]
 
     __test_neighbors(test_config, expected_neighbors, "Hamming")
@@ -249,10 +250,10 @@ def test_neighbors_strictlyadjacent():
     """Test whether the strictly adjacent neighbors are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
-        (1.5, 4, 'string_1'),
-        (1.5, 4, 'string_2'),
-        (1.5, 5.5, 'string_1'),
-        (1.5, 5.5, 'string_2'),
+        (1.5, 4, "string_1"),
+        (1.5, 4, "string_2"),
+        (1.5, 5.5, "string_1"),
+        (1.5, 5.5, "string_2"),
     ]
 
     __test_neighbors(test_config, expected_neighbors, "strictly-adjacent")
@@ -262,10 +263,10 @@ def test_neighbors_adjacent():
     """Test whether the adjacent neighbors are as expected."""
     test_config = tuple([1, 4, "string_1"])
     expected_neighbors = [
-        (1.5, 4, 'string_1'),
-        (1.5, 4, 'string_2'),
-        (1.5, 5.5, 'string_1'),
-        (1.5, 5.5, 'string_2'),
+        (1.5, 4, "string_1"),
+        (1.5, 4, "string_2"),
+        (1.5, 5.5, "string_1"),
+        (1.5, 5.5, "string_2"),
     ]
 
     __test_neighbors(test_config, expected_neighbors, "adjacent")
@@ -275,22 +276,18 @@ def test_neighbors_fictious():
     """Test whether the neighbors are as expected for a fictious parameter configuration (i.e. not existing in the search space due to restrictions)."""
     test_config = tuple([1.5, 4, "string_1"])
     expected_neighbors_hamming = [
-        (1.5, 4, 'string_2'),
-        (1.5, 5.5, 'string_1'),
-        (3, 4, 'string_1'),
+        (1.5, 4, "string_2"),
+        (1.5, 5.5, "string_1"),
+        (3, 4, "string_1"),
     ]
-    expected_neighbors_strictlyadjacent = [
-        (1.5, 5.5, 'string_2'),
-        (1.5, 5.5, 'string_1'),
-        (1.5, 4, 'string_2')
-    ]
+    expected_neighbors_strictlyadjacent = [(1.5, 5.5, "string_2"), (1.5, 5.5, "string_1"), (1.5, 4, "string_2")]
 
     expected_neighbors_adjacent = [
-        (1.5, 5.5, 'string_2'),
-        (1.5, 5.5, 'string_1'),
-        (1.5, 4, 'string_2'),
-        (3, 4, 'string_1'),
-        (3, 4, 'string_2'),
+        (1.5, 5.5, "string_2"),
+        (1.5, 5.5, "string_1"),
+        (1.5, 4, "string_2"),
+        (3, 4, "string_1"),
+        (3, 4, "string_2"),
     ]
 
     __test_neighbors_direct(test_config, expected_neighbors_hamming, "Hamming")
@@ -301,10 +298,7 @@ def test_neighbors_fictious():
 def test_neighbors_cached():
     """Test whether retrieving a set of neighbors twice returns the cached version."""
     simple_searchspace_duplicate = Searchspace(
-        simple_tuning_options.tune_params,
-        simple_tuning_options.restrictions,
-        max_threads,
-        neighbor_method="Hamming"
+        simple_tuning_options.tune_params, simple_tuning_options.restrictions, max_threads, neighbor_method="Hamming"
     )
 
     test_configs = simple_searchspace_duplicate.get_random_sample(5)
@@ -333,12 +327,7 @@ def test_order_param_configs():
     """Test whether the ordering of parameter configurations according to parameter index happens as expected."""
     test_order = [1, 2, 0]
     test_config = tuple([1, 4, "string_1"])
-    expected_order = [
-        (1.5, 5.5, 'string_2'),
-        (1.5, 4, 'string_2'),
-        (1.5, 4, 'string_1'),
-        (1.5, 5.5, 'string_1')
-    ]
+    expected_order = [(1.5, 5.5, "string_2"), (1.5, 4, "string_2"), (1.5, 4, "string_1"), (1.5, 5.5, "string_1")]
     neighbors = simple_searchspace.get_neighbors_no_cache(test_config, "adjacent")
 
     # test failsafe too few indices
@@ -391,9 +380,9 @@ def test_small_searchspace():
     """Test a small real-world searchspace and the usage of the `max_threads` parameter."""
     max_threads = 1024
     tune_params = dict()
-    tune_params["block_size_x"] = [1, 2, 4, 8, 16] + [32*i for i in range(1,33)]
+    tune_params["block_size_x"] = [1, 2, 4, 8, 16] + [32 * i for i in range(1, 33)]
     tune_params["block_size_y"] = [2**i for i in range(6)]
-    tune_params["tile_size_x"] = [i for i in range(1,11)]
+    tune_params["tile_size_x"] = [i for i in range(1, 11)]
     restrictions = [
         "block_size_x*block_size_y >= 32",
         f"block_size_x*block_size_y <= {max_threads}",
@@ -402,42 +391,45 @@ def test_small_searchspace():
     searchspace_bruteforce = Searchspace(tune_params, restrictions, max_threads, framework="bruteforce")
     compare_two_searchspace_objects(searchspace, searchspace_bruteforce)
 
+
 def test_full_searchspace(compare_against_bruteforce=False):
     """Tests a full real-world searchspace (expdist). If `compare_against_bruteforce`, the searcspace will be bruteforced to compare against, this can take a long time!."""
     # device characteristics
     dev = {
-        'device_name': 'NVIDIA A40',
-        'max_threads': 1024,
-        'max_shared_memory_per_block': 49152,
-        'max_shared_memory': 102400
+        "device_name": "NVIDIA A40",
+        "max_threads": 1024,
+        "max_shared_memory_per_block": 49152,
+        "max_shared_memory": 102400,
     }
 
     # tunable parameters and restrictions
     tune_params = dict()
-    tune_params["block_size_x"] = [1, 2, 4, 8, 16] + [32*i for i in range(1,33)]
+    tune_params["block_size_x"] = [1, 2, 4, 8, 16] + [32 * i for i in range(1, 33)]
     tune_params["block_size_y"] = [2**i for i in range(6)]
-    tune_params["tile_size_x"] = [i for i in range(1,11)]
-    tune_params["tile_size_y"] = [i for i in range(1,11)]
-    tune_params["temporal_tiling_factor"] = [i for i in range(1,11)]
+    tune_params["tile_size_x"] = [i for i in range(1, 11)]
+    tune_params["tile_size_y"] = [i for i in range(1, 11)]
+    tune_params["temporal_tiling_factor"] = [i for i in range(1, 11)]
     max_tfactor = max(tune_params["temporal_tiling_factor"])
     tune_params["max_tfactor"] = [max_tfactor]
-    tune_params["loop_unroll_factor_t"] = [i for i in range(1,max_tfactor+1)]
-    tune_params["sh_power"] = [0,1]
-    tune_params["blocks_per_sm"] = [0,1,2,3,4]
+    tune_params["loop_unroll_factor_t"] = [i for i in range(1, max_tfactor + 1)]
+    tune_params["sh_power"] = [0, 1]
+    tune_params["blocks_per_sm"] = [0, 1, 2, 3, 4]
 
     restrictions = [
-            "block_size_x*block_size_y >= 32",
-            "temporal_tiling_factor % loop_unroll_factor_t == 0",
-            f"block_size_x*block_size_y <= {dev['max_threads']}",
-            f"(block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4 <= {dev['max_shared_memory_per_block']}",
-            f"blocks_per_sm == 0 or (((block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4) * blocks_per_sm <= {dev['max_shared_memory']})"
-        ]
+        "block_size_x*block_size_y >= 32",
+        "temporal_tiling_factor % loop_unroll_factor_t == 0",
+        f"block_size_x*block_size_y <= {dev['max_threads']}",
+        f"(block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4 <= {dev['max_shared_memory_per_block']}",
+        f"blocks_per_sm == 0 or (((block_size_x*tile_size_x + temporal_tiling_factor * 2) * (block_size_y*tile_size_y + temporal_tiling_factor * 2) * (2+sh_power) * 4) * blocks_per_sm <= {dev['max_shared_memory']})",
+    ]
 
     # build the searchspace
-    searchspace = Searchspace(tune_params, restrictions, max_threads=dev['max_threads'])
+    searchspace = Searchspace(tune_params, restrictions, max_threads=dev["max_threads"])
 
     if compare_against_bruteforce:
-        searchspace_bruteforce = Searchspace(tune_params, restrictions, max_threads=dev['max_threads'], framework='bruteforce')
+        searchspace_bruteforce = Searchspace(
+            tune_params, restrictions, max_threads=dev["max_threads"], framework="bruteforce"
+        )
         compare_two_searchspace_objects(searchspace, searchspace_bruteforce)
     else:
         assert searchspace.size == len(searchspace.list) == 349853

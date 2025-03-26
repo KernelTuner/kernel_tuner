@@ -16,7 +16,6 @@ except Exception:
 
 @skip_if_no_cuda
 def test_ready_argument_list():
-
     size = 1000
     a = np.int32(75)
     b = np.random.randn(size).astype(np.float32)
@@ -34,7 +33,6 @@ def test_ready_argument_list():
 
 @skip_if_no_cuda
 def test_compile():
-
     kernel_string = """
     extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;

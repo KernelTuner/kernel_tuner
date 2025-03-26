@@ -37,7 +37,10 @@ __global__ void fp32_kernel(float *ptr)
 }
 """
 
-def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=None, use_locked_clocks=False, cache=None, simulation_mode=None):
+
+def get_frequency_power_relation_fp32(
+    device, n_samples=10, nvidia_smi_fallback=None, use_locked_clocks=False, cache=None, simulation_mode=None
+):
     """Use NVML and PyCUDA with a synthetic kernel to obtain samples of frequency-power pairs."""
     # get some numbers about the device
     if not cache:
@@ -46,7 +49,7 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
 
         drv.init()
         dev = drv.Device(device)
-        device_name = dev.name().replace(' ', '_')
+        device_name = dev.name().replace(" ", "_")
         multiprocessor_count = dev.get_attribute(drv.device_attribute.MULTIPROCESSOR_COUNT)
         max_block_dim_x = dev.get_attribute(drv.device_attribute.MAX_BLOCK_DIM_X)
 
@@ -76,12 +79,28 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
     metrics["f"] = lambda p: p["core_freq"]
 
     nvmlobserver = NVMLObserver(
-        ["core_freq", "nvml_power"], device=device, nvidia_smi_fallback=nvidia_smi_fallback, use_locked_clocks=use_locked_clocks)
+        ["core_freq", "nvml_power"],
+        device=device,
+        nvidia_smi_fallback=nvidia_smi_fallback,
+        use_locked_clocks=use_locked_clocks,
+    )
 
-    results, _ = tune_kernel("fp32_kernel", fp32_kernel_string, problem_size=(multiprocessor_count, 64),
-                             arguments=arguments, tune_params=tune_params, observers=[nvmlobserver],
-                             verbose=False, quiet=True, metrics=metrics, iterations=10, simulation_mode=simulation_mode,
-                             grid_div_x=[], grid_div_y=[], cache=cache or f"synthetic_fp32_cache_{device_name}.json")
+    results, _ = tune_kernel(
+        "fp32_kernel",
+        fp32_kernel_string,
+        problem_size=(multiprocessor_count, 64),
+        arguments=arguments,
+        tune_params=tune_params,
+        observers=[nvmlobserver],
+        verbose=False,
+        quiet=True,
+        metrics=metrics,
+        iterations=10,
+        simulation_mode=simulation_mode,
+        grid_div_x=[],
+        grid_div_y=[],
+        cache=cache or f"synthetic_fp32_cache_{device_name}.json",
+    )
 
     freqs = np.array([res["core_freq"] for res in results])
     nvml_power = np.array([res["nvml_power"] for res in results])
@@ -91,7 +110,7 @@ def get_frequency_power_relation_fp32(device, n_samples=10, nvidia_smi_fallback=
 
 def estimated_voltage(clocks, clock_threshold, voltage_scale):
     """Estimate voltage based on clock_threshold and voltage_scale."""
-    return [1 + ((clock > clock_threshold) * (1e-3 * voltage_scale * (clock-clock_threshold))) for clock in clocks]
+    return [1 + ((clock > clock_threshold) * (1e-3 * voltage_scale * (clock - clock_threshold))) for clock in clocks]
 
 
 def estimated_power(clocks, clock_threshold, voltage_scale, clock_scale, power_max):
@@ -131,18 +150,24 @@ def fit_power_frequency_model(freqs, nvml_power):
 
     # fit the model
     p0 = (clock_threshold, voltage_scale, clock_scale, power_max)
-    bounds = ([clock_min, 0, 0, 0.9*power_max],
-              [clock_max, 1, 1, 1.1*power_max])
+    bounds = ([clock_min, 0, 0, 0.9 * power_max], [clock_max, 1, 1, 1.1 * power_max])
     res = optimize.curve_fit(estimated_power, x, y, p0=p0, bounds=bounds)
-    clock_threshold, voltage_scale, clock_scale, power_max = np.round(
-        res[0], 2)
+    clock_threshold, voltage_scale, clock_scale, power_max = np.round(res[0], 2)
 
     fit_parameters = (clock_threshold, voltage_scale, clock_scale, power_max)
     scale_parameters = (clock_min, min(nvml_power))
     return clock_threshold + clock_min, fit_parameters, scale_parameters
 
 
-def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_smi_fallback=None, use_locked_clocks=False, cache=None, simulation_mode=None):
+def create_power_frequency_model(
+    device=0,
+    n_samples=10,
+    verbose=False,
+    nvidia_smi_fallback=None,
+    use_locked_clocks=False,
+    cache=None,
+    simulation_mode=None,
+):
     """Calculate the most energy-efficient clock frequency of device.
 
     This function uses a performance model to fit the power-frequency curve
@@ -176,7 +201,9 @@ def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_s
     :rtype: float
 
     """
-    freqs, nvml_power = get_frequency_power_relation_fp32(device, n_samples, nvidia_smi_fallback, use_locked_clocks, cache=cache, simulation_mode=simulation_mode)
+    freqs, nvml_power = get_frequency_power_relation_fp32(
+        device, n_samples, nvidia_smi_fallback, use_locked_clocks, cache=cache, simulation_mode=simulation_mode
+    )
 
     if verbose:
         print("Clock frequencies:", freqs.tolist())
@@ -187,7 +214,7 @@ def create_power_frequency_model(device=0, n_samples=10, verbose=False, nvidia_s
     if verbose:
         print(f"Modelled most energy efficient frequency: {ridge_frequency} MHz")
 
-    all_frequencies = np.array(get_nvml_gr_clocks(device, quiet=True)['nvml_gr_clock'])
+    all_frequencies = np.array(get_nvml_gr_clocks(device, quiet=True)["nvml_gr_clock"])
     ridge_frequency_final = all_frequencies[np.argmin(abs(all_frequencies - ridge_frequency))]
 
     if verbose:
@@ -200,8 +227,12 @@ def get_frequency_range_around_ridge(ridge_frequency, all_frequencies, freq_rang
     """Return number_of_freqs frequencies in a freq_range percentage around the ridge_frequency from among all_frequencies."""
     min_freq = 1e-2 * (100 - int(freq_range)) * ridge_frequency
     max_freq = 1e-2 * (100 + int(freq_range)) * ridge_frequency
-    frequency_selection = np.unique([all_frequencies[np.argmin(abs(
-        all_frequencies - f))] for f in np.linspace(min_freq, max_freq, int(number_of_freqs))]).tolist()
+    frequency_selection = np.unique(
+        [
+            all_frequencies[np.argmin(abs(all_frequencies - f))]
+            for f in np.linspace(min_freq, max_freq, int(number_of_freqs))
+        ]
+    ).tolist()
 
     if verbose:
         print(f"Suggested range of frequencies to auto-tune: {frequency_selection} MHz")

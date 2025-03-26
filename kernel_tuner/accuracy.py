@@ -46,9 +46,7 @@ class Tunable(UserDict):
 
         if option not in self.data:
             list = ", ".join(map(str, self.data.keys()))
-            raise KeyError(
-                f"'{option}' is not a valid parameter value, should be one of: {list}"
-            )
+            raise KeyError(f"'{option}' is not a valid parameter value, should be one of: {list}")
 
         return self.data[option]
 
@@ -60,12 +58,14 @@ def _find_bfloat16_if_available():
     # Try to get bfloat16 if available.
     try:
         from bfloat16 import bfloat16
+
         return bfloat16
     except ImportError:
         pass
 
     try:
         from tensorflow import bfloat16
+
         return bfloat16.as_numpy_dtype
     except ImportError:
         pass
@@ -102,9 +102,7 @@ def _to_float_dtype(x: str) -> np.dtype:
 
 
 class TunablePrecision(Tunable):
-    def __init__(
-        self, param_key: str, array: np.ndarray, dtypes: Dict[str, np.dtype] = None
-    ):
+    def __init__(self, param_key: str, array: np.ndarray, dtypes: Dict[str, np.dtype] = None):
         """The ``Tunable`` object can be used as an input argument when tuning
         kernels. It is a container that internally holds several arrays
         containing the same data, but stored in using different levels of
@@ -134,7 +132,6 @@ class TunablePrecision(Tunable):
             bfloat16 = _find_bfloat16_if_available()
             if bfloat16 is not None:
                 dtypes["bfloat16"] = bfloat16
-
 
         # If dtype is a list, convert it to a dictionary
         if isinstance(dtypes, (list, tuple)):
@@ -257,9 +254,7 @@ def error_metric_from_name(user_key, EPS=1e-8):
         raise ValueError(f"invalid error metric provided: {user_key}")
 
     # cast both arguments to f64 before passing them to the metric
-    return lambda a, b: metric(
-        a.astype(np.float64, copy=False), b.astype(np.float64, copy=False)
-    )
+    return lambda a, b: metric(a.astype(np.float64, copy=False), b.astype(np.float64, copy=False))
 
 
 class AccuracyObserver(OutputObserver):

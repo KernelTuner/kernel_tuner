@@ -8,8 +8,11 @@ from kernel_tuner.strategies.common import CostFunc, setup_method_arguments, set
 
 supported_methods = ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
 
-_options = dict(method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "L-BFGS-B"),
-                       T=("Temperature parameter for the accept or reject criterion", 1.0))
+_options = dict(
+    method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "L-BFGS-B"),
+    T=("Temperature parameter for the accept or reject criterion", 1.0),
+)
+
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     method, T = common.get_options(tuning_options.strategy_options, _options)
@@ -21,16 +24,16 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     kwargs = setup_method_arguments(method, bounds)
     options = setup_method_options(method, tuning_options)
-    kwargs['options'] = options
-
+    kwargs["options"] = options
 
     minimizer_kwargs = dict(**kwargs)
     minimizer_kwargs["method"] = method
 
     opt_result = None
     try:
-        opt_result = scipy.optimize.basinhopping(cost_func, x0, T=T, stepsize=eps,
-                                             minimizer_kwargs=minimizer_kwargs, disp=tuning_options.verbose)
+        opt_result = scipy.optimize.basinhopping(
+            cost_func, x0, T=T, stepsize=eps, minimizer_kwargs=minimizer_kwargs, disp=tuning_options.verbose
+        )
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
