@@ -930,7 +930,8 @@ def wrap_templated_kernel(kernel_string, kernel_name):
 
     template_parameters = match.group(1).split(",")
     argument_list = match.group(3).split(",")
-    argument_list = [s.strip() for s in argument_list]  # remove extra whitespace around 'type name' strings
+    # remove extra whitespace around 'type name' strings
+    argument_list = [s.strip() for s in argument_list]
 
     type_list, name_list = split_argument_list(argument_list)
 

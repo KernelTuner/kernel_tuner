@@ -1,3 +1,4 @@
+"""Ray actors module."""
 import ray
 
 from kernel_tuner.runners.sequential import SequentialRunner
@@ -9,6 +10,7 @@ from kernel_tuner.util import get_gpu_id, get_gpu_type
 
 @ray.remote
 class RemoteActor:
+    """Remote actor for the parallel tuner."""
     def __init__(
         self,
         kernel_source,

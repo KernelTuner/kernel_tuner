@@ -102,7 +102,8 @@ class CostFunc:
             return return_values[0]
         return return_values
 
-    def _is_single_configuration(self, x):
+    @staticmethod
+    def _is_single_configuration(x):
         """
         Determines if the input is a single configuration based on its type and composition.
 
@@ -117,7 +118,8 @@ class CostFunc:
         if isinstance(x, (int, float)):
             return True
         if isinstance(x, np.ndarray):
-            return x.dtype.kind in "if"  # Checks for data type being integer ('i') or float ('f')
+            # Checks for data type being integer ('i') or float ('f')
+            return x.dtype.kind in "if"
         if isinstance(x, (list, tuple)):
             return all(isinstance(item, (int, float)) for item in x)
         return False
@@ -332,7 +334,7 @@ def scale_from_params(params, tune_params, eps):
     return x
 
 
-def check_num_devices(ensemble_size: int, simulation_mode: bool, runner):
+def check_num_devices(ensemble_size: int, simulation_mode: bool):
     num_devices = get_num_devices(simulation_mode=simulation_mode)
     if num_devices < ensemble_size:
         warnings.warn(
@@ -342,7 +344,7 @@ def check_num_devices(ensemble_size: int, simulation_mode: bool, runner):
 
 
 def create_actor_on_device(
-    kernel_source, kernel_options, device_options, iterations, observers, cache_manager, simulation_mode, id
+    kernel_source, kernel_options, device_options, iterations, observers, cache_manager, simulation_mode, identifier
 ):
     # Check if Ray is initialized, raise an error if not
     if not ray.is_initialized():
@@ -374,7 +376,7 @@ def create_actor_on_device(
         observers_type_and_arguments=observers_type_and_arguments,
         cache_manager=cache_manager,
         simulation_mode=simulation_mode,
-        id=id,
+        identifier=identifier,
     )
 
 

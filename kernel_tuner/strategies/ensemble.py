@@ -54,7 +54,6 @@ _options = dict(
 
 def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, actors=None):
     clean_up = True if actors is None and cache_manager is None else False
-    options = tuning_options.strategy_options
     simulation_mode = True if isinstance(runner, SimulationRunner) else False
     initialize_ray()
 
@@ -63,7 +62,8 @@ def tune(searchspace: Searchspace, runner, tuning_options, cache_manager=None, a
     ensemble_size = len(ensemble)
 
     # setup strategy options
-    if "bayes_opt" in ensemble:  # All strategies start from a random sample except for BO
+    if "bayes_opt" in ensemble:
+        # All strategies start from a random sample except for BO
         tuning_options.strategy_options["samplingmethod"] = "random"
     tuning_options.strategy_options["max_fevals"] = 100 * ensemble_size if max_fevals is None else max_fevals
     tuning_options.strategy_options["check_and_retrieve"] = True

@@ -1,3 +1,4 @@
+"""Parallel runner"""
 import ray
 import sys
 from ray.util.actor_pool import ActorPool
@@ -110,7 +111,8 @@ class ParallelRunner(Runner):
         """
         if (
             tuning_options is None
-        ):  # HACK as tuning_options can't be the first argument and parameter_space needs to be a default argument
+        ):
+            # HACK as tuning_options can't be the first argument and parameter_space needs to be a default argument
             raise ValueError("tuning_options cannot be None")
 
         # Create RemoteActor instances
@@ -124,14 +126,14 @@ class ParallelRunner(Runner):
             ]
             self.actors = [
                 create_actor_on_device(
-                    *runner_attributes, id=_id, cache_manager=self.cache_manager, simulation_mode=self.simulation_mode
+                    *runner_attributes, identifier=_id, cache_manager=self.cache_manager, simulation_mode=self.simulation_mode
                 )
                 for _id in range(self.num_gpus)
             ]
 
         # Check if all GPUs are of the same type
         if not self.simulation_mode and not self._check_gpus_equals():
-            raise GPUTypeMismatchError(f"Different GPU types found")
+            raise GPUTypeMismatchError("Different GPU types found")
 
         if self.cache_manager is None:
             if cache_manager is None:

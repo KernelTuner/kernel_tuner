@@ -1,3 +1,4 @@
+"""Ray caching module."""
 import ray
 
 from kernel_tuner.util import store_cache
@@ -5,6 +6,7 @@ from kernel_tuner.util import store_cache
 
 @ray.remote(num_cpus=1)
 class CacheManager:
+    """Manage the cache used by the parallel actors."""
     def __init__(self, cache, cachefile):
         from kernel_tuner.interface import Options  # importing here due to circular import
 

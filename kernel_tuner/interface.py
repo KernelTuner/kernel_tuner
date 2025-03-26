@@ -658,7 +658,11 @@ def tune_kernel(
         strategy = brute_force
 
     # select the runner for this job based on input
-    selected_runner = SimulationRunner if simulation_mode else (ParallelRunner if parallel_mode else SequentialRunner)
+    selected_runner = SequentialRunner
+    if simulation_mode:
+        selected_runner = SimulationRunner
+    elif parallel_mode:
+        selected_runner = ParallelRunner
     tuning_options.simulated_time = 0
     if parallel_mode:
         num_gpus = tuning_options["num_gpus"] if "num_gpus" in tuning_options else None
