@@ -144,8 +144,6 @@
 </li>
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.__init__">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.core.DeviceInterface.__init__">(kernel_tuner.core.DeviceInterface method)</a>
-</li>
         <li><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner.__init__">(kernel_tuner.runners.sequential.SequentialRunner method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.runners.simulation.SimulationRunner.__init__">(kernel_tuner.runners.simulation.SimulationRunner method)</a>
@@ -173,16 +171,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.before_start">before_start() (kernel_tuner.observers.BenchmarkObserver method)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.benchmark">benchmark() (kernel_tuner.core.DeviceInterface method)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.benchmark_continuous">benchmark_continuous() (kernel_tuner.core.DeviceInterface method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.benchmark_default">benchmark_default() (kernel_tuner.core.DeviceInterface method)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.benchmark_prologue">benchmark_prologue() (kernel_tuner.core.DeviceInterface method)</a>
-</li>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver">BenchmarkObserver (class in kernel_tuner.observers)</a>
 </li>
   </ul></td>
@@ -194,8 +184,6 @@
       <li><a href="design.html#kernel_tuner.util.check_argument_list">check_argument_list() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.check_argument_type">check_argument_type() (in module kernel_tuner.util)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.check_kernel_output">check_kernel_output() (kernel_tuner.core.DeviceInterface method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.check_restriction">check_restriction() (in module kernel_tuner.util)</a>
 </li>
@@ -225,8 +213,6 @@
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.compile">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.compile_kernel">compile_kernel() (kernel_tuner.core.DeviceInterface method)</a>
-</li>
       <li><a href="design.html#kernel_tuner.util.compile_restrictions">compile_restrictions() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.backends.compiler.CompilerFunctions">CompilerFunctions (class in kernel_tuner.backends.compiler)</a>
@@ -237,6 +223,8 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.convert_constraint_restriction">convert_constraint_restriction() (in module kernel_tuner.util)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.backends.cupy.CupyFunctions.copy_constant_memory_args">copy_constant_memory_args() (kernel_tuner.backends.cupy.CupyFunctions method)</a>
 
       <ul>
@@ -248,11 +236,7 @@
 </li>
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.copy_constant_memory_args">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.core.DeviceInterface.copy_constant_memory_args">(kernel_tuner.core.DeviceInterface method)</a>
-</li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.backends.cupy.CupyFunctions.copy_shared_memory_args">copy_shared_memory_args() (kernel_tuner.backends.cupy.CupyFunctions method)</a>
 
       <ul>
@@ -263,8 +247,6 @@
         <li><a href="design.html#kernel_tuner.backends.opencl.OpenCLFunctions.copy_shared_memory_args">(kernel_tuner.backends.opencl.OpenCLFunctions method)</a>
 </li>
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.copy_shared_memory_args">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
-</li>
-        <li><a href="design.html#kernel_tuner.core.DeviceInterface.copy_shared_memory_args">(kernel_tuner.core.DeviceInterface method)</a>
 </li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.backends.cupy.CupyFunctions.copy_texture_memory_args">copy_texture_memory_args() (kernel_tuner.backends.cupy.CupyFunctions method)</a>
@@ -278,14 +260,10 @@
 </li>
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.copy_texture_memory_args">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.core.DeviceInterface.copy_texture_memory_args">(kernel_tuner.core.DeviceInterface method)</a>
-</li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.util.correct_open_cache">correct_open_cache() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="user-api.html#kernel_tuner.create_device_targets">create_device_targets() (in module kernel_tuner)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.create_kernel_instance">create_kernel_instance() (kernel_tuner.core.DeviceInterface method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.cuda_error_check">cuda_error_check() (in module kernel_tuner.util)</a>
 </li>
@@ -304,8 +282,6 @@
       <li><a href="design.html#kernel_tuner.util.delete_temp_file">delete_temp_file() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.detect_language">detect_language() (in module kernel_tuner.util)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface">DeviceInterface (class in kernel_tuner.core)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -345,18 +321,16 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.get_config_string">get_config_string() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.get_environment">get_environment() (kernel_tuner.core.DeviceInterface method)</a>
-</li>
       <li><a href="design.html#kernel_tuner.util.get_grid_dimensions">get_grid_dimensions() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_instance_string">get_instance_string() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.strategies.common.get_options">get_options() (in module kernel_tuner.strategies.common)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.get_problem_size">get_problem_size() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.get_results">get_results() (kernel_tuner.observers.BenchmarkObserver method)</a>
@@ -557,8 +531,6 @@
 </li>
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.memcpy_dtoh">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.core.DeviceInterface.memcpy_dtoh">(kernel_tuner.core.DeviceInterface method)</a>
-</li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.backends.compiler.CompilerFunctions.memcpy_htod">memcpy_htod() (kernel_tuner.backends.compiler.CompilerFunctions method)</a>
 
@@ -675,12 +647,10 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.prepare_kernel_string">prepare_kernel_string() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.preprocess_gpu_arguments">preprocess_gpu_arguments() (kernel_tuner.core.DeviceInterface static method)</a>
+      <li><a href="design.html#kernel_tuner.util.print_config">print_config() (in module kernel_tuner.util)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="design.html#kernel_tuner.util.print_config">print_config() (in module kernel_tuner.util)</a>
-</li>
       <li><a href="design.html#kernel_tuner.util.print_config_output">print_config_output() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.process_cache">process_cache() (in module kernel_tuner.util)</a>
@@ -714,8 +684,6 @@
 </li>
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.ready_argument_list">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.core.DeviceInterface.ready_argument_list">(kernel_tuner.core.DeviceInterface method)</a>
-</li>
       </ul></li>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.register_configuration">register_configuration() (kernel_tuner.observers.BenchmarkObserver method)</a>
 </li>
@@ -746,8 +714,6 @@
 </li>
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.run_kernel">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
-        <li><a href="design.html#kernel_tuner.core.DeviceInterface.run_kernel">(kernel_tuner.core.DeviceInterface method)</a>
-</li>
       </ul></li>
       <li><a href="design.html#kernel_tuner.util.RuntimeFailedConfig">RuntimeFailedConfig (class in kernel_tuner.util)</a>
 </li>
@@ -760,8 +726,6 @@
       <li><a href="design.html#kernel_tuner.strategies.common.scale_from_params">scale_from_params() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner">SequentialRunner (class in kernel_tuner.runners.sequential)</a>
-</li>
-      <li><a href="design.html#kernel_tuner.core.DeviceInterface.set_nvml_parameters">set_nvml_parameters() (kernel_tuner.core.DeviceInterface method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.setup_block_and_grid">setup_block_and_grid() (in module kernel_tuner.util)</a>
 </li>

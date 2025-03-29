@@ -101,11 +101,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#device-interfaces">Device Interfaces</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-core-deviceinterface">kernel_tuner.core.DeviceInterface</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.core.DeviceInterface"><code class="docutils literal notranslate"><span class="pre">DeviceInterface</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#backends">Backends</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-backends-pycuda-pycudafunctions">kernel_tuner.backends.pycuda.PyCudaFunctions</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.backends.pycuda.PyCudaFunctions"><code class="docutils literal notranslate"><span class="pre">PyCudaFunctions</span></code></a></li>
 </ul>
@@ -418,137 +414,8 @@ execution times.</p>
 
 </section>
 </section>
-<section id="device-interfaces">
-<h2>Device Interfaces<a class="headerlink" href="#device-interfaces" title="Link to this heading">¶</a></h2>
-<section id="kernel-tuner-core-deviceinterface">
-<h3>kernel_tuner.core.DeviceInterface<a class="headerlink" href="#kernel-tuner-core-deviceinterface" title="Link to this heading">¶</a></h3>
-<dl class="py class">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.core.</span></span><span class="sig-name descname"><span class="pre">DeviceInterface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface" title="Link to this definition">¶</a></dt>
-<dd><p>Class that offers a High-Level Device Interface to the rest of the Kernel Tuner</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.__init__" title="Link to this definition">¶</a></dt>
-<dd><p>Instantiate the DeviceInterface, based on language in kernel source</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel sources</p></li>
-<li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
-CUDA-capable GPUs or OpenCL devices you may use this to select one,
-0 by default. Ignored if you are tuning host code by passing lang=”C”.</p></li>
-<li><p><strong>platform</strong> – OpenCL platform to use, in case you have multiple
-OpenCL platforms you may use this to select one,
-0 by default. Ignored if not using OpenCL.</p></li>
-<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels.
-Currently supported: “CUDA”, “OpenCL”, “HIP” or “C”</p></li>
-<li><p><strong>compiler_options</strong> (<em>list</em><em> of </em><em>strings</em>) – The compiler options to use when compiling kernels for this device.</p></li>
-<li><p><strong>iterations</strong> (<em>int</em>) – Number of iterations to be used when benchmarking using this device.</p></li>
-<li><p><strong>times</strong> (<em>bool</em>) – Return the execution time of all iterations.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark">
-<span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_nvml_setting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark" title="Link to this definition">¶</a></dt>
-<dd><p>Benchmark the kernel instance.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark_continuous">
-<span class="sig-name descname"><span class="pre">benchmark_continuous</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark_continuous" title="Link to this definition">¶</a></dt>
-<dd><p>Benchmark continuously for at least ‘duration’ seconds</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark_default">
-<span class="sig-name descname"><span class="pre">benchmark_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark_default" title="Link to this definition">¶</a></dt>
-<dd><p>Benchmark one kernel execution for ‘iterations’ at a time</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.benchmark_prologue">
-<span class="sig-name descname"><span class="pre">benchmark_prologue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.benchmark_prologue" title="Link to this definition">¶</a></dt>
-<dd><p>Benchmark prologue one kernel execution per PrologueObserver</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.check_kernel_output">
-<span class="sig-name descname"><span class="pre">check_kernel_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verify</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.check_kernel_output" title="Link to this definition">¶</a></dt>
-<dd><p>runs the kernel once and checks the result against answer</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.compile_kernel">
-<span class="sig-name descname"><span class="pre">compile_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.compile_kernel" title="Link to this definition">¶</a></dt>
-<dd><p>compile the kernel for this specific instance</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.copy_constant_memory_args">
-<span class="sig-name descname"><span class="pre">copy_constant_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.copy_constant_memory_args" title="Link to this definition">¶</a></dt>
-<dd><p>adds constant memory arguments to the most recently compiled module</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.copy_shared_memory_args">
-<span class="sig-name descname"><span class="pre">copy_shared_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">smem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.copy_shared_memory_args" title="Link to this definition">¶</a></dt>
-<dd><p>adds shared memory arguments to the most recently compiled module</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.copy_texture_memory_args">
-<span class="sig-name descname"><span class="pre">copy_texture_memory_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.copy_texture_memory_args" title="Link to this definition">¶</a></dt>
-<dd><p>adds texture memory arguments to the most recently compiled module</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.create_kernel_instance">
-<span class="sig-name descname"><span class="pre">create_kernel_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.create_kernel_instance" title="Link to this definition">¶</a></dt>
-<dd><p>create kernel instance from kernel source, parameters, problem size, grid divisors, and so on</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.get_environment">
-<span class="sig-name descname"><span class="pre">get_environment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.get_environment" title="Link to this definition">¶</a></dt>
-<dd><p>Return dictionary with information about the environment</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.memcpy_dtoh">
-<span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.memcpy_dtoh" title="Link to this definition">¶</a></dt>
-<dd><p>perform a device to host memory copy</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.preprocess_gpu_arguments">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">preprocess_gpu_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.preprocess_gpu_arguments" title="Link to this definition">¶</a></dt>
-<dd><p>Get a flat list of arguments based on the configuration given by <cite>params</cite></p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.ready_argument_list">
-<span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.ready_argument_list" title="Link to this definition">¶</a></dt>
-<dd><p>ready argument list to be passed to the kernel, allocates gpu mem if necessary</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.run_kernel">
-<span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.run_kernel" title="Link to this definition">¶</a></dt>
-<dd><p>Run a compiled kernel instance on a device</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="kernel_tuner.core.DeviceInterface.set_nvml_parameters">
-<span class="sig-name descname"><span class="pre">set_nvml_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.core.DeviceInterface.set_nvml_parameters" title="Link to this definition">¶</a></dt>
-<dd><p>Set the NVML parameters. Avoids setting time leaking into benchmark time.</p>
-</dd></dl>
-
-</dd></dl>
-
-</section>
+<section id="backends">
+<h2>Backends<a class="headerlink" href="#backends" title="Link to this heading">¶</a></h2>
 <section id="kernel-tuner-backends-pycuda-pycudafunctions">
 <h3>kernel_tuner.backends.pycuda.PyCudaFunctions<a class="headerlink" href="#kernel-tuner-backends-pycuda-pycudafunctions" title="Link to this heading">¶</a></h3>
 <dl class="py class">
@@ -1565,18 +1432,18 @@ to be numpy objects, such as numpy.ndarray or numpy.int32, and so on.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.hip.HipFunctions.ready_argument_list">
 <span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.hip.HipFunctions.ready_argument_list" title="Link to this definition">¶</a></dt>
-<dd><p>Ready argument list to be passed to the HIP function.
-:param arguments: List of arguments to be passed to the HIP function.</p>
-<blockquote>
-<div><p>The order should match the argument list on the HIP function.
-Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.</p>
-</div></blockquote>
+<dd><p>Ready argument list to be passed to the HIP function.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>List of arguments to be passed to the HIP function.</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy objects</em><em>)</em>) – List of arguments to be passed to the HIP function.
+The order should match the argument list on the HIP function.
+Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>list</p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of arguments to be passed to the HIP function.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
 </dd>
 </dl>
 </dd></dl>
