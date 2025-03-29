@@ -49,7 +49,7 @@ building blocks for implementing runners.
 The observers are explained in :ref:`observers`.
 
 At the bottom, the backends are shown.
-PyCUDA, CuPy, cuda-python, PyOpenCL and PyHIP are for tuning either CUDA, OpenCL, or HIP kernels.
+PyCUDA, CuPy, cuda-python, PyOpenCL and HIP Python are for tuning either CUDA, OpenCL, or HIP kernels.
 The CompilerFunctions implementation can call any compiler, typically NVCC
 or GCC is used. There is limited support for tuning Fortran kernels.
 This backend was created not just to be able to tune C

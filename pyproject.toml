@@ -16,6 +16,7 @@ authors = [
     "Willem-Jan Palenstijn <w.j.palenstijn@liacs.leidenuniv.nl>",
     "Bram Veenboer <veenboer@astron.nl>",
     "Richard Schoonhoven <Richard.Schoonhoven@cwi.nl>",
+    "Leon Oostrum <l.oostrum@esciencecenter.nl",
 ]
 
 readme = "README.md"
@@ -53,15 +54,17 @@ repository = "https://github.com/KernelTuner/kernel_tuner"
 "Tracker" = "https://github.com/KernelTuner/kernel_tuner/issues"
 [tool.poetry.build]
 generate-setup-file = false
+[tool.poetry.scripts]
+kernel_tuner = "kernel_tuner.interface:entry_point"
 
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"          # NOTE when changing the supported Python versions, also change the test versions in the noxfile
-numpy = "^1.26.0"              # Python 3.12 requires numpy at least 1.26
-scipy = ">=1.11.0"
+python = ">=3.9,<3.15"    # NOTE when changing the supported Python versions, also change the test versions in the noxfile
+numpy = "^1.26.0"          # Python 3.12 requires numpy at least 1.26
+scipy = ">=1.11.0"         # held back by Python 3.9
 packaging = "*"                 # required by file_utils
 jsonschema = "*"
-python-constraint2 = "^2.0.0b5"
+python-constraint2 = "^2.1.0"
 xmltodict = "*"
 pandas = ">=2.0.0"
 scikit-learn = ">=1.0.2"
@@ -79,7 +82,7 @@ pynvml = { version = "^11.4.1", optional = true }
 # OpenCL
 pyopencl = { version = "*", optional = true } # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 # HIP
-pyhip-interface = { version = "*", optional = true }
+hip-python-fork = { version = "*", optional = true }
 # Tutorial (for the notebooks used in the examples)
 jupyter = { version = "^1.0.0", optional = true }
 matplotlib = { version = "^3.5.0", optional = true }
@@ -88,7 +91,7 @@ matplotlib = { version = "^3.5.0", optional = true }
 cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
 opencl = ["pyopencl"]
 cuda_opencl = ["pycuda", "pyopencl"]
-hip = ["pyhip-interface"]
+hip = ["hip-python-fork"]
 tutorial = ["jupyter", "matplotlib", "nvidia-ml-py"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
@@ -111,13 +114,14 @@ markupsafe = "^2.0.1"       # TODO why do we need markupsafe here?
 optional = true
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.0"
+pytest-timeout = "^2.3.1"
 pytest-cov = "^5.0.0"
 mock = "^5.1.0"
 nox = "^2024.4.15"
 nox-poetry = "^1.0.3"
 ruff = "^0.4.4"
 pep440 = "^0.1.2"
-tomli = "^2.0.1"      # held back by Python <= 3.10, can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
+tomli = "^2.0.1"          # held back by Python <= 3.10, can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
 
 # development dependencies are unused for now, as this is already covered by test and docs
 # # ATTENTION: if anything is changed here, run `poetry update`
