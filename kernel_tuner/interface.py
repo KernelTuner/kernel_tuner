@@ -598,8 +598,8 @@ def tune_kernel(
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params, observers, simulation_mode=simulation_mode)
 
-    # check whether block_size_names are used as expected
-    util.check_block_size_params_names_list(block_size_names, tune_params)
+    # check whether block_size_names are used
+    block_size_names = util.check_block_size_params_names_list(block_size_names, tune_params)
 
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
@@ -691,8 +691,17 @@ def tune_kernel(
     if verbose:
         print(f"Searchspace has {searchspace.size} configurations after restrictions.")
 
-    # call the strategy to execute the tuning process
+    # register the times and raise an exception if the budget is exceeded
+    if "time_limit" in tuning_options:
+        tuning_options["startup_time"] = perf_counter() - start_overhead_time
+        if tuning_options["startup_time"] > tuning_options["time_limit"]:
+            raise RuntimeError(
+                f"The startup time of the tuning process ({tuning_options['startup_time']} seconds) has exceeded the time limit ({tuning_options['time_limit']} seconds). "
+                "Please increase the time limit or decrease the size of the search space."
+            )
     tuning_options["start_time"] = perf_counter()
+
+    # call the strategy to execute the tuning process
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
 

@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "kernel_tuner"
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.2.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.3.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -48,13 +48,13 @@ classifiers = [
 ]
 
 # ATTENTION: if anything is changed here, run `poetry update`
-requires-python = ">=3.10,<4" # <4 is because of hip-python-fork  # NOTE when changing the Python versions, also change the test versions in the Noxfile and GitHub Actions
+requires-python = ">=3.10,<4" # <4 is because of hip-python  # NOTE when changing the Python versions, also change the test versions in the Noxfile and GitHub Actions
 dependencies = [
     "numpy (>=1.26.0,<2.0.0)",    # Python 3.12 requires numpy at least 1.26, CuPy does not support 2.0
     "scipy>=1.14.1",
     "packaging",        # required by file_utils
     "jsonschema",
-    "python-constraint2>=2.2.0",
+    "python-constraint2>=2.2.2",
     "xmltodict",
     "pandas>=2.0.0",
     "scikit-learn>=1.0.2",
@@ -83,11 +83,20 @@ include = [
 # cupy-cuda11x = { version = "*", optional = true }    # NOTE: these are completely optional dependencies as described in CONTRIBUTING.rst
 # cupy-cuda12x = { version = "*", optional = true }
 # cuda-python = { version = "*", optional = true }
+
+[[tool.poetry.source]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+priority = "explicit"
+
+[tool.poetry.dependencies]
+hip-python = { version = "^6.3.3.540.31", source = "testpypi", optional = true }  # Note: when released, switch this package to pypi and remove tool.poetry.source and move this to [project.optional-dependencies]
+
 [project.optional-dependencies]
 cuda = ["pycuda>=2025.1", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 opencl = ["pyopencl"]                                                   # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 cuda_opencl = ["pycuda>=2024.1", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
-hip = ["hip-python-fork"]
+hip = ["hip-python"]
 tutorial = ["jupyter>=1.0.0", "matplotlib>=3.5.0", "nvidia-ml-py>=12.535.108"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
