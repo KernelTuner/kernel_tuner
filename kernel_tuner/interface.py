@@ -684,6 +684,7 @@ def tune_kernel(
 
     # call the strategy to execute the tuning process
     tuning_options["start_time"] = perf_counter()
+    tuning_options["startup_time"] = perf_counter() - start_overhead_time
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
 
