@@ -1,16 +1,16 @@
-"""This module contains the interface of all kernel_tuner backends"""
+"""This module contains the interface of all kernel_tuner backends."""
 from __future__ import print_function
 
 from abc import ABC, abstractmethod
 
 
 class Backend(ABC):
-    """Base class for kernel_tuner backends"""
+    """Base class for kernel_tuner backends."""
 
     @abstractmethod
     def ready_argument_list(self, arguments):
         """This method must implement the allocation of the arguments on device memory."""
-        pass
+        return arguments
 
     @abstractmethod
     def compile(self, kernel_instance):
@@ -59,7 +59,7 @@ class Backend(ABC):
 
 
 class GPUBackend(Backend):
-    """Base class for GPU backends"""
+    """Base class for GPU backends."""
 
     @abstractmethod
     def __init__(self, device, iterations, compiler_options, observers):
@@ -82,7 +82,7 @@ class GPUBackend(Backend):
 
 
 class CompilerBackend(Backend):
-    """Base class for compiler backends"""
+    """Base class for compiler backends."""
 
     @abstractmethod
     def __init__(self, iterations, compiler_options, compiler):

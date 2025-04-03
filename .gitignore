@@ -2,6 +2,8 @@
 poetry.lock
 noxenv.txt
 noxsettings.toml
+hyperparamtuning/
+*.prof
 
 ### Python ###
 *.pyc
@@ -16,6 +18,8 @@ push_to_pypi.sh
 .nfs*
 *.log
 *.json
+!kernel_tuner/schema/T1/1.0.0/input-schema.json
+!test/test_T1_input.json
 *.csv
 .cache
 *.ipynb_checkpoints
