@@ -1,8 +1,10 @@
 import ast
+import numbers
 import re
 from pathlib import Path
 from random import choice, shuffle
-from typing import List
+from typing import List, Union
+from warnings import warn
 
 import numpy as np
 from constraint import (
@@ -12,13 +14,26 @@ from constraint import (
     MaxProdConstraint,
     MinConflictsSolver,
     OptimizedBacktrackingSolver,
+    # ParallelSolver,
     Problem,
     RecursiveBacktrackingSolver,
     Solver,
 )
 
+try:
+    import torch
+    from torch import Tensor
+
+    torch_available = True
+except ImportError:
+    torch_available = False
+
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
-from kernel_tuner.util import compile_restrictions, default_block_size_names
+from kernel_tuner.util import (
+    compile_restrictions,
+    default_block_size_names,
+    get_interval,
+)
 
 supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming"]
 
@@ -34,6 +49,7 @@ class Searchspace:
         block_size_names=default_block_size_names,
         build_neighbors_index=False,
         neighbor_method=None,
+        from_cache: dict = None,
         framework="PythonConstraint",
         solver_method="PC_OptimizedBacktrackingSolver",
         path_to_ATF_cache: Path = None,
@@ -45,18 +61,39 @@ class Searchspace:
             adjacent: picks closest parameter value in both directions for each parameter
             Hamming: any parameter config with 1 different parameter value is a neighbor
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
+        Optionally an imported cache can be used instead with `from_cache`, in which case the `tune_params`, `restrictions` and `max_threads` arguments can be set to None, and construction is skipped.
         """
+        # check the arguments
+        if from_cache is not None:
+            assert (
+                tune_params is None and restrictions is None and max_threads is None
+            ), "When `from_cache` is used, the positional arguments must be set to None."
+            tune_params = from_cache["tune_params"]
+        if from_cache is None:
+            assert tune_params is not None and max_threads is not None, "Must specify positional arguments."
+
         # set the object attributes using the arguments
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
-        self.restrictions = restrictions
+        self._tensorspace = None
+        self.tensor_dtype = torch.float32 if torch_available else None
+        self.tensor_device = torch.device("cpu") if torch_available else None
+        self.tensor_kwargs = dict(dtype=self.tensor_dtype, device=self.tensor_device)
+        self._tensorspace_bounds = None
+        self._tensorspace_bounds_indices = []
+        self._tensorspace_categorical_dimensions = []
+        self._tensorspace_param_config_structure = []
+        self._map_tensor_to_param = {}
+        self._map_param_to_tensor = {}
+        self.restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
-        self._modified_restrictions = restrictions
+        self._modified_restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
+        self.solver_method = solver_method
         self.__neighbor_cache = dict()
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
@@ -66,43 +103,66 @@ class Searchspace:
         restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
         if (
             len(restrictions) > 0
-            and any(isinstance(restriction, str) for restriction in restrictions)
-            and not (framework_l == "pysmt" or framework_l == "pyatf" or framework_l == "bruteforce")
+            and (
+                any(isinstance(restriction, str) for restriction in restrictions)
+                or any(
+                    isinstance(restriction[0], str) for restriction in restrictions if isinstance(restriction, tuple)
+                )
+            )
+            and not (
+                framework_l == "pysmt" or framework_l == "bruteforce" or solver_method.lower() == "pc_parallelsolver"
+            )
         ):
             self.restrictions = compile_restrictions(
-                restrictions, tune_params, monolithic=False, try_to_constraint=framework_l == "pythonconstraint"
+                restrictions,
+                tune_params,
+                monolithic=False,
+                format=framework_l if framework_l == "pyatf" else None,
+                try_to_constraint=framework_l == "pythonconstraint",
             )
 
-        # get the framework given the framework argument
-        if framework_l == "pythonconstraint":
-            searchspace_builder = self.__build_searchspace
-        elif framework_l == "pysmt":
-            searchspace_builder = self.__build_searchspace_pysmt
-        elif framework_l == "pyatf":
-            searchspace_builder = self.__build_searchspace_pyATF
-        elif framework_l == "atf_cache":
-            searchspace_builder = self.__build_searchspace_ATF_cache
-            self.path_to_ATF_cache = path_to_ATF_cache
-        elif framework_l == "bruteforce":
-            searchspace_builder = self.__build_searchspace_bruteforce
+        # if an imported cache, skip building and set the values directly
+        if from_cache is not None:
+            configs = dict(from_cache["cache"]).values()
+            self.list = list(tuple([v for p, v in c.items() if p in self.tune_params]) for c in configs)
+            self.size = len(self.list)
+            self.__dict = dict(zip(self.list, range(self.size)))
         else:
-            raise ValueError(f"Invalid framework parameter {framework}")
+            # get the framework given the framework argument
+            if framework_l == "pythonconstraint":
+                searchspace_builder = self.__build_searchspace
+            elif framework_l == "pysmt":
+                searchspace_builder = self.__build_searchspace_pysmt
+            elif framework_l == "pyatf":
+                searchspace_builder = self.__build_searchspace_pyATF
+            elif framework_l == "atf_cache":
+                searchspace_builder = self.__build_searchspace_ATF_cache
+                self.path_to_ATF_cache = path_to_ATF_cache
+            elif framework_l == "bruteforce":
+                searchspace_builder = self.__build_searchspace_bruteforce
+            else:
+                raise ValueError(f"Invalid framework parameter {framework}")
 
-        # get the solver given the solver method argument
-        solver = ""
-        if solver_method.lower() == "pc_backtrackingsolver":
-            solver = BacktrackingSolver()
-        elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
-            solver = OptimizedBacktrackingSolver(forwardcheck=False)
-        elif solver_method.lower() == "pc_recursivebacktrackingsolver":
-            solver = RecursiveBacktrackingSolver()
-        elif solver_method.lower() == "pc_minconflictssolver":
-            solver = MinConflictsSolver()
-        else:
-            raise ValueError(f"Solver method {solver_method} not recognized.")
+            # get the solver given the solver method argument
+            solver = ""
+            if solver_method.lower() == "pc_backtrackingsolver":
+                solver = BacktrackingSolver()
+            elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
+                solver = OptimizedBacktrackingSolver(forwardcheck=False)
+            elif solver_method.lower() == "pc_parallelsolver":
+                raise NotImplementedError("ParallelSolver is not yet implemented")
+                # solver = ParallelSolver()
+            elif solver_method.lower() == "pc_recursivebacktrackingsolver":
+                solver = RecursiveBacktrackingSolver()
+            elif solver_method.lower() == "pc_minconflictssolver":
+                solver = MinConflictsSolver()
+            else:
+                raise ValueError(f"Solver method {solver_method} not recognized.")
 
-        # build the search space
-        self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
+            # build the search space
+            self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
+
+        # finalize construction
         self.__numpy = None
         self.num_params = len(self.tune_params)
         self.indices = np.arange(self.size)
@@ -145,7 +205,7 @@ class Searchspace:
     #         num_solutions: int = csp.n_solutions()  # number of solutions
     #         solutions = [csp.values(sol=i) for i in range(num_solutions)]  # list of solutions
 
-    def __build_searchspace_bruteforce(self, block_size_names: list, max_threads: int, solver = None):
+    def __build_searchspace_bruteforce(self, block_size_names: list, max_threads: int, solver=None):
         # bruteforce solving of the searchspace
 
         from itertools import product
@@ -167,9 +227,16 @@ class Searchspace:
                 restrictions = [restrictions]
             block_size_restriction_spaced = f"{' * '.join(used_block_size_names)} <= {max_threads}"
             block_size_restriction_unspaced = f"{'*'.join(used_block_size_names)} <= {max_threads}"
-            if block_size_restriction_spaced not in restrictions and block_size_restriction_unspaced not in restrictions:
+            if (
+                block_size_restriction_spaced not in restrictions
+                and block_size_restriction_unspaced not in restrictions
+            ):
                 restrictions.append(block_size_restriction_spaced)
-                if isinstance(self._modified_restrictions, list) and block_size_restriction_spaced not in self._modified_restrictions:
+                if (
+                    isinstance(self._modified_restrictions, list)
+                    and block_size_restriction_spaced not in self._modified_restrictions
+                ):
+                    print(f"added default block size restriction '{block_size_restriction_spaced}'")
                     self._modified_restrictions.append(block_size_restriction_spaced)
                     if isinstance(self.restrictions, list):
                         self.restrictions.append(block_size_restriction_spaced)
@@ -252,25 +319,76 @@ class Searchspace:
 
     def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
         """Builds the searchspace using pyATF."""
-        from pyatf import TP, Set, Tuner
+        from pyatf import TP, Interval, Set, Tuner
         from pyatf.cost_functions.generic import CostFunction
         from pyatf.search_techniques import Exhaustive
 
-        costfunc = CostFunction("echo 'hello'")
+        # Define a bogus cost function
+        costfunc = CostFunction(":")  # bash no-op
 
+        # add the Kernel Tuner default blocksize threads restrictions
+        assert isinstance(self.restrictions, list)
+        valid_block_size_names = list(
+            block_size_name for block_size_name in block_size_names if block_size_name in self.param_names
+        )
+        if len(valid_block_size_names) > 0:
+            # adding the default blocksize restriction requires recompilation because pyATF requires combined restrictions for the same parameter
+            max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
+            restrictions = self._modified_restrictions.copy() + [max_block_size_product]
+            self.restrictions = compile_restrictions(
+                restrictions, self.tune_params, format="pyatf", try_to_constraint=False
+            )
+
+        # build a dictionary of the restrictions, combined based on last parameter
+        res_dict = dict()
+        registered_params = list()
+        registered_restrictions = list()
+        for param in self.tune_params.keys():
+            registered_params.append(param)
+            for index, (res, params, source) in enumerate(self.restrictions):
+                if index in registered_restrictions:
+                    continue
+                if all(p in registered_params for p in params):
+                    if param in res_dict:
+                        raise KeyError(
+                            f"`{param}` is already in res_dict with `{res_dict[param][1]}`, can't add `{source}`"
+                        )
+                    res_dict[param] = (res, source)
+                    print(source, res, param, params)
+                    registered_restrictions.append(index)
+
+        # define the Tunable Parameters
         def get_params():
-            params = List()
-            for key, values in self.tune_params.items():
-                TP(key, Set(values))
+            params = list()
+            for index, (key, values) in enumerate(self.tune_params.items()):
+                vi = get_interval(values)
+                vals = (
+                    Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
+                )
+                constraint = res_dict.get(key, None)
+                constraint_source = None
+                if constraint is not None:
+                    constraint, constraint_source = constraint
+                # in case of a leftover monolithic restriction, append at the last parameter
+                if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
+                    res, params, source = self.restrictions[0]
+                    assert callable(res)
+                    constraint = res
+                params.append(TP(key, vals, constraint, constraint_source))
             return params
 
-        tuning_result = (
-            Tuner()
-            .tuning_parameters(*get_params())
-            .search_technique(Exhaustive())
-            .tune(costfunc)
+        # tune
+        _, _, tuning_data = (
+            Tuner().verbosity(0).tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
         )
-        return tuning_result
+
+        # transform the result into a list of parameter configurations for validation
+        tune_params = self.tune_params
+        parameter_tuple_list = list()
+        for entry in tuning_data.history._entries:
+            parameter_tuple_list.append(tuple(entry.configuration[p] for p in tune_params.keys()))
+        pl = self.__parameter_space_list_to_lookup_and_return_type(parameter_tuple_list)
+        return pl
 
     def __build_searchspace_ATF_cache(self, block_size_names: list, max_threads: int, solver: Solver):
         """Imports the valid configurations from an ATF CSV file, returns the searchspace, a dict of the searchspace for fast lookups and the size."""
@@ -323,10 +441,13 @@ class Searchspace:
         if len(valid_block_size_names) > 0:
             parameter_space.addConstraint(MaxProdConstraint(max_threads), valid_block_size_names)
             max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
-            if isinstance(self._modified_restrictions, list) and max_block_size_product not in self._modified_restrictions:
+            if (
+                isinstance(self._modified_restrictions, list)
+                and max_block_size_product not in self._modified_restrictions
+            ):
                 self._modified_restrictions.append(max_block_size_product)
                 if isinstance(self.restrictions, list):
-                    self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names))
+                    self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names, None))
 
         # construct the parameter space with the constraints applied
         return parameter_space.getSolutionsAsListDict(order=self.param_names)
@@ -339,7 +460,7 @@ class Searchspace:
 
                 # convert to a Constraint type if necessary
                 if isinstance(restriction, tuple):
-                    restriction, required_params = restriction
+                    restriction, required_params, _ = restriction
                 if callable(restriction) and not isinstance(restriction, Constraint):
                     restriction = FunctionConstraint(restriction)
 
@@ -348,12 +469,11 @@ class Searchspace:
                     parameter_space.addConstraint(restriction, required_params)
                 elif isinstance(restriction, Constraint):
                     all_params_required = all(param_name in required_params for param_name in self.param_names)
-                    parameter_space.addConstraint(
-                        restriction,
-                        None if all_params_required else required_params
-                    )
+                    parameter_space.addConstraint(restriction, None if all_params_required else required_params)
+                elif isinstance(restriction, str) and self.solver_method.lower() == "pc_parallelsolver":
+                    parameter_space.addConstraint(restriction)
                 else:
-                    raise ValueError(f"Unrecognized restriction {restriction}")
+                    raise ValueError(f"Unrecognized restriction type {type(restriction)} ({restriction})")
 
         # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
         elif callable(self.restrictions):
@@ -537,10 +657,115 @@ class Searchspace:
         # map(get) is ~40% faster than numpy[indices] (average based on six searchspaces with 10000, 100000 and 1000000 configs and 10 or 100 random indices)
         return list(map(self.list.__getitem__, indices))
 
-    def get_param_config_index(self, param_config: tuple):
+    def get_param_config_index(self, param_config: Union[tuple, any]):
         """Lookup the index for a parameter configuration, returns None if not found."""
+        if torch_available and isinstance(param_config, Tensor):
+            param_config = self.tensor_to_param_config(param_config)
         # constant time O(1) access - much faster than any other method, but needs a shadow dict of the search space
         return self.__dict.get(param_config, None)
+
+    def initialize_tensorspace(self, dtype=None, device=None):
+        """Encode the searchspace in a Tensor. Save the mapping. Call this function directly to control the precision or device used."""
+        assert self._tensorspace is None, "Tensorspace is already initialized"
+        skipped_count = 0
+        bounds = []
+        if dtype is not None:
+            self.tensor_dtype = dtype
+        if device is not None:
+            self.tensor_device = device
+        self.tensor_kwargs = dict(dtype=self.tensor_dtype, device=self.tensor_device)
+
+        # generate the mappings to and from tensor values
+        for index, param_values in enumerate(self.params_values):
+            # filter out parameters that do not matter, more efficient and avoids bounds problem
+            if len(param_values) < 2 or all(p == param_values[0] for p in param_values):
+                # keep track of skipped parameters, add them back in conversion functions
+                self._tensorspace_param_config_structure.append(param_values[0])
+                skipped_count += 1
+                continue
+            else:
+                self._tensorspace_param_config_structure.append(None)
+
+            # convert numericals to float, or encode categorical
+            if all(isinstance(v, numbers.Real) for v in param_values):
+                tensor_values = torch.tensor(param_values, dtype=self.tensor_dtype)
+            else:
+                self._tensorspace_categorical_dimensions.append(index - skipped_count)
+                # tensor_values = np.arange(len(param_values))
+                tensor_values = torch.arange(len(param_values), dtype=self.tensor_dtype)
+
+            # write the mappings to the object
+            self._map_param_to_tensor[index] = dict(zip(param_values, tensor_values.tolist()))
+            self._map_tensor_to_param[index] = dict(zip(tensor_values.tolist(), param_values))
+            bounds.append((tensor_values.min(), tensor_values.max()))
+            if tensor_values.min() < tensor_values.max():
+                self._tensorspace_bounds_indices.append(index - skipped_count)
+
+        # do some checks
+        assert len(self.params_values) == len(self._tensorspace_param_config_structure)
+        assert len(self._map_param_to_tensor) == len(self._map_tensor_to_param) == len(bounds)
+        assert len(self._tensorspace_bounds_indices) <= len(bounds)
+
+        # apply the mappings on the full searchspace
+        # numpy_repr = self.get_list_numpy()
+        # numpy_repr = np.apply_along_axis(self.param_config_to_tensor, 1, numpy_repr)
+        # self._tensorspace = torch.from_numpy(numpy_repr.astype(self.tensor_dtype)).to(self.tensor_device)
+        self._tensorspace = torch.stack(tuple(map(self.param_config_to_tensor, self.list)))
+
+        # set the bounds in the correct format (one array for the min, one for the max)
+        bounds = torch.tensor(bounds, **self.tensor_kwargs)
+        self._tensorspace_bounds = torch.cat([bounds[:, 0], bounds[:, 1]]).reshape((2, bounds.shape[0]))
+
+    def get_tensorspace(self):
+        """Get the searchspace encoded in a Tensor. To use a non-default dtype or device, call `initialize_tensorspace` first."""
+        if self._tensorspace is None:
+            self.initialize_tensorspace()
+        return self._tensorspace
+
+    def get_tensorspace_categorical_dimensions(self):
+        """Get the a list of the categorical dimensions in the tensorspace."""
+        return self._tensorspace_categorical_dimensions
+
+    def param_config_to_tensor(self, param_config: tuple):
+        """Convert from a parameter configuration to a Tensor."""
+        if len(self._map_param_to_tensor) == 0:
+            self.initialize_tensorspace()
+        array = []
+        for i, param in enumerate(param_config):
+            if self._tensorspace_param_config_structure[i] is not None:
+                continue  # skip over parameters not in the tensorspace
+            mapping = self._map_param_to_tensor[i]
+            conversions = [None, str, float, int, bool]
+            for c in conversions:
+                try:
+                    c_param = param if c is None else c(param)
+                    array.append(mapping[c_param])
+                    break
+                except (KeyError, ValueError) as e:
+                    if c == conversions[-1]:
+                        raise KeyError(f"No variant of {param} could be found in {mapping}") from e
+        return torch.tensor(array, **self.tensor_kwargs)
+
+    def tensor_to_param_config(self, tensor):
+        """Convert from a Tensor to a parameter configuration."""
+        assert tensor.dim() == 1, f"Parameter configuration tensor must be 1-dimensional, is {tensor.dim()} ({tensor})"
+        if len(self._map_tensor_to_param) == 0:
+            self.initialize_tensorspace()
+        config = self._tensorspace_param_config_structure.copy()
+        skip_counter = 0
+        for i, param in enumerate(config):
+            if param is not None:
+                skip_counter += 1
+            else:
+                value = tensor[i - skip_counter].item()
+                config[i] = self._map_tensor_to_param[i][value]
+        return tuple(config)
+
+    def get_tensorspace_bounds(self):
+        """Get the bounds to the tensorspace parameters, returned as a 2 x d dimensional tensor, and the indices of the parameters."""
+        if self._tensorspace is None:
+            self.initialize_tensorspace()
+        return self._tensorspace_bounds, self._tensorspace_bounds_indices
 
     def __prepare_neighbors_index(self):
         """Prepare by calculating the indices for the individual parameters."""
@@ -639,6 +864,11 @@ class Searchspace:
 
     def get_random_sample(self, num_samples: int) -> List[tuple]:
         """Get the parameter configurations for a random, non-conflicting sample (caution: not unique in consecutive calls)."""
+        if self.size < num_samples:
+            warn(
+                f"Too many samples requested ({num_samples}), reducing the number of samples to the searchspace size ({self.size})"
+            )
+            num_samples = self.size
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
 
     def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None) -> List[int]:
@@ -752,3 +982,39 @@ class Searchspace:
                 f"The number of ordered parameter configurations ({len(ordered_param_configs)}) differs from the original number of parameter configurations ({len(param_configs)})"
             )
         return ordered_param_configs
+
+    def to_ax_searchspace(self):
+        """Convert this searchspace to an Ax SearchSpace."""
+        from ax import ChoiceParameter, FixedParameter, ParameterType, SearchSpace
+
+        # create searchspace
+        ax_searchspace = SearchSpace([])
+
+        # add the parameters
+        for param_name, param_values in self.tune_params.items():
+            if len(param_values) == 0:
+                continue
+
+            # convert the types
+            assert all(
+                isinstance(param_values[0], type(v)) for v in param_values
+            ), f"Parameter values of mixed types are not supported: {param_values}"
+            param_type_mapping = {
+                str: ParameterType.STRING,
+                int: ParameterType.INT,
+                float: ParameterType.FLOAT,
+                bool: ParameterType.BOOL,
+            }
+            param_type = param_type_mapping[type(param_values[0])]
+
+            # add the parameter
+            if len(param_values) == 1:
+                ax_searchspace.add_parameter(FixedParameter(param_name, param_type, param_values[0]))
+            else:
+                ax_searchspace.add_parameter(ChoiceParameter(param_name, param_type, param_values))
+
+        # add the constraints
+        raise NotImplementedError(
+            "Conversion to Ax SearchSpace has not been fully implemented as Ax Searchspaces can't capture full complexity."
+        )
+        # return ax_searchspace

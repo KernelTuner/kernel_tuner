@@ -1,0 +1,133 @@
+{
+    "General": {
+        "BenchmarkName": "convolution",
+        "OutputFormat": "JSON"
+    },
+    "ConfigurationSpace": {
+        "TuningParameters": [
+            {
+                "Name": "filter_width",
+                "Type": "int",
+                "Values": "[i for i in range(3,35,2)]",
+                "Default": 17
+            },
+            {
+                "Name": "filter_height",
+                "Type": "int",
+                "Values": "[i for i in range(3,35,2)]",
+                "Default": 17
+            },
+            {
+                "Name": "block_size_x",
+                "Type": "int",
+                "Values": "[16*i for i in range(1,9)]",
+                "Default": 16
+            },
+            {
+                "Name": "block_size_y",
+                "Type": "int",
+                "Values": "[2**i for i in range(6)]",
+                "Default": 16
+            },
+            {
+                "Name": "tile_size_x",
+                "Type": "int",
+                "Values": "[i for i in range(1,9)]",
+                "Default": 1
+            },
+            {
+                "Name": "tile_size_y",
+                "Type": "int",
+                "Values": "[i for i in range(1,9)]",
+                "Default": 1
+            },
+            {
+                "Name": "use_padding",
+                "Type": "int",
+                "Values": "[0, 1]",
+                "Default": 1
+            },
+            {
+                "Name": "read_only",
+                "Type": "int",
+                "Values": "[0, 1]",
+                "Default": 0
+            }
+        ],
+        "Conditions": [
+            {
+                "Expression": "use_padding==0 or (block_size_x % 32 != 0)",
+                "Parameters": [
+                    "use_padding",
+                    "block_size_x",
+                    "block_size_y"
+                ]
+            }
+        ]
+    },
+    "KernelSpecification": {
+        "Language": "CUDA",
+        "CompilerOptions": [
+            "-std=c++11"
+        ],
+        "BenchmarkName": "GEMM",
+        "KernelName": "convolution_kernel",
+        "KernelFile": "convolution.cu",
+        "GlobalSizeType": "CUDA",
+        "LocalSize": {
+            "X": "block_size_x",
+            "Y": "block_size_y",
+            "Z": "1"
+        },
+        "GlobalSize": {
+            "X": "(262144 // block_size_x) // tile_size_x",
+            "Y": "(262144 // block_size_y) // tile_size_y",
+            "Z": "1"
+        },
+        "GridDivX": [
+            "block_size_x",
+            "tile_size_x"
+        ],
+        "GridDivY": [
+            "block_size_y",
+            "tile_size_y"
+        ],
+        "ProblemSize": [
+            4096,
+            4096
+        ],
+        "SharedMemory": 0,
+        "Stream": null,
+        "Arguments": [
+            {
+                "Name": "output_image",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "WriteOnly",
+                "FillType": "Constant",
+                "Size": 16777216,
+                "FillValue": 0.0,
+                "Output": 1
+            },
+            {
+                "Name": "input_image",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "ReadOnly",
+                "FillType": "Random",
+                "Size": "(ProblemSize[0]+max(filter_width)-1) * (ProblemSize[1]+max(filter_height)-1)",
+                "FillValue": 1.0
+            },
+            {
+                "Name": "d_filter",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "ReadOnly",
+                "MemType": "Constant",
+                "FillType": "Random",
+                "Size": "max(filter_height) * max(filter_width)",
+                "FillValue": 1.0
+            }
+        ]
+    }
+}

@@ -1,4 +1,4 @@
-""" The default strategy that iterates through the whole parameter space """
+"""The default strategy that iterates through the whole parameter space."""
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 

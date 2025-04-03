@@ -27,6 +27,10 @@ simple_tuning_options = Options(dict(restrictions=restrict, tune_params=simple_t
 simple_searchspace = Searchspace(simple_tune_params, restrict, max_threads)
 simple_searchspace_bruteforce = Searchspace(simple_tune_params, restrict, max_threads, framework="bruteforce")
 
+simple_tune_params_single = simple_tune_params.copy()
+simple_tune_params_single["s"] = [True]
+simple_searchspace_single = Searchspace(simple_tune_params_single, restrict, max_threads)
+
 # 3.1 million combinations, of which 10600 pass the restrictions
 num_layers = 42
 tune_params = dict()

@@ -1,8 +1,10 @@
 from kernel_tuner.hyper import tune_hyper_params
 
-from .test_runners import cache_filename, env  # noqa: F401
+from .context import skip_if_no_methodology
+from .test_runners import env  # noqa: F401
 
 
+@skip_if_no_methodology
 def test_hyper(env):
 
     hyper_params = dict()
@@ -13,6 +15,6 @@ def test_hyper(env):
 
     target_strategy = "genetic_algorithm"
 
-    result = tune_hyper_params(target_strategy, hyper_params, *env, verbose=True, cache=cache_filename)
-    assert len(result) > 0
-
+    result, env = tune_hyper_params(target_strategy, hyper_params, iterations=1, verbose=True, cache=None)
+    assert len(result) == 2
+    assert 'best_config' in env

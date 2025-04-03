@@ -4,15 +4,15 @@ import sys
 
 import numpy as np
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
-_options = dict(T=("Starting temperature", 1.0),
-                       T_min=("End temperature", 0.001),
-                       alpha=("Alpha parameter", 0.995),
-                       maxiter=("Number of iterations within each annealing step", 1))
+_options = dict(T=("Starting temperature", 0.5),
+                       T_min=("End temperature", 0.0001),
+                       alpha=("Alpha parameter", 0.9975),
+                       maxiter=("Number of iterations within each annealing step", 2))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     # SA works with real parameter values and does not need scaling
@@ -27,7 +27,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # if user supplied max_fevals that is lower then max_iter we will
     # scale the annealing schedule to fit max_fevals
-    max_feval = tuning_options.strategy_options.get("max_fevals", max_iter)
+    max_fevals = tuning_options.strategy_options.get("max_fevals", max_iter)
+
+    # limit max_fevals to max size of the parameter space
+    max_fevals = min(searchspace.size, max_fevals)
 
     # get random starting point and evaluate cost
     pos = list(searchspace.get_random_sample(1)[0])
@@ -49,7 +52,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             new_pos = neighbor(pos, searchspace)
             try:
                 new_cost = cost_func(new_pos, check_restrictions=False)
-            except util.StopCriterionReached as e:
+            except StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
                 return cost_func.results
@@ -64,7 +67,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 old_cost = new_cost
 
         c = len(tuning_options.unique_results)
-        T = T_start * alpha**(max_iter/max_feval*c)
+        T = T_start * alpha**(max_iter/max_fevals*c)
 
         # check if solver gets stuck and if so restart from random position
         if c == c_old:

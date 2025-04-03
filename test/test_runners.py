@@ -158,7 +158,7 @@ def test_time_keeping(env):
                               answer=answer)
     max_time = (time.perf_counter() - start) * 1e3  # ms
 
-    assert len(result) >= 10
+    assert len(result) >= 10, f"{len(result)=} < 10 for {kernel_name=} with {tune_params=}"
 
     timings = [
         'total_framework_time', 'total_strategy_time', 'total_compile_time',

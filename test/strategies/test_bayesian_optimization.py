@@ -74,7 +74,7 @@ def test_bo_initialization():
     assert BO.searchspace == pruned_parameter_space
     assert BO.unvisited_cache == pruned_parameter_space
     assert len(BO.observations) == len(pruned_parameter_space)
-    assert BO.current_optimum == np.PINF
+    assert BO.current_optimum == np.inf
 
 def test_bo_initial_sample_lhs():
     sample = BO.draw_latin_hypercube_samples(num_samples=1)
