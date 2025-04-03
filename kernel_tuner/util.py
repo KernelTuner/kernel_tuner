@@ -195,8 +195,6 @@ def check_stop_criterion(to):
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
         raise StopCriterionReached("max_fevals reached")
     if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time) > to.time_limit):
-        if to.startup_time > to.time_limit:
-            raise RuntimeError(f"Time budget of {to.time_limit} seconds was already exceeded during startup ({to.startup_time} seconds).")
         raise StopCriterionReached("time limit exceeded")
 
 

@@ -682,9 +682,16 @@ def tune_kernel(
     if verbose:
         print(f"Searchspace has {searchspace.size} configurations after restrictions.")
 
-    # call the strategy to execute the tuning process
-    tuning_options["start_time"] = perf_counter()
+    # register the times and raise an exception if the budget is exceeded
     tuning_options["startup_time"] = perf_counter() - start_overhead_time
+    if tuning_options["startup_time"] > tuning_options["time_limit"]:
+        raise RuntimeError(
+            f"The startup time of the tuning process ({tuning_options["startup_time"]} seconds) has exceeded the time limit ({tuning_options["time_limit"]} seconds). "
+            "Please increase the time limit or decrease the size of the search space."
+        )
+    tuning_options["start_time"] = perf_counter()
+
+    # call the strategy to execute the tuning process
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
 
