@@ -687,7 +687,7 @@ def tune_kernel(
         tuning_options["startup_time"] = perf_counter() - start_overhead_time
         if tuning_options["startup_time"] > tuning_options["time_limit"]:
             raise RuntimeError(
-                f"The startup time of the tuning process ({tuning_options["startup_time"]} seconds) has exceeded the time limit ({tuning_options["time_limit"]} seconds). "
+                f"The startup time of the tuning process ({tuning_options['startup_time']} seconds) has exceeded the time limit ({tuning_options['time_limit']} seconds). "
                 "Please increase the time limit or decrease the size of the search space."
             )
     tuning_options["start_time"] = perf_counter()
