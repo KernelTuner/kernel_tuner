@@ -57,9 +57,14 @@ generate-setup-file = false
 [tool.poetry.scripts]
 kernel_tuner = "kernel_tuner.interface:entry_point"
 
+[[tool.poetry.source]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+priority = "explicit"
+
 # ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
-python = ">=3.10,<4" # <4 is because of hip-python-fork  # NOTE when changing the Python versions, also change the test versions in the Noxfile and GitHub Actions
+python = ">=3.10,<4" # <4 is because of hip-python  # NOTE when changing the Python versions, also change the test versions in the Noxfile and GitHub Actions
 numpy = "^1.26.0"          # Python >3.12 requires numpy >= 1.26
 scipy = ">=1.14.1"
 packaging = "*"                 # required by file_utils
@@ -72,6 +77,7 @@ scikit-learn = ">=1.0.2"
 
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
 # Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
+# ATTENTION: if anything is changed here, run `poetry update`
 # CUDA
 pycuda = { version = "^2025.1", optional = true }           # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 nvidia-ml-py = { version = "^12.535.108", optional = true }
@@ -82,7 +88,7 @@ pynvml = { version = "^11.4.1", optional = true }
 # OpenCL
 pyopencl = { version = "*", optional = true } # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 # HIP
-hip-python-fork = { version = "*", optional = true }
+hip-python = { version = "^6.3.3.540.31", source = "testpypi", optional = true }  # Note: when released, switch this package to pypi and remove tool.poetry.source
 # Tutorial (for the notebooks used in the examples)
 jupyter = { version = "^1.0.0", optional = true }
 matplotlib = { version = "^3.5.0", optional = true }
@@ -91,7 +97,7 @@ matplotlib = { version = "^3.5.0", optional = true }
 cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
 opencl = ["pyopencl"]
 cuda_opencl = ["pycuda", "pyopencl"]
-hip = ["hip-python-fork"]
+hip = ["hip-python"]
 tutorial = ["jupyter", "matplotlib", "nvidia-ml-py"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
