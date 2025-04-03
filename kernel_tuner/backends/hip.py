@@ -104,6 +104,7 @@ class HipFunctions(GPUBackend):
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the HIP function.
+
         :param arguments: List of arguments to be passed to the HIP function.
             The order should match the argument list on the HIP function.
             Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.

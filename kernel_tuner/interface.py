@@ -597,8 +597,8 @@ def tune_kernel(
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params, observers, simulation_mode=simulation_mode)
 
-    # check whether block_size_names are used as expected
-    util.check_block_size_params_names_list(block_size_names, tune_params)
+    # check whether block_size_names are used
+    block_size_names = util.check_block_size_params_names_list(block_size_names, tune_params)
 
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
