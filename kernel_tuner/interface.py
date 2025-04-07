@@ -613,12 +613,15 @@ def tune_kernel(
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
     tuning_options["unique_results"] = {}
 
-    # copy some values from strategy_options to tuning_options
+    # copy some values from strategy_options
+    searchspace_construction_options = {}
     if strategy_options:
         if "max_fevals" in strategy_options:
             tuning_options["max_fevals"] = strategy_options["max_fevals"]
         if "time_limit" in strategy_options:
-            tuning_options["time_limit"] = strategy_options["time_limit"]            
+            tuning_options["time_limit"] = strategy_options["time_limit"] 
+        if "searchspace_construction_options" in strategy_options:
+            searchspace_construction_options = strategy_options["searchspace_construction_options"]         
 
     # log the user inputs
     logging.debug("tune_kernel called")
@@ -681,7 +684,6 @@ def tune_kernel(
         tuning_options.cachefile = None
 
     # create search space
-    searchspace_construction_options = strategy_options["searchspace_construction_options"] if "searchspace_construction_options" in strategy_options else {}
     searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
