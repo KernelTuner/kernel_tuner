@@ -612,16 +612,21 @@ def tune_kernel(
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
     tuning_options["unique_results"] = {}
-    if strategy_options and "max_fevals" in strategy_options:
-        tuning_options["max_fevals"] = strategy_options["max_fevals"]
-    if strategy_options and "time_limit" in strategy_options:
-        tuning_options["time_limit"] = strategy_options["time_limit"]
 
+    # copy some values from strategy_options to tuning_options
+    if strategy_options:
+        if "max_fevals" in strategy_options:
+            tuning_options["max_fevals"] = strategy_options["max_fevals"]
+        if "time_limit" in strategy_options:
+            tuning_options["time_limit"] = strategy_options["time_limit"]            
+
+    # log the user inputs
     logging.debug("tune_kernel called")
     logging.debug("kernel_options: %s", util.get_config_string(kernel_options))
     logging.debug("tuning_options: %s", util.get_config_string(tuning_options))
     logging.debug("device_options: %s", util.get_config_string(device_options))
 
+    # check whether the selected strategy and options are valid
     if strategy:
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
@@ -676,7 +681,8 @@ def tune_kernel(
         tuning_options.cachefile = None
 
     # create search space
-    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
+    searchspace_construction_options = strategy_options["searchspace_construction_options"] if "searchspace_construction_options" in strategy_options else {}
+    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
     if verbose:

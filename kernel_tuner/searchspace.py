@@ -98,7 +98,7 @@ class Searchspace:
         elif framework_l == "bruteforce":
             searchspace_builder = self.__build_searchspace_bruteforce
         else:
-            raise ValueError(f"Invalid framework parameter {framework}")
+            raise ValueError(f"Invalid framework parameter '{framework}'")
 
         # get the solver given the solver method argument
         solver = ""
