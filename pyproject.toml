@@ -79,6 +79,7 @@ include = [
 
 # List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
 # Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
+# ATTENTION: if anything is changed here, run `poetry update`
 # CUDA
 # cupy-cuda11x = { version = "*", optional = true }    # NOTE: these are completely optional dependencies as described in CONTRIBUTING.rst
 # cupy-cuda12x = { version = "*", optional = true }
