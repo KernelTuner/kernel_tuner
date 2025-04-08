@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contribution guide &mdash; Kernel Tuner 1.1.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=6f037312"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Development environment" href="dev-environment.html" />
+    <link rel="prev" title="Design documentation" href="design.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.1.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="backends.html">Backends</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contribution guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#reporting-issues">Reporting Issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributing-code">Contributing Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#simple-development-setup">Simple development setup</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dev-environment.html">Development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contribution guide</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/contributing.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="toctree-wrapper compound">
+</div>
+<section id="contribution-guide">
+<span id="contributing"></span><h1>Contribution guide<a class="headerlink" href="#contribution-guide" title="Link to this heading">¶</a></h1>
+<p>Thank you for considering to contribute to Kernel Tuner!</p>
+<section id="reporting-issues">
+<h2>Reporting Issues<a class="headerlink" href="#reporting-issues" title="Link to this heading">¶</a></h2>
+<p>Not all contributions are code, creating an issue also helps us to improve. When you create an issue about a problem, please ensure the following:</p>
+<ul class="simple">
+<li><p>Describe what you expected to happen.</p></li>
+<li><p>If possible, include a minimal example to help us reproduce the issue.</p></li>
+<li><p>Describe what actually happened, including the output of any errors printed.</p></li>
+<li><p>List the version of Python, CUDA or OpenCL, and C compiler, if applicable.</p></li>
+</ul>
+</section>
+<section id="contributing-code">
+<h2>Contributing Code<a class="headerlink" href="#contributing-code" title="Link to this heading">¶</a></h2>
+<p>For contributing code to Kernel Tuner please select an issue to work on or create a new issue to propose a change or addition. For significant changes, it is required to first create an issue and discuss the proposed changes. Then fork the repository, create a branch, one per change or addition, and create a pull request.</p>
+<p>Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings for module public functions.</p>
+<p>Before creating a pull request please ensure the following:</p>
+<ul class="simple">
+<li><p>You are working in an up-to-date development environment</p></li>
+<li><p>You have written unit tests to test your additions and all unit tests pass (run <code class="code highlight bash docutils literal highlight-bash">nox</code>). If you do not have the required hardware, you can run <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-gpu</code>, or <code class="code highlight bash docutils literal highlight-bash">skip-cuda</code>, <code class="code highlight bash docutils literal highlight-bash">skip-hip</code>, <code class="code highlight bash docutils literal highlight-bash">skip-opencl</code>.</p></li>
+<li><p>The examples still work and produce the same (or better) results</p></li>
+<li><p>An entry about the change or addition is created in <code class="code highlight bash docutils literal highlight-bash">CHANGELOG.md</code></p></li>
+</ul>
+<p>If you are in doubt on where to put your additions to the Kernel Tuner, please
+have look at the <a class="reference internal" href="design.html#design-documentation"><span class="std std-ref">design documentation</span></a>, or discuss it in the issue regarding your additions.</p>
+</section>
+<section id="simple-development-setup">
+<span id="simple-dev-env"></span><h2>Simple development setup<a class="headerlink" href="#simple-development-setup" title="Link to this heading">¶</a></h2>
+<p>For small changes to the code you can setup a quick development environment with the following steps:</p>
+<ul class="simple">
+<li><p><code class="code highlight bash docutils literal highlight-bash">git<span class="w"> </span>clone<span class="w"> </span>git@github.com:KernelTuner/kernel_tuner.git</code></p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash"><span class="nb">cd</span><span class="w"> </span>kernel_tuner</code></p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.</code></p></li>
+</ul>
+<p>To run the tests in your local Python environment:</p>
+<ul class="simple">
+<li><p><code class="code highlight bash docutils literal highlight-bash">pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>doc/requirements_test.txt</code></p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">pytest<span class="w"> </span>-v<span class="w"> </span><span class="nb">test</span></code></p></li>
+</ul>
+<p>To build the documentation locally:</p>
+<ul class="simple">
+<li><p><code class="code highlight bash docutils literal highlight-bash">pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>doc/requirements.txt</code></p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash"><span class="nb">cd</span><span class="w"> </span>doc</code></p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">make<span class="w"> </span>html</code></p></li>
+</ul>
+<p>These instructions should be enough for most small contributions.
+For larger changes, or when you need to change the dependencies of Kernel Tuner, please see the documentation on setting up a <a class="reference external" href="https://kerneltuner.github.io/kernel_tuner/latest/dev-environment.html">full development environment</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="design.html" class="btn btn-neutral float-left" title="Design documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dev-environment.html" class="btn btn-neutral float-right" title="Development environment" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
