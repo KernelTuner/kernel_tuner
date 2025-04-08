@@ -89,14 +89,8 @@ kernel_tuner.runners.sequential.SimulationRunner
     :members:
 
 
-Device Interfaces
------------------
-
-kernel_tuner.core.DeviceInterface
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.core.DeviceInterface
-    :special-members: __init__
-    :members:
+Backends
+--------
 
 kernel_tuner.backends.pycuda.PyCudaFunctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
