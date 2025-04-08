@@ -34,7 +34,7 @@ except ImportError:
 try:
     from hip._util.types import DeviceArray
 except ImportError:
-    Pointer = Exception # using Exception here as a type that will never be among kernel arguments
+    Pointer = Exception  # using Exception here as a type that will never be among kernel arguments
     DeviceArray = Exception
 
 
@@ -160,22 +160,21 @@ class CompilerFunctions(CompilerBackend):
 
         for i, arg in enumerate(arguments):
             if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg)):
-                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}")
+                raise TypeError(
+                    f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}"
+                )
             dtype_str = arg.typestr if isinstance(arg, DeviceArray) else str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
                     data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
-                    numpy_arg = arg
                 else:
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
-                numpy_arg = arg
             elif is_cupy_array(arg):
                 data_ctypes = C.c_void_p(arg.data.ptr)
             elif isinstance(arg, DeviceArray):
                 data_ctypes = arg.as_c_void_p()
-                numpy_arg = None
 
             ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
             self.allocations.append(Argument(numpy=arg.copy(), ctypes=data_ctypes))
@@ -283,7 +282,7 @@ class CompilerFunctions(CompilerBackend):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                check=True
+                check=True,
             )
 
             subprocess.run(
@@ -294,7 +293,7 @@ class CompilerFunctions(CompilerBackend):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                check=True
+                check=True,
             )
 
             self.lib = np.ctypeslib.load_library(filename, ".")
