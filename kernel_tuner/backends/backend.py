@@ -57,11 +57,10 @@ class Backend(ABC):
         """This method must implement a host to device copy."""
         pass
 
-    def refresh_memory(self, arguments, should_sync):
-        """Copy the original content of the output memory to device memory."""
-        for i, arg in enumerate(arguments):
-            if should_sync[i]:
-                self.memcpy_htod(self.allocations[i], arg)
+    @abstractmethod
+    def refresh_memory(self, device_memory, host_arguments, should_sync):
+        """This method must implement refreshing the device memory with a clean copy."""
+        pass
 
 
 class GPUBackend(Backend):
@@ -86,6 +85,12 @@ class GPUBackend(Backend):
         """This method must implement the allocation and copy of texture memory to the GPU."""
         pass
 
+    def refresh_memory(self, gpu_memory, host_arguments, should_sync):
+        """Refresh the GPU memory with the untouched host arguments."""
+        for i, arg in enumerate(host_arguments):
+            if should_sync[i]:
+                self.memcpy_htod(gpu_memory[i], arg)
+
 
 class CompilerBackend(Backend):
     """Base class for compiler backends"""
@@ -93,6 +98,12 @@ class CompilerBackend(Backend):
     @abstractmethod
     def __init__(self, iterations, compiler_options, compiler):
         pass
+
+    def refresh_memory(self, gpu_memory, host_arguments, should_sync):
+        """Refresh the GPU memory with the untouched host arguments."""
+        for i, arg in enumerate(host_arguments):
+            if should_sync[i]:
+                self.memcpy_htod(self.allocations[i], arg)
 
     @abstractmethod
     def cleanup_lib(self):
