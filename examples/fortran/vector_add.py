@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """This is a minimal example for calling Fortran functions"""
 
-from __future__ import print_function
 import numpy as np
 from kernel_tuner import tune_kernel
 
@@ -29,6 +28,7 @@ def tune():
         tune_params,
         lang="C",
         compiler="gfortran",
+        compiler_options=["-fopenmp"],
     )
 
     return result
