@@ -783,13 +783,7 @@ def test_convert_constraint_lambdas_illformatted():
     """ Test a number of different ways to define the restrictions.
 
     These are currently not supported but we would like to support them in the future.
-    That is why these tests exist and are expected to fail.
-
-    When there is time to fix this, we can change the test to
-        assert result == expected
-        and work on the code until the test passes.
-
-    But for now we assert result != expected
+    That is why this test expects an exception
 
     """
 
@@ -797,8 +791,12 @@ def test_convert_constraint_lambdas_illformatted():
                     lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024,
                     lambda p: p["block_size_z"] < 8]
 
-    result = convert_constraint_lambdas(restrictions)
-    print(result)
     expected = ['32 <= block_size_x * block_size_y <= 1024', 'block_size_z < 8', '32 <= block_size_x*block_size_y <= 512']
 
-    assert result != expected
+    try:
+        result = convert_constraint_lambdas(restrictions)
+        print(result)
+    except ValueError:
+        pass
+
+

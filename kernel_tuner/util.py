@@ -1233,7 +1233,11 @@ def convert_constraint_lambdas(restrictions):
                 new_c = unparse_constraint_lambda(lambda_ast)
                 res.append(new_c)
 
-    return list(set(res))
+    result = list(set(res))
+    if not len(result) == len(restrictions):
+        raise ValueError("An error occured when parsing restrictions. If you mix lambdas and string-based restrictions, please define the lambda first.")
+
+    return result
 
 
 def compile_restrictions(
