@@ -23,11 +23,17 @@ from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
+from kernel_tuner.observers.tegra import TegraObserver
 
 try:
     import torch
 except ImportError:
     torch = util.TorchPlaceHolder()
+
+try:
+    from hip._util.types import DeviceArray
+except ImportError:
+    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
 
 _KernelInstance = namedtuple(
     "_KernelInstance",
@@ -105,7 +111,7 @@ class KernelSource(object):
         """
         logging.debug("get_kernel_string called")
 
-        if self.lang.upper() == "HYPERTUNER":
+        if hasattr(self, 'lang') and self.lang.upper() == "HYPERTUNER":
             return ""
 
         kernel_source = self.kernel_sources[index]
@@ -324,8 +330,9 @@ class DeviceInterface(object):
             raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
         self.dev = dev
 
-        # look for NVMLObserver in observers, if present, enable special tunable parameters through nvml
+        # look for NVMLObserver and TegraObserver in observers, if present, enable special tunable parameters through nvml/tegra
         self.use_nvml = False
+        self.use_tegra = False
         self.continuous_observers = []
         self.output_observers = []
         self.prologue_observers = []
@@ -334,6 +341,9 @@ class DeviceInterface(object):
                 if isinstance(obs, NVMLObserver):
                     self.nvml = obs.nvml
                     self.use_nvml = True
+                if isinstance(obs, TegraObserver):
+                    self.tegra = obs.tegra
+                    self.use_tegra = True
                 if hasattr(obs, "continuous_observer"):
                     self.continuous_observers.append(obs.continuous_observer)
                 if isinstance(obs, OutputObserver):
@@ -388,6 +398,7 @@ class DeviceInterface(object):
         for obs in self.benchmark_observers:
             result.update(obs.get_results())
 
+
     def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
         """Benchmark continuously for at least 'duration' seconds."""
         iterations = int(np.ceil(duration / (result["time"] / 1000)))
@@ -411,6 +422,7 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             result.update(obs.get_results())
 
+
     def set_nvml_parameters(self, instance):
         """Set the NVML parameters. Avoids setting time leaking into benchmark time."""
         if self.use_nvml:
@@ -424,6 +436,11 @@ class DeviceInterface(object):
                 self.nvml.gr_clock = instance.params["nvml_gr_clock"]
             if "nvml_mem_clock" in instance.params:
                 self.nvml.mem_clock = instance.params["nvml_mem_clock"]
+
+        if self.use_tegra:
+            if "tegra_gr_clock" in instance.params:
+                self.tegra.gr_clock = instance.params["tegra_gr_clock"]
+
 
     def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False):
         """Benchmark the kernel instance."""
@@ -491,7 +508,7 @@ class DeviceInterface(object):
 
             should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
         else:
-            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)) for arg in instance.arguments]
+            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
@@ -643,8 +660,10 @@ class DeviceInterface(object):
             shared_mem_error_messages = [
                 "uses too much shared data",
                 "local memory limit exceeded",
+                r"local memory \(\d+\) exceeds limit \(\d+\)",
             ]
-            if any(msg in str(e) for msg in shared_mem_error_messages):
+            error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
+            if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
                 logging.debug(
                     "compile_kernel failed due to kernel using too much shared memory"
                 )
@@ -653,7 +672,7 @@ class DeviceInterface(object):
                         f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
                     )
             else:
-                logging.debug("compile_kernel failed due to error: " + str(e))
+                print("compile_kernel failed due to error: " + error_message)
                 print("Error while compiling:", instance.name)
                 raise e
         return func
@@ -711,7 +730,7 @@ class DeviceInterface(object):
         )
 
         # check for templated kernel
-        if kernel_source.lang in ["CUDA", "NVCUDA"] and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA", "NVCUDA", "HIP"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments

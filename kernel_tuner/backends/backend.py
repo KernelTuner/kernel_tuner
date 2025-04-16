@@ -10,7 +10,7 @@ class Backend(ABC):
     @abstractmethod
     def ready_argument_list(self, arguments):
         """This method must implement the allocation of the arguments on device memory."""
-        pass
+        return arguments
 
     @abstractmethod
     def compile(self, kernel_instance):

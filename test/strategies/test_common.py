@@ -1,10 +1,13 @@
 import sys
 from time import perf_counter
 
+from pytest import raises
+
 from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
+from kernel_tuner.util import StopCriterionReached
 
 try:
     from mock import Mock
@@ -42,8 +45,10 @@ def test_cost_func():
                              restrictions=restrictions, strategy_options={},
                              verbose=True, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
-    time = CostFunc(Searchspace(tune_params, restrictions, 1024), tuning_options, runner)(x)
-    assert time == sys.float_info.max
+    
+    with raises(StopCriterionReached):
+        time = CostFunc(Searchspace(tune_params, restrictions, 1024), tuning_options, runner)(x)
+        assert time == sys.float_info.max
 
 
 def test_setup_method_arguments():

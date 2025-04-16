@@ -1,15 +1,22 @@
 """Module for functions related to hyperparameter optimization."""
 
-import itertools
-import warnings
 
-import numpy as np
+from pathlib import Path
+from random import randint
 
 import kernel_tuner
-from kernel_tuner.util import get_config_string
 
 
-def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
+def get_random_unique_filename(prefix = '', suffix=''):
+    """Get a random, unique filename that does not yet exist."""
+    def randpath():
+        return Path(f"{prefix}{randint(1000, 9999)}{suffix}")
+    path = randpath()
+    while path.exists():
+        path = randpath()
+    return path
+
+def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs):
     """Tune hyperparameters for a given strategy and kernel.
 
     This function is to be called just like tune_kernel, except that you specify a strategy
@@ -46,69 +53,37 @@ def tune_hyper_params(target_strategy, hyper_params, *args, **kwargs):
     #     - The methodology returns the fitness metric
     #     - The fitness metric is fed back into the meta-strategy
 
+    iterations = 1
+    if "iterations" in kwargs:
+        iterations = kwargs['iterations']
+        del kwargs['iterations']
 
-
-    if "cache" in kwargs:
-        del kwargs['cache']
+    # pass a temporary cache file to avoid duplicate execution
+    cachefile = get_random_unique_filename('temp_', '.json')
+    kwargs['cache'] = str(cachefile)
 
     def put_if_not_present(target_dict, key, value):
         target_dict[key] = value if key not in target_dict else target_dict[key]
 
-    put_if_not_present(kwargs, "verbose", False)
-    put_if_not_present(kwargs, "quiet", True)
+    put_if_not_present(kwargs, "verbose", True)
+    put_if_not_present(kwargs, "quiet", False)
     kwargs['simulation_mode'] = False
     kwargs['strategy'] = 'dual_annealing'
     kwargs['verify'] = None
+    arguments = [target_strategy]
 
-    return kernel_tuner.tune_kernel('hyperparamtuning', None, [], [], hyper_params, lang='Hypertuner', *args, **kwargs)
-
-
-
-
-    #last position argument is tune_params
-    tune_params = args[-1]
-
-    #find optimum
-    kwargs["strategy"] = "brute_force"
-    results, _ = kernel_tuner.tune_kernel(*args, **kwargs)
-    optimum = min(results, key=lambda p: p["time"])["time"]
-
-    #could throw a warning for the kwargs that will be overwritten, strategy(_options)
-    kwargs["strategy"] = target_strategy
-
-    parameter_space = itertools.product(*hyper_params.values())
-    all_results = []
-
-    for params in parameter_space:
-        strategy_options = dict(zip(hyper_params.keys(), params))
-
-        kwargs["strategy_options"] = strategy_options
-
-        fevals = []
-        p_of_opt = []
-        for _ in range(100):
-            #measure
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                results, _ = kernel_tuner.tune_kernel(*args, **kwargs)
-
-            #get unique function evaluations
-            unique_fevals = {",".join([str(v) for k, v in record.items() if k in tune_params])
-                             for record in results}
-
-            fevals.append(len(unique_fevals))
-            p_of_opt.append(min(results, key=lambda p: p["time"])["time"] / optimum * 100)
-
-        strategy_options["fevals"] = np.average(fevals)
-        strategy_options["fevals_std"] = np.std(fevals)
-
-        strategy_options["p_of_opt"] = np.average(p_of_opt)
-        strategy_options["p_of_opt_std"] = np.std(p_of_opt)
-
-        print(get_config_string(strategy_options))
-        all_results.append(strategy_options)
-
-    return all_results
+    # execute the hyperparameter tuning
+    result, env = kernel_tuner.tune_kernel('hyperparamtuning', None, [], arguments, hyper_params, *args, lang='Hypertuner',
+                                    objective='score', objective_higher_is_better=True, iterations=iterations, **kwargs)
+    
+    # remove the temporary cachefile and return only unique results in order
+    cachefile.unlink()
+    result_unique = dict()
+    for r in result:
+        config_id = ",".join(str(r[k]) for k in hyper_params.keys())
+        if config_id not in result_unique:
+            result_unique[config_id] = r
+    return list(result_unique.values()), env
 
 if __name__ == "__main__":  # TODO remove in production
     hyperparams = {
@@ -118,4 +93,6 @@ if __name__ == "__main__":  # TODO remove in production
         'c1': [1.0, 2.0, 3.0],
         'c2': [0.5, 1.0, 1.5]
     }
-    tune_hyper_params('pso', hyperparams)
+    result, env = tune_hyper_params('pso', hyperparams)
+    print(result)
+    print(env['best_config'])

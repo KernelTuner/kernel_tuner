@@ -1,21 +1,21 @@
-from datetime import datetime
+
+import ctypes as C
 
 import numpy as np
-import ctypes as C
 import pytest
 from pytest import raises
 
 try:
-    from mock import patch, Mock
+    from mock import Mock, patch
 except ImportError:
-    from unittest.mock import patch, Mock
+    from unittest.mock import Mock, patch
 
 import kernel_tuner
-from kernel_tuner.backends.compiler import CompilerFunctions, Argument, is_cupy_array, get_array_module
-from kernel_tuner.core import KernelSource, KernelInstance
 from kernel_tuner import util
+from kernel_tuner.backends.compiler import Argument, CompilerFunctions, get_array_module, is_cupy_array
+from kernel_tuner.core import KernelInstance, KernelSource
 
-from .context import skip_if_no_gfortran, skip_if_no_gcc, skip_if_no_openmp, skip_if_no_cupy
+from .context import skip_if_no_cupy, skip_if_no_gcc, skip_if_no_gfortran, skip_if_no_openmp
 from .test_runners import env as cuda_env  # noqa: F401
 
 
@@ -198,11 +198,11 @@ def test_compile_detects_device_code(npct, subprocess):
     cfunc = CompilerFunctions()
     cfunc.compile(kernel_instance)
 
-    print(subprocess.check_call.call_args_list)
+    print(subprocess.run.call_args_list)
 
     # assert the filename suffix used for source compilation is .cu
     dot_cu_used = False
-    for call in subprocess.check_call.call_args_list:
+    for call in subprocess.run.call_args_list:
         args, kwargs = call
         args = args[0]
         print(args)
