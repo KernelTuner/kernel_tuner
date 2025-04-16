@@ -2,24 +2,22 @@
 requires = ["poetry-core>=1.7.0", "setuptools>=67.7.2"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry]
+[project]
 name = "kernel_tuner"
-packages = [{ include = "kernel_tuner", from = "." }]
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.1.2" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.2.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    "Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>",
-    "Alessio Sclocco <a.sclocco@esciencecenter.nl>",
-    "Stijn Heldens <s.heldens@esciencecenter.nl>",
-    "Floris-Jan Willemsen <f.j.Willemsen@esciencecenter.nl>",
-    "Willem-Jan Palenstijn <w.j.palenstijn@liacs.leidenuniv.nl>",
-    "Bram Veenboer <veenboer@astron.nl>",
-    "Richard Schoonhoven <Richard.Schoonhoven@cwi.nl>",
-    "Leon Oostrum <l.oostrum@esciencecenter.nl",
+    { name = "Ben van Werkhoven", email = "b.vanwerkhoven@esciencecenter.nl"},
+    { name = "Alessio Sclocco", email = "a.sclocco@esciencecenter.nl" },
+    { name = "Stijn Heldens", email = "s.heldens@esciencecenter.nl" },
+    { name = "Floris-Jan Willemsen", email = "f.j.Willemsen@esciencecenter.nl" },
+    { name = "Willem-Jan Palenstijn", email = "w.j.palenstijn@liacs.leidenuniv.nl" },
+    { name = "Bram Veenboer", email = "veenboer@astron.nl" },
+    { name = "Richard Schoonhoven", email = "Richard.Schoonhoven@cwi.nl"  },
+    { name = "Leon Oostrum", email = "l.oostrum@esciencecenter.nl" },
 ]
-
-readme = "README.md"
 keywords = [
     "auto-tuning",
     "gpu",
@@ -43,62 +41,64 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development",
     "Topic :: System :: Distributed Computing",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
 ]
-include = [
-    { path = "test" },
-] # this ensures that people won't have to clone the whole repo to include notebooks, they can just do `pip install kernel_tuner[tutorial,cuda]`
+
+# ATTENTION: if anything is changed here, run `poetry update`
+requires-python = ">=3.10,<4" # <4 is because of hip-python  # NOTE when changing the Python versions, also change the test versions in the Noxfile and GitHub Actions
+dependencies = [
+    "numpy>=2.0.0",
+    "scipy>=1.14.1",    # Python >=3.13 needs scipy >=1.14
+    "packaging",        # required by file_utils
+    "jsonschema",
+    "python-constraint2>=2.2.2",
+    "xmltodict",
+    "pandas>=2.0.0",
+    "scikit-learn>=1.0.2",
+]
+# NOTE Torch can be used with Kernel Tuner, but is not a dependency, should be up to the user to use it
+
+[project.urls]
 homepage = "https://KernelTuner.github.io/kernel_tuner/"
 documentation = "https://KernelTuner.github.io/kernel_tuner/"
 repository = "https://github.com/KernelTuner/kernel_tuner"
-[tool.poetry.urls]
-"Tracker" = "https://github.com/KernelTuner/kernel_tuner/issues"
-[tool.poetry.build]
-generate-setup-file = false
-[tool.poetry.scripts]
+changelog = "https://github.com/KernelTuner/kernel_tuner/blob/master/CHANGELOG.md"
+issues = "https://github.com/KernelTuner/kernel_tuner/issues"
+
+[project.scripts]
 kernel_tuner = "kernel_tuner.interface:entry_point"
+
+[tool.poetry]
+packages = [{ include = "kernel_tuner", from = "." }]
+include = [
+    { path = "test" },
+] # this ensures that people won't have to clone the whole repo to include notebooks, they can just do `pip install kernel_tuner[tutorial,cuda]`
+
+# List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
+# Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
+# ATTENTION: if anything is changed here, run `poetry update`
+# CUDA
+# cupy-cuda11x = { version = "*", optional = true }    # NOTE: these are completely optional dependencies as described in CONTRIBUTING.rst
+# cupy-cuda12x = { version = "*", optional = true }
+# cuda-python = { version = "*", optional = true }
 
 [[tool.poetry.source]]
 name = "testpypi"
 url = "https://test.pypi.org/simple/"
 priority = "explicit"
 
-# ATTENTION: if anything is changed here, run `poetry update`
 [tool.poetry.dependencies]
-python = ">=3.9,<4"         # <4 is because of hip-python # NOTE when changing the supported Python versions, also change the test versions in the noxfile
-numpy = "^2.0.0"            # Python 3.12 requires numpy at least 1.26
-scipy = ">=1.11.0"          # held back by Python 3.9
-packaging = "*"             # required by file_utils
-jsonschema = "*"
-python-constraint2 = "^2.1.0"
-xmltodict = "*"
-pandas = ">=2.0.0"
-scikit-learn = ">=1.0.2"
-# Torch can be used with Kernel Tuner, but is not a dependency, should be up to the user to use it
+hip-python = { version = "^6.3.3.540.31", source = "testpypi", optional = true }  # Note: when released, switch this package to pypi and remove tool.poetry.source and move this to [project.optional-dependencies]
 
-# List of optional dependencies for user installation, e.g. `pip install kernel_tuner[cuda]`, used in the below `extras`.
-# Please note that this is different from the dependency groups below, e.g. `docs` and `test`, those are for development.
-# ATTENTION: if anything is changed here, run `poetry update`
-# CUDA
-pycuda = { version = "^2024.1", optional = true }           # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
-nvidia-ml-py = { version = "^12.535.108", optional = true }
-pynvml = { version = "^11.4.1", optional = true }
-# cupy-cuda11x = { version = "*", optional = true }    # Note: these are completely optional dependencies as described in CONTRIBUTING.rst
-# cupy-cuda12x = { version = "*", optional = true }
-# cuda-python = { version = "*", optional = true }
-# OpenCL
-pyopencl = { version = "*", optional = true } # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
-# HIP
-hip-python = { version = "^6.3.3.540.31", source = "testpypi", optional = true }  # Note: when released, switch this package to pypi and remove tool.poetry.source
-# Tutorial (for the notebooks used in the examples)
-jupyter = { version = "^1.0.0", optional = true }
-matplotlib = { version = "^3.5.0", optional = true }
-
-[tool.poetry.extras]
-cuda = ["pycuda", "nvidia-ml-py", "pynvml"]
-opencl = ["pyopencl"]
-cuda_opencl = ["pycuda", "pyopencl"]
+[project.optional-dependencies]
+cuda = ["pycuda>=2025.1", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
+opencl = ["pyopencl"]                                                   # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
+cuda_opencl = ["pycuda>=2024.1", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 hip = ["hip-python"]
-tutorial = ["jupyter", "matplotlib", "nvidia-ml-py"]
+tutorial = ["jupyter>=1.0.0", "matplotlib>=3.5.0", "nvidia-ml-py>=12.535.108"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
 # Please note that there is overlap with the `dev` group

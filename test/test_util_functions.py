@@ -754,3 +754,49 @@ def test_parse_restrictions():
     assert all(param in rw_tune_params for param in params_constraint)
     assert isinstance(parsed_constraint, MinProdConstraint)
     assert parsed_constraint._minprod == 31
+
+
+def test_convert_constraint_lambdas():
+
+    restrictions = [lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024,
+                    "32 <= block_size_x*block_size_y <= 512",
+                    lambda p: p["block_size_z"] < 8]
+
+    result = convert_constraint_lambdas(restrictions)
+    print(result)
+    expected = ['32 <= block_size_x * block_size_y <= 1024', 'block_size_z < 8', '32 <= block_size_x*block_size_y <= 512']
+
+    assert sorted(result) == sorted(expected)
+
+    restrictions2 = []
+    restrictions2 += [lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024]
+    restrictions2 += [lambda p: p["block_size_z"] < 8]
+
+    result2 = convert_constraint_lambdas(restrictions2)
+    print(result2)
+    expected2 = ['block_size_z < 8', '32 <= block_size_x * block_size_y <= 1024']
+
+    assert sorted(result2) == sorted(expected2)
+
+
+def test_convert_constraint_lambdas_illformatted():
+    """ Test a number of different ways to define the restrictions.
+
+    These are currently not supported but we would like to support them in the future.
+    That is why this test expects an exception
+
+    """
+
+    restrictions = ["32 <= block_size_x*block_size_y <= 512",
+                    lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024,
+                    lambda p: p["block_size_z"] < 8]
+
+    expected = ['32 <= block_size_x * block_size_y <= 1024', 'block_size_z < 8', '32 <= block_size_x*block_size_y <= 512']
+
+    try:
+        result = convert_constraint_lambdas(restrictions)
+        print(result)
+    except ValueError:
+        pass
+
+

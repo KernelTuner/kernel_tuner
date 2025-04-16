@@ -27,7 +27,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # if user supplied max_fevals that is lower then max_iter we will
     # scale the annealing schedule to fit max_fevals
-    max_feval = tuning_options.strategy_options.get("max_fevals", max_iter)
+    max_fevals = tuning_options.strategy_options.get("max_fevals", max_iter)
+
+    # limit max_fevals to max size of the parameter space
+    max_fevals = min(searchspace.size, max_fevals)
 
     # get random starting point and evaluate cost
     pos = list(searchspace.get_random_sample(1)[0])
@@ -64,7 +67,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 old_cost = new_cost
 
         c = len(tuning_options.unique_results)
-        T = T_start * alpha**(max_iter/max_feval*c)
+        T = T_start * alpha**(max_iter/max_fevals*c)
 
         # check if solver gets stuck and if so restart from random position
         if c == c_old:
