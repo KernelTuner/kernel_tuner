@@ -1,4 +1,5 @@
 """Module for kernel tuner utility functions."""
+import ast
 import errno
 import json
 import logging
@@ -6,9 +7,10 @@ import os
 import re
 import sys
 import tempfile
+import textwrap
 import time
 import warnings
-from inspect import signature
+from inspect import signature, getsource
 from types import FunctionType
 from typing import Optional, Union
 
@@ -1037,8 +1039,97 @@ def parse_restrictions(restrictions: list[str], tune_params: dict, monolithic = 
     return parsed_restrictions
 
 
+def get_all_lambda_asts(func):
+    """
+    Extracts the AST nodes of all lambda functions defined on the same line as func.
+    Args:
+        func: A lambda function object.
+    Returns:
+        A list of all ast.Lambda node objects on the line where func is defined.
+    Raises:
+        ValueError: If the source can't be retrieved or no lambda is found.
+    """
+
+    res = []
+    try:
+        source = inspect.getsource(func)
+        source = textwrap.dedent(source).strip()
+        parsed = ast.parse(source)
+
+        # Find the Lambda node
+        for node in ast.walk(parsed):
+            if isinstance(node, ast.Lambda):
+                res.append(node)
+        if not res:
+            raise ValueError("No lambda node found in the source.")
+    except OSError:
+        raise ValueError("Could not retrieve source. Is this defined interactively or dynamically?")
+    return res
+
+
+class ConstraintLambdaTransformer(ast.NodeTransformer):
+    """
+    Replaces any `NAME['string']` subscript with just `'string'`, if `NAME`
+    matches the lambda argument name.
+    """
+    def __init__(self, dict_arg_name):
+        self.dict_arg_name = dict_arg_name
+
+    def visit_Subscript(self, node):
+        # We only replace subscript expressions of the form <dict_arg_name>['some_string']
+        if (isinstance(node.value, ast.Name)
+                and node.value.id == self.dict_arg_name
+                and isinstance(node.slice, ast.Constant)
+                and isinstance(node.slice.value, str)):
+            # Replace `dict_arg_name['some_key']` with the string used as key
+            return ast.Name(node.slice.value)
+        return self.generic_visit(node)
+
+
+def unparse_constraint_lambda(lambda_ast):
+    """
+    Parse the lambda function to replace accesses to tunable parameter dict
+    Returns string body of the rewritten lambda function
+    """
+    args = lambda_ast.args
+    body = lambda_ast.args
+
+    # Kernel Tuner only allows constraint lambdas with a single argument
+    arg = args.args[0].arg
+
+    # Create transformer that replaces accesses to tunable parameter dict
+    # with simply the name of the tunable parameter
+    transformer = ConstraintLambdaTransformer(arg)
+    new_lambda_ast = transformer.visit(lambda_ast)
+
+    rewritten_lambda_body_as_string = ast.unparse(new_lambda_ast.body).strip()
+
+    return rewritten_lambda_body_as_string
+
+
+def convert_constraint_lambdas(restrictions):
+    """ extract and convert all constraint lambdas from the restrictions """
+    parse_callables_once = True
+    res = []
+    for c in restrictions:
+        if isinstance(c, str):
+            res.append(c)
+        if callable(c) and parse_callables_once:
+            lambda_asts = get_all_lambda_asts(c)
+
+            for lambda_ast in lambda_asts:
+                new_c = unparse_constraint_lambda(lambda_ast)
+                res.append(new_c)
+
+            parse_callables_once = False
+    return res
+
+
 def compile_restrictions(restrictions: list, tune_params: dict, monolithic = False, format = None, try_to_constraint = True) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
     """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
+
+    restrictions = convert_constraint_lambdas(restrictions)
+
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
