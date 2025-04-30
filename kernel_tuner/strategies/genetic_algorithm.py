@@ -11,7 +11,7 @@ from kernel_tuner.strategies.common import CostFunc
 _options = dict(
     popsize=("population size", 20),
     maxiter=("maximum number of generations", 100),
-    constraint_aware=("constraint-aware optimization (True/False)", False),
+    constraint_aware=("constraint-aware optimization (True/False)", True),
     method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
     mutation_chance=("chance to mutate is 1 in mutation_chance", 10),
 )
@@ -36,7 +36,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         weighted_population = []
         for dna in population:
             try:
-                time = cost_func(dna, check_restrictions=False)
+                # if we are not constraint-aware we should check restrictions upon evaluation
+                time = cost_func(dna, check_restrictions=not constraint_aware)
             except util.StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
@@ -84,13 +85,24 @@ class GeneticAlgorithm:
     def __init__(self, pop_size, searchspace, constraint_aware=False, method="uniform", mutation_chance=10):
         self.pop_size = pop_size
         self.searchspace = searchspace
+        self.tune_params = searchspace.tune_params.copy()
         self.constraint_aware = constraint_aware
         self.crossover_method = supported_methods[method]
         self.mutation_chance = mutation_chance
 
     def generate_population(self):
         """ Constraint-aware population creation method """
-        return list(list(p) for p in self.searchspace.get_random_sample(self.pop_size))
+        if self.constraint_aware:
+            pop = list(list(p) for p in self.searchspace.get_random_sample(self.pop_size))
+        else:
+            pop = []
+            dna_size = len(self.tune_params)
+            for _ in range(self.pop_size):
+                dna = []
+                for key in self.tune_params:
+                    dna.append(random.choice(self.tune_params[key]))
+                pop.append(dna)
+        return pop
 
     def crossover(self, dna1, dna2):
         """ Apply selected crossover method, repair dna if constraint-aware """
@@ -135,12 +147,24 @@ class GeneticAlgorithm:
         """Mutate DNA with 1/mutation_chance chance."""
         # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
         if int(random.random() * self.mutation_chance) == 0:
-            if cache:
-                neighbors = self.searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
+            if self.constraint_aware:
+                if cache:
+                    neighbors = self.searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
+                else:
+                    neighbors = self.searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
+                if len(neighbors) > 0:
+                    return list(random.choice(neighbors))
             else:
-                neighbors = self.searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
-            if len(neighbors) > 0:
-                return list(random.choice(neighbors))
+                # select a tunable parameter at random
+                mutate_index = random.randint(0, len(self.tune_params)-1)
+                mutate_key = list(self.tune_params.keys())[mutate_index]
+                # get all possible values for this parameter and remove current value
+                new_val_options = self.tune_params[mutate_key].copy()
+                new_val_options.remove(dna[mutate_index])
+                # pick new value at random
+                if len(new_val_options) > 0:
+                    new_val = random.choice(new_val_options)
+                    dna[mutate_index] = new_val
         return dna
 
 
