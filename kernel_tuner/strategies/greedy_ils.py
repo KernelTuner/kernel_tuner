@@ -31,7 +31,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
     #while searching
-    candidate = searchspace.get_random_sample(1)[0]
+    candidate = cost_func.get_start_pos()
     best_score = cost_func(candidate, check_restrictions=False)
 
     last_improvement = 0

@@ -24,9 +24,15 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     fevals = 0
 
+    first_candidate = cost_func.get_start_pos()
+
     #while searching
     while fevals < max_fevals:
-        candidate = searchspace.get_random_sample(1)[0]
+        if first_candidate:
+            candidate = first_candidate
+            first_candidate = None
+        else:
+            candidate = searchspace.get_random_sample(1)[0]
 
         try:
             base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=randomize, order=order)
