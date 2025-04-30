@@ -11,6 +11,7 @@ from kernel_tuner.strategies.common import CostFunc
 _options = dict(
     popsize=("population size", 20),
     maxiter=("maximum number of generations", 100),
+    constraint_aware=("constraint-aware optimization (True/False)", False),
     method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
     mutation_chance=("chance to mutate is 1 in mutation_chance", 10),
 )
@@ -19,13 +20,15 @@ _options = dict(
 def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
-    pop_size, generations, method, mutation_chance = common.get_options(options, _options)
+    pop_size, generations, constraint_aware, method, mutation_chance = common.get_options(options, _options)
     crossover = supported_methods[method]
+
+    GA = GeneticAlgorithm(pop_size, searchspace, constraint_aware, method, mutation_chance)
 
     best_score = 1e20
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
-    population = list(list(p) for p in searchspace.get_random_sample(pop_size))
+    population = GA.generate_population()
 
     for generation in range(generations):
 
@@ -51,18 +54,19 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         if tuning_options.verbose:
             print("Generation %d, best_score %f" % (generation, best_score))
 
+        # build new population for next generation
         population = []
 
         # crossover and mutate
         while len(population) < pop_size:
-            dna1, dna2 = weighted_choice(weighted_population, 2)
+            dna1, dna2 = GA.weighted_choice(weighted_population, 2)
 
-            children = crossover(dna1, dna2)
+            children = GA.crossover(dna1, dna2)
 
             for child in children:
-                child = mutate(child, mutation_chance, searchspace)
+                child = GA.mutate(child)
 
-                if child not in population and searchspace.is_param_config_valid(tuple(child)):
+                if child not in population:
                     population.append(child)
 
                 if len(population) >= pop_size:
@@ -75,57 +79,94 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
 tune.__doc__ = common.get_strategy_docstring("Genetic Algorithm", _options)
 
+class GeneticAlgorithm:
 
-def weighted_choice(population, n):
-    """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected."""
+    def __init__(self, pop_size, searchspace, constraint_aware=False, method="uniform", mutation_chance=10):
+        self.pop_size = pop_size
+        self.searchspace = searchspace
+        self.constraint_aware = constraint_aware
+        self.crossover_method = supported_methods[method]
+        self.mutation_chance = mutation_chance
 
-    def random_index_betavariate(pop_size):
-        # has a higher probability of returning index of item at the head of the list
-        alpha = 1
-        beta = 2.5
-        return int(random.betavariate(alpha, beta) * pop_size)
+    def generate_population(self):
+        """ Constraint-aware population creation method """
+        return list(list(p) for p in self.searchspace.get_random_sample(self.pop_size))
 
-    def random_index_weighted(pop_size):
-        """Use weights to increase probability of selection."""
-        weights = [w for _, w in population]
-        # invert because lower is better
-        inverted_weights = [1.0 / w for w in weights]
-        prefix_sum = np.cumsum(inverted_weights)
-        total_weight = sum(inverted_weights)
-        randf = random.random() * total_weight
-        # return first index of prefix_sum larger than random number
-        return next(i for i, v in enumerate(prefix_sum) if v > randf)
+    def crossover(self, dna1, dna2):
+        """ Apply selected crossover method, repair dna if constraint-aware """
+        dna1, dna2 = self.crossover_method(dna1, dna2)
+        if self.constraint_aware:
+            return self.repair(dna1), self.repair(dna2)
+        return dna1, dna2
 
-    random_index = random_index_betavariate
+    def weighted_choice(self, population, n):
+        """Randomly select n unique individuals from a weighted population, fitness determines probability of being selected."""
 
-    indices = [random_index(len(population)) for _ in range(n)]
-    chosen = []
-    for ind in indices:
-        while ind in chosen:
-            ind = random_index(len(population))
-        chosen.append(ind)
+        def random_index_betavariate(pop_size):
+            # has a higher probability of returning index of item at the head of the list
+            alpha = 1
+            beta = 2.5
+            return int(random.betavariate(alpha, beta) * pop_size)
 
-    return [population[ind][0] for ind in chosen]
+        def random_index_weighted(pop_size):
+            """Use weights to increase probability of selection."""
+            weights = [w for _, w in population]
+            # invert because lower is better
+            inverted_weights = [1.0 / w for w in weights]
+            prefix_sum = np.cumsum(inverted_weights)
+            total_weight = sum(inverted_weights)
+            randf = random.random() * total_weight
+            # return first index of prefix_sum larger than random number
+            return next(i for i, v in enumerate(prefix_sum) if v > randf)
+
+        random_index = random_index_betavariate
+
+        indices = [random_index(len(population)) for _ in range(n)]
+        chosen = []
+        for ind in indices:
+            while ind in chosen:
+                ind = random_index(len(population))
+            chosen.append(ind)
+
+        return [population[ind][0] for ind in chosen]
 
 
-def mutate(dna, mutation_chance, searchspace: Searchspace, cache=True):
-    """Mutate DNA with 1/mutation_chance chance."""
-    # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
-    if int(random.random() * mutation_chance) == 0:
-        if cache:
-            neighbors = searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
-        else:
-            neighbors = searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
-        if len(neighbors) > 0:
-            return list(random.choice(neighbors))
-    return dna
+    def mutate(self, dna, cache=False):
+        """Mutate DNA with 1/mutation_chance chance."""
+        # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
+        if int(random.random() * self.mutation_chance) == 0:
+            if cache:
+                neighbors = self.searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
+            else:
+                neighbors = self.searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
+            if len(neighbors) > 0:
+                return list(random.choice(neighbors))
+        return dna
+
+
+    def repair(self, dna):
+        """ It is possible that crossover methods yield a configuration that is not valid. """
+        if not self.searchspace.is_param_config_valid(tuple(dna)):
+            # dna is not valid, try to repair it
+            # search for valid configurations neighboring this config
+            # start from strictly-adjacent to increasingly allowing more neighbors
+            for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
+                neighbors = self.searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method=neighbor_method)
+
+                # if we have found valid neighboring configurations, select one at random
+                if len(neighbors) > 0:
+                    new_dna = list(random.choice(neighbors))
+                    print(f"GA crossover resulted in invalid config {dna=}, repaired dna to {new_dna=}")
+                    return new_dna
+
+        return dna
 
 
 def single_point_crossover(dna1, dna2):
     """Crossover dna1 and dna2 at a random index."""
     # check if you can do the crossovers using the neighbor index: check which valid parameter configuration is closest to the crossover, probably best to use "adjacent" as it is least strict?
     pos = int(random.random() * (len(dna1)))
-    return (dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:])
+    return dna1[:pos] + dna2[pos:], dna2[:pos] + dna1[pos:]
 
 
 def two_point_crossover(dna1, dna2):
@@ -137,7 +178,7 @@ def two_point_crossover(dna1, dna2):
     pos1, pos2 = sorted(random.sample(list(range(start, end)), 2))
     child1 = dna1[:pos1] + dna2[pos1:pos2] + dna1[pos2:]
     child2 = dna2[:pos1] + dna1[pos1:pos2] + dna2[pos2:]
-    return (child1, child2)
+    return child1, child2
 
 
 def uniform_crossover(dna1, dna2):
@@ -168,7 +209,7 @@ def disruptive_uniform_crossover(dna1, dna2):
                     child1[ind] = dna2[ind]
                     child2[ind] = dna1[ind]
                     swaps += 1
-    return (child1, child2)
+    return child1, child2
 
 
 supported_methods = {
@@ -177,3 +218,4 @@ supported_methods = {
     "uniform": uniform_crossover,
     "disruptive_uniform": disruptive_uniform_crossover,
 }
+

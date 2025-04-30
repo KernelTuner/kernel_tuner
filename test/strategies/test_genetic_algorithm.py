@@ -14,10 +14,12 @@ def test_weighted_choice():
     pop = searchspace.get_random_sample(pop_size)
     weighted_pop = [[p, i] for i, p in enumerate(pop)]
 
-    result = ga.weighted_choice(weighted_pop, 1)
+    GA = ga.GeneticAlgorithm(pop_size, searchspace)
+
+    result = GA.weighted_choice(weighted_pop, 1)
     assert result[0] in pop
 
-    result = ga.weighted_choice(weighted_pop, 2)
+    result = GA.weighted_choice(weighted_pop, 2)
     print(result)
     assert result[0] in pop
     assert result[1] in pop
@@ -43,7 +45,9 @@ def test_random_population():
 def test_mutate():
     pop = searchspace.get_random_sample(1)
 
-    mutant = ga.mutate(pop[0], 10, searchspace)
+    GA = ga.GeneticAlgorithm(1, searchspace)
+
+    mutant = GA.mutate(pop[0])
     assert len(pop[0]) == len(mutant)
     assert mutant[0] in tune_params["x"]
     assert mutant[1] in tune_params["y"]
