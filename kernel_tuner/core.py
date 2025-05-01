@@ -29,6 +29,11 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
+try:
+    from hip._util.types import DeviceArray
+except ImportError:
+    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+
 _KernelInstance = namedtuple(
     "_KernelInstance",
     [
@@ -117,7 +122,7 @@ class KernelSource(object):
         The files beyond the first are considered additional files that may also contain tunable parameters
 
         For each file beyond the first this function creates a temporary file with
-        preprocessors statements inserted. Occurences of the original filenames in the
+        preprocessors statements inserted. Occurrences of the original filenames in the
         first file are replaced with their temporary counterparts.
 
         :param kernel_name: A string specifying the kernel name.
@@ -175,7 +180,7 @@ class KernelSource(object):
             temp_file = util.get_temp_filename(suffix="." + f.split(".")[-1])
             temp_files[f] = temp_file
             util.write_file(temp_file, ks)
-            # replace occurences of the additional file's name in the first kernel_string with the name of the temp file
+            # replace occurrences of the additional file's name in the first kernel_string with the name of the temp file
             kernel_string = kernel_string.replace(f, temp_file)
 
         return name, kernel_string, temp_files
@@ -495,7 +500,7 @@ class DeviceInterface(object):
 
             should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
         else:
-            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor)) for arg in instance.arguments]
+            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
@@ -506,7 +511,7 @@ class DeviceInterface(object):
         # run the kernel
         check = self.run_kernel(func, gpu_args, instance)
         if not check:
-            return  # runtime failure occured that should be ignored, skip correctness check
+            return  # runtime failure occurred that should be ignored, skip correctness check
 
         # retrieve gpu results to host memory
         result_host = []
@@ -590,7 +595,7 @@ class DeviceInterface(object):
                     if kernel_options.texmem_args is not None:
                         self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
-                # stop compilation stopwatch and convert to miliseconds
+                # stop compilation stopwatch and convert to milliseconds
                 last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
                 # test kernel for correctness
@@ -623,7 +628,7 @@ class DeviceInterface(object):
                 )
                 raise e
 
-            # clean up any temporary files, if no error occured
+            # clean up any temporary files, if no error occurred
             instance.delete_temp_files()
 
         result["compile_time"] = last_compilation_time or 0
@@ -659,7 +664,7 @@ class DeviceInterface(object):
                         f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
                     )
             else:
-                logging.debug("compile_kernel failed due to error: " + str(e))
+                print("compile_kernel failed due to error: " + error_message)
                 print("Error while compiling:", instance.name)
                 raise e
         return func
@@ -900,7 +905,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                     + " detected during correctness check"
                 )
                 print(
-                    "this error occured when checking value of the %oth kernel argument"
+                    "this error occurred when checking value of the %oth kernel argument"
                     % (i,)
                 )
                 print(
@@ -929,7 +934,7 @@ def split_argument_list(argument_list):
         match = re.match(regex, arg, re.S)
         if not match:
             raise ValueError("error parsing templated kernel argument list")
-        type_list.append(re.sub(r"\s+", " ", match.group(1).strip(), re.S))
+        type_list.append(re.sub(r"\s+", " ", match.group(1).strip(), flags=re.S))
         name_list.append(match.group(2).strip())
     return type_list, name_list
 
@@ -951,7 +956,7 @@ def apply_template_typenames(type_list, templated_typenames):
             # if the templated typename occurs as a token in the string, meaning that it is enclosed in
             # beginning of string or whitespace, and end of string, whitespace or star
             regex = r"(^|\s+)(" + k + r")($|\s+|\*)"
-            sub = re.sub(regex, replace_typename_token, arg_type, re.S)
+            sub = re.sub(regex, replace_typename_token, arg_type, flags=re.S)
             type_list[i] = sub
 
 
