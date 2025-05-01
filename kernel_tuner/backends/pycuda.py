@@ -106,7 +106,7 @@ class PyCudaFunctions(GPUBackend):
         )
         if cc == "00":
             cc = self.context.get_device().compute_capability()
-        self.cc = str(cc[0]) + str(cc[1])
+        self.cc = str(cc)
         self.iterations = iterations
         self.current_module = None
         self.func = None
