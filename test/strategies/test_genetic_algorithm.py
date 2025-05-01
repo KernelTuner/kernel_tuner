@@ -43,9 +43,10 @@ def test_random_population():
 
 
 def test_mutate():
-    pop = searchspace.get_random_sample(1)
 
     GA = ga.GeneticAlgorithm(1, searchspace)
+
+    pop = GA.generate_population()
 
     mutant = GA.mutate(pop[0])
     assert len(pop[0]) == len(mutant)
