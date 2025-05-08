@@ -32,20 +32,20 @@ def output_file_schema(target):
     return current_version, json_string
 
 
-def get_configuration_validity(objective) -> str:
+def get_configuration_validity(error) -> str:
     """Convert internal Kernel Tuner error to string."""
     errorstring: str
-    if not isinstance(objective, util.ErrorConfig):
+    if not isinstance(error, util.ErrorConfig):
         errorstring = "correct"
     else:
-        if isinstance(objective, util.CompilationFailedConfig):
+        if isinstance(error, util.CompilationFailedConfig):
             errorstring = "compile"
-        elif isinstance(objective, util.RuntimeFailedConfig):
+        elif isinstance(error, util.RuntimeFailedConfig):
             errorstring = "runtime"
-        elif isinstance(objective, util.InvalidConfig):
+        elif isinstance(error, util.InvalidConfig):
             errorstring = "constraints"
         else:
-            raise ValueError(f"Unkown objective type {type(objective)}, value {objective}")
+            raise ValueError(f"Unkown error type {type(error)}, value {error}")
     return errorstring
 
 
@@ -110,7 +110,8 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
         out["times"] = timings
 
         # encode the validity of the configuration
-        out["invalidity"] = get_configuration_validity(result[objective])
+        # out["invalidity"] = get_configuration_validity(result[objective])
+        out["invalidity"] = get_configuration_validity(result['error'])
 
         # Kernel Tuner does not support producing results of configs that fail the correctness check
         # therefore correctness is always 1
@@ -127,7 +128,10 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
         # In Kernel Tuner we currently support only one objective at a time, this can be a user-defined
         # metric that combines scores from multiple different quantities into a single value to support
         # multi-objective tuning however.
-        out["objectives"] = [objective]
+        # NOTE(maric): With PyMOO integrated we do support multi-objective tuning without scalarization
+        objectives = [objective] if isinstance(objective, str) else list(objective)
+        assert isinstance(objectives, list)
+        out["objectives"] = objectives
 
         # append to output
         output_data.append(out)

@@ -90,13 +90,17 @@ class SequentialRunner(Runner):
 
                 result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
 
+                assert util.check_result_type(result)
+
                 params.update(result)
 
-                if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
+                # if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
+                if 'error' in result:
                     logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
 
             # only compute metrics on configs that have not errored
-            if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
+            # if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
+            if 'error' in params:
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
@@ -112,6 +116,8 @@ class SequentialRunner(Runner):
 
                 # add configuration to cache
                 store_cache(x_int, params, tuning_options)
+
+            assert util.check_result_type(params)
 
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)

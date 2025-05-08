@@ -79,6 +79,13 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 
+def check_result_type(r):
+    "Check if the result has the right format."
+    if 'error' in r:
+        return isinstance(r['error'], ErrorConfig)
+    return True
+
+
 class TorchPlaceHolder:
     def __init__(self):
         self.Tensor = Exception  # using Exception here as a type that will never be among kernel arguments

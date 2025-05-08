@@ -587,7 +587,16 @@ def tune_kernel(
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # default objective if none is specified
-    objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
+    # if len(list(objective)) == 1:
+    #     objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
+
+    if isinstance(objective, str):
+        objective = list(objective)
+
+    if isinstance(objective_higher_is_better, bool):
+        objective_higher_is_better = list(objective_higher_is_better)
+
+    assert len(list(objective)) == len(list(objective_higher_is_better))
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params, observers, simulation_mode=simulation_mode)

@@ -92,7 +92,10 @@ class CostFunc:
             legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
             if not legal:
                 result = params_dict
-                result[self.tuning_options.objective] = util.InvalidConfig()
+                # result[self.tuning_options.objective] = util.InvalidConfig()
+                result['error'] = util.InvalidConfig()
+
+        assert legal == ('error' not in result), "A legal config MUST NOT have an error result."
 
         if legal:
             # compile and benchmark this instance
@@ -109,10 +112,17 @@ class CostFunc:
             self.runner.last_strategy_start_time = perf_counter()
 
         # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective] or sys.float_info.max
-        return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
+        return_values = []
+        for obj, higher_is_better in zip(self.tuning_options.objective, self.tuning_options.objective_higher_is_better):
+            return_value = result[obj] if 'error' not in result else sys.float_info.max
+            return_value = return_value if not higher_is_better else -return_value
+            return_values.append(return_value)
 
-        return return_value
+        if len(return_values) == 1:
+            return return_values[0]
+        else:
+            # NOTE: MAYBE make this a tuple()
+            return return_values
 
     def get_bounds_x0_eps(self):
         """Compute bounds, x0 (the initial guess), and eps."""

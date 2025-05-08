@@ -480,11 +480,15 @@ class DeviceInterface(object):
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
                     )
-                result[objective] = util.RuntimeFailedConfig()
+                # result[objective] = util.RuntimeFailedConfig()
+                result['error'] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
                 print("Error while benchmarking:", instance.name)
                 raise e
+
+        assert util.check_result_type(result), "The error in a result MUST be an actual error."
+        
         return result
 
     def check_kernel_output(
@@ -571,7 +575,8 @@ class DeviceInterface(object):
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
-            result[to.objective] = util.InvalidConfig()
+            # result[to.objective] = util.InvalidConfig()
+            result['error'] = util.InvalidConfig()
         else:
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
             gpu_args = _preprocess_gpu_arguments(gpu_args, params)
@@ -581,7 +586,8 @@ class DeviceInterface(object):
                 start_compilation = time.perf_counter()
                 func = self.compile_kernel(instance, verbose)
                 if not func:
-                    result[to.objective] = util.CompilationFailedConfig()
+                    # result[to.objective] = util.CompilationFailedConfig()
+                    result['error'] = util.CompilationFailedConfig()
                 else:
                     # add shared memory arguments to compiled module
                     if kernel_options.smem_args is not None:
@@ -634,6 +640,8 @@ class DeviceInterface(object):
         result["compile_time"] = last_compilation_time or 0
         result["verification_time"] = last_verification_time or 0
         result["benchmark_time"] = last_benchmark_time or 0
+
+        assert util.check_result_type(result), "The error in a result MUST be an actual error."
 
         return result
 

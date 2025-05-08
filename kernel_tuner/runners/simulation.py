@@ -90,6 +90,8 @@ class SimulationRunner(Runner):
             if tuning_options.cache and x_int in tuning_options.cache:
                 result = tuning_options.cache[x_int].copy()
 
+                assert util.check_result_type(result)
+
                 # Simulate behavior of sequential runner that when a configuration is
                 # served from the cache by the sequential runner, the compile_time,
                 # verification_time, and benchmark_time are set to 0.
@@ -123,6 +125,8 @@ class SimulationRunner(Runner):
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
                 result['framework_time'] = total_time - self.last_strategy_time
+
+                assert util.check_result_type(result)
 
                 results.append(result)
                 continue
