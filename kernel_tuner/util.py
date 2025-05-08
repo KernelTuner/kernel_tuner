@@ -748,7 +748,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             v = replace_param_occurrences(v, params)
 
         if not k.isidentifier():
-            raise ValueError("name is not a valid identifier: {k}")
+            raise ValueError(f"name is not a valid identifier: {k}")
 
         # Escape newline characters
         v = str(v)
