@@ -57,6 +57,7 @@ from kernel_tuner.strategies import (
     pso,
     random_sample,
     simulated_annealing,
+    pymoo_minimize,
 )
 
 strategy_map = {
@@ -75,6 +76,7 @@ strategy_map = {
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
+    "pymoo_minimize": pymoo_minimize,
 }
 
 
@@ -425,7 +427,7 @@ _tuning_options = Options(
                 """Optimization objective to sort results on, consisting of a string
             that also occurs in results as a metric or observed quantity, default 'time'.
             Please see :ref:`objectives`.""",
-                "string",
+                "str | list[str]",
             ),
         ),
         (
@@ -433,7 +435,7 @@ _tuning_options = Options(
             (
                 """boolean that specifies whether the objective should
             be maximized (True) or minimized (False), default False.""",
-                "bool",
+                "bool | list[bool]",
             ),
         ),
         (
