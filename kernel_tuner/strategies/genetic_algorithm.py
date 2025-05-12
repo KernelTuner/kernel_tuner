@@ -21,7 +21,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
     pop_size, generations, constraint_aware, method, mutation_chance = common.get_options(options, _options)
-    crossover = supported_methods[method]
 
     GA = GeneticAlgorithm(pop_size, searchspace, constraint_aware, method, mutation_chance)
 
