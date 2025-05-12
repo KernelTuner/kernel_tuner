@@ -69,22 +69,26 @@ class HypertunerFunctions(Backend):
             {
                 "name": "dedispersion_milo",
                 "folder": folder,
-                "input_file": "dedispersion_milo.json"
+                "input_file": "dedispersion_milo.json",
+                "objective_performance_keys": ["time"]
             },
             {
                 "name": "hotspot_milo",
                 "folder": folder,
-                "input_file": "hotspot_milo.json"
+                "input_file": "hotspot_milo.json",
+                "objective_performance_keys": ["GFLOP/s"]
             },
             {
                 "name": "convolution_milo",
                 "folder": folder,
-                "input_file": "convolution_milo.json"
+                "input_file": "convolution_milo.json",
+                "objective_performance_keys": ["time"]
             },
             {
                 "name": "gemm_milo",
                 "folder": folder,
-                "input_file": "gemm_milo.json"
+                "input_file": "gemm_milo.json",
+                "objective_performance_keys": ["time"]
             }
         ]
 
