@@ -13,7 +13,8 @@ _options = dict(popsize=("Population size", 20),
                        maxiter=("Maximum number of iterations", 100),
                        w=("Inertia weight constant", 0.5),
                        c1=("Cognitive constant", 2.0),
-                       c2=("Social constant", 1.0))
+                       c2=("Social constant", 1.0),
+                       constraint_aware=("constraint-aware optimization (True/False)", False))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
@@ -24,7 +25,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     bounds, _, eps = cost_func.get_bounds_x0_eps()
 
 
-    num_particles, maxiter, w, c1, c2 = common.get_options(tuning_options.strategy_options, _options)
+    num_particles, maxiter, w, c1, c2, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
 
     best_score_global = sys.float_info.max
     best_position_global = []
@@ -35,9 +36,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         swarm.append(Particle(bounds))
 
     # ensure particles start from legal points
-    population = list(list(p) for p in searchspace.get_random_sample(num_particles))
-    for i, particle in enumerate(swarm):
-        particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+    if constraint_aware:
+        population = list(list(p) for p in searchspace.get_random_sample(num_particles))
+        for i, particle in enumerate(swarm):
+            particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
 
     # start optimization
     for i in range(maxiter):

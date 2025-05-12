@@ -3,6 +3,7 @@ import sys
 from time import perf_counter
 
 import numpy as np
+from scipy.spatial import distance
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
@@ -88,8 +89,17 @@ class CostFunc:
 
         # else check if this is a legal (non-restricted) configuration
         if check_restrictions and self.searchspace.restrictions:
+            legal = self.searchspace.is_param_config_valid(tuple(params))
             params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
-            legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
+
+            if "constraint_aware" in self.tuning_options.strategy_options and self.tuning_options.strategy_options["constraint_aware"]:
+                # attempt to repair
+                new_params = unscale_and_snap_to_nearest_valid(x, params, self.searchspace, self.tuning_options.eps)
+                if new_params:
+                    params = new_params
+                    legal = True
+                    x_int = ",".join([str(i) for i in params])
+
             if not legal:
                 result = params_dict
                 result[self.tuning_options.objective] = util.InvalidConfig()
@@ -243,3 +253,28 @@ def scale_from_params(params, tune_params, eps):
     for i, v in enumerate(tune_params.values()):
         x[i] = 0.5 * eps + v.index(params[i])*eps
     return x
+
+
+
+def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):
+    """Helper func to snap to the nearest valid configuration"""
+
+    # params is nearest unscaled point, but is not valid
+    neighbors = get_neighbors(params, searchspace)
+
+    if neighbors:
+        # sort on distance to x
+        neighbors.sort(key=lambda y: distance.euclidean(x,scale_from_params(y, searchspace.tune_params, eps)))
+
+        # return closest valid neighbor
+        return neighbors[0]
+
+    return []
+
+
+def get_neighbors(params, searchspace):
+    for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
+        neighbors = searchspace.get_neighbors_no_cache(tuple(params), neighbor_method=neighbor_method)
+        if len(neighbors) > 0:
+            return neighbors
+    return []
