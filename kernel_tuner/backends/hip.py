@@ -40,7 +40,9 @@ def hip_check(call_result):
     if len(result) == 1:
         result = result[0]
     if isinstance(err, hip.hipError_t) and err != hip.hipError_t.hipSuccess:
-        raise RuntimeError(str(err))
+        _, error_name = hip.hipGetErrorName(err)
+        _, error_str = hip.hipGetErrorString(err)
+        raise RuntimeError(f"{error_name}: {error_str}")
     return result
 
 
