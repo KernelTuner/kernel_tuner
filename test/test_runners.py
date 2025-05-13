@@ -140,6 +140,22 @@ def test_diff_evo(env):
     assert len(result) > 0
 
 
+def test_constraint_aware_GA(env):
+    options = dict(method="uniform",
+                   constraint_aware=True,
+                   popsize=5,
+                   maxiter=2,
+                   mutation_chance=10,
+                   max_fevals=10)
+    result, _ = tune_kernel(*env,
+                            strategy="genetic_algorithm",
+                            strategy_options=options,
+                            verbose=True,
+                            cache=cache_filename,
+                            simulation_mode=True)
+    assert len(result) > 0
+
+
 @skip_if_no_pycuda
 def test_time_keeping(env):
     kernel_name, kernel_string, size, args, tune_params = env

@@ -1,9 +1,10 @@
 """A simple greedy iterative local search algorithm for parameter search."""
+from random import choice as random_choice
+
 from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
-from kernel_tuner.strategies.genetic_algorithm import mutate
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
 
 _options = dict(neighbor=("Method for selecting neighboring nodes, choose from Hamming or adjacent", "Hamming"),
@@ -58,9 +59,14 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
 tune.__doc__ = common.get_strategy_docstring("Greedy Iterative Local Search (ILS)", _options)
 
+def mutate(indiv, searchspace: Searchspace):
+    neighbors = searchspace.get_neighbors_no_cache(tuple(indiv), neighbor_method="Hamming")
+    return list(random_choice(neighbors))
+
+
 def random_walk(indiv, permutation_size, no_improve, last_improve, searchspace: Searchspace):
     if last_improve >= no_improve:
         return searchspace.get_random_sample(1)[0]
     for _ in range(permutation_size):
-        indiv = mutate(indiv, 0, searchspace, cache=False)
+        indiv = mutate(indiv, searchspace)
     return indiv

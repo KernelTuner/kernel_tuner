@@ -54,8 +54,9 @@ except Exception:
 
 try:
     from hip import hip
+    hip.hipDriverGetVersion()
     hip_present = True
-except ImportError:
+except (ImportError, RuntimeError):
     hip_present = False
 
 try:
