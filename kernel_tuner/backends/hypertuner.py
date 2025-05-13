@@ -35,37 +35,18 @@ class HypertunerFunctions(Backend):
     """Class for executing hyperparameter tuning."""
     units = {}
 
-    def __init__(self, iterations):
+    def __init__(self, iterations, compiler_options=None):
         self.iterations = iterations
+        self.compiler_options = compiler_options
         self.observers = [ScoreObserver(self)]
         self.name = platform.processor()
         self.max_threads = 1024
         self.last_score = None
 
-        # set the environment options
-        env = dict()
-        env["iterations"] = self.iterations
-        self.env = env
-
-        # check for the methodology package
-        if methodology_available is not True:
-            raise ImportError("Unable to import the autotuning methodology, run `pip install autotuning_methodology`.")
-
-    def ready_argument_list(self, arguments):
-        arglist = super().ready_argument_list(arguments)
-        if arglist is None:
-            arglist = []
-        return arglist
-    
-    def compile(self, kernel_instance):
-        super().compile(kernel_instance)
-        path = Path(__file__).parent.parent.parent / "hyperparamtuning"
-        path.mkdir(exist_ok=True)
-
-        # TODO get applications & GPUs args from benchmark
-        gpus = ["A100", "A4000", "MI250X"]
+        # set the defaults
+        self.gpus = ["A100", "A4000", "MI250X"]
         folder = "../autotuning_methodology/benchmark_hub/kernels"
-        applications = [
+        self.applications = [
             {
                 "name": "dedispersion_milo",
                 "folder": folder,
@@ -91,6 +72,51 @@ class HypertunerFunctions(Backend):
                 "objective_performance_keys": ["time"]
             }
         ]
+        # any additional settings
+        self.override = { 
+            "experimental_groups_defaults": { 
+                "repeats": 25,
+                "samples": self.iterations,
+                "minimum_fraction_of_budget_valid": 0.01, 
+            },
+            "statistics_settings": {
+                "cutoff_percentile": 0.95,
+                "cutoff_percentile_start": 0.01,
+                "cutoff_type": "time",
+                "objective_time_keys": [
+                    "all"
+                ]
+            }
+        }
+
+        # override the defaults with compiler options if provided
+        if self.compiler_options is not None:
+            if "gpus" in self.compiler_options:
+                self.gpus = self.compiler_options["gpus"]
+            if "applications" in self.compiler_options:
+                self.applications = self.compiler_options["applications"]
+            if "override" in self.compiler_options:
+                self.override = self.compiler_options["override"]
+
+        # set the environment options
+        env = dict()
+        env["iterations"] = self.iterations
+        self.env = env
+
+        # check for the methodology package
+        if methodology_available is not True:
+            raise ImportError("Unable to import the autotuning methodology, run `pip install autotuning_methodology`.")
+
+    def ready_argument_list(self, arguments):
+        arglist = super().ready_argument_list(arguments)
+        if arglist is None:
+            arglist = []
+        return arglist
+    
+    def compile(self, kernel_instance):
+        super().compile(kernel_instance)
+        path = Path(__file__).parent.parent.parent / "hyperparamtuning"
+        path.mkdir(exist_ok=True)
 
         # strategy settings
         strategy: str = kernel_instance.arguments[0]
@@ -104,18 +130,9 @@ class HypertunerFunctions(Backend):
             'search_method_hyperparameters': hyperparams
         }]
 
-        # any additional settings
-        override = { 
-            "experimental_groups_defaults": { 
-                "repeats": 25,
-                "samples": self.iterations,
-                "minimum_fraction_of_budget_valid": 0.01, 
-            }
-        }
-
         name = kernel_instance.name if len(kernel_instance.name) > 0 else kernel_instance.kernel_source.kernel_name
-        experiments_filepath = generate_experiment_file(name, path, searchspace_strategies, applications, gpus, 
-                                                        override=override, generate_unique_file=True, overwrite_existing_file=True)
+        experiments_filepath = generate_experiment_file(name, path, searchspace_strategies, self.applications, self.gpus, 
+                                                        override=self.override, generate_unique_file=True, overwrite_existing_file=True)
         return str(experiments_filepath)
     
     def start_event(self):
