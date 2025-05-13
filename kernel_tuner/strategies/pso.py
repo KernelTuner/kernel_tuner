@@ -16,7 +16,7 @@ _options = dict(
     w=("Inertia weight constant", 0.5),
     c1=("Cognitive constant", 3.0),
     c2=("Social constant", 1.5),
-    constraint_aware=("constraint-aware optimization (True/False)", False))
+    constraint_aware=("constraint-aware optimization (True/False)", True))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 

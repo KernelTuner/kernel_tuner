@@ -12,32 +12,31 @@ from kernel_tuner.strategies.common import CostFunc
 _options = dict(
     popsize=("population size", 30),
     maxiter=("maximum number of generations", 30),
-    constraint_aware=("constraint-aware optimization (True/False)", True),
     method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
     mutation_chance=("chance to mutate is 1 in mutation_chance", 20),
+    constraint_aware=("constraint-aware optimization (True/False)", True),
 )
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
     options = tuning_options.strategy_options
-    pop_size, generations, constraint_aware, method, mutation_chance = common.get_options(options, _options)
+    pop_size, generations, method, mutation_chance, constraint_aware = common.get_options(options, _options)
 
-    GA = GeneticAlgorithm(pop_size, searchspace, constraint_aware, method, mutation_chance)
+    # if necessary adjust the popsize to a sensible value based on search space size
+    pop_size = min(round((searchspace.size / generations) * 3), pop_size)
 
-    # if left to the default, adjust the popsize to a sensible value for small search spaces
-    if pop_size == _options["popsize"][1]:
-        pop_size = min(round(searchspace.size / 2), pop_size)
-    else:
-        # otherwise, just make sure it doesn't exceed the search space size
-        pop_size = min(searchspace.size, pop_size)
+    GA = GeneticAlgorithm(pop_size, searchspace, method, mutation_chance, constraint_aware)
 
     best_score = 1e20
     cost_func = CostFunc(searchspace, tuning_options, runner)
+    num_evaluated = 0
 
     population = GA.generate_population()
 
     for generation in range(generations):
+        if any([not searchspace.is_param_config_valid(tuple(dna)) for dna in population]):
+            raise ValueError(f"Generation {generation}/{generations}, population validity: {[searchspace.is_param_config_valid(tuple(dna)) for dna in population]}")
 
         # determine fitness of population members
         weighted_population = []
@@ -45,7 +44,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             try:
                 # if we are not constraint-aware we should check restrictions upon evaluation
                 time = cost_func(dna, check_restrictions=not constraint_aware)
-            except util.StopCriterionReached as e:
+                num_evaluated += 1
+            except StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
                 return cost_func.results
@@ -68,7 +68,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         population = []
 
         # crossover and mutate
-        while len(population) < pop_size:
+        while len(population) < pop_size and searchspace.size > num_evaluated + len(population):
             dna1, dna2 = GA.weighted_choice(weighted_population, 2)
 
             children = GA.crossover(dna1, dna2)
@@ -76,7 +76,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             for child in children:
                 child = GA.mutate(child)
 
-                if child not in population:
+                if child not in population and searchspace.is_param_config_valid(tuple(child)):
                     population.append(child)
 
                 if len(population) >= pop_size:
@@ -91,13 +91,13 @@ tune.__doc__ = common.get_strategy_docstring("Genetic Algorithm", _options)
 
 class GeneticAlgorithm:
 
-    def __init__(self, pop_size, searchspace, constraint_aware=False, method="uniform", mutation_chance=10):
+    def __init__(self, pop_size, searchspace, method="uniform", mutation_chance=10, constraint_aware=True):
         self.pop_size = pop_size
         self.searchspace = searchspace
         self.tune_params = searchspace.tune_params.copy()
-        self.constraint_aware = constraint_aware
         self.crossover_method = supported_methods[method]
         self.mutation_chance = mutation_chance
+        self.constraint_aware = constraint_aware
 
     def generate_population(self):
         """ Constraint-aware population creation method """
