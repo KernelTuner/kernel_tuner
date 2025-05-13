@@ -891,10 +891,14 @@ def tune_kernel_T1(
             strategy_options[attribute["Name"]] = attribute["Value"]
     if "Budget" in inputs:
         budget = inputs["Budget"][0]
-        assert budget["Type"] == "ConfigurationCount"
         if strategy_options is None:
             strategy_options = {}
-        strategy_options["max_fevals"] = budget["BudgetValue"]
+        if budget["Type"] == "ConfigurationCount":
+            strategy_options["max_fevals"] = budget["BudgetValue"]
+        elif budget["Type"] == "TuningDuration":
+            strategy_options["time_limit"] = budget["BudgetValue"]  # both are in seconds
+        else:
+            raise NotImplementedError(f"Budget type in {budget} is not supported")
 
     # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:
@@ -971,7 +975,6 @@ def tune_kernel_T1(
             raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
 
     # tune with the converted inputs
-    # TODO get_t4_results calls once available in T1
     results, env = tune_kernel(
         kernel_name,
         kernel_source,
