@@ -107,6 +107,14 @@ if __name__ == "__main__":
             'c1': [1.0, 2.0, 3.0],
             'c2': [0.5, 1.0, 1.5]
         }
+    elif strategy_to_tune.lower() == "firefly_algorithm":
+        hyperparams = {
+            'popsize': [10, 20, 30],
+            'maxiter': [50, 100, 150],
+            'B0': [0.5, 1.0, 1.5],
+            'gamma': [0.1, 0.25, 0.5],
+            'alpha': [0.1, 0.2, 0.3]
+        }
     elif strategy_to_tune.lower() == "greedy_ils":
         hyperparams = {
             'neighbor': ['Hamming', 'adjacent'],

@@ -77,7 +77,8 @@ class HypertunerFunctions(Backend):
             "experimental_groups_defaults": { 
                 "repeats": 25,
                 "samples": self.iterations,
-                "minimum_fraction_of_budget_valid": 0.01, 
+                "minimum_fraction_of_budget_valid": 0.1,
+                "minimum_number_of_valid_search_iterations": 10,
             },
             "statistics_settings": {
                 "cutoff_percentile": 0.95,

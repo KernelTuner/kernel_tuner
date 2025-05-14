@@ -189,7 +189,7 @@ class GeneticAlgorithm:
                 # if we have found valid neighboring configurations, select one at random
                 if len(neighbors) > 0:
                     new_dna = list(random.choice(neighbors))
-                    print(f"GA crossover resulted in invalid config {dna=}, repaired dna to {new_dna=}")
+                    # print(f"GA crossover resulted in invalid config {dna=}, repaired dna to {new_dna=}")
                     return new_dna
 
         return dna
