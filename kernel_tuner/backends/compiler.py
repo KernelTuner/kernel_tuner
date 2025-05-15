@@ -412,7 +412,7 @@ class CompilerFunctions(CompilerBackend):
         """There is no memcpy_htod implemented for the compiler backend."""
         pass
 
-    def refresh_memory(self, arguments, should_sync):
+    def refresh_memory(self, _, arguments, should_sync):
         """Copy the preserved content of the output memory to used arrays."""
         for i, arg in enumerate(arguments):
             if should_sync[i]:

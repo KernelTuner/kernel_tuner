@@ -99,12 +99,6 @@ class CompilerBackend(Backend):
     def __init__(self, iterations, compiler_options, compiler):
         pass
 
-    def refresh_memory(self, gpu_memory, host_arguments, should_sync):
-        """Refresh the GPU memory with the untouched host arguments."""
-        for i, arg in enumerate(host_arguments):
-            if should_sync[i]:
-                self.memcpy_htod(self.allocations[i], arg)
-
     @abstractmethod
     def cleanup_lib(self):
         """Unload the previously loaded shared library"""
