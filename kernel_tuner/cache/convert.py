@@ -194,6 +194,8 @@ def convert_cache_to_t4(cache: CacheFileJSON) -> T4FileJSON:
         # In case of invalid configurations 'times' might be omitted in cache_line
         if "times" in cache_line:
             times["runtimes"] = cache_line["times"]
+        elif "benchmark_time" in cache_line:
+            times["runtimes"] = [cache_line["benchmark_time"]]
 
         measurement = T4ResultMeasurementJSON(name=cache["objective"], value=cache_line[cache["objective"]], unit="")
 
