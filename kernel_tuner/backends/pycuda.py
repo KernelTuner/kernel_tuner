@@ -106,7 +106,7 @@ class PyCudaFunctions(GPUBackend):
         )
         if cc == "00":
             cc = self.context.get_device().compute_capability()
-        self.cc = str(cc[0]) + str(cc[1])
+        self.cc = str(cc)
         self.iterations = iterations
         self.current_module = None
         self.func = None
@@ -180,6 +180,9 @@ class PyCudaFunctions(GPUBackend):
             # pycuda does not support bool, convert to uint8 instead
             elif isinstance(arg, np.bool_):
                 gpu_args.append(arg.astype(np.uint8))
+            # pycuda does not support 16-bit formats, view them as uint16
+            elif isinstance(arg, np.generic) and str(arg.dtype) in ("float16", "bfloat16"):
+                gpu_args.append(arg.view(np.uint16))
             # if not an array, just pass argument along
             else:
                 gpu_args.append(arg)

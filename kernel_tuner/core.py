@@ -118,7 +118,7 @@ class KernelSource(object):
         The files beyond the first are considered additional files that may also contain tunable parameters
 
         For each file beyond the first this function creates a temporary file with
-        preprocessors statements inserted. Occurences of the original filenames in the
+        preprocessors statements inserted. Occurrences of the original filenames in the
         first file are replaced with their temporary counterparts.
 
         :param kernel_name: A string specifying the kernel name.
@@ -174,7 +174,7 @@ class KernelSource(object):
             temp_file = util.get_temp_filename(suffix="." + f.split(".")[-1])
             temp_files[f] = temp_file
             util.write_file(temp_file, ks)
-            # replace occurences of the additional file's name in the first kernel_string with the name of the temp file
+            # replace occurrences of the additional file's name in the first kernel_string with the name of the temp file
             kernel_string = kernel_string.replace(f, temp_file)
 
         return name, kernel_string, temp_files
@@ -574,7 +574,7 @@ class DeviceInterface(object):
                     if kernel_options.texmem_args is not None:
                         self.dev.copy_texture_memory_args(kernel_options.texmem_args)
 
-                # stop compilation stopwatch and convert to miliseconds
+                # stop compilation stopwatch and convert to milliseconds
                 last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
 
                 # test kernel for correctness
@@ -600,7 +600,7 @@ class DeviceInterface(object):
                 print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
                 raise e
 
-            # clean up any temporary files, if no error occured
+            # clean up any temporary files, if no error occurred
             instance.delete_temp_files()
 
         result["compile_time"] = last_compilation_time or 0
@@ -776,10 +776,12 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     # for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
-            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
-                if answer[i].dtype != arg.dtype:
+            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(
+                arg, (np.ndarray, cp.ndarray)
+            ):
+                if not np.can_cast(arg.dtype, answer[i].dtype):
                     raise TypeError(
-                        f"Element {i} of the expected results list is not of the same dtype as the kernel output: "
+                        f"Element {i} of the expected results list has a dtype that is not compatible with the dtype of the kernel output: "
                         + str(answer[i].dtype)
                         + " != "
                         + str(arg.dtype)
@@ -857,9 +859,18 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                 output_test = np.allclose(expected, result, atol=atol)
 
             if not output_test and verbose:
-                print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
-                print("this error occured when checking value of the %oth kernel argument" % (i,))
-                print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
+                print(
+                    "Error: "
+                    + util.get_config_string(instance.params)
+                    + " detected during correctness check"
+                )
+                print(
+                    "this error occurred when checking value of the %oth kernel argument"
+                    % (i,)
+                )
+                print(
+                    "Printing kernel output and expected result, set verbose=False to suppress this debug print"
+                )
                 np.set_printoptions(edgeitems=50)
                 print("Kernel output:")
                 print(result)
@@ -901,7 +912,7 @@ def apply_template_typenames(type_list, templated_typenames):
             # if the templated typename occurs as a token in the string, meaning that it is enclosed in
             # beginning of string or whitespace, and end of string, whitespace or star
             regex = r"(^|\s+)(" + k + r")($|\s+|\*)"
-            sub = re.sub(regex, replace_typename_token, arg_type, re.S)
+            sub = re.sub(regex, replace_typename_token, arg_type, flags=re.S)
             type_list[i] = sub
 
 
