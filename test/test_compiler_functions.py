@@ -378,7 +378,7 @@ def test_refresh_memory():
     assert np.all(arguments[0] == [1, 2, 3])
     arguments[0] = np.array([0, 0, 0]).astype(np.int8)
     assert np.all(arguments[0] == [0, 0, 0])
-    cfunc.refresh_memory(arguments, [True])
+    cfunc.refresh_memory(None, arguments, [True])
     assert np.all(arguments[0] == [1, 2, 3])
 
 
