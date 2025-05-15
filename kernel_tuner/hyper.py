@@ -17,7 +17,7 @@ def get_random_unique_filename(prefix = '', suffix=''):
         path = randpath()
     return path
 
-def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs):
+def tune_hyper_params(target_strategy: str, hyper_params: dict, restrictions: list, *args, **kwargs):
     """Tune hyperparameters for a given strategy and kernel.
 
     This function is to be called just like tune_kernel, except that you specify a strategy
@@ -80,7 +80,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
     name = f"hyperparamtuning_{target_strategy.lower()}"
 
     # execute the hyperparameter tuning
-    result, env = kernel_tuner.tune_kernel(name, None, [], arguments, hyper_params, *args, lang='Hypertuner',
+    result, env = kernel_tuner.tune_kernel(name, None, [], arguments, hyper_params, restrictions=restrictions, *args, lang='Hypertuner',
                                     objective='score', objective_higher_is_better=True, iterations=iterations, **kwargs)
     
     # remove the temporary cachefile and return only unique results in order
@@ -99,6 +99,7 @@ if __name__ == "__main__":
     strategy_to_tune = args.strategy_to_tune
 
     # select the hyperparameter parameters for the selected optimization algorithm
+    restrictions = []
     if strategy_to_tune.lower() == "pso":
         hyperparams = {
             'popsize': [10, 20, 30],
@@ -169,6 +170,6 @@ if __name__ == "__main__":
         raise ValueError(f"Invalid argument {strategy_to_tune=}")
 
     # run the hyperparameter tuning
-    result, env = tune_hyper_params(strategy_to_tune.lower(), hyperparams)
+    result, env = tune_hyper_params(strategy_to_tune.lower(), hyperparams, restrictions=restrictions)
     print(result)
     print(env['best_config'])
