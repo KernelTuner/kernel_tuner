@@ -870,29 +870,37 @@ def tune_kernel_T1(
     simulation_mode=False,
     output_T4=True,
     iterations=7,
-    strategy_options=None,
-):
-    """Call the tune function with a T1 input file."""
+    device=None,
+    strategy: str=None,
+    strategy_options: dict={},
+) -> tuple:
+    """
+    Call the tune function with a T1 input file.
+    
+        The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
+    """
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs["KernelSpecification"]
     kernel_name: str = kernelspec["KernelName"]
     kernel_filepath = Path(kernelspec["KernelFile"])
     kernel_source = (
-        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent.parent / kernel_filepath
+        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent / kernel_filepath
+    )
+    kernel_source = (
+        kernel_source if kernel_source.exists() else Path(input_filepath).parent.parent / kernel_filepath
     )
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
     language: str = kernelspec["Language"]
     problem_size = kernelspec["ProblemSize"]
-    device = kernelspec["Device"]["Name"]
-    strategy = inputs["Search"]["Name"]
-    if "Attributes" in inputs["Search"]:
-        strategy_options = {}
-        for attribute in inputs["Search"]["Attributes"]:
-            strategy_options[attribute["Name"]] = attribute["Value"]
+    if device is None:
+        device = kernelspec["Device"]["Name"]
+    if strategy is None:
+        strategy = inputs["Search"]["Name"]
+        if "Attributes" in inputs["Search"]:
+            for attribute in inputs["Search"]["Attributes"]:
+                strategy_options[attribute["Name"]] = attribute["Value"]
     if "Budget" in inputs:
         budget = inputs["Budget"][0]
-        if strategy_options is None:
-            strategy_options = {}
         if budget["Type"] == "ConfigurationCount":
             strategy_options["max_fevals"] = budget["BudgetValue"]
         elif budget["Type"] == "TuningDuration":
