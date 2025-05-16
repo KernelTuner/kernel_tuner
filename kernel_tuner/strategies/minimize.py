@@ -2,7 +2,7 @@
 
 import scipy.optimize
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import (
     CostFunc,
@@ -30,7 +30,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     opt_result = None
     try:
         opt_result = scipy.optimize.minimize(cost_func, x0, method=method, options=options, **kwargs)
-    except util.StopCriterionReached as e:
+    except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
 

@@ -4,10 +4,12 @@ import numpy as np
 import pytest
 
 import kernel_tuner
-from kernel_tuner import util
+from kernel_tuner.util import InvalidConfig
 from kernel_tuner.interface import strategy_map
 
-cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/../test_cache_file.json"
+from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch
+
+cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
 
 @pytest.fixture
 def vector_add():
@@ -29,11 +31,25 @@ def vector_add():
     args = [c, a, b, n]
     tune_params = dict()
     tune_params["block_size_x"] = [128 + 64 * i for i in range(15)]
+    tune_params["test_string"] = ["alg_1", "alg_2"]
+    tune_params["test_single"] = [15]
+    tune_params["test_bool"] = [True, False]
+    tune_params["test_mixed"] = ["test", 1, True, 2.45]
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
-
-@pytest.mark.parametrize('strategy', strategy_map)
+# skip some strategies if their dependencies are not installed
+strategies = []
+for s in strategy_map.keys():
+    if 'gpytorch' in s.lower() or 'botorch_alt' in s.lower():
+        continue    # TODO issue warning for uninstalled dependencies?
+    if 'gpytorch' in s.lower():
+        strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_gpytorch))
+    elif 'botorch' in s.lower():
+        strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_botorch))
+    else:
+        strategies.append(s)
+@pytest.mark.parametrize('strategy', strategies)
 def test_strategies(vector_add, strategy):
 
     options = dict(popsize=5, neighbor='adjacent')
@@ -46,7 +62,9 @@ def test_strategies(vector_add, strategy):
         filter_options = options
     filter_options["max_fevals"] = 10
 
-    results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+    restrictions = ["test_string == 'alg_2'", "test_bool == True", "test_mixed == 2.45"]
+
+    results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                          verbose=False, cache=cache_filename, simulation_mode=True)
 
     assert len(results) > 0
@@ -57,13 +75,17 @@ def test_strategies(vector_add, strategy):
         unique_results = {}
         for result in results:
             x_int = ",".join([str(v) for k, v in result.items() if k in tune_params])
-            if not isinstance(result["time"], util.InvalidConfig):
+            if not isinstance(result["time"], InvalidConfig):
                 unique_results[x_int] = result["time"]
         assert len(unique_results) <= filter_options["max_fevals"]
 
     # check whether the returned dictionaries contain exactly the expected keys and the appropriate type
     expected_items = {
         'block_size_x': int,
+        'test_string': str,
+        'test_single': int,
+        'test_bool': bool,
+        'test_mixed': float,
         'time': (float, int),
         'times': list,
         'compile_time': (float, int),
