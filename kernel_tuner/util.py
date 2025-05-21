@@ -437,16 +437,18 @@ def get_config_string(params, keys=None, units=None):
 def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """Compute grid dims based on problem sizes and listed grid divisors."""
 
-    def get_dimension_divisor(divisor_list, default, params):
-        if divisor_list is None:
-            if default in params:
-                divisor_list = [default]
-            else:
-                return 1
-        if callable(divisor_list):
-            return divisor_list(params)
+    def get_dimension_divisor(divisor, default, params):
+        if divisor is None:
+            divisor = params.get(default, 1)
+
+        if isinstance(divisor, int):
+            return divisor
+        elif callable(divisor):
+            return divisor(params)
+        elif isinstance(divisor, str):
+            return int(eval(replace_param_occurrences(divisor, params)))
         else:
-            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+            return np.prod([get_dimension_divisor(s, 1, params) for s in divisor])
 
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
     return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
