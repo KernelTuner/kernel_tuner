@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 name = "kernel_tuner"
 packages = [{ include = "kernel_tuner", from = "." }]
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.1.2" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.1.3" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 license = "Apache-2.0"
 authors = [
     "Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>",
