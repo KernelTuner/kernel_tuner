@@ -441,14 +441,19 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
         if divisor is None:
             divisor = params.get(default, 1)
 
+        divisor_num = 1
         if isinstance(divisor, int):
-            return divisor
+            divisor_num = divisor
         elif callable(divisor):
-            return divisor(params)
+            divisor_num = divisor(params)
         elif isinstance(divisor, str):
-            return int(eval(replace_param_occurrences(divisor, params)))
+            divisor_num = int(eval(replace_param_occurrences(divisor, params)))
+        elif np.iterable(divisor):
+            for div in divisor:
+                divisor_num *= get_dimension_divisor(div, 1, params)
         else:
-            return np.prod([get_dimension_divisor(s, 1, params) for s in divisor])
+            raise ValueError("Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable")
+        return divisor_num
 
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
     return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
