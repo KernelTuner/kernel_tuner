@@ -1200,7 +1200,8 @@ in the parameter space.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.memcpy_dtoh">
 <span class="sig-name descname"><span class="pre">memcpy_dtoh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.memcpy_dtoh" title="Link to this definition">¶</a></dt>
-<dd><p>a simple memcpy copying from an Argument to a numpy array</p>
+<dd><p>This method implements the semantic of a device to host copy for the Compiler backend.
+There is no actual copy from device to host happening, but host to host.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1214,15 +1215,7 @@ in the parameter space.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.memcpy_htod">
 <span class="sig-name descname"><span class="pre">memcpy_htod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.memcpy_htod" title="Link to this definition">¶</a></dt>
-<dd><p>a simple memcpy copying from a numpy array to an Argument</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>dest</strong> (<em>Argument</em>) – An Argument for some memory allocation</p></li>
-<li><p><strong>src</strong> (<em>np.ndarray</em><em> or </em><em>cupy.ndarray</em>) – A numpy or cupy array containing the source data</p></li>
-</ul>
-</dd>
-</dl>
+<dd><p>There is no memcpy_htod implemented for the compiler backend.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1257,6 +1250,12 @@ Allowed values are np.ndarray, cupy.ndarray, and/or np.int32, np.float32, and so
 <dd class="field-odd"><p>list(Argument)</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.refresh_memory">
+<span class="sig-name descname"><span class="pre">refresh_memory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">should_sync</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.refresh_memory" title="Link to this definition">¶</a></dt>
+<dd><p>Copy the preserved content of the output memory to used arrays.</p>
 </dd></dl>
 
 <dl class="py method">
