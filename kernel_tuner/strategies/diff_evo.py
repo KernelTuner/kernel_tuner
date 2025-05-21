@@ -15,12 +15,11 @@ _options = dict(method=(f"Creation method for new population, any of {supported_
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
-
     method, popsize, maxiter = common.get_options(tuning_options.strategy_options, _options)
 
     # build a bounds array as needed for the optimizer
     cost_func = CostFunc(searchspace, tuning_options, runner)
-    bounds = cost_func.get_bounds()
+    bounds, x0, _ = cost_func.get_bounds_x0_eps()
 
     # ensure particles start from legal points
     population = list(list(p) for p in searchspace.get_random_sample(popsize))
@@ -29,7 +28,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     opt_result = None
     try:
         opt_result = differential_evolution(cost_func, bounds, maxiter=maxiter, popsize=popsize, init=population,
-                                        polish=False, strategy=method, disp=tuning_options.verbose)
+                                        polish=False, strategy=method, disp=tuning_options.verbose, x0=x0)
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
