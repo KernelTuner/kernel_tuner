@@ -16,7 +16,7 @@
 
 
 Create optimized GPU applications in any mainstream GPU 
-programming language (CUDA, HIP, OpenCL, OpenACC).
+programming language (CUDA, HIP, OpenCL, OpenACC, OpenMP).
 
 What Kernel Tuner does:
 
