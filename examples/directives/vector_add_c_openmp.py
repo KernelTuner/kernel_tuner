@@ -33,7 +33,7 @@ app = Code(OpenMP(), Cxx())
 kernel_string, kernel_args = process_directives(app, code)
 
 tune_params = dict()
-tune_params["nteams"] = [2**i for i in range(1,11)]
+tune_params["nteams"] = [2**i for i in range(1, 11)]
 tune_params["nthreads"] = [32 * i for i in range(1, 33)]
 metrics = dict()
 metrics["GB/s"] = (
