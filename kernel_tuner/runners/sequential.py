@@ -55,7 +55,7 @@ class SequentialRunner(Runner):
 
         :param tuning_options: A dictionary with all options regarding the tuning
             process.
-        :type tuning_options: kernel_tuner.iterface.Options
+        :type tuning_options: kernel_tuner.interface.Options
 
         :returns: A list of dictionaries for executed kernel configurations and their
             execution times.
