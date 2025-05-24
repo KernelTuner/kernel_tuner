@@ -10,10 +10,10 @@ from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
 _options = dict(
-    popsize=("population size", 30),
-    maxiter=("maximum number of generations", 30),
-    method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "uniform"),
-    mutation_chance=("chance to mutate is 1 in mutation_chance", 20),
+    popsize=("population size", 20),
+    maxiter=("maximum number of generations", 150),
+    method=("crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform", "single_point"),
+    mutation_chance=("chance to mutate is 1 in mutation_chance", 5),
     constraint_aware=("constraint-aware optimization (True/False)", True),
 )
 
