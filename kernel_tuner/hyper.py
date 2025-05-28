@@ -68,11 +68,12 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, restrictions: li
     def put_if_not_present(target_dict, key, value):
         target_dict[key] = value if key not in target_dict else target_dict[key]
 
+    # set default arguments if not provided
     put_if_not_present(kwargs, "verbose", True)
     put_if_not_present(kwargs, "quiet", False)
-    kwargs['simulation_mode'] = False
-    kwargs['strategy'] = 'brute_force'
-    kwargs['verify'] = None
+    put_if_not_present(kwargs, "simulation_mode", False)
+    put_if_not_present(kwargs, "strategy", brute_force)
+    put_if_not_present(kwargs, 'verify', None)
     arguments = [target_strategy]
 
     # IMPORTANT when running this script in parallel, always make sure the below name is unique among your runs!
