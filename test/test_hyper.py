@@ -34,6 +34,6 @@ def test_hyper(env):
         }
     }
 
-    result, env = tune_hyper_params(target_strategy, hyper_params, iterations=1, compiler_options=compiler_options, verbose=True, cache=None)
+    result, env = tune_hyper_params(target_strategy, hyper_params, restrictions=[], iterations=1, compiler_options=compiler_options, verbose=True, cache=None)
     assert len(result) == 2
     assert 'best_config' in env

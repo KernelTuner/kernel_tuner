@@ -72,7 +72,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, restrictions: li
     put_if_not_present(kwargs, "verbose", True)
     put_if_not_present(kwargs, "quiet", False)
     put_if_not_present(kwargs, "simulation_mode", False)
-    put_if_not_present(kwargs, "strategy", brute_force)
+    put_if_not_present(kwargs, "strategy", 'brute_force')
     put_if_not_present(kwargs, 'verify', None)
     arguments = [target_strategy]
 

@@ -168,3 +168,7 @@ class HypertunerFunctions(Backend):
     
     def memcpy_htod(self, dest, src):
         return super().memcpy_htod(dest, src)
+
+    def refresh_memory(self, device_memory, host_arguments, should_sync):
+        """This is a no-op for the hypertuner backend, as it does not manage memory directly."""
+        pass
