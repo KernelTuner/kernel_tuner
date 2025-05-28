@@ -24,7 +24,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     pop_size, generations, method, mutation_chance, constraint_aware = common.get_options(options, _options)
 
     # if necessary adjust the popsize to a sensible value based on search space size
-    pop_size = min(round((searchspace.size / generations) * 3), pop_size)
+    if pop_size < 2 or pop_size > np.floor(searchspace.size / 2):
+        pop_size = min(max(round((searchspace.size / generations) * 3), 2), pop_size)
 
     GA = GeneticAlgorithm(pop_size, searchspace, method, mutation_chance, constraint_aware)
 
