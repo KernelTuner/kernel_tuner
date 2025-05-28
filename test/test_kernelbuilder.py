@@ -3,8 +3,8 @@ from .context import skip_backend
 
 import pytest
 from kernel_tuner import kernelbuilder
-from kernel_tuner import util
 from kernel_tuner import integration
+from kernel_tuner.util import delete_temp_file
 
 
 backends = ["cuda", "cupy"]
@@ -59,4 +59,4 @@ def test_PythonKernel_tuned(test_kernel, backend):
         assert np.allclose(reference[0], a+b)
 
     finally:
-        util.delete_temp_file(test_results_file)
+        delete_temp_file(test_results_file)
