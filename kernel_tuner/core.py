@@ -115,15 +115,10 @@ class KernelSource(object):
         kernel_source = self.kernel_sources[index]
         return util.get_kernel_string(kernel_source, params)
 
-<<<<<<< HEAD
     def prepare_list_of_files(
         self, kernel_name, params, grid, threads, block_size_names
     ):
         """Prepare the kernel string along with any additional files.
-=======
-    def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
-        """prepare the kernel string along with any additional files
->>>>>>> origin/master
 
         The first file in the list is allowed to include or read in the others
         The files beyond the first are considered additional files that may also contain tunable parameters
@@ -660,11 +655,7 @@ class DeviceInterface(object):
 
     @staticmethod
     def preprocess_gpu_arguments(old_arguments, params):
-<<<<<<< HEAD
         """Get a flat list of arguments based on the configuration given by `params`."""
-=======
-        """Get a flat list of arguments based on the configuration given by `params`"""
->>>>>>> origin/master
         return _preprocess_gpu_arguments(old_arguments, params)
 
     def copy_shared_memory_args(self, smem_args):
@@ -776,11 +767,7 @@ class DeviceInterface(object):
 
 
 def _preprocess_gpu_arguments(old_arguments, params):
-<<<<<<< HEAD
     """Get a flat list of arguments based on the configuration given by `params`."""
-=======
-    """Get a flat list of arguments based on the configuration given by `params`"""
->>>>>>> origin/master
     new_arguments = []
 
     for argument in old_arguments:
