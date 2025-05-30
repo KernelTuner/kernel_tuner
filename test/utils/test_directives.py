@@ -4,6 +4,13 @@ from kernel_tuner.utils.directives import *
 def test_is_openacc():
     assert is_openacc(OpenACC())
     assert not is_openacc(None)
+    assert not is_openacc(OpenMP())
+
+
+def test_is_openmp():
+    assert is_openmp(OpenMP())
+    assert not is_openmp(None)
+    assert not is_openmp(OpenACC())
 
 
 def test_is_cxx():
@@ -28,6 +35,16 @@ def test_line_contains_openacc_directive():
     assert not line_contains_openacc_directive(cxx_code, None)
 
 
+def test_line_contains_openmp_directive():
+    cxx_code = "int main(void) {\n#pragma omp target}"
+    f90_code = "!$omp target"
+    assert line_contains_openmp_directive(cxx_code, Cxx())
+    assert not line_contains_openmp_directive(f90_code, Cxx())
+    assert line_contains_openmp_directive(f90_code, Fortran())
+    assert not line_contains_openmp_directive(cxx_code, Fortran())
+    assert not line_contains_openmp_directive(cxx_code, None)
+
+
 def test_line_contains_openacc_parallel_directive():
     assert line_contains_openacc_parallel_directive("#pragma acc parallel wait", Cxx())
     assert line_contains_openacc_parallel_directive("!$acc parallel", Fortran())
@@ -36,9 +53,22 @@ def test_line_contains_openacc_parallel_directive():
     assert not line_contains_openacc_parallel_directive("!$acc parallel", None)
 
 
+def test_line_contains_openmp_target_directive():
+    assert line_contains_openmp_target_directive("#pragma omp target teams", Cxx())
+    assert line_contains_openmp_target_directive("!$omp target", Fortran())
+    assert not line_contains_openmp_target_directive("#pragma omp loop", Cxx())
+    assert not line_contains_openmp_target_directive("!$omp loop", Fortran())
+    assert not line_contains_openmp_target_directive("!$omp parallel", None)
+
+
 def test_openacc_directive_contains_data_clause():
     assert openacc_directive_contains_data_clause("#pragma acc parallel present(A[:1089])")
     assert not openacc_directive_contains_data_clause("#pragma acc parallel for")
+
+
+def test_openmp_directive_contains_data_clause():
+    assert openmp_directive_contains_data_clause("#pragma omp target teams map(tofrom: A[:1089])")
+    assert not openmp_directive_contains_data_clause("#pragma omp target")
 
 
 def test_create_data_directive():
@@ -48,6 +78,7 @@ def test_create_data_directive():
         create_data_directive_openacc("array", size, Cxx())
         == "#pragma acc enter data create(array[:1024])\n#pragma acc update device(array[:1024])\n"
     )
+    assert create_data_directive_openmp("array", size, Cxx()) == "#pragma omp target enter data map(to: array[:1024])\n"
     size.clear()
     size.add(35)
     size.add(16)
@@ -55,18 +86,27 @@ def test_create_data_directive():
         create_data_directive_openacc("matrix", size, Fortran())
         == "!$acc enter data create(matrix(:35,:16))\n!$acc update device(matrix(:35,:16))\n"
     )
+    assert (
+        create_data_directive_openmp("matrix", size, Fortran()) == "!$omp target enter data map(to: matrix(:35,:16))\n"
+    )
     assert create_data_directive_openacc("array", size, None) == ""
+    assert create_data_directive_openmp("array", size, None) == ""
 
 
 def test_exit_data_directive():
     size = ArraySize()
     size.add(1024)
     assert exit_data_directive_openacc("array", size, Cxx()) == "#pragma acc exit data copyout(array[:1024])\n"
+    assert exit_data_directive_openmp("array", size, Cxx()) == "#pragma omp target exit data map(from: array[:1024])\n"
     size.clear()
     size.add(35)
     size.add(16)
     assert exit_data_directive_openacc("matrix", size, Fortran()) == "!$acc exit data copyout(matrix(:35,:16))\n"
+    assert (
+        exit_data_directive_openmp("matrix", size, Fortran()) == "!$omp target exit data map(from: matrix(:35,:16))\n"
+    )
     assert exit_data_directive_openacc("matrix", size, None) == ""
+    assert exit_data_directive_openmp("matrix", size, None) == ""
 
 
 def test_correct_kernel():
@@ -101,14 +141,20 @@ def test_wrap_timing():
 def test_wrap_data():
     acc_cxx = Code(OpenACC(), Cxx())
     acc_f90 = Code(OpenACC(), Fortran())
+    omp_cxx = Code(OpenMP(), Cxx())
+    omp_f90 = Code(OpenMP(), Fortran())
     code_cxx = "// this is a comment\n"
     code_f90 = "! this is a comment\n"
     data = {"array": ["int*", "size"]}
     preprocessor = ["#define size 42"]
     expected_cxx = "#pragma acc enter data create(array[:42])\n#pragma acc update device(array[:42])\n\n// this is a comment\n\n#pragma acc exit data copyout(array[:42])\n"
     assert wrap_data(code_cxx, acc_cxx, data, preprocessor, None) == expected_cxx
+    expected_cxx = "#pragma omp target enter data map(to: array[:42])\n\n// this is a comment\n\n#pragma omp target exit data map(from: array[:42])\n"
+    assert wrap_data(code_cxx, omp_cxx, data, preprocessor, None) == expected_cxx
     expected_f90 = "!$acc enter data create(array(:42))\n!$acc update device(array(:42))\n\n! this is a comment\n\n!$acc exit data copyout(array(:42))\n"
     assert wrap_data(code_f90, acc_f90, data, preprocessor, None) == expected_f90
+    expected_f90 = "!$omp target enter data map(to: array(:42))\n\n! this is a comment\n\n!$omp target exit data map(from: array(:42))\n"
+    assert wrap_data(code_f90, omp_f90, data, preprocessor, None) == expected_f90
     data = {"matrix": ["float*", "rows,cols"]}
     preprocessor = ["#define rows 42", "#define cols 84"]
     expected_f90 = "!$acc enter data create(matrix(:42,:84))\n!$acc update device(matrix(:42,:84))\n\n! this is a comment\n\n!$acc exit data copyout(matrix(:42,:84))\n"
@@ -238,13 +284,13 @@ def test_extract_directive_signature():
     signatures = extract_directive_signature(code, acc_cxx)
     assert len(signatures) == 1
     assert (
-        "float vector_add(float * restrict a, float * restrict b, float * restrict c, int size)"
+        "float vector_add(float * a, float * b, float * c, int size)"
         in signatures["vector_add"]
     )
     signatures = extract_directive_signature(code, acc_cxx, "vector_add")
     assert len(signatures) == 1
     assert (
-        "float vector_add(float * restrict a, float * restrict b, float * restrict c, int size)"
+        "float vector_add(float * a, float * b, float * c, int size)"
         in signatures["vector_add"]
     )
     signatures = extract_directive_signature(code, acc_cxx, "vector_add_ext")
