@@ -36,7 +36,7 @@ from constraint import Constraint
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
-from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results
+from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
@@ -47,6 +47,7 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
+from kernel_tuner.strategies.wrapper import OptAlgWrapper
 from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
@@ -62,7 +63,7 @@ from kernel_tuner.strategies import (
     ordered_greedy_mls,
     pso,
     random_sample,
-    simulated_annealing,
+    simulated_annealing
 )
 
 strategy_map = {
@@ -893,6 +894,19 @@ def tune_kernel_T1(
             strategy_options["time_limit"] = budget["BudgetValue"]  # both are in seconds
         else:
             raise NotImplementedError(f"Budget type in {budget} is not supported")
+
+    # check if the strategy is a path
+    if "custom_search_method_path" in strategy_options:
+        # if it is a path, import the strategy from the file
+        opt_path: Path = Path(strategy_options["custom_search_method_path"])
+        class_name: str = strategy
+        assert opt_path.exists(), f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
+        optimizer_class = import_class_from_file(opt_path, class_name)
+        budget = strategy_options.get("max_fevals", 1e12)    # if not set, use a very large number to have it run out at the time limit
+        filter_keys = ["custom_search_method_path", "max_fevals", "time_limit", "constraint_aware"]
+        adjusted_strategy_options = {k:v for k, v in strategy_options.items() if k not in filter_keys}
+        optimizer_instance = optimizer_class(budget=budget, **adjusted_strategy_options)
+        strategy = OptAlgWrapper(optimizer_instance)
 
     # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:

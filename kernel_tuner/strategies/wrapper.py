@@ -21,7 +21,7 @@ class OptAlgWrapper:
             cost_func.get_bounds_x0_eps()
 
         try:
-            self.optimizer(cost_func)
+            self.optimizer(cost_func, searchspace)
         except util.StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
