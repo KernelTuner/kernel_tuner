@@ -8,15 +8,14 @@ from kernel_tuner.strategies.common import CostFunc
 class OptAlgWrapper:
     """Wrapper class for user-defined optimization algorithms"""
 
-    def __init__(self, optimizer, scaling=True):
+    def __init__(self, optimizer):
         self.optimizer = optimizer
-        self.scaling = scaling
 
 
     def tune(self, searchspace: Searchspace, runner, tuning_options):
-        cost_func = CostFunc(searchspace, tuning_options, runner, scaling=self.scaling)
+        cost_func = CostFunc(searchspace, tuning_options, runner, **self.optimizer.costfunc_kwargs)
 
-        if self.scaling:
+        if self.optimizer.costfunc_kwargs.get('scaling', True):
             # Initialize costfunc for scaling
             cost_func.get_bounds_x0_eps()
 
