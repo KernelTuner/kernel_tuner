@@ -10,16 +10,17 @@ from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
 _options = dict(T=("Starting temperature", 1.0),
-                       T_min=("End temperature", 0.001),
-                       alpha=("Alpha parameter", 0.995),
-                       maxiter=("Number of iterations within each annealing step", 1))
+                T_min=("End temperature", 0.001),
+                alpha=("Alpha parameter", 0.995),
+                maxiter=("Number of iterations within each annealing step", 1),
+                constraint_aware=("constraint-aware optimization (True/False)", True))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     # SA works with real parameter values and does not need scaling
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
     # optimization parameters
-    T, T_min, alpha, niter = common.get_options(tuning_options.strategy_options, _options)
+    T, T_min, alpha, niter, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
     T_start = T
 
     # compute how many iterations would be needed to complete the annealing schedule
@@ -30,7 +31,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     max_feval = tuning_options.strategy_options.get("max_fevals", max_iter)
 
     # get random starting point and evaluate cost
-    pos = list(searchspace.get_random_sample(1)[0])
+    pos = generate_starting_point(searchspace, constraint_aware)
     old_cost = cost_func(pos, check_restrictions=False)
 
     # main optimization loop
@@ -46,9 +47,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         for _ in range(niter):
 
-            new_pos = neighbor(pos, searchspace)
+            new_pos = neighbor(pos, searchspace, constraint_aware)
             try:
-                new_cost = cost_func(new_pos, check_restrictions=False)
+                new_cost = cost_func(new_pos, check_restrictions=not constraint_aware)
             except util.StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
@@ -73,7 +74,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             stuck = 0
         c_old = c
         if stuck > 100:
-            pos = list(searchspace.get_random_sample(1)[0])
+            pos = generate_starting_point(searchspace, constraint_aware)
             stuck = 0
 
         # safeguard
@@ -103,11 +104,49 @@ def acceptance_prob(old_cost, new_cost, T, tuning_options):
     return np.exp(((old_cost-new_cost)/old_cost)/T)
 
 
-def neighbor(pos, searchspace: Searchspace):
+def neighbor(pos, searchspace: Searchspace, constraint_aware=True):
     """Return a random neighbor of pos."""
-    # Note: this is not the same as the previous implementation, because it is possible that non-edge parameters remain the same, but suggested configurations will all be within restrictions
-    neighbors = searchspace.get_neighbors(tuple(pos), neighbor_method='Hamming') if random.random() < 0.2 else searchspace.get_neighbors(tuple(pos), neighbor_method='strictly-adjacent')
-    if len(neighbors) > 0:
-        return list(random.choice(neighbors))
-    # if there are no neighbors, return a random configuration
-    return list(searchspace.get_random_sample(1)[0])
+
+    if constraint_aware:
+        # Note: this is not the same as the previous implementation, because it is possible that non-edge parameters remain the same, but suggested configurations will all be within restrictions
+        neighbors = searchspace.get_neighbors(tuple(pos), neighbor_method='Hamming') if random.random() < 0.2 else searchspace.get_neighbors(tuple(pos), neighbor_method='strictly-adjacent')
+        if len(neighbors) > 0:
+            return list(random.choice(neighbors))
+        # if there are no neighbors, return a random configuration
+        return list(searchspace.get_random_sample(1)[0])
+
+    else:
+        tune_params = searchspace.tune_params
+        size = len(pos)
+        pos_out = []
+        # random mutation
+        # expected value is set that values all dimensions attempt to get mutated
+        for i in range(size):
+            key = list(tune_params.keys())[i]
+            values = tune_params[key]
+
+            if random.random() < 0.2:  #replace with random value
+                new_value = random_val(i, tune_params)
+            else: #adjacent value
+                ind = values.index(pos[i])
+                if random.random() > 0.5:
+                    ind += 1
+                else:
+                    ind -= 1
+                ind = min(max(ind, 0), len(values)-1)
+                new_value = values[ind]
+
+            pos_out.append(new_value)
+        return pos_out
+
+def random_val(index, tune_params):
+    """return a random value for a parameter"""
+    key = list(tune_params.keys())[index]
+    return random.choice(tune_params[key])
+
+def generate_starting_point(searchspace: Searchspace, constraint_aware=True):
+    if constraint_aware:
+        return list(searchspace.get_random_sample(1)[0])
+    else:
+        tune_params = searchspace.tune_params
+        return [random_val(i, tune_params) for i in range(len(tune_params))]
