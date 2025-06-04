@@ -14,13 +14,12 @@ class OptAlg(ABC):
         self.costfunc_kwargs = {"scaling": True, "snap": True}
 
     @abstractmethod
-    def __call__(self, func: CostFunc, searchspace: Searchspace, budget_spent_fraction: float) -> tuple[tuple, float]:
-        """_summary_
+    def __call__(self, func: CostFunc, searchspace: Searchspace) -> tuple[tuple, float]:
+        """Optimize the black box function `func` within the given `searchspace`.
 
         Args:
-            func (CostFunc): Cost function to be optimized.
+            func (CostFunc): Cost function to be optimized. Has a property `budget_spent_fraction` that indicates how much of the budget has been spent.
             searchspace (Searchspace): Search space containing the parameters to be optimized.
-            budget_spent_fraction (float): Fraction of the budget that has already been spent.
 
         Returns:
             tuple[tuple, float]: tuple of the best parameters and the corresponding cost value
