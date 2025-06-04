@@ -100,6 +100,7 @@ class CostFunc:
                 tuning_options["max_fevals"] if "max_fevals" in tuning_options else np.inf, searchspace.size
             )
         self.results = []
+        self.budget_spent_fraction = 0.0
 
         # if enabled, encode non-numeric parameter values as a numeric value
         if self.encode_non_numeric:
@@ -127,7 +128,7 @@ class CostFunc:
         logging.debug("x: %s", str(x))
 
         # check if max_fevals is reached or time limit is exceeded
-        util.check_stop_criterion(self.tuning_options)
+        self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
 
         # snap values in x to nearest actual value for each parameter, unscale x if needed
         if self.snap:

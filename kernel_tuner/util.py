@@ -190,12 +190,28 @@ def check_argument_list(kernel_name, kernel_string, args):
         warnings.warn(errors[0], UserWarning)
 
 
-def check_stop_criterion(to):
-    """Checks if max_fevals is reached or time limit is exceeded."""
-    if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
-        raise StopCriterionReached(f"max_fevals reached ({len(to.unique_results)} >= {to.max_fevals})")
-    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time) > to.time_limit):
-        raise StopCriterionReached("time limit exceeded")
+def check_stop_criterion(to: dict) -> float:
+    """Check if the stop criterion is reached.
+
+    Args:
+        to (dict): tuning options.
+
+    Raises:
+        StopCriterionReached: if the max_fevals is reached or time limit is exceeded.
+
+    Returns:
+        float: fraction of budget spent.
+    """
+    if "max_fevals" in to:
+        if len(to.unique_results) >= to.max_fevals:
+            raise StopCriterionReached(f"max_fevals ({to.max_fevals}) reached")
+        return len(to.unique_results) / to.max_fevals
+    if "time_limit" in to:
+        time_spent = (time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time
+        if time_spent > to.time_limit:
+            raise StopCriterionReached("time limit exceeded")
+        return time_spent / to.time_limit
+    
 
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):

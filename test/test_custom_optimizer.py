@@ -3,7 +3,9 @@
 
 import numpy as np
 
-class HybridDELocalRefinement:
+from kernel_tuner.strategies.wrapper import OptAlg
+
+class HybridDELocalRefinement(OptAlg):
     """
     A two-phase differential evolution with local refinement, intended for BBOB-type
     black box optimization problems in [-5,5]^dim.
@@ -12,21 +14,14 @@ class HybridDELocalRefinement:
     exploration and local exploitation under a strict function evaluation budget.
     """
 
-    def __init__(self, budget, dim):
-        """
-        Initialize the optimizer with:
-        - budget: total number of function evaluations allowed.
-        - dim: dimensionality of the search space.
-        """
-        self.budget = budget
-        self.dim = dim
+    def __init__(self):
+        super().__init__()
         # You can adjust these hyperparameters based on experimentation/tuning:
-        self.population_size = min(50, 10 * dim)  # Caps for extremely large dim
         self.F = 0.8        # Differential weight
         self.CR = 0.9       # Crossover probability
         self.local_search_freq = 10  # Local refinement frequency in generations
 
-    def __call__(self, func):
+    def __call__(self, func, searchspace):
         """
         Optimize the black box function `func` in [-5,5]^dim, using
         at most self.budget function evaluations.
@@ -35,9 +30,8 @@ class HybridDELocalRefinement:
             best_params: np.ndarray representing the best parameters found
             best_value: float representing the best objective value found
         """
-        # Check if we have a non-positive budget
-        if self.budget <= 0:
-            raise ValueError("Budget must be a positive integer.")
+        self.dim = searchspace.num_params
+        self.population_size = round(min(min(50, 10 * self.dim), np.ceil(searchspace.size / 3)))  # Caps for extremely large dim
 
         # 1. Initialize population
         lower_bound, upper_bound = -5.0, 5.0
@@ -49,8 +43,6 @@ class HybridDELocalRefinement:
         for i in range(self.population_size):
             fitness[i] = func(pop[i])
             evaluations += 1
-            if evaluations >= self.budget:
-                break
 
         # Track best solution
         best_idx = np.argmin(fitness)
@@ -59,7 +51,7 @@ class HybridDELocalRefinement:
 
         # 2. Main evolutionary loop
         gen = 0
-        while evaluations < self.budget:
+        while func.budget_spent_fraction < 1.0 and evaluations < searchspace.size:
             gen += 1
             for i in range(self.population_size):
                 # DE mutation: pick three distinct indices
@@ -78,7 +70,7 @@ class HybridDELocalRefinement:
                 # Evaluate trial
                 trial_fitness = func(trial)
                 evaluations += 1
-                if evaluations >= self.budget:
+                if func.budget_spent_fraction > 1.0:
                     # If out of budget, wrap up
                     if trial_fitness < fitness[i]:
                         pop[i] = trial
@@ -99,13 +91,10 @@ class HybridDELocalRefinement:
                         best_params = trial.copy()
 
             # Periodically refine best solution with a small local neighborhood search
-            if gen % self.local_search_freq == 0 and evaluations < self.budget:
+            if gen % self.local_search_freq == 0 and func.budget_spent_fraction < 1.0:
                 best_params, best_value, evaluations = self._local_refinement(
                     func, best_params, best_value, evaluations, lower_bound, upper_bound
                 )
-
-            if evaluations >= self.budget:
-                break
 
         return best_params, best_value
 
@@ -115,11 +104,10 @@ class HybridDELocalRefinement:
         Uses a quick 'perturb-and-accept' approach in a shrinking neighborhood.
         """
         # Neighborhood size shrinks as the budget is consumed
-        frac_budget_used = evaluations / self.budget
-        step_size = 0.2 * (1.0 - frac_budget_used)
+        step_size = 0.2 * (1.0 - func.budget_spent_fraction)
 
         for _ in range(5):  # 5 refinements each time
-            if evaluations >= self.budget:
+            if func.budget_spent_fraction >= 1.0:
                 break
             candidate = best_params + np.random.uniform(-step_size, step_size, self.dim)
             candidate = np.clip(candidate, lb, ub)
@@ -138,26 +126,23 @@ class HybridDELocalRefinement:
 import os
 from kernel_tuner import tune_kernel
 from kernel_tuner.strategies.wrapper import OptAlgWrapper
-cache_filename = os.path.dirname(
-
-    os.path.realpath(__file__)) + "/test_cache_file.json"
 
 from .test_runners import env
 
+cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
 
 def test_OptAlgWrapper(env):
     kernel_name, kernel_string, size, args, tune_params = env
 
     # Instantiate LLaMAE optimization algorithm
-    budget = int(15)
-    dim = len(tune_params)
-    optimizer = HybridDELocalRefinement(budget, dim)
+    optimizer = HybridDELocalRefinement()
 
     # Wrap the algorithm class in the OptAlgWrapper
     # for use in Kernel Tuner
     strategy = OptAlgWrapper(optimizer)
+    strategy_options = { 'max_fevals': 15 }
 
     # Call the tuner
     tune_kernel(kernel_name, kernel_string, size, args, tune_params,
-                strategy=strategy, cache=cache_filename,
+                strategy=strategy, strategy_options=strategy_options, cache=cache_filename,
                 simulation_mode=True, verbose=True)
