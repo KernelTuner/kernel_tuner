@@ -60,6 +60,7 @@ class CostFunc:
         self.scaling = scaling
         self.searchspace = searchspace
         self.results = []
+        self.budget_spent_fraction = 0.0
 
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
@@ -70,7 +71,7 @@ class CostFunc:
         logging.debug('x: ' + str(x))
 
         # check if max_fevals is reached or time limit is exceeded
-        util.check_stop_criterion(self.tuning_options)
+        self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
 
         # snap values in x to nearest actual value for each parameter, unscale x if needed
         if self.snap:
