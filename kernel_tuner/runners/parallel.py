@@ -125,6 +125,7 @@ class ParallelRunner(Runner):
         :type iterations: int
         """
         self.state = ParallelRunnerState(observers, iterations)
+        self.state.device_options = device_options
         self.state.quiet = device_options.quiet
         self.state.kernel_source = kernel_source
         self.state.warmed_up = False
