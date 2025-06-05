@@ -32,6 +32,7 @@ import numpy
 import kernel_tuner.core as core
 import kernel_tuner.util as util
 from kernel_tuner.integration import get_objective_defaults
+from kernel_tuner.runners.parallel import ParallelRunner
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace
@@ -463,6 +464,7 @@ _tuning_options = Options(
         ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
+        ("parallel_runner", ("If the value is larger than 1 use that number as the number of parallel runners doing the tuning", "int")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
     ]
 )
@@ -574,6 +576,7 @@ def tune_kernel(
     cache=None,
     metrics=None,
     simulation_mode=False,
+    parallel_runner=1,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -600,6 +603,8 @@ def tune_kernel(
 
     if iterations < 1:
         raise ValueError("Iterations should be at least one!")
+    if parallel_runner < 1:
+        logging.warning("The number of parallel runners should be at least one!")
 
     # sort all the options into separate dicts
     opts = locals()
@@ -650,7 +655,14 @@ def tune_kernel(
         strategy = brute_force
 
     # select the runner for this job based on input
-    selected_runner = SimulationRunner if simulation_mode else SequentialRunner
+    # TODO: we could use the "match case" syntax when removing support for 3.9
+    if simulation_mode:
+        selected_runner = SimulationRunner
+    elif parallel_runner > 1:
+        selected_runner = ParallelRunner
+        tuning_options.parallel_runner = parallel_runner
+    else:
+        selected_runner = SequentialRunner
     tuning_options.simulated_time = 0
     runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
 
