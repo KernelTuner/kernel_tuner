@@ -305,16 +305,23 @@ def store_metadata_file(metadata_filename: str):
 
 def import_class_from_file(file_path: Path, class_name):
     """Import a class from a file."""
-    module_name = file_path.stem
-    spec = spec_from_file_location(module_name, file_path)
-    if spec is None:
-        raise ImportError(f"Could not load spec from {file_path}")
-    
-    # create a module from the spec and execute it
-    module = module_from_spec(spec)
-    spec.loader.exec_module(module)
-    if not hasattr(module, class_name):
-        raise ImportError(f"Module '{module_name}' has no class '{class_name}'")
+
+    def load_module(module_name):
+        spec = spec_from_file_location(module_name, file_path)
+        if spec is None:
+            raise ImportError(f"Could not load spec from {file_path}")
+        
+        # create a module from the spec and execute it
+        module = module_from_spec(spec)
+        spec.loader.exec_module(module)
+        if not hasattr(module, class_name):
+            raise ImportError(f"Module '{module_name}' has no class '{class_name}'")
+        return module
+
+    try:
+        module = load_module(file_path.stem)
+    except ImportError:
+        module = load_module(f"{file_path.parent.stem}.{file_path.stem}")
     
     # return the class from the module
     return getattr(module, class_name)

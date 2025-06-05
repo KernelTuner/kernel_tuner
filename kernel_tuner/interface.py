@@ -902,10 +902,9 @@ def tune_kernel_T1(
         class_name: str = strategy
         assert opt_path.exists(), f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
         optimizer_class = import_class_from_file(opt_path, class_name)
-        budget = strategy_options.get("max_fevals", 1e12)    # if not set, use a very large number to have it run out at the time limit
         filter_keys = ["custom_search_method_path", "max_fevals", "time_limit", "constraint_aware"]
         adjusted_strategy_options = {k:v for k, v in strategy_options.items() if k not in filter_keys}
-        optimizer_instance = optimizer_class(budget=budget, **adjusted_strategy_options)
+        optimizer_instance = optimizer_class(**adjusted_strategy_options)
         strategy = OptAlgWrapper(optimizer_instance)
 
     # set the cache path
@@ -973,6 +972,8 @@ def tune_kernel_T1(
         elif arg["MemoryType"] == "Scalar":
             if arg["Type"] == "float":
                 argument = numpy.float32(arg["FillValue"])
+            elif arg["Type"] == "int32":
+                argument = numpy.int32(arg["FillValue"])
             else:
                 raise NotImplementedError()
         if argument is not None:
