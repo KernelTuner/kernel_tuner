@@ -120,16 +120,14 @@ class HybridDELocalRefinement(OptAlg):
         return best_params, best_value, evaluations
 
 
-
-
 ### Testing the Optimization Algorithm Wrapper in Kernel Tuner
-import os
-from kernel_tuner import tune_kernel
+from kernel_tuner import tune_kernel, tune_kernel_T1
 from kernel_tuner.strategies.wrapper import OptAlgWrapper
+from pathlib import Path
 
-from .test_runners import env
+from .test_runners import env   # noqa: F401
 
-cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
+cache_filename = Path(__file__).parent.resolve() / "test_cache_file.json"
 
 def test_OptAlgWrapper(env):
     kernel_name, kernel_string, size, args, tune_params = env
@@ -143,6 +141,33 @@ def test_OptAlgWrapper(env):
     strategy_options = { 'max_fevals': 15 }
 
     # Call the tuner
-    tune_kernel(kernel_name, kernel_string, size, args, tune_params,
+    res, _ = tune_kernel(kernel_name, kernel_string, size, args, tune_params,
                 strategy=strategy, strategy_options=strategy_options, cache=cache_filename,
                 simulation_mode=True, verbose=True)
+    assert len(res) == strategy_options['max_fevals']
+
+def test_OptAlgWrapper_T1(env):
+    kernel_name, kernel_string, size, args, tune_params = env
+
+    strategy = "HybridDELocalRefinement"
+    strategy_options = {
+        "max_fevals": 15,
+        "custom_search_method_path": Path(__file__).resolve(),
+        "constraint_aware": False,
+    }
+    iterations = 1
+    
+    res, _ = tune_kernel_T1(
+        Path(__file__).parent.resolve() / "test_cache_file_T1_input.json",
+        cache_filename,
+        device="NVIDIA RTX A4000",
+        objective="time",
+        objective_higher_is_better=False,
+        simulation_mode=True,
+        output_T4=False,
+        iterations=iterations,
+        strategy=strategy,
+        strategy_options=strategy_options,
+    )
+
+    assert len(res) == strategy_options['max_fevals']
