@@ -133,10 +133,12 @@ class ParallelRunner(Runner):
         self.state.last_strategy_start_time = self.state.start_time
         self.state.last_strategy_time = 0
         self.state.kernel_options = kernel_options
+        # define a dummy device interface
+        self.dev = DeviceInterface(kernel_source)
 
     def get_environment(self, tuning_options):
-        # TODO: we are going to fix this one later
-        return None
+        # dummy environment
+        return self.dev.get_environment()
 
     def run(self, parameter_space, tuning_options):
         """Iterate through the entire parameter space using a single Python process.
