@@ -28,7 +28,7 @@ class ParallelRunnerState:
         self.iterations = iterations
 
 
-@remote
+@remote(num_cpus=1, num_gpus=1)
 def parallel_run(task_id: int, state: ParallelRunnerState, parameter_space, tuning_options):
     dev = DeviceInterface(
         state.kernel_source, iterations=state.iterations, observers=state.observers, **state.device_options
@@ -37,9 +37,9 @@ def parallel_run(task_id: int, state: ParallelRunnerState, parameter_space, tuni
     gpu_args = dev.ready_argument_list(state.kernel_options.arguments)
     # iterate over parameter space
     results = []
-    elements_per_task = len(parameter_space) / tuning_options.parallel_runner
-    first_element = task_id * elements_per_task
-    last_element = (
+    elements_per_task = int(len(parameter_space) / tuning_options.parallel_runner)
+    first_element = int(task_id * elements_per_task)
+    last_element = int(
         (task_id + 1) * elements_per_task if task_id + 1 < tuning_options.parallel_runner else len(parameter_space)
     )
     for element in parameter_space[first_element:last_element]:
@@ -167,4 +167,4 @@ class ParallelRunner(Runner):
         for task in tasks:
             results.append(get(task))
 
-        return [chain.from_iterable(results)]
+        return list(chain.from_iterable(results))
