@@ -2,6 +2,7 @@
 import logging
 from time import perf_counter
 from datetime import datetime, timezone
+from itertools import chain
 
 from ray import remote, get, put
 
@@ -166,4 +167,4 @@ class ParallelRunner(Runner):
         for task in tasks:
             results.append(get(task))
 
-        return results
+        return [chain.from_iterable(results)]
