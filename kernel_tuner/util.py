@@ -284,7 +284,7 @@ def check_restriction(restrict, params: dict) -> bool:
             return restrict(**selected_params)
     # otherwise, raise an error
     else:
-        raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")
+        raise ValueError(f"Unknown restriction type {type(restrict)} ({restrict})")
 
 
 def check_restrictions(restrictions, params: dict, verbose: bool) -> bool:
@@ -352,7 +352,7 @@ def convert_constraint_restriction(restrict: Constraint):
 
     elif isinstance(restrict, (InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint)):
         raise NotImplementedError(
-            f"Restriction of the type {type(restrict)} is explicitely not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
+            f"Restriction of the type {type(restrict)} is explicitly not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
         )
     else:
         raise TypeError(f"Unrecognized restriction {restrict}")
@@ -572,7 +572,7 @@ def get_total_timings(results, env, overhead_time):
             total_verification_time += result["verification_time"]
             total_benchmark_time += result["benchmark_time"]
 
-    # add the seperate times to the environment dict
+    # add the separate time values to the environment dict
     env["total_framework_time"] = total_framework_time
     env["total_strategy_time"] = total_strategy_time
     env["total_compile_time"] = total_compile_time
@@ -748,7 +748,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             v = replace_param_occurrences(v, params)
 
         if not k.isidentifier():
-            raise ValueError("name is not a valid identifier: {k}")
+            raise ValueError(f"name is not a valid identifier: {k}")
 
         # Escape newline characters
         v = str(v)
