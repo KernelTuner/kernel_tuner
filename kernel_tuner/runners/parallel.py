@@ -135,7 +135,10 @@ class ParallelRunner(Runner):
         self.state.last_strategy_start_time = self.state.start_time
         self.state.last_strategy_time = 0
         self.state.kernel_options = kernel_options
-        # define a dummy device interface
+        # fields used directly by strategies
+        self.last_strategy_time = perf_counter()
+        self.state.last_strategy_start_time = self.last_strategy_time
+        # define a dummy device interface on the master node
         self.dev = DeviceInterface(kernel_source)
 
     def get_environment(self, tuning_options):
