@@ -563,8 +563,8 @@ class Searchspace:
         )
         # calculate the absolute difference between the parameter value indices
         abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices)
-        # get the param config indices where the difference is one or less for each position
-        matching_indices = (np.max(abs_index_difference, axis=1) <= 1).nonzero()[0]
+        # get the param config indices where the difference is one for at most one position and zero for the other positions
+        matching_indices = np.where(abs_index_difference.sum(axis=1) <= 1)[0]
         # as the selected param config does not differ anywhere, remove it from the matches
         if param_config_index is not None:
             matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
@@ -581,26 +581,29 @@ class Searchspace:
         index_difference = self.params_values_indices - param_config_value_indices
         # transpose to get the param indices difference per parameter instead of per param config
         index_difference_transposed = index_difference.transpose()
+        # find 'hamming' neighbors for which at most one position is different
+        hamming_mask = (index_difference != 0).sum(axis=1) <= 1
         # for each parameter get the closest upper and lower parameter (absolute index difference >= 1)
         # np.PINF has been replaced by 1e12 here, as on some systems np.PINF becomes np.NINF
         upper_bound = tuple(
             np.min(
-                index_difference_transposed[p][(index_difference_transposed[p] > 0).nonzero()],
+                index_difference_transposed[p],
                 initial=1e12,
+                where=hamming_mask,
             )
             for p in range(self.num_params)
         )
         lower_bound = tuple(
             np.max(
-                index_difference_transposed[p][(index_difference_transposed[p] < 0).nonzero()],
+                index_difference_transposed[p],
                 initial=-1e12,
+                where=hamming_mask,
             )
             for p in range(self.num_params)
         )
         # return the indices where each parameter is within bounds
-        matching_indices = (
-            np.logical_and(index_difference <= upper_bound, index_difference >= lower_bound).all(axis=1).nonzero()[0]
-        )
+        within_bounds = np.logical_and(index_difference <= upper_bound, index_difference >= lower_bound).all(axis=1)
+        matching_indices = (hamming_mask & within_bounds).nonzero()[0]
         # as the selected param config does not differ anywhere, remove it from the matches
         if param_config_index is not None:
             matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
