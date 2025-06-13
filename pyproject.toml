@@ -1,7 +1,3 @@
-[build-system]
-requires = ["poetry-core>=1.7.0", "setuptools>=67.7.2"]
-build-backend = "poetry.core.masonry.api"
-
 [project]
 name = "kernel_tuner"
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
@@ -72,6 +68,10 @@ issues = "https://github.com/KernelTuner/kernel_tuner/issues"
 kernel_tuner = "kernel_tuner.interface:entry_point"
 
 [tool.poetry]
+name = "kernel_tuner"
+description = "An easy to use CUDA/OpenCL kernel tuner in Python"
+version = "1.3.0"
+authors = ["Ben van Werkhoven <b.vanwerkhoven@esciencecenter.nl>"]
 packages = [{ include = "kernel_tuner", from = "." }]
 include = [
     { path = "test" },
@@ -91,6 +91,7 @@ url = "https://test.pypi.org/simple/"
 priority = "explicit"
 
 [tool.poetry.dependencies]
+python = "^3.10"
 hip-python = { version = "^6.3.3.540.31", source = "testpypi", optional = true }  # Note: when released, switch this package to pypi and remove tool.poetry.source and move this to [project.optional-dependencies]
 
 [project.optional-dependencies]
@@ -154,3 +155,7 @@ select = [
 ]
 [tool.ruff.pydocstyle]
 convention = "google"
+
+[build-system]
+requires = ["poetry-core>=1.7.0", "setuptools>=67.7.2"]
+build-backend = "poetry.core.masonry.api"

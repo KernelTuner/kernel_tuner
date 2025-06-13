@@ -36,7 +36,7 @@ from constraint import Constraint
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
-from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
+from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
@@ -47,7 +47,6 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
-from kernel_tuner.strategies.wrapper import OptAlgWrapper
 from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
@@ -63,7 +62,7 @@ from kernel_tuner.strategies import (
     ordered_greedy_mls,
     pso,
     random_sample,
-    simulated_annealing
+    simulated_annealing,
 )
 
 strategy_map = {
@@ -633,15 +632,33 @@ def tune_kernel(
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
         else:
-            # check for user-defined strategy
-            if hasattr(strategy, "tune") and callable(strategy.tune):
+            if hasattr(strategy, "tune") or hasattr(strategy, "__call__"):
                 # user-defined strategy
                 pass
             else:
-                raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
+                raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))} or callable custom strategy.")
 
-        # ensure strategy_options is an Options object
-        tuning_options.strategy_options = Options(strategy_options or {})
+        # make strategy_options into an Options object
+        if tuning_options.strategy_options:
+            if not isinstance(strategy_options, Options):
+                tuning_options.strategy_options = Options(strategy_options)
+
+            # select strategy based on user options
+            if "fraction" in tuning_options.strategy_options and not tuning_options.strategy == "random_sample":
+                raise ValueError(
+                    'It is not possible to use fraction in combination with strategies other than "random_sample". '
+                    'Please set strategy="random_sample", when using "fraction" in strategy_options'
+                )
+
+            # check if method is supported by the selected strategy
+            if "method" in tuning_options.strategy_options:
+                method = tuning_options.strategy_options.method
+                if method not in strategy.supported_methods:
+                    raise ValueError("Method %s is not supported for strategy %s" % (method, tuning_options.strategy))
+
+        # if no strategy_options dict has been passed, create empty dictionary
+        else:
+            tuning_options.strategy_options = Options({})
 
     # if no strategy selected
     else:
@@ -895,18 +912,6 @@ def tune_kernel_T1(
         else:
             raise NotImplementedError(f"Budget type in {budget} is not supported")
 
-    # check if the strategy is a path
-    if "custom_search_method_path" in strategy_options:
-        # if it is a path, import the strategy from the file
-        opt_path: Path = Path(strategy_options["custom_search_method_path"])
-        class_name: str = strategy
-        assert opt_path.exists(), f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
-        optimizer_class = import_class_from_file(opt_path, class_name)
-        filter_keys = ["custom_search_method_path", "max_fevals", "time_limit", "constraint_aware"]
-        adjusted_strategy_options = {k:v for k, v in strategy_options.items() if k not in filter_keys}
-        optimizer_instance = optimizer_class(**adjusted_strategy_options)
-        strategy = OptAlgWrapper(optimizer_instance)
-
     # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:
         cache_filepath = Path(kernelspec["SimulationInput"])
@@ -972,8 +977,6 @@ def tune_kernel_T1(
         elif arg["MemoryType"] == "Scalar":
             if arg["Type"] == "float":
                 argument = numpy.float32(arg["FillValue"])
-            elif arg["Type"] == "int32":
-                argument = numpy.int32(arg["FillValue"])
             else:
                 raise NotImplementedError()
         if argument is not None:
