@@ -438,11 +438,11 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
     """Compute grid dims based on problem sizes and listed grid divisors."""
 
     def get_dimension_divisor(divisor, default, params):
-        if divisor is None:
-            divisor = params.get(default, 1)
-
         divisor_num = 1
-        if isinstance(divisor, int):
+
+        if divisor is None:
+            divisor_num = params.get(default, 1)
+        elif isinstance(divisor, int):
             divisor_num = divisor
         elif callable(divisor):
             divisor_num = divisor(params)
@@ -453,6 +453,7 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
                 divisor_num *= get_dimension_divisor(div, 1, params)
         else:
             raise ValueError("Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable")
+
         return divisor_num
 
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
