@@ -906,6 +906,9 @@ def tune_kernel_T1(
         adjusted_strategy_options = {k:v for k, v in strategy_options.items() if k not in filter_keys}
         optimizer_instance = optimizer_class(**adjusted_strategy_options)
         strategy = OptAlgWrapper(optimizer_instance)
+        if "constraint_aware" not in strategy_options and hasattr(optimizer_instance, "constraint_aware"):
+            # if the optimizer has a constraint_aware attribute, set it in the strategy options
+            strategy_options["constraint_aware"] = optimizer_instance.constraint_aware
 
     # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:
