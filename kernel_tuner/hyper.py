@@ -85,7 +85,7 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, *args, **kwargs)
             result_unique[config_id] = r
     return list(result_unique.values()), env
 
-if __name__ == "__main__":  # TODO remove in production
+if __name__ == "__main__":
     hyperparams = {
         'popsize': [10, 20, 30],
         'maxiter': [50, 100, 150],
