@@ -506,7 +506,7 @@ class DeviceInterface(object):
         # run the kernel
         check = self.run_kernel(func, gpu_args, instance)
         if not check:
-            # runtime failure occured that should be ignored, skip correctness check
+            # runtime failure occurred that should be ignored, skip correctness check
             return
 
         # retrieve gpu results to host memory
@@ -905,7 +905,7 @@ def split_argument_list(argument_list):
         match = re.match(regex, arg, re.S)
         if not match:
             raise ValueError("error parsing templated kernel argument list")
-        type_list.append(re.sub(r"\s+", " ", match.group(1).strip(), re.S))
+        type_list.append(re.sub(r"\s+", " ", match.group(1).strip(), flags=re.S))
         name_list.append(match.group(2).strip())
     return type_list, name_list
 
