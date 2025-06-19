@@ -47,7 +47,6 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
-from kernel_tuner.strategies.wrapper import OptAlgWrapper
 from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
@@ -62,9 +61,11 @@ from kernel_tuner.strategies import (
     mls,
     ordered_greedy_mls,
     pso,
+    pyatf_strategies,
     random_sample,
-    simulated_annealing
+    simulated_annealing,
 )
+from kernel_tuner.strategies.wrapper import OptAlgWrapper
 
 strategy_map = {
     "brute_force": brute_force,
@@ -81,7 +82,8 @@ strategy_map = {
     "pso": pso,
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt
+    "bayes_opt": bayes_opt,
+    "pyatf_strategies": pyatf_strategies,
 }
 
 
@@ -629,6 +631,7 @@ def tune_kernel(
     logging.debug("tuning_options: %s", util.get_config_string(tuning_options))
     logging.debug("device_options: %s", util.get_config_string(device_options))
 
+    strategy_string = strategy
     if strategy:
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
@@ -861,10 +864,9 @@ def tune_kernel_T1(
     strategy: str=None,
     strategy_options: dict={},
 ) -> tuple:
-    """
-    Call the tune function with a T1 input file.
+    """Call the tune function with a T1 input file.
     
-        The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
+    The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
     """
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs["KernelSpecification"]

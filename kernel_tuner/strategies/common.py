@@ -356,7 +356,6 @@ def scale_from_params(params, tune_params, eps):
 
 def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):
     """Helper func to snap to the nearest valid configuration"""
-
     # params is nearest unscaled point, but is not valid
     neighbors = get_neighbors(params, searchspace)
 

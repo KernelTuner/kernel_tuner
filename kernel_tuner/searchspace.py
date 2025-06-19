@@ -76,6 +76,7 @@ class Searchspace:
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
+        self.tune_params_pyatf = None
         self._tensorspace = None
         self.tensor_dtype = torch.float32 if torch_available else None
         self.tensor_device = torch.device("cpu") if torch_available else None
@@ -376,10 +377,13 @@ class Searchspace:
                     constraint = res
                 params.append(TP(key, vals, constraint, constraint_source))
             return params
+        
+        # set data
+        self.tune_params_pyatf = get_params()
 
         # tune
         _, _, tuning_data = (
-            Tuner().verbosity(0).tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
+            Tuner().verbosity(0).tuning_parameters(*self.tune_params_pyatf).search_technique(Exhaustive()).tune(costfunc)
         )
 
         # transform the result into a list of parameter configurations for validation
