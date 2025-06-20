@@ -30,6 +30,7 @@ from ast import literal_eval
 from datetime import datetime
 from pathlib import Path
 from time import perf_counter
+from copy import deepcopy
 
 import numpy
 from constraint import Constraint
@@ -607,14 +608,6 @@ def tune_kernel(
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
 
-    # if the restrictions are not constraints or a callable, the restrictions are strings, so parse them to functions (increases restrictions check performance significantly)
-    if (
-        restrictions is not None
-        and not callable(restrictions)
-        and not any(isinstance(r, Constraint) for r in restrictions)
-    ):
-        restrictions = util.compile_restrictions(restrictions, tune_params)
-
     # sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
@@ -675,6 +668,7 @@ def tune_kernel(
         tuning_options.cachefile = None
 
     # create search space
+    tuning_options.restrictions_unmodified = deepcopy(restrictions)
     searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
