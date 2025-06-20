@@ -180,7 +180,8 @@ class CostFunc:
             return_value = result[self.tuning_options.objective]
         else:
             return_value = result[self.tuning_options.objective] or sys.float_info.max
-        return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
+        if not isinstance(return_value, util.ErrorConfig):
+            return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
 
         # include raw data in return if requested
         if self.return_raw is not None:
