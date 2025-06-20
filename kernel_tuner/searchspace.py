@@ -47,6 +47,7 @@ class Searchspace:
         restrictions,
         max_threads: int,
         block_size_names=default_block_size_names,
+        defer_construction=False,
         build_neighbors_index=False,
         neighbor_method=None,
         from_cache: dict = None,
@@ -62,6 +63,7 @@ class Searchspace:
             Hamming: any parameter config with 1 different parameter value is a neighbor
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         Optionally an imported cache can be used instead with `from_cache`, in which case the `tune_params`, `restrictions` and `max_threads` arguments can be set to None, and construction is skipped.
+        Optionally construction can be deffered to a later time by setting `defer_construction` to True, in which case the searchspace is not built on instantiation (experimental).
         """
         # check the arguments
         if from_cache is not None:
@@ -76,7 +78,8 @@ class Searchspace:
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
-        self.tune_params_pyatf = None
+        self.max_threads = max_threads
+        self.block_size_names = block_size_names
         self._tensorspace = None
         self.tensor_dtype = torch.float32 if torch_available else None
         self.tensor_device = torch.device("cpu") if torch_available else None
@@ -160,17 +163,19 @@ class Searchspace:
             else:
                 raise ValueError(f"Solver method {solver_method} not recognized.")
 
-            # build the search space
-            self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
+            if not defer_construction:
+                # build the search space
+                self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
 
         # finalize construction
-        self.__numpy = None
-        self.num_params = len(self.tune_params)
-        self.indices = np.arange(self.size)
-        if neighbor_method is not None and neighbor_method != "Hamming":
-            self.__prepare_neighbors_index()
-        if build_neighbors_index:
-            self.neighbors_index = self.__build_neighbors_index(neighbor_method)
+        if not defer_construction:
+            self.__numpy = None
+            self.num_params = len(self.tune_params)
+            self.indices = np.arange(self.size)
+            if neighbor_method is not None and neighbor_method != "Hamming":
+                self.__prepare_neighbors_index()
+            if build_neighbors_index:
+                self.neighbors_index = self.__build_neighbors_index(neighbor_method)
 
     # def __build_searchspace_ortools(self, block_size_names: list, max_threads: int) -> Tuple[List[tuple], np.ndarray, dict, int]:
     #     # Based on https://developers.google.com/optimization/cp/cp_solver#python_2
@@ -318,14 +323,15 @@ class Searchspace:
 
         return self.__parameter_space_list_to_lookup_and_return_type(parameter_space_list)
 
-    def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
-        """Builds the searchspace using pyATF."""
-        from pyatf import TP, Interval, Set, Tuner
-        from pyatf.cost_functions.generic import CostFunction
-        from pyatf.search_techniques import Exhaustive
+    def get_tune_params_pyatf(self, block_size_names: list = None, max_threads: int = None):
+        """Convert the tune_params and restrictions to pyATF tunable parameters."""
+        from pyatf import TP, Interval, Set
 
-        # Define a bogus cost function
-        costfunc = CostFunction(":")  # bash no-op
+        # if block_size_names or max_threads are not specified, use the defaults
+        if block_size_names is None:
+            block_size_names = self.block_size_names
+        if max_threads is None:
+            max_threads = self.max_threads
 
         # add the Kernel Tuner default blocksize threads restrictions
         assert isinstance(self.restrictions, list)
@@ -359,27 +365,36 @@ class Searchspace:
                     registered_restrictions.append(index)
 
         # define the Tunable Parameters
-        def get_params():
-            params = list()
-            for index, (key, values) in enumerate(self.tune_params.items()):
-                vi = get_interval(values)
-                vals = (
-                    Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
-                )
-                constraint = res_dict.get(key, None)
-                constraint_source = None
-                if constraint is not None:
-                    constraint, constraint_source = constraint
-                # in case of a leftover monolithic restriction, append at the last parameter
-                if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
-                    res, params, source = self.restrictions[0]
-                    assert callable(res)
-                    constraint = res
-                params.append(TP(key, vals, constraint, constraint_source))
-            return params
+        params = list()
+        for index, (key, values) in enumerate(self.tune_params.items()):
+            vi = get_interval(values)
+            vals = (
+                Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
+            )
+            constraint = res_dict.get(key, None)
+            constraint_source = None
+            if constraint is not None:
+                constraint, constraint_source = constraint
+            # in case of a leftover monolithic restriction, append at the last parameter
+            if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
+                res, params, source = self.restrictions[0]
+                assert callable(res)
+                constraint = res
+            params.append(TP(key, vals, constraint, constraint_source))
+        return params
+
+
+    def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
+        """Builds the searchspace using pyATF."""
+        from pyatf import Tuner
+        from pyatf.cost_functions.generic import CostFunction
+        from pyatf.search_techniques import Exhaustive
+
+        # Define a bogus cost function
+        costfunc = CostFunction(":")  # bash no-op
         
         # set data
-        self.tune_params_pyatf = get_params()
+        self.tune_params_pyatf = self.get_tune_params_pyatf(block_size_names, max_threads)
 
         # tune
         _, _, tuning_data = (
