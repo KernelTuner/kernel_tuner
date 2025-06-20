@@ -7,17 +7,16 @@ from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 from kernel_tuner.util import StopCriterionReached
 
-supported_searchtechniques = ["auc_bandit", "differential_evolution", "pattern_search", "round_robin", "simulated_annealing"]
+supported_searchtechniques = ["auc_bandit", "differential_evolution", "pattern_search", "round_robin", "simulated_annealing", "torczon"]
 
 _options = dict(searchtechnique=(f"PyATF optimization algorithm to use, choose any from {supported_searchtechniques}", "simulated_annealing"))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     from pyatf.search_techniques.search_technique import SearchTechnique
+    from pyatf.search_space import SearchSpace as pyATFSearchSpace
 
     # setup the Kernel Tuner functionalities
-    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True, snap=True, return_invalid=True)
-    # using this instead of get_bounds because scaling is used
-    bounds, _, eps = cost_func.get_bounds_x0_eps()
+    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, snap=False, return_invalid=False)
 
     # dynamically import the search technique based on the provided options
     module_name,  = common.get_options(tuning_options.strategy_options, _options)
@@ -31,9 +30,17 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     assert isinstance(search_technique, SearchTechnique), f"Search technique {search_technique} is not a valid pyATF search technique."
 
     # initialize the search space
-    # from pyatf.search_space import SearchSpace as PyATFSearchSpace
-    # assert searchspace.tune_params_pyatf is not None
-    # search_space = PyATFSearchSpace(*searchspace.tune_params_pyatf, enable_1d_access=False) # SearchTechnique1D currently not supported
+    searchspace_pyatf = Searchspace(
+        searchspace.tune_params, 
+        tuning_options.restrictions_unmodified, 
+        searchspace.max_threads, 
+        searchspace.block_size_names, 
+        defer_construction=True,
+        framework="pyatf"
+    )
+    tune_params_pyatf = searchspace_pyatf.get_tune_params_pyatf()
+    assert isinstance(tune_params_pyatf, (tuple, list)), f"Tuning parameters must be a tuple or list of tuples, is {type(tune_params_pyatf)} ({tune_params_pyatf})."
+    search_space_pyatf = pyATFSearchSpace(*tune_params_pyatf, enable_1d_access=False) # SearchTechnique1D currently not supported
 
     # initialize
     get_next_coordinates_or_indices = search_technique.get_next_coordinates
@@ -54,16 +61,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
             # get configuration
             coords_or_index = coordinates_or_indices.pop()
-            # config = search_space.get_configuration(coords_or_index)
+            config = search_space_pyatf.get_configuration(coords_or_index)
             valid = True
             cost = None
 
-            # convert normalized coordinates of each parameter to range of bounds (from [0, 1] to [bound[0], bound[1]])
-            if isinstance(coords_or_index, tuple):
-                coords_or_index = tuple(b[0]+c*(b[1]-b[0]) for c, b in zip(coords_or_index, bounds) if c is not None)
-
             # evaluate the configuration
-            opt_result = cost_func(coords_or_index)
+            x = tuple([config[k] for k in searchspace.tune_params.keys()])
+            opt_result = cost_func(x, check_restrictions=False)
 
             # adjust opt_result to expected PyATF output in cost and valid
             if not isinstance(opt_result, (int, float)):
@@ -78,22 +82,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         pass
     finally:
         search_technique.finalize()
-
-    return cost_func.results
-
-    # scale variables in x to make 'eps' relevant for multiple variables
-    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
-
-    opt_result = None
-    try:
-        opt_result = searchtechnique(cost_func)
-    except StopCriterionReached as e:
-        searchtechnique.finalize()
-        if tuning_options.verbose:
-            print(e)
-
-    if opt_result and tuning_options.verbose:
-        print(opt_result.message)
 
     return cost_func.results
 
