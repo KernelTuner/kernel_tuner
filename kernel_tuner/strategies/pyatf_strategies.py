@@ -11,7 +11,10 @@ from kernel_tuner.util import StopCriterionReached
 
 supported_searchtechniques = ["auc_bandit", "differential_evolution", "pattern_search", "round_robin", "simulated_annealing", "torczon"]
 
-_options = dict(searchtechnique=(f"PyATF optimization algorithm to use, choose any from {supported_searchtechniques}", "simulated_annealing"))
+_options = dict(
+    searchtechnique=(f"PyATF optimization algorithm to use, choose any from {supported_searchtechniques}", "simulated_annealing"),
+    use_searchspace_cache=(f"Use a cached search space if available, otherwise create a new one.", False)
+)
 
 def get_cache_checksum(d: dict):
     checksum=0
@@ -26,9 +29,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     from pyatf.search_techniques.search_technique import SearchTechnique
     from pyatf.search_space import SearchSpace as pyATFSearchSpace
     from pyatf import TP
+
+    # get the search technique module name and whether to use search space caching
+    module_name, use_searchspace_cache = common.get_options(tuning_options.strategy_options, _options)
     try:
-        import dill
-        pyatf_search_space_caching = True
+        if use_searchspace_cache:
+            import dill
+        pyatf_search_space_caching = use_searchspace_cache
     except ImportError:
         from warnings import warn
         pyatf_search_space_caching = False
@@ -38,7 +45,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, snap=False, return_invalid=False)
 
     # dynamically import the search technique based on the provided options
-    module_name,  = common.get_options(tuning_options.strategy_options, _options)
     module = import_module(f"pyatf.search_techniques.{module_name}")
     class_name = [d for d in dir(module) if d.lower() == module_name.replace('_','')][0]
     searchtechnique_class = getattr(module, class_name)
