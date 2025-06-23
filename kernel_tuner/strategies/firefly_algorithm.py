@@ -94,7 +94,7 @@ class Firefly(Particle):
         """Create Firefly at random position within bounds."""
         super().__init__(bounds)
         self.bounds = bounds
-        self.intensity = 1 / self.score
+        self.intensity = -self.score
 
     def distance_to(self, other):
         """Return Euclidian distance between self and other Firefly."""
@@ -103,10 +103,7 @@ class Firefly(Particle):
     def compute_intensity(self, fun):
         """Evaluate cost function and compute intensity at this position."""
         self.evaluate(fun)
-        if self.score == sys.float_info.max:
-            self.intensity = -sys.float_info.max
-        else:
-            self.intensity = 1 / self.score
+        self.intensity = -self.score
 
     def move_towards(self, other, beta, alpha):
         """Move firefly towards another given beta and alpha values."""
