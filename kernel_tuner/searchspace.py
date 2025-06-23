@@ -21,6 +21,7 @@ from constraint import (
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import (
     compile_restrictions,
+    convert_constraint_lambdas,
     default_block_size_names,
     get_interval,
 )
@@ -74,7 +75,7 @@ class Searchspace:
             len(restrictions) > 0
             and any(isinstance(restriction, str) for restriction in restrictions)
             and not (
-                framework_l == "pysmt" or framework_l == "bruteforce" or solver_method.lower() == "pc_parallelsolver"
+                framework_l == "pysmt" or framework_l == "bruteforce" or framework_l == "pythonconstraint" or solver_method.lower() == "pc_parallelsolver"
             )
         ):
             self.restrictions = compile_restrictions(
@@ -82,7 +83,6 @@ class Searchspace:
                 tune_params,
                 monolithic=False,
                 format=framework_l if framework_l == "pyatf" else None,
-                try_to_constraint=framework_l == "pythonconstraint",
             )
 
         # get the framework given the framework argument
@@ -289,9 +289,7 @@ class Searchspace:
             # adding the default blocksize restriction requires recompilation because pyATF requires combined restrictions for the same parameter
             max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
             restrictions = self._modified_restrictions.copy() + [max_block_size_product]
-            self.restrictions = compile_restrictions(
-                restrictions, self.tune_params, format="pyatf", try_to_constraint=False
-            )
+            self.restrictions = compile_restrictions(restrictions, self.tune_params, format="pyatf")
 
         # build a dictionary of the restrictions, combined based on last parameter
         res_dict = dict()
@@ -377,7 +375,7 @@ class Searchspace:
             parameter_space_dict,
             size_list,
         )
-
+    
     def __build_searchspace(self, block_size_names: list, max_threads: int, solver: Solver):
         """Compute valid configurations in a search space based on restrictions and max_threads."""
         # instantiate the parameter space with all the variables
@@ -386,6 +384,9 @@ class Searchspace:
             parameter_space.addVariable(str(param_name), param_values)
 
         # add the user-specified restrictions as constraints on the parameter space
+        if not isinstance(self.restrictions, (list, tuple)):
+            self.restrictions = [self.restrictions]
+        self.restrictions = convert_constraint_lambdas(self.restrictions)
         parameter_space = self.__add_restrictions(parameter_space)
 
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
@@ -412,20 +413,29 @@ class Searchspace:
             for restriction in self.restrictions:
                 required_params = self.param_names
 
-                # convert to a Constraint type if necessary
-                if isinstance(restriction, tuple):
-                    restriction, required_params, _ = restriction
+                # (un)wrap where necessary
+                if isinstance(restriction, tuple) and len(restriction) >= 2:
+                    required_params = restriction[1]
+                    restriction = restriction[0]
                 if callable(restriction) and not isinstance(restriction, Constraint):
-                    restriction = FunctionConstraint(restriction)
+                    # def restrictions_wrapper(*args):
+                    #     return check_instance_restrictions(restriction, dict(zip(self.param_names, args)), False)
+                    # print(restriction, isinstance(restriction, Constraint))
+                    # restriction = FunctionConstraint(restrictions_wrapper)
+                    restriction = FunctionConstraint(restriction, required_params)
 
-                # add the Constraint
+                # add as a Constraint
+                all_params_required = all(param_name in required_params for param_name in self.param_names)
+                variables = None if all_params_required else required_params
                 if isinstance(restriction, FunctionConstraint):
-                    parameter_space.addConstraint(restriction, required_params)
+                    parameter_space.addConstraint(restriction, variables)
                 elif isinstance(restriction, Constraint):
-                    all_params_required = all(param_name in required_params for param_name in self.param_names)
-                    parameter_space.addConstraint(restriction, None if all_params_required else required_params)
-                elif isinstance(restriction, str) and self.solver_method.lower() == "pc_parallelsolver":
-                    parameter_space.addConstraint(restriction)
+                    parameter_space.addConstraint(restriction, variables)
+                elif isinstance(restriction, str):
+                    if self.solver_method.lower() == "pc_parallelsolver":
+                        parameter_space.addConstraint(restriction)
+                    else:
+                        parameter_space.addConstraint(restriction, variables)
                 else:
                     raise ValueError(f"Unrecognized restriction {restriction}")
 
