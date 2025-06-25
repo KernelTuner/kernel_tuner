@@ -100,7 +100,7 @@ skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP fou
 skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on PATH")
 skip_if_no_bayesopt_gpytorch = pytest.mark.skipif(not bayes_opt_gpytorch_present, reason="Torch and GPyTorch not installed")
 skip_if_no_bayesopt_botorch = pytest.mark.skipif(not bayes_opt_botorch_present, reason="Torch and BOTorch not installed")
-skip_if_no_pyhip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
+skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
 skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
 
 

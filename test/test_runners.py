@@ -156,6 +156,17 @@ def test_constraint_aware_GA(env):
     assert len(result) > 0
 
 
+def test_restrictions(env):
+    restrictions = [lambda p: p["block_size_x"] <= 512, "block_size_x > 128"]
+
+    result, _ = tune_kernel(*env,
+                            verbose=True,
+                            restrictions=restrictions,
+                            cache=cache_filename,
+                            simulation_mode=True)
+    assert len(result) == 6
+
+
 @skip_if_no_pycuda
 def test_time_keeping(env):
     kernel_name, kernel_string, size, args, tune_params = env
