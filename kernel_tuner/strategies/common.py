@@ -45,10 +45,10 @@ def make_strategy_options_doc(strategy_options):
 
 def get_options(strategy_options, options):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
-    accepted = list(options.keys()) + ["max_fevals", "time_limit"]
+    accepted = list(options.keys()) + ["max_fevals", "time_limit", "searchspace_construction_options"]
     for key in strategy_options:
         if key not in accepted:
-            raise ValueError(f"Unrecognized option {key} in strategy_options")
+            raise ValueError(f"Unrecognized option {key} in strategy_options (allowed: {accepted})")
     assert isinstance(options, dict)
     return [strategy_options.get(opt, default) for opt, (_, default) in options.items()]
 
@@ -56,10 +56,12 @@ def get_options(strategy_options, options):
 class CostFunc:
     def __init__(self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True):
         self.runner = runner
-        self.tuning_options = tuning_options
         self.snap = snap
         self.scaling = scaling
         self.searchspace = searchspace
+        self.tuning_options = tuning_options
+        if isinstance(self.tuning_options, dict):
+            self.tuning_options['max_fevals'] = min(tuning_options['max_fevals'] if 'max_fevals' in tuning_options else np.inf, searchspace.size)
         self.results = []
 
     def __call__(self, x, check_restrictions=True):

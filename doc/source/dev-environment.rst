@@ -27,8 +27,8 @@ Steps with :bash:`sudo` access (e.g. on a local device):
     * After installation, restart your shell. 
 #. Install the required Python versions: 
     * On some systems, additional packages may be needed to build Python versions. For example on Ubuntu: :bash:`sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev liblzma-dev lzma`.
-    * Install the Python versions with: :bash:`pyenv install 3.9 3.10 3.11 3.12`. The reason we're installing all these versions as opposed to just one, is so we can test against all supported Python versions.
-#. Set the Python versions so they can be found: :bash:`pyenv local 3.9 3.10 3.11 3.12` (replace :bash:`local` with :bash:`global` when not using the virtualenv).
+    * Install the Python versions with: :bash:`pyenv install 3.9 3.10 3.11 3.12 3.13`. The reason we're installing all these versions as opposed to just one, is so we can test against all supported Python versions.
+#. Set the Python versions so they can be found: :bash:`pyenv local 3.9 3.10 3.11 3.12 3.13` (replace :bash:`local` with :bash:`global` when not using the virtualenv).
 #. Setup a local virtual environment in the folder: :bash:`pyenv virtualenv 3.11 kerneltuner` (or whatever environment name and Python version you prefer).
 #. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__. 
     * Use :bash:`curl -sSL https://install.python-poetry.org | python3 -` to install Poetry.
