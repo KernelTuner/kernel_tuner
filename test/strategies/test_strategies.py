@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pytest
+from pathlib import Path
 
 import kernel_tuner
 from kernel_tuner.util import InvalidConfig
@@ -9,7 +10,6 @@ from kernel_tuner.interface import strategy_map
 
 from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch
 
-cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/test_cache_file.json"
 
 @pytest.fixture
 def vector_add():
@@ -51,7 +51,7 @@ for s in strategy_map.keys():
         strategies.append(s)
 @pytest.mark.parametrize('strategy', strategies)
 def test_strategies(vector_add, strategy):
-
+    cache_filename =  Path(__file__).parent / "test_cache_file.json"
     options = dict(popsize=5, neighbor='adjacent')
 
     print(f"testing {strategy}")
@@ -64,6 +64,17 @@ def test_strategies(vector_add, strategy):
 
     restrictions = ["test_string == 'alg_2'", "test_bool == True", "test_mixed == 2.45"]
 
+    # pyATF can't handle non-number tune parameters, so we filter them out
+    if strategy == "pyatf_strategies":
+        tune_params = {
+            "block_size_x": [128 + 64 * i for i in range(15)]
+        }
+        restrictions = []
+        cache_filename = cache_filename.parent.parent / "test_cache_file.json"
+        vector_add[-1] = tune_params
+
+    # run the tuning in simulation mode
+    assert cache_filename.exists()
     results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                          verbose=False, cache=cache_filename, simulation_mode=True)
 
@@ -82,10 +93,6 @@ def test_strategies(vector_add, strategy):
     # check whether the returned dictionaries contain exactly the expected keys and the appropriate type
     expected_items = {
         'block_size_x': int,
-        'test_string': str,
-        'test_single': int,
-        'test_bool': bool,
-        'test_mixed': float,
         'time': (float, int),
         'times': list,
         'compile_time': (float, int),
@@ -95,6 +102,11 @@ def test_strategies(vector_add, strategy):
         'framework_time': (float, int),
         'timestamp': str
     }
+    if strategy != "pyatf_strategies":
+        expected_items['test_string'] = str
+        expected_items['test_single'] = int
+        expected_items['test_bool'] = bool
+        expected_items['test_mixed'] = float
     for res in results:
         assert len(res) == len(expected_items)
         for expected_key, expected_type in expected_items.items():
