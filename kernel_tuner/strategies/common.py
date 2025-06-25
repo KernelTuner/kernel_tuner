@@ -3,6 +3,7 @@ import sys
 from time import perf_counter
 
 import numpy as np
+import numbers
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
@@ -111,8 +112,15 @@ class CostFunc:
             self.runner.last_strategy_start_time = perf_counter()
 
         # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective] or sys.float_info.max
-        return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
+        return_value = result[self.tuning_options.objective]
+
+        if isinstance(return_value, numbers.Number):
+            if self.tuning_options.objective_higher_is_better:
+                # flip the sign if higher means better
+                return_value = -return_value
+        else:
+            # this is not a valid configuration, just return max
+            return_value = sys.float_info.max
 
         return return_value
 
