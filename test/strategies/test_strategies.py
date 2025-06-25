@@ -8,7 +8,7 @@ import kernel_tuner
 from kernel_tuner.util import InvalidConfig
 from kernel_tuner.interface import strategy_map
 
-from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch
+from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch, skip_if_no_pyatf
 
 
 @pytest.fixture
@@ -47,6 +47,8 @@ for s in strategy_map.keys():
         strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_gpytorch))
     elif 'botorch' in s.lower():
         strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_botorch))
+    elif 'pyatf' in s.lower():
+        strategies.append(pytest.param(s, marks=skip_if_no_pyatf))
     else:
         strategies.append(s)
 @pytest.mark.parametrize('strategy', strategies)

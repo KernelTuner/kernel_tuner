@@ -74,6 +74,12 @@ except ImportError:
     bayes_opt_gpytorch_present = False
 
 try:
+    import pyatf
+    pyatf_present = True
+except ImportError:
+    pyatf_present = False
+
+try:
     from autotuning_methodology.report_experiments import get_strategy_scores
     methodology_present = True
 except ImportError:
@@ -101,6 +107,7 @@ skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on
 skip_if_no_bayesopt_gpytorch = pytest.mark.skipif(not bayes_opt_gpytorch_present, reason="Torch and GPyTorch not installed")
 skip_if_no_bayesopt_botorch = pytest.mark.skipif(not bayes_opt_botorch_present, reason="Torch and BOTorch not installed")
 skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
+skip_if_no_pyatf = pytest.mark.skipif(not pyatf_present, reason="PyATF not installed")
 skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
 
 
