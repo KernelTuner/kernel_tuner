@@ -42,7 +42,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         warn("dill is not installed, pyATF search space caching will not be used.")
 
     # setup the Kernel Tuner functionalities
-    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, snap=False, return_invalid=False)
+    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False, snap=False, return_invalid=True)
 
     # dynamically import the search technique based on the provided options
     module = import_module(f"pyatf.search_techniques.{module_name}")
