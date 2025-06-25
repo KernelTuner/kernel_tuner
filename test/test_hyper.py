@@ -24,7 +24,7 @@ def test_hyper(env):
                 "minimum_fraction_of_budget_valid": 0.01, 
             },
             "statistics_settings": {
-                "cutoff_percentile": 0.90,
+                "cutoff_percentile": 0.80,
                 "cutoff_percentile_start": 0.01,
                 "cutoff_type": "time",
                 "objective_time_keys": [
