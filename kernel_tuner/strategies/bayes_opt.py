@@ -24,8 +24,6 @@ try:
 except ImportError:
     bayes_opt_present = False
 
-from kernel_tuner import util
-
 supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"]
 
 
@@ -107,19 +105,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     _, _, eps = cost_func.get_bounds_x0_eps()
 
     # compute cartesian product of all tunable parameters
-    parameter_space = itertools.product(*tune_params.values())
-
-    # check for search space restrictions
-    if searchspace.restrictions is not None:
-        tuning_options.verbose = False
-    parameter_space = filter(lambda p: util.config_valid(p, tuning_options, runner.dev.max_threads), parameter_space)
-    parameter_space = list(parameter_space)
-    if len(parameter_space) < 1:
-        raise ValueError("Empty parameterspace after restrictionscheck. Restrictionscheck is possibly too strict.")
-    if len(parameter_space) == 1:
-        raise ValueError(
-            f"Only one configuration after restrictionscheck. Restrictionscheck is possibly too strict. Configuration: {parameter_space[0]}"
-        )
+    # TODO actually use the Searchspace object properly throughout Bayesian Optimization
+    parameter_space = searchspace.list
 
     # normalize search space to [0,1]
     normalize_dict, denormalize_dict = generate_normalized_param_dicts(tune_params, eps)
@@ -137,7 +124,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # initialize and optimize
     try:
         bo = BayesianOptimization(
-            parameter_space, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
+            parameter_space, searchspace, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
         )
     except StopCriterionReached:
         warnings.warn(
@@ -179,6 +166,7 @@ class BayesianOptimization:
     def __init__(
         self,
         searchspace: list,
+        searchspace_obj: Searchspace,
         removed_tune_params: list,
         tuning_options: dict,
         normalize_dict: dict,
@@ -256,6 +244,7 @@ class BayesianOptimization:
 
         # set remaining values
         self.__searchspace = searchspace
+        self.__searchspace_obj = searchspace_obj
         self.removed_tune_params = removed_tune_params
         self.searchspace_size = len(self.searchspace)
         self.num_dimensions = len(self.dimensions())
@@ -463,7 +452,7 @@ class BayesianOptimization:
         """Evaluates the objective function."""
         param_config = self.unprune_param_config(param_config)
         denormalized_param_config = self.denormalize_param_config(param_config)
-        if not util.config_valid(denormalized_param_config, self.tuning_options, self.max_threads):
+        if not self.__searchspace_obj.is_param_config_valid(denormalized_param_config):
             return self.invalid_value
         val = self.cost_func(param_config)
         self.fevals += 1
