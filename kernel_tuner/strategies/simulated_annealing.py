@@ -115,17 +115,28 @@ def acceptance_prob(old_cost, new_cost, T, tuning_options):
 def neighbor(pos, searchspace: Searchspace, constraint_aware=True):
     """Return a random neighbor of pos."""
 
+    def random_neighbor(pos, method):
+        """Helper method to return a random neighbor."""
+        neighbors = searchspace.get_neighbors_no_cache(pos, neighbor_method=method)
+        if not neighbors:
+            return pos
+        return random.choice(neighbors)
+
+    size = len(pos)
+
     if constraint_aware:
-        # Note: this is not the same as the previous implementation, because it is possible that non-edge parameters remain the same, but suggested configurations will all be within restrictions
-        neighbors = searchspace.get_neighbors(tuple(pos), neighbor_method='Hamming') if random.random() < 0.2 else searchspace.get_neighbors(tuple(pos), neighbor_method='strictly-adjacent')
-        if len(neighbors) > 0:
-            return list(random.choice(neighbors))
-        # if there are no neighbors, return a random configuration
-        return list(searchspace.get_random_sample(1)[0])
+        pos = tuple(pos)
+
+        # Note: the following tries to mimick as much as possible the earlier version of SA but in a constraint-aware version
+        for i in range(size):
+            if random.random() < 0.2:
+                pos = random_neighbor(pos, 'Hamming')
+        pos = random_neighbor(pos, 'adjacent')
+
+        return list(pos)
 
     else:
         tune_params = searchspace.tune_params
-        size = len(pos)
         pos_out = []
         # random mutation
         # expected value is set that values all dimensions attempt to get mutated
