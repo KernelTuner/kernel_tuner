@@ -64,7 +64,7 @@ class Searchspace:
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
-        self.__neighbor_cache = dict()
+        self.__neighbor_cache = { method: dict() for method in supported_neighbor_methods }
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
@@ -758,24 +758,25 @@ class Searchspace:
         raise ValueError(f"The neighbor method {neighbor_method} is not in {supported_neighbor_methods}")
 
     def get_neighbors_indices(self, param_config: tuple, neighbor_method=None) -> List[int]:
-        """Get the neighbors indices for a parameter configuration, possibly cached."""
-        neighbors = self.__neighbor_cache.get(param_config, None)
+        """Get the neighbors indices for a parameter configuration, cached if requested before."""
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+        neighbors = self.__neighbor_cache[neighbor_method].get(param_config, None)
         # if there are no cached neighbors, compute them
         if neighbors is None:
             neighbors = self.get_neighbors_indices_no_cache(param_config, neighbor_method)
-            self.__neighbor_cache[param_config] = neighbors
-        # if the neighbors were cached but the specified neighbor method was different than the one initially used to build the cache, throw an error
-        elif (
-            self.neighbor_method is not None and neighbor_method is not None and self.neighbor_method != neighbor_method
-        ):
-            raise ValueError(
-                f"The neighbor method {neighbor_method} differs from the intially set {self.neighbor_method}, can not use cached neighbors. Use 'get_neighbors_no_cache()' when mixing neighbor methods to avoid this."
-            )
+            self.__neighbor_cache[neighbor_method][param_config] = neighbors
         return neighbors
 
-    def are_neighbors_indices_cached(self, param_config: tuple) -> bool:
+    def are_neighbors_indices_cached(self, param_config: tuple, neighbor_method=None) -> bool:
         """Returns true if the neighbor indices are in the cache, false otherwise."""
-        return param_config in self.__neighbor_cache
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+        return param_config in self.__neighbor_cache[neighbor_method]
 
     def get_neighbors_no_cache(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
         """Get the neighbors for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
