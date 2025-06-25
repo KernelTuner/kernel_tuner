@@ -375,7 +375,7 @@ def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):
 
 def get_neighbors(params, searchspace):
     for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
-        neighbors = searchspace.get_neighbors_no_cache(tuple(params), neighbor_method=neighbor_method)
+        neighbors = searchspace.get_neighbors(tuple(params), neighbor_method=neighbor_method)
         if len(neighbors) > 0:
             return neighbors
     return []

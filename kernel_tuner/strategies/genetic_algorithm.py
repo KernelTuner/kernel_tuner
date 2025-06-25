@@ -161,7 +161,7 @@ class GeneticAlgorithm:
                 if cache:
                     neighbors = self.searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
                 else:
-                    neighbors = self.searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
+                    neighbors = self.searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
                 if len(neighbors) > 0:
                     return list(random.choice(neighbors))
             else:
@@ -185,7 +185,7 @@ class GeneticAlgorithm:
             # search for valid configurations neighboring this config
             # start from strictly-adjacent to increasingly allowing more neighbors
             for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
-                neighbors = self.searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method=neighbor_method)
+                neighbors = self.searchspace.get_neighbors(tuple(dna), neighbor_method=neighbor_method)
 
                 # if we have found valid neighboring configurations, select one at random
                 if len(neighbors) > 0:
