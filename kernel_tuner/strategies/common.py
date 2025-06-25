@@ -7,6 +7,7 @@ from time import perf_counter
 
 import numpy as np
 from scipy.spatial import distance
+import numbers
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
@@ -176,12 +177,14 @@ class CostFunc:
             self.runner.last_strategy_start_time = perf_counter()
 
         # get numerical return value, taking optimization direction into account
-        if self.return_invalid:
-            return_value = result[self.tuning_options.objective]
-        else:
-            return_value = result[self.tuning_options.objective] or sys.float_info.max
+        return_value = result[self.tuning_options.objective]
         if not isinstance(return_value, util.ErrorConfig):
+            # this is a valid configuration, so invert value in case of maximization
             return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
+        else:
+            # this is not a valid configuration, replace with float max if needed
+            if not self.return_invalid:
+                return_value = sys.float_info.max
 
         # include raw data in return if requested
         if self.return_raw is not None:
