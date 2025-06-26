@@ -201,7 +201,7 @@ def check_stop_criterion(to: dict) -> float:
         StopCriterionReached: if the max_fevals is reached or time limit is exceeded.
 
     Returns:
-        float: fraction of budget spent.
+        float: fraction of budget spent. If both max_fevals and time_limit are set, it returns the fraction of time.
     """
     if "max_fevals" in to:
         if len(to.unique_results) >= to.max_fevals:
