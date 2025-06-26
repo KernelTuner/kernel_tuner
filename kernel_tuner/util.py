@@ -200,12 +200,13 @@ def check_stop_criterion(to: dict) -> float:
         StopCriterionReached: if the max_fevals is reached or time limit is exceeded.
 
     Returns:
-        float: fraction of budget spent.
+        float: fraction of budget spent. If both max_fevals and time_limit are set, it returns the fraction of time.
     """
     if "max_fevals" in to:
         if len(to.unique_results) >= to.max_fevals:
             raise StopCriterionReached(f"max_fevals ({to.max_fevals}) reached")
-        return len(to.unique_results) / to.max_fevals
+        if not "time_limit" in to:
+            return len(to.unique_results) / to.max_fevals
     if "time_limit" in to:
         time_spent = (time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time
         if time_spent > to.time_limit:

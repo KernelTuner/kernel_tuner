@@ -36,7 +36,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     population = GA.generate_population()
 
     for generation in range(generations):
-        if any([not searchspace.is_param_config_valid(tuple(dna)) for dna in population]):
+        if constraint_aware and any([not searchspace.is_param_config_valid(tuple(dna)) for dna in population]):
             raise ValueError(f"Generation {generation}/{generations}, population validity: {[searchspace.is_param_config_valid(tuple(dna)) for dna in population]}")
 
         # determine fitness of population members
@@ -77,7 +77,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             for child in children:
                 child = GA.mutate(child)
 
-                if child not in population and searchspace.is_param_config_valid(tuple(child)):
+                if child not in population and (not constraint_aware or searchspace.is_param_config_valid(tuple(child))):
                     population.append(child)
 
                 if len(population) >= pop_size:
