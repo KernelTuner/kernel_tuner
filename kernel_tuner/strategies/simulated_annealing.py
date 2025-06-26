@@ -4,7 +4,7 @@ import sys
 
 import numpy as np
 
-from kernel_tuner.util import StopCriterionReached
+from kernel_tuner.util import StopCriterionReached, ErrorConfig
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
@@ -18,7 +18,7 @@ _options = dict(T=("Starting temperature", 0.5),
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     # SA works with real parameter values and does not need scaling
-    cost_func = CostFunc(searchspace, tuning_options, runner)
+    cost_func = CostFunc(searchspace, tuning_options, runner, return_invalid=True)
 
     # optimization parameters
     T, T_min, alpha, niter, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
@@ -36,7 +36,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # get random starting point and evaluate cost
     pos = generate_starting_point(searchspace, constraint_aware)
-    old_cost = cost_func(pos, check_restrictions=False)
+    old_cost = cost_func(pos, check_restrictions=not constraint_aware)
 
     # main optimization loop
     stuck = 0
@@ -92,13 +92,12 @@ tune.__doc__ = common.get_strategy_docstring("Simulated Annealing", _options)
 
 def acceptance_prob(old_cost, new_cost, T, tuning_options):
     """Annealing equation, with modifications to work towards a lower value."""
-    error_val = sys.float_info.max
     res = 0.0
     # if start pos is not valid, always move
-    if old_cost == error_val:
+    if isinstance(old_cost, ErrorConfig):
         res = 1.0
     # if we have found a valid ps before, never move to nonvalid pos
-    elif new_cost == error_val:
+    elif isinstance(new_cost, ErrorConfig):
         res = 0.0
     # always move if new cost is better
     elif new_cost < old_cost:
@@ -117,7 +116,7 @@ def neighbor(pos, searchspace: Searchspace, constraint_aware=True):
 
     def random_neighbor(pos, method):
         """Helper method to return a random neighbor."""
-        neighbors = searchspace.get_neighbor(pos, neighbor_method=method)
+        neighbors = searchspace.get_neighbors(pos, neighbor_method=method)
         if not neighbors:
             return pos
         return random.choice(neighbors)
