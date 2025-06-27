@@ -79,6 +79,7 @@ class Searchspace:
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
+        self.original_tune_params = tune_params.copy() if hasattr(tune_params, "copy") else tune_params
         self.max_threads = max_threads
         self.block_size_names = block_size_names
         self._tensorspace = None
@@ -92,6 +93,7 @@ class Searchspace:
         self._map_tensor_to_param = {}
         self._map_param_to_tensor = {}
         self.restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
+        self.original_restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
         self._modified_restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
         self.param_names = list(self.tune_params.keys())
@@ -100,6 +102,7 @@ class Searchspace:
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
         self.__neighbor_cache = { method: dict() for method in supported_neighbor_methods }
+        self.neighbors_index = dict()
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
@@ -175,7 +178,7 @@ class Searchspace:
             if neighbor_method is not None and neighbor_method != "Hamming":
                 self.__prepare_neighbors_index()
             if build_neighbors_index:
-                self.neighbors_index = self.__build_neighbors_index(neighbor_method)
+                self.neighbors_index[neighbor_method] = self.__build_neighbors_index(neighbor_method)
 
     # def __build_searchspace_ortools(self, block_size_names: list, max_threads: int) -> Tuple[List[tuple], np.ndarray, dict, int]:
     #     # Based on https://developers.google.com/optimization/cp/cp_solver#python_2
@@ -452,7 +455,8 @@ class Searchspace:
         # add the user-specified restrictions as constraints on the parameter space
         if not isinstance(self.restrictions, (list, tuple)):
             self.restrictions = [self.restrictions]
-        self.restrictions = convert_constraint_lambdas(self.restrictions)
+        if any(not isinstance(restriction, (Constraint, FunctionConstraint, str)) for restriction in self.restrictions):
+            self.restrictions = convert_constraint_lambdas(self.restrictions)
         parameter_space = self.__add_restrictions(parameter_space)
 
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
@@ -901,23 +905,24 @@ class Searchspace:
             num_samples = self.size
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
 
-    def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None) -> List[int]:
+    def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[int]:
         """Get the neighbors indices for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
         param_config_index = self.get_param_config_index(param_config)
-
-        # this is the simplest case, just return the cached value
-        if self.build_neighbors_index and param_config_index is not None:
-            if neighbor_method is not None and neighbor_method != self.neighbor_method:
-                raise ValueError(
-                    f"The neighbor method {neighbor_method} differs from the neighbor method {self.neighbor_method} initially used for indexing"
-                )
-            return self.neighbors_index[param_config_index]
 
         # check if there is a neighbor method to use
         if neighbor_method is None:
             if self.neighbor_method is None:
                 raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
             neighbor_method = self.neighbor_method
+
+        # this is the simplest case, just return the cached value
+        if param_config_index is not None:
+            if neighbor_method in self.neighbors_index:
+                return self.neighbors_index[neighbor_method][param_config_index]
+            elif build_full_cache:
+                # build the neighbors index for the given neighbor method
+                self.neighbors_index[neighbor_method] = self.__build_neighbors_index(neighbor_method)
+                return self.neighbors_index[neighbor_method][param_config_index]
 
         if neighbor_method == "Hamming":
             return self.__get_neighbors_indices_hamming(param_config)
@@ -933,7 +938,7 @@ class Searchspace:
             return self.__get_neighbors_indices_adjacent(param_config_index, param_config)
         raise ValueError(f"The neighbor method {neighbor_method} is not in {supported_neighbor_methods}")
 
-    def get_neighbors_indices(self, param_config: tuple, neighbor_method=None) -> List[int]:
+    def get_neighbors_indices(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[int]:
         """Get the neighbors indices for a parameter configuration, cached if requested before."""
         if neighbor_method is None:
             neighbor_method = self.neighbor_method
@@ -942,7 +947,7 @@ class Searchspace:
         neighbors = self.__neighbor_cache[neighbor_method].get(param_config, None)
         # if there are no cached neighbors, compute them
         if neighbors is None:
-            neighbors = self.get_neighbors_indices_no_cache(param_config, neighbor_method)
+            neighbors = self.get_neighbors_indices_no_cache(param_config, neighbor_method, build_full_cache)
             self.__neighbor_cache[neighbor_method][param_config] = neighbors
         return neighbors
 
@@ -958,9 +963,9 @@ class Searchspace:
         """Get the neighbors for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
         return self.get_param_configs_at_indices(self.get_neighbors_indices_no_cache(param_config, neighbor_method))
 
-    def get_neighbors(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
+    def get_neighbors(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[tuple]:
         """Get the neighbors for a parameter configuration."""
-        return self.get_param_configs_at_indices(self.get_neighbors_indices(param_config, neighbor_method))
+        return self.get_param_configs_at_indices(self.get_neighbors_indices(param_config, neighbor_method, build_full_cache))
 
     def get_param_neighbors(self, param_config: tuple, index: int, neighbor_method: str, randomize: bool) -> list:
         """Get the neighboring parameters at an index."""
