@@ -80,7 +80,7 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
                 child[index] = val
 
                 # get score for this position
-                score = cost_func(child, check_restrictions=False)
+                score = cost_func(child)
 
                 # generalize this to other tuning objectives
                 if score < best_score:

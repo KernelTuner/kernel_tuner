@@ -20,7 +20,7 @@ from constraint import (
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import compile_restrictions, default_block_size_names
 
-supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming"]
+supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming", "Hamming-adjacent"]
 
 
 class Searchspace:
@@ -44,6 +44,7 @@ class Searchspace:
             strictly-adjacent: differs +1 or -1 parameter index value for each parameter
             adjacent: picks closest parameter value in both directions for each parameter
             Hamming: any parameter config with 1 different parameter value is a neighbor
+            Hamming-adjacent: differs +1 or -1 parameter index value for exactly 1 parameter.
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         """
         # set the object attributes using the arguments
@@ -552,6 +553,45 @@ class Searchspace:
         matching_indices = (num_matching_params == self.num_params - 1).nonzero()[0]
         return matching_indices
 
+    def __get_neighbors_indices_hammingadjacent(self, param_config_index: int = None, param_config: tuple = None) -> List[int]:
+        """Get the neighbors using adjacent distance from the parameter configuration (parameter index absolute difference >= 1)."""
+        param_config_value_indices = (
+            self.get_param_indices(param_config)
+            if param_config_index is None
+            else self.params_values_indices[param_config_index]
+        )
+
+        # compute boolean mask for all configuration that differ at exactly one parameter (Hamming distance == 1)
+        hamming_mask = np.count_nonzero(self.params_values_indices != param_config_value_indices, axis=1) == 1
+
+        # get the configuration indices of the hamming neighbors
+        hamming_indices, = np.nonzero(hamming_mask)
+
+        # for the hamming neighbors, calculate the difference between parameter value indices
+        hamming_values_indices = self.params_values_indices[hamming_mask]
+
+        # for each parameter get the closest upper and lower parameter (absolute index difference >= 1)
+        # np.PINF has been replaced by 1e12 here, as on some systems np.PINF becomes np.NINF
+        upper_bound = np.min(
+            hamming_values_indices,
+            initial=1e12,
+            axis=0,
+            where=hamming_values_indices > param_config_value_indices,
+        )
+
+        lower_bound = np.max(
+            hamming_values_indices,
+            initial=-1e12,
+            axis=0,
+            where=hamming_values_indices < param_config_value_indices,
+        )
+
+        # return mask for adjacent neighbors (each parameter is within bounds)
+        adjacent_mask = np.all((lower_bound <= hamming_values_indices) & (hamming_values_indices <= upper_bound), axis=1)
+
+        # return hamming neighbors that are also adjacent
+        return hamming_indices[adjacent_mask]
+
     def __get_neighbors_indices_strictlyadjacent(
         self, param_config_index: int = None, param_config: tuple = None
     ) -> List[int]:
@@ -615,6 +655,13 @@ class Searchspace:
         # for each parameter configuration, find the neighboring parameter configurations
         if self.params_values_indices is None:
             self.__prepare_neighbors_index()
+
+        if neighbor_method == "Hamming-adjacent":
+            return list(
+                self.__get_neighbors_indices_hammingadjacent(param_config_index, param_config)
+                for param_config_index, param_config in enumerate(self.list)
+            )
+
         if neighbor_method == "strictly-adjacent":
             return list(
                 self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
@@ -667,6 +714,8 @@ class Searchspace:
             self.__prepare_neighbors_index()
 
         # if the passed param_config is fictious, we can not use the pre-calculated neighbors index
+        if neighbor_method == "Hamming-adjacent":
+            return self.__get_neighbors_indices_hammingadjacent(param_config_index, param_config)
         if neighbor_method == "strictly-adjacent":
             return self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
         if neighbor_method == "adjacent":
