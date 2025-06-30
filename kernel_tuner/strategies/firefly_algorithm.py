@@ -21,7 +21,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
     # using this instead of get_bounds because scaling is used
-    bounds, _, eps = cost_func.get_bounds_x0_eps()
+    bounds, x0, eps = cost_func.get_bounds_x0_eps()
 
     num_particles, maxiter, B0, gamma, alpha = common.get_options(tuning_options.strategy_options, _options)
 
@@ -37,6 +37,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     population = list(list(p) for p in searchspace.get_random_sample(num_particles))
     for i, particle in enumerate(swarm):
         particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+
+    # include user provided starting point
+    swarm[0].position = x0
 
     # compute initial intensities
     for j in range(num_particles):
