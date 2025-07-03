@@ -1117,8 +1117,9 @@ def compile_restrictions(
     return noncompiled_restrictions + compiled_restrictions
 
 def check_matching_problem_size(cached_problem_size, problem_size):
+    """ check if requested problem size matches the problem size in the cache"""
     if not (np.array(cached_problem_size) == np.array(problem_size)).all():
-        raise ValueError(f"Cannot load cache which contains results for different problem_size, cache: {cached_data['problem_size']}, requested: {kernel_options.problem_size}")
+        raise ValueError(f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}")
 
 def process_cache(cache, kernel_options, tuning_options, runner):
     """Cache file for storing tuned configurations.

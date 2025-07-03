@@ -726,6 +726,19 @@ def test_parse_restrictions():
     assert all(param in tune_params for param in params)
 
 
+def test_check_matching_problem_size():
+    # these should error
+    with pytest.raises(ValueError):
+        check_matching_problem_size(42, 1000)
+    with pytest.raises(ValueError):
+        check_matching_problem_size([42,1], 42)
+    # these should not error
+    check_matching_problem_size(1000, (1000,))
+    check_matching_problem_size([1000], 1000)
+    check_matching_problem_size(1000, 1000)
+    check_matching_problem_size(1000, [1000])
+
+
 def test_convert_constraint_lambdas():
 
     restrictions = [lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024,
