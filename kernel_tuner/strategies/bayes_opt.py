@@ -229,7 +229,7 @@ class BayesianOptimization:
             self.worst_value = np.inf
             self.argopt = np.argmin
         elif opt_direction == "max":
-            self.worst_value = np.NINF
+            self.worst_value = -np.inf
             self.argopt = np.argmax
         else:
             raise ValueError("Invalid optimization direction '{}'".format(opt_direction))
