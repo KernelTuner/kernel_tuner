@@ -126,8 +126,8 @@ _kernel_options = Options(
             (
                 """Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA", "Cupy",
-        "OpenCL", "HIP", or "C".""",
+        the language using this argument, currently supported: "CUDA", "CuPy",
+        "nvcuda", "OpenCL", "HIP", or "C".""",
                 "string",
             ),
         ),
@@ -530,7 +530,7 @@ def _get_docstring(opts):
 
 
 _tune_kernel_docstring = (
-    """ Tune a CUDA kernel given a set of tunable parameters
+    """ Tune a GPU kernel given a set of tunable parameters
 
 %s
 
