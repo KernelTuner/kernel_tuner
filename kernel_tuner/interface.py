@@ -23,14 +23,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import logging
+from argparse import ArgumentParser
+from ast import literal_eval
 from datetime import datetime
+from pathlib import Path
 from time import perf_counter
 
 import numpy
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
+from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
@@ -399,7 +404,7 @@ _tuning_options = Options(
             All strategies support the following two options:
 
             1. "max_fevals": the maximum number of unique valid function evaluations (i.e. compiling and
-            benchmarking a kernel configuration the strategy is allowed to perform as part of the optimization.
+            benchmarking a kernel configuration) the strategy is allowed to perform as part of the optimization.
             Note that some strategies implement a default max_fevals of 100.
 
             2. "time_limit": the maximum amount of time in seconds the strategy is allowed to spent on trying to
@@ -607,16 +612,24 @@ def tune_kernel(
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
     tuning_options["unique_results"] = {}
-    if strategy_options and "max_fevals" in strategy_options:
-        tuning_options["max_fevals"] = strategy_options["max_fevals"]
-    if strategy_options and "time_limit" in strategy_options:
-        tuning_options["time_limit"] = strategy_options["time_limit"]
 
+    # copy some values from strategy_options
+    searchspace_construction_options = {}
+    if strategy_options:
+        if "max_fevals" in strategy_options:
+            tuning_options["max_fevals"] = strategy_options["max_fevals"]
+        if "time_limit" in strategy_options:
+            tuning_options["time_limit"] = strategy_options["time_limit"] 
+        if "searchspace_construction_options" in strategy_options:
+            searchspace_construction_options = strategy_options["searchspace_construction_options"]         
+
+    # log the user inputs
     logging.debug("tune_kernel called")
     logging.debug("kernel_options: %s", util.get_config_string(kernel_options))
     logging.debug("tuning_options: %s", util.get_config_string(tuning_options))
     logging.debug("device_options: %s", util.get_config_string(device_options))
 
+    # check whether the selected strategy and options are valid
     if strategy:
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
@@ -660,6 +673,8 @@ def tune_kernel(
 
     # process cache
     if cache:
+        if isinstance(cache, Path):
+            cache = str(cache.resolve())
         if cache[-5:] != ".json":
             cache += ".json"
 
@@ -669,14 +684,23 @@ def tune_kernel(
         tuning_options.cachefile = None
 
     # create search space
-    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
+    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
     if verbose:
         print(f"Searchspace has {searchspace.size} configurations after restrictions.")
 
-    # call the strategy to execute the tuning process
+    # register the times and raise an exception if the budget is exceeded
+    if "time_limit" in tuning_options:
+        tuning_options["startup_time"] = perf_counter() - start_overhead_time
+        if tuning_options["startup_time"] > tuning_options["time_limit"]:
+            raise RuntimeError(
+                f"The startup time of the tuning process ({tuning_options['startup_time']} seconds) has exceeded the time limit ({tuning_options['time_limit']} seconds). "
+                "Please increase the time limit or decrease the size of the search space."
+            )
     tuning_options["start_time"] = perf_counter()
+
+    # call the strategy to execute the tuning process
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
 
@@ -684,7 +708,7 @@ def tune_kernel(
     if results:  # checks if results is not empty
         best_config = util.get_best_config(results, objective, objective_higher_is_better)
         # add the best configuration to env
-        env['best_config'] = best_config
+        env["best_config"] = best_config
         if not device_options.quiet:
             units = getattr(runner, "units", None)
             print("best performing configuration:")
@@ -835,3 +859,126 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
 
     # check for types and length of block_size_names
     util.check_block_size_names(block_size_names)
+
+
+def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation_mode = False, output_T4 = True, iterations = 7, strategy_options = None):
+    """Call the tune function with a T1 input file."""
+    inputs = get_input_file(input_filepath)
+    kernelspec: dict = inputs["KernelSpecification"]
+    kernel_name: str = kernelspec["KernelName"]
+    kernel_filepath = Path(kernelspec["KernelFile"])
+    kernel_source = (
+        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent.parent / kernel_filepath
+    )
+    assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
+    language: str = kernelspec["Language"]
+    problem_size = kernelspec["ProblemSize"]
+    device = kernelspec["Device"]["Name"]
+    strategy = inputs["Search"]["Name"]
+
+    if cache_filepath is None and "SimulationInput" in kernelspec:
+        cache_filepath = Path(kernelspec["SimulationInput"])
+
+    # get the grid divisions
+    grid_divs = {}
+    for grid_div in ["GridDivX", "GridDivY", "GridDivZ"]:
+        grid_divs[grid_div] = None
+        if grid_div in kernelspec and len(kernelspec[grid_div]) > 0:
+            grid_divs[grid_div] = kernelspec[grid_div]
+
+    # convert tuneable parameters
+    tune_params = dict()
+    for param in inputs["ConfigurationSpace"]["TuningParameters"]:
+        tune_param = None
+        if param["Type"] in ["int", "float"]:
+            vals = param["Values"]
+            if vals[:5] == "list(" or (vals[0] == "[" and vals[-1] == "]"):
+                tune_param = eval(vals)
+            else:
+                tune_param = literal_eval(vals)
+        if tune_param is not None:
+            tune_params[param["Name"]] = tune_param
+        else:
+            raise NotImplementedError(f"Conversion for this type of parameter has not yet been implemented: {param}")
+
+    # convert restrictions
+    restrictions = list()
+    for res in inputs["ConfigurationSpace"]["Conditions"]:
+        restriction = None
+        if isinstance(res["Expression"], str):
+            restriction = res["Expression"]
+        if restriction is not None:
+            restrictions.append(restriction)
+        else:
+            raise NotImplementedError(f"Conversion for this type of restriction has not yet been implemented: {res}")
+
+    # convert arguments (must be after resolving tune_params)
+    arguments = list()
+    cmem_arguments = {}
+    for arg in kernelspec["Arguments"]:
+        argument = None
+        if arg["Type"] == "float" and arg["MemoryType"] == "Vector":
+            size = arg["Size"]
+            if isinstance(size, str):
+                args = tune_params.copy()
+                args["ProblemSize"] = problem_size
+                size = int(eval(size, args))
+            if not isinstance(size, int):
+                raise TypeError(f"Size should be an integer, but is {size} (type ({type(size)}, from {arg['Size']}))")
+            if arg["FillType"] == "Constant":
+                argument = numpy.full(size, arg["FillValue"]).astype(numpy.float32)
+            elif arg["FillType"] == "Random":
+                argument = numpy.random.randn(size).astype(numpy.float32)
+            else:
+                raise NotImplementedError(f"Conversion for fill type '{arg['FillType']}' has not yet been implemented")
+        if argument is not None:
+            arguments.append(argument)
+            if "MemType" in arg and arg["MemType"] == "Constant":
+                cmem_arguments[arg["Name"]] = argument
+        else:
+            raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
+
+    # tune with the converted inputs
+    # TODO add objective to tune_kernel and get_t4_results calls once available in T1
+    results, env = tune_kernel(
+        kernel_name,
+        kernel_source,
+        problem_size,
+        arguments,
+        tune_params,
+        device=device,
+        grid_div_x=grid_divs["GridDivX"],
+        grid_div_y=grid_divs["GridDivY"],
+        grid_div_z=grid_divs["GridDivZ"],
+        cmem_args=cmem_arguments,
+        restrictions=restrictions,
+        lang=language,
+        cache=cache_filepath,
+        simulation_mode=simulation_mode,
+        quiet=True,
+        verbose=False,
+        iterations=iterations,
+        strategy=strategy,
+        strategy_options=strategy_options
+    )
+    if output_T4:
+        return get_t4_metadata(), get_t4_results(results, tune_params)
+    return results, env
+
+
+def entry_point(args=None):  #  pragma: no cover
+    """Command-line interface entry point."""
+    cli = ArgumentParser()
+    cli.add_argument("input_file", type=str, help="The path to the input json file to execute (T1 standard)")
+    cli.add_argument(
+        "cache_file", type=str, help="The path to the cachefile to use (optional)", required=False, default=None
+    )
+    args = cli.parse_args(args)
+    input_filepath_arg: str = args.input_file
+    if input_filepath_arg is None or input_filepath_arg == "":
+        raise ValueError("Invalid '--input_file' option. Run 'kernel_tuner -h' to read more.")
+    input_filepath = Path(input_filepath_arg)
+    cachefile_filepath_arg = args.cache_file
+    if cachefile_filepath_arg is not None:
+        cachefile_filepath_arg = Path(cachefile_filepath_arg)
+    tune_kernel_T1(input_filepath, cache_filepath=cachefile_filepath_arg)

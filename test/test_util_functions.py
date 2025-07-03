@@ -712,7 +712,7 @@ def test_parse_restrictions():
     assert expected in parsed[0]
 
     # test the split parsed function
-    parsed_multi = parse_restrictions(restrictions, tune_params, try_to_constraint=False)
+    parsed_multi = parse_restrictions(restrictions, tune_params)
     assert isinstance(parsed_multi, list) and isinstance(parsed_multi[0], tuple)
     assert len(parsed_multi) == 3
     parsed, params = parsed_multi[0]
@@ -725,32 +725,47 @@ def test_parse_restrictions():
     assert restrictions[2] in parsed
     assert all(param in tune_params for param in params)
 
-    # test the conversion to constraints
-    parsed_multi_constraints = parse_restrictions(restrictions, tune_params, try_to_constraint=True)
-    assert isinstance(parsed_multi_constraints, list) and isinstance(parsed_multi_constraints[0], tuple)
-    assert len(parsed_multi_constraints) == 4
-    parsed, params = parsed_multi_constraints[0]
-    assert isinstance(parsed, str)
-    assert params == ["block_size_x"]
-    parsed, params = parsed_multi_constraints[1]
-    assert isinstance(parsed, str)
-    assert all(param in tune_params for param in params)
-    parsed, params = parsed_multi_constraints[2]
-    assert isinstance(parsed, MinProdConstraint)
-    assert all(param in tune_params for param in params)
-    parsed, params = parsed_multi_constraints[3]
-    assert isinstance(parsed, MaxProdConstraint)
-    assert all(param in tune_params for param in params)
 
-    # test the conversion to constraints with a real-world edge-case
-    rw_tune_params = dict()
-    rw_tune_params["tile_size_x"] = [1, 2, 3, 4, 5, 6, 7, 8]
-    rw_tune_params["tile_size_y"] = [1, 2, 3, 4, 5, 6, 7, 8]
-    parsed_constraint, params_constraint = parse_restrictions(["tile_size_x*tile_size_y<30"], rw_tune_params, try_to_constraint=True)[0]
-    assert all(param in rw_tune_params for param in params_constraint)
-    assert isinstance(parsed_constraint, MaxProdConstraint)
-    assert parsed_constraint._maxprod == 29
-    parsed_constraint, params_constraint = parse_restrictions(["30<tile_size_x*tile_size_y"], rw_tune_params, try_to_constraint=True)[0]
-    assert all(param in rw_tune_params for param in params_constraint)
-    assert isinstance(parsed_constraint, MinProdConstraint)
-    assert parsed_constraint._minprod == 31
+def test_convert_constraint_lambdas():
+
+    restrictions = [lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024,
+                    "32 <= block_size_x*block_size_y <= 512",
+                    lambda p: p["block_size_z"] < 8]
+
+    result = convert_constraint_lambdas(restrictions)
+    print(result)
+    expected = ['32 <= block_size_x * block_size_y <= 1024', 'block_size_z < 8', '32 <= block_size_x*block_size_y <= 512']
+
+    assert sorted(result) == sorted(expected)
+
+    restrictions2 = []
+    restrictions2 += [lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024]
+    restrictions2 += [lambda p: p["block_size_z"] < 8]
+
+    result2 = convert_constraint_lambdas(restrictions2)
+    print(result2)
+    expected2 = ['block_size_z < 8', '32 <= block_size_x * block_size_y <= 1024']
+
+    assert sorted(result2) == sorted(expected2)
+
+
+def test_convert_constraint_lambdas_illformatted():
+    """Test a number of different ways to define the restrictions.
+
+    These are currently not supported but we would like to support them in the future.
+    That is why this test expects an exception
+
+    """
+    restrictions = ["32 <= block_size_x*block_size_y <= 512",
+                    lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024,
+                    lambda p: p["block_size_z"] < 8]
+
+    expected = ['32 <= block_size_x * block_size_y <= 1024', 'block_size_z < 8', '32 <= block_size_x*block_size_y <= 512']
+
+    try:
+        result = convert_constraint_lambdas(restrictions)
+        print(result)
+    except ValueError:
+        pass
+
+
