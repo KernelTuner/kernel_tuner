@@ -525,10 +525,10 @@ def test_get_kernel_string_func():
 
 def test_get_kernel_string_filename_not_found():
     # when the string looks like a filename, but the file does not exist
-    # assume the string is not a filename after all
+    # check if throws an exception
     bogus_filename = "filename_3456789.cu"
-    answer = get_kernel_string(bogus_filename)
-    assert answer == bogus_filename
+    with pytest.raises(ValueError):
+        get_kernel_string(bogus_filename)
 
 
 def test_looks_like_a_filename1():
