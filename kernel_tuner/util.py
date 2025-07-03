@@ -1169,7 +1169,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     # if file exists
     else:
-        cached_data = read_cache(cache)
+        cached_data = read_cache(cache, open_cache=not tuning_options.simulation_mode)
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
