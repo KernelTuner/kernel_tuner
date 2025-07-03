@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Development environment &mdash; Kernel Tuner 1.1.3 documentation</title>
+  <title>Development environment &mdash; Kernel Tuner 1.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -13,7 +13,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=cb7bf70b"></script>
+        <script src="_static/documentation_options.js?v=6efca38a"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -35,7 +35,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.1.3
+                1.2.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -140,12 +140,12 @@ or change dependencies of Kernel Tuner.</strong></p>
 <li><dl class="simple">
 <dt>Install the required Python versions:</dt><dd><ul class="simple">
 <li><p>On some systems, additional packages may be needed to build Python versions. For example on Ubuntu: <code class="code highlight bash docutils literal highlight-bash">sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>build-essential<span class="w"> </span>zlib1g-dev<span class="w"> </span>libncurses5-dev<span class="w"> </span>libgdbm-dev<span class="w"> </span>libnss3-dev<span class="w"> </span>libssl-dev<span class="w"> </span>libreadline-dev<span class="w"> </span>libffi-dev<span class="w"> </span>libsqlite3-dev<span class="w"> </span>wget<span class="w"> </span>libbz2-dev<span class="w"> </span>liblzma-dev<span class="w"> </span>lzma</code>.</p></li>
-<li><p>Install the Python versions with: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span><span class="m">3</span>.12</code>. The reason we’re installing all these versions as opposed to just one, is so we can test against all supported Python versions.</p></li>
+<li><p>Install the Python versions with: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span><span class="m">3</span>.12<span class="w"> </span><span class="m">3</span>.13</code>. The reason we’re installing all these versions as opposed to just one, is so we can test against all supported Python versions.</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><p>Set the Python versions so they can be found: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span><span class="m">3</span>.12</code> (replace <code class="code highlight bash docutils literal highlight-bash"><span class="nb">local</span></code> with <code class="code highlight bash docutils literal highlight-bash">global</code> when not using the virtualenv).</p></li>
+<li><p>Set the Python versions so they can be found: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="m">3</span>.9<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span><span class="m">3</span>.12<span class="w"> </span><span class="m">3</span>.13</code> (replace <code class="code highlight bash docutils literal highlight-bash"><span class="nb">local</span></code> with <code class="code highlight bash docutils literal highlight-bash">global</code> when not using the virtualenv).</p></li>
 <li><p>Setup a local virtual environment in the folder: <code class="code highlight bash docutils literal highlight-bash">pyenv<span class="w"> </span>virtualenv<span class="w"> </span><span class="m">3</span>.11<span class="w"> </span>kerneltuner</code> (or whatever environment name and Python version you prefer).</p></li>
 <li><dl class="simple">
 <dt><a class="reference external" href="https://python-poetry.org/docs/#installing-with-the-official-installer">Install Poetry</a>.</dt><dd><ul class="simple">
@@ -315,7 +315,7 @@ release. This process is again fully automated using GitHub actions.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer, Richard Schoonhoven and Leon Oostrum.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

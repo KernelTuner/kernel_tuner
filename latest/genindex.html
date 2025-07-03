@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; Kernel Tuner 1.1.3 documentation</title>
+  <title>Index &mdash; Kernel Tuner 1.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -12,7 +12,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=cb7bf70b"></script>
+        <script src="_static/documentation_options.js?v=6efca38a"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -33,7 +33,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.1.3
+                1.2.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -221,10 +221,14 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.config_valid">config_valid() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.convert_constraint_restriction">convert_constraint_restriction() (in module kernel_tuner.util)</a>
+      <li><a href="design.html#kernel_tuner.util.ConstraintLambdaTransformer">ConstraintLambdaTransformer (class in kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.util.convert_constraint_lambdas">convert_constraint_lambdas() (in module kernel_tuner.util)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.util.convert_constraint_restriction">convert_constraint_restriction() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.backends.cupy.CupyFunctions.copy_constant_memory_args">copy_constant_memory_args() (kernel_tuner.backends.cupy.CupyFunctions method)</a>
 
       <ul>
@@ -317,6 +321,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="optimization.html#kernel_tuner.strategies.bayes_opt.generate_normalized_param_dicts">generate_normalized_param_dicts() (in module kernel_tuner.strategies.bayes_opt)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.util.get_all_lambda_asts">get_all_lambda_asts() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.get_best_config">get_best_config() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_config_string">get_config_string() (in module kernel_tuner.util)</a>
@@ -325,12 +331,14 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.get_instance_string">get_instance_string() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
+      <li><a href="design.html#kernel_tuner.util.get_interval">get_interval() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.strategies.common.get_options">get_options() (in module kernel_tuner.strategies.common)</a>
+      <li><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.strategies.common.get_options">get_options() (in module kernel_tuner.strategies.common)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.get_problem_size">get_problem_size() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.get_results">get_results() (kernel_tuner.observers.BenchmarkObserver method)</a>
@@ -849,6 +857,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.util.unparse_constraint_lambda">unparse_constraint_lambda() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.strategies.common.unscale_and_snap_to_nearest">unscale_and_snap_to_nearest() (in module kernel_tuner.strategies.common)</a>
 </li>
   </ul></td>
@@ -875,7 +885,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer, Richard Schoonhoven and Leon Oostrum.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

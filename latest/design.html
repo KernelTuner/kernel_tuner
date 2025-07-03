@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Design documentation &mdash; Kernel Tuner 1.1.3 documentation</title>
+  <title>Design documentation &mdash; Kernel Tuner 1.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -13,7 +13,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=cb7bf70b"></script>
+        <script src="_static/documentation_options.js?v=6efca38a"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -36,7 +36,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.1.3
+                1.2.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -131,6 +131,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#util-functions">Util Functions</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.util">kernel_tuner.util</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.CompilationFailedConfig"><code class="docutils literal notranslate"><span class="pre">CompilationFailedConfig</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.ConstraintLambdaTransformer"><code class="docutils literal notranslate"><span class="pre">ConstraintLambdaTransformer</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.ErrorConfig"><code class="docutils literal notranslate"><span class="pre">ErrorConfig</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.InvalidConfig"><code class="docutils literal notranslate"><span class="pre">InvalidConfig</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.NpEncoder"><code class="docutils literal notranslate"><span class="pre">NpEncoder</span></code></a></li>
@@ -146,16 +147,19 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_tune_params_list"><code class="docutils literal notranslate"><span class="pre">check_tune_params_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.compile_restrictions"><code class="docutils literal notranslate"><span class="pre">compile_restrictions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.config_valid"><code class="docutils literal notranslate"><span class="pre">config_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.convert_constraint_lambdas"><code class="docutils literal notranslate"><span class="pre">convert_constraint_lambdas()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.convert_constraint_restriction"><code class="docutils literal notranslate"><span class="pre">convert_constraint_restriction()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.correct_open_cache"><code class="docutils literal notranslate"><span class="pre">correct_open_cache()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.cuda_error_check"><code class="docutils literal notranslate"><span class="pre">cuda_error_check()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.delete_temp_file"><code class="docutils literal notranslate"><span class="pre">delete_temp_file()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.detect_language"><code class="docutils literal notranslate"><span class="pre">detect_language()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.dump_cache"><code class="docutils literal notranslate"><span class="pre">dump_cache()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_all_lambda_asts"><code class="docutils literal notranslate"><span class="pre">get_all_lambda_asts()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_best_config"><code class="docutils literal notranslate"><span class="pre">get_best_config()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_config_string"><code class="docutils literal notranslate"><span class="pre">get_config_string()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_grid_dimensions"><code class="docutils literal notranslate"><span class="pre">get_grid_dimensions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_instance_string"><code class="docutils literal notranslate"><span class="pre">get_instance_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_interval"><code class="docutils literal notranslate"><span class="pre">get_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_kernel_string"><code class="docutils literal notranslate"><span class="pre">get_kernel_string()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_problem_size"><code class="docutils literal notranslate"><span class="pre">get_problem_size()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_smem_args"><code class="docutils literal notranslate"><span class="pre">get_smem_args()</span></code></a></li>
@@ -176,6 +180,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.setup_block_and_grid"><code class="docutils literal notranslate"><span class="pre">setup_block_and_grid()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.store_cache"><code class="docutils literal notranslate"><span class="pre">store_cache()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.to_valid_nvrtc_gpu_arch_cc"><code class="docutils literal notranslate"><span class="pre">to_valid_nvrtc_gpu_arch_cc()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.unparse_constraint_lambda"><code class="docutils literal notranslate"><span class="pre">unparse_constraint_lambda()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.write_file"><code class="docutils literal notranslate"><span class="pre">write_file()</span></code></a></li>
 </ul>
 </li>
@@ -1499,6 +1504,13 @@ of the grid</p></li>
 <dd></dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.util.ConstraintLambdaTransformer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">ConstraintLambdaTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_arg_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.ConstraintLambdaTransformer" title="Link to this definition">¶</a></dt>
+<dd><p>Replaces any <cite>NAME[‘string’]</cite> subscript with just <cite>‘string’</cite>, if <cite>NAME</cite>
+matches the lambda argument name.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="kernel_tuner.util.ErrorConfig">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">ErrorConfig</span></span><a class="headerlink" href="#kernel_tuner.util.ErrorConfig" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -1596,14 +1608,20 @@ implement default like this:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.compile_restrictions">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">compile_restrictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monolithic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">try_to_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Constraint</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">LambdaType</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.util.compile_restrictions" title="Link to this definition">¶</a></dt>
-<dd><p>Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if <cite>try_to_constraint</cite>) and parameters used, or a single Function if monolithic is true.</p>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">compile_restrictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monolithic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">LambdaType</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.util.compile_restrictions" title="Link to this definition">¶</a></dt>
+<dd><p>Parses restrictions from a list of strings into a list of strings or Functions and parameters used and source, or a single Function if monolithic is true.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.config_valid">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">config_valid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_threads</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.config_valid" title="Link to this definition">¶</a></dt>
 <dd><p>Combines restrictions and a check on the max thread block dimension to check config validity.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.convert_constraint_lambdas">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">convert_constraint_lambdas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.convert_constraint_lambdas" title="Link to this definition">¶</a></dt>
+<dd><p>Extract and convert all constraint lambdas from the restrictions</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1643,6 +1661,23 @@ implement default like this:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.get_all_lambda_asts">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_all_lambda_asts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_all_lambda_asts" title="Link to this definition">¶</a></dt>
+<dd><p>Extracts the AST nodes of all lambda functions defined on the same line as func.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> – A lambda function object.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of all ast.Lambda node objects on the line where func is defined.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the source can’t be retrieved or no lambda is found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.get_best_config">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_best_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_best_config" title="Link to this definition">¶</a></dt>
 <dd><p>Returns the best configuration from a list of results according to some objective.</p>
@@ -1667,6 +1702,12 @@ implement default like this:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.get_interval">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_interval" title="Link to this definition">¶</a></dt>
+<dd><p>Checks if an array can be an interval. Returns (start, end, step) if interval, otherwise None.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.get_kernel_string">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_kernel_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_kernel_string" title="Link to this definition">¶</a></dt>
 <dd><p>Retrieve the kernel source and return as a string.</p>
@@ -1681,8 +1722,9 @@ after all.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_source</strong> (<em>string</em><em> or </em><em>callable</em>) – One of the sources for the kernel, could be a
-function that generates the kernel code, a string containing a filename
-that points to the kernel source, or just a string that contains the code.</p></li>
+function that generates the kernel code, a string or Path containing a
+filename that points to the kernel source, or just a string that
+contains the code.</p></li>
 <li><p><strong>params</strong> – Dictionary containing the tunable parameters for this specific
 kernel instance, only needed when kernel_source is a generator.</p></li>
 </ul>
@@ -1744,7 +1786,7 @@ an atol keyword argument.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.parse_restrictions">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">parse_restrictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monolithic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">try_to_constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Constraint</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.util.parse_restrictions" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">parse_restrictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monolithic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Constraint</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.util.parse_restrictions" title="Link to this definition">¶</a></dt>
 <dd><p>Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters.</p>
 </dd></dl>
 
@@ -1891,6 +1933,13 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.unparse_constraint_lambda">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">unparse_constraint_lambda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambda_ast</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.unparse_constraint_lambda" title="Link to this definition">¶</a></dt>
+<dd><p>Parse the lambda function to replace accesses to tunable parameter dict
+Returns string body of the rewritten lambda function</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.write_file">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">write_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">string</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.write_file" title="Link to this definition">¶</a></dt>
 <dd><p>Dump the contents of string to a file called filename.</p>
@@ -1911,7 +1960,7 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer and Richard Schoonhoven.</p>
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer, Richard Schoonhoven and Leon Oostrum.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
