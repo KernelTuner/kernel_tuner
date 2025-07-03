@@ -527,7 +527,7 @@ def test_get_kernel_string_filename_not_found():
     # when the string looks like a filename, but the file does not exist
     # check if throws an exception
     bogus_filename = "filename_3456789.cu"
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundError):
         get_kernel_string(bogus_filename)
 
 

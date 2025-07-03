@@ -520,9 +520,8 @@ def get_kernel_string(kernel_source, params=None):
         kernel_string = read_file(kernel_source)
     elif isinstance(kernel_source, str):
         if looks_like_a_filename(kernel_source):
-            kernel_string = read_file(kernel_source)
-            if kernel_string is None:
-                raise ValueError(f"{kernel_source} looks like a filename, but cannot open file")
+            with open(kernel_source, "r") as f:
+                kernel_string = f.read()
         else:
             kernel_string = kernel_source
     else:
