@@ -1,19 +1,43 @@
 """This module contains utility functions for operations on files, mostly JSON cache files."""
 
 import json
-import os
 import subprocess
 from importlib.metadata import PackageNotFoundError, requires, version
 from pathlib import Path
 from sys import platform
 
+import jsonschema
 import xmltodict
 from packaging.requirements import Requirement
 
 from kernel_tuner import util
 
-schema_dir = os.path.dirname(os.path.realpath(__file__)) + "/schema"
+schema_dir = Path(__file__).parent / "schema"
 
+def input_file_schema():
+    """Get the requested JSON input schema and the version number.
+
+    :returns: the current version of the T1 schemas and the JSON string of the schema
+    :rtype: string, string
+    """    
+    current_version = "1.0.0"
+    input_file = schema_dir.joinpath(f"T1/{current_version}/input-schema.json")
+    with input_file.open() as fh:
+        json_string = json.load(fh)
+    return current_version, json_string
+
+def get_input_file(filepath: Path, validate=True) -> dict[str, any]:
+    """Load the T1 input file from the given path, validates it and returns contents if valid.
+
+    :param filepath: Path to the input file to load. 
+    :returns: the contents of the file if valid. 
+    """    
+    with filepath.open() as fp:
+        input_file = json.load(fp)
+    if validate:
+        _, input_schema = input_file_schema()
+        jsonschema.validate(input_file, input_schema)
+    return input_file
 
 def output_file_schema(target):
     """Get the requested JSON schema and the version number.
@@ -26,8 +50,8 @@ def output_file_schema(target):
 
     """
     current_version = "1.0.0"
-    output_file = schema_dir + f"/T4/{current_version}/{target}-schema.json"
-    with open(output_file, "r") as fh:
+    output_file = schema_dir.joinpath(f"T4/{current_version}/{target}-schema.json")
+    with output_file.open() as fh:
         json_string = json.load(fh)
     return current_version, json_string
 
@@ -63,13 +87,10 @@ def make_filenamepath(filenamepath: Path):
         filepath.mkdir()
 
 
-def store_output_file(output_filename: str, results, tune_params, objective="time"):
-    """Store the obtained auto-tuning results in a JSON output file.
+def get_t4_results(results, tune_params, objective="time"):
+    """Get the obtained auto-tuning results in a dictionary.
 
-    This function produces a JSON file that adheres to the T4 auto-tuning output JSON schema.
-
-    :param output_filename: Name or 'path / name' of the to be created output file
-    :type output_filename: string
+    This function produces a dictionary that adheres to the T4 auto-tuning output JSON schema.
 
     :param results: Results list as return by tune_kernel
     :type results: list of dicts
@@ -81,9 +102,6 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
     :type objective: string
 
     """
-    output_filenamepath = Path(filename_ensure_json_extension(output_filename))
-    make_filenamepath(output_filenamepath)
-
     timing_keys = ["compile_time", "benchmark_time", "framework_time", "strategy_time", "verification_time"]
     not_measurement_keys = list(tune_params.keys()) + timing_keys + ["timestamp"] + ["times"]
 
@@ -134,7 +152,30 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
 
     # write output_data to a JSON file
     version, _ = output_file_schema("results")
-    output_json = dict(results=output_data, schema_version=version)
+    output_json = dict(results=output_data, schema_version=version, metadata={'timeunit': 'miliseconds'})
+    return output_json
+
+def store_output_file(output_filename: str, results, tune_params, objective="time"):
+    """Store the obtained auto-tuning results in a JSON output file.
+
+    This function produces a JSON file that adheres to the T4 auto-tuning output JSON schema.
+
+    :param output_filename: Name or 'path / name' of the to be created output file
+    :type output_filename: string
+
+    :param results: Results list as return by tune_kernel
+    :type results: list of dicts
+
+    :param tune_params: Tunable parameters as passed to tune_kernel
+    :type tune_params: dict
+
+    :param objective: The objective used during auto-tuning, default is 'time'.
+    :type objective: string
+
+    """
+    output_filenamepath = Path(filename_ensure_json_extension(output_filename))
+    make_filenamepath(output_filenamepath)
+    output_json = get_t4_results(results, tune_params, objective)
     with open(output_filenamepath, "w+") as fh:
         json.dump(output_json, fh, cls=util.NpEncoder)
 
@@ -175,17 +216,11 @@ def get_device_query(target):
         raise ValueError("get_device_query target not supported")
 
 
-def store_metadata_file(metadata_filename: str):
-    """Store the metadata about the current hardware and software environment in a JSON output file.
+def get_t4_metadata():
+    """Get the metadata about the current hardware and software environment.
 
-    This function produces a JSON file that adheres to the T4 auto-tuning metadata JSON schema.
-
-    :param metadata_filename: Name or 'path / name' of the to be created metadata file
-    :type metadata_filename: string
-
+    This function produces a dictionary that adheres to the T4 auto-tuning metadata JSON schema.
     """
-    metadata_filenamepath = Path(filename_ensure_json_extension(metadata_filename))
-    make_filenamepath(metadata_filenamepath)
     metadata = {}
     supported_operating_systems = ["linux", "win32", "darwin"]
 
@@ -250,5 +285,20 @@ def store_metadata_file(metadata_filename: str):
     # write metadata to JSON file
     version, _ = output_file_schema("metadata")
     metadata_json = dict(metadata=metadata, schema_version=version)
+    return metadata_json
+
+def store_metadata_file(metadata_filename: str):
+    """Store the metadata about the current hardware and software environment in a JSON output file.
+
+    This function produces a JSON file that adheres to the T4 auto-tuning metadata JSON schema.
+
+    :param metadata_filename: Name or 'path / name' of the to be created metadata file
+    :type metadata_filename: string
+
+    """
+    metadata_filenamepath = Path(filename_ensure_json_extension(metadata_filename))
+    make_filenamepath(metadata_filenamepath)
+    metadata_json = get_t4_metadata()
     with open(metadata_filenamepath, "w+") as fh:
         json.dump(metadata_json, fh, indent="  ")
+

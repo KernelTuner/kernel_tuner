@@ -27,7 +27,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # if user supplied max_fevals that is lower then max_iter we will
     # scale the annealing schedule to fit max_fevals
-    max_feval = tuning_options.strategy_options.get("max_fevals", max_iter)
+    max_fevals = tuning_options.strategy_options.get("max_fevals", max_iter)
+
+    # limit max_fevals to max size of the parameter space
+    max_fevals = min(searchspace.size, max_fevals)
 
     # get random starting point and evaluate cost
     pos = cost_func.get_start_pos()
@@ -64,7 +67,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 old_cost = new_cost
 
         c = len(tuning_options.unique_results)
-        T = T_start * alpha**(max_iter/max_feval*c)
+        T = T_start * alpha**(max_iter/max_fevals*c)
 
         # check if solver gets stuck and if so restart from random position
         if c == c_old:
@@ -87,20 +90,24 @@ tune.__doc__ = common.get_strategy_docstring("Simulated Annealing", _options)
 
 def acceptance_prob(old_cost, new_cost, T, tuning_options):
     """Annealing equation, with modifications to work towards a lower value."""
-    error_val = sys.float_info.max if not tuning_options.objective_higher_is_better else -sys.float_info.max
+    error_val = sys.float_info.max
+    res = 0.0
     # if start pos is not valid, always move
     if old_cost == error_val:
-        return 1.0
+        res = 1.0
     # if we have found a valid ps before, never move to nonvalid pos
-    if new_cost == error_val:
-        return 0.0
+    elif new_cost == error_val:
+        res = 0.0
     # always move if new cost is better
-    if new_cost < old_cost:
-        return 1.0
+    elif new_cost < old_cost:
+        res = 1.0
     # maybe move if old cost is better than new cost depending on T and random value
-    if tuning_options.objective_higher_is_better:
-        return np.exp(((new_cost-old_cost)/new_cost)/T)
-    return np.exp(((old_cost-new_cost)/old_cost)/T)
+    else:
+        if tuning_options.objective_higher_is_better:
+            res = np.exp(((new_cost-old_cost)/new_cost)/T)
+        else:
+            res = np.exp(((old_cost-new_cost)/old_cost)/T)
+    return res
 
 
 def neighbor(pos, searchspace: Searchspace):
