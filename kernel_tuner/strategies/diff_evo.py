@@ -99,7 +99,8 @@ def random_draw(idxs, mutate, best):
     return np.random.choice(idxs, draw, replace=draw >= len(idxs))
 
 
-def generate_population(tune_params, min_idx, max_idx, popsize, searchspace, constraint_aware):
+def generate_population(tune_params, max_idx, popsize, searchspace, constraint_aware):
+    """ Generate new population, returns Numpy array """
     if constraint_aware:
         samples = LatinHypercube(len(tune_params)).integers(l_bounds=0, u_bounds=max_idx, n=popsize, endpoint=True)
         population = [indices_to_values(sample, tune_params) for sample in samples]
@@ -133,7 +134,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
     bounds = np.array(bounds)
 
     # Initialize the population with random individuals within the bounds
-    population = generate_population(tune_params, min_idx, max_idx, popsize, searchspace, constraint_aware)
+    population = generate_population(tune_params, max_idx, popsize, searchspace, constraint_aware)
 
     # Override with user-specified starting position
     population[0] = cost_func.get_start_pos()
@@ -160,7 +161,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
 
         # If for two generations there has been no change, generate a new population
         if stabilized > 2:
-            trial_population = list(generate_population(tune_params, min_idx, max_idx, popsize, searchspace, constraint_aware))
+            trial_population = list(generate_population(tune_params, max_idx, popsize, searchspace, constraint_aware))
 
         # Iterate over each individual in the population
         i = 0
@@ -189,19 +190,20 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
             if constraint_aware:
                 trial_vector = repair(trial_vector, searchspace)
 
-            # Store for selection
+            # Store for selection, if not in trial_population already
             if list(trial_vector) not in trial_population:
                 trial_population.append(list(trial_vector))
                 i += 1
                 stuck = 0
             else:
                 stuck += 1
-                if stuck >= 20:
-                    if verbose:
-                        print(f"Differential Evolution got stuck generating new individuals, insert random sample")
-                    trial_population.append(list(searchspace.get_random_sample(1)[0]))
-                    i += 1
-                    stuck = 0
+
+            if stuck >= 20:
+                if verbose:
+                    print("Differential Evolution got stuck generating new individuals, insert random sample")
+                trial_population.append(list(searchspace.get_random_sample(1)[0]))
+                i += 1
+                stuck = 0
 
 
         # --- c. Selection ---
