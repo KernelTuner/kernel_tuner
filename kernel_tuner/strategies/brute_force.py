@@ -6,6 +6,9 @@ _options = {}
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
+    # Force error on unsupported options
+    common.get_options(tuning_options.strategy_options or [], _options, unsupported=["max_fevals", "time_limit", "x0", "searchspace_construction_options"])
+
     # call the runner
     return runner.run(searchspace.sorted_list(), tuning_options)
 
