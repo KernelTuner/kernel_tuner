@@ -65,7 +65,6 @@ def values_to_indices(individual_values, tune_params):
 def indices_to_values(individual_indices, tune_params):
     """Converts an individual's index vector back to its values."""
     tune_params_list = list(tune_params.values())
-    print(f"{tune_params_list=} {individual_indices=}")
     values = []
     for dim, idx in enumerate(individual_indices):
         values.append(tune_params_list[dim][idx])
@@ -78,18 +77,22 @@ def parse_method(method):
     match = re.fullmatch(pattern, method)
 
     if match:
-        return match.group(1) == "best", int(match.group(2)), mutation[match.group(2)], crossover[match.group(3)]
+        if match.group(1) in ["currenttobest", "randtobest"]:
+            mutation_method = mutation[match.group(1)]
+        else:
+            mutation_method = mutation[match.group(2)]
+        return match.group(1) == "best", int(match.group(2)), mutation_method, crossover[match.group(3)]
     else:
         raise ValueError("Error parsing differential evolution method")
 
 
-def random_draw(idxs, mutation, best):
+def random_draw(idxs, mutate, best):
     """
     Draw requested number of random individuals.
 
     Draw without replacement unless there is not enough to draw from.
     """
-    draw = 2 * mutation + 1 - int(best)
+    draw = 2 * mutate + 1 - int(best)
     return np.random.choice(idxs, draw, replace=draw >= len(idxs))
 
 
@@ -98,23 +101,6 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
     A basic implementation of the Differential Evolution algorithm.
 
     This function finds the minimum of a given cost function within specified bounds.
-
-    Args:
-        cost_func (callable): The objective function to be minimized. It should take a
-                              single argument (a numpy array of parameters) and return a
-                              single scalar value (the cost).
-        bounds (list of tuples): A list where each tuple contains the (min, max) bounds
-                                 for each parameter. e.g., [(-5, 5), (-5, 5)]
-        popsize (int): The size of the population.
-        maxiter (int): The maximum number of generations to run.
-        F (float): The mutation factor, also known as the differential weight.
-                   Should be in the range [0, 2].
-        CR (float): The crossover probability. Should be in the range [0, 1].
-        verbose (bool): If True, prints the progress of the algorithm at each generation.
-
-    Returns:
-        dict: A dictionary containing the best solution found ('solution') and its
-              corresponding cost ('cost').
     """
     tune_params = cost_func.tuning_options.tune_params
     min_idx = np.zeros(len(tune_params))
@@ -335,7 +321,7 @@ def exponential_crossover(donor_vector, target, CR):
 mutation = {
     "1": mutate_de_1,
     "2": mutate_de_2,
-    "currenttobest1": mutate_currenttobest1,
-    "randtobest1": mutate_randtobest1,
+    "currenttobest": mutate_currenttobest1,
+    "randtobest": mutate_randtobest1,
 }
 crossover = {"bin": binomial_crossover, "exp": exponential_crossover}
