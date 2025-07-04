@@ -11,6 +11,8 @@ from kernel_tuner.interface import strategy_map
 from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch, skip_if_no_pyatf
 
 
+cache_filename =  Path(__file__).parent / "test_cache_file.json"
+
 @pytest.fixture
 def vector_add():
     kernel_string = """
@@ -53,7 +55,6 @@ for s in strategy_map.keys():
         strategies.append(s)
 @pytest.mark.parametrize('strategy', strategies)
 def test_strategies(vector_add, strategy):
-    cache_filename =  Path(__file__).parent / "test_cache_file.json"
     options = dict(popsize=5, neighbor='adjacent')
 
     print(f"testing {strategy}")
@@ -69,18 +70,19 @@ def test_strategies(vector_add, strategy):
     restrictions = ["test_string == 'alg_2'", "test_bool == True", "test_mixed == 2.45"]
 
     # pyATF can't handle non-number tune parameters, so we filter them out
+    cache_filename_local = cache_filename
     if strategy == "pyatf_strategies":
         tune_params = {
             "block_size_x": [128 + 64 * i for i in range(15)]
         }
         restrictions = []
-        cache_filename = cache_filename.parent.parent / "test_cache_file.json"
+        cache_filename_local = cache_filename_local.parent.parent / "test_cache_file.json"
         vector_add[-1] = tune_params
 
     # run the tuning in simulation mode
-    assert cache_filename.exists()
+    assert cache_filename_local.exists()
     results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
-                                         verbose=False, cache=cache_filename, simulation_mode=True)
+                                         verbose=False, cache=cache_filename_local, simulation_mode=True)
 
     assert len(results) > 0
 
