@@ -35,7 +35,7 @@ supported_methods = [
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner)
-    bounds = cost_func.get_bounds()
+    bounds, x0, _ = cost_func.get_bounds_x0_eps()
 
     options = tuning_options.strategy_options
     popsize, maxiter, F, CR, method, constraint_aware = common.get_options(options, _options)

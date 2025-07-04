@@ -33,7 +33,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     max_fevals = min(searchspace.size, max_fevals)
 
     # get random starting point and evaluate cost
-    pos = list(searchspace.get_random_sample(1)[0])
+    pos = cost_func.get_start_pos()
     old_cost = cost_func(pos, check_restrictions=False)
 
     # main optimization loop

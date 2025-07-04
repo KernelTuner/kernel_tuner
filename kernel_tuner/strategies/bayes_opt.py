@@ -13,7 +13,7 @@ from scipy.stats.qmc import LatinHypercube
 
 # BO imports
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies.common import CostFunc
+from kernel_tuner.strategies.common import CostFunc, get_options
 from kernel_tuner.util import StopCriterionReached
 
 try:
@@ -25,6 +25,24 @@ except ImportError:
     bayes_opt_present = False
 
 supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"]
+
+# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
+_options = dict(
+    covariancekernel=(
+        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
+        "matern32",
+    ),
+    covariancelengthscale=("The covariance length scale", 1.5),
+    method=(
+        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
+        "multi-ultrafast",
+    ),
+    samplingmethod=(
+        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
+        "lhs",
+    ),
+    popsize=("Number of initial samples", 20),
+)
 
 
 def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
@@ -92,6 +110,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     :rtype: list(dict()), dict()
 
     """
+    # we don't actually use this for Bayesian Optimization, but it is used to check for unsupported options  
+    get_options(tuning_options.strategy_options, _options, unsupported=["x0"])
+
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
@@ -141,25 +162,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             print(e)
 
     return cost_func.results
-
-
-# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
-_options = dict(
-    covariancekernel=(
-        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
-        "matern32",
-    ),
-    covariancelengthscale=("The covariance length scale", 1.5),
-    method=(
-        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
-        "multi-ultrafast",
-    ),
-    samplingmethod=(
-        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
-        "lhs",
-    ),
-    popsize=("Number of initial samples", 20),
-)
 
 
 class BayesianOptimization:

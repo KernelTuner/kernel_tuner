@@ -11,7 +11,7 @@ _options = dict(fraction=("Fraction of the search space to cover value in [0, 1]
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     # get the samples
-    fraction = common.get_options(tuning_options.strategy_options, _options)[0]
+    fraction = common.get_options(tuning_options.strategy_options, _options, unsupported=["x0"])[0]
     assert 0 <= fraction <= 1.0
     num_samples = int(np.ceil(searchspace.size * fraction))
 
