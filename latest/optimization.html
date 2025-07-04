@@ -224,6 +224,11 @@ configuration that has been selected by the optimization strategy. If you are co
 cache files, serving a value from the cache for the first time in the run also counts as a function evaluation for the strategy.
 Only unique function evaluations are counted, so the second time a parameter configuration is selected by the strategy it is served from the
 cache, but not counted as a unique function evaluation.</p>
+<p>All optimization algorithms, except for brute_force, random_sample, and bayes_opt, allow the user to specify an initial guess or
+starting point for the optimization, called <code class="docutils literal notranslate"><span class="pre">x0</span></code>. This can be passed to the strategy using the <code class="docutils literal notranslate"><span class="pre">strategy_options=</span></code> dictionary with <code class="docutils literal notranslate"><span class="pre">&quot;x0&quot;</span></code> as key and
+a list of values for each parameter in tune_params to note the starting point. For example, for a kernel that has parameters <code class="docutils literal notranslate"><span class="pre">block_size_x</span></code> (64, 128, 256)
+and <code class="docutils literal notranslate"><span class="pre">tile_size_x</span></code> (1,2,3), one could pass <code class="docutils literal notranslate"><span class="pre">strategy_options=dict(x0=[128,2])</span></code> to <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code> to make sure the strategy starts from
+the configuration with <code class="docutils literal notranslate"><span class="pre">block_size_x=128,</span> <span class="pre">tile_size_x=2</span></code>. The order in the <code class="docutils literal notranslate"><span class="pre">x0</span></code> list should match the order in the tunable parameters dictionary.</p>
 <p>Below all the strategies are listed with their strategy-specific options that can be passed in a dictionary to the <code class="docutils literal notranslate"><span class="pre">strategy_options=</span></code> argument
 of <code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code>.</p>
 <section id="module-kernel_tuner.strategies.basinhopping">
