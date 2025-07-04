@@ -82,14 +82,17 @@ def test_strategies(vector_add, strategy):
             assert isinstance(res[expected_key], expected_type)
 
     # check if strategy respects user-specified starting point (x0)
+    x0 = [256]
+    filter_options["x0"] = x0
     if not strategy in ["brute_force", "random_sample", "bayes_opt"]:
-        x0 = [256]
-        filter_options["x0"] = x0
-
         results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
-                                         verbose=False, cache=cache_filename, simulation_mode=True)
-
+                                            verbose=False, cache=cache_filename, simulation_mode=True)
         assert results[0]["block_size_x"] == x0[0]
+    else:
+        with pytest.raises(ValueError):
+            results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+                                            verbose=False, cache=cache_filename, simulation_mode=True)
+
 
 
 
