@@ -1,5 +1,5 @@
 """A simple Different Evolution for parameter search."""
-
+import random
 import re
 import numpy as np
 
@@ -14,6 +14,7 @@ _options = dict(
     F=("mutation factor (differential weight)", 0.8),
     CR=("crossover rate", 0.9),
     method=("method", "best1bin"),
+    constraint_aware=("constraint-aware optimization (True/False)", True),
 )
 
 supported_methods = [
@@ -37,13 +38,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     bounds = cost_func.get_bounds()
 
     options = tuning_options.strategy_options
-    popsize, maxiter, F, CR, method = common.get_options(options, _options)
+    popsize, maxiter, F, CR, method, constraint_aware = common.get_options(options, _options)
 
     if method not in supported_methods:
         raise ValueError(f"Error {method} not supported, {supported_methods=}")
 
     try:
-        differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, tuning_options.verbose)
+        differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, constraint_aware, tuning_options.verbose)
     except util.StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
@@ -96,7 +97,7 @@ def random_draw(idxs, mutate, best):
     return np.random.choice(idxs, draw, replace=draw >= len(idxs))
 
 
-def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, verbose):
+def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, constraint_aware, verbose):
     """
     A basic implementation of the Differential Evolution algorithm.
 
@@ -114,7 +115,18 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
     bounds = np.array(bounds)
 
     # Initialize the population with random individuals within the bounds
-    population = np.array(list(list(p) for p in searchspace.get_random_sample(popsize)))
+    if constraint_aware:
+        population = np.array(list(list(p) for p in searchspace.get_random_sample(popsize)))
+    else:
+        population = []
+        dna_size = len(self.tune_params)
+        for _ in range(self.pop_size):
+            dna = []
+            for key in self.tune_params:
+                dna.append(random.choice(self.tune_params[key]))
+            population.append(dna)
+        population = np.array(population)
+
     population[0] = cost_func.get_start_pos()
 
     # Calculate the initial cost for each individual in the population
@@ -154,6 +166,10 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
 
             # --- b. Crossover ---
             trial_vector = crossover_method(donor_vector, population[i], CR)
+
+            # Repair if constraint_aware
+            if constraint_aware:
+                trial_vector = repair(trial_vector, searchspace)
 
             # Store for selection
             trial_population.append(trial_vector)
@@ -317,6 +333,25 @@ def exponential_crossover(donor_vector, target, CR):
         l += 1
 
     return trial_idx
+
+
+def repair(trial_vector, searchspace):
+    """
+    Attempts to repair trial_vector if trial_vector is invalid
+    """
+    if not searchspace.is_param_config_valid(tuple(trial_vector)):
+        # search for valid configurations neighboring trial_vector
+        # start from strictly-adjacent to increasingly allowing more neighbors
+        for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
+            neighbors = searchspace.get_neighbors_no_cache(tuple(trial_vector), neighbor_method=neighbor_method)
+
+            # if we have found valid neighboring configurations, select one at random
+            if len(neighbors) > 0:
+                new_trial_vector = np.array(list(random.choice(neighbors)))
+                print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired dna to {new_trial_vector=}")
+                return new_trial_vector
+
+    return trial_vector
 
 
 mutation = {
