@@ -242,7 +242,11 @@ class CostFunc:
         """Create a bounds array from the tunable parameters."""
         bounds = []
         for values in self.encoded_params_values if self.encode_non_numeric else self.searchspace.params_values:
-            bounds.append((min(values), max(values)))
+            try:
+                bounds.append((min(values), max(values)))
+            except TypeError:
+                # if values are not numeric, use the first and last value as bounds
+                bounds.append((values[0], values[-1]))
         return bounds
 
     def encoded_to_params(self, config):

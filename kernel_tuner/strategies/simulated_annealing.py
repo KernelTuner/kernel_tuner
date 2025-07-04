@@ -35,13 +35,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     max_fevals = min(searchspace.size, max_fevals)
 
     # get random starting point and evaluate cost
-<<<<<<< HEAD
-    pos = generate_starting_point(searchspace, constraint_aware)
-    old_cost = cost_func(pos, check_restrictions=not constraint_aware)
-=======
     pos = cost_func.get_start_pos()
-    old_cost = cost_func(pos, check_restrictions=False)
->>>>>>> origin/custom_diff_evo
+    old_cost = cost_func(pos, check_restrictions=not constraint_aware)
 
     # main optimization loop
     stuck = 0

@@ -45,7 +45,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     try:
         differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, constraint_aware, tuning_options.verbose)
-    except util.StopCriterionReached as e:
+    except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
 
