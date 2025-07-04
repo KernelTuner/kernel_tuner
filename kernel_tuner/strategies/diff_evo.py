@@ -119,11 +119,11 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
         population = np.array(list(list(p) for p in searchspace.get_random_sample(popsize)))
     else:
         population = []
-        dna_size = len(self.tune_params)
-        for _ in range(self.pop_size):
+        dna_size = len(tune_params)
+        for _ in range(pop_size):
             dna = []
-            for key in self.tune_params:
-                dna.append(random.choice(self.tune_params[key]))
+            for key in tune_params:
+                dna.append(random.choice(tune_params[key]))
             population.append(dna)
         population = np.array(population)
 
