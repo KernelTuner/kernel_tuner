@@ -43,9 +43,12 @@ def make_strategy_options_doc(strategy_options):
     return doc
 
 
-def get_options(strategy_options, options):
+def get_options(strategy_options, options, unsupported=None):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
     accepted = list(options.keys()) + ["max_fevals", "time_limit", "x0", "searchspace_construction_options"]
+    if unsupported:
+        for key in unsupported:
+            accepted.remove(key)
     for key in strategy_options:
         if key not in accepted:
             raise ValueError(f"Unrecognized option {key} in strategy_options (allowed: {accepted})")

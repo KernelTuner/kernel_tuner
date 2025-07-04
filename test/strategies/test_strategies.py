@@ -44,7 +44,9 @@ def test_strategies(vector_add, strategy):
         filter_options = {opt:val for opt, val in options.items() if opt in kernel_tuner.interface.strategy_map[strategy]._options}
     else:
         filter_options = options
-    filter_options["max_fevals"] = 10
+
+    if strategy != "brute_force":
+        filter_options["max_fevals"] = 10
 
     results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
                                          verbose=False, cache=cache_filename, simulation_mode=True)
