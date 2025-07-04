@@ -115,6 +115,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
 
     # Initialize the population with random individuals within the bounds
     population = np.array(list(list(p) for p in searchspace.get_random_sample(popsize)))
+    population[0] = cost_func.get_start_pos()
 
     # Calculate the initial cost for each individual in the population
     population_cost = np.array([cost_func(ind) for ind in population])
