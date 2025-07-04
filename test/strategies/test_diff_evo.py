@@ -7,6 +7,9 @@ from kernel_tuner.strategies.diff_evo import (
     mutate_de_2,
     binomial_crossover,
     exponential_crossover,
+    parse_method,
+    mutation,
+    crossover,
 )
 from kernel_tuner.strategies.diff_evo import supported_methods
 from kernel_tuner import tune_kernel
@@ -145,6 +148,26 @@ def test_exponential_crossover():
 
     for dim, val in enumerate(result):
         assert (val == donor_vector[dim]) or (val == target[dim])
+
+
+def test_parse_method():
+
+    # check unsupported methods raise ValueError
+    for method in ["randtobest4bin", "bogus3log"]:
+        print(f"{method=}")
+        with pytest.raises(ValueError):
+            parse_method(method)
+
+    # check if parses correctly
+    def check_result(result, expected):
+        assert len(result) == len(expected)
+        for i, res in enumerate(result):
+            assert res == expected[i]
+
+    check_result(parse_method("rand1bin"), [False, 1, mutation["1"], crossover["bin"]])
+    check_result(parse_method("best1exp"), [True, 1, mutation["1"], crossover["exp"]])
+    check_result(parse_method("randtobest1exp"), [False, 1, mutation["randtobest"], crossover["exp"]])
+    check_result(parse_method("currenttobest1bin"), [False, 1, mutation["currenttobest"], crossover["bin"]])
 
 
 @pytest.mark.parametrize("method", supported_methods)
