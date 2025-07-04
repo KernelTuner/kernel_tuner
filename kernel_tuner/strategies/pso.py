@@ -23,11 +23,18 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # scale variables in x because PSO works with velocities to visit different configurations
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
+<<<<<<< HEAD
     # using this instead of get_bounds because scaling is used
     bounds, _, eps = cost_func.get_bounds_x0_eps()
 
     num_particles, maxiter, w, c1, c2, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
     num_particles = min(round(searchspace.size / 2), num_particles)
+=======
+    #using this instead of get_bounds because scaling is used
+    bounds, x0, eps = cost_func.get_bounds_x0_eps()
+
+    num_particles, maxiter, w, c1, c2 = common.get_options(tuning_options.strategy_options, _options)
+>>>>>>> origin/custom_diff_evo
 
     best_score_global = sys.float_info.max
     best_position_global = []
@@ -42,6 +49,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         population = list(list(p) for p in searchspace.get_random_sample(num_particles))
         for i, particle in enumerate(swarm):
             particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+
+    # include user provided starting point
+    swarm[0].position = x0
 
     # start optimization
     for i in range(maxiter):

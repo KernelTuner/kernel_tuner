@@ -49,9 +49,12 @@ def make_strategy_options_doc(strategy_options):
     return doc
 
 
-def get_options(strategy_options, options):
+def get_options(strategy_options, options, unsupported=None):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
-    accepted = list(options.keys()) + ["max_fevals", "time_limit", "searchspace_construction_options"]
+    accepted = list(options.keys()) + ["max_fevals", "time_limit", "x0", "searchspace_construction_options"]
+    if unsupported:
+        for key in unsupported:
+            accepted.remove(key)
     for key in strategy_options:
         if key not in accepted:
             raise ValueError(f"Unrecognized option {key} in strategy_options (allowed: {accepted})")
@@ -195,6 +198,11 @@ class CostFunc:
 
         return return_value
 
+    def get_start_pos(self):
+        """Get starting position for optimization."""
+        _, x0, _ = self.get_bounds_x0_eps()
+        return x0
+
     def get_bounds_x0_eps(self):
         """Compute bounds, x0 (the initial guess), and eps."""
         values = list(self.searchspace.tune_params.values())
@@ -211,7 +219,7 @@ class CostFunc:
             bounds = [(0, eps * len(v)) for v in values]
             if x0:
                 # x0 has been supplied by the user, map x0 into [0, eps*len(v)]
-                x0 = scale_from_params(x0, self.tuning_options, eps)
+                x0 = scale_from_params(x0, self.searchspace.tune_params, eps)
             else:
                 # get a valid x0
                 pos = list(self.searchspace.get_random_sample(1)[0])
@@ -219,12 +227,8 @@ class CostFunc:
         else:
             bounds = self.get_bounds()
             if not x0:
-                x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
-            eps = 1e9
-            for v_list in values:
-                if len(v_list) > 1:
-                    vals = np.sort(v_list)
-                    eps = min(eps, np.amin(np.gradient(vals)))
+                x0 = list(self.searchspace.get_random_sample(1)[0])
+            eps = 1
 
         self.tuning_options["eps"] = eps
         logging.debug("get_bounds_x0_eps called")

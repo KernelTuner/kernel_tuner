@@ -459,16 +459,24 @@ def get_config_string(params, keys=None, units=None):
 def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """Compute grid dims based on problem sizes and listed grid divisors."""
 
-    def get_dimension_divisor(divisor_list, default, params):
-        if divisor_list is None:
-            if default in params:
-                divisor_list = [default]
-            else:
-                return 1
-        if callable(divisor_list):
-            return divisor_list(params)
+    def get_dimension_divisor(divisor, default, params):
+        divisor_num = 1
+
+        if divisor is None:
+            divisor_num = params.get(default, 1)
+        elif isinstance(divisor, int):
+            divisor_num = divisor
+        elif callable(divisor):
+            divisor_num = divisor(params)
+        elif isinstance(divisor, str):
+            divisor_num = int(eval(replace_param_occurrences(divisor, params)))
+        elif np.iterable(divisor):
+            for div in divisor:
+                divisor_num *= get_dimension_divisor(div, 1, params)
         else:
-            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+            raise ValueError("Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable")
+
+        return divisor_num
 
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
     return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))

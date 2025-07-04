@@ -130,16 +130,6 @@ def test_simulation_runner(env):
     assert max_time - recorded_time_including_simulation < 10
 
 
-def test_diff_evo(env):
-    result, _ = tune_kernel(*env,
-                            strategy="diff_evo",
-                            strategy_options=dict(popsize=5),
-                            verbose=True,
-                            cache=cache_filename,
-                            simulation_mode=True)
-    assert len(result) > 0
-
-
 def test_constraint_aware_GA(env):
     options = dict(method="uniform",
                    constraint_aware=True,

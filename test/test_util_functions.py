@@ -59,6 +59,22 @@ def test_get_grid_dimensions1():
     assert grid[1] == 25
     assert grid[2] == 1
 
+    grid = get_grid_dimensions(
+        problem_size, params, ("41", 37, None), block_size_names
+    )
+
+    assert grid[0] == 25
+    assert grid[1] == 28
+    assert grid[2] == 1
+
+    grid = get_grid_dimensions(
+        problem_size, params, (None, [2, "block_y"], None), block_size_names
+    )
+
+    assert grid[0] == 1024
+    assert grid[1] == 14
+    assert grid[2] == 1
+
 
 def test_get_grid_dimensions2():
     problem_size = (1024, 1024, 1)

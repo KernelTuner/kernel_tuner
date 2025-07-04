@@ -35,6 +35,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     population = GA.generate_population()
 
+    population[0] = cost_func.get_start_pos()
+
     for generation in range(generations):
         if constraint_aware and any([not searchspace.is_param_config_valid(tuple(dna)) for dna in population]):
             raise ValueError(f"Generation {generation}/{generations}, population validity: {[searchspace.is_param_config_valid(tuple(dna)) for dna in population]}")

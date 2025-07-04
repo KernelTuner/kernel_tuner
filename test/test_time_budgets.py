@@ -69,9 +69,11 @@ def test_some_time_budget(env):
 @skip_if_no_gcc
 def test_full_time_budget(env):
     """Ensure that given ample time budget, the entire space is explored."""
-    res, _ = tune_kernel(*env, strategy="brute_force", strategy_options={"time_limit": 10.0})
 
     # Ensure that the entire space is explored.
     tune_params = env[-1]
     size_all = len(list(product(*tune_params.values())))
+
+    res, _ = tune_kernel(*env, strategy="random_sample", strategy_options={"fraction": 1.0, "time_limit": 10.0})
+
     assert len(res) == size_all

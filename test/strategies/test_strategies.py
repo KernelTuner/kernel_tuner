@@ -62,7 +62,9 @@ def test_strategies(vector_add, strategy):
         filter_options = {opt:val for opt, val in options.items() if opt in kernel_tuner.interface.strategy_map[strategy]._options}
     else:
         filter_options = options
-    filter_options["max_fevals"] = 10
+
+    if strategy != "brute_force":
+        filter_options["max_fevals"] = 10
 
     restrictions = ["test_string == 'alg_2'", "test_bool == True", "test_mixed == 2.45"]
 
@@ -114,3 +116,20 @@ def test_strategies(vector_add, strategy):
         for expected_key, expected_type in expected_items.items():
             assert expected_key in res
             assert isinstance(res[expected_key], expected_type)
+
+    # check if strategy respects user-specified starting point (x0)
+    x0 = [256]
+    filter_options["x0"] = x0
+    if not strategy in ["brute_force", "random_sample", "bayes_opt"]:
+        results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+                                            verbose=False, cache=cache_filename, simulation_mode=True)
+        assert results[0]["block_size_x"] == x0[0]
+    else:
+        with pytest.raises(ValueError):
+            results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+                                            verbose=False, cache=cache_filename, simulation_mode=True)
+
+
+
+
+
