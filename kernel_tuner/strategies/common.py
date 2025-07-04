@@ -153,12 +153,8 @@ class CostFunc:
         else:
             bounds = self.get_bounds()
             if not x0:
-                x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
-            eps = 1e9
-            for v_list in values:
-                if len(v_list) > 1:
-                    vals = np.sort(v_list)
-                    eps = min(eps, np.amin(np.gradient(vals)))
+                x0 = list(self.searchspace.get_random_sample(1)[0])
+            eps = 1
 
         self.tuning_options["eps"] = eps
         logging.debug('get_bounds_x0_eps called')
