@@ -1,4 +1,5 @@
 """A simple Different Evolution for parameter search."""
+
 import re
 import numpy as np
 
@@ -12,10 +13,23 @@ _options = dict(
     maxiter=("maximum number of generations", 200),
     F=("mutation factor (differential weight)", 0.8),
     CR=("crossover rate", 0.9),
-    method=("method", "best1bin")
+    method=("method", "best1bin"),
 )
 
-supported_methods = ["best1bin", "rand1bin", "best2bin", "rand2bin", "best1exp", "rand1exp", "best2exp", "rand2exp", "currenttobest1bin", "currenttobest1exp", "randtobest1bin", "randtobest1exp"]
+supported_methods = [
+    "best1bin",
+    "rand1bin",
+    "best2bin",
+    "rand2bin",
+    "best1exp",
+    "rand1exp",
+    "best2exp",
+    "rand2exp",
+    "currenttobest1bin",
+    "currenttobest1exp",
+    "randtobest1bin",
+    "randtobest1exp",
+]
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
@@ -59,7 +73,7 @@ def indices_to_values(individual_indices, tune_params):
 
 
 def parse_method(method):
-    """ Helper func to parse the preferred method into its components. """
+    """Helper func to parse the preferred method into its components."""
     pattern = r"^(best|rand|currenttobest|randtobest)(1|2)(bin|exp)$"
     match = re.fullmatch(pattern, method)
 
@@ -76,7 +90,7 @@ def random_draw(idxs, mutation, best):
     Draw without replacement unless there is not enough to draw from.
     """
     draw = 2 * mutation + 1 - int(best)
-    return np.random.choice(idxs, draw, replace=draw>=len(idxs))
+    return np.random.choice(idxs, draw, replace=draw >= len(idxs))
 
 
 def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, verbose):
@@ -104,14 +118,11 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
     """
     tune_params = cost_func.tuning_options.tune_params
     min_idx = np.zeros(len(tune_params))
-    max_idx = [len(v)-1 for v in tune_params.values()]
+    max_idx = [len(v) - 1 for v in tune_params.values()]
 
     best, mutation, mutation_method, crossover_method = parse_method(method)
 
     # --- 1. Initialization ---
-
-    # Get the number of dimensions from the bounds list
-    dimensions = len(bounds)
 
     # Convert bounds to a numpy array for easier manipulation
     bounds = np.array(bounds)
@@ -187,11 +198,11 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
         if verbose:
             print(f"Generation {generation + 1}, Best Cost: {best_cost:.6f}")
 
-    return {'solution': best_solution, 'cost': best_cost}
+    return {"solution": best_solution, "cost": best_cost}
 
 
 def round_and_clip(mutant_idx_float, min_idx, max_idx):
-    """ Helper func to round floating index to nearest integer and clip within bounds. """
+    """Helper func to round floating index to nearest integer and clip within bounds."""
     # Round to the nearest integer
     rounded_idx = np.round(mutant_idx_float)
 
@@ -277,7 +288,7 @@ def mutate_de_2(best_idx, randos_idx, F, min_idx, max_idx, best):
 
 
 def binomial_crossover(donor_vector, target, CR):
-    """ Performs binomial crossover of donor_vector with target given crossover rate CR. """
+    """Performs binomial crossover of donor_vector with target given crossover rate CR."""
     # Create the trial vector by mixing parameters from the target and donor vectors
     trial_vector = np.copy(target)
     dimensions = len(donor_vector)
@@ -320,5 +331,11 @@ def exponential_crossover(donor_vector, target, CR):
 
     return trial_idx
 
-mutation = {"1": mutate_de_1, "2": mutate_de_2, "currenttobest1": mutate_currenttobest1, "randtobest1": mutate_randtobest1}
+
+mutation = {
+    "1": mutate_de_1,
+    "2": mutate_de_2,
+    "currenttobest1": mutate_currenttobest1,
+    "randtobest1": mutate_randtobest1,
+}
 crossover = {"bin": binomial_crossover, "exp": exponential_crossover}

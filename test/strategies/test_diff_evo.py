@@ -1,10 +1,18 @@
 import numpy as np
 import pytest
-from kernel_tuner.strategies.diff_evo import values_to_indices, indices_to_values, mutate_de_1, mutate_de_2, binomial_crossover, exponential_crossover
+from kernel_tuner.strategies.diff_evo import (
+    values_to_indices,
+    indices_to_values,
+    mutate_de_1,
+    mutate_de_2,
+    binomial_crossover,
+    exponential_crossover,
+)
 from kernel_tuner.strategies.diff_evo import supported_methods
 from kernel_tuner import tune_kernel
 
 from .test_strategies import vector_add, cache_filename
+
 
 def test_values_to_indices():
 
@@ -37,7 +45,7 @@ def test_indices_to_values():
 
     tune_params["block_size_y"] = [16, 32, 128, 1024]
     expected = [1024, 32]
-    result = indices_to_values([3,1], tune_params)
+    result = indices_to_values([3, 1], tune_params)
     assert result[0] == expected[0]
     assert result[1] == expected[1]
     assert len(result) == len(expected)
@@ -58,7 +66,7 @@ def test_mutate_de_1():
     F = 0.8
     params_list = list(tune_params)
     min_idx = np.zeros(len(tune_params))
-    max_idx = [len(v)-1 for v in tune_params.values()]
+    max_idx = [len(v) - 1 for v in tune_params.values()]
 
     mutant = mutate_de_1(a_idx, randos_idx, F, min_idx, max_idx, False)
 
@@ -94,7 +102,7 @@ def test_mutate_de_2():
     F = 0.8
     params_list = list(tune_params)
     min_idx = np.zeros(len(tune_params))
-    max_idx = [len(v)-1 for v in tune_params.values()]
+    max_idx = [len(v) - 1 for v in tune_params.values()]
 
     mutant = mutate_de_2(a_idx, randos_idx, F, min_idx, max_idx, False)
 
@@ -139,14 +147,14 @@ def test_exponential_crossover():
         assert (val == donor_vector[dim]) or (val == target[dim])
 
 
-@pytest.mark.parametrize('method', supported_methods)
+@pytest.mark.parametrize("method", supported_methods)
 def test_diff_evo(vector_add, method):
-    result, _ = tune_kernel(*vector_add,
-                            strategy="diff_evo",
-                            strategy_options=dict(popsize=5, method=method),
-                            verbose=True,
-                            cache=cache_filename,
-                            simulation_mode=True)
+    result, _ = tune_kernel(
+        *vector_add,
+        strategy="diff_evo",
+        strategy_options=dict(popsize=5, method=method),
+        verbose=True,
+        cache=cache_filename,
+        simulation_mode=True,
+    )
     assert len(result) > 0
-
-
