@@ -3,6 +3,8 @@ import random
 import re
 import numpy as np
 
+from scipy.stats.qmc import LatinHypercube
+
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
@@ -11,7 +13,7 @@ from kernel_tuner.strategies.common import CostFunc
 _options = dict(
     popsize=("population size", 50),
     maxiter=("maximum number of generations", 200),
-    F=("mutation factor (differential weight)", 0.8),
+    F=("mutation factor (differential weight)", 1.3),
     CR=("crossover rate", 0.9),
     method=("method", "best1bin"),
     constraint_aware=("constraint-aware optimization (True/False)", True),
@@ -35,7 +37,7 @@ supported_methods = [
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner)
-    bounds, x0, _ = cost_func.get_bounds_x0_eps()
+    bounds = cost_func.get_bounds()
 
     options = tuning_options.strategy_options
     popsize, maxiter, F, CR, method, constraint_aware = common.get_options(options, _options)
@@ -97,6 +99,22 @@ def random_draw(idxs, mutate, best):
     return np.random.choice(idxs, draw, replace=draw >= len(idxs))
 
 
+def generate_population(tune_params, min_idx, max_idx, popsize, searchspace, constraint_aware):
+    if constraint_aware:
+        samples = LatinHypercube(len(tune_params)).integers(l_bounds=0, u_bounds=max_idx, n=popsize, endpoint=True)
+        population = [indices_to_values(sample, tune_params) for sample in samples]
+        population = np.array([repair(individual, searchspace) for individual in population])
+    else:
+        population = []
+        for _ in range(popsize):
+            ind = []
+            for key in tune_params:
+                ind.append(random.choice(tune_params[key]))
+            population.append(ind)
+        population = np.array(population)
+    return population
+
+
 def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, constraint_aware, verbose):
     """
     A basic implementation of the Differential Evolution algorithm.
@@ -115,18 +133,9 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
     bounds = np.array(bounds)
 
     # Initialize the population with random individuals within the bounds
-    if constraint_aware:
-        population = np.array(list(list(p) for p in searchspace.get_random_sample(popsize)))
-    else:
-        population = []
-        dna_size = len(self.tune_params)
-        for _ in range(self.pop_size):
-            dna = []
-            for key in self.tune_params:
-                dna.append(random.choice(self.tune_params[key]))
-            population.append(dna)
-        population = np.array(population)
+    population = generate_population(tune_params, min_idx, max_idx, popsize, searchspace, constraint_aware)
 
+    # Override with user-specified starting position
     population[0] = cost_func.get_start_pos()
 
     # Calculate the initial cost for each individual in the population
@@ -140,16 +149,25 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
 
     # --- 2. Main Loop ---
 
+    stabilized = 0
+
     # Iterate through the specified number of generations
     for generation in range(maxiter):
 
+        # Trial population and vectors are stored as lists
+        # not Numpy arrays, to make it easy to check for duplicates
         trial_population = []
 
+        # If for two generations there has been no change, generate a new population
+        if stabilized > 2:
+            trial_population = list(generate_population(tune_params, min_idx, max_idx, popsize, searchspace, constraint_aware))
+
         # Iterate over each individual in the population
-        for i in range(popsize):
+        i = 0
+        stuck = 0
+        while len(trial_population) < popsize:
 
             # --- a. Mutation ---
-
             # Select three distinct random individuals (a, b, c) from the population,
             # ensuring they are different from the current individual 'i'.
             idxs = [idx for idx in range(popsize) if idx != i]
@@ -172,12 +190,27 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
                 trial_vector = repair(trial_vector, searchspace)
 
             # Store for selection
-            trial_population.append(trial_vector)
+            if list(trial_vector) not in trial_population:
+                trial_population.append(list(trial_vector))
+                i += 1
+                stuck = 0
+            else:
+                stuck += 1
+                if stuck >= 20:
+                    if verbose:
+                        print(f"Differential Evolution got stuck generating new individuals, insert random sample")
+                    trial_population.append(list(searchspace.get_random_sample(1)[0]))
+                    i += 1
+                    stuck = 0
+
 
         # --- c. Selection ---
 
         # Calculate the cost of the new trial vectors
         trial_population_cost = np.array([cost_func(ind) for ind in trial_population])
+
+        # Keep track of whether population changes over time
+        no_change = True
 
         # Iterate over each individual in the trial population
         for i in range(popsize):
@@ -188,8 +221,13 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
             # If the trial vector has a lower or equal cost, it replaces the
             # target vector in the population for the next generation.
             if trial_cost <= population_cost[i]:
-                population[i] = trial_vector
-                population_cost[i] = trial_cost
+
+                # check if trial_vector is not already in population
+                idxs = [idx for idx in range(popsize) if idx != i]
+                if trial_vector not in population[idxs]:
+                    population[i] = np.array(trial_vector)
+                    population_cost[i] = trial_cost
+                    no_change = False
 
                 # Update the overall best solution if the new one is better
                 if trial_cost < best_cost:
@@ -197,9 +235,16 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
                     best_solution = trial_vector
                     best_solution_idx = values_to_indices(best_solution, tune_params)
 
+        # Note if population is stabilizing
+        if no_change:
+            stabilized += 1
+
         # Print the progress at the end of the generation
         if verbose:
             print(f"Generation {generation + 1}, Best Cost: {best_cost:.6f}")
+
+    if verbose:
+        print(f"Differential Evolution completed fevals={len(cost_func.tuning_options.unique_results)}")
 
     return {"solution": best_solution, "cost": best_cost}
 
@@ -348,7 +393,7 @@ def repair(trial_vector, searchspace):
             # if we have found valid neighboring configurations, select one at random
             if len(neighbors) > 0:
                 new_trial_vector = np.array(list(random.choice(neighbors)))
-                print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired dna to {new_trial_vector=}")
+                print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired to {new_trial_vector=}")
                 return new_trial_vector
 
     return trial_vector
