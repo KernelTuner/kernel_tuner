@@ -732,11 +732,16 @@ def test_check_matching_problem_size():
         check_matching_problem_size(42, 1000)
     with pytest.raises(ValueError):
         check_matching_problem_size([42,1], 42)
+    with pytest.raises(ValueError):
+        check_matching_problem_size([42,0], 42)
+    with pytest.raises(ValueError):
+        check_matching_problem_size(None, 42)
     # these should not error
     check_matching_problem_size(1000, (1000,))
     check_matching_problem_size([1000], 1000)
     check_matching_problem_size(1000, 1000)
     check_matching_problem_size(1000, [1000])
+    check_matching_problem_size([1000,], 1000)
 
 
 def test_convert_constraint_lambdas():
