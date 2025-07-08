@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 import ctypes
@@ -10,12 +11,18 @@ try:
 except:
     hip = None
 
-from kernel_tuner.file_utils import output_file_schema, store_metadata_file, store_output_file
+from kernel_tuner.file_utils import get_input_file, output_file_schema, store_metadata_file, store_output_file
 from kernel_tuner.util import delete_temp_file, check_argument_list
 from .context import skip_if_no_hip
 
 from .test_runners import cache_filename, env, tune_kernel  # noqa: F401
 
+
+def test_get_input_file(env):
+    filename = Path(__file__).parent / "test_T1_input.json"
+    assert filename.exists()
+    contents = get_input_file(filename, validate=True)
+    assert isinstance(contents, dict)
 
 def test_store_output_file(env):
     # setup variables

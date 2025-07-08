@@ -1,5 +1,5 @@
 """Module for kernel tuner utility functions."""
-
+import ast
 import errno
 import json
 import logging
@@ -7,11 +7,13 @@ import os
 import re
 import sys
 import tempfile
+import textwrap
 import time
 import warnings
-from inspect import signature
+from inspect import getsource, signature
+from pathlib import Path
 from types import FunctionType
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 from constraint import (
@@ -193,7 +195,7 @@ def check_stop_criterion(to):
     """Checks if max_fevals is reached or time limit is exceeded."""
     if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
         raise StopCriterionReached("max_fevals reached")
-    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
+    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time) > to.time_limit):
         raise StopCriterionReached("time limit exceeded")
 
 
@@ -268,12 +270,15 @@ def check_restriction(restrict, params: dict) -> bool:
     # if it's a tuple, use only the parameters in the second argument to call the restriction
     elif (
         isinstance(restrict, tuple)
-        and len(restrict) == 2
+        and (len(restrict) == 2 or len(restrict) == 3)
         and callable(restrict[0])
         and isinstance(restrict[1], (list, tuple))
     ):
         # unpack the tuple
-        restrict, selected_params = restrict
+        if len(restrict) == 2:
+            restrict, selected_params = restrict
+        else:
+            restrict, selected_params, source = restrict
         # look up the selected parameters and their value
         selected_params = dict((key, params[key]) for key in selected_params)
         # call the restriction
@@ -437,16 +442,24 @@ def get_config_string(params, keys=None, units=None):
 def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """Compute grid dims based on problem sizes and listed grid divisors."""
 
-    def get_dimension_divisor(divisor_list, default, params):
-        if divisor_list is None:
-            if default in params:
-                divisor_list = [default]
-            else:
-                return 1
-        if callable(divisor_list):
-            return divisor_list(params)
+    def get_dimension_divisor(divisor, default, params):
+        divisor_num = 1
+
+        if divisor is None:
+            divisor_num = params.get(default, 1)
+        elif isinstance(divisor, int):
+            divisor_num = divisor
+        elif callable(divisor):
+            divisor_num = divisor(params)
+        elif isinstance(divisor, str):
+            divisor_num = int(eval(replace_param_occurrences(divisor, params)))
+        elif np.iterable(divisor):
+            for div in divisor:
+                divisor_num *= get_dimension_divisor(div, 1, params)
         else:
-            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+            raise ValueError("Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable")
+
+        return divisor_num
 
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
     return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
@@ -455,6 +468,28 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
 def get_instance_string(params):
     """Combine the parameters to a string mostly used for debug output use of dict is advised."""
     return "_".join([str(i) for i in params.values()])
+
+
+def get_interval(a: list):
+    """Checks if an array can be an interval. Returns (start, end, step) if interval, otherwise None."""
+    if len(a) < 3:
+        return None
+    if not all(isinstance(e, (int, float)) for e in a):
+        return None
+    a_min = min(a)
+    a_max = max(a)
+    if len(a) <= 2:
+        return (a_min, a_max, a_max-a_min)
+    # determine the first step size
+    step = a[1]-a_min
+    # for each element, the step size should be equal to the first step
+    for i, e in enumerate(a):
+        if e-a[i-1] != step:
+            return None 
+    result = (a_min, a_max, step)
+    if not all(isinstance(e, (int, float)) for e in result):
+        return None
+    return result
 
 
 def get_kernel_string(kernel_source, params=None):
@@ -471,8 +506,9 @@ def get_kernel_string(kernel_source, params=None):
     after all.
 
     :param kernel_source: One of the sources for the kernel, could be a
-        function that generates the kernel code, a string containing a filename
-        that points to the kernel source, or just a string that contains the code.
+        function that generates the kernel code, a string or Path containing a
+        filename that points to the kernel source, or just a string that
+        contains the code.
     :type kernel_source: string or callable
 
     :param params: Dictionary containing the tunable parameters for this specific
@@ -488,6 +524,8 @@ def get_kernel_string(kernel_source, params=None):
     kernel_string = None
     if callable(kernel_source):
         kernel_string = kernel_source(params)
+    elif isinstance(kernel_source, Path):
+        kernel_string = read_file(kernel_source)
     elif isinstance(kernel_source, str):
         if looks_like_a_filename(kernel_source):
             kernel_string = read_file(kernel_source) or kernel_source
@@ -779,7 +817,10 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
 
 def read_file(filename):
     """Return the contents of the file named filename or None if file not found."""
-    if os.path.isfile(filename):
+    if isinstance(filename, Path):
+        with filename.open() as f:
+            return f.read()
+    elif os.path.isfile(filename):
         with open(filename, "r") as f:
             return f.read()
 
@@ -841,7 +882,7 @@ def normalize_verify_function(v):
 
 
 def parse_restrictions(
-    restrictions: list[str], tune_params: dict, monolithic=False, try_to_constraint=True
+    restrictions: list[str], tune_params: dict, monolithic=False, format=None
 ) -> list[tuple[Union[Constraint, str], list[str]]]:
     """Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters."""
     # rewrite the restrictions so variables are singled out
@@ -849,7 +890,7 @@ def parse_restrictions(
 
     def replace_params(match_object):
         key = match_object.group(1)
-        if key in tune_params:
+        if key in tune_params and format != "pyatf":
             param = str(key)
             return "params[params_index['" + param + "']]"
         else:
@@ -864,166 +905,18 @@ def parse_restrictions(
             return param
         else:
             return key
-
-    def to_multiple_restrictions(restrictions: list[str]) -> list[str]:
-        """Split the restrictions into multiple restriction where possible (e.g. 3 <= x * y < 9 <= z -> [(MinProd(3), [x, y]), (MaxProd(9-1), [x, y]), (MinProd(9), [z])])."""
-        split_restrictions = list()
-        for res in restrictions:
-            # if there are logic chains in the restriction, skip splitting further
-            if " and " in res or " or " in res:
-                split_restrictions.append(res)
-                continue
-            # find the indices of splittable comparators
-            comparators = ["<=", ">=", ">", "<"]
-            comparators_indices = [(m.start(0), m.end(0)) for m in re.finditer("|".join(comparators), res)]
-            if len(comparators_indices) <= 1:
-                # this can't be split further
-                split_restrictions.append(res)
-                continue
-            # split the restrictions from the previous to the next comparator
-            for index in range(len(comparators_indices)):
-                temp_copy = res
-                prev_stop = comparators_indices[index - 1][1] + 1 if index > 0 else 0
-                next_stop = (
-                    comparators_indices[index + 1][0] if index < len(comparators_indices) - 1 else len(temp_copy)
-                )
-                split_restrictions.append(temp_copy[prev_stop:next_stop].strip())
-        return split_restrictions
-
-    def to_numeric_constraint(
-        restriction: str, params: list[str]
-    ) -> Optional[Union[MinSumConstraint, ExactSumConstraint, MaxSumConstraint, MaxProdConstraint]]:
-        """Converts a restriction to a built-in numeric constraint if possible."""
-        comparators = ["<=", "==", ">=", ">", "<"]
-        comparators_found = re.findall("|".join(comparators), restriction)
-        # check if there is exactly one comparator, if not, return None
-        if len(comparators_found) != 1:
-            return None
-        comparator = comparators_found[0]
-
-        # split the string on the comparison and remove leading and trailing whitespace
-        left, right = tuple(s.strip() for s in restriction.split(comparator))
-
-        # find out which side is the constant number
-        def is_or_evals_to_number(s: str) -> Optional[Union[int, float]]:
-            try:
-                # check if it's a number or solvable to a number (e.g. '32*2')
-                number = eval(s)
-                assert isinstance(number, (int, float))
-                return number
-            except Exception:
-                # it's not a solvable subexpression, return None
-                return None
-
-        # either the left or right side of the equation must evaluate to a constant number
-        left_num = is_or_evals_to_number(left)
-        right_num = is_or_evals_to_number(right)
-        if (left_num is None and right_num is None) or (left_num is not None and right_num is not None):
-            # left_num and right_num can't be both None or both a constant
-            return None
-        number, variables, variables_on_left = (
-            (left_num, right.strip(), False) if left_num is not None else (right_num, left.strip(), True)
-        )
-
-        # if the number is an integer, we can map '>' to '>=' and '<' to '<=' by changing the number (does not work with floating points!)
-        number_is_int = isinstance(number, int)
-        if number_is_int:
-            if comparator == "<":
-                if variables_on_left:
-                    # (x < 2) == (x <= 2-1)
-                    number -= 1
-                else:
-                    # (2 < x) == (2+1 <= x)
-                    number += 1
-            elif comparator == ">":
-                if variables_on_left:
-                    # (x > 2) == (x >= 2+1)
-                    number += 1
-                else:
-                    # (2 > x) == (2-1 >= x)
-                    number -= 1
-
-        # check if an operator is applied on the variables, if not return
-        operators = [r"\*\*", r"\*", r"\+"]
-        operators_found = re.findall(str("|".join(operators)), variables)
-        if len(operators_found) == 0:
-            # no operators found, return only based on comparator
-            if len(params) != 1 or variables not in params:
-                # there were more than one variable but no operator
-                return None
-            # map to a Constraint
-            # if there are restrictions with a single variable, it will be used to prune the domain at the start
-            elif comparator == "==":
-                return ExactSumConstraint(number)
-            elif comparator == "<=" or (comparator == "<" and number_is_int):
-                return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
-            elif comparator == ">=" or (comparator == ">" and number_is_int):
-                return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
-            raise ValueError(f"Invalid comparator {comparator}")
-
-        # check which operator is applied on the variables
-        operator = operators_found[0]
-        if not all(o == operator for o in operators_found):
-            # if the operator is inconsistent (e.g. 'x + y * z == 3'), return None
-            return None
-
-        # split the string on the comparison
-        splitted = variables.split(operator)
-        # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
-        if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
-            # map to a Constraint
-            if operator == "**":
-                # power operations are not (yet) supported, added to avoid matching the double asterisk
-                return None
-            elif operator == "*":
-                if comparator == "<=" or (comparator == "<" and number_is_int):
-                    return MaxProdConstraint(number) if variables_on_left else MinProdConstraint(number)
-                elif comparator == ">=" or (comparator == ">" and number_is_int):
-                    return MinProdConstraint(number) if variables_on_left else MaxProdConstraint(number)
-            elif operator == "+":
-                if comparator == "==":
-                    return ExactSumConstraint(number)
-                elif comparator == "<=" or (comparator == "<" and number_is_int):
-                    return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
-                elif comparator == ">=" or (comparator == ">" and number_is_int):
-                    return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
-            else:
-                raise ValueError(f"Invalid operator {operator}")
-        return None
-
-    def to_equality_constraint(
-        restriction: str, params: list[str]
-    ) -> Optional[Union[AllEqualConstraint, AllDifferentConstraint]]:
-        """Converts a restriction to either an equality or inequality constraint on all the parameters if possible."""
-        # check if all parameters are involved
-        if len(params) != len(tune_params):
-            return None
-
-        # find whether (in)equalities appear in this restriction
-        equalities_found = re.findall("==", restriction)
-        inequalities_found = re.findall("!=", restriction)
-        # check if one of the two have been found, if none or both have been found, return None
-        if not (len(equalities_found) > 0 ^ len(inequalities_found) > 0):
-            return None
-        comparator = equalities_found[0] if len(equalities_found) > 0 else inequalities_found[0]
-
-        # split the string on the comparison
-        splitted = restriction.split(comparator)
-        # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
-        if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
-            # map to a Constraint
-            if comparator == "==":
-                return AllEqualConstraint()
-            elif comparator == "!=":
-                return AllDifferentConstraint()
-            return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
-        return None
+    
+    # remove functionally duplicate restrictions (preserves order and whitespace)
+    if all(isinstance(r, str) for r in restrictions):
+        # clean the restriction strings to functional equivalence
+        restrictions_cleaned = [r.replace(' ', '') for r in restrictions]
+        restrictions_cleaned_unique = list(dict.fromkeys(restrictions_cleaned)) # dict preserves order
+        # get the indices of the unique restrictions, use these to build a new list of restrictions
+        restrictions_unique_indices = [restrictions_cleaned.index(r) for r in restrictions_cleaned_unique]
+        restrictions = [restrictions[i] for i in restrictions_unique_indices]
 
     # create the parsed restrictions
     if monolithic is False:
-        # split into multiple restrictions where possible
-        if try_to_constraint:
-            restrictions = to_multiple_restrictions(restrictions)
         # split into functions that only take their relevant parameters
         parsed_restrictions = list()
         for res in restrictions:
@@ -1031,24 +924,36 @@ def parse_restrictions(
             parsed_restriction = re.sub(regex_match_variable, replace_params_split, res).strip()
             params_used = list(params_used)
             finalized_constraint = None
-            if try_to_constraint and " or " not in res and " and " not in res:
-                # if applicable, strip the outermost round brackets
-                while (
-                    parsed_restriction[0] == "("
-                    and parsed_restriction[-1] == ")"
-                    and "(" not in parsed_restriction[1:]
-                    and ")" not in parsed_restriction[:1]
-                ):
-                    parsed_restriction = parsed_restriction[1:-1]
-                # check if we can turn this into the built-in numeric comparison constraint
-                finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
-                if finalized_constraint is None:
-                    # check if we can turn this into the built-in equality comparison constraint
-                    finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
-            if finalized_constraint is None:
-                # we must turn it into a general function
+            # we must turn it into a general function
+            if format is not None and format.lower() == "pyatf":
+                finalized_constraint = parsed_restriction
+            else:
                 finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
             parsed_restrictions.append((finalized_constraint, params_used))
+
+        # if pyATF, restrictions that are set on the same parameter must be combined into one
+        if format is not None and format.lower() == "pyatf":
+            res_dict = dict()
+            registered_params = list()
+            registered_restrictions = list()
+            parsed_restrictions_pyatf = list()
+            for param in tune_params.keys():
+                registered_params.append(param)
+                for index, (res, params) in enumerate(parsed_restrictions):
+                    if index in registered_restrictions:
+                        continue
+                    if all(p in registered_params for p in params):
+                        if param not in res_dict:
+                            res_dict[param] = (list(), list())
+                        res_dict[param][0].append(res)
+                        res_dict[param][1].extend(params)
+                        registered_restrictions.append(index)
+            # combine multiple restrictions into one
+            for res_tuple in res_dict.values():
+                res, params_used = res_tuple
+                params_used = list(dict.fromkeys(params_used))   # param_used should only contain unique, dict preserves order
+                parsed_restrictions_pyatf.append((f"def r({', '.join(params_used)}): return ({') and ('.join(res)}) \n", params_used))
+            parsed_restrictions = parsed_restrictions_pyatf
     else:
         # create one monolithic function
         parsed_restrictions = ") and (".join(
@@ -1062,20 +967,124 @@ def parse_restrictions(
         # provide a mapping of the parameter names to the index in the tuple received
         params_index = dict(zip(tune_params.keys(), range(len(tune_params.keys()))))
 
-        parsed_restrictions = [
-            (
-                f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n",
-                list(tune_params.keys()),
-            )
-        ]
+        if format == "pyatf":
+            parsed_restrictions = [
+                (
+                    f"def restrictions({', '.join(params_index.keys())}): return {parsed_restrictions} \n",
+                    list(tune_params.keys()),
+                )
+            ]
+        else:
+            parsed_restrictions = [
+                (
+                    f"def restrictions(*params): params_index = {params_index}; return {parsed_restrictions} \n",
+                    list(tune_params.keys()),
+                )
+            ]
 
     return parsed_restrictions
 
 
+def get_all_lambda_asts(func):
+    """Extracts the AST nodes of all lambda functions defined on the same line as func.
+
+    Args:
+        func: A lambda function object.
+
+    Returns:
+        A list of all ast.Lambda node objects on the line where func is defined.
+
+    Raises:
+        ValueError: If the source can't be retrieved or no lambda is found.
+    """
+    res = []
+    try:
+        source = getsource(func)
+        source = textwrap.dedent(source).strip()
+        parsed = ast.parse(source)
+
+        # Find the Lambda node
+        for node in ast.walk(parsed):
+            if isinstance(node, ast.Lambda):
+                res.append(node)
+        if not res:
+            raise ValueError(f"No lambda node found in the source {source}.")
+    except SyntaxError:
+        """ Ignore syntax errors on the lambda """
+        return res
+    except OSError:
+        raise ValueError("Could not retrieve source. Is this defined interactively or dynamically?")
+    return res
+
+
+class ConstraintLambdaTransformer(ast.NodeTransformer):
+    """Replaces any `NAME['string']` subscript with just `'string'`, if `NAME`
+    matches the lambda argument name.
+    """
+    def __init__(self, dict_arg_name):
+        self.dict_arg_name = dict_arg_name
+
+    def visit_Subscript(self, node):
+        # We only replace subscript expressions of the form <dict_arg_name>['some_string']
+        if (isinstance(node.value, ast.Name)
+                and node.value.id == self.dict_arg_name
+                and isinstance(node.slice, ast.Constant)
+                and isinstance(node.slice.value, str)):
+            # Replace `dict_arg_name['some_key']` with the string used as key
+            return ast.Name(node.slice.value)
+        return self.generic_visit(node)
+
+
+def unparse_constraint_lambda(lambda_ast):
+    """Parse the lambda function to replace accesses to tunable parameter dict
+    Returns string body of the rewritten lambda function
+    """
+    args = lambda_ast.args
+    body = lambda_ast.args
+
+    # Kernel Tuner only allows constraint lambdas with a single argument
+    arg = args.args[0].arg
+
+    # Create transformer that replaces accesses to tunable parameter dict
+    # with simply the name of the tunable parameter
+    transformer = ConstraintLambdaTransformer(arg)
+    new_lambda_ast = transformer.visit(lambda_ast)
+
+    rewritten_lambda_body_as_string = ast.unparse(new_lambda_ast.body).strip()
+
+    return rewritten_lambda_body_as_string
+
+
+def convert_constraint_lambdas(restrictions):
+    """Extract and convert all constraint lambdas from the restrictions"""
+    res = []
+    for c in restrictions:
+        if isinstance(c, (str, Constraint)):
+            res.append(c)
+        if callable(c) and not isinstance(c, Constraint):
+            try:
+                lambda_asts = get_all_lambda_asts(c)
+            except ValueError:
+                res.append(c)   # it's just a plain function, not a lambda
+                continue
+
+            for lambda_ast in lambda_asts:
+                new_c = unparse_constraint_lambda(lambda_ast)
+                res.append(new_c)
+
+    result = list(set(res))
+    if not len(result) == len(restrictions):
+        raise ValueError("An error occured when parsing restrictions. If you mix lambdas and string-based restrictions, please define the lambda first.")
+
+    return result
+
+
 def compile_restrictions(
-    restrictions: list, tune_params: dict, monolithic=False, try_to_constraint=True
-) -> list[tuple[Union[str, Constraint, FunctionType], list[str]]]:
-    """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used, or a single Function if monolithic is true."""
+    restrictions: list, tune_params: dict, monolithic=False, format=None
+) -> list[tuple[Union[str, FunctionType], list[str], Union[str, None]]]:
+    """Parses restrictions from a list of strings into a list of strings or Functions and parameters used and source, or a single Function if monolithic is true."""
+    restrictions = convert_constraint_lambdas(restrictions)
+
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
@@ -1084,9 +1093,7 @@ def compile_restrictions(
         return restrictions_ignore
 
     # parse the strings
-    parsed_restrictions = parse_restrictions(
-        restrictions_str, tune_params, monolithic=monolithic, try_to_constraint=try_to_constraint
-    )
+    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, monolithic=monolithic, format=format)
 
     # compile the parsed restrictions into a function
     compiled_restrictions: list[tuple] = list()
@@ -1095,10 +1102,10 @@ def compile_restrictions(
             # if it's a string, parse it to a function
             code_object = compile(restriction, "<string>", "exec")
             func = FunctionType(code_object.co_consts[0], globals())
-            compiled_restrictions.append((func, params_used))
+            compiled_restrictions.append((func, params_used, restriction))
         elif isinstance(restriction, Constraint):
             # otherwise it already is a Constraint, pass it directly
-            compiled_restrictions.append((restriction, params_used))
+            compiled_restrictions.append((restriction, params_used, None))
         else:
             raise ValueError(f"Restriction {restriction} is neither a string or Constraint {type(restriction)}")
 
@@ -1110,9 +1117,10 @@ def compile_restrictions(
     noncompiled_restrictions = []
     for r in restrictions_ignore:
         if isinstance(r, tuple) and len(r) == 2 and isinstance(r[1], (list, tuple)):
-            noncompiled_restrictions.append(r)
+            restriction, params_used = r
+            noncompiled_restrictions.append((restriction, params_used, restriction))
         else:
-            noncompiled_restrictions.append((r, ()))
+            noncompiled_restrictions.append((r, [], r))
     return noncompiled_restrictions + compiled_restrictions
 
 
@@ -1169,7 +1177,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     # if file exists
     else:
-        cached_data = read_cache(cache)
+        cached_data = read_cache(cache, open_cache=not tuning_options.simulation_mode)
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
@@ -1177,10 +1185,17 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
         # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != runner.dev.name:
-            raise ValueError("Cannot load cache which contains results for different device")
+            raise ValueError(
+                f"Cannot load cache which contains results for different device (cache: {cached_data['device_name']}, actual: {runner.dev.name})"
+            )
         if cached_data["kernel_name"] != kernel_options.kernel_name:
-            raise ValueError("Cannot load cache which contains results for different kernel")
+            raise ValueError(
+                f"Cannot load cache which contains results for different kernel (cache: {cached_data['kernel_name']}, actual: {kernel_options.kernel_name})"
+            )
         if "problem_size" in cached_data and not callable(kernel_options.problem_size):
+            # if it's a single value, convert to an array
+            if isinstance(cached_data["problem_size"], int):
+                cached_data["problem_size"] = [cached_data["problem_size"]]
             # if problem_size is not iterable, compare directly
             if not hasattr(kernel_options.problem_size, "__iter__"):
                 if cached_data["problem_size"] != kernel_options.problem_size:
@@ -1212,7 +1227,7 @@ def correct_open_cache(cache, open_cache=True):
         filestr = cachefile.read().strip()
 
     # if file was not properly closed, pretend it was properly closed
-    if len(filestr) > 0 and not filestr[-3:] in ["}\n}", "}}}"]:
+    if len(filestr) > 0 and filestr[-3:] not in ["}\n}", "}}}"]:
         # remove the trailing comma if any, and append closing brackets
         if filestr[-1] == ",":
             filestr = filestr[:-1]

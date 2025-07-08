@@ -27,6 +27,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     population = list(list(p) for p in searchspace.get_random_sample(pop_size))
 
+    population[0] = cost_func.get_start_pos()
+
     for generation in range(generations):
 
         # determine fitness of population members

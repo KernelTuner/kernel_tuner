@@ -1,4 +1,5 @@
 """Bayesian Optimization implementation from the thesis by Willemsen."""
+
 import itertools
 import time
 import warnings
@@ -12,7 +13,8 @@ from scipy.stats.qmc import LatinHypercube
 
 # BO imports
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies.common import CostFunc
+from kernel_tuner.strategies.common import CostFunc, get_options
+from kernel_tuner.util import StopCriterionReached
 
 try:
     from sklearn.gaussian_process import GaussianProcessRegressor
@@ -22,9 +24,25 @@ try:
 except ImportError:
     bayes_opt_present = False
 
-from kernel_tuner import util
+supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"]
 
-supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast"]
+# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
+_options = dict(
+    covariancekernel=(
+        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
+        "matern32",
+    ),
+    covariancelengthscale=("The covariance length scale", 1.5),
+    method=(
+        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
+        "multi-ultrafast",
+    ),
+    samplingmethod=(
+        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
+        "lhs",
+    ),
+    popsize=("Number of initial samples", 20),
+)
 
 
 def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
@@ -92,6 +110,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     :rtype: list(dict()), dict()
 
     """
+    # we don't actually use this for Bayesian Optimization, but it is used to check for unsupported options  
+    get_options(tuning_options.strategy_options, _options, unsupported=["x0"])
+
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
@@ -105,19 +126,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     _, _, eps = cost_func.get_bounds_x0_eps()
 
     # compute cartesian product of all tunable parameters
-    parameter_space = itertools.product(*tune_params.values())
-
-    # check for search space restrictions
-    if searchspace.restrictions is not None:
-        tuning_options.verbose = False
-    parameter_space = filter(lambda p: util.config_valid(p, tuning_options, runner.dev.max_threads), parameter_space)
-    parameter_space = list(parameter_space)
-    if len(parameter_space) < 1:
-        raise ValueError("Empty parameterspace after restrictionscheck. Restrictionscheck is possibly too strict.")
-    if len(parameter_space) == 1:
-        raise ValueError(
-            f"Only one configuration after restrictionscheck. Restrictionscheck is possibly too strict. Configuration: {parameter_space[0]}"
-        )
+    # TODO actually use the Searchspace object properly throughout Bayesian Optimization
+    parameter_space = searchspace.list
 
     # normalize search space to [0,1]
     normalize_dict, denormalize_dict = generate_normalized_param_dicts(tune_params, eps)
@@ -135,47 +145,30 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # initialize and optimize
     try:
         bo = BayesianOptimization(
-            parameter_space, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
+            parameter_space, searchspace, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
         )
-    except util.StopCriterionReached as e:
-        print(
+    except StopCriterionReached:
+        warnings.warn(
             "Stop criterion reached during initialization, was popsize (default 20) greater than max_fevals or the alotted time?"
         )
-        raise e
+        return cost_func.results
+        # raise e
     try:
         if max_fevals - bo.fevals <= 0:
             raise ValueError("No function evaluations left for optimization after sampling")
         bo.optimize(max_fevals)
-    except util.StopCriterionReached as e:
+    except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
 
     return cost_func.results
 
 
-# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
-_options = dict(
-    covariancekernel=(
-        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
-        "matern32",
-    ),
-    covariancelengthscale=("The covariance length scale", 1.5),
-    method=(
-        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
-        "multi-advanced",
-    ),
-    samplingmethod=(
-        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
-        "lhs",
-    ),
-    popsize=("Number of initial samples", 20),
-)
-
-
 class BayesianOptimization:
     def __init__(
         self,
         searchspace: list,
+        searchspace_obj: Searchspace,
         removed_tune_params: list,
         tuning_options: dict,
         normalize_dict: dict,
@@ -199,7 +192,7 @@ class BayesianOptimization:
         # get hyperparameters
         cov_kernel_name = get_hyperparam("covariancekernel", "matern32", self.supported_cov_kernels)
         cov_kernel_lengthscale = get_hyperparam("covariancelengthscale", 1.5)
-        acquisition_function = get_hyperparam("method", "multi-advanced", self.supported_methods)
+        acquisition_function = get_hyperparam("method", "multi-ultrafast", self.supported_methods)
         acq = acquisition_function
         acq_params = get_hyperparam("methodparams", {})
         multi_af_names = get_hyperparam("multi_af_names", ["ei", "poi", "lcb"])
@@ -253,6 +246,7 @@ class BayesianOptimization:
 
         # set remaining values
         self.__searchspace = searchspace
+        self.__searchspace_obj = searchspace_obj
         self.removed_tune_params = removed_tune_params
         self.searchspace_size = len(self.searchspace)
         self.num_dimensions = len(self.dimensions())
@@ -342,6 +336,8 @@ class BayesianOptimization:
             self.optimize = self.__optimize_multi_advanced
         elif acquisition_function == "multi-fast":
             self.optimize = self.__optimize_multi_fast
+        elif acquisition_function == "multi-ultrafast":
+            self.optimize = self.__optimize_multi_ultrafast
         else:
             raise ValueError(
                 "Acquisition function must be one of {}, is {}".format(self.supported_methods, acquisition_function)
@@ -458,7 +454,7 @@ class BayesianOptimization:
         """Evaluates the objective function."""
         param_config = self.unprune_param_config(param_config)
         denormalized_param_config = self.denormalize_param_config(param_config)
-        if not util.config_valid(denormalized_param_config, self.tuning_options, self.max_threads):
+        if not self.__searchspace_obj.is_param_config_valid(denormalized_param_config):
             return self.invalid_value
         val = self.cost_func(param_config)
         self.fevals += 1
@@ -842,6 +838,44 @@ class BayesianOptimization:
                 observation = self.evaluate_objective_function(candidate_params)
                 self.update_after_evaluation(observation, candidate_index, candidate_params)
             self.fit_observations_to_model()
+
+    def __optimize_multi_ultrafast(self, max_fevals, predict_eval_ratio=5):
+        """Optimize with a portfolio of multiple acquisition functions. Predictions are only taken once, or fewer if predictions take too long.
+
+        The `predict_eval_ratio` denotes the ratio between the duration of the predictions and the duration of evaluations, as updating the prediction every evaluation is not efficient when evaluation is quick.
+        Predictions are only updated if the previous evaluation took more than `predict_eval_ratio` * the last prediction duration, or the last prediction is more than `predict_eval_ratio` evaluations ago.
+        """
+        last_prediction_counter = 0
+        last_prediction_time = 0
+        last_eval_time = 0
+        while self.fevals < max_fevals:
+            aqfs = self.multi_afs
+            # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
+            fit_observations = last_prediction_time * predict_eval_ratio <= last_eval_time or last_prediction_counter >= predict_eval_ratio
+            if fit_observations:
+                last_prediction_counter = 0
+                pred_start = time.perf_counter()
+                if last_eval_time > 0.0:
+                    self.fit_observations_to_model()
+                predictions, _, std = self.predict_list(self.unvisited_cache)
+                last_prediction_time = time.perf_counter() - pred_start
+            else:
+                last_prediction_counter += 1
+            eval_start = time.perf_counter()
+            hyperparam = self.contextual_variance(std)
+            if self.__visited_num >= self.searchspace_size:
+                raise ValueError(self.error_message_searchspace_fully_observed)
+            for af in aqfs:
+                if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
+                    break
+                list_of_acquisition_values = af(predictions, hyperparam)
+                best_af = self.argopt(list_of_acquisition_values)
+                del predictions[best_af]  # to avoid going out of bounds
+                candidate_params = self.unvisited_cache[best_af]
+                candidate_index = self.find_param_config_index(candidate_params)
+                observation = self.evaluate_objective_function(candidate_params)
+                self.update_after_evaluation(observation, candidate_index, candidate_params)
+            last_eval_time = time.perf_counter() - eval_start
 
     def af_random(self, predictions=None, hyperparam=None) -> list:
         """Acquisition function returning a randomly shuffled list for comparison."""
