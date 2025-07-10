@@ -130,10 +130,6 @@ class CostFunc:
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
-        if self.encode_non_numeric and not self.scaling:
-            x_numeric = self.params_to_encoded(x)
-        else:
-            x_numeric = x
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug("_cost_func called")
@@ -145,9 +141,7 @@ class CostFunc:
         # snap values in x to nearest actual value for each parameter, unscale x if needed
         if self.snap:
             if self.scaling:
-                params = unscale_and_snap_to_nearest(x_numeric, self.searchspace.tune_params, self.tuning_options.eps)
-                if self.encode_non_numeric and not self.scaling:
-                    params = self.encoded_to_params(params)
+                params = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)
             else:
                 params = snap_to_nearest_config(x, self.searchspace.tune_params)
         else:
@@ -165,10 +159,8 @@ class CostFunc:
 
             if "constraint_aware" in self.tuning_options.strategy_options and self.tuning_options.strategy_options["constraint_aware"]:
                 # attempt to repair
-                new_params = unscale_and_snap_to_nearest_valid(x_numeric, params, self.searchspace, self.tuning_options.eps)
+                new_params = unscale_and_snap_to_nearest_valid(x, params, self.searchspace, self.tuning_options.eps)
                 if new_params:
-                    if self.encode_non_numeric:
-                        new_params = self.encoded_to_params(new_params)
                     params = new_params
                     legal = True
                     x_int = ",".join([str(i) for i in params])
@@ -254,8 +246,12 @@ class CostFunc:
     def get_bounds(self):
         """Create a bounds array from the tunable parameters."""
         bounds = []
-        for values in self.encoded_params_values if self.encode_non_numeric else self.searchspace.params_values:
-            bounds.append((min(values), max(values)))
+        for values in self.searchspace.params_values:
+            try:
+                bounds.append((min(values), max(values)))
+            except TypeError:
+                # if values are not numbers, use the first and last value as bounds
+                bounds.append((values[0], values[-1]))
         return bounds
 
     def encoded_to_params(self, config):
