@@ -172,8 +172,14 @@ def test_parse_method():
 
 @pytest.mark.parametrize("method", supported_methods)
 def test_diff_evo(vector_add, method):
+    restrictions = [
+        "test_string == 'alg_2'", 
+        "test_bool == True", 
+        "test_mixed == 2.45"
+    ]
     result, _ = tune_kernel(
         *vector_add,
+        restrictions=restrictions,
         strategy="diff_evo",
         strategy_options=dict(popsize=5, method=method),
         verbose=True,
