@@ -70,7 +70,7 @@ def indices_to_values(individual_indices, tune_params):
     values = []
     for dim, idx in enumerate(individual_indices):
         values.append(tune_params_list[dim][idx])
-    return np.array(values)
+    return values
 
 
 def parse_method(method):
@@ -103,7 +103,7 @@ def generate_population(tune_params, max_idx, popsize, searchspace, constraint_a
     if constraint_aware:
         samples = LatinHypercube(len(tune_params)).integers(l_bounds=0, u_bounds=max_idx, n=popsize, endpoint=True)
         population = [indices_to_values(sample, tune_params) for sample in samples]
-        population = np.array([repair(individual, searchspace) for individual in population])
+        population = [repair(individual, searchspace) for individual in population]
     else:
         population = []
         for _ in range(popsize):
@@ -111,7 +111,7 @@ def generate_population(tune_params, max_idx, popsize, searchspace, constraint_a
             for key in tune_params:
                 ind.append(random.choice(tune_params[key]))
             population.append(ind)
-        population = np.array(population)
+        population = population
     return population
 
 
@@ -353,7 +353,7 @@ def binomial_crossover(donor_vector, target, CR):
     # Apply crossover
     trial_vector[crossover_points] = donor_vector[crossover_points]
 
-    return trial_vector
+    return list(trial_vector)
 
 
 def exponential_crossover(donor_vector, target, CR):
@@ -378,7 +378,7 @@ def exponential_crossover(donor_vector, target, CR):
         trial_idx[crossover_point] = donor_vector[crossover_point]
         l += 1
 
-    return trial_idx
+    return list(trial_idx)
 
 
 def repair(trial_vector, searchspace):
@@ -393,7 +393,7 @@ def repair(trial_vector, searchspace):
 
             # if we have found valid neighboring configurations, select one at random
             if len(neighbors) > 0:
-                new_trial_vector = np.array(list(random.choice(neighbors)))
+                new_trial_vector = list(random.choice(neighbors))
                 print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired to {new_trial_vector=}")
                 return new_trial_vector
 
