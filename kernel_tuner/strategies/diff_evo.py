@@ -111,7 +111,6 @@ def generate_population(tune_params, max_idx, popsize, searchspace, constraint_a
             for key in tune_params:
                 ind.append(random.choice(tune_params[key]))
             population.append(ind)
-        population = population
     return population
 
 
@@ -224,9 +223,8 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
             if trial_cost <= population_cost[i]:
 
                 # check if trial_vector is not already in population
-                idxs = [idx for idx in range(popsize) if idx != i]
-                if trial_vector not in population[idxs]:
-                    population[i] = np.array(trial_vector)
+                if population.count(trial_vector) == 0:
+                    population[i] = trial_vector
                     population_cost[i] = trial_cost
                     no_change = False
 
@@ -351,7 +349,7 @@ def binomial_crossover(donor_vector, target, CR):
         crossover_points[np.random.randint(0, dimensions)] = True
 
     # Apply crossover
-    trial_vector[crossover_points] = donor_vector[crossover_points]
+    trial_vector[crossover_points] = np.array(donor_vector)[crossover_points]
 
     return list(trial_vector)
 
@@ -375,7 +373,7 @@ def exponential_crossover(donor_vector, target, CR):
     l = 0
     while np.random.rand() < CR and l < dimensions:
         crossover_point = (start_point + l) % dimensions
-        trial_idx[crossover_point] = donor_vector[crossover_point]
+        trial_idx[crossover_point] = np.array(donor_vector)[crossover_point]
         l += 1
 
     return list(trial_idx)
