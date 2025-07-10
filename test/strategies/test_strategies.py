@@ -67,7 +67,11 @@ def test_strategies(vector_add, strategy):
     if strategy != "brute_force":
         filter_options["max_fevals"] = 10
 
-    restrictions = ["test_string == 'alg_2'", "test_bool == True", "test_mixed == 2.45"]
+    restrictions = [
+        "test_string == 'alg_2'", 
+        "test_bool == True", 
+        "test_mixed == 2.45"
+    ]
 
     # pyATF can't handle non-number tune parameters, so we filter them out
     cache_filename_local = cache_filename
@@ -81,6 +85,7 @@ def test_strategies(vector_add, strategy):
 
     # run the tuning in simulation mode
     assert cache_filename_local.exists()
+    assert restrictions is not None
     results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                          verbose=False, cache=cache_filename_local, simulation_mode=True)
 
@@ -123,15 +128,10 @@ def test_strategies(vector_add, strategy):
     x0 = [256]
     filter_options["x0"] = x0
     if not strategy in ["brute_force", "random_sample", "bayes_opt"]:
-        results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+        results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                             verbose=False, cache=cache_filename, simulation_mode=True)
         assert results[0]["block_size_x"] == x0[0]
     else:
         with pytest.raises(ValueError):
-            results, _ = kernel_tuner.tune_kernel(*vector_add, strategy=strategy, strategy_options=filter_options,
+            results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                             verbose=False, cache=cache_filename, simulation_mode=True)
-
-
-
-
-

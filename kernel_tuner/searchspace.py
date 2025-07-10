@@ -5,6 +5,7 @@ from pathlib import Path
 from random import choice, shuffle
 from typing import List, Union
 from warnings import warn
+from copy import deepcopy
 
 import numpy as np
 from constraint import (
@@ -92,10 +93,11 @@ class Searchspace:
         self._tensorspace_param_config_structure = []
         self._map_tensor_to_param = {}
         self._map_param_to_tensor = {}
-        self.restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
-        self.original_restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
+        restrictions = list(restrictions) if not isinstance(restrictions, (list, tuple)) else restrictions
+        self.restrictions = deepcopy(restrictions)
+        self.original_restrictions = deepcopy(restrictions)  # keep the original restrictions, so that the searchspace can be modified later
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
-        self._modified_restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
+        self._modified_restrictions = deepcopy(restrictions)
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
@@ -479,8 +481,9 @@ class Searchspace:
 
     def __add_restrictions(self, parameter_space: Problem) -> Problem:
         """Add the user-specified restrictions as constraints on the parameter space."""
-        if isinstance(self.restrictions, list):
-            for restriction in self.restrictions:
+        restrictions = deepcopy(self.restrictions)
+        if isinstance(restrictions, list):
+            for restriction in restrictions:
                 required_params = self.param_names
 
                 # (un)wrap where necessary
@@ -510,14 +513,14 @@ class Searchspace:
                     raise ValueError(f"Unrecognized restriction type {type(restriction)} ({restriction})")
 
         # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
-        elif callable(self.restrictions):
+        elif callable(restrictions):
 
             def restrictions_wrapper(*args):
-                return check_instance_restrictions(self.restrictions, dict(zip(self.param_names, args)), False)
+                return check_instance_restrictions(restrictions, dict(zip(self.param_names, args)), False)
 
             parameter_space.addConstraint(FunctionConstraint(restrictions_wrapper), self.param_names)
-        elif self.restrictions is not None:
-            raise ValueError(f"The restrictions are of unsupported type {type(self.restrictions)}")
+        elif restrictions is not None:
+            raise ValueError(f"The restrictions are of unsupported type {type(restrictions)}")
         return parameter_space
 
     def __parse_restrictions_pysmt(self, restrictions: list, tune_params: dict, symbols: dict):

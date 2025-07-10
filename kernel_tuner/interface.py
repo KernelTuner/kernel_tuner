@@ -646,7 +646,6 @@ def tune_kernel(
 
         # ensure strategy_options is an Options object
         tuning_options.strategy_options = Options(strategy_options or {})
-
     # if no strategy selected
     else:
         strategy = brute_force
