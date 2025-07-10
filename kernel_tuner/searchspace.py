@@ -93,7 +93,7 @@ class Searchspace:
         self._tensorspace_param_config_structure = []
         self._map_tensor_to_param = {}
         self._map_param_to_tensor = {}
-        restrictions = list(restrictions) if not isinstance(restrictions, (list, tuple)) else restrictions
+        restrictions = [restrictions] if not isinstance(restrictions, (list, tuple)) else restrictions
         self.restrictions = deepcopy(restrictions)
         self.original_restrictions = deepcopy(restrictions)  # keep the original restrictions, so that the searchspace can be modified later
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
@@ -687,7 +687,15 @@ class Searchspace:
 
     def get_param_indices(self, param_config: tuple) -> tuple:
         """For each parameter value in the param config, find the index in the tunable parameters."""
-        return tuple(self.params_values[index].index(param_value) for index, param_value in enumerate(param_config))
+        try:
+            return tuple(self.params_values[index].index(param_value) for index, param_value in enumerate(param_config))
+        except ValueError as e:
+            for index, param_value in enumerate(param_config):
+                if param_value not in self.params_values[index]:
+                    # if the parameter value is not in the list of values for that parameter, raise an error
+                    raise ValueError(
+                        f"Parameter value {param_value} ({type(param_value)}) is not in the list of values {self.params_values[index]}"
+                    ) from e
 
     def get_param_configs_at_indices(self, indices: List[int]) -> List[tuple]:
         """Get the param configs at the given indices."""
@@ -753,9 +761,13 @@ class Searchspace:
         bounds = torch.tensor(bounds, **self.tensor_kwargs)
         self._tensorspace_bounds = torch.cat([bounds[:, 0], bounds[:, 1]]).reshape((2, bounds.shape[0]))
 
+    def has_tensorspace(self) -> bool:
+        """Check if the tensorspace has been initialized."""
+        return self._tensorspace is not None
+
     def get_tensorspace(self):
         """Get the searchspace encoded in a Tensor. To use a non-default dtype or device, call `initialize_tensorspace` first."""
-        if self._tensorspace is None:
+        if not self.has_tensorspace():
             self.initialize_tensorspace()
         return self._tensorspace
 
@@ -800,7 +812,7 @@ class Searchspace:
 
     def get_tensorspace_bounds(self):
         """Get the bounds to the tensorspace parameters, returned as a 2 x d dimensional tensor, and the indices of the parameters."""
-        if self._tensorspace is None:
+        if not self.has_tensorspace():
             self.initialize_tensorspace()
         return self._tensorspace_bounds, self._tensorspace_bounds_indices
 
