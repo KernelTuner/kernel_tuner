@@ -338,7 +338,7 @@ def mutate_de_2(best_idx, randos_idx, F, min_idx, max_idx, best):
 def binomial_crossover(donor_vector, target, CR):
     """Performs binomial crossover of donor_vector with target given crossover rate CR."""
     # Create the trial vector by mixing parameters from the target and donor vectors
-    trial_vector = np.copy(target)
+    trial_vector = target.copy()
     dimensions = len(donor_vector)
 
     # Generate a random array of floats for comparison with the crossover rate CR
@@ -350,9 +350,11 @@ def binomial_crossover(donor_vector, target, CR):
         crossover_points[np.random.randint(0, dimensions)] = True
 
     # Apply crossover
-    trial_vector[crossover_points] = np.array(donor_vector)[crossover_points]
+    for i, d in enumerate(donor_vector):
+        if crossover_points[i]:
+            trial_vector[i] = donor_vector[i]
 
-    return list(trial_vector)
+    return trial_vector
 
 
 def exponential_crossover(donor_vector, target, CR):
@@ -363,7 +365,7 @@ def exponential_crossover(donor_vector, target, CR):
     from the donor vector and the rest from the target vector.
     """
     dimensions = len(target)
-    trial_idx = np.copy(target)
+    trial_vector = target.copy()
 
     # 1. Select a random starting point for the crossover block.
     start_point = np.random.randint(0, dimensions)
@@ -374,10 +376,10 @@ def exponential_crossover(donor_vector, target, CR):
     l = 0
     while np.random.rand() < CR and l < dimensions:
         crossover_point = (start_point + l) % dimensions
-        trial_idx[crossover_point] = np.array(donor_vector)[crossover_point]
+        trial_vector[crossover_point] = donor_vector[crossover_point]
         l += 1
 
-    return list(trial_idx)
+    return trial_vector
 
 
 def repair(trial_vector, searchspace):
