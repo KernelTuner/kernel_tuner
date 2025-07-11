@@ -868,48 +868,21 @@ class Searchspace:
         allowed_index_difference = 1
         allowed_values = [[v] for v in param_config]
         while allowed_index_difference <= max_index_difference:
-            # get the param config indices where the difference is allowed_index_difference or less for each position
-            matching_indices = (np.max(abs_index_difference, axis=1) <= allowed_index_difference).nonzero()[0]
+            # get the param config indices where the difference is at most allowed_index_difference for each position
+            matching_indices = list((np.max(abs_index_difference, axis=1) <= allowed_index_difference).nonzero()[0])
             # as the selected param config does not differ anywhere, remove it from the matches
             if param_config_index is not None:
-                matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
+                matching_indices.remove(param_config_index)
             
             # if there are matching indices, return a random one
             if len(matching_indices) > 0:
                 # get the random index from the matching indices
-                random_neighbor_index = np.random.choice(matching_indices)
+                random_neighbor_index = choice(matching_indices)
                 return self.get_param_configs_at_indices([random_neighbor_index])[0]
 
             # if there are no matching indices, increase the allowed index difference and start over
             allowed_index_difference += 1
         return None
-
-        # alternative implementation
-        # # start at an index difference of 1, progressively increase - potentially expensive if there are no neighbors
-        # allowed_index_difference = 1
-        # allowed_values = [[v] for v in param_config]
-        # while evaluated_configs < self.size:
-        #     # for each parameter, add the allowed values
-        #     for i, value in enumerate(param_config):
-        #         param_values = self.tune_params[i]
-        #         current_index = param_values.index(value)
-
-        #         # add lower neighbor (if exists)
-        #         if current_index - allowed_index_difference >= 0:
-        #             allowed_values[i].append(param_values[current_index - allowed_index_difference])
-        #             neighbor_candidates.append(tuple(lower_neighbor))
-
-        #         # add upper neighbor (if exists)
-        #         if current_index + allowed_index_difference < len(param_values):
-        #             allowed_values[i].append(param_values[current_index + allowed_index_difference])
-
-        #     # create the random list of candidate neighbors (Cartesian product of allowed values)
-        #     from itertools import product
-        #     candidate_neighbors = product(*allowed_values)
-        #     for candidate in candidate_neighbors:
-        #       # check if the candidate has not been previously evaluated
-        #       # check if the candidate neighbors are valid
-        # return None
 
     def __get_neighbors_indices_strictlyadjacent(
         self, param_config_index: int = None, param_config: tuple = None
@@ -926,7 +899,7 @@ class Searchspace:
         matching_indices = (np.max(abs_index_difference, axis=1) <= 1).nonzero()[0]
         # as the selected param config does not differ anywhere, remove it from the matches
         if param_config_index is not None:
-            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
+            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=True)
         return matching_indices
 
     def __get_neighbors_indices_adjacent(self, param_config_index: int = None, param_config: tuple = None) -> List[int]:
@@ -962,7 +935,7 @@ class Searchspace:
         )
         # as the selected param config does not differ anywhere, remove it from the matches
         if param_config_index is not None:
-            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
+            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=True)
         return matching_indices
 
     def __build_neighbors_index(self, neighbor_method) -> List[List[int]]:
@@ -1078,10 +1051,11 @@ class Searchspace:
                 neighbor_method = self.neighbor_method
 
             # find the random neighbor based on the method
-            if neighbor_method == "Hamming":
-                return self.__get_random_neighbor_hamming(param_config)
-            elif neighbor_method == "adjacent":
+            if neighbor_method == "adjacent":
                 return self.__get_random_neighbor_adjacent(param_config)
+            # elif neighbor_method == "Hamming":
+            #   this implementation is not as efficient as just generating all neighbors
+            #     return self.__get_random_neighbor_hamming(param_config)
             else:
                 # not much performance to be gained for strictly-adjacent neighbors, just generate the neighbors
                 neighbors = self.get_neighbors(param_config, neighbor_method)
