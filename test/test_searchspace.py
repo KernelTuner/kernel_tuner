@@ -246,7 +246,15 @@ def test_neighbors_hamming():
         (3, 4, 'string_1'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "Hamming")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "Hamming")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "Hamming")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
 
 
 def test_neighbors_strictlyadjacent():
@@ -259,7 +267,15 @@ def test_neighbors_strictlyadjacent():
         (1.5, 5.5, 'string_2'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "strictly-adjacent")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "strictly-adjacent")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "strictly-adjacent")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
 
 
 def test_neighbors_adjacent():
@@ -272,7 +288,15 @@ def test_neighbors_adjacent():
         (1.5, 5.5, 'string_2'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "adjacent")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "adjacent")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "adjacent")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
 
 
 def test_neighbors_fictious():
