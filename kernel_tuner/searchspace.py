@@ -826,6 +826,91 @@ class Searchspace:
         matching_indices = (num_matching_params == self.num_params - 1).nonzero()[0]
         return matching_indices
 
+    def __get_random_neighbor_hamming(self, param_config: tuple) -> tuple:
+        """Get a random neighbor at 1 Hamming distance from the parameter configuration."""
+        arr = self.get_list_numpy()
+        target = np.array(param_config)
+        assert arr[0].shape == target.shape
+
+        # find the first row that differs from the target in exactly one column, return as soon as one is found
+        random_order_indices = np.random.permutation(arr.shape[0])
+        for i in random_order_indices:
+            # assert arr[i].shape == target.shape, f"Row {i} shape {arr[i].shape} does not match target shape {target.shape}"
+            if np.count_nonzero(arr[i] != target) == 1:
+                return self.get_param_configs_at_indices([i])[0]
+        return None
+
+    def __get_random_neighbor_adjacent(self, param_config: tuple) -> tuple:
+        """Get an approximately random adjacent neighbor of the parameter configuration."""
+        # NOTE: this is not truly random as we only progressively increase the allowed index difference if no neighbors are found, but much faster than generating all neighbors
+
+        # get the indices of the parameter values
+        if self.params_values_indices is None:
+            self.__prepare_neighbors_index()
+        param_config_index = self.get_param_config_index(param_config)
+        param_config_value_indices = (
+            self.get_param_indices(param_config)
+            if param_config_index is None
+            else self.params_values_indices[param_config_index]
+        )
+        max_index_difference_per_param = [max(len(self.params_values[p]) - 1 - i, i) for p, i in enumerate(param_config_value_indices)]
+
+        # calculate the absolute difference between the parameter value indices
+        abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices)
+
+        # calculate the difference between the parameter value indices
+        index_difference = np.abs(self.params_values_indices - param_config_value_indices)
+        # transpose to get the param indices difference per parameter instead of per param config
+        index_difference_transposed = index_difference.transpose()
+
+        # start at an index difference of 1, progressively increase - potentially expensive if there are no neighbors until very late
+        max_index_difference = max(max_index_difference_per_param)
+        allowed_index_difference = 1
+        allowed_values = [[v] for v in param_config]
+        while allowed_index_difference <= max_index_difference:
+            # get the param config indices where the difference is allowed_index_difference or less for each position
+            matching_indices = (np.max(abs_index_difference, axis=1) <= allowed_index_difference).nonzero()[0]
+            # as the selected param config does not differ anywhere, remove it from the matches
+            if param_config_index is not None:
+                matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
+            
+            # if there are matching indices, return a random one
+            if len(matching_indices) > 0:
+                # get the random index from the matching indices
+                random_neighbor_index = np.random.choice(matching_indices)
+                return self.get_param_configs_at_indices([random_neighbor_index])[0]
+
+            # if there are no matching indices, increase the allowed index difference and start over
+            allowed_index_difference += 1
+        return None
+
+        # alternative implementation
+        # # start at an index difference of 1, progressively increase - potentially expensive if there are no neighbors
+        # allowed_index_difference = 1
+        # allowed_values = [[v] for v in param_config]
+        # while evaluated_configs < self.size:
+        #     # for each parameter, add the allowed values
+        #     for i, value in enumerate(param_config):
+        #         param_values = self.tune_params[i]
+        #         current_index = param_values.index(value)
+
+        #         # add lower neighbor (if exists)
+        #         if current_index - allowed_index_difference >= 0:
+        #             allowed_values[i].append(param_values[current_index - allowed_index_difference])
+        #             neighbor_candidates.append(tuple(lower_neighbor))
+
+        #         # add upper neighbor (if exists)
+        #         if current_index + allowed_index_difference < len(param_values):
+        #             allowed_values[i].append(param_values[current_index + allowed_index_difference])
+
+        #     # create the random list of candidate neighbors (Cartesian product of allowed values)
+        #     from itertools import product
+        #     candidate_neighbors = product(*allowed_values)
+        #     for candidate in candidate_neighbors:
+        #       # check if the candidate has not been previously evaluated
+        #       # check if the candidate neighbors are valid
+        # return None
+
     def __get_neighbors_indices_strictlyadjacent(
         self, param_config_index: int = None, param_config: tuple = None
     ) -> List[int]:
@@ -981,6 +1066,28 @@ class Searchspace:
     def get_neighbors(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[tuple]:
         """Get the neighbors for a parameter configuration."""
         return self.get_param_configs_at_indices(self.get_neighbors_indices(param_config, neighbor_method, build_full_cache))
+
+    def get_random_neighbor(self, param_config: tuple, neighbor_method=None) -> tuple:
+        """Get an approximately random neighbor for a parameter configuration. Much faster than taking a random choice of all neighbors, but does not build cache."""
+        if self.are_neighbors_indices_cached(param_config, neighbor_method):
+            neighbors = self.get_neighbors(param_config, neighbor_method)
+            return choice(neighbors)
+        else:
+            # check if there is a neighbor method to use
+            if neighbor_method is None:
+                neighbor_method = self.neighbor_method
+
+            # find the random neighbor based on the method
+            if neighbor_method == "Hamming":
+                return self.__get_random_neighbor_hamming(param_config)
+            elif neighbor_method == "adjacent":
+                return self.__get_random_neighbor_adjacent(param_config)
+            else:
+                # not much performance to be gained for strictly-adjacent neighbors, just generate the neighbors
+                neighbors = self.get_neighbors(param_config, neighbor_method)
+                if len(neighbors) == 0:
+                    return None
+                return choice(neighbors)
 
     def get_param_neighbors(self, param_config: tuple, index: int, neighbor_method: str, randomize: bool) -> list:
         """Get the neighboring parameters at an index."""
