@@ -1,13 +1,11 @@
 """Module for functionality that is commonly used throughout the strategies."""
 
 import logging
-import numbers
 import sys
 from time import perf_counter
 
 import numpy as np
 from scipy.spatial import distance
-import numbers
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
@@ -62,11 +60,6 @@ def get_options(strategy_options, options, unsupported=None):
     return [strategy_options.get(opt, default) for opt, (_, default) in options.items()]
 
 
-def is_number(value) -> bool:
-    """Check if a value is a real number (false on booleans and complex numbers)."""
-    return isinstance(value, numbers.Real) and not isinstance(value, bool)
-
-
 class CostFunc:
     """Class encapsulating the CostFunc method."""
 
@@ -78,7 +71,6 @@ class CostFunc:
         *,
         scaling=False,
         snap=True,
-        encode_non_numeric=None,
         return_invalid=False,
         return_raw=None,
     ):
@@ -90,7 +82,6 @@ class CostFunc:
             runner: the runner to use.
             scaling: whether to internally scale parameter values. Defaults to False.
             snap: whether to snap given configurations to their closests equivalent in the space. Defaults to True.
-            encode_non_numeric: whether to encode non-numeric parameter values. Defaults to None, meaning it is applied when necessary.
             return_invalid: whether to return the util.ErrorConfig of an invalid configuration. Defaults to False.
             return_raw: returns (result, results[raw]). Key inferred from objective if set to True. Defaults to None.
         """
@@ -103,7 +94,6 @@ class CostFunc:
         self.runner = runner
         self.scaling = scaling
         self.snap = snap
-        self.encode_non_numeric = encode_non_numeric if encode_non_numeric is not None else not all([all(is_number(v) for v in param_values) for param_values in self.searchspace.params_values])
         self.return_invalid = return_invalid
         self.return_raw = return_raw
         if return_raw is True:
@@ -111,21 +101,6 @@ class CostFunc:
         self.results = []
         self.budget_spent_fraction = 0.0
 
-        # if enabled, encode non-numeric parameter values as a numeric value
-        # NOTE careful, this shouldn't conflict with Searchspace tensorspace
-        if self.encode_non_numeric:
-            self._map_param_to_encoded = {}
-            self._map_encoded_to_param = {}
-            self.encoded_params_values = []
-            for i, param_values in enumerate(self.searchspace.params_values):
-                encoded_values = param_values
-                if not all(is_number(v) for v in param_values):
-                    encoded_values = np.arange(
-                        len(param_values)
-                    )  # NOTE when changing this, adjust the rounding in encoded_to_params
-                    self._map_param_to_encoded[i] = dict(zip(param_values, encoded_values))
-                    self._map_encoded_to_param[i] = dict(zip(encoded_values, param_values))
-                self.encoded_params_values.append(encoded_values)
 
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
@@ -253,41 +228,6 @@ class CostFunc:
                 # if values are not numbers, use the first and last value as bounds
                 bounds.append((values[0], values[-1]))
         return bounds
-
-    def encoded_to_params(self, config):
-        """Convert from an encoded configuration to the real parameters."""
-        if not self.encode_non_numeric:
-            raise ValueError("'encode_non_numeric' must be set to true to use this function.")
-        params = []
-        for i, v in enumerate(config):
-            # params.append(self._map_encoded_to_param[i][v] if i in self._map_encoded_to_param else v)
-            if i in self._map_encoded_to_param:
-                encoding = self._map_encoded_to_param[i]
-                if v in encoding:
-                    param = encoding[v]
-                elif isinstance(v, float):
-                    # try to resolve a rounding error due to floating point arithmetic / continous solver
-                    param = encoding[round(v)]
-                else:
-                    raise ValueError(f"Encoded value {v} not found in {self._map_encoded_to_param[i]}")
-            else:
-                param = v
-            params.append(param)
-        assert len(params) == len(config)
-        return params
-
-    def params_to_encoded(self, config):
-        """Convert from a parameter configuration to the encoded configuration."""
-        if not self.encode_non_numeric:
-            raise ValueError("'encode_non_numeric' must be set to true to use this function.")
-        encoded = []
-        for i, v in enumerate(config):
-            try:
-                encoded.append(self._map_param_to_encoded[i][v] if i in self._map_param_to_encoded else v)
-            except KeyError:
-                raise KeyError(f"{config} parameter value {v} not found in {self._map_param_to_encoded} for parameter {i}.")
-        assert len(encoded) == len(config)
-        return encoded
 
 
 def setup_method_arguments(method, bounds):
