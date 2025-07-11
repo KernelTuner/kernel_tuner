@@ -6,6 +6,7 @@ from random import choice, shuffle
 from typing import List, Union
 from warnings import warn
 from copy import deepcopy
+from collections import defaultdict
 
 import numpy as np
 from constraint import (
@@ -104,6 +105,7 @@ class Searchspace:
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
         self.__neighbor_cache = { method: dict() for method in supported_neighbor_methods }
+        self.__neighbor_partial_cache = { method: defaultdict(list) for method in supported_neighbor_methods }
         self.neighbors_index = dict()
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
@@ -837,6 +839,7 @@ class Searchspace:
         for i in random_order_indices:
             # assert arr[i].shape == target.shape, f"Row {i} shape {arr[i].shape} does not match target shape {target.shape}"
             if np.count_nonzero(arr[i] != target) == 1:
+                self.__add_to_neighbor_partial_cache(param_config, [i], full_neighbors=False)
                 return self.get_param_configs_at_indices([i])[0]
         return None
 
@@ -876,13 +879,32 @@ class Searchspace:
             
             # if there are matching indices, return a random one
             if len(matching_indices) > 0:
-                # get the random index from the matching indices
+                self.__add_to_neighbor_partial_cache(param_config, matching_indices, full_neighbors=allowed_index_difference == max_index_difference)
+                
+                # get a random index from the matching indices
                 random_neighbor_index = choice(matching_indices)
                 return self.get_param_configs_at_indices([random_neighbor_index])[0]
 
             # if there are no matching indices, increase the allowed index difference and start over
             allowed_index_difference += 1
         return None
+
+    def __add_to_neighbor_partial_cache(self, param_config: tuple, neighbor_indices: List[int], neighbor_method: str, full_neighbors = False):
+        """Add the neighbor indices to the partial cache using the given parameter configuration."""
+        param_config_index = self.get_param_config_index(param_config)
+        if param_config_index is None:
+            return  # we need a valid parameter configuration to add to the cache
+        # add the indices to the partial cache for the parameter configuration
+        if full_neighbors:
+            self.__neighbor_partial_cache[neighbor_method][param_config_index] = neighbor_indices
+        else:
+            for neighbor_index in neighbor_indices:
+                if neighbor_index not in self.__neighbor_partial_cache[neighbor_method][param_config_index]:
+                    self.__neighbor_partial_cache[neighbor_method][param_config_index].append(neighbor_index)
+        # add the parameter configuration index to the partial cache for each neighbor
+        for neighbor_index in neighbor_indices:
+            if param_config_index not in self.__neighbor_partial_cache[neighbor_method][neighbor_index]:
+                self.__neighbor_partial_cache[neighbor_method][neighbor_index].append(param_config_index)
 
     def __get_neighbors_indices_strictlyadjacent(
         self, param_config_index: int = None, param_config: tuple = None
@@ -1022,6 +1044,10 @@ class Searchspace:
         if neighbors is None:
             neighbors = self.get_neighbors_indices_no_cache(param_config, neighbor_method, build_full_cache)
             self.__neighbor_cache[neighbor_method][param_config] = neighbors
+            self.__add_to_neighbor_partial_cache(param_config, neighbors, neighbor_method, full_neighbors=True)
+            if neighbor_method == "strictly-adjacent":
+                # any neighbor in strictly-adjacent is also an adjacent neighbor
+                self.__add_to_neighbor_partial_cache(param_config, neighbors, "adjacent", full_neighbors=False)
         return neighbors
 
     def are_neighbors_indices_cached(self, param_config: tuple, neighbor_method=None) -> bool:
@@ -1040,28 +1066,65 @@ class Searchspace:
         """Get the neighbors for a parameter configuration."""
         return self.get_param_configs_at_indices(self.get_neighbors_indices(param_config, neighbor_method, build_full_cache))
 
-    def get_random_neighbor(self, param_config: tuple, neighbor_method=None) -> tuple:
-        """Get an approximately random neighbor for a parameter configuration. Much faster than taking a random choice of all neighbors, but does not build cache."""
+    def get_partial_neighbors_indices(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
+        """Get the partial neighbors for a parameter configuration."""
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+        param_config_index = self.get_param_config_index(param_config)
+        if param_config_index is None or param_config_index not in self.__neighbor_partial_cache[neighbor_method]:
+            return []
+        return self.get_param_configs_at_indices(self.__neighbor_partial_cache[neighbor_method][param_config_index])
+
+    def pop_random_partial_neighbor(self, param_config: tuple, neighbor_method=None, threshold=2) -> tuple:
+        """Pop a random partial neighbor for a given a parameter configuration if there are at least `threshold` neighbors."""
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+        param_config_index = self.get_param_config_index(param_config)
+        if param_config_index is None or param_config_index not in self.__neighbor_partial_cache[neighbor_method]:
+            return None
+        partial_neighbors = self.get_param_configs_at_indices(self.__neighbor_partial_cache[neighbor_method][param_config_index])
+        if len(partial_neighbors) < threshold:
+            return None
+        partial_neighbor_index = choice(range(len(partial_neighbors)))
+        random_neighbor = self.__neighbor_partial_cache[neighbor_method][param_config_index].pop(partial_neighbor_index)
+        return self.get_param_configs_at_indices([random_neighbor])[0]
+
+    def get_random_neighbor(self, param_config: tuple, neighbor_method=None, use_partial_cache=True) -> tuple:
+        """Get an approximately random neighbor for a parameter configuration. Much faster than taking a random choice of all neighbors, but does not build full cache."""
         if self.are_neighbors_indices_cached(param_config, neighbor_method):
             neighbors = self.get_neighbors(param_config, neighbor_method)
             return choice(neighbors) if len(neighbors) > 0 else None
-        else:
-            # check if there is a neighbor method to use
+        elif use_partial_cache:
+            # pop the chosen neighbor from the cache to avoid choosing it again until it is re-added
+            random_neighbor = self.pop_random_partial_neighbor(param_config, neighbor_method)
+            if random_neighbor is not None:
+                return random_neighbor
+    
+        # check if there is a neighbor method to use
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
             if neighbor_method is None:
-                neighbor_method = self.neighbor_method
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
 
-            # find the random neighbor based on the method
-            if neighbor_method == "adjacent":
-                return self.__get_random_neighbor_adjacent(param_config)
-            # elif neighbor_method == "Hamming":
-            #   this implementation is not as efficient as just generating all neighbors
-            #     return self.__get_random_neighbor_hamming(param_config)
-            else:
-                # not much performance to be gained for strictly-adjacent neighbors, just generate the neighbors
-                neighbors = self.get_neighbors(param_config, neighbor_method)
-                if len(neighbors) == 0:
-                    return None
-                return choice(neighbors)
+        # oddly enough, the custom random neighbor methods are not faster than just generating all neighbor + partials
+        # # find the random neighbor based on the method
+        # if neighbor_method == "adjacent":
+        #     return self.__get_random_neighbor_adjacent(param_config)
+        # elif neighbor_method == "Hamming":
+        #   this implementation is not as efficient as just generating all neighbors
+        #     return self.__get_random_neighbor_hamming(param_config)
+        # # else:
+        #    # not much performance to be gained for strictly-adjacent neighbors, just generate the neighbors
+
+        # calculate the full neighbors and return a random one
+        neighbors = self.get_neighbors(param_config, neighbor_method)
+        if len(neighbors) == 0:
+            return None
+        return choice(neighbors)
 
     def get_param_neighbors(self, param_config: tuple, index: int, neighbor_method: str, randomize: bool) -> list:
         """Get the neighboring parameters at an index."""

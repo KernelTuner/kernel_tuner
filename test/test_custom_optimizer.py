@@ -16,6 +16,7 @@ class HybridDELocalRefinement(OptAlg):
 
     def __init__(self):
         super().__init__()
+        self.costfunc_kwargs = {"scaling": True, "snap": True}
         # You can adjust these hyperparameters based on experimentation/tuning:
         self.F = 0.8        # Differential weight
         self.CR = 0.9       # Crossover probability

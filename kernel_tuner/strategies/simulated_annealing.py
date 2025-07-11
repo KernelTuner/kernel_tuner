@@ -116,10 +116,6 @@ def neighbor(pos, searchspace: Searchspace, constraint_aware=True):
 
     def random_neighbor(pos, method):
         """Helper method to return a random neighbor."""
-        # neighbors = searchspace.get_neighbors(pos, neighbor_method=method)
-        # if not neighbors:
-        #     return pos
-        # return random.choice(neighbors)
         neighbor = searchspace.get_random_neighbor(pos, neighbor_method=method)
         if neighbor is None:
             return pos
