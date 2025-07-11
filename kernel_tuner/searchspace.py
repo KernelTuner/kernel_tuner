@@ -839,7 +839,7 @@ class Searchspace:
         for i in random_order_indices:
             # assert arr[i].shape == target.shape, f"Row {i} shape {arr[i].shape} does not match target shape {target.shape}"
             if np.count_nonzero(arr[i] != target) == 1:
-                self.__add_to_neighbor_partial_cache(param_config, [i], full_neighbors=False)
+                self.__add_to_neighbor_partial_cache(param_config, [i], "Hamming", full_neighbors=False)
                 return self.get_param_configs_at_indices([i])[0]
         return None
 
@@ -879,7 +879,7 @@ class Searchspace:
             
             # if there are matching indices, return a random one
             if len(matching_indices) > 0:
-                self.__add_to_neighbor_partial_cache(param_config, matching_indices, full_neighbors=allowed_index_difference == max_index_difference)
+                self.__add_to_neighbor_partial_cache(param_config, matching_indices, "adjacent", full_neighbors=allowed_index_difference == max_index_difference)
                 
                 # get a random index from the matching indices
                 random_neighbor_index = choice(matching_indices)
