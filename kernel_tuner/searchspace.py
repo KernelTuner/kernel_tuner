@@ -1044,7 +1044,7 @@ class Searchspace:
         """Get an approximately random neighbor for a parameter configuration. Much faster than taking a random choice of all neighbors, but does not build cache."""
         if self.are_neighbors_indices_cached(param_config, neighbor_method):
             neighbors = self.get_neighbors(param_config, neighbor_method)
-            return choice(neighbors)
+            return choice(neighbors) if len(neighbors) > 0 else None
         else:
             # check if there is a neighbor method to use
             if neighbor_method is None:

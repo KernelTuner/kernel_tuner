@@ -155,17 +155,14 @@ class GeneticAlgorithm:
         return [population[ind][0] for ind in chosen]
 
 
-    def mutate(self, dna, cache=False):
+    def mutate(self, dna):
         """Mutate DNA with 1/mutation_chance chance."""
         # this is actually a neighbors problem with Hamming distance, choose randomly from returned searchspace list
         if int(random.random() * self.mutation_chance) == 0:
             if self.constraint_aware:
-                if cache:
-                    neighbors = self.searchspace.get_neighbors(tuple(dna), neighbor_method="Hamming")
-                else:
-                    neighbors = self.searchspace.get_neighbors_no_cache(tuple(dna), neighbor_method="Hamming")
-                if len(neighbors) > 0:
-                    return list(random.choice(neighbors))
+                neighbor = self.searchspace.get_random_neighbor(tuple(dna), neighbor_method="Hamming")
+                if neighbor is not None:
+                    return list(neighbor)
             else:
                 # select a tunable parameter at random
                 mutate_index = random.randint(0, len(self.tune_params)-1)
@@ -187,13 +184,11 @@ class GeneticAlgorithm:
             # search for valid configurations neighboring this config
             # start from strictly-adjacent to increasingly allowing more neighbors
             for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
-                neighbors = self.searchspace.get_neighbors(tuple(dna), neighbor_method=neighbor_method)
-
+                neighbor = self.searchspace.get_random_neighbor(tuple(dna), neighbor_method=neighbor_method)
                 # if we have found valid neighboring configurations, select one at random
-                if len(neighbors) > 0:
-                    new_dna = list(random.choice(neighbors))
-                    # print(f"GA crossover resulted in invalid config {dna=}, repaired dna to {new_dna=}")
-                    return new_dna
+                if neighbor is not None:
+                    # print(f"GA crossover resulted in invalid config {dna=}, repaired dna to {neighbor=}")
+                    return list(neighbor)
 
         return dna
 

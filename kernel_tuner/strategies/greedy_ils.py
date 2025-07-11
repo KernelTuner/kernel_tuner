@@ -60,8 +60,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 tune.__doc__ = common.get_strategy_docstring("Greedy Iterative Local Search (ILS)", _options)
 
 def mutate(indiv, searchspace: Searchspace):
-    neighbors = searchspace.get_neighbors(tuple(indiv), neighbor_method="Hamming")
-    return list(random_choice(neighbors))
+    return list(searchspace.get_random_neighbor(tuple(indiv), neighbor_method="Hamming"))
 
 
 def random_walk(indiv, permutation_size, no_improve, last_improve, searchspace: Searchspace):
