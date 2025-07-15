@@ -83,7 +83,7 @@ class SimulationRunner(Runner):
 
         results = []
 
-        # iterate over parameter space
+        # iterate over parameter space 
         for element in parameter_space:
 
             # check if element is in the cache

@@ -39,7 +39,7 @@ def test_cost_func():
     assert time == 5
 
     # check if restrictions are properly handled
-    def restrictions(_):
+    def restrictions(x, y):
         return False
     tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
                              restrictions=restrictions, strategy_options={},

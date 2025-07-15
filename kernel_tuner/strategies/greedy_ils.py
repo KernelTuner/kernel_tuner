@@ -32,7 +32,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
     #while searching
-    candidate = searchspace.get_random_sample(1)[0]
+    candidate = cost_func.get_start_pos()
     best_score = cost_func(candidate, check_restrictions=False)
 
     last_improvement = 0
@@ -60,8 +60,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 tune.__doc__ = common.get_strategy_docstring("Greedy Iterative Local Search (ILS)", _options)
 
 def mutate(indiv, searchspace: Searchspace):
-    neighbors = searchspace.get_neighbors_no_cache(tuple(indiv), neighbor_method="Hamming")
-    return list(random_choice(neighbors))
+    return list(searchspace.get_random_neighbor(tuple(indiv), neighbor_method="Hamming"))
 
 
 def random_walk(indiv, permutation_size, no_improve, last_improve, searchspace: Searchspace):
