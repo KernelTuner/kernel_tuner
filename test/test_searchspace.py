@@ -246,7 +246,15 @@ def test_neighbors_hamming():
         (3, 4, 'string_1'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "Hamming")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "Hamming")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "Hamming")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
 
 
 def test_neighbors_strictlyadjacent():
@@ -259,7 +267,15 @@ def test_neighbors_strictlyadjacent():
         (1.5, 5.5, 'string_2'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "strictly-adjacent")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "strictly-adjacent")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "strictly-adjacent")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
 
 
 def test_neighbors_adjacent():
@@ -272,7 +288,15 @@ def test_neighbors_adjacent():
         (1.5, 5.5, 'string_2'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "adjacent")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "adjacent")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "adjacent")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
 
 
 def test_neighbors_fictious():
@@ -318,6 +342,34 @@ def test_neighbors_cached():
         assert simple_searchspace_duplicate.are_neighbors_indices_cached(test_config)
         neighbors_2 = simple_searchspace_duplicate.get_neighbors(test_config)
         assert neighbors == neighbors_2
+
+
+def test_neighbors_cached_mixed_methods():
+    """Test whether retrieving a set of neighbors with one method after another yields the correct neighbors."""
+    simple_searchspace_duplicate = Searchspace(
+        simple_tuning_options.tune_params,
+        simple_tuning_options.restrictions,
+        max_threads,
+    )
+
+    test_configs = simple_searchspace_duplicate.get_random_sample(5)
+    for test_config in test_configs:
+        assert not simple_searchspace_duplicate.are_neighbors_indices_cached(test_config, "Hamming")
+        neighbors_hamming = simple_searchspace_duplicate.get_neighbors(test_config, "Hamming")
+        assert simple_searchspace_duplicate.are_neighbors_indices_cached(test_config, "Hamming")
+
+        # now switch to a different method
+        neighbors_strictlyadjacent = simple_searchspace_duplicate.get_neighbors(test_config, "strictly-adjacent")
+        neighbors_strictlyadjacent_no_cache = simple_searchspace_duplicate.get_neighbors_no_cache(test_config, "strictly-adjacent")
+
+        neighbors_adjacent = simple_searchspace_duplicate.get_neighbors(test_config, "adjacent")
+        neighbors_adjacent_no_cache = simple_searchspace_duplicate.get_neighbors_no_cache(test_config, "adjacent")
+
+        # check that the neighbors are as expected
+        assert neighbors_strictlyadjacent == neighbors_strictlyadjacent_no_cache
+        assert neighbors_adjacent == neighbors_adjacent_no_cache
+        assert neighbors_hamming != neighbors_strictlyadjacent
+        assert neighbors_hamming != neighbors_adjacent
 
 
 def test_param_neighbors():

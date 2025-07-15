@@ -5,6 +5,8 @@ from pathlib import Path
 from random import choice, shuffle
 from typing import List, Union
 from warnings import warn
+from copy import deepcopy
+from collections import defaultdict
 
 import numpy as np
 from constraint import (
@@ -31,6 +33,7 @@ except ImportError:
 from kernel_tuner.util import check_restrictions as check_instance_restrictions
 from kernel_tuner.util import (
     compile_restrictions,
+    convert_constraint_lambdas,
     default_block_size_names,
     get_interval,
 )
@@ -47,6 +50,7 @@ class Searchspace:
         restrictions,
         max_threads: int,
         block_size_names=default_block_size_names,
+        defer_construction=False,
         build_neighbors_index=False,
         neighbor_method=None,
         from_cache: dict = None,
@@ -62,6 +66,7 @@ class Searchspace:
             Hamming: any parameter config with 1 different parameter value is a neighbor
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         Optionally an imported cache can be used instead with `from_cache`, in which case the `tune_params`, `restrictions` and `max_threads` arguments can be set to None, and construction is skipped.
+        Optionally construction can be deffered to a later time by setting `defer_construction` to True, in which case the searchspace is not built on instantiation (experimental).
         """
         # check the arguments
         if from_cache is not None:
@@ -76,6 +81,9 @@ class Searchspace:
         framework_l = framework.lower()
         restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
+        self.original_tune_params = tune_params.copy() if hasattr(tune_params, "copy") else tune_params
+        self.max_threads = max_threads
+        self.block_size_names = block_size_names
         self._tensorspace = None
         self.tensor_dtype = torch.float32 if torch_available else None
         self.tensor_device = torch.device("cpu") if torch_available else None
@@ -86,15 +94,19 @@ class Searchspace:
         self._tensorspace_param_config_structure = []
         self._map_tensor_to_param = {}
         self._map_param_to_tensor = {}
-        self.restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
+        restrictions = [restrictions] if not isinstance(restrictions, (list, tuple)) else restrictions
+        self.restrictions = deepcopy(restrictions)
+        self.original_restrictions = deepcopy(restrictions)  # keep the original restrictions, so that the searchspace can be modified later
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
-        self._modified_restrictions = restrictions.copy() if hasattr(restrictions, "copy") else restrictions
+        self._modified_restrictions = deepcopy(restrictions)
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
-        self.__neighbor_cache = dict()
+        self.__neighbor_cache = { method: dict() for method in supported_neighbor_methods }
+        self.__neighbor_partial_cache = { method: defaultdict(list) for method in supported_neighbor_methods }
+        self.neighbors_index = dict()
         self.neighbor_method = neighbor_method
         if (neighbor_method is not None or build_neighbors_index) and neighbor_method not in supported_neighbor_methods:
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
@@ -110,7 +122,7 @@ class Searchspace:
                 )
             )
             and not (
-                framework_l == "pysmt" or framework_l == "bruteforce" or solver_method.lower() == "pc_parallelsolver"
+                framework_l == "pysmt" or framework_l == "bruteforce" or framework_l == "pythonconstraint" or solver_method.lower() == "pc_parallelsolver"
             )
         ):
             self.restrictions = compile_restrictions(
@@ -118,7 +130,6 @@ class Searchspace:
                 tune_params,
                 monolithic=False,
                 format=framework_l if framework_l == "pyatf" else None,
-                try_to_constraint=framework_l == "pythonconstraint",
             )
 
         # if an imported cache, skip building and set the values directly
@@ -159,17 +170,19 @@ class Searchspace:
             else:
                 raise ValueError(f"Solver method {solver_method} not recognized.")
 
-            # build the search space
-            self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
+            if not defer_construction:
+                # build the search space
+                self.list, self.__dict, self.size = searchspace_builder(block_size_names, max_threads, solver)
 
         # finalize construction
-        self.__numpy = None
-        self.num_params = len(self.tune_params)
-        self.indices = np.arange(self.size)
-        if neighbor_method is not None and neighbor_method != "Hamming":
-            self.__prepare_neighbors_index()
-        if build_neighbors_index:
-            self.neighbors_index = self.__build_neighbors_index(neighbor_method)
+        if not defer_construction:
+            self.__numpy = None
+            self.num_params = len(self.tune_params)
+            self.indices = np.arange(self.size)
+            if neighbor_method is not None and neighbor_method != "Hamming":
+                self.__prepare_neighbors_index()
+            if build_neighbors_index:
+                self.neighbors_index[neighbor_method] = self.__build_neighbors_index(neighbor_method)
 
     # def __build_searchspace_ortools(self, block_size_names: list, max_threads: int) -> Tuple[List[tuple], np.ndarray, dict, int]:
     #     # Based on https://developers.google.com/optimization/cp/cp_solver#python_2
@@ -317,14 +330,15 @@ class Searchspace:
 
         return self.__parameter_space_list_to_lookup_and_return_type(parameter_space_list)
 
-    def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
-        """Builds the searchspace using pyATF."""
-        from pyatf import TP, Interval, Set, Tuner
-        from pyatf.cost_functions.generic import CostFunction
-        from pyatf.search_techniques import Exhaustive
+    def get_tune_params_pyatf(self, block_size_names: list = None, max_threads: int = None):
+        """Convert the tune_params and restrictions to pyATF tunable parameters."""
+        from pyatf import TP, Interval, Set
 
-        # Define a bogus cost function
-        costfunc = CostFunction(":")  # bash no-op
+        # if block_size_names or max_threads are not specified, use the defaults
+        if block_size_names is None:
+            block_size_names = self.block_size_names
+        if max_threads is None:
+            max_threads = self.max_threads
 
         # add the Kernel Tuner default blocksize threads restrictions
         assert isinstance(self.restrictions, list)
@@ -335,9 +349,7 @@ class Searchspace:
             # adding the default blocksize restriction requires recompilation because pyATF requires combined restrictions for the same parameter
             max_block_size_product = f"{' * '.join(valid_block_size_names)} <= {max_threads}"
             restrictions = self._modified_restrictions.copy() + [max_block_size_product]
-            self.restrictions = compile_restrictions(
-                restrictions, self.tune_params, format="pyatf", try_to_constraint=False
-            )
+            self.restrictions = compile_restrictions(restrictions, self.tune_params, format="pyatf")
 
         # build a dictionary of the restrictions, combined based on last parameter
         res_dict = dict()
@@ -358,28 +370,41 @@ class Searchspace:
                     registered_restrictions.append(index)
 
         # define the Tunable Parameters
-        def get_params():
-            params = list()
-            for index, (key, values) in enumerate(self.tune_params.items()):
-                vi = get_interval(values)
-                vals = (
-                    Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
-                )
-                constraint = res_dict.get(key, None)
-                constraint_source = None
-                if constraint is not None:
-                    constraint, constraint_source = constraint
-                # in case of a leftover monolithic restriction, append at the last parameter
-                if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
-                    res, params, source = self.restrictions[0]
-                    assert callable(res)
-                    constraint = res
-                params.append(TP(key, vals, constraint, constraint_source))
-            return params
+        params = list()
+        for index, (key, values) in enumerate(self.tune_params.items()):
+            vi = get_interval(values)
+            vals = (
+                Interval(vi[0], vi[1], vi[2]) if vi is not None and vi[2] != 0 else Set(*np.array(values).flatten())
+            )
+            assert vals is not None, f"Values for parameter {key} are None, this should not happen."
+            constraint = res_dict.get(key, None)
+            constraint_source = None
+            if constraint is not None:
+                constraint, constraint_source = constraint
+            # in case of a leftover monolithic restriction, append at the last parameter
+            if index == len(self.tune_params) - 1 and len(res_dict) == 0 and len(self.restrictions) == 1:
+                res, params, source = self.restrictions[0]
+                assert callable(res)
+                constraint = res
+            params.append(TP(key, vals, constraint, constraint_source))
+        return params
+
+
+    def __build_searchspace_pyATF(self, block_size_names: list, max_threads: int, solver: Solver):
+        """Builds the searchspace using pyATF."""
+        from pyatf import Tuner
+        from pyatf.cost_functions.generic import CostFunction
+        from pyatf.search_techniques import Exhaustive
+
+        # Define a bogus cost function
+        costfunc = CostFunction(":")  # bash no-op
+        
+        # set data
+        self.tune_params_pyatf = self.get_tune_params_pyatf(block_size_names, max_threads)
 
         # tune
         _, _, tuning_data = (
-            Tuner().verbosity(0).tuning_parameters(*get_params()).search_technique(Exhaustive()).tune(costfunc)
+            Tuner().verbosity(0).tuning_parameters(*self.tune_params_pyatf).search_technique(Exhaustive()).tune(costfunc)
         )
 
         # transform the result into a list of parameter configurations for validation
@@ -423,7 +448,7 @@ class Searchspace:
             parameter_space_dict,
             size_list,
         )
-
+    
     def __build_searchspace(self, block_size_names: list, max_threads: int, solver: Solver):
         """Compute valid configurations in a search space based on restrictions and max_threads."""
         # instantiate the parameter space with all the variables
@@ -432,6 +457,10 @@ class Searchspace:
             parameter_space.addVariable(str(param_name), param_values)
 
         # add the user-specified restrictions as constraints on the parameter space
+        if not isinstance(self.restrictions, (list, tuple)):
+            self.restrictions = [self.restrictions]
+        if any(not isinstance(restriction, (Constraint, FunctionConstraint, str)) for restriction in self.restrictions):
+            self.restrictions = convert_constraint_lambdas(self.restrictions)
         parameter_space = self.__add_restrictions(parameter_space)
 
         # add the default blocksize threads restrictions last, because it is unlikely to reduce the parameter space by much
@@ -454,36 +483,46 @@ class Searchspace:
 
     def __add_restrictions(self, parameter_space: Problem) -> Problem:
         """Add the user-specified restrictions as constraints on the parameter space."""
-        if isinstance(self.restrictions, list):
-            for restriction in self.restrictions:
+        restrictions = deepcopy(self.restrictions)
+        if isinstance(restrictions, list):
+            for restriction in restrictions:
                 required_params = self.param_names
 
-                # convert to a Constraint type if necessary
-                if isinstance(restriction, tuple):
-                    restriction, required_params, _ = restriction
+                # (un)wrap where necessary
+                if isinstance(restriction, tuple) and len(restriction) >= 2:
+                    required_params = restriction[1]
+                    restriction = restriction[0]
                 if callable(restriction) and not isinstance(restriction, Constraint):
-                    restriction = FunctionConstraint(restriction)
+                    # def restrictions_wrapper(*args):
+                    #     return check_instance_restrictions(restriction, dict(zip(self.param_names, args)), False)
+                    # print(restriction, isinstance(restriction, Constraint))
+                    # restriction = FunctionConstraint(restrictions_wrapper)
+                    restriction = FunctionConstraint(restriction, required_params)
 
-                # add the Constraint
+                # add as a Constraint
+                all_params_required = all(param_name in required_params for param_name in self.param_names)
+                variables = None if all_params_required else required_params
                 if isinstance(restriction, FunctionConstraint):
-                    parameter_space.addConstraint(restriction, required_params)
+                    parameter_space.addConstraint(restriction, variables)
                 elif isinstance(restriction, Constraint):
-                    all_params_required = all(param_name in required_params for param_name in self.param_names)
-                    parameter_space.addConstraint(restriction, None if all_params_required else required_params)
-                elif isinstance(restriction, str) and self.solver_method.lower() == "pc_parallelsolver":
-                    parameter_space.addConstraint(restriction)
+                    parameter_space.addConstraint(restriction, variables)
+                elif isinstance(restriction, str):
+                    if self.solver_method.lower() == "pc_parallelsolver":
+                        parameter_space.addConstraint(restriction)
+                    else:
+                        parameter_space.addConstraint(restriction, variables)
                 else:
                     raise ValueError(f"Unrecognized restriction type {type(restriction)} ({restriction})")
 
         # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
-        elif callable(self.restrictions):
+        elif callable(restrictions):
 
             def restrictions_wrapper(*args):
-                return check_instance_restrictions(self.restrictions, dict(zip(self.param_names, args)), False)
+                return check_instance_restrictions(restrictions, dict(zip(self.param_names, args)), False)
 
             parameter_space.addConstraint(FunctionConstraint(restrictions_wrapper), self.param_names)
-        elif self.restrictions is not None:
-            raise ValueError(f"The restrictions are of unsupported type {type(self.restrictions)}")
+        elif restrictions is not None:
+            raise ValueError(f"The restrictions are of unsupported type {type(restrictions)}")
         return parameter_space
 
     def __parse_restrictions_pysmt(self, restrictions: list, tune_params: dict, symbols: dict):
@@ -650,7 +689,15 @@ class Searchspace:
 
     def get_param_indices(self, param_config: tuple) -> tuple:
         """For each parameter value in the param config, find the index in the tunable parameters."""
-        return tuple(self.params_values[index].index(param_value) for index, param_value in enumerate(param_config))
+        try:
+            return tuple(self.params_values[index].index(param_value) for index, param_value in enumerate(param_config))
+        except ValueError as e:
+            for index, param_value in enumerate(param_config):
+                if param_value not in self.params_values[index]:
+                    # if the parameter value is not in the list of values for that parameter, raise an error
+                    raise ValueError(
+                        f"Parameter value {param_value} ({type(param_value)}) is not in the list of values {self.params_values[index]}"
+                    ) from e
 
     def get_param_configs_at_indices(self, indices: List[int]) -> List[tuple]:
         """Get the param configs at the given indices."""
@@ -716,9 +763,13 @@ class Searchspace:
         bounds = torch.tensor(bounds, **self.tensor_kwargs)
         self._tensorspace_bounds = torch.cat([bounds[:, 0], bounds[:, 1]]).reshape((2, bounds.shape[0]))
 
+    def has_tensorspace(self) -> bool:
+        """Check if the tensorspace has been initialized."""
+        return self._tensorspace is not None
+
     def get_tensorspace(self):
         """Get the searchspace encoded in a Tensor. To use a non-default dtype or device, call `initialize_tensorspace` first."""
-        if self._tensorspace is None:
+        if not self.has_tensorspace():
             self.initialize_tensorspace()
         return self._tensorspace
 
@@ -763,7 +814,7 @@ class Searchspace:
 
     def get_tensorspace_bounds(self):
         """Get the bounds to the tensorspace parameters, returned as a 2 x d dimensional tensor, and the indices of the parameters."""
-        if self._tensorspace is None:
+        if not self.has_tensorspace():
             self.initialize_tensorspace()
         return self._tensorspace_bounds, self._tensorspace_bounds_indices
 
@@ -776,6 +827,84 @@ class Searchspace:
         num_matching_params = np.count_nonzero(self.get_list_numpy() == param_config, -1)
         matching_indices = (num_matching_params == self.num_params - 1).nonzero()[0]
         return matching_indices
+
+    def __get_random_neighbor_hamming(self, param_config: tuple) -> tuple:
+        """Get a random neighbor at 1 Hamming distance from the parameter configuration."""
+        arr = self.get_list_numpy()
+        target = np.array(param_config)
+        assert arr[0].shape == target.shape
+
+        # find the first row that differs from the target in exactly one column, return as soon as one is found
+        random_order_indices = np.random.permutation(arr.shape[0])
+        for i in random_order_indices:
+            # assert arr[i].shape == target.shape, f"Row {i} shape {arr[i].shape} does not match target shape {target.shape}"
+            if np.count_nonzero(arr[i] != target) == 1:
+                self.__add_to_neighbor_partial_cache(param_config, [i], "Hamming", full_neighbors=False)
+                return self.get_param_configs_at_indices([i])[0]
+        return None
+
+    def __get_random_neighbor_adjacent(self, param_config: tuple) -> tuple:
+        """Get an approximately random adjacent neighbor of the parameter configuration."""
+        # NOTE: this is not truly random as we only progressively increase the allowed index difference if no neighbors are found, but much faster than generating all neighbors
+
+        # get the indices of the parameter values
+        if self.params_values_indices is None:
+            self.__prepare_neighbors_index()
+        param_config_index = self.get_param_config_index(param_config)
+        param_config_value_indices = (
+            self.get_param_indices(param_config)
+            if param_config_index is None
+            else self.params_values_indices[param_config_index]
+        )
+        max_index_difference_per_param = [max(len(self.params_values[p]) - 1 - i, i) for p, i in enumerate(param_config_value_indices)]
+
+        # calculate the absolute difference between the parameter value indices
+        abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices)
+
+        # calculate the difference between the parameter value indices
+        index_difference = np.abs(self.params_values_indices - param_config_value_indices)
+        # transpose to get the param indices difference per parameter instead of per param config
+        index_difference_transposed = index_difference.transpose()
+
+        # start at an index difference of 1, progressively increase - potentially expensive if there are no neighbors until very late
+        max_index_difference = max(max_index_difference_per_param)
+        allowed_index_difference = 1
+        allowed_values = [[v] for v in param_config]
+        while allowed_index_difference <= max_index_difference:
+            # get the param config indices where the difference is at most allowed_index_difference for each position
+            matching_indices = list((np.max(abs_index_difference, axis=1) <= allowed_index_difference).nonzero()[0])
+            # as the selected param config does not differ anywhere, remove it from the matches
+            if param_config_index is not None:
+                matching_indices.remove(param_config_index)
+            
+            # if there are matching indices, return a random one
+            if len(matching_indices) > 0:
+                self.__add_to_neighbor_partial_cache(param_config, matching_indices, "adjacent", full_neighbors=allowed_index_difference == max_index_difference)
+                
+                # get a random index from the matching indices
+                random_neighbor_index = choice(matching_indices)
+                return self.get_param_configs_at_indices([random_neighbor_index])[0]
+
+            # if there are no matching indices, increase the allowed index difference and start over
+            allowed_index_difference += 1
+        return None
+
+    def __add_to_neighbor_partial_cache(self, param_config: tuple, neighbor_indices: List[int], neighbor_method: str, full_neighbors = False):
+        """Add the neighbor indices to the partial cache using the given parameter configuration."""
+        param_config_index = self.get_param_config_index(param_config)
+        if param_config_index is None:
+            return  # we need a valid parameter configuration to add to the cache
+        # add the indices to the partial cache for the parameter configuration
+        if full_neighbors:
+            self.__neighbor_partial_cache[neighbor_method][param_config_index] = neighbor_indices
+        else:
+            for neighbor_index in neighbor_indices:
+                if neighbor_index not in self.__neighbor_partial_cache[neighbor_method][param_config_index]:
+                    self.__neighbor_partial_cache[neighbor_method][param_config_index].append(neighbor_index)
+        # add the parameter configuration index to the partial cache for each neighbor
+        for neighbor_index in neighbor_indices:
+            if param_config_index not in self.__neighbor_partial_cache[neighbor_method][neighbor_index]:
+                self.__neighbor_partial_cache[neighbor_method][neighbor_index].append(param_config_index)
 
     def __get_neighbors_indices_strictlyadjacent(
         self, param_config_index: int = None, param_config: tuple = None
@@ -792,7 +921,7 @@ class Searchspace:
         matching_indices = (np.max(abs_index_difference, axis=1) <= 1).nonzero()[0]
         # as the selected param config does not differ anywhere, remove it from the matches
         if param_config_index is not None:
-            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
+            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=True)
         return matching_indices
 
     def __get_neighbors_indices_adjacent(self, param_config_index: int = None, param_config: tuple = None) -> List[int]:
@@ -828,7 +957,7 @@ class Searchspace:
         )
         # as the selected param config does not differ anywhere, remove it from the matches
         if param_config_index is not None:
-            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=False)
+            matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=True)
         return matching_indices
 
     def __build_neighbors_index(self, neighbor_method) -> List[List[int]]:
@@ -871,23 +1000,24 @@ class Searchspace:
             num_samples = self.size
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
 
-    def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None) -> List[int]:
+    def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[int]:
         """Get the neighbors indices for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
         param_config_index = self.get_param_config_index(param_config)
-
-        # this is the simplest case, just return the cached value
-        if self.build_neighbors_index and param_config_index is not None:
-            if neighbor_method is not None and neighbor_method != self.neighbor_method:
-                raise ValueError(
-                    f"The neighbor method {neighbor_method} differs from the neighbor method {self.neighbor_method} initially used for indexing"
-                )
-            return self.neighbors_index[param_config_index]
 
         # check if there is a neighbor method to use
         if neighbor_method is None:
             if self.neighbor_method is None:
                 raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
             neighbor_method = self.neighbor_method
+
+        # this is the simplest case, just return the cached value
+        if param_config_index is not None:
+            if neighbor_method in self.neighbors_index:
+                return self.neighbors_index[neighbor_method][param_config_index]
+            elif build_full_cache:
+                # build the neighbors index for the given neighbor method
+                self.neighbors_index[neighbor_method] = self.__build_neighbors_index(neighbor_method)
+                return self.neighbors_index[neighbor_method][param_config_index]
 
         if neighbor_method == "Hamming":
             return self.__get_neighbors_indices_hamming(param_config)
@@ -903,33 +1033,98 @@ class Searchspace:
             return self.__get_neighbors_indices_adjacent(param_config_index, param_config)
         raise ValueError(f"The neighbor method {neighbor_method} is not in {supported_neighbor_methods}")
 
-    def get_neighbors_indices(self, param_config: tuple, neighbor_method=None) -> List[int]:
-        """Get the neighbors indices for a parameter configuration, possibly cached."""
-        neighbors = self.__neighbor_cache.get(param_config, None)
+    def get_neighbors_indices(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[int]:
+        """Get the neighbors indices for a parameter configuration, cached if requested before."""
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+        neighbors = self.__neighbor_cache[neighbor_method].get(param_config, None)
         # if there are no cached neighbors, compute them
         if neighbors is None:
-            neighbors = self.get_neighbors_indices_no_cache(param_config, neighbor_method)
-            self.__neighbor_cache[param_config] = neighbors
-        # if the neighbors were cached but the specified neighbor method was different than the one initially used to build the cache, throw an error
-        elif (
-            self.neighbor_method is not None and neighbor_method is not None and self.neighbor_method != neighbor_method
-        ):
-            raise ValueError(
-                f"The neighbor method {neighbor_method} differs from the intially set {self.neighbor_method}, can not use cached neighbors. Use 'get_neighbors_no_cache()' when mixing neighbor methods to avoid this."
-            )
+            neighbors = self.get_neighbors_indices_no_cache(param_config, neighbor_method, build_full_cache)
+            self.__neighbor_cache[neighbor_method][param_config] = neighbors
+            self.__add_to_neighbor_partial_cache(param_config, neighbors, neighbor_method, full_neighbors=True)
+            if neighbor_method == "strictly-adjacent":
+                # any neighbor in strictly-adjacent is also an adjacent neighbor
+                self.__add_to_neighbor_partial_cache(param_config, neighbors, "adjacent", full_neighbors=False)
         return neighbors
 
-    def are_neighbors_indices_cached(self, param_config: tuple) -> bool:
+    def are_neighbors_indices_cached(self, param_config: tuple, neighbor_method=None) -> bool:
         """Returns true if the neighbor indices are in the cache, false otherwise."""
-        return param_config in self.__neighbor_cache
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+        return param_config in self.__neighbor_cache[neighbor_method]
 
     def get_neighbors_no_cache(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
         """Get the neighbors for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
         return self.get_param_configs_at_indices(self.get_neighbors_indices_no_cache(param_config, neighbor_method))
 
-    def get_neighbors(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
+    def get_neighbors(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[tuple]:
         """Get the neighbors for a parameter configuration."""
-        return self.get_param_configs_at_indices(self.get_neighbors_indices(param_config, neighbor_method))
+        return self.get_param_configs_at_indices(self.get_neighbors_indices(param_config, neighbor_method, build_full_cache))
+
+    def get_partial_neighbors_indices(self, param_config: tuple, neighbor_method=None) -> List[tuple]:
+        """Get the partial neighbors for a parameter configuration."""
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+        param_config_index = self.get_param_config_index(param_config)
+        if param_config_index is None or param_config_index not in self.__neighbor_partial_cache[neighbor_method]:
+            return []
+        return self.get_param_configs_at_indices(self.__neighbor_partial_cache[neighbor_method][param_config_index])
+
+    def pop_random_partial_neighbor(self, param_config: tuple, neighbor_method=None, threshold=2) -> tuple:
+        """Pop a random partial neighbor for a given a parameter configuration if there are at least `threshold` neighbors."""
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+        param_config_index = self.get_param_config_index(param_config)
+        if param_config_index is None or param_config_index not in self.__neighbor_partial_cache[neighbor_method]:
+            return None
+        partial_neighbors = self.get_param_configs_at_indices(self.__neighbor_partial_cache[neighbor_method][param_config_index])
+        if len(partial_neighbors) < threshold:
+            return None
+        partial_neighbor_index = choice(range(len(partial_neighbors)))
+        random_neighbor = self.__neighbor_partial_cache[neighbor_method][param_config_index].pop(partial_neighbor_index)
+        return self.get_param_configs_at_indices([random_neighbor])[0]
+
+    def get_random_neighbor(self, param_config: tuple, neighbor_method=None, use_partial_cache=True) -> tuple:
+        """Get an approximately random neighbor for a parameter configuration. Much faster than taking a random choice of all neighbors, but does not build full cache."""
+        if self.are_neighbors_indices_cached(param_config, neighbor_method):
+            neighbors = self.get_neighbors(param_config, neighbor_method)
+            return choice(neighbors) if len(neighbors) > 0 else None
+        elif use_partial_cache:
+            # pop the chosen neighbor from the cache to avoid choosing it again until it is re-added
+            random_neighbor = self.pop_random_partial_neighbor(param_config, neighbor_method)
+            if random_neighbor is not None:
+                return random_neighbor
+    
+        # check if there is a neighbor method to use
+        if neighbor_method is None:
+            neighbor_method = self.neighbor_method
+            if neighbor_method is None:
+                raise ValueError("Neither the neighbor_method argument nor self.neighbor_method was set")
+
+        # oddly enough, the custom random neighbor methods are not faster than just generating all neighbor + partials
+        # # find the random neighbor based on the method
+        # if neighbor_method == "adjacent":
+        #     return self.__get_random_neighbor_adjacent(param_config)
+        # elif neighbor_method == "Hamming":
+        #   this implementation is not as efficient as just generating all neighbors
+        #     return self.__get_random_neighbor_hamming(param_config)
+        # # else:
+        #    # not much performance to be gained for strictly-adjacent neighbors, just generate the neighbors
+
+        # calculate the full neighbors and return a random one
+        neighbors = self.get_neighbors(param_config, neighbor_method)
+        if len(neighbors) == 0:
+            return None
+        return choice(neighbors)
 
     def get_param_neighbors(self, param_config: tuple, index: int, neighbor_method: str, randomize: bool) -> list:
         """Get the neighboring parameters at an index."""

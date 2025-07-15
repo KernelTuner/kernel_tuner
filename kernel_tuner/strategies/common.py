@@ -1,7 +1,6 @@
 """Module for functionality that is commonly used throughout the strategies."""
 
 import logging
-import numbers
 import sys
 from time import perf_counter
 
@@ -48,12 +47,15 @@ def make_strategy_options_doc(strategy_options):
     return doc
 
 
-def get_options(strategy_options, options):
+def get_options(strategy_options, options, unsupported=None):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
-    accepted = list(options.keys()) + ["max_fevals", "time_limit"]
+    accepted = list(options.keys()) + ["max_fevals", "time_limit", "x0", "searchspace_construction_options"]
+    if unsupported:
+        for key in unsupported:
+            accepted.remove(key)
     for key in strategy_options:
         if key not in accepted:
-            raise ValueError(f"Unrecognized option {key} in strategy_options")
+            raise ValueError(f"Unrecognized option {key} in strategy_options (allowed: {accepted})")
     assert isinstance(options, dict)
     return [strategy_options.get(opt, default) for opt, (_, default) in options.items()]
 
@@ -69,7 +71,6 @@ class CostFunc:
         *,
         scaling=False,
         snap=True,
-        encode_non_numeric=False,
         return_invalid=False,
         return_raw=None,
     ):
@@ -81,47 +82,29 @@ class CostFunc:
             runner: the runner to use.
             scaling: whether to internally scale parameter values. Defaults to False.
             snap: whether to snap given configurations to their closests equivalent in the space. Defaults to True.
-            encode_non_numeric: whether to externally encode non-numeric parameter values. Defaults to False.
             return_invalid: whether to return the util.ErrorConfig of an invalid configuration. Defaults to False.
             return_raw: returns (result, results[raw]). Key inferred from objective if set to True. Defaults to None.
         """
-        self.runner = runner
-        self.snap = snap
-        self.scaling = scaling
-        self.encode_non_numeric = encode_non_numeric
-        self.return_invalid = return_invalid
-        self.return_raw = return_raw
-        if return_raw is True:
-            self.return_raw = f"{tuning_options['objective']}s"
         self.searchspace = searchspace
         self.tuning_options = tuning_options
         if isinstance(self.tuning_options, dict):
             self.tuning_options["max_fevals"] = min(
                 tuning_options["max_fevals"] if "max_fevals" in tuning_options else np.inf, searchspace.size
             )
+        self.runner = runner
+        self.scaling = scaling
+        self.snap = snap
+        self.return_invalid = return_invalid
+        self.return_raw = return_raw
+        if return_raw is True:
+            self.return_raw = f"{tuning_options['objective']}s"
         self.results = []
         self.budget_spent_fraction = 0.0
 
-        # if enabled, encode non-numeric parameter values as a numeric value
-        if self.encode_non_numeric:
-            self._map_param_to_encoded = {}
-            self._map_encoded_to_param = {}
-            self.encoded_params_values = []
-            for i, param_values in enumerate(self.searchspace.params_values):
-                encoded_values = param_values
-                if not all(isinstance(v, numbers.Real) for v in param_values):
-                    encoded_values = np.arange(
-                        len(param_values)
-                    )  # NOTE when changing this, adjust the rounding in encoded_to_params
-                    self._map_param_to_encoded[i] = dict(zip(param_values, encoded_values))
-                    self._map_encoded_to_param[i] = dict(zip(encoded_values, param_values))
-                self.encoded_params_values.append(encoded_values)
 
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
-        if self.encode_non_numeric:
-            x = self.encoded_to_params(x)
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug("_cost_func called")
@@ -176,11 +159,14 @@ class CostFunc:
             self.runner.last_strategy_start_time = perf_counter()
 
         # get numerical return value, taking optimization direction into account
-        if self.return_invalid:
-            return_value = result[self.tuning_options.objective]
+        return_value = result[self.tuning_options.objective]
+        if not isinstance(return_value, util.ErrorConfig):
+            # this is a valid configuration, so invert value in case of maximization
+            return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
         else:
-            return_value = result[self.tuning_options.objective] or sys.float_info.max
-        return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
+            # this is not a valid configuration, replace with float max if needed
+            if not self.return_invalid:
+                return_value = sys.float_info.max
 
         # include raw data in return if requested
         if self.return_raw is not None:
@@ -191,12 +177,18 @@ class CostFunc:
 
         return return_value
 
+    def get_start_pos(self):
+        """Get starting position for optimization."""
+        _, x0, _ = self.get_bounds_x0_eps()
+        return x0
+
     def get_bounds_x0_eps(self):
         """Compute bounds, x0 (the initial guess), and eps."""
         values = list(self.searchspace.tune_params.values())
 
         if "x0" in self.tuning_options.strategy_options:
             x0 = self.tuning_options.strategy_options.x0
+            assert isinstance(x0, (tuple, list)) and len(x0) == len(values), f"Invalid x0: {x0}, expected number of parameters of `tune_params` to match ({len(values)})"
         else:
             x0 = None
 
@@ -207,7 +199,7 @@ class CostFunc:
             bounds = [(0, eps * len(v)) for v in values]
             if x0:
                 # x0 has been supplied by the user, map x0 into [0, eps*len(v)]
-                x0 = scale_from_params(x0, self.tuning_options, eps)
+                x0 = scale_from_params(x0, self.searchspace.tune_params, eps)
             else:
                 # get a valid x0
                 pos = list(self.searchspace.get_random_sample(1)[0])
@@ -215,12 +207,8 @@ class CostFunc:
         else:
             bounds = self.get_bounds()
             if not x0:
-                x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
-            eps = 1e9
-            for v_list in values:
-                if len(v_list) > 1:
-                    vals = np.sort(v_list)
-                    eps = min(eps, np.amin(np.gradient(vals)))
+                x0 = list(self.searchspace.get_random_sample(1)[0])
+            eps = 1
 
         self.tuning_options["eps"] = eps
         logging.debug("get_bounds_x0_eps called")
@@ -233,41 +221,13 @@ class CostFunc:
     def get_bounds(self):
         """Create a bounds array from the tunable parameters."""
         bounds = []
-        for values in self.encoded_params_values if self.encode_non_numeric else self.searchspace.params_values:
-            bounds.append((min(values), max(values)))
+        for values in self.searchspace.params_values:
+            try:
+                bounds.append((min(values), max(values)))
+            except TypeError:
+                # if values are not numbers, use the first and last value as bounds
+                bounds.append((values[0], values[-1]))
         return bounds
-
-    def encoded_to_params(self, config):
-        """Convert from an encoded configuration to the real parameters."""
-        if not self.encode_non_numeric:
-            raise ValueError("'encode_non_numeric' must be set to true to use this function.")
-        params = []
-        for i, v in enumerate(config):
-            # params.append(self._map_encoded_to_param[i][v] if i in self._map_encoded_to_param else v)
-            if i in self._map_encoded_to_param:
-                encoding = self._map_encoded_to_param[i]
-                if v in encoding:
-                    param = encoding[v]
-                elif isinstance(v, float):
-                    # try to resolve a rounding error due to floating point arithmetic / continous solver
-                    param = encoding[round(v)]
-                else:
-                    raise ValueError(f"Encoded value {v} not found in {self._map_encoded_to_param[i]}")
-            else:
-                param = v
-            params.append(param)
-        assert len(params) == len(config)
-        return params
-
-    def params_to_encoded(self, config):
-        """Convert from a parameter configuration to the encoded configuration."""
-        if not self.encode_non_numeric:
-            raise ValueError("'encode_non_numeric' must be set to true to use this function.")
-        encoded = []
-        for i, v in enumerate(config):
-            encoded.append(self._map_param_to_encoded[i][v] if i in self._map_param_to_encoded else v)
-        assert len(encoded) == len(config)
-        return encoded
 
 
 def setup_method_arguments(method, bounds):
@@ -356,7 +316,6 @@ def scale_from_params(params, tune_params, eps):
 
 def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):
     """Helper func to snap to the nearest valid configuration"""
-
     # params is nearest unscaled point, but is not valid
     neighbors = get_neighbors(params, searchspace)
 
@@ -372,7 +331,7 @@ def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):
 
 def get_neighbors(params, searchspace):
     for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
-        neighbors = searchspace.get_neighbors_no_cache(tuple(params), neighbor_method=neighbor_method)
+        neighbors = searchspace.get_neighbors(tuple(params), neighbor_method=neighbor_method)
         if len(neighbors) > 0:
             return neighbors
     return []

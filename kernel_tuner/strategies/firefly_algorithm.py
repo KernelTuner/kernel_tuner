@@ -22,7 +22,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
     # using this instead of get_bounds because scaling is used
-    bounds, _, eps = cost_func.get_bounds_x0_eps()
+    bounds, x0, eps = cost_func.get_bounds_x0_eps()
 
     num_particles, maxiter, B0, gamma, alpha, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
 
@@ -39,6 +39,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         population = list(list(p) for p in searchspace.get_random_sample(num_particles))
         for i, particle in enumerate(swarm):
             particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+
+    # include user provided starting point
+    swarm[0].position = x0
 
     # compute initial intensities
     for j in range(num_particles):
@@ -96,7 +99,7 @@ class Firefly(Particle):
         """Create Firefly at random position within bounds."""
         super().__init__(bounds)
         self.bounds = bounds
-        self.intensity = 1 / self.score
+        self.intensity = -self.score
 
     def distance_to(self, other):
         """Return Euclidian distance between self and other Firefly."""
@@ -105,10 +108,7 @@ class Firefly(Particle):
     def compute_intensity(self, fun):
         """Evaluate cost function and compute intensity at this position."""
         self.evaluate(fun)
-        if self.score == sys.float_info.max:
-            self.intensity = -sys.float_info.max
-        else:
-            self.intensity = 1 / self.score
+        self.intensity = -self.score
 
     def move_towards(self, other, beta, alpha):
         """Move firefly towards another given beta and alpha values."""

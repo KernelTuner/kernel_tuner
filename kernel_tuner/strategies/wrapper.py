@@ -11,7 +11,7 @@ class OptAlg(ABC):
     """Base class for user-defined optimization algorithms."""
 
     def __init__(self):
-        self.costfunc_kwargs = {"scaling": True, "snap": True}
+        self.costfunc_kwargs = {"scaling": False, "snap": False}
 
     @abstractmethod
     def __call__(self, func: CostFunc, searchspace: Searchspace) -> tuple[tuple, float]:
@@ -43,7 +43,7 @@ class OptAlgWrapper:
             self.optimizer.constraint_aware = False
         cost_func = CostFunc(searchspace, tuning_options, runner, **self.optimizer.costfunc_kwargs)
 
-        if self.optimizer.costfunc_kwargs.get('scaling', True):
+        if self.optimizer.costfunc_kwargs.get('scaling', False):
             # Initialize costfunc for scaling
             cost_func.get_bounds_x0_eps()
 

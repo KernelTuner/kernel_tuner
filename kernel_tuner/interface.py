@@ -30,6 +30,7 @@ from ast import literal_eval
 from datetime import datetime
 from pathlib import Path
 from time import perf_counter
+from copy import deepcopy
 
 import numpy
 from constraint import Constraint
@@ -47,7 +48,6 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
-from kernel_tuner.strategies.wrapper import OptAlgWrapper
 from kernel_tuner.strategies import (
     basinhopping,
     bayes_opt,
@@ -62,9 +62,11 @@ from kernel_tuner.strategies import (
     mls,
     ordered_greedy_mls,
     pso,
+    pyatf_strategies,
     random_sample,
-    simulated_annealing
+    simulated_annealing,
 )
+from kernel_tuner.strategies.wrapper import OptAlgWrapper
 
 strategy_map = {
     "brute_force": brute_force,
@@ -81,7 +83,8 @@ strategy_map = {
     "pso": pso,
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt
+    "bayes_opt": bayes_opt,
+    "pyatf_strategies": pyatf_strategies,
 }
 
 
@@ -128,8 +131,8 @@ _kernel_options = Options(
             (
                 """Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA", "Cupy",
-        "OpenCL", "HIP", or "C".""",
+        the language using this argument, currently supported: "CUDA", "CuPy",
+        "nvcuda", "OpenCL", "HIP", or "C".""",
                 "string",
             ),
         ),
@@ -532,7 +535,7 @@ def _get_docstring(opts):
 
 
 _tune_kernel_docstring = (
-    """ Tune a CUDA kernel given a set of tunable parameters
+    """ Tune a GPU kernel given a set of tunable parameters
 
 %s
 
@@ -605,30 +608,31 @@ def tune_kernel(
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
 
-    # if the restrictions are not constraints or a callable, the restrictions are strings, so parse them to functions (increases restrictions check performance significantly)
-    if (
-        restrictions is not None
-        and not callable(restrictions)
-        and not any(isinstance(r, Constraint) for r in restrictions)
-    ):
-        restrictions = util.compile_restrictions(restrictions, tune_params)
-
     # sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
     tuning_options["unique_results"] = {}
-    if strategy_options and "max_fevals" in strategy_options:
-        tuning_options["max_fevals"] = strategy_options["max_fevals"]
-    if strategy_options and "time_limit" in strategy_options:
-        tuning_options["time_limit"] = strategy_options["time_limit"]
 
+    # copy some values from strategy_options
+    searchspace_construction_options = {}
+    if strategy_options:
+        if "max_fevals" in strategy_options:
+            tuning_options["max_fevals"] = strategy_options["max_fevals"]
+        if "time_limit" in strategy_options:
+            tuning_options["time_limit"] = strategy_options["time_limit"] 
+        if "searchspace_construction_options" in strategy_options:
+            searchspace_construction_options = strategy_options["searchspace_construction_options"]         
+
+    # log the user inputs
     logging.debug("tune_kernel called")
     logging.debug("kernel_options: %s", util.get_config_string(kernel_options))
     logging.debug("tuning_options: %s", util.get_config_string(tuning_options))
     logging.debug("device_options: %s", util.get_config_string(device_options))
 
+    # check whether the selected strategy and options are valid
+    strategy_string = strategy
     if strategy:
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
@@ -642,7 +646,6 @@ def tune_kernel(
 
         # ensure strategy_options is an Options object
         tuning_options.strategy_options = Options(strategy_options or {})
-
     # if no strategy selected
     else:
         strategy = brute_force
@@ -672,7 +675,8 @@ def tune_kernel(
         tuning_options.cachefile = None
 
     # create search space
-    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
+    tuning_options.restrictions_unmodified = deepcopy(restrictions)
+    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
     if verbose:
@@ -861,10 +865,9 @@ def tune_kernel_T1(
     strategy: str=None,
     strategy_options: dict={},
 ) -> tuple:
-    """
-    Call the tune function with a T1 input file.
+    """Call the tune function with a T1 input file.
     
-        The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
+    The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
     """
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs["KernelSpecification"]

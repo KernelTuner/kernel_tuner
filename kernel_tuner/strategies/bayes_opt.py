@@ -13,7 +13,7 @@ from scipy.stats.qmc import LatinHypercube
 
 # BO imports
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies.common import CostFunc
+from kernel_tuner.strategies.common import CostFunc, get_options
 from kernel_tuner.util import StopCriterionReached
 
 try:
@@ -24,9 +24,25 @@ try:
 except ImportError:
     bayes_opt_present = False
 
-from kernel_tuner import util
-
 supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"]
+
+# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
+_options = dict(
+    covariancekernel=(
+        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
+        "matern32",
+    ),
+    covariancelengthscale=("The covariance length scale", 1.5),
+    method=(
+        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
+        "multi-ultrafast",
+    ),
+    samplingmethod=(
+        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
+        "lhs",
+    ),
+    popsize=("Number of initial samples", 20),
+)
 
 
 def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
@@ -94,6 +110,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     :rtype: list(dict()), dict()
 
     """
+    # we don't actually use this for Bayesian Optimization, but it is used to check for unsupported options  
+    get_options(tuning_options.strategy_options, _options, unsupported=["x0"])
+
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
@@ -107,19 +126,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     _, _, eps = cost_func.get_bounds_x0_eps()
 
     # compute cartesian product of all tunable parameters
-    parameter_space = itertools.product(*tune_params.values())
-
-    # check for search space restrictions
-    if searchspace.restrictions is not None:
-        tuning_options.verbose = False
-    parameter_space = filter(lambda p: util.config_valid(p, tuning_options, runner.dev.max_threads), parameter_space)
-    parameter_space = list(parameter_space)
-    if len(parameter_space) < 1:
-        raise ValueError("Empty parameterspace after restrictionscheck. Restrictionscheck is possibly too strict.")
-    if len(parameter_space) == 1:
-        raise ValueError(
-            f"Only one configuration after restrictionscheck. Restrictionscheck is possibly too strict. Configuration: {parameter_space[0]}"
-        )
+    # TODO actually use the Searchspace object properly throughout Bayesian Optimization
+    parameter_space = searchspace.list
 
     # normalize search space to [0,1]
     normalize_dict, denormalize_dict = generate_normalized_param_dicts(tune_params, eps)
@@ -137,7 +145,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # initialize and optimize
     try:
         bo = BayesianOptimization(
-            parameter_space, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
+            parameter_space, searchspace, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
         )
     except StopCriterionReached:
         warnings.warn(
@@ -156,29 +164,11 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     return cost_func.results
 
 
-# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
-_options = dict(
-    covariancekernel=(
-        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
-        "matern32",
-    ),
-    covariancelengthscale=("The covariance length scale", 1.5),
-    method=(
-        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
-        "multi-ultrafast",
-    ),
-    samplingmethod=(
-        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
-        "lhs",
-    ),
-    popsize=("Number of initial samples", 20),
-)
-
-
 class BayesianOptimization:
     def __init__(
         self,
         searchspace: list,
+        searchspace_obj: Searchspace,
         removed_tune_params: list,
         tuning_options: dict,
         normalize_dict: dict,
@@ -241,7 +231,7 @@ class BayesianOptimization:
             self.worst_value = np.inf
             self.argopt = np.argmin
         elif opt_direction == "max":
-            self.worst_value = np.NINF
+            self.worst_value = -np.inf
             self.argopt = np.argmax
         else:
             raise ValueError("Invalid optimization direction '{}'".format(opt_direction))
@@ -256,6 +246,7 @@ class BayesianOptimization:
 
         # set remaining values
         self.__searchspace = searchspace
+        self.__searchspace_obj = searchspace_obj
         self.removed_tune_params = removed_tune_params
         self.searchspace_size = len(self.searchspace)
         self.num_dimensions = len(self.dimensions())
@@ -463,7 +454,7 @@ class BayesianOptimization:
         """Evaluates the objective function."""
         param_config = self.unprune_param_config(param_config)
         denormalized_param_config = self.denormalize_param_config(param_config)
-        if not util.config_valid(denormalized_param_config, self.tuning_options, self.max_threads):
+        if not self.__searchspace_obj.is_param_config_valid(denormalized_param_config):
             return self.invalid_value
         val = self.cost_func(param_config)
         self.fevals += 1

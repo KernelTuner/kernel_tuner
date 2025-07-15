@@ -4,7 +4,7 @@ import sys
 
 import numpy as np
 
-from kernel_tuner.util import StopCriterionReached
+from kernel_tuner.util import StopCriterionReached, ErrorConfig
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
@@ -18,7 +18,7 @@ _options = dict(T=("Starting temperature", 0.5),
 
 def tune(searchspace: Searchspace, runner, tuning_options):
     # SA works with real parameter values and does not need scaling
-    cost_func = CostFunc(searchspace, tuning_options, runner)
+    cost_func = CostFunc(searchspace, tuning_options, runner, return_invalid=True)
 
     # optimization parameters
     T, T_min, alpha, niter, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
@@ -35,8 +35,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     max_fevals = min(searchspace.size, max_fevals)
 
     # get random starting point and evaluate cost
-    pos = generate_starting_point(searchspace, constraint_aware)
-    old_cost = cost_func(pos, check_restrictions=False)
+    pos = cost_func.get_start_pos()
+    old_cost = cost_func(pos, check_restrictions=not constraint_aware)
 
     # main optimization loop
     stuck = 0
@@ -92,36 +92,50 @@ tune.__doc__ = common.get_strategy_docstring("Simulated Annealing", _options)
 
 def acceptance_prob(old_cost, new_cost, T, tuning_options):
     """Annealing equation, with modifications to work towards a lower value."""
-    error_val = sys.float_info.max if not tuning_options.objective_higher_is_better else -sys.float_info.max
+    res = 0.0
     # if start pos is not valid, always move
-    if old_cost == error_val:
-        return 1.0
+    if isinstance(old_cost, ErrorConfig):
+        res = 1.0
     # if we have found a valid ps before, never move to nonvalid pos
-    if new_cost == error_val:
-        return 0.0
+    elif isinstance(new_cost, ErrorConfig):
+        res = 0.0
     # always move if new cost is better
-    if new_cost < old_cost:
-        return 1.0
+    elif new_cost < old_cost:
+        res = 1.0
     # maybe move if old cost is better than new cost depending on T and random value
-    if tuning_options.objective_higher_is_better:
-        return np.exp(((new_cost-old_cost)/new_cost)/T)
-    return np.exp(((old_cost-new_cost)/old_cost)/T)
+    else:
+        if tuning_options.objective_higher_is_better:
+            res = np.exp(((new_cost-old_cost)/new_cost)/T)
+        else:
+            res = np.exp(((old_cost-new_cost)/old_cost)/T)
+    return res
 
 
 def neighbor(pos, searchspace: Searchspace, constraint_aware=True):
     """Return a random neighbor of pos."""
 
+    def random_neighbor(pos, method):
+        """Helper method to return a random neighbor."""
+        neighbor = searchspace.get_random_neighbor(pos, neighbor_method=method)
+        if neighbor is None:
+            return pos
+        return neighbor
+
+    size = len(pos)
+
     if constraint_aware:
-        # Note: this is not the same as the previous implementation, because it is possible that non-edge parameters remain the same, but suggested configurations will all be within restrictions
-        neighbors = searchspace.get_neighbors(tuple(pos), neighbor_method='Hamming') if random.random() < 0.2 else searchspace.get_neighbors(tuple(pos), neighbor_method='strictly-adjacent')
-        if len(neighbors) > 0:
-            return list(random.choice(neighbors))
-        # if there are no neighbors, return a random configuration
-        return list(searchspace.get_random_sample(1)[0])
+        pos = tuple(pos)
+
+        # Note: the following tries to mimick as much as possible the earlier version of SA but in a constraint-aware version
+        for i in range(size):
+            if random.random() < 0.2:
+                pos = random_neighbor(pos, 'Hamming')
+        pos = random_neighbor(pos, 'adjacent')
+
+        return list(pos)
 
     else:
         tune_params = searchspace.tune_params
-        size = len(pos)
         pos_out = []
         # random mutation
         # expected value is set that values all dimensions attempt to get mutated
