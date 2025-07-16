@@ -28,10 +28,19 @@ supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advance
 
 # _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
 _options = dict(
-    covariancekernel=('The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"', "matern32"),
+    covariancekernel=(
+        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
+        "matern32",
+    ),
     covariancelengthscale=("The covariance length scale", 1.5),
-    method=("The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods), "multi-ultrafast"),
-    samplingmethod=("Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)", "lhs"),
+    method=(
+        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
+        "multi-ultrafast",
+    ),
+    samplingmethod=(
+        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
+        "lhs",
+    ),
     popsize=("Number of initial samples", 20),
 )
 
