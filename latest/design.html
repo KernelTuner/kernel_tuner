@@ -140,6 +140,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.StopCriterionReached"><code class="docutils literal notranslate"><span class="pre">StopCriterionReached</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_list"><code class="docutils literal notranslate"><span class="pre">check_argument_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_type"><code class="docutils literal notranslate"><span class="pre">check_argument_type()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_matching_problem_size"><code class="docutils literal notranslate"><span class="pre">check_matching_problem_size()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restriction"><code class="docutils literal notranslate"><span class="pre">check_restriction()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restrictions"><code class="docutils literal notranslate"><span class="pre">check_restrictions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_stop_criterion"><code class="docutils literal notranslate"><span class="pre">check_stop_criterion()</span></code></a></li>
@@ -1574,6 +1575,12 @@ implement default like this:</p>
 <dt class="sig sig-object py" id="kernel_tuner.util.check_argument_type">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_argument_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_argument</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_type" title="Link to this definition">¶</a></dt>
 <dd><p>Check if the numpy.dtype matches the type used in the code.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.check_matching_problem_size">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_matching_problem_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cached_problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_matching_problem_size" title="Link to this definition">¶</a></dt>
+<dd><p>Check the if requested problem size matches the problem size in the cache.</p>
 </dd></dl>
 
 <dl class="py function">
