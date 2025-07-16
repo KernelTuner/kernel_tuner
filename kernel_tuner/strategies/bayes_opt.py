@@ -28,19 +28,10 @@ supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advance
 
 # _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
 _options = dict(
-    covariancekernel=(
-        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
-        "matern32",
-    ),
+    covariancekernel=('The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"', "matern32"),
     covariancelengthscale=("The covariance length scale", 1.5),
-    method=(
-        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
-        "multi-ultrafast",
-    ),
-    samplingmethod=(
-        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
-        "lhs",
-    ),
+    method=("The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods), "multi-ultrafast"),
+    samplingmethod=("Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)", "lhs"),
     popsize=("Number of initial samples", 20),
 )
 
@@ -110,7 +101,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     :rtype: list(dict()), dict()
 
     """
-    # we don't actually use this for Bayesian Optimization, but it is used to check for unsupported options  
+    # we don't actually use this for Bayesian Optimization, but it is used to check for unsupported options
     get_options(tuning_options.strategy_options, _options, unsupported=["x0"])
 
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
@@ -145,7 +136,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # initialize and optimize
     try:
         bo = BayesianOptimization(
-            parameter_space, searchspace, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
+            parameter_space,
+            searchspace,
+            removed_tune_params,
+            tuning_options,
+            normalize_dict,
+            denormalize_dict,
+            cost_func,
         )
     except StopCriterionReached:
         warnings.warn(
@@ -851,7 +848,10 @@ class BayesianOptimization:
         while self.fevals < max_fevals:
             aqfs = self.multi_afs
             # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
-            fit_observations = last_prediction_time * predict_eval_ratio <= last_eval_time or last_prediction_counter >= predict_eval_ratio
+            fit_observations = (
+                last_prediction_time * predict_eval_ratio <= last_eval_time
+                or last_prediction_counter >= predict_eval_ratio
+            )
             if fit_observations:
                 last_prediction_counter = 0
                 pred_start = time.perf_counter()
