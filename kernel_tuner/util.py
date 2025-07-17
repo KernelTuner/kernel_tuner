@@ -1229,7 +1229,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
                 )
             raise ValueError(
                 f"Cannot load cache which contains results obtained with different tunable parameters. \
-                Cache has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
+                Cache at '{cache}' has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
             )
 
         tuning_options.cachefile = cache
