@@ -94,9 +94,9 @@ class CostFunc:
 
         # else check if this is a legal (non-restricted) configuration
         if check_restrictions and self.searchspace.restrictions:
-            params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
-            legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
+            legal = self.searchspace.is_param_config_valid(tuple(params))
             if not legal:
+                params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
                 result = params_dict
                 result[self.tuning_options.objective] = util.InvalidConfig()
 
