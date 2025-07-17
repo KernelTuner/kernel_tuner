@@ -11,7 +11,8 @@ from kernel_tuner.strategies.common import CostFunc
 
 _options = dict(
     popsize=("population size", 50),
-    maxiter=("maximum number of generations", 1e12),    # very large to avoid early stopping (stopping is managed by StopCriterionReached)
+    popsize_times_dimensions=("multiply population size with number of dimensions (True/False)", False),
+    maxiter=("maximum number of generations", int(1e15)),    # very large to avoid early stopping (stopping is managed by StopCriterionReached)
     F=("mutation factor (differential weight)", 1.3),
     CR=("crossover rate", 0.9),
     method=("method", "best1bin"),
@@ -39,7 +40,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     bounds = cost_func.get_bounds()
 
     options = tuning_options.strategy_options
-    popsize, maxiter, F, CR, method, constraint_aware = common.get_options(options, _options)
+    popsize, popsize_times_dimensions, maxiter, F, CR, method, constraint_aware = common.get_options(options, _options)
+    if popsize_times_dimensions:
+        popsize *= min(len(searchspace.get_true_tunable_params()), searchspace.size)
+    maxiter = min(maxiter, searchspace.size)
 
     if method not in supported_methods:
         raise ValueError(f"Error {method} not supported, {supported_methods=}")
