@@ -104,6 +104,7 @@ class Searchspace:
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
+        self.__true_tune_params = None
         self.__neighbor_cache = { method: dict() for method in supported_neighbor_methods }
         self.__neighbor_partial_cache = { method: defaultdict(list) for method in supported_neighbor_methods }
         self.neighbors_index = dict()
@@ -686,6 +687,20 @@ class Searchspace:
             # type_string = ",".join(list(type(param).__name__ for param in parameter_space_list[0]))
             self.__numpy = np.array(self.list)
         return self.__numpy
+
+    def get_true_tunable_params(self) -> dict:
+        """Get the tunable parameters that are actually tunable, i.e. not constant after restrictions."""
+        if self.__true_tune_params is None:
+            true_tune_params = dict()
+            numpy_list = self.get_list_numpy()
+            for param_index, (param_name, param_values) in enumerate(self.tune_params.items()):
+                if len(param_values) == 1:
+                    continue    # if the parameter is constant, skip it
+                if not np.all(numpy_list[:, param_index] == numpy_list[0, param_index]):
+                    # if after restrictions there are different values, register the parameter
+                    true_tune_params[param_name] = param_values
+            self.__true_tune_params = true_tune_params
+        return self.__true_tune_params
 
     def get_param_indices(self, param_config: tuple) -> tuple:
         """For each parameter value in the param config, find the index in the tunable parameters."""
