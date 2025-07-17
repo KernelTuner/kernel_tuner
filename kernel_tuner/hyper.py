@@ -5,6 +5,8 @@ from pathlib import Path
 from random import randint
 from argparse import ArgumentParser
 
+import numpy as np
+
 import kernel_tuner
 
 
@@ -94,10 +96,25 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, restrictions: li
     return list(result_unique.values()), env
 
 if __name__ == "__main__":
+    """Main function to run the hyperparameter tuning. Run with `python hyper.py strategy_to_tune=`."""
+
     parser = ArgumentParser()
-    parser.add_argument("strategy_to_tune")
+    parser.add_argument("strategy_to_tune", type=str, help="The strategy to tune hyperparameters for.")
+    parser.add_argument("--meta_strategy", nargs='?', default="genetic_algorithm", type=str, help="The meta-strategy to use for hyperparameter tuning.")
+    parser.add_argument("--max_time", nargs='?', default=60*60*24, type=int, help="The maximum time in seconds for the hyperparameter tuning.")
     args = parser.parse_args()
     strategy_to_tune = args.strategy_to_tune
+
+    kwargs = dict(
+        verbose=True,
+        quiet=False,
+        simulation_mode=False,
+        strategy=args.meta_strategy,
+        cache=f"hyperparamtuning_t={strategy_to_tune}_m={args.meta_strategy}.json",
+        strategy_options=dict(
+            time_limit=args.max_time,
+        )
+    )
 
     # select the hyperparameter parameters for the selected optimization algorithm
     restrictions = []
@@ -131,9 +148,10 @@ if __name__ == "__main__":
     elif strategy_to_tune.lower() == "diff_evo":
         hyperparams = {
             'method': ["best1bin", "rand1bin", "best2bin", "rand2bin", "best1exp", "rand1exp", "best2exp", "rand2exp", "currenttobest1bin", "currenttobest1exp", "randtobest1bin", "randtobest1exp"],   # best1bin
-            'popsize': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],   # 50
-            'F': [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0],  # 1.3
-            'CR': [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]  # 0.9
+            'popsize': list(range(1, 100+1, 1)),   # 50
+            'popsize_times_dimensions': [True, False],  # False
+            'F': list(np.arange(0.05, 2.0+0.05, 0.05)),  # 1.3
+            'CR': list(np.arange(0.05, 1.0+0.05, 0.05))  # 0.9
         }
     elif strategy_to_tune.lower() == "basinhopping":
         hyperparams = {
@@ -172,6 +190,6 @@ if __name__ == "__main__":
         raise ValueError(f"Invalid argument {strategy_to_tune=}")
 
     # run the hyperparameter tuning
-    result, env = tune_hyper_params(strategy_to_tune.lower(), hyperparams, restrictions=restrictions)
+    result, env = tune_hyper_params(strategy_to_tune.lower(), hyperparams, restrictions=restrictions, **kwargs)
     print(result)
     print(env['best_config'])
