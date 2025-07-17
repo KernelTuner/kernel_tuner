@@ -541,10 +541,10 @@ def test_get_kernel_string_func():
 
 def test_get_kernel_string_filename_not_found():
     # when the string looks like a filename, but the file does not exist
-    # assume the string is not a filename after all
+    # check if throws an exception
     bogus_filename = "filename_3456789.cu"
-    answer = get_kernel_string(bogus_filename)
-    assert answer == bogus_filename
+    with pytest.raises(FileNotFoundError):
+        get_kernel_string(bogus_filename)
 
 
 def test_looks_like_a_filename1():
@@ -740,6 +740,24 @@ def test_parse_restrictions():
     parsed, params = parsed_multi[2]
     assert restrictions[2] in parsed
     assert all(param in tune_params for param in params)
+
+
+def test_check_matching_problem_size():
+    # these should error
+    with pytest.raises(ValueError):
+        check_matching_problem_size(42, 1000)
+    with pytest.raises(ValueError):
+        check_matching_problem_size([42,1], 42)
+    with pytest.raises(ValueError):
+        check_matching_problem_size([42,0], 42)
+    with pytest.raises(ValueError):
+        check_matching_problem_size(None, 42)
+    # these should not error
+    check_matching_problem_size(1000, (1000,))
+    check_matching_problem_size([1000], 1000)
+    check_matching_problem_size(1000, 1000)
+    check_matching_problem_size(1000, [1000])
+    check_matching_problem_size([1000,], 1000)
 
 
 def test_convert_constraint_lambdas():

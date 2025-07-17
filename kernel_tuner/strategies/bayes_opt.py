@@ -110,7 +110,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     :rtype: list(dict()), dict()
 
     """
-    # we don't actually use this for Bayesian Optimization, but it is used to check for unsupported options  
+    # we don't actually use this for Bayesian Optimization, but it is used to check for unsupported options
     get_options(tuning_options.strategy_options, _options, unsupported=["x0"])
 
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
@@ -145,7 +145,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # initialize and optimize
     try:
         bo = BayesianOptimization(
-            parameter_space, searchspace, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
+            parameter_space,
+            searchspace,
+            removed_tune_params,
+            tuning_options,
+            normalize_dict,
+            denormalize_dict,
+            cost_func,
         )
     except StopCriterionReached:
         warnings.warn(
@@ -851,7 +857,10 @@ class BayesianOptimization:
         while self.fevals < max_fevals:
             aqfs = self.multi_afs
             # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
-            fit_observations = last_prediction_time * predict_eval_ratio <= last_eval_time or last_prediction_counter >= predict_eval_ratio
+            fit_observations = (
+                last_prediction_time * predict_eval_ratio <= last_eval_time
+                or last_prediction_counter >= predict_eval_ratio
+            )
             if fit_observations:
                 last_prediction_counter = 0
                 pred_start = time.perf_counter()

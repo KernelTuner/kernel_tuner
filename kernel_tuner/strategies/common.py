@@ -130,19 +130,21 @@ class CostFunc:
         # else check if this is a legal (non-restricted) configuration
         if check_restrictions and self.searchspace.restrictions:
             legal = self.searchspace.is_param_config_valid(tuple(params))
-            params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
 
-            if "constraint_aware" in self.tuning_options.strategy_options and self.tuning_options.strategy_options["constraint_aware"]:
-                # attempt to repair
-                new_params = unscale_and_snap_to_nearest_valid(x, params, self.searchspace, self.tuning_options.eps)
-                if new_params:
-                    params = new_params
-                    legal = True
-                    x_int = ",".join([str(i) for i in params])
 
             if not legal:
-                result = params_dict
-                result[self.tuning_options.objective] = util.InvalidConfig()
+                if "constraint_aware" in self.tuning_options.strategy_options and self.tuning_options.strategy_options["constraint_aware"]:
+                    # attempt to repair
+                    new_params = unscale_and_snap_to_nearest_valid(x, params, self.searchspace, self.tuning_options.eps)
+                    if new_params:
+                        params = new_params
+                        legal = True
+                        x_int = ",".join([str(i) for i in params])
+
+                if not legal:
+                    params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
+                    result = params_dict
+                    result[self.tuning_options.objective] = util.InvalidConfig()
 
         if legal:
             # compile and benchmark this instance

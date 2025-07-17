@@ -11,6 +11,9 @@ from kernel_tuner.util import get_instance_string, looks_like_a_filename, read_f
 objective_default_map = {
     "time": False,
     "energy": False,
+    "fitness": True,
+    "cost": False,
+    "loss": False,
     "GFLOP/s": True,
     "TFLOP/s": True,
     "GB/s": True,
