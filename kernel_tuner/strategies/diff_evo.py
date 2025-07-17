@@ -11,7 +11,7 @@ from kernel_tuner.strategies.common import CostFunc
 
 _options = dict(
     popsize=("population size", 50),
-    maxiter=("maximum number of generations", 200),
+    maxiter=("maximum number of generations", 1e12),    # very large to avoid early stopping (stopping is managed by StopCriterionReached)
     F=("mutation factor (differential weight)", 1.3),
     CR=("crossover rate", 0.9),
     method=("method", "best1bin"),
@@ -391,7 +391,7 @@ def repair(trial_vector, searchspace):
         for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
             new_trial_vector = searchspace.get_random_neighbor(tuple(trial_vector), neighbor_method=neighbor_method)
             if new_trial_vector is not None:
-                print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired to {new_trial_vector=}")
+                # print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired to {new_trial_vector=}")
                 return list(new_trial_vector)
 
     return trial_vector

@@ -130,9 +130,10 @@ if __name__ == "__main__":
         }
     elif strategy_to_tune.lower() == "diff_evo":
         hyperparams = {
-            'method': ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"],
-            'popsize': [10, 20, 30],
-            'maxiter': [50, 100, 150],
+            'method': ["best1bin", "rand1bin", "best2bin", "rand2bin", "best1exp", "rand1exp", "best2exp", "rand2exp", "currenttobest1bin", "currenttobest1exp", "randtobest1bin", "randtobest1exp"],   # best1bin
+            'popsize': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],   # 50
+            'F': [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0],  # 1.3
+            'CR': [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]  # 0.9
         }
     elif strategy_to_tune.lower() == "basinhopping":
         hyperparams = {
