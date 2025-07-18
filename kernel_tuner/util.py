@@ -1147,7 +1147,9 @@ def compile_restrictions(
 
 def check_matching_problem_size(cached_problem_size, problem_size):
     """Check the if requested problem size matches the problem size in the cache."""
-    if not (np.array(cached_problem_size) == np.array(problem_size)).all():
+    cached_problem_size_arr = np.array(cached_problem_size)
+    problem_size_arr = np.array(problem_size)
+    if cached_problem_size_arr.size != problem_size_arr.size or not (cached_problem_size_arr == problem_size_arr).all():
         raise ValueError(f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}")
 
 def process_cache(cache, kernel_options, tuning_options, runner):
