@@ -8,9 +8,6 @@ from warnings import warn
 from copy import deepcopy
 from collections import defaultdict
 
-from scipy.stats.qmc import LatinHypercube
-from sklearn.neighbors import NearestNeighbors
-
 import numpy as np
 from constraint import (
     BacktrackingSolver,
@@ -107,6 +104,9 @@ class Searchspace:
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
+        self.__tune_params_to_index_lookup = None
+        self.__tune_params_from_index_lookup = None
+        self.__list_param_indices = None
         self.__true_tune_params = None
         self.__neighbor_cache = { method: dict() for method in supported_neighbor_methods }
         self.__neighbor_partial_cache = { method: defaultdict(list) for method in supported_neighbor_methods }
@@ -691,6 +691,34 @@ class Searchspace:
             self.__numpy = np.array(self.list)
         return self.__numpy
 
+    def get_list_param_indices_numpy(self) -> np.ndarray:
+        """Get the parameter space list as a NumPy array of parameter value indices. 
+        
+        Same as mapping `get_param_indices` over the searchspace, but faster.
+        Assumes that the parameter configs have the same order as `tune_params`.
+
+        Returns:
+            the NumPy array.
+        """
+        if self.__list_param_indices is None:
+            tune_params_to_index_lookup = list()
+            tune_params_from_index_lookup = list()
+            for param_name, param_values in self.tune_params.items():
+                tune_params_to_index_lookup.append({ value: index for index, value in enumerate(param_values) })
+                tune_params_from_index_lookup.append({ index: value for index, value in enumerate(param_values) })
+            
+            # build the list
+            list_param_indices = list()
+            for param_config in self.list:
+                list_param_indices.append([tune_params_to_index_lookup[index][val] for index, val in enumerate(param_config)])
+
+            # register the computed results
+            self.__tune_params_to_index_lookup = tune_params_to_index_lookup
+            self.__tune_params_from_index_lookup = tune_params_from_index_lookup
+            self.__list_param_indices = np.array(list_param_indices)
+            assert self.__list_param_indices.shape == (self.size, self.num_params)
+        return self.__list_param_indices
+
     def get_true_tunable_params(self) -> dict:
         """Get the tunable parameters that are actually tunable, i.e. not constant after restrictions."""
         if self.__true_tune_params is None:
@@ -707,6 +735,9 @@ class Searchspace:
 
     def get_param_indices(self, param_config: tuple) -> tuple:
         """For each parameter value in the param config, find the index in the tunable parameters."""
+        if self.__tune_params_to_index_lookup is not None:
+            # if the lookup is already computed, use it
+            return tuple([self.__tune_params_to_index_lookup[index][param_value] for index, param_value in enumerate(param_config)])
         try:
             return tuple(self.params_values[index].index(param_value) for index, param_value in enumerate(param_config))
         except ValueError as e:
@@ -716,6 +747,13 @@ class Searchspace:
                     raise ValueError(
                         f"Parameter value {param_value} ({type(param_value)}) is not in the list of values {self.params_values[index]}"
                     ) from e
+
+    def get_param_config_from_param_indices(self, param_indices: tuple) -> tuple:
+        """Get the parameter configuration from the given parameter indices."""
+        if self.__tune_params_from_index_lookup is not None:
+            # if the lookup is already computed, use it
+            return tuple([self.__tune_params_from_index_lookup[index][param_index] for index, param_index in enumerate(param_indices)])
+        return tuple(self.params_values[index][param_index] for index, param_index in enumerate(param_indices))
 
     def get_param_configs_at_indices(self, indices: List[int]) -> List[tuple]:
         """Get the param configs at the given indices."""
@@ -838,7 +876,7 @@ class Searchspace:
 
     def __prepare_neighbors_index(self):
         """Prepare by calculating the indices for the individual parameters."""
-        self.params_values_indices = np.array(list(self.get_param_indices(param_config) for param_config in self.list))
+        self.params_values_indices = self.get_list_param_indices_numpy()
 
     def __get_neighbors_indices_hamming(self, param_config: tuple) -> List[int]:
         """Get the neighbors using Hamming distance from the parameter configuration."""
@@ -1017,54 +1055,6 @@ class Searchspace:
             )
             num_samples = self.size
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
-
-    def get_latin_hypercube_sample(self, n_samples: int, seed: int = None) -> List[tuple]:
-        """Perform Latin Hypercube Sampling over a set of valid discrete configurations.
-
-        Parameters:
-        - n_samples: int
-            The number of LHS samples to draw.
-        - seed: int or None
-            Random seed for reproducibility.
-
-        Returns:
-        - sample: np.ndarray of shape (n_samples, n_dims)
-            The sampled configurations using LHS.
-        """
-        if n_samples > self.size:
-            raise ValueError(f"Cannot sample more points ({n_samples}) than available configurations ({self.size})")
-
-        # get the configurations
-        configs = self.get_list_numpy()
-        n_dims = configs.shape[1]
-
-        # encode non-numeric values to their index in the parameter values
-        for i in range(n_dims):
-            if not np.issubdtype(configs[:, i].dtype, np.number):
-                # convert categorical values to indices
-                unique_values, inverse_indices = np.unique(configs[:, i], return_inverse=True)
-                configs[:, i] = inverse_indices
-
-        # Normalize valid configurations to [0, 1]^d
-        scaler_min = configs.min(axis=0)
-        scaler_max = configs.max(axis=0)
-        normalized = (configs - scaler_min) / (scaler_max - scaler_min + 1e-9)
-
-        # Generate LHS samples in [0, 1]^d
-        sampler = LatinHypercube(d=n_dims, seed=seed)
-        lhs_points = sampler.random(n=n_samples)
-
-        # Match LHS points to the closest valid config
-        nn = NearestNeighbors(n_neighbors=1)
-        nn.fit(normalized)
-        _, indices = nn.kneighbors(lhs_points)
-        selected_indices = np.unique(indices.flatten())
-
-        # if duplicates were removed, add random unique configs until we have enough
-        if len(selected_indices) < n_samples:
-            selected_indices = np.concatenate([selected_indices, self.get_random_sample_indices(n_samples - len(selected_indices))])
-
-        return self.get_param_configs_at_indices(selected_indices)
 
     def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[int]:
         """Get the neighbors indices for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
