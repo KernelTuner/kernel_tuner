@@ -8,6 +8,9 @@ from warnings import warn
 from copy import deepcopy
 from collections import defaultdict
 
+from scipy.stats.qmc import LatinHypercube
+from sklearn.neighbors import NearestNeighbors
+
 import numpy as np
 from constraint import (
     BacktrackingSolver,
@@ -1014,6 +1017,54 @@ class Searchspace:
             )
             num_samples = self.size
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
+
+    def get_latin_hypercube_sample(self, n_samples: int, seed: int = None) -> List[tuple]:
+        """Perform Latin Hypercube Sampling over a set of valid discrete configurations.
+
+        Parameters:
+        - n_samples: int
+            The number of LHS samples to draw.
+        - seed: int or None
+            Random seed for reproducibility.
+
+        Returns:
+        - sample: np.ndarray of shape (n_samples, n_dims)
+            The sampled configurations using LHS.
+        """
+        if n_samples > self.size:
+            raise ValueError(f"Cannot sample more points ({n_samples}) than available configurations ({self.size})")
+
+        # get the configurations
+        configs = self.get_list_numpy()
+        n_dims = configs.shape[1]
+
+        # encode non-numeric values to their index in the parameter values
+        for i in range(n_dims):
+            if not np.issubdtype(configs[:, i].dtype, np.number):
+                # convert categorical values to indices
+                unique_values, inverse_indices = np.unique(configs[:, i], return_inverse=True)
+                configs[:, i] = inverse_indices
+
+        # Normalize valid configurations to [0, 1]^d
+        scaler_min = configs.min(axis=0)
+        scaler_max = configs.max(axis=0)
+        normalized = (configs - scaler_min) / (scaler_max - scaler_min + 1e-9)
+
+        # Generate LHS samples in [0, 1]^d
+        sampler = LatinHypercube(d=n_dims, seed=seed)
+        lhs_points = sampler.random(n=n_samples)
+
+        # Match LHS points to the closest valid config
+        nn = NearestNeighbors(n_neighbors=1)
+        nn.fit(normalized)
+        _, indices = nn.kneighbors(lhs_points)
+        selected_indices = np.unique(indices.flatten())
+
+        # if duplicates were removed, add random unique configs until we have enough
+        if len(selected_indices) < n_samples:
+            selected_indices = np.concatenate([selected_indices, self.get_random_sample_indices(n_samples - len(selected_indices))])
+
+        return self.get_param_configs_at_indices(selected_indices)
 
     def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[int]:
         """Get the neighbors indices for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
