@@ -442,6 +442,59 @@ def test_order_param_configs():
         assert expected_param_config in ordered_neighbors
     assert len(ordered_neighbors) == len(expected_order)
 
+def test_true_tunable_params():
+    """Test whether the true tunable parameters are correctly identified."""
+    # create a searchspace with mixed parameter types
+    mixed_tune_params = dict()
+    mixed_tune_params["int_param"] = [1, 2, 3]
+    mixed_tune_params["float_param"] = [3.0, 4.0, 5.0]
+    mixed_restrict = ["int_param >= 3"]
+
+    # create the searchspace object
+    searchspace = Searchspace(mixed_tune_params, mixed_restrict, max_threads)
+
+    # check the size
+    assert searchspace.size == 3
+
+    # check that the true tunable parameters are correctly identified
+    true_tunable_params = searchspace.get_true_tunable_params()
+    assert len(true_tunable_params) == 1
+    assert "float_param" in true_tunable_params
+    assert true_tunable_params["float_param"] == mixed_tune_params["float_param"]
+
+
+def test_mixed_param_types():
+    """Test whether the searchspace can handle mixed parameter types."""
+    # create a searchspace with mixed parameter types
+    mixed_tune_params = dict()
+    mixed_tune_params["int_param"] = [1, 2, 3]
+    mixed_tune_params["float_param"] = [1.0, 2.0, 3.0]
+    mixed_tune_params["str_param"] = ["Alpha", "Bravo", "Charlie"]
+    mixed_tune_params["bool_param"] = [True, False]
+    mixed_restrict = ["int_param + float_param > 3", "bool_param == False"]
+
+    # create the searchspace object
+    searchspace = Searchspace(mixed_tune_params, mixed_restrict, max_threads)
+
+    # check the size
+    assert searchspace.size == 18 == len(searchspace.list) == len(searchspace.get_list_dict().keys())
+
+    # check whether param indices are correctly identified
+    assert searchspace.get_param_indices(tuple([1, 1.0, "Alpha", True])) == (0, 0, 0, 0)
+    assert searchspace.get_param_indices(tuple([2, 2.0, "Bravo", False])) == (1, 1, 1, 1)
+
+    # check whether the mapping of params to param indices and back works
+    for param_config in searchspace.list:
+        param_indices = searchspace.get_param_indices(param_config)
+        assert searchspace.get_param_config_from_param_indices(param_indices) == param_config
+
+    # check the parameter types
+    assert all(v1 == v2 for v1, v2 in zip(searchspace.tune_param_is_numeric_mask, [True, True, False, False]))
+
+    # check whether numeric params work as expected
+    for param_config_numeric, param_config in zip(searchspace.get_list_numpy_numeric(), searchspace.list):
+        assert searchspace.get_param_config_from_numeric(param_config_numeric) == param_config
+
 
 def test_small_searchspace():
     """Test a small real-world searchspace and the usage of the `max_threads` parameter."""
