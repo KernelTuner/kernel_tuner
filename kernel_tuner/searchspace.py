@@ -104,8 +104,9 @@ class Searchspace:
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
-        self.tune_param_is_numeric = { param_name: all(isinstance(val, (int, float)) and not any(isinstance(val, bool)) for param_name, val in tune_params.items()) }
-        self.tune_param_is_numeric_mask = np.array(tune_param_is_numeric.values(), dtype=bool)
+        self.tune_param_is_numeric = { param_name: all(isinstance(val, (int, float)) for val in param_values) and not any(isinstance(val, bool) for val in param_values) for (param_name, param_values) in tune_params.items() }
+        self.tune_param_is_numeric_mask = np.array(list(self.tune_param_is_numeric.values()), dtype=bool)
+        self.__numpy_types = [np.array(vals).dtype for vals in self.params_values]
         self.__tune_params_to_index_lookup = None
         self.__tune_params_from_index_lookup = None
         self.__list_param_indices = None
@@ -682,7 +683,10 @@ class Searchspace:
         return self.__dict
 
     def get_list_numpy(self) -> np.ndarray:
-        """Get the parameter space list as a NumPy array. Initializes the NumPy array if not yet done.
+        """Get the parameter space list as a NumPy array of tuples with mixed types. 
+        
+        Rarely faster or more convenient than `get_list_param_indices_numpy` or `get_list_numpy_numeric`. 
+        Initializes the NumPy array if not yet done.
 
         Returns:
             the NumPy array.
@@ -691,11 +695,15 @@ class Searchspace:
             # create a numpy array of the search space
             # in order to have the tuples as tuples in numpy, the types are set with a string, but this will make the type np.void
             # type_string = ",".join(list(type(param).__name__ for param in parameter_space_list[0]))
-            self.__numpy = np.array(self.list)
+            types = np.dtype([(param_name, self.__numpy_types[index]) for index, param_name in enumerate(self.param_names)])
+            self.__numpy = np.array(self.list, dtype=types)
+            assert self.__numpy.shape[0] == self.size, f"Expected shape {(self.size,)}, got {self.__numpy.shape}"
+            assert len(self.__numpy[0]) == self.num_params, f"Expected tuples to be of length {len(self.__numpy[0])}, got {len(self.__numpy[0])}"
+        # return the numpy array
         return self.__numpy
 
     def get_list_param_indices_numpy(self) -> np.ndarray:
-        """Get the parameter space list as a NumPy array of parameter value indices. 
+        """Get the parameter space list as a 2D NumPy array of parameter value indices. 
         
         Same as mapping `get_param_indices` over the searchspace, but faster.
         Assumes that the parameter configs have the same order as `tune_params`.
@@ -718,12 +726,12 @@ class Searchspace:
             # register the computed results
             self.__tune_params_to_index_lookup = tune_params_to_index_lookup
             self.__tune_params_from_index_lookup = tune_params_from_index_lookup
-            self.__list_param_indices = np.array(list_param_indices)
-            assert self.__list_param_indices.shape == (self.size, self.num_params)
+            self.__list_param_indices = np.array(list_param_indices, dtype=int)
+            assert self.__list_param_indices.shape == (self.size, self.num_params), f"Expected shape {(self.size, self.num_params)}, got {self.__list_param_indices.shape}"
         return self.__list_param_indices
     
     def get_list_numpy_numeric(self) -> np.ndarray:
-        """Get the parameter space list as a NumPy array of numeric values. 
+        """Get the parameter space list as a 2D NumPy array of numeric values. 
         
         This is a view of the NumPy array returned by `get_list_numpy`, but with only numeric values.
         If the searchspace contains non-numeric values, their index will be used instead.
@@ -732,14 +740,19 @@ class Searchspace:
             the NumPy array.
         """
         if self.__list_numpy_numeric is None:
-            self.__list_numpy_numeric = np.where(self.tune_param_is_numeric_mask, self.get_list_numpy(), self.get_list_param_indices_numpy())
+            # self.__list_numpy_numeric = np.where(self.tune_param_is_numeric_mask, self.get_list_numpy(), self.get_list_param_indices_numpy())
+            list_numpy_numeric = list()
+            for index, (param_name, is_numeric) in enumerate(self.tune_param_is_numeric.items()):
+                list_numpy_numeric.append(self.get_list_numpy()[param_name] if is_numeric else self.get_list_param_indices_numpy()[:, index])
+            self.__list_numpy_numeric = np.array(list_numpy_numeric).transpose()
+            assert self.__list_numpy_numeric.shape == (self.size, self.num_params), f"Expected shape {(self.size, self.num_params)}, got {self.__list_numpy_numeric.shape}"
         return self.__list_numpy_numeric
 
     def get_true_tunable_params(self) -> dict:
         """Get the tunable parameters that are actually tunable, i.e. not constant after restrictions."""
         if self.__true_tune_params is None:
             true_tune_params = dict()
-            numpy_list = self.get_list_numpy()
+            numpy_list = self.get_list_param_indices_numpy()
             for param_index, (param_name, param_values) in enumerate(self.tune_params.items()):
                 if len(param_values) == 1:
                     continue    # if the parameter is constant, skip it
@@ -773,9 +786,13 @@ class Searchspace:
 
     def get_param_config_from_numeric(self, param_config: tuple) -> tuple:
         """Get the actual parameter configuration values from a numeric representation of the parameter configuration as in `get_list_numpy_numeric`."""
+        if np.all(self.tune_param_is_numeric_mask):
+            return param_config  # if all parameters are numeric, return the input as is
         if self.__tune_params_from_index_lookup is None:
             # if the lookup is not yet computed, compute it
             self.get_list_param_indices_numpy()
+        if isinstance(param_config, np.ndarray):
+            param_config = tuple(param_config.tolist())     # if the input is a numpy array, convert it to a tuple
         return tuple([val if self.tune_param_is_numeric_mask[index] else self.__tune_params_from_index_lookup[index][val] for index, val in enumerate(param_config)])
 
     def get_param_configs_at_indices(self, indices: List[int]) -> List[tuple]:
@@ -903,14 +920,15 @@ class Searchspace:
 
     def __get_neighbors_indices_hamming(self, param_config: tuple) -> List[int]:
         """Get the neighbors using Hamming distance from the parameter configuration."""
-        num_matching_params = np.count_nonzero(self.get_list_numpy() == param_config, -1)
+        param_indices = self.get_param_indices(param_config)
+        num_matching_params = np.count_nonzero(self.get_list_param_indices_numpy() == param_indices, -1)
         matching_indices = (num_matching_params == self.num_params - 1).nonzero()[0]
         return matching_indices
 
     def __get_random_neighbor_hamming(self, param_config: tuple) -> tuple:
         """Get a random neighbor at 1 Hamming distance from the parameter configuration."""
-        arr = self.get_list_numpy()
-        target = np.array(param_config)
+        arr = self.get_list_param_indices_numpy()
+        target = np.array(self.get_param_indices(param_config))
         assert arr[0].shape == target.shape
 
         # find the first row that differs from the target in exactly one column, return as soon as one is found
