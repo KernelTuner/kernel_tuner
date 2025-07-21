@@ -104,9 +104,12 @@ class Searchspace:
         self.params_values_indices = None
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
+        self.tune_param_is_numeric = { param_name: all(isinstance(val, (int, float)) and not any(isinstance(val, bool)) for param_name, val in tune_params.items()) }
+        self.tune_param_is_numeric_mask = np.array(tune_param_is_numeric.values(), dtype=bool)
         self.__tune_params_to_index_lookup = None
         self.__tune_params_from_index_lookup = None
         self.__list_param_indices = None
+        self.__list_numpy_numeric = None
         self.__true_tune_params = None
         self.__neighbor_cache = { method: dict() for method in supported_neighbor_methods }
         self.__neighbor_partial_cache = { method: defaultdict(list) for method in supported_neighbor_methods }
@@ -718,6 +721,19 @@ class Searchspace:
             self.__list_param_indices = np.array(list_param_indices)
             assert self.__list_param_indices.shape == (self.size, self.num_params)
         return self.__list_param_indices
+    
+    def get_list_numpy_numeric(self) -> np.ndarray:
+        """Get the parameter space list as a NumPy array of numeric values. 
+        
+        This is a view of the NumPy array returned by `get_list_numpy`, but with only numeric values.
+        If the searchspace contains non-numeric values, their index will be used instead.
+
+        Returns:
+            the NumPy array.
+        """
+        if self.__list_numpy_numeric is None:
+            self.__list_numpy_numeric = np.where(self.tune_param_is_numeric_mask, self.get_list_numpy(), self.get_list_param_indices_numpy())
+        return self.__list_numpy_numeric
 
     def get_true_tunable_params(self) -> dict:
         """Get the tunable parameters that are actually tunable, i.e. not constant after restrictions."""
