@@ -771,6 +771,13 @@ class Searchspace:
             return tuple([self.__tune_params_from_index_lookup[index][param_index] for index, param_index in enumerate(param_indices)])
         return tuple(self.params_values[index][param_index] for index, param_index in enumerate(param_indices))
 
+    def get_param_config_from_numeric(self, param_config: tuple) -> tuple:
+        """Get the actual parameter configuration values from a numeric representation of the parameter configuration as in `get_list_numpy_numeric`."""
+        if self.__tune_params_from_index_lookup is None:
+            # if the lookup is not yet computed, compute it
+            self.get_list_param_indices_numpy()
+        return tuple([val if self.tune_param_is_numeric_mask[index] else self.__tune_params_from_index_lookup[index][val] for index, val in enumerate(param_config)])
+
     def get_param_configs_at_indices(self, indices: List[int]) -> List[tuple]:
         """Get the param configs at the given indices."""
         # map(get) is ~40% faster than numpy[indices] (average based on six searchspaces with 10000, 100000 and 1000000 configs and 10 or 100 random indices)
