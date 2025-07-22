@@ -2,11 +2,11 @@ import ast
 import numbers
 import re
 from pathlib import Path
-from random import choice, shuffle
+from random import choice, shuffle, randint
 from typing import List, Union
 from warnings import warn
 from copy import deepcopy
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import numpy as np
 from constraint import (
@@ -1096,6 +1096,70 @@ class Searchspace:
             )
             num_samples = self.size
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
+
+    def get_distributed_random_sample(self, num_samples: int, neighbor_method=None, sampling_factor=10) -> List[tuple]:
+        """Get a distributed random sample of parameter configurations, similar to LHS but much faster in a constrained setting."""
+        if self.size < num_samples:
+            warn(
+                f"Too many samples requested ({num_samples}), reducing the number of samples to the searchspace size ({self.size})"
+            )
+            num_samples = self.size
+        
+        # adjust the number of random samples if necessary
+        sampling_factor = max(1, sampling_factor)
+        num_random_samples = min(sampling_factor * num_samples, self.size)
+        if num_random_samples == self.size or num_random_samples <= 1:
+            return self.get_random_sample(num_random_samples)
+        random_samples_indices = self.get_random_sample_indices(num_random_samples)
+
+        # calculate the desired parameter configuration indices, starting at the edges of the parameter indices and halving each time
+        def get_next_sample(lower: tuple, upper: tuple) -> tuple:
+            """Get the next sample indices by halving the range between upper and lower bounds."""
+            half = tuple(round((lower[i] + upper[i]) / 2) for i in range(upper))
+            if half == lower or half == upper:
+                # if the range is too small to make a difference, pick one of the bounds and replace one random index with an index of the other
+                random_sample = choice([lower, upper])
+                random_index = randint(0, self.num_params-1))
+                random_sample[random_index] = lower[random_index] if random_sample[random_index] == upper[random_index] else upper[random_index]
+                return tuple(random_sample)
+            return half
+
+        # seed the queue with the lower and upper bounds of the parameter indices
+        target_samples_param_indices = []
+        target_samples_param_indices.append(tuple(0 for _ in range(self.num_params)))
+        target_samples_param_indices.append(tuple(len(self.params_values[i]) - 1 for i in range(self.num_params)))
+        queue = deque([(target_samples_param_indices[0], target_samples_param_indices[1])])
+
+        # do a binary search for the target sample indices, until we have enough samples
+        while len(target_samples_param_indices) < num_samples:
+            lower, upper = queue.popleft()
+            next_sample = get_next_sample(lower, upper)
+            target_samples_param_indices.append(next_sample)
+            queue.append((lower, next_sample))
+            queue.append((next_sample, upper))
+
+        # filter out duplicate samples
+        target_samples_param_indices = list(set(target_samples_param_indices))
+
+        # for each of the target sample indices, calculate which parameter configuration is closest
+        target_sample_indices = list()
+        for target_sample_param_config_indices in target_samples_param_indices:
+            # calculate the absolute difference between the parameter value indices
+            abs_index_difference = np.abs(self.params_values_indices - target_sample_param_config_indices)
+            # find the param config index where the difference is the smallest
+            min_index_difference_index = np.argmin(abs_index_difference, axis=1)
+            target_sample_indices.append(min_index_difference_index)
+
+        # filter out duplicate samples and replace with random ones
+        target_sample_indices = list(set(target_sample_indices))
+        if len(target_sample_indices) < num_samples:
+            # if there are not enough unique samples, fill up with random samples
+            random_sample_indices = self.get_random_sample_indices(num_samples - len(target_sample_indices))
+            target_sample_indices.extend(random_sample_indices)
+
+        # TODO this same approach can be done with LHS on the parameter index values!
+
+        return self.get_param_configs_at_indices(target_sample_indices)
 
     def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[int]:
         """Get the neighbors indices for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
