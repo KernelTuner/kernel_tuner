@@ -958,11 +958,6 @@ class Searchspace:
         # calculate the absolute difference between the parameter value indices
         abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices)
 
-        # calculate the difference between the parameter value indices
-        index_difference = np.abs(self.params_values_indices - param_config_value_indices)
-        # transpose to get the param indices difference per parameter instead of per param config
-        index_difference_transposed = index_difference.transpose()
-
         # start at an index difference of 1, progressively increase - potentially expensive if there are no neighbors until very late
         max_index_difference = max(max_index_difference_per_param)
         allowed_index_difference = 1
