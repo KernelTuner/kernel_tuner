@@ -298,6 +298,24 @@ def test_neighbors_adjacent():
         assert random_neighbor in neighbors
         assert random_neighbor != test_config
 
+def test_neighbors_closest_param_indices():
+    """Test whether the closest parameter indices neighbors are as expected."""
+    test_config = tuple([1.5, 4, "string_1"])
+    expected_neighbors = [
+        (1.5, 5.5, 'string_1'), 
+        (1.5, 4, 'string_2')
+    ]
+
+    # test the neighbors
+    __test_neighbors(test_config, expected_neighbors, "closest-param-indices")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "closest-param-indices")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "closest-param-indices")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
+
 
 def test_neighbors_fictious():
     """Test whether the neighbors are as expected for a fictious parameter configuration (i.e. not existing in the search space due to restrictions)."""
