@@ -9,6 +9,7 @@ from copy import deepcopy
 from collections import defaultdict, deque
 
 import numpy as np
+from scipy.stats.qmc import LatinHypercube
 from constraint import (
     BacktrackingSolver,
     Constraint,
@@ -110,6 +111,8 @@ class Searchspace:
         self.__tune_params_to_index_lookup = None
         self.__tune_params_from_index_lookup = None
         self.__list_param_indices = None
+        self.__list_param_indices_lower_bounds = None
+        self.__list_param_indices_upper_bounds = None
         self.__list_numpy_numeric = None
         self.__true_tune_params = None
         self.__neighbor_cache = { method: dict() for method in supported_neighbor_methods }
@@ -726,10 +729,51 @@ class Searchspace:
             # register the computed results
             self.__tune_params_to_index_lookup = tune_params_to_index_lookup
             self.__tune_params_from_index_lookup = tune_params_from_index_lookup
-            self.__list_param_indices = np.array(list_param_indices, dtype=int)
+            self.__list_param_indices = np.array(list_param_indices)
             assert self.__list_param_indices.shape == (self.size, self.num_params), f"Expected shape {(self.size, self.num_params)}, got {self.__list_param_indices.shape}"
+
+            # calculate the actual minimum and maximum index for each parameter after restrictions
+            self.__list_param_indices_lower_bounds = np.min(self.__list_param_indices, axis=0)
+            self.__list_param_indices_upper_bounds = np.max(self.__list_param_indices, axis=0)
+
+            largest_index = np.max(self.__list_param_indices) * 2 # multiplied by two to account for worst-case absolute difference operations later
+            if largest_index >= 2**31:
+                # if the largest index is larger than 2**31, use int64 to avoid overflow
+                self.__list_param_indices = self.__list_param_indices.astype(np.int64)
+            # else:
+                # self.__list_param_indices = self.__list_param_indices.astype(np.int32)
+            # 
+            # the below types do not have a sizable performance benifit currently
+            elif largest_index >= 2**15:
+                # if the largest index is larger than 2**15, use int32 to avoid overflow
+                self.__list_param_indices = self.__list_param_indices.astype(np.int32)
+            elif largest_index >= 2**7:
+                # if the largest index is larger than 2**7, use int16 to avoid overflow
+                self.__list_param_indices = self.__list_param_indices.astype(np.int16)
+            else:
+                self.__list_param_indices = self.__list_param_indices.astype(np.int8)
         return self.__list_param_indices
-    
+
+    def get_param_indices_lower_bounds(self) -> np.ndarray:
+        """Get the lower bounds of the parameter indices after restrictions."""
+        if self.__list_param_indices_lower_bounds is None:
+            self.get_list_param_indices_numpy()
+        return self.__list_param_indices_lower_bounds
+
+    def get_param_indices_upper_bounds(self) -> np.ndarray:
+        """Get the upper bounds of the parameter indices after restrictions."""
+        if self.__list_param_indices_upper_bounds is None:
+            self.get_list_param_indices_numpy()
+        return self.__list_param_indices_upper_bounds
+
+    def get_list_param_indices_numpy_min(self):
+        """Get the minimum possible value in the numpy list of parameter indices."""
+        return np.iinfo(self.get_list_param_indices_numpy().dtype).min
+
+    def get_list_param_indices_numpy_max(self):
+        """Get the maximum possible value in the numpy list of parameter indices."""
+        return np.iinfo(self.get_list_param_indices_numpy().dtype).max
+
     def get_list_numpy_numeric(self) -> np.ndarray:
         """Get the parameter space list as a 2D NumPy array of numeric values. 
         
@@ -928,12 +972,12 @@ class Searchspace:
             self.__prepare_neighbors_index()
 
         # calculate the absolute difference between the parameter value indices
-        abs_index_difference = np.abs(self.params_values_indices - param_indices)
+        abs_index_difference = np.abs(self.params_values_indices - np.array(param_indices), dtype=self.params_values_indices.dtype)
         # calculate the sum of the absolute differences for each parameter configuration
         sum_of_index_differences = np.sum(abs_index_difference, axis=1)
         if param_index is not None:
             # set the sum of index differences to infinity for the parameter index to avoid returning the same parameter configuration
-            sum_of_index_differences[param_index] = np.iinfo(sum_of_index_differences.dtype).max    # can't use np.inf as it is not an integer type
+            sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
         if return_one:
             # if return_one is True, return the index of the closest parameter configuration (faster than finding all)
             get_partial_neighbors_indices = [np.argmin(sum_of_index_differences)]
@@ -981,7 +1025,7 @@ class Searchspace:
         max_index_difference_per_param = [max(len(self.params_values[p]) - 1 - i, i) for p, i in enumerate(param_config_value_indices)]
 
         # calculate the absolute difference between the parameter value indices
-        abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices)
+        abs_index_difference = np.abs(self.params_values_indices - np.array(param_config_value_indices), dtype=self.params_values_indices.dtype)
 
         # start at an index difference of 1, progressively increase - potentially expensive if there are no neighbors until very late
         max_index_difference = max(max_index_difference_per_param)
@@ -1035,7 +1079,7 @@ class Searchspace:
             else self.params_values_indices[param_config_index]
         )
         # calculate the absolute difference between the parameter value indices
-        abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices)
+        abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices, dtype=self.params_values_indices.dtype)
         # get the param config indices where the difference is one or less for each position
         matching_indices = (np.max(abs_index_difference, axis=1) <= 1).nonzero()[0]
         # as the selected param config does not differ anywhere, remove it from the matches
@@ -1057,18 +1101,17 @@ class Searchspace:
         # transpose to get the param indices difference per parameter instead of per param config
         index_difference_transposed = index_difference.transpose()
         # for each parameter get the closest upper and lower parameter (absolute index difference >= 1)
-        # np.PINF has been replaced by 1e12 here, as on some systems np.PINF becomes np.NINF
         upper_bound = tuple(
             np.min(
                 index_difference_transposed[p][(index_difference_transposed[p] > 0).nonzero()],
-                initial=1e12,
+                initial=self.get_list_param_indices_numpy_max(),
             )
             for p in range(self.num_params)
         )
         lower_bound = tuple(
             np.max(
                 index_difference_transposed[p][(index_difference_transposed[p] < 0).nonzero()],
-                initial=-1e12,
+                initial=self.get_list_param_indices_numpy_min(),
             )
             for p in range(self.num_params)
         )
@@ -1126,12 +1169,14 @@ class Searchspace:
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
 
     def get_distributed_random_sample_indices(self, num_samples: int, sampling_factor=10) -> List[int]:
-        """Get a distributed random sample of parameter configuration indices."""
-        if self.size < num_samples:
+        """Get a distributed random sample of parameter configuration indices. Note: `get_LHS_random_sample_indices` is likely faster and better distributed."""
+        if num_samples > self.size:
             warn(
-                f"Too many samples requested ({num_samples}), reducing the number of samples to the searchspace size ({self.size})"
+                f"Too many samples requested ({num_samples}), reducing the number of samples to half of the searchspace size ({self.size})"
             )
-            num_samples = self.size
+            num_samples = round(self.size / 2)
+        if num_samples == self.size:
+            return np.shuffle([range(self.size)])
         
         # adjust the number of random samples if necessary
         sampling_factor = max(1, sampling_factor)
@@ -1175,13 +1220,13 @@ class Searchspace:
         target_sample_indices = list()
         for target_sample_param_config_indices in target_samples_param_indices:
             # calculate the absolute difference between the parameter value indices
-            abs_index_difference = np.abs(self.params_values_indices - target_sample_param_config_indices)
+            abs_index_difference = np.abs(self.params_values_indices - target_sample_param_config_indices, dtype=self.params_values_indices.dtype)
             # find the param config index where the difference is the smallest
             sum_of_index_differences = np.sum(abs_index_difference, axis=1)
             param_index = self.get_param_config_index(self.get_param_config_from_param_indices(target_sample_param_config_indices))
             if param_index is not None:
                 # set the sum of index differences to infinity for the parameter index to avoid returning the same parameter configuration
-                sum_of_index_differences[param_index] = np.iinfo(sum_of_index_differences.dtype).max    # can't use np.inf as it is not an integer type
+                sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
             min_index_difference_index = np.argmin(sum_of_index_differences)
             target_sample_indices.append(min_index_difference_index.item())
 
@@ -1193,13 +1238,59 @@ class Searchspace:
             target_sample_indices.extend(random_sample_indices.tolist())
             target_sample_indices = list(set(target_sample_indices))
 
-        # TODO this same approach can be done with LHS on the parameter index values!
-
         return target_sample_indices
 
     def get_distributed_random_sample(self, num_samples: int, sampling_factor=10) -> List[tuple]:
         """Get a distributed random sample of parameter configurations."""
         return self.get_param_configs_at_indices(self.get_distributed_random_sample_indices(num_samples, sampling_factor))
+
+    def get_LHS_sample_indices(self, num_samples: int) -> List[int]:
+        """Get a Latin Hypercube sample of parameter configuration indices."""
+        if num_samples > self.size:
+            warn(
+                f"Too many samples requested ({num_samples}), reducing the number of samples to half of the searchspace size ({self.size})"
+            )
+            num_samples = round(self.size / 2)
+        if num_samples == self.size:
+            return np.shuffle([range(self.size)])
+        if self.params_values_indices is None:
+            self.__prepare_neighbors_index()
+
+        # get the Latin Hypercube of samples
+        target_samples_param_indices = LatinHypercube(len(self.params_values)).integers(
+            l_bounds=self.get_param_indices_lower_bounds(), 
+            u_bounds=self.get_param_indices_upper_bounds(), 
+            n=num_samples, 
+            endpoint=True)
+        target_samples_param_indices = np.array(target_samples_param_indices, dtype=self.params_values_indices.dtype)
+
+        # for each of the target sample indices, calculate which parameter configuration is closest
+        target_sample_indices = list()
+        for target_sample_param_config_indices in target_samples_param_indices:
+            # calculate the absolute difference between the parameter value indices
+            abs_index_difference = np.abs(self.params_values_indices - target_sample_param_config_indices, dtype=self.params_values_indices.dtype)
+            # find the param config index where the difference is the smallest
+            sum_of_index_differences = np.sum(abs_index_difference, axis=1)
+            param_index = self.get_param_config_index(self.get_param_config_from_param_indices(target_sample_param_config_indices))
+            if param_index is not None:
+                # set the sum of index differences to infinity for the parameter index to avoid returning the same parameter configuration
+                sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
+            min_index_difference_index = np.argmin(sum_of_index_differences)
+            target_sample_indices.append(min_index_difference_index.item())
+
+        # filter out duplicate samples and replace with random ones
+        target_sample_indices = list(set(target_sample_indices))
+        while len(target_sample_indices) < num_samples:
+            # if there are not enough unique samples, fill up with random samples
+            random_sample_indices = self.get_random_sample_indices(num_samples - len(target_sample_indices))
+            target_sample_indices.extend(random_sample_indices.tolist())
+            target_sample_indices = list(set(target_sample_indices))
+
+        return target_sample_indices
+
+    def get_LHS_sample(self, num_samples: int) -> List[tuple]:
+        """Get a distributed random sample of parameter configurations."""
+        return self.get_param_configs_at_indices(self.get_LHS_sample_indices(num_samples))
 
     def get_neighbors_indices_no_cache(self, param_config: tuple, neighbor_method=None, build_full_cache=False) -> List[int]:
         """Get the neighbors indices for a parameter configuration (does not check running cache, useful when mixing neighbor methods)."""
