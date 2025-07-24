@@ -105,9 +105,7 @@ def random_draw(idxs, mutate, best):
 def generate_population(tune_params, max_idx, popsize, searchspace, constraint_aware):
     """Generate new population, returns Numpy array."""
     if constraint_aware:
-        samples = LatinHypercube(len(tune_params)).integers(l_bounds=0, u_bounds=max_idx, n=popsize, endpoint=True)
-        population = [indices_to_values(sample, tune_params) for sample in samples]
-        population = [repair(individual, searchspace) for individual in population]
+        population = [list(c) for c in searchspace.get_LHS_sample(popsize)]
     else:
         population = []
         for _ in range(popsize):
@@ -391,8 +389,9 @@ def repair(trial_vector, searchspace):
     """
     if not searchspace.is_param_config_valid(tuple(trial_vector)):
         # search for valid configurations neighboring trial_vector
+        for neighbor_method in ["closest-param-indices"]:
         # start from strictly-adjacent to increasingly allowing more neighbors
-        for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
+        # for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
             new_trial_vector = searchspace.get_random_neighbor(tuple(trial_vector), neighbor_method=neighbor_method)
             if new_trial_vector is not None:
                 # print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired to {new_trial_vector=}")
