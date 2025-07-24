@@ -486,7 +486,7 @@ def test_mixed_param_types():
     # create a searchspace with mixed parameter types
     mixed_tune_params = dict()
     mixed_tune_params["int_param"] = [1, 2, 3]
-    mixed_tune_params["float_param"] = [1.0, 2.0, 3.0]
+    mixed_tune_params["float_param"] = [1.0, 2.0, 3.0, -4.4]
     mixed_tune_params["str_param"] = ["Alpha", "Bravo", "Charlie"]
     mixed_tune_params["bool_param"] = [True, False]
     mixed_restrict = ["int_param + float_param > 3", "bool_param == False"]
@@ -513,6 +513,10 @@ def test_mixed_param_types():
     for param_config_numeric, param_config in zip(searchspace.get_list_numpy_numeric(), searchspace.list):
         assert searchspace.get_param_config_from_numeric(param_config_numeric) == param_config
 
+    # check whether the true index bounds are as expected
+    assert all(v1 == v2 for v1, v2 in zip(searchspace.get_param_indices_lower_bounds(), (0, 0, 0, 1)))
+    assert all(v1 == v2 for v1, v2 in zip(searchspace.get_param_indices_upper_bounds(), (2, 2, 2, 1)))
+
 def test_get_distributed_random_sample():
     """Test whether the distributed random sample indices are as expected."""
     # create a searchspace with mixed parameter types
@@ -532,6 +536,32 @@ def test_get_distributed_random_sample():
     # get the distributed random sample indices
     num_samples = 10
     distributed_random_sample_indices = searchspace.get_distributed_random_sample_indices(num_samples=num_samples, sampling_factor=2)
+
+    # check that the indices are unique and within bounds
+    assert len(distributed_random_sample_indices) == num_samples
+    assert len(set(distributed_random_sample_indices)) == num_samples
+    for index in distributed_random_sample_indices:
+        assert 0 <= index < searchspace.size
+
+def test_get_LHS_sample_indices():
+    """Test whether the distributed random sample indices are as expected."""
+    # create a searchspace with mixed parameter types
+    mixed_tune_params = dict()
+    mixed_tune_params["int_param"] = [1, 2, 3]
+    mixed_tune_params["float_param"] = [1.0, 2.0, 3.0]
+    mixed_tune_params["str_param"] = ["Alpha", "Bravo", "Charlie"]
+    mixed_tune_params["bool_param"] = [True, False]
+    mixed_restrict = ["int_param + float_param > 2", "bool_param == False"]
+
+    # create the searchspace object
+    searchspace = Searchspace(mixed_tune_params, mixed_restrict, max_threads)
+
+    # check the size
+    assert searchspace.size == 24
+
+    # get the distributed random sample indices
+    num_samples = 10
+    distributed_random_sample_indices = searchspace.get_LHS_sample_indices(num_samples=num_samples)
 
     # check that the indices are unique and within bounds
     assert len(distributed_random_sample_indices) == num_samples
