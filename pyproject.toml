@@ -54,7 +54,7 @@ dependencies = [
     "scipy>=1.14.1",    # Python >=3.13 needs scipy >=1.14
     "packaging",        # required by file_utils
     "jsonschema",
-    "python-constraint2>=2.3.1",
+    "python-constraint2>=2.4.0",
     "xmltodict",
     "pandas>=2.0.0",
     "scikit-learn>=1.0.2",
