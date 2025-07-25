@@ -150,11 +150,23 @@ class HypertunerFunctions(Backend):
         return super().synchronize()
     
     def run_kernel(self, func, gpu_args=None, threads=None, grid=None, stream=None):
+        # from cProfile import Profile
+    
+        # # generate the experiments file
+        # experiments_filepath = Path(func)
+
+        # # run the methodology to get a fitness score for this configuration
+        # with Profile() as pr:
+        #     scores = get_strategy_scores(str(experiments_filepath), full_validate_on_load=False)
+        #     pr.dump_stats('diff_evo_hypertune_hotspot.prof')
+        # self.last_score = scores[list(scores.keys())[0]]['score']
+        # raise ValueError(scores)
+    
         # generate the experiments file
         experiments_filepath = Path(func)
 
         # run the methodology to get a fitness score for this configuration
-        scores = get_strategy_scores(str(experiments_filepath))
+        scores = get_strategy_scores(str(experiments_filepath), full_validate_on_load=False)
         self.last_score = scores[list(scores.keys())[0]]['score']
 
         # remove the experiments file
