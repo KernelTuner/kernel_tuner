@@ -11,11 +11,11 @@ from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc, scale_from_params
 
 _options = dict(
-    popsize=("Population size", 30),
-    maxiter=("Maximum number of iterations", 100),
+    popsize=("Population size", 50),
+    maxiter=("Maximum number of iterations", 190),
     w=("Inertia weight constant", 0.5),
-    c1=("Cognitive constant", 3.0),
-    c2=("Social constant", 0.5),
+    c1=("Cognitive constant", 3.5),
+    c2=("Social constant", 1.0),
     constraint_aware=("constraint-aware optimization (True/False)", True))
 
 def tune(searchspace: Searchspace, runner, tuning_options):

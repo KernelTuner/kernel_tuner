@@ -10,11 +10,11 @@ from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
 _options = dict(
-    popsize=("population size", 50),
-    popsize_times_dimensions=("multiply population size with number of dimensions (True/False)", False),
+    popsize=("population size", 16),
+    popsize_times_dimensions=("multiply population size with number of dimensions (True/False)", True),
     maxiter=("maximum number of generations", int(1e15)),    # very large to avoid early stopping (stopping is managed by StopCriterionReached)
-    F=("mutation factor (differential weight)", 1.3),
-    CR=("crossover rate", 0.9),
+    F=("mutation factor (differential weight)", 0.7),
+    CR=("crossover rate", 0.6),
     method=("method", "best1bin"),
     constraint_aware=("constraint-aware optimization (True/False)", True),
 )

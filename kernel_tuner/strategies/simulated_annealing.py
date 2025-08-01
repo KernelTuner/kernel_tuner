@@ -10,10 +10,10 @@ from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
 
 
-_options = dict(T=("Starting temperature", 0.5),
-                T_min=("End temperature", 0.001),
+_options = dict(T=("Starting temperature", 0.1),
+                T_min=("End temperature", 0.0001),
                 alpha=("Alpha parameter", 0.9975),
-                maxiter=("Number of iterations within each annealing step", 2),
+                maxiter=("Number of iterations within each annealing step", 1),
                 constraint_aware=("constraint-aware optimization (True/False)", True))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
