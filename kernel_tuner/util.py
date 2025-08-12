@@ -528,7 +528,8 @@ def get_kernel_string(kernel_source, params=None):
         kernel_string = read_file(kernel_source)
     elif isinstance(kernel_source, str):
         if looks_like_a_filename(kernel_source):
-            kernel_string = read_file(kernel_source) or kernel_source
+            with open(kernel_source, "r") as f:
+                kernel_string = f.read()
         else:
             kernel_string = kernel_source
     else:
@@ -1123,6 +1124,10 @@ def compile_restrictions(
             noncompiled_restrictions.append((r, [], r))
     return noncompiled_restrictions + compiled_restrictions
 
+def check_matching_problem_size(cached_problem_size, problem_size):
+    """Check the if requested problem size matches the problem size in the cache."""
+    if not (np.array(cached_problem_size) == np.array(problem_size)).all():
+        raise ValueError(f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}")
 
 def process_cache(cache, kernel_options, tuning_options, runner):
     """Cache file for storing tuned configurations.
@@ -1193,18 +1198,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
                 f"Cannot load cache which contains results for different kernel (cache: {cached_data['kernel_name']}, actual: {kernel_options.kernel_name})"
             )
         if "problem_size" in cached_data and not callable(kernel_options.problem_size):
-            # if it's a single value, convert to an array
-            if isinstance(cached_data["problem_size"], int):
-                cached_data["problem_size"] = [cached_data["problem_size"]]
-            # if problem_size is not iterable, compare directly
-            if not hasattr(kernel_options.problem_size, "__iter__"):
-                if cached_data["problem_size"] != kernel_options.problem_size:
-                    raise ValueError("Cannot load cache which contains results for different problem_size")
-            # else (problem_size is iterable)
-            # cache returns list, problem_size is likely a tuple. Therefore, the next check
-            # checks the equality of all items in the list/tuples individually
-            elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
-                raise ValueError("Cannot load cache which contains results for different problem_size")
+            check_matching_problem_size(cached_data["problem_size"], kernel_options.problem_size)
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
             if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
                 raise ValueError(

@@ -11,6 +11,9 @@ from kernel_tuner import util
 objective_default_map = {
     "time": False,
     "energy": False,
+    "fitness": True,
+    "cost": False,
+    "loss": False,
     "GFLOP/s": True,
     "TFLOP/s": True,
     "GB/s": True,
