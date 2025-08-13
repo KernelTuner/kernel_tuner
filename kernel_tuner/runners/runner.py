@@ -14,7 +14,7 @@ class Runner(ABC):
         pass
 
     @abstractmethod
-    def get_environment(self):
+    def get_environment(self, tuning_options):
         pass
 
     @abstractmethod
