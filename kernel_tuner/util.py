@@ -400,9 +400,41 @@ def get_best_config(results, objective, objective_higher_is_better=False):
     ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
     best_config = func(
         results,
-        key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val,
+        key=lambda x: x[objective] if 'error' not in x and isinstance(x[objective], float) else ignore_val,
     )
     return best_config
+
+
+def get_pareto_front(results, objective, objective_higher_is_better):
+    assert isinstance(objective, list)
+
+    nonerror_results = list(filter(lambda x: "error" not in x, results))
+    front = []
+
+    # A point `p` in a finite set of points `S` is said to be maximal or non-dominated if there is no other point `q` in `S` whose `q(i)` are all >= `p(i)`
+    # So for all q there must be a q(i) such that q(i) < p(i)
+    for p in nonerror_results:
+        p_nondom = True
+        for q in nonerror_results:
+            if p is q:
+                continue
+            # \forall(i): q(i) >= p(i)?
+            flag = True
+            for i, higher_is_better in zip(objective, objective_higher_is_better):
+                p_i, q_i = p[i], q[i]
+                if not higher_is_better:
+                    p_i, q_i = -p_i, -q_i
+                if q_i < p_i:
+                    flag = False
+                    break
+            if flag:
+                p_nondom = False
+                break
+        if p_nondom:
+            p["optimal"] = True
+            front.append(p)
+    
+    return front
 
 
 def get_config_string(params, keys=None, units=None):
