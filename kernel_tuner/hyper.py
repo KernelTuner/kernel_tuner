@@ -5,6 +5,8 @@ from pathlib import Path
 from random import randint
 from argparse import ArgumentParser
 
+import numpy as np
+
 import kernel_tuner
 
 
@@ -94,20 +96,43 @@ def tune_hyper_params(target_strategy: str, hyper_params: dict, restrictions: li
     return list(result_unique.values()), env
 
 if __name__ == "__main__":
+    """Main function to run the hyperparameter tuning. Run with `python hyper.py strategy_to_tune=`."""
+
     parser = ArgumentParser()
-    parser.add_argument("strategy_to_tune")
+    parser.add_argument("strategy_to_tune", type=str, help="The strategy to tune hyperparameters for.")
+    parser.add_argument("--meta_strategy", nargs='?', default="dual_annealing", type=str, help="The meta-strategy to use for hyperparameter tuning.")
+    parser.add_argument("--max_time", nargs='?', default=60*60*24, type=int, help="The maximum time in seconds for the hyperparameter tuning.")
     args = parser.parse_args()
     strategy_to_tune = args.strategy_to_tune
+
+    kwargs = dict(
+        verbose=True,
+        quiet=False,
+        simulation_mode=False,
+        strategy=args.meta_strategy,
+        cache=f"hyperparamtuning_t={strategy_to_tune}_m={args.meta_strategy}.json",
+        strategy_options=dict(
+            time_limit=args.max_time,
+        )
+    )
 
     # select the hyperparameter parameters for the selected optimization algorithm
     restrictions = []
     if strategy_to_tune.lower() == "pso":
+        # exhaustive search for PSO hyperparameters
+        # hyperparams = {
+        #     'popsize': [10, 20, 30],
+        #     'maxiter': [50, 100, 150],
+        #     # 'w': [0.25, 0.5, 0.75],   # disabled due to low influence according to KW-test (H=0.0215) and mutual information
+        #     'c1': [1.0, 2.0, 3.0],
+        #     'c2': [0.5, 1.0, 1.5]
+        # }
         hyperparams = {
-            'popsize': [10, 20, 30],
-            'maxiter': [50, 100, 150],
+            'popsize': list(range(2, 50+1, 2)),
+            'maxiter': list(range(10, 200, 10)),
             # 'w': [0.25, 0.5, 0.75],   # disabled due to low influence according to KW-test (H=0.0215) and mutual information
-            'c1': [1.0, 2.0, 3.0],
-            'c2': [0.5, 1.0, 1.5]
+            'c1': [round(n, 2) for n in np.arange(1.0, 3.5+0.25, 0.25).tolist()],
+            'c2': [round(n, 2) for n in np.arange(0.5, 2.0+0.25, 0.25).tolist()]
         }
     elif strategy_to_tune.lower() == "firefly_algorithm":
         hyperparams = {
@@ -130,9 +155,11 @@ if __name__ == "__main__":
         }
     elif strategy_to_tune.lower() == "diff_evo":
         hyperparams = {
-            'method': ["best1bin", "best1exp", "rand1exp", "randtobest1exp", "best2exp", "rand2exp", "randtobest1bin", "best2bin", "rand2bin", "rand1bin"],
-            'popsize': [10, 20, 30],
-            'maxiter': [50, 100, 150],
+            'method': ["best1bin", "rand1bin", "best2bin", "rand2bin", "best1exp", "rand1exp", "best2exp", "rand2exp", "currenttobest1bin", "currenttobest1exp", "randtobest1bin", "randtobest1exp"],   # best1bin
+            'popsize': list(range(2, 50+1, 2)),   # 50
+            'popsize_times_dimensions': [True, False],  # False
+            'F': [round(n, 2) for n in np.arange(0.1, 2.0+0.1, 0.1).tolist()],  # 1.3
+            'CR': [round(n, 2) for n in np.arange(0.05, 1.0+0.05, 0.05).tolist()]  # 0.9
         }
     elif strategy_to_tune.lower() == "basinhopping":
         hyperparams = {
@@ -140,11 +167,17 @@ if __name__ == "__main__":
             'T': [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5],
         }
     elif strategy_to_tune.lower() == "genetic_algorithm":
+        # hyperparams = {
+        #     'method': ["single_point", "two_point", "uniform", "disruptive_uniform"],
+        #     'popsize': [10, 20, 30],
+        #     'maxiter': [50, 100, 150],
+        #     'mutation_chance': [5, 10, 20]
+        # }
         hyperparams = {
             'method': ["single_point", "two_point", "uniform", "disruptive_uniform"],
-            'popsize': [10, 20, 30],
-            'maxiter': [50, 100, 150],
-            'mutation_chance': [5, 10, 20]
+            'popsize': list(range(2, 50+1, 2)),
+            'maxiter': list(range(10, 200, 10)),
+            'mutation_chance': list(range(5, 100, 5))
         }
     elif strategy_to_tune.lower() == "greedy_mls":
         hyperparams = {
@@ -153,11 +186,17 @@ if __name__ == "__main__":
             'randomize': [True, False]
         }
     elif strategy_to_tune.lower() == "simulated_annealing":
+        # hyperparams = {
+        #     'T': [0.5, 1.0, 1.5],
+        #     'T_min': [0.0001, 0.001, 0.01],
+        #     'alpha': [0.9925, 0.995, 0.9975],
+        #     'maxiter': [1, 2, 3]
+        # }
         hyperparams = {
-            'T': [0.5, 1.0, 1.5],
-            'T_min': [0.0001, 0.001, 0.01],
+            'T': [round(n, 2) for n in np.arange(0.1, 2.0+0.1, 0.1).tolist()],
+            'T_min': [round(n, 4) for n in np.arange(0.0001, 0.1, 0.001).tolist()],
             'alpha': [0.9925, 0.995, 0.9975],
-            'maxiter': [1, 2, 3]
+            'maxiter': list(range(1, 10, 1))
         }
     elif strategy_to_tune.lower() == "bayes_opt":
         hyperparams = {
@@ -171,6 +210,6 @@ if __name__ == "__main__":
         raise ValueError(f"Invalid argument {strategy_to_tune=}")
 
     # run the hyperparameter tuning
-    result, env = tune_hyper_params(strategy_to_tune.lower(), hyperparams, restrictions=restrictions)
+    result, env = tune_hyper_params(strategy_to_tune.lower(), hyperparams, restrictions=restrictions, **kwargs)
     print(result)
     print(env['best_config'])
