@@ -50,7 +50,7 @@ classifiers = [
 # ATTENTION: if anything is changed here, run `poetry update`
 requires-python = ">=3.10,<4" # <4 is because of hip-python  # NOTE when changing the Python versions, also change the test versions in the Noxfile and GitHub Actions
 dependencies = [
-    "numpy (>=1.26.0,<2.0.0)",
+    "numpy>=2.0.0",
     "scipy>=1.14.1",    # Python >=3.13 needs scipy >=1.14
     "packaging",        # required by file_utils
     "jsonschema",
