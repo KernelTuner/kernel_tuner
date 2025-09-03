@@ -34,6 +34,13 @@ class OptAlgWrapper:
         self.optimizer: OptAlg = optimizer
 
     def tune(self, searchspace: Searchspace, runner, tuning_options):
+        if not hasattr(self.optimizer, 'costfunc_kwargs'):
+            # Set costfunc kwarts to no scaling and no snapping (assume a mixed-int optimizer).
+            self.optimizer.costfunc_kwargs = {
+                "scaling": False,
+                "snap": False,
+            }
+            self.optimizer.constraint_aware = False
         cost_func = CostFunc(searchspace, tuning_options, runner, **self.optimizer.costfunc_kwargs)
 
         if self.optimizer.costfunc_kwargs.get('scaling', False):
