@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Documentation &mdash; Kernel Tuner 1.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=1f29e9d3"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Parameter Vocabulary" href="vocabulary.html" />
+    <link rel="prev" title="Observers" href="observers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.3.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="backends.html">Backends</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#kernel_tuner.tune_kernel"><code class="docutils literal notranslate"><span class="pre">tune_kernel()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kernel_tuner.run_kernel"><code class="docutils literal notranslate"><span class="pre">run_kernel()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kernel_tuner.store_results"><code class="docutils literal notranslate"><span class="pre">store_results()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kernel_tuner.create_device_targets"><code class="docutils literal notranslate"><span class="pre">create_device_targets()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-environment.html">Development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/user-api.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="toctree-wrapper compound">
+</div>
+<section id="api-documentation">
+<span id="details"></span><h1>API Documentation<a class="headerlink" href="#api-documentation" title="Link to this heading">¶</a></h1>
+<p>This file provides all the details you need about how to call the Kernel Tuner’s functions, including all the optional arguments.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.tune_kernel">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">tune_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verify</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">simulation_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.tune_kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Tune a GPU kernel given a set of tunable parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel in the code.</p></li>
+<li><p><strong>kernel_source</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, HIP, or C kernel code.
+It is allowed for the code to be passed as a string, a filename, a function
+that returns a string of code, or a list when the code needs auxilliary files.</p>
+<p>To support combined host and device code tuning, a list of
+filenames can be passed. The first file in the list should be the
+file that contains the host code. The host code is assumed to
+include or read in any of the files in the list beyond the first.
+The tunable parameters can be used within all files.</p>
+<p>Another alternative is to pass a code generating function.
+The purpose of this is to support the use of code generating
+functions that generate the kernel code based on the specific
+parameters. This function should take one positional argument,
+which will be used to pass a dict containing the parameters.
+The function should return a string with the source code for
+the kernel.</p>
+</p></li>
+<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
+automatically detects the language, but if it fails, you may specify
+the language using this argument, currently supported: “CUDA”, “CuPy”,
+“nvcuda”, “OpenCL”, “HIP”, or “C”.</p></li>
+<li><p><strong>problem_size</strong> (<em>callable</em><em>, </em><em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>..</em><em>)</em>) – <p>The size of the domain from which the grid dimensions
+of the kernel are computed.</p>
+<p>This can be specified using an int, string, function, or
+1,2,3-dimensional tuple.</p>
+<p>In general, do not divide the problem_size yourself by the thread block sizes.
+Kernel Tuner does this for you based on tunable parameters,
+called “block_size_x”, “block_size_y”, and “block_size_z”.
+If more or different parameters divide the grid dimensions use
+grid_div_x/y/z options to specify this.</p>
+<p>In most use-cases the problem_size is specified using a single integer
+or a tuple of integers,
+but Kernel Tuner supports more advanced use cases where the problem_size
+itself depends on the tunable parameters in some way.</p>
+<p>You are allowed to use a function or string to specify the problem_size.
+A function should accept a dictionary with the tunable parameters
+for this kernel configuration and directly return a tuple
+that specifies the problem size in all dimensions.</p>
+<p>When passing a string, you are allowed to write Python
+arithmetic and use the names of tunable parameters as variables
+in these expressions. Kernel Tuner will replace instances of the tunable
+parameters with their current value when computing the grid dimensions.
+This option exists for convenience, but do note that using a lambda
+function is probably safer. The string notation should only return
+the problem size for one dimension, but can be used inside
+a tuple, possibly in combination with integers or more strings in
+different dimensions.</p>
+<p>See the reduction CUDA example for an example use of this feature.</p>
+</p></li>
+<li><p><strong>arguments</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for scalars.</p></li>
+<li><p><strong>grid_div_x</strong> (<em>callable</em><em> or </em><em>list</em>) – <p>A list of names of the parameters whose values divide
+the grid dimensions in the x-direction.
+The product of all grid divisor expressions is computed before dividing
+the problem_size in that dimension. Also note that the divison is treated
+as a float divison and resulting grid dimensions will be rounded up to
+the nearest integer number.</p>
+<p>Arithmetic expressions can be
+used if necessary inside the string containing a parameter name. For
+example, in some cases you may want to divide the problem size in the
+x-dimension with the number of warps rather than the number of threads
+in a block, in such cases one could for example use [“block_size_x/32”].
+Another option is to pass a function to grid_div_x that accepts a
+dictionary with the tunable parameters and returns the grid divisor
+in this dimension, for example: grid_div_x=lambda p:p[“block_size_x”]/32.</p>
+<p>If not supplied, [“block_size_x”] will be used by default, if you do not
+want any grid x-dimension divisors pass an empty list.</p>
+</p></li>
+<li><p><strong>grid_div_y</strong> (<em>list</em>) – A list of names of the parameters whose values divide
+the grid dimensions in the y-direction, [“block_size_y”] by default.
+If you do not want to divide the problem_size, you should pass an empty list.
+See grid_div_x for more details.</p></li>
+<li><p><strong>grid_div_z</strong> (<em>list</em>) – A list of names of the parameters whose values divide
+the grid dimensions in the z-direction, [“block_size_z”] by default.
+If you do not want to divide the problem_size, you should pass an empty list.
+See grid_div_x for more details.</p></li>
+<li><p><strong>smem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em>)</em>) – CUDA-specific feature for specifying shared memory options
+to the kernel. At the moment only ‘size’ is supported, but setting the
+shared memory configuration on Kepler GPUs for example could be added
+in the future. Size should denote the number of bytes for to use when
+dynamically allocating shared memory.</p></li>
+<li><p><strong>cmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em>)</em>) – CUDA-specific feature for specifying constant memory
+arguments to the kernel. In OpenCL these are handled as normal
+kernel arguments, but in CUDA you can copy to a symbol. The way you
+specify constant memory arguments is by passing a dictionary with
+strings containing the constant memory symbol name together with numpy
+objects in the same way as normal kernel arguments.</p></li>
+<li><p><strong>texmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em> or </em><em>dict</em><em>)</em>) – CUDA-specific feature for specifying texture memory
+arguments to the kernel. You specify texture memory arguments by passing a
+dictionary with strings containing the texture reference name together with
+the texture contents. These contents can be either simply a numpy object,
+or a dictionary containing the numpy object under the key ‘array’ plus the
+configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’
+(a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis),
+‘normalized_coordinates’ (True/False).</p></li>
+<li><p><strong>block_size_names</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that replace the defaults for the names
+that denote the thread block dimensions. If not passed, the behavior
+defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></p></li>
+<li><p><strong>defines</strong> (<em>dict</em>) – A dictionary containing the preprocessor definitions inserted into
+the source code. The keys should the definition names and each value should be either a string or
+a function that returns a string. If an emtpy dictionary is passed, no definitions are inserted.
+If None is passed, each tunable parameter is inserted as a preprocessor definition.</p></li>
+<li><p><strong>tune_params</strong> (<em>dict</em><em>( </em><em>string :</em><em> [</em><em>...</em><em>]</em>) – <p>A dictionary containing the parameter names as keys,
+and lists of possible parameter settings as values.
+Kernel Tuner will try to compile and benchmark all possible
+combinations of all possible values for all tuning parameters.
+This typically results in a rather large search space of all
+possible kernel configurations.</p>
+<p>For each kernel configuration, each tuning parameter is
+replaced at compile-time with its current value.
+Currently, Kernel Tuner uses the convention that the following
+list of tuning parameters are used as thread block dimensions:</p>
+<blockquote>
+<div><ul>
+<li><p>”block_size_x”   thread block (work group) x-dimension</p></li>
+<li><p>”block_size_y”   thread block (work group) y-dimension</p></li>
+<li><p>”block_size_z”   thread block (work group) z-dimension</p></li>
+</ul>
+</div></blockquote>
+<p>Options for changing these defaults may be added later. If you
+don’t want the thread block dimensions to be compiled in, you
+may use the built-in variables blockDim.xyz in CUDA or the
+built-in function get_local_size() in OpenCL instead.</p>
+</p></li>
+<li><p><strong>restrictions</strong> (<em>callable</em><em> or </em><em>list</em><em>(</em><em>strings</em><em>)</em>) – An option to limit the search space with restrictions.
+The restrictions can be specified using a function or a list of strings.
+The function should take one argument, namely a dictionary with the
+tunable parameters of the kernel configuration, if the function returns
+True the configuration is considered to be part of the search space, or
+False otherwise.
+The other way to specify restrictions is using a list of strings
+containing boolean expression that must be satisfied by the kernel
+configuration. These expressions must all be true for the configuration
+to be part of the search space. For example:
+restrictions=[“block_size_x==block_size_y*tile_size_y”] limits the
+search to configurations where the block_size_x equals the product
+of block_size_y and tile_size_y.
+The default is None.</p></li>
+<li><p><strong>answer</strong> (<em>list</em>) – A list of arguments, similar to what you pass to arguments,
+that contains the expected output of the kernel after it has executed
+and contains None for each argument that is input-only. The expected
+output of the kernel will then be used to verify the correctness of
+each kernel in the parameter space before it will be benchmarked.</p></li>
+<li><p><strong>atol</strong> (<em>float</em>) – The maximum allowed absolute difference between two elements
+in the output and the reference answer, as passed to numpy.allclose().
+Ignored if you have not passed a reference answer. Default value is
+1e-6, that is 0.000001.</p></li>
+<li><p><strong>verify</strong> (<em>func</em><em>(</em><em>ref</em><em>, </em><em>ans</em><em>, </em><em>atol=None</em><em>)</em>) – <p>Python function used for output verification. By default,
+numpy.allclose is used for output verification, if this does not suit
+your application, you can pass a different function here.</p>
+<p>The function is expected to have two positional arguments. The first
+is the reference result, the second is the output computed by the
+kernel being verified. The types of these arguments depends on the
+type of the output arguments you are verifying. The function may also
+have an optional argument named atol, to which the value will be
+passed that was specified using the atol option to tune_kernel.
+The function should return True when the output passes the test, and
+False when the output fails the test.</p>
+</p></li>
+<li><p><strong>strategy</strong> – <p>Specify the strategy to use for searching through the
+parameter space, choose from:</p>
+<blockquote>
+<div><ul>
+<li><p>”basinhopping” Basin Hopping</p></li>
+<li><p>”bayes_opt” Bayesian Optimization</p></li>
+<li><p>”brute_force” (default) iterates through the entire search space</p></li>
+<li><p>”minimize” uses a local minimization algorithm</p></li>
+<li><p>”dual annealing” dual annealing</p></li>
+<li><p>”diff_evo” differential evolution</p></li>
+<li><p>”firefly_algorithm” firefly algorithm strategy</p></li>
+<li><p>”genetic_algorithm” a genetic algorithm optimization</p></li>
+<li><p>”greedy_ils” greedy randomized iterative local search</p></li>
+<li><p>”greedy_mls” greedy randomized multi-start local search</p></li>
+<li><p>”mls” best-improvement multi-start local search</p></li>
+<li><p>”ordered_greedy_mls” multi-start local search that uses a fixed order</p></li>
+<li><p>”pso” particle swarm optimization</p></li>
+<li><p>”random_sample” takes a random sample of the search space</p></li>
+<li><p>”simulated_annealing” simulated annealing strategy</p></li>
+</ul>
+</div></blockquote>
+<p>Strategy-specific parameters and options are explained under strategy_options.</p>
+</p></li>
+<li><p><strong>strategy_options</strong> (<em>dict</em>) – <p>A dict with options specific to the selected tuning strategy.</p>
+<p>All strategies support the following two options:</p>
+<p>1. “max_fevals”: the maximum number of unique valid function evaluations (i.e. compiling and
+benchmarking a kernel configuration) the strategy is allowed to perform as part of the optimization.
+Note that some strategies implement a default max_fevals of 100.</p>
+<p>2. “time_limit”: the maximum amount of time in seconds the strategy is allowed to spent on trying to
+find the optimal kernel configuration. There is no default time limit.</p>
+<p>Strategy specific options are explained in <a class="reference internal" href="optimization.html#optimizations"><span class="std std-ref">Optimization strategies</span></a>.</p>
+</p></li>
+<li><p><strong>iterations</strong> (<em>int</em>) – The number of times a kernel should be executed and
+its execution time measured when benchmarking a kernel, 7 by default.</p></li>
+<li><p><strong>objective</strong> (<em>string</em>) – Optimization objective to sort results on, consisting of a string
+that also occurs in results as a metric or observed quantity, default ‘time’.
+Please see <a class="reference internal" href="metrics.html#objectives"><span class="std std-ref">Tuning Objectives</span></a>.</p></li>
+<li><p><strong>objective_higher_is_better</strong> (<em>bool</em>) – boolean that specifies whether the objective should
+be maximized (True) or minimized (False), default False.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – <p>Sets whether or not to report about configurations that
+were skipped during the search. This could be due to several reasons:</p>
+<blockquote>
+<div><ul>
+<li><p>kernel configuration fails one or more restrictions</p></li>
+<li><p>too many threads per thread block</p></li>
+<li><p>too much shared memory used by the kernel</p></li>
+<li><p>too many resources requested for launch</p></li>
+</ul>
+</div></blockquote>
+<p>verbose is False by default.</p>
+</p></li>
+<li><p><strong>cache</strong> (<em>string</em>) – Filename for the cache to persistently store benchmarked configurations.
+Filename uses suffix “.json”, which is appended if missing.
+If the file exists, it is read and tuning continues from this file. Please see <a class="reference internal" href="cache_files.html#cache"><span class="std std-ref">Cache files</span></a>.</p></li>
+<li><p><strong>metrics</strong> (<em>dict</em>) – specifies user-defined metrics, please see <a class="reference internal" href="metrics.html#metrics"><span class="std std-ref">Metrics</span></a>.</p></li>
+<li><p><strong>simulation_mode</strong> (<em>bool</em>) – Simulate an auto-tuning search from an existing cachefile</p></li>
+<li><p><strong>observers</strong> (<em>list</em>) – A list of Observers to use during tuning, please see <a class="reference internal" href="observers.html#observers"><span class="std std-ref">Observers</span></a>.</p></li>
+<li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
+CUDA-capable GPUs or OpenCL devices you may use this to select one,
+0 by default. Ignored if you are tuning host code by passing
+lang=”C”.</p></li>
+<li><p><strong>platform</strong> (<em>int</em>) – OpenCL platform to use, in case you have multiple
+OpenCL platforms you may use this to select one,
+0 by default. Ignored if not using OpenCL.</p></li>
+<li><p><strong>quiet</strong> (<em>boolean</em>) – Control whether or not to print to the console which
+device is being used, False by default</p></li>
+<li><p><strong>compiler</strong> (<em>string</em>) – A string containing your preferred compiler,
+only effective with lang=”C”.</p></li>
+<li><p><strong>compiler_options</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that specify compiler
+options.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of dictionaries of all executed kernel configurations and their
+execution times. And a dictionary with information about the environment
+in which the tuning took place. This records device name, properties,
+version info, and so on.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list(dict()), dict()</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.run_kernel">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_div_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">texmem_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.run_kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Compile and run a single kernel</p>
+<p>Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
+However, instead of measuring execution time run_kernel returns the output of the kernel.
+The output is returned as a list of numpy arrays that contains the state of all the kernel arguments
+after execution on the GPU.</p>
+<dl class="simple">
+<dt>To summarize what this function will do for you in one call:</dt><dd><ul class="simple">
+<li><p>Compile the kernel according to the set of parameters passed</p></li>
+<li><p>Allocate GPU memory to hold all kernel arguments</p></li>
+<li><p>Move the all data to the GPU</p></li>
+<li><p>Execute the kernel on the GPU</p></li>
+<li><p>Copy all data from the GPU back to the host and return it as a list of Numpy arrays</p></li>
+</ul>
+</dd>
+</dl>
+<p>This function was added to Kernel Tuner mostly to allow easy testing for kernel correctness.
+On purpose, the interface is a lot like <cite>tune_kernel()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_name</strong> (<em>string</em>) – The name of the kernel in the code.</p></li>
+<li><p><strong>kernel_source</strong> (<em>string</em><em> or </em><em>list and/or callable</em>) – <p>The CUDA, OpenCL, HIP, or C kernel code.
+It is allowed for the code to be passed as a string, a filename, a function
+that returns a string of code, or a list when the code needs auxilliary files.</p>
+<p>To support combined host and device code tuning, a list of
+filenames can be passed. The first file in the list should be the
+file that contains the host code. The host code is assumed to
+include or read in any of the files in the list beyond the first.
+The tunable parameters can be used within all files.</p>
+<p>Another alternative is to pass a code generating function.
+The purpose of this is to support the use of code generating
+functions that generate the kernel code based on the specific
+parameters. This function should take one positional argument,
+which will be used to pass a dict containing the parameters.
+The function should return a string with the source code for
+the kernel.</p>
+</p></li>
+<li><p><strong>lang</strong> (<em>string</em>) – Specifies the language used for GPU kernels. The kernel_tuner
+automatically detects the language, but if it fails, you may specify
+the language using this argument, currently supported: “CUDA”, “CuPy”,
+“nvcuda”, “OpenCL”, “HIP”, or “C”.</p></li>
+<li><p><strong>problem_size</strong> (<em>callable</em><em>, </em><em>string</em><em>, </em><em>int</em><em>, or </em><em>tuple</em><em>(</em><em>int</em><em> or </em><em>string</em><em>, </em><em>..</em><em>)</em>) – <p>The size of the domain from which the grid dimensions
+of the kernel are computed.</p>
+<p>This can be specified using an int, string, function, or
+1,2,3-dimensional tuple.</p>
+<p>In general, do not divide the problem_size yourself by the thread block sizes.
+Kernel Tuner does this for you based on tunable parameters,
+called “block_size_x”, “block_size_y”, and “block_size_z”.
+If more or different parameters divide the grid dimensions use
+grid_div_x/y/z options to specify this.</p>
+<p>In most use-cases the problem_size is specified using a single integer
+or a tuple of integers,
+but Kernel Tuner supports more advanced use cases where the problem_size
+itself depends on the tunable parameters in some way.</p>
+<p>You are allowed to use a function or string to specify the problem_size.
+A function should accept a dictionary with the tunable parameters
+for this kernel configuration and directly return a tuple
+that specifies the problem size in all dimensions.</p>
+<p>When passing a string, you are allowed to write Python
+arithmetic and use the names of tunable parameters as variables
+in these expressions. Kernel Tuner will replace instances of the tunable
+parameters with their current value when computing the grid dimensions.
+This option exists for convenience, but do note that using a lambda
+function is probably safer. The string notation should only return
+the problem size for one dimension, but can be used inside
+a tuple, possibly in combination with integers or more strings in
+different dimensions.</p>
+<p>See the reduction CUDA example for an example use of this feature.</p>
+</p></li>
+<li><p><strong>arguments</strong> (<em>list</em>) – A list of kernel arguments, use numpy arrays for
+arrays, use numpy.int32 or numpy.float32 for scalars.</p></li>
+<li><p><strong>grid_div_x</strong> (<em>callable</em><em> or </em><em>list</em>) – <p>A list of names of the parameters whose values divide
+the grid dimensions in the x-direction.
+The product of all grid divisor expressions is computed before dividing
+the problem_size in that dimension. Also note that the divison is treated
+as a float divison and resulting grid dimensions will be rounded up to
+the nearest integer number.</p>
+<p>Arithmetic expressions can be
+used if necessary inside the string containing a parameter name. For
+example, in some cases you may want to divide the problem size in the
+x-dimension with the number of warps rather than the number of threads
+in a block, in such cases one could for example use [“block_size_x/32”].
+Another option is to pass a function to grid_div_x that accepts a
+dictionary with the tunable parameters and returns the grid divisor
+in this dimension, for example: grid_div_x=lambda p:p[“block_size_x”]/32.</p>
+<p>If not supplied, [“block_size_x”] will be used by default, if you do not
+want any grid x-dimension divisors pass an empty list.</p>
+</p></li>
+<li><p><strong>grid_div_y</strong> (<em>list</em>) – A list of names of the parameters whose values divide
+the grid dimensions in the y-direction, [“block_size_y”] by default.
+If you do not want to divide the problem_size, you should pass an empty list.
+See grid_div_x for more details.</p></li>
+<li><p><strong>grid_div_z</strong> (<em>list</em>) – A list of names of the parameters whose values divide
+the grid dimensions in the z-direction, [“block_size_z”] by default.
+If you do not want to divide the problem_size, you should pass an empty list.
+See grid_div_x for more details.</p></li>
+<li><p><strong>smem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em>)</em>) – CUDA-specific feature for specifying shared memory options
+to the kernel. At the moment only ‘size’ is supported, but setting the
+shared memory configuration on Kepler GPUs for example could be added
+in the future. Size should denote the number of bytes for to use when
+dynamically allocating shared memory.</p></li>
+<li><p><strong>cmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em>)</em>) – CUDA-specific feature for specifying constant memory
+arguments to the kernel. In OpenCL these are handled as normal
+kernel arguments, but in CUDA you can copy to a symbol. The way you
+specify constant memory arguments is by passing a dictionary with
+strings containing the constant memory symbol name together with numpy
+objects in the same way as normal kernel arguments.</p></li>
+<li><p><strong>texmem_args</strong> (<em>dict</em><em>(</em><em>string: numpy object</em><em> or </em><em>dict</em><em>)</em>) – CUDA-specific feature for specifying texture memory
+arguments to the kernel. You specify texture memory arguments by passing a
+dictionary with strings containing the texture reference name together with
+the texture contents. These contents can be either simply a numpy object,
+or a dictionary containing the numpy object under the key ‘array’ plus the
+configuration options ‘filter_mode’ (‘point’ or ‘linear), ‘address_mode’
+(a list of ‘border’, ‘clamp’, ‘mirror’, ‘wrap’ per axis),
+‘normalized_coordinates’ (True/False).</p></li>
+<li><p><strong>block_size_names</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that replace the defaults for the names
+that denote the thread block dimensions. If not passed, the behavior
+defaults to <code class="docutils literal notranslate"><span class="pre">[&quot;block_size_x&quot;,</span> <span class="pre">&quot;block_size_y&quot;,</span> <span class="pre">&quot;block_size_z&quot;]</span></code></p></li>
+<li><p><strong>defines</strong> (<em>dict</em>) – A dictionary containing the preprocessor definitions inserted into
+the source code. The keys should the definition names and each value should be either a string or
+a function that returns a string. If an emtpy dictionary is passed, no definitions are inserted.
+If None is passed, each tunable parameter is inserted as a preprocessor definition.</p></li>
+<li><p><strong>params</strong> (<em>dict</em><em>( </em><em>string: int</em><em> )</em>) – A dictionary containing the tuning parameter names as keys
+and a single value per tuning parameter as values.</p></li>
+<li><p><strong>device</strong> (<em>int</em>) – CUDA/OpenCL device to use, in case you have multiple
+CUDA-capable GPUs or OpenCL devices you may use this to select one,
+0 by default. Ignored if you are tuning host code by passing
+lang=”C”.</p></li>
+<li><p><strong>platform</strong> (<em>int</em>) – OpenCL platform to use, in case you have multiple
+OpenCL platforms you may use this to select one,
+0 by default. Ignored if not using OpenCL.</p></li>
+<li><p><strong>quiet</strong> (<em>boolean</em>) – Control whether or not to print to the console which
+device is being used, False by default</p></li>
+<li><p><strong>compiler</strong> (<em>string</em>) – A string containing your preferred compiler,
+only effective with lang=”C”.</p></li>
+<li><p><strong>compiler_options</strong> (<em>list</em><em>(</em><em>string</em><em>)</em>) – A list of strings that specify compiler
+options.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of numpy arrays, similar to the arguments passed to this
+function, containing the output after kernel execution.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.store_results">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">store_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.store_results" title="Link to this definition">¶</a></dt>
+<dd><p>stores tuning results to a JSON file</p>
+<p>Stores the top (3% by default) best kernel configurations in a JSON file.
+The results are stored for a specific device (retrieved using env[‘device_name’])
+and for a specific problem_size. If the file already exists, new results for
+this device and problem_size will be appended. Any previous results already stored
+in the file for this specific device and problem_size will be overwritten.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>results_filename</strong> (<em>string</em>) – Filename of the JSON file in which the results will be stored.
+Results will be appended if the file already exists. Existing results within the
+file for the same device and problem_size will be overwritten.</p></li>
+<li><p><strong>tune_params</strong> (<em>dict</em>) – The tunable parameters of this kernel.</p></li>
+<li><p><strong>problem_size</strong> (<em>tuple</em>) – The problem_size this kernel was tuned for</p></li>
+<li><p><strong>results</strong> (<em>list</em><em>(</em><em>dict</em><em>)</em>) – A list of dictionaries of all executed kernel configurations and their
+execution times, and possibly other user-defined metrics, as returned by
+tune_kernel().</p></li>
+<li><p><strong>env</strong> (<em>dict</em>) – A dictionary with information about the environment
+in which the tuning took place. This records device name, properties,
+version info, and so on. Typicaly this dictionary is returned by tune_kernel().</p></li>
+<li><p><strong>top</strong> (<em>float</em>) – Denotes the top percentage of results to store in the results file</p></li>
+<li><p><strong>objective</strong> (<em>string</em>) – Optimization objective to sort results on, consisting of a string
+that also occurs in results as a metric.</p></li>
+<li><p><strong>objective_higher_is_better</strong> (<em>bool</em>) – A boolean that specifies whether the objective should
+be maximized or minimized.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.create_device_targets">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.</span></span><span class="sig-name descname"><span class="pre">create_device_targets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">header_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">results_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.create_device_targets" title="Link to this definition">¶</a></dt>
+<dd><p>create a header with device targets</p>
+<p>This function generates a header file with device targets for compiling
+a kernel with different parameters on different devices. The tuning
+results are stored in a JSON file created by store_results. Existing
+header_filename will be overwritten.</p>
+<p>This function only creates device targets and does not create problem_size
+specific targets. Instead it searches for configurations that perform well
+for different problem sizes and selects a single configuration to use
+for the kernel.</p>
+<p>The header file can be included in a kernel source file using:
+<code class="docutils literal notranslate"><span class="pre">#include</span> <span class="pre">&quot;header_filename.h&quot;</span></code></p>
+<p>The kernel can then be compiled for a specific device using:
+<code class="docutils literal notranslate"><span class="pre">-DTARGET_GPU=&quot;name_of_gpu&quot;</span></code></p>
+<p>The header will also include a default value, which is chosen to perform well
+on different devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>header_filename</strong> (<em>string</em>) – Filename of the to be created header file.</p></li>
+<li><p><strong>results_filename</strong> (<em>string</em>) – Filename of the JSON file that stores the tuning results.</p></li>
+<li><p><strong>objective</strong> (<em>string</em>) – Optimization objective to sort results on, consisting of a string
+that also occurs in results as a metric.</p></li>
+<li><p><strong>objective_higher_is_better</strong> (<em>bool</em>) – A boolean that specifies whether the objective should
+be maximized or minimized.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="observers.html" class="btn btn-neutral float-left" title="Observers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vocabulary.html" class="btn btn-neutral float-right" title="Parameter Vocabulary" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer, Richard Schoonhoven and Leon Oostrum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

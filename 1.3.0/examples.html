@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kernel Tuner Examples &mdash; Kernel Tuner 1.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=1f29e9d3"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Backends" href="backends.html" />
+    <link rel="prev" title="Matrix multiplication" href="matrix_multiplication.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.3.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Kernel Tuner Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#vector-add">Vector Add</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#stencil">Stencil</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#matrix-multiplication">Matrix Multiplication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#convolution">Convolution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#convolution-py">convolution.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sepconv-py">sepconv.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#convolution-correct-py">convolution_correct.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#convolution-streams-py">convolution_streams.py</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#reduction">Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sparse-matrix-vector-multiplication">Sparse Matrix Vector Multiplication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#point-in-polygon">Point-in-Polygon</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#expdist">ExpDist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#code-generator">Code Generator</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="backends.html">Backends</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-environment.html">Development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Kernel Tuner Examples</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/examples.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="toctree-wrapper compound">
+</div>
+<section id="kernel-tuner-examples">
+<span id="examples"></span><h1>Kernel Tuner Examples<a class="headerlink" href="#kernel-tuner-examples" title="Link to this heading">¶</a></h1>
+<p>Most of the examples show how to use Kernel Tuner to tune a
+CUDA, OpenCL, or C kernel, while demonstrating a particular usecase of Kernel Tuner.</p>
+<p>Except for <a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/test_vector_add.py">test_vector_add.py</a>  and
+<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/test_vector_add_parameterized.py">test_vector_add_parameterized.py</a>,
+which show how to write tests for GPU kernels with Kernel Tuner.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please do not use the examples as performance benchmarks.
+The examples here are created specifically to highlight certain features in Kernel Tuner.
+Please contact the developers if you are interested in benchmarking Kernel Tuner.</p>
+</div>
+<p>Below we list the example applications and the features they illustrate.</p>
+<section id="vector-add">
+<h2>Vector Add<a class="headerlink" href="#vector-add" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda-c++/vector_add.py">CUDA-C++</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add.py">OpenCL</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py">C</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/fortran/vector_add.py">Fortran</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/directives/vector_add_c_openacc.py">OpenACC-C++</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/directives/vector_add_fortran_openacc.py">OpenACC-Fortran</a>]</dt><dd><ul class="simple">
+<li><p>use Kernel Tuner to tune a simple kernel</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="stencil">
+<h2>Stencil<a class="headerlink" href="#stencil" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/stencil.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/stencil.py">OpenCL</a>]</dt><dd><ul class="simple">
+<li><p>use a 2-dimensional problem domain with 2-dimensional thread blocks in a simple and clean example</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="matrix-multiplication">
+<h2>Matrix Multiplication<a class="headerlink" href="#matrix-multiplication" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/matmul.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/matmul.py">OpenCL</a>]</dt><dd><ul class="simple">
+<li><p>pass a filename instead of a string with code</p></li>
+<li><p>use 2-dimensional thread blocks and tiling in both dimensions</p></li>
+<li><p>tell Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling</p></li>
+<li><p>use the restrictions option to limit the search to only valid configurations</p></li>
+<li><p>use a user-defined performance metric like GFLOP/s</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="convolution">
+<h2>Convolution<a class="headerlink" href="#convolution" title="Link to this heading">¶</a></h2>
+<p>There are several different examples centered around the convolution
+kernel [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/convolution.cu">CUDA</a>]
+[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/convolution.cl">OpenCL</a>]</p>
+<section id="convolution-py">
+<h3>convolution.py<a class="headerlink" href="#convolution-py" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/convolution.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/convolution.py">OpenCL</a>]</dt><dd><ul class="simple">
+<li><p>use tunable parameters for tuning for multiple input sizes</p></li>
+<li><p>pass constant memory arguments to the kernel</p></li>
+<li><p>write output to a json file</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="sepconv-py">
+<h3>sepconv.py<a class="headerlink" href="#sepconv-py" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/sepconv.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/sepconv.py">OpenCL</a>]</dt><dd><ul class="simple">
+<li><p>use the convolution kernel for separable filters</p></li>
+<li><p>write output to a csv file using Pandas</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="convolution-correct-py">
+<h3>convolution_correct.py<a class="headerlink" href="#convolution-correct-py" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/convolution_correct.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/convolution_correct.py">OpenCL</a>]</dt><dd><ul class="simple">
+<li><p>use run_kernel to compute a reference answer</p></li>
+<li><p>verify the output of every benchmarked kernel</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="convolution-streams-py">
+<h3>convolution_streams.py<a class="headerlink" href="#convolution-streams-py" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/convolution_streams.py">CUDA</a>]</dt><dd><ul class="simple">
+<li><p>allocate page-locked host memory from Python</p></li>
+<li><p>overlap transfers to and from the GPU with computation</p></li>
+<li><p>tune parameters in the host code in combination with those in the kernel</p></li>
+<li><p>use the lang=”C” option and set compiler options</p></li>
+<li><p>pass a list of filenames instead of strings with kernel code</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+<section id="reduction">
+<h2>Reduction<a class="headerlink" href="#reduction" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/reduction.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/reduction.py">OpenCL</a>]</dt><dd><ul class="simple">
+<li><p>use vector types and shuffle instructions (shuffle is only available in CUDA)</p></li>
+<li><p>tune the number of thread blocks the kernel is executed with</p></li>
+<li><p>tune the partial loop unrolling factor of a for-loop</p></li>
+<li><p>tune pipeline that consists of two kernels</p></li>
+<li><p>tune with custom output verification function</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="sparse-matrix-vector-multiplication">
+<h2>Sparse Matrix Vector Multiplication<a class="headerlink" href="#sparse-matrix-vector-multiplication" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/spmv.py">CUDA</a>]</dt><dd><ul class="simple">
+<li><p>use scipy to compute a reference answer and verify all benchmarked kernels</p></li>
+<li><p>express that the number of thread blocks depends on the values of tunable parameters</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="point-in-polygon">
+<h2>Point-in-Polygon<a class="headerlink" href="#point-in-polygon" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/pnpoly.py">CUDA</a>]</dt><dd><ul class="simple">
+<li><p>overlap transfers with device mapped host memory</p></li>
+<li><p>tune on different implementations of an algorithm</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="expdist">
+<h2>ExpDist<a class="headerlink" href="#expdist" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/expdist.py">CUDA</a>]</dt><dd><ul class="simple">
+<li><p>in-thread block 2D reduction using CUB library</p></li>
+<li><p>C++ in CUDA kernel code</p></li>
+<li><p>tune multiple kernels in pipeline</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="code-generator">
+<h2>Code Generator<a class="headerlink" href="#code-generator" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add_codegen.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add_codegen.py">OpenCL</a>]</dt><dd><ul class="simple">
+<li><p>use a Python function as a code generator</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="matrix_multiplication.html" class="btn btn-neutral float-left" title="Matrix multiplication" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="backends.html" class="btn btn-neutral float-right" title="Backends" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2025, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer, Richard Schoonhoven and Leon Oostrum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
