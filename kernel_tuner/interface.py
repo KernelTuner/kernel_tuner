@@ -30,12 +30,14 @@ from ast import literal_eval
 from datetime import datetime
 from pathlib import Path
 from time import perf_counter
+from copy import deepcopy
 
 import numpy
+from constraint import Constraint
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
-from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results
+from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
 from kernel_tuner.integration import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
@@ -60,9 +62,11 @@ from kernel_tuner.strategies import (
     mls,
     ordered_greedy_mls,
     pso,
+    pyatf_strategies,
     random_sample,
     simulated_annealing,
 )
+from kernel_tuner.strategies.wrapper import OptAlgWrapper
 
 strategy_map = {
     "brute_force": brute_force,
@@ -80,6 +84,7 @@ strategy_map = {
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
+    "pyatf_strategies": pyatf_strategies,
 }
 
 
@@ -603,9 +608,6 @@ def tune_kernel(
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
 
-    if iterations < 1:
-        raise ValueError("Iterations should be at least one!")
-
     # sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
@@ -630,34 +632,20 @@ def tune_kernel(
     logging.debug("device_options: %s", util.get_config_string(device_options))
 
     # check whether the selected strategy and options are valid
+    strategy_string = strategy
     if strategy:
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
         else:
-            raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
+            # check for user-defined strategy
+            if hasattr(strategy, "tune") and callable(strategy.tune):
+                # user-defined strategy
+                pass
+            else:
+                raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
 
-        # make strategy_options into an Options object
-        if tuning_options.strategy_options:
-            if not isinstance(strategy_options, Options):
-                tuning_options.strategy_options = Options(strategy_options)
-
-            # select strategy based on user options
-            if "fraction" in tuning_options.strategy_options and not tuning_options.strategy == "random_sample":
-                raise ValueError(
-                    'It is not possible to use fraction in combination with strategies other than "random_sample". '
-                    'Please set strategy="random_sample", when using "fraction" in strategy_options'
-                )
-
-            # check if method is supported by the selected strategy
-            if "method" in tuning_options.strategy_options:
-                method = tuning_options.strategy_options.method
-                if method not in strategy.supported_methods:
-                    raise ValueError("Method %s is not supported for strategy %s" % (method, tuning_options.strategy))
-
-        # if no strategy_options dict has been passed, create empty dictionary
-        else:
-            tuning_options.strategy_options = Options({})
-
+        # ensure strategy_options is an Options object
+        tuning_options.strategy_options = Options(strategy_options or {})
     # if no strategy selected
     else:
         strategy = brute_force
@@ -671,19 +659,23 @@ def tune_kernel(
     # we normalize it so that it always accepts atol.
     tuning_options.verify = util.normalize_verify_function(tuning_options.verify)
 
+    def preprocess_cache(filepath):
+        if isinstance(filepath, Path):
+            filepath = str(filepath.resolve())
+        if filepath[-5:] != ".json":
+            filepath += ".json"
+        return filepath
+
     # process cache
     if cache:
-        if isinstance(cache, Path):
-            cache = str(cache.resolve())
-        if cache[-5:] != ".json":
-            cache += ".json"
-
+        cache = preprocess_cache(cache)
         util.process_cache(cache, kernel_options, tuning_options, runner)
     else:
         tuning_options.cache = {}
         tuning_options.cachefile = None
 
     # create search space
+    tuning_options.restrictions_unmodified = deepcopy(restrictions)
     searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
@@ -861,21 +853,67 @@ def _check_user_input(kernel_name, kernelsource, arguments, block_size_names):
     util.check_block_size_names(block_size_names)
 
 
-def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation_mode = False, output_T4 = True, iterations = 7, strategy_options = None):
-    """Call the tune function with a T1 input file."""
+def tune_kernel_T1(
+    input_filepath: Path,
+    cache_filepath: Path = None,
+    objective="time",
+    objective_higher_is_better=False,
+    simulation_mode=False,
+    output_T4=True,
+    iterations=7,
+    device=None,
+    strategy: str=None,
+    strategy_options: dict={},
+) -> tuple:
+    """Call the tune function with a T1 input file.
+    
+    The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
+    """
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs["KernelSpecification"]
     kernel_name: str = kernelspec["KernelName"]
     kernel_filepath = Path(kernelspec["KernelFile"])
     kernel_source = (
-        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent.parent / kernel_filepath
+        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent / kernel_filepath
+    )
+    kernel_source = (
+        kernel_source if kernel_source.exists() else Path(input_filepath).parent.parent / kernel_filepath
     )
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
     language: str = kernelspec["Language"]
     problem_size = kernelspec["ProblemSize"]
-    device = kernelspec["Device"]["Name"]
-    strategy = inputs["Search"]["Name"]
+    if device is None:
+        device = kernelspec["Device"]["Name"]
+    if strategy is None:
+        strategy = inputs["Search"]["Name"]
+        if "Attributes" in inputs["Search"]:
+            for attribute in inputs["Search"]["Attributes"]:
+                strategy_options[attribute["Name"]] = attribute["Value"]
+    if "Budget" in inputs:
+        budget = inputs["Budget"][0]
+        if budget["Type"] == "ConfigurationCount":
+            strategy_options["max_fevals"] = budget["BudgetValue"]
+        elif budget["Type"] == "TuningDuration":
+            strategy_options["time_limit"] = budget["BudgetValue"]  # both are in seconds
+        else:
+            raise NotImplementedError(f"Budget type in {budget} is not supported")
 
+    # check if the strategy is a path
+    if "custom_search_method_path" in strategy_options:
+        # if it is a path, import the strategy from the file
+        opt_path: Path = Path(strategy_options["custom_search_method_path"])
+        class_name: str = strategy
+        assert opt_path.exists(), f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
+        optimizer_class = import_class_from_file(opt_path, class_name)
+        filter_keys = ["custom_search_method_path", "max_fevals", "time_limit", "constraint_aware"]
+        adjusted_strategy_options = {k:v for k, v in strategy_options.items() if k not in filter_keys}
+        optimizer_instance = optimizer_class(**adjusted_strategy_options)
+        strategy = OptAlgWrapper(optimizer_instance)
+        if "constraint_aware" not in strategy_options and hasattr(optimizer_instance, "constraint_aware"):
+            # if the optimizer has a constraint_aware attribute, set it in the strategy options
+            strategy_options["constraint_aware"] = optimizer_instance.constraint_aware
+
+    # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:
         cache_filepath = Path(kernelspec["SimulationInput"])
 
@@ -892,10 +930,12 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
         tune_param = None
         if param["Type"] in ["int", "float"]:
             vals = param["Values"]
-            if vals[:5] == "list(" or (vals[0] == "[" and vals[-1] == "]"):
+            if "list(" in vals or "range(" in vals or (vals[0] == "[" and vals[-1] == "]"):
                 tune_param = eval(vals)
             else:
                 tune_param = literal_eval(vals)
+        if param["Type"] == "string":
+            tune_param = eval(param["Values"])
         if tune_param is not None:
             tune_params[param["Name"]] = tune_param
         else:
@@ -917,7 +957,11 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
     cmem_arguments = {}
     for arg in kernelspec["Arguments"]:
         argument = None
-        if arg["Type"] == "float" and arg["MemoryType"] == "Vector":
+        if arg["MemoryType"] == "Vector":
+            if arg["Type"] != "float":
+                raise NotImplementedError(
+                    f"Conversion for vector type '{arg['Type']}' has not yet been implemented: {arg}"
+                )
             size = arg["Size"]
             if isinstance(size, str):
                 args = tune_params.copy()
@@ -931,6 +975,13 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
                 argument = numpy.random.randn(size).astype(numpy.float32)
             else:
                 raise NotImplementedError(f"Conversion for fill type '{arg['FillType']}' has not yet been implemented")
+        elif arg["MemoryType"] == "Scalar":
+            if arg["Type"] == "float":
+                argument = numpy.float32(arg["FillValue"])
+            elif arg["Type"] == "int32":
+                argument = numpy.int32(arg["FillValue"])
+            else:
+                raise NotImplementedError()
         if argument is not None:
             arguments.append(argument)
             if "MemType" in arg and arg["MemType"] == "Constant":
@@ -939,7 +990,6 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
             raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
 
     # tune with the converted inputs
-    # TODO add objective to tune_kernel and get_t4_results calls once available in T1
     results, env = tune_kernel(
         kernel_name,
         kernel_source,
@@ -959,10 +1009,12 @@ def tune_kernel_T1(input_filepath: Path, cache_filepath: Path = None, simulation
         verbose=False,
         iterations=iterations,
         strategy=strategy,
-        strategy_options=strategy_options
+        strategy_options=strategy_options,
+        objective=objective,
+        objective_higher_is_better=objective_higher_is_better,
     )
     if output_T4:
-        return get_t4_metadata(), get_t4_results(results, tune_params)
+        return get_t4_metadata(), get_t4_results(results, tune_params, objective=objective)
     return results, env
 
 

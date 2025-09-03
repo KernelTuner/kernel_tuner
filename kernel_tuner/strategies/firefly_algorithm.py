@@ -3,7 +3,7 @@ import sys
 
 import numpy as np
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc, scale_from_params
@@ -13,7 +13,8 @@ _options = dict(popsize=("Population size", 20),
                        maxiter=("Maximum number of iterations", 100),
                        B0=("Maximum attractiveness", 1.0),
                        gamma=("Light absorption coefficient", 1.0),
-                       alpha=("Randomization parameter", 0.2))
+                       alpha=("Randomization parameter", 0.2),
+                       constraint_aware=("constraint-aware optimization (True/False)", True))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
@@ -23,7 +24,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # using this instead of get_bounds because scaling is used
     bounds, x0, eps = cost_func.get_bounds_x0_eps()
 
-    num_particles, maxiter, B0, gamma, alpha = common.get_options(tuning_options.strategy_options, _options)
+    num_particles, maxiter, B0, gamma, alpha, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
 
     best_score_global = sys.float_info.max
     best_position_global = []
@@ -34,9 +35,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         swarm.append(Firefly(bounds))
 
     # ensure particles start from legal points
-    population = list(list(p) for p in searchspace.get_random_sample(num_particles))
-    for i, particle in enumerate(swarm):
-        particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+    if constraint_aware:
+        population = list(list(p) for p in searchspace.get_random_sample(num_particles))
+        for i, particle in enumerate(swarm):
+            particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
 
     # include user provided starting point
     swarm[0].position = x0
@@ -45,7 +47,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     for j in range(num_particles):
         try:
             swarm[j].compute_intensity(cost_func)
-        except util.StopCriterionReached as e:
+        except StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
             return cost_func.results
@@ -68,7 +70,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                     swarm[i].move_towards(swarm[j], beta, alpha)
                     try:
                         swarm[i].compute_intensity(cost_func)
-                    except util.StopCriterionReached as e:
+                    except StopCriterionReached as e:
                         if tuning_options.verbose:
                             print(e)
                         return cost_func.results

@@ -2,6 +2,7 @@
 import logging
 from collections import namedtuple
 from time import perf_counter
+from warnings import warn
 
 from kernel_tuner import util
 from kernel_tuner.runners.runner import Runner
@@ -82,7 +83,7 @@ class SimulationRunner(Runner):
 
         results = []
 
-        # iterate over parameter space
+        # iterate over parameter space 
         for element in parameter_space:
 
             # check if element is in the cache
@@ -127,8 +128,26 @@ class SimulationRunner(Runner):
                 results.append(result)
                 continue
 
-            # if the element is not in the cache, raise an error
-            check = util.check_restrictions(tuning_options.restrictions, dict(zip(tuning_options['tune_params'].keys(), element)), True)
+            # if the configuration is not in the cache and not within restrictions, simulate an InvalidConfig with warning
+            params_dict = dict(zip(tuning_options['tune_params'].keys(), element))
+            check = util.check_restrictions(tuning_options.restrictions, params_dict, True)
+            if not check:
+                result = params_dict
+                result['compile_time'] = 0
+                result['verification_time'] = 0
+                result['benchmark_time'] = 0
+                result['strategy_time'] = self.last_strategy_time
+
+                total_time = 1000 * (perf_counter() - self.start_time)
+                self.start_time = perf_counter()
+                result['framework_time'] = total_time - self.last_strategy_time
+
+                result[tuning_options.objective] = util.InvalidConfig()
+                results.append(result)
+                warn(f"Configuration {element} not in cache, does not pass restrictions. Will be treated as an InvalidConfig, but make sure you are evaluating the correct cache file.")
+                continue
+
+            # if the configuration is not in the cache and passes restrictions, return a ValueError
             err_string = f"kernel configuration {element} not in cache, does {'' if check else 'not '}pass extra restriction check ({check})"
             logging.debug(err_string)
             raise ValueError(f"{err_string} - in simulation mode, all configurations must be present in the cache")

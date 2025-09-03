@@ -315,10 +315,13 @@ class DeviceInterface(object):
                 observers=observers,
             )
         elif lang.upper() == "HYPERTUNER":
-            dev = HypertunerFunctions(iterations=iterations)
+            dev = HypertunerFunctions(
+                iterations=iterations,
+                compiler_options=compiler_options
+            )
             self.requires_warmup = False
         else:
-            raise ValueError(
+            raise NotImplementedError(
                 "Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet"
             )
         self.dev = dev

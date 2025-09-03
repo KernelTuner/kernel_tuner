@@ -3,6 +3,7 @@
 import json
 import subprocess
 from importlib.metadata import PackageNotFoundError, requires, version
+from importlib.util import spec_from_file_location, module_from_spec
 from pathlib import Path
 from sys import platform
 
@@ -152,7 +153,7 @@ def get_t4_results(results, tune_params, objective="time"):
 
     # write output_data to a JSON file
     version, _ = output_file_schema("results")
-    output_json = dict(results=output_data, schema_version=version, metadata={'timeunit': 'miliseconds'})
+    output_json = dict(results=output_data, schema_version=version, metadata={'timeunit': 'milliseconds'})
     return output_json
 
 def store_output_file(output_filename: str, results, tune_params, objective="time"):
@@ -302,3 +303,25 @@ def store_metadata_file(metadata_filename: str):
     with open(metadata_filenamepath, "w+") as fh:
         json.dump(metadata_json, fh, indent="  ")
 
+def import_class_from_file(file_path: Path, class_name):
+    """Import a class from a file."""
+
+    def load_module(module_name):
+        spec = spec_from_file_location(module_name, file_path)
+        if spec is None:
+            raise ImportError(f"Could not load spec from {file_path}")
+        
+        # create a module from the spec and execute it
+        module = module_from_spec(spec)
+        spec.loader.exec_module(module)
+        if not hasattr(module, class_name):
+            raise ImportError(f"Module '{module_name}' has no class '{class_name}'")
+        return module
+
+    try:
+        module = load_module(file_path.stem)
+    except ImportError:
+        module = load_module(f"{file_path.parent.stem}.{file_path.stem}")
+    
+    # return the class from the module
+    return getattr(module, class_name)

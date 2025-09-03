@@ -191,12 +191,29 @@ def check_argument_list(kernel_name, kernel_string, args):
         warnings.warn(errors[0], UserWarning)
 
 
-def check_stop_criterion(to):
-    """Checks if max_fevals is reached or time limit is exceeded."""
-    if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
-        raise StopCriterionReached("max_fevals reached")
-    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time) > to.time_limit):
-        raise StopCriterionReached("time limit exceeded")
+def check_stop_criterion(to: dict) -> float:
+    """Check if the stop criterion is reached.
+
+    Args:
+        to (dict): tuning options.
+
+    Raises:
+        StopCriterionReached: if the max_fevals is reached or time limit is exceeded.
+
+    Returns:
+        float: fraction of budget spent. If both max_fevals and time_limit are set, it returns the fraction of time.
+    """
+    if "max_fevals" in to:
+        if len(to.unique_results) >= to.max_fevals:
+            raise StopCriterionReached(f"max_fevals ({to.max_fevals}) reached")
+        if not "time_limit" in to:
+            return len(to.unique_results) / to.max_fevals
+    if "time_limit" in to:
+        time_spent = (time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time
+        if time_spent > to.time_limit:
+            raise StopCriterionReached("time limit exceeded")
+        return time_spent / to.time_limit
+    
 
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
@@ -479,13 +496,13 @@ def get_interval(a: list):
     a_min = min(a)
     a_max = max(a)
     if len(a) <= 2:
-        return (a_min, a_max, a_max-a_min)
+        return (a_min, a_max, a_max - a_min)
     # determine the first step size
-    step = a[1]-a_min
+    step = a[1] - a_min
     # for each element, the step size should be equal to the first step
     for i, e in enumerate(a):
-        if e-a[i-1] != step:
-            return None 
+        if e - a[i - 1] != step:
+            return None
     result = (a_min, a_max, step)
     if not all(isinstance(e, (int, float)) for e in result):
         return None
@@ -910,8 +927,8 @@ def parse_restrictions(
     # remove functionally duplicate restrictions (preserves order and whitespace)
     if all(isinstance(r, str) for r in restrictions):
         # clean the restriction strings to functional equivalence
-        restrictions_cleaned = [r.replace(' ', '') for r in restrictions]
-        restrictions_cleaned_unique = list(dict.fromkeys(restrictions_cleaned)) # dict preserves order
+        restrictions_cleaned = [r.replace(" ", "") for r in restrictions]
+        restrictions_cleaned_unique = list(dict.fromkeys(restrictions_cleaned))  # dict preserves order
         # get the indices of the unique restrictions, use these to build a new list of restrictions
         restrictions_unique_indices = [restrictions_cleaned.index(r) for r in restrictions_cleaned_unique]
         restrictions = [restrictions[i] for i in restrictions_unique_indices]
@@ -952,8 +969,12 @@ def parse_restrictions(
             # combine multiple restrictions into one
             for res_tuple in res_dict.values():
                 res, params_used = res_tuple
-                params_used = list(dict.fromkeys(params_used))   # param_used should only contain unique, dict preserves order
-                parsed_restrictions_pyatf.append((f"def r({', '.join(params_used)}): return ({') and ('.join(res)}) \n", params_used))
+                params_used = list(
+                    dict.fromkeys(params_used)
+                )  # param_used should only contain unique, dict preserves order
+                parsed_restrictions_pyatf.append(
+                    (f"def r({', '.join(params_used)}): return ({') and ('.join(res)}) \n", params_used)
+                )
             parsed_restrictions = parsed_restrictions_pyatf
     else:
         # create one monolithic function
@@ -1126,7 +1147,9 @@ def compile_restrictions(
 
 def check_matching_problem_size(cached_problem_size, problem_size):
     """Check the if requested problem size matches the problem size in the cache."""
-    if not (np.array(cached_problem_size) == np.array(problem_size)).all():
+    cached_problem_size_arr = np.array(cached_problem_size)
+    problem_size_arr = np.array(problem_size)
+    if cached_problem_size_arr.size != problem_size_arr.size or not (cached_problem_size_arr == problem_size_arr).all():
         raise ValueError(f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}")
 
 def process_cache(cache, kernel_options, tuning_options, runner):
@@ -1208,7 +1231,7 @@ def process_cache(cache, kernel_options, tuning_options, runner):
                 )
             raise ValueError(
                 f"Cannot load cache which contains results obtained with different tunable parameters. \
-                Cache has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
+                Cache at '{cache}' has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
             )
 
         tuning_options.cachefile = cache

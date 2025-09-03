@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 """This is the minimal example from the README"""
 
-import json
-from collections import OrderedDict
-
 import numpy
+import kernel_tuner
 from kernel_tuner import tune_kernel
-from kernel_tuner.observers.nvml import NVMLObserver
+from kernel_tuner.file_utils import store_output_file, store_metadata_file
 
 def tune():
 
@@ -19,7 +17,7 @@ def tune():
     }
     """
 
-    size = 80000000
+    size = 10000000
 
     a = numpy.random.randn(size).astype(numpy.float32)
     b = numpy.random.randn(size).astype(numpy.float32)
@@ -31,15 +29,13 @@ def tune():
     tune_params = dict()
     tune_params["block_size_x"] = [128+64*i for i in range(15)]
 
-    nvmlobserver = NVMLObserver(["nvml_energy", "temperature"])
+    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, strategy=kernel_tuner.strategies.minimize, verbose=True)
 
-    metrics = OrderedDict()
-    metrics["GFLOPS/W"] = lambda p: (size/1e9) / p["nvml_energy"]
+    # Store the tuning results in an output file
+    store_output_file("vector_add.json", results, tune_params)
 
-    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, observers=[nvmlobserver], metrics=metrics, iterations=32)
-
-    with open("vector_add.json", 'w') as fp:
-        json.dump(results, fp)
+    # Store the metadata of this run
+    store_metadata_file("vector_add-metadata.json")
 
     return results
 

@@ -59,7 +59,11 @@
                                     "type": "string"
                                 },
                                 "value": {
-                                    "type": "number"
+                                    "type": [
+                                        "number",
+                                        "string",
+                                        "array"
+                                    ]
                                 },
                                 "unit": {
                                     "type": "string"
