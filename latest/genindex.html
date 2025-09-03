@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; Kernel Tuner 1.2.0 documentation</title>
+  <title>Index &mdash; Kernel Tuner 1.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -12,7 +12,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=6efca38a"></script>
+        <script src="_static/documentation_options.js?v=1f29e9d3"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -33,7 +33,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.2.0
+                1.3.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -125,6 +125,7 @@
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
@@ -174,6 +175,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver">BenchmarkObserver (class in kernel_tuner.observers)</a>
+</li>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.binomial_crossover">binomial_crossover() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -225,10 +228,10 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.ConstraintLambdaTransformer">ConstraintLambdaTransformer (class in kernel_tuner.util)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.convert_constraint_lambdas">convert_constraint_lambdas() (in module kernel_tuner.util)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.convert_constraint_restriction">convert_constraint_restriction() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.backends.cupy.CupyFunctions.copy_constant_memory_args">copy_constant_memory_args() (kernel_tuner.backends.cupy.CupyFunctions method)</a>
@@ -269,6 +272,8 @@
       </ul></li>
       <li><a href="design.html#kernel_tuner.util.correct_open_cache">correct_open_cache() (in module kernel_tuner.util)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.strategies.common.CostFunc">CostFunc (class in kernel_tuner.strategies.common)</a>
+</li>
       <li><a href="user-api.html#kernel_tuner.create_device_targets">create_device_targets() (in module kernel_tuner)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.cuda_error_check">cuda_error_check() (in module kernel_tuner.util)</a>
@@ -289,6 +294,8 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.detect_language">detect_language() (in module kernel_tuner.util)</a>
 </li>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.differential_evolution">differential_evolution() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.disruptive_uniform_crossover">disruptive_uniform_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
@@ -308,6 +315,10 @@
       <li><a href="design.html#kernel_tuner.util.ErrorConfig">ErrorConfig (class in kernel_tuner.util)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.exponential_crossover">exponential_crossover() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="F">F</h2>
@@ -323,9 +334,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="optimization.html#kernel_tuner.strategies.bayes_opt.generate_normalized_param_dicts">generate_normalized_param_dicts() (in module kernel_tuner.strategies.bayes_opt)</a>
 </li>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.generate_population">generate_population() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.get_all_lambda_asts">get_all_lambda_asts() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_best_config">get_best_config() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.strategies.common.CostFunc.get_bounds">get_bounds() (kernel_tuner.strategies.common.CostFunc method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.strategies.common.CostFunc.get_bounds_x0_eps">get_bounds_x0_eps() (kernel_tuner.strategies.common.CostFunc method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_config_string">get_config_string() (in module kernel_tuner.util)</a>
 </li>
@@ -335,10 +352,10 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.get_interval">get_interval() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.strategies.common.get_options">get_options() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_problem_size">get_problem_size() (in module kernel_tuner.util)</a>
@@ -346,6 +363,8 @@
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.get_results">get_results() (kernel_tuner.observers.BenchmarkObserver method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_smem_args">get_smem_args() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.strategies.common.CostFunc.get_start_pos">get_start_pos() (kernel_tuner.strategies.common.CostFunc method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.strategies.common.get_strategy_docstring">get_strategy_docstring() (in module kernel_tuner.strategies.common)</a>
 </li>
@@ -368,6 +387,10 @@
 
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.indices_to_values">indices_to_values() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.InvalidConfig">InvalidConfig (class in kernel_tuner.util)</a>
 </li>
@@ -570,8 +593,6 @@
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.memset">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     module
 
@@ -611,9 +632,17 @@
         <li><a href="design.html#module-kernel_tuner.util">kernel_tuner.util</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="optimization.html#kernel_tuner.strategies.firefly_algorithm.Firefly.move_towards">move_towards() (kernel_tuner.strategies.firefly_algorithm.Firefly method)</a>
 </li>
-      <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.mutate">mutate() (in module kernel_tuner.strategies.genetic_algorithm)</a>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.mutate_currenttobest1">mutate_currenttobest1() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.mutate_de_1">mutate_de_1() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.mutate_de_2">mutate_de_2() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.mutate_randtobest1">mutate_randtobest1() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -649,6 +678,8 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.parse_method">parse_method() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.parse_restrictions">parse_restrictions() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="observers.html#kernel_tuner.observers.pmt.PMTObserver">PMTObserver (class in kernel_tuner.observers.pmt)</a>
@@ -657,10 +688,10 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.prepare_kernel_string">prepare_kernel_string() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.print_config">print_config() (in module kernel_tuner.util)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.util.print_config">print_config() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.print_config_output">print_config_output() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.process_cache">process_cache() (in module kernel_tuner.util)</a>
@@ -677,6 +708,10 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.random_draw">random_draw() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
+      <li><a href="optimization.html#kernel_tuner.strategies.simulated_annealing.random_val">random_val() (in module kernel_tuner.strategies.simulated_annealing)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.read_cache">read_cache() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.read_file">read_file() (in module kernel_tuner.util)</a>
@@ -703,7 +738,11 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.repair">repair() (in module kernel_tuner.strategies.diff_evo)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.replace_param_occurrences">replace_param_occurrences() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.round_and_clip">round_and_clip() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
       <li><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner.run">run() (kernel_tuner.runners.sequential.SequentialRunner method)</a>
 
@@ -857,21 +896,27 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.uniform_crossover">uniform_crossover() (in module kernel_tuner.strategies.genetic_algorithm)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.unparse_constraint_lambda">unparse_constraint_lambda() (in module kernel_tuner.util)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.strategies.common.unscale_and_snap_to_nearest">unscale_and_snap_to_nearest() (in module kernel_tuner.strategies.common)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.strategies.common.unscale_and_snap_to_nearest_valid">unscale_and_snap_to_nearest_valid() (in module kernel_tuner.strategies.common)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.values_to_indices">values_to_indices() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
   </ul></td>
 </tr></table>
 
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="optimization.html#kernel_tuner.strategies.genetic_algorithm.weighted_choice">weighted_choice() (in module kernel_tuner.strategies.genetic_algorithm)</a>
-</li>
-  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.write_file">write_file() (in module kernel_tuner.util)</a>
 </li>

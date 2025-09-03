@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Development environment &mdash; Kernel Tuner 1.2.0 documentation</title>
+  <title>Development environment &mdash; Kernel Tuner 1.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -13,7 +13,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=6efca38a"></script>
+        <script src="_static/documentation_options.js?v=1f29e9d3"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -35,7 +35,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.2.0
+                1.3.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -244,7 +244,7 @@ or change dependencies of Kernel Tuner.</strong></p>
 <li><p>Check if the environment is setup correctly by running <code class="code highlight bash docutils literal highlight-bash">pytest</code>. All tests should pass, except if you’re not on a GPU node, or one or more extras has been left out in the previous step, then these tests will skip gracefully.</p></li>
 <li><dl class="simple">
 <dt>Set Nox to use the correct backend and location:</dt><dd><ul class="simple">
-<li><p>Run <code class="code highlight bash docutils literal highlight-bash">conda<span class="w"> </span>--<span class="w"> </span>create-settings-file</code> to automatically create a settings file.</p></li>
+<li><p>Run <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>create-settings-file</code> to automatically create a settings file.</p></li>
 <li><dl class="simple">
 <dt>In this settings file <code class="code highlight bash docutils literal highlight-bash">noxsettings.toml</code>, change the <code class="code highlight bash docutils literal highlight-bash">venvbackend</code>:</dt><dd><ul>
 <li><p>If you used Mamba in step 2, to <code class="code highlight bash docutils literal highlight-bash">mamba</code>.</p></li>

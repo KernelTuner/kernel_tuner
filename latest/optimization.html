@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Optimization strategies &mdash; Kernel Tuner 1.2.0 documentation</title>
+  <title>Optimization strategies &mdash; Kernel Tuner 1.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -13,7 +13,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=6efca38a"></script>
+        <script src="_static/documentation_options.js?v=1f29e9d3"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -36,7 +36,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.2.0
+                1.3.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -84,7 +84,21 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.strategies.diff_evo">kernel_tuner.strategies.diff_evo</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.binomial_crossover"><code class="docutils literal notranslate"><span class="pre">binomial_crossover()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.differential_evolution"><code class="docutils literal notranslate"><span class="pre">differential_evolution()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.exponential_crossover"><code class="docutils literal notranslate"><span class="pre">exponential_crossover()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.generate_population"><code class="docutils literal notranslate"><span class="pre">generate_population()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.indices_to_values"><code class="docutils literal notranslate"><span class="pre">indices_to_values()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.mutate_currenttobest1"><code class="docutils literal notranslate"><span class="pre">mutate_currenttobest1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.mutate_de_1"><code class="docutils literal notranslate"><span class="pre">mutate_de_1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.mutate_de_2"><code class="docutils literal notranslate"><span class="pre">mutate_de_2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.mutate_randtobest1"><code class="docutils literal notranslate"><span class="pre">mutate_randtobest1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.parse_method"><code class="docutils literal notranslate"><span class="pre">parse_method()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.random_draw"><code class="docutils literal notranslate"><span class="pre">random_draw()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.repair"><code class="docutils literal notranslate"><span class="pre">repair()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.round_and_clip"><code class="docutils literal notranslate"><span class="pre">round_and_clip()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.diff_evo.values_to_indices"><code class="docutils literal notranslate"><span class="pre">values_to_indices()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.strategies.dual_annealing">kernel_tuner.strategies.dual_annealing</a><ul>
@@ -103,12 +117,10 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.strategies.genetic_algorithm">kernel_tuner.strategies.genetic_algorithm</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.disruptive_uniform_crossover"><code class="docutils literal notranslate"><span class="pre">disruptive_uniform_crossover()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.mutate"><code class="docutils literal notranslate"><span class="pre">mutate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.single_point_crossover"><code class="docutils literal notranslate"><span class="pre">single_point_crossover()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.two_point_crossover"><code class="docutils literal notranslate"><span class="pre">two_point_crossover()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.uniform_crossover"><code class="docutils literal notranslate"><span class="pre">uniform_crossover()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.genetic_algorithm.weighted_choice"><code class="docutils literal notranslate"><span class="pre">weighted_choice()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.strategies.greedy_ils">kernel_tuner.strategies.greedy_ils</a><ul>
@@ -142,6 +154,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-kernel_tuner.strategies.simulated_annealing">kernel_tuner.strategies.simulated_annealing</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.simulated_annealing.acceptance_prob"><code class="docutils literal notranslate"><span class="pre">acceptance_prob()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.simulated_annealing.neighbor"><code class="docutils literal notranslate"><span class="pre">neighbor()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.simulated_annealing.random_val"><code class="docutils literal notranslate"><span class="pre">random_val()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#kernel_tuner.strategies.simulated_annealing.tune"><code class="docutils literal notranslate"><span class="pre">tune()</span></code></a></li>
 </ul>
 </li>
@@ -311,7 +324,7 @@ execution times.</p>
 </section>
 <section id="module-kernel_tuner.strategies.brute_force">
 <span id="kernel-tuner-strategies-brute-force"></span><h2>kernel_tuner.strategies.brute_force<a class="headerlink" href="#module-kernel_tuner.strategies.brute_force" title="Link to this heading">¶</a></h2>
-<p>The default strategy that iterates through the whole parameter space</p>
+<p>The default strategy that iterates through the whole parameter space.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.brute_force.tune">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.brute_force.</span></span><span class="sig-name descname"><span class="pre">tune</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.brute_force.tune" title="Link to this definition">¶</a></dt>
@@ -339,7 +352,101 @@ about the hardware/software environment on which the tuning took place.</p>
 </section>
 <section id="module-kernel_tuner.strategies.diff_evo">
 <span id="kernel-tuner-strategies-diff-evo"></span><h2>kernel_tuner.strategies.diff_evo<a class="headerlink" href="#module-kernel_tuner.strategies.diff_evo" title="Link to this heading">¶</a></h2>
-<p>The differential evolution strategy that optimizes the search through the parameter space.</p>
+<p>A simple Different Evolution for parameter search.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.binomial_crossover">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">binomial_crossover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">donor_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">CR</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.binomial_crossover" title="Link to this definition">¶</a></dt>
+<dd><p>Performs binomial crossover of donor_vector with target given crossover rate CR.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.differential_evolution">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">differential_evolution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cost_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">popsize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">CR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint_aware</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.differential_evolution" title="Link to this definition">¶</a></dt>
+<dd><p>A basic implementation of the Differential Evolution algorithm.</p>
+<p>This function finds the minimum of a given cost function within specified bounds.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.exponential_crossover">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">exponential_crossover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">donor_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">CR</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.exponential_crossover" title="Link to this definition">¶</a></dt>
+<dd><p>Performs exponential crossover for a discrete search space.</p>
+<p>This creates a trial vector by taking a contiguous block of parameters
+from the donor vector and the rest from the target vector.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.generate_population">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">generate_population</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">popsize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint_aware</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.generate_population" title="Link to this definition">¶</a></dt>
+<dd><p>Generate new population, returns Numpy array.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.indices_to_values">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">indices_to_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">individual_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.indices_to_values" title="Link to this definition">¶</a></dt>
+<dd><p>Converts an individual’s index vector back to its values.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.mutate_currenttobest1">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">mutate_currenttobest1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">best_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">randos_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.mutate_currenttobest1" title="Link to this definition">¶</a></dt>
+<dd><p>Performs the DE/1 currenttobest1 mutation strategy.</p>
+<p>This function operates on the indices of the parameters, not their actual values.
+The formula v = cur + F * (best - cur + a - b) is applied to the indices, and the result is
+then rounded and clipped to ensure it remains a valid index.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.mutate_de_1">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">mutate_de_1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">best_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">randos_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.mutate_de_1" title="Link to this definition">¶</a></dt>
+<dd><p>Performs the DE/1 mutation strategy.</p>
+<p>This function operates on the indices of the parameters, not their actual values.
+The formula v = a + F * (b - c) is applied to the indices, and the result is
+then rounded and clipped to ensure it remains a valid index.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.mutate_de_2">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">mutate_de_2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">best_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">randos_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.mutate_de_2" title="Link to this definition">¶</a></dt>
+<dd><p>Performs the DE/2 mutation strategy for a discrete search space.</p>
+<p>This function operates on the indices of the parameters, not their actual values.
+The formula v = a + F1 * (b - c) + F2 * (d - e) is applied to the indices,
+and the result is then rounded and clipped to ensure it remains a valid index.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.mutate_randtobest1">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">mutate_randtobest1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">best_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">randos_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.mutate_randtobest1" title="Link to this definition">¶</a></dt>
+<dd><p>Performs the DE/1 randtobest1 mutation strategy.</p>
+<p>This function operates on the indices of the parameters, not their actual values.
+The formula v = a + F * (best - a + b - c) is applied to the indices, and the result is
+then rounded and clipped to ensure it remains a valid index.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.parse_method">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">parse_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.parse_method" title="Link to this definition">¶</a></dt>
+<dd><p>Helper func to parse the preferred method into its components.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.random_draw">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">random_draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idxs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.random_draw" title="Link to this definition">¶</a></dt>
+<dd><p>Draw requested number of random individuals.</p>
+<p>Draw without replacement unless there is not enough to draw from.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.repair">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">repair</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trial_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searchspace</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.repair" title="Link to this definition">¶</a></dt>
+<dd><p>Attempts to repair trial_vector if trial_vector is invalid</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.round_and_clip">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">round_and_clip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mutant_idx_float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.round_and_clip" title="Link to this definition">¶</a></dt>
+<dd><p>Helper func to round floating index to nearest integer and clip within bounds.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.tune">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">tune</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.tune" title="Link to this definition">¶</a></dt>
@@ -347,9 +454,13 @@ about the hardware/software environment on which the tuning took place.</p>
 <p>This Differential Evolution strategy supports the following strategy_options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>method: Creation method for new population, any of [‘best1bin’, ‘best1exp’, ‘rand1exp’, ‘randtobest1exp’, ‘best2exp’, ‘rand2exp’, ‘randtobest1bin’, ‘best2bin’, ‘rand2bin’, ‘rand1bin’], default best1bin.</p></li>
-<li><p>popsize: Population size, default 20.</p></li>
-<li><p>maxiter: Number of generations, default 100.</p></li>
+<li><p>popsize: population size, default 16.</p></li>
+<li><p>popsize_times_dimensions: multiply population size with number of dimensions (True/False), default True.</p></li>
+<li><p>maxiter: maximum number of generations, default 1000000000000000.</p></li>
+<li><p>F: mutation factor (differential weight), default 0.7.</p></li>
+<li><p>CR: crossover rate, default 0.6.</p></li>
+<li><p>method: method, default best1bin.</p></li>
+<li><p>constraint_aware: constraint-aware optimization (True/False), default True.</p></li>
 </ul>
 </div></blockquote>
 <dl class="field-list simple">
@@ -371,6 +482,12 @@ about the hardware/software environment on which the tuning took place.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.diff_evo.values_to_indices">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.diff_evo.</span></span><span class="sig-name descname"><span class="pre">values_to_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">individual_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.diff_evo.values_to_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Converts an individual’s values to its corresponding index vector.</p>
+</dd></dl>
+
 </section>
 <section id="module-kernel_tuner.strategies.dual_annealing">
 <span id="kernel-tuner-strategies-dual-annealing"></span><h2>kernel_tuner.strategies.dual_annealing<a class="headerlink" href="#module-kernel_tuner.strategies.dual_annealing" title="Link to this heading">¶</a></h2>
@@ -382,7 +499,7 @@ about the hardware/software environment on which the tuning took place.</p>
 <p>This Dual Annealing strategy supports the following strategy_options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>method: Local optimization method to use, choose any from [‘COBYLA’, ‘L-BFGS-B’, ‘SLSQP’, ‘CG’, ‘Powell’, ‘Nelder-Mead’, ‘BFGS’, ‘trust-constr’], default Powell.</p></li>
+<li><p>method: Local optimization method to use, choose any from [‘COBYLA’, ‘L-BFGS-B’, ‘SLSQP’, ‘CG’, ‘Powell’, ‘Nelder-Mead’, ‘BFGS’, ‘trust-constr’], default COBYLA.</p></li>
 </ul>
 </div></blockquote>
 <dl class="field-list simple">
@@ -444,6 +561,7 @@ about the hardware/software environment on which the tuning took place.</p>
 <li><p>B0: Maximum attractiveness, default 1.0.</p></li>
 <li><p>gamma: Light absorption coefficient, default 1.0.</p></li>
 <li><p>alpha: Randomization parameter, default 0.2.</p></li>
+<li><p>constraint_aware: constraint-aware optimization (True/False), default True.</p></li>
 </ul>
 </div></blockquote>
 <dl class="field-list simple">
@@ -479,12 +597,6 @@ if the number of differences between parents is larger than 1</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.mutate">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">mutate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dna</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutation_chance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.mutate" title="Link to this definition">¶</a></dt>
-<dd><p>Mutate DNA with 1/mutation_chance chance.</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.single_point_crossover">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">single_point_crossover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dna1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dna2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.single_point_crossover" title="Link to this definition">¶</a></dt>
 <dd><p>Crossover dna1 and dna2 at a random index.</p>
@@ -497,10 +609,11 @@ if the number of differences between parents is larger than 1</p>
 <p>This Genetic Algorithm strategy supports the following strategy_options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>popsize: population size, default 20.</p></li>
-<li><p>maxiter: maximum number of generations, default 100.</p></li>
-<li><p>method: crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform, default uniform.</p></li>
-<li><p>mutation_chance: chance to mutate is 1 in mutation_chance, default 10.</p></li>
+<li><p>popsize: population size, default 26.</p></li>
+<li><p>maxiter: maximum number of generations, default 90.</p></li>
+<li><p>method: crossover method to use, choose any from single_point, two_point, uniform, disruptive_uniform, default single_point.</p></li>
+<li><p>mutation_chance: chance to mutate is 1 in mutation_chance, default 55.</p></li>
+<li><p>constraint_aware: constraint-aware optimization (True/False), default True.</p></li>
 </ul>
 </div></blockquote>
 <dl class="field-list simple">
@@ -532,12 +645,6 @@ about the hardware/software environment on which the tuning took place.</p>
 <dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.uniform_crossover">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">uniform_crossover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dna1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dna2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.uniform_crossover" title="Link to this definition">¶</a></dt>
 <dd><p>Randomly crossover genes between dna1 and dna2.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="kernel_tuner.strategies.genetic_algorithm.weighted_choice">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.genetic_algorithm.</span></span><span class="sig-name descname"><span class="pre">weighted_choice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">population</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.genetic_algorithm.weighted_choice" title="Link to this definition">¶</a></dt>
-<dd><p>Randomly select n unique individuals from a weighted population, fitness determines probability of being selected.</p>
 </dd></dl>
 
 </section>
@@ -728,11 +835,12 @@ about the hardware/software environment on which the tuning took place.</p>
 <p>This Particle Swarm Optimization (PSO) strategy supports the following strategy_options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>popsize: Population size, default 20.</p></li>
-<li><p>maxiter: Maximum number of iterations, default 100.</p></li>
+<li><p>popsize: Population size, default 50.</p></li>
+<li><p>maxiter: Maximum number of iterations, default 190.</p></li>
 <li><p>w: Inertia weight constant, default 0.5.</p></li>
-<li><p>c1: Cognitive constant, default 2.0.</p></li>
+<li><p>c1: Cognitive constant, default 3.5.</p></li>
 <li><p>c2: Social constant, default 1.0.</p></li>
+<li><p>constraint_aware: constraint-aware optimization (True/False), default True.</p></li>
 </ul>
 </div></blockquote>
 <dl class="field-list simple">
@@ -799,8 +907,14 @@ about the hardware/software environment on which the tuning took place.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.simulated_annealing.neighbor">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.simulated_annealing.</span></span><span class="sig-name descname"><span class="pre">neighbor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Searchspace</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.simulated_annealing.neighbor" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.simulated_annealing.</span></span><span class="sig-name descname"><span class="pre">neighbor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint_aware</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.simulated_annealing.neighbor" title="Link to this definition">¶</a></dt>
 <dd><p>Return a random neighbor of pos.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.simulated_annealing.random_val">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.simulated_annealing.</span></span><span class="sig-name descname"><span class="pre">random_val</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.simulated_annealing.random_val" title="Link to this definition">¶</a></dt>
+<dd><p>return a random value for a parameter</p>
 </dd></dl>
 
 <dl class="py function">
@@ -810,10 +924,11 @@ about the hardware/software environment on which the tuning took place.</p>
 <p>This Simulated Annealing strategy supports the following strategy_options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>T: Starting temperature, default 1.0.</p></li>
-<li><p>T_min: End temperature, default 0.001.</p></li>
-<li><p>alpha: Alpha parameter, default 0.995.</p></li>
+<li><p>T: Starting temperature, default 0.1.</p></li>
+<li><p>T_min: End temperature, default 0.0001.</p></li>
+<li><p>alpha: Alpha parameter, default 0.9975.</p></li>
 <li><p>maxiter: Number of iterations within each annealing step, default 1.</p></li>
+<li><p>constraint_aware: constraint-aware optimization (True/False), default True.</p></li>
 </ul>
 </div></blockquote>
 <dl class="field-list simple">

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Design documentation &mdash; Kernel Tuner 1.2.0 documentation</title>
+  <title>Design documentation &mdash; Kernel Tuner 1.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -13,7 +13,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=6efca38a"></script>
+        <script src="_static/documentation_options.js?v=1f29e9d3"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -36,7 +36,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.2.0
+                1.3.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -78,6 +78,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Design documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#strategies">Strategies</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#module-kernel_tuner.strategies.common">kernel_tuner.strategies.common</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.common.CostFunc"><code class="docutils literal notranslate"><span class="pre">CostFunc</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.common.get_options"><code class="docutils literal notranslate"><span class="pre">get_options()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.common.get_strategy_docstring"><code class="docutils literal notranslate"><span class="pre">get_strategy_docstring()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.common.make_strategy_options_doc"><code class="docutils literal notranslate"><span class="pre">make_strategy_options_doc()</span></code></a></li>
@@ -86,6 +87,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.common.setup_method_options"><code class="docutils literal notranslate"><span class="pre">setup_method_options()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.common.snap_to_nearest_config"><code class="docutils literal notranslate"><span class="pre">snap_to_nearest_config()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.common.unscale_and_snap_to_nearest"><code class="docutils literal notranslate"><span class="pre">unscale_and_snap_to_nearest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.strategies.common.unscale_and_snap_to_nearest_valid"><code class="docutils literal notranslate"><span class="pre">unscale_and_snap_to_nearest_valid()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -269,6 +271,31 @@ discussed above. For the documentation of the user API see the
 <p>Many of the strategies use helper functions that are collected in <code class="docutils literal notranslate"><span class="pre">kernel_tuner.strategies.common</span></code>.</p>
 <section id="module-kernel_tuner.strategies.common">
 <span id="kernel-tuner-strategies-common"></span><h3>kernel_tuner.strategies.common<a class="headerlink" href="#module-kernel_tuner.strategies.common" title="Link to this heading">¶</a></h3>
+<p>Module for functionality that is commonly used throughout the strategies.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.common.</span></span><span class="sig-name descname"><span class="pre">CostFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_invalid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc" title="Link to this definition">¶</a></dt>
+<dd><p>Class encapsulating the CostFunc method.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc.get_bounds">
+<span class="sig-name descname"><span class="pre">get_bounds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc.get_bounds" title="Link to this definition">¶</a></dt>
+<dd><p>Create a bounds array from the tunable parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc.get_bounds_x0_eps">
+<span class="sig-name descname"><span class="pre">get_bounds_x0_eps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc.get_bounds_x0_eps" title="Link to this definition">¶</a></dt>
+<dd><p>Compute bounds, x0 (the initial guess), and eps.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc.get_start_pos">
+<span class="sig-name descname"><span class="pre">get_start_pos</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc.get_start_pos" title="Link to this definition">¶</a></dt>
+<dd><p>Get starting position for optimization.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.common.get_options">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.common.</span></span><span class="sig-name descname"><span class="pre">get_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unsupported</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.get_options" title="Link to this definition">¶</a></dt>
@@ -315,6 +342,12 @@ discussed above. For the documentation of the user API see the
 <dt class="sig sig-object py" id="kernel_tuner.strategies.common.unscale_and_snap_to_nearest">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.common.</span></span><span class="sig-name descname"><span class="pre">unscale_and_snap_to_nearest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.unscale_and_snap_to_nearest" title="Link to this definition">¶</a></dt>
 <dd><p>Helper func that snaps a scaled variable to the nearest config.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.common.unscale_and_snap_to_nearest_valid">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.common.</span></span><span class="sig-name descname"><span class="pre">unscale_and_snap_to_nearest_valid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.unscale_and_snap_to_nearest_valid" title="Link to this definition">¶</a></dt>
+<dd><p>Helper func to snap to the nearest valid configuration</p>
 </dd></dl>
 
 </section>
@@ -1597,8 +1630,22 @@ implement default like this:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.check_stop_criterion">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_stop_criterion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_stop_criterion" title="Link to this definition">¶</a></dt>
-<dd><p>Checks if max_fevals is reached or time limit is exceeded.</p>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_stop_criterion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#kernel_tuner.util.check_stop_criterion" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the stop criterion is reached.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>to</strong> (<em>dict</em>) – tuning options.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#kernel_tuner.util.StopCriterionReached" title="kernel_tuner.util.StopCriterionReached"><strong>StopCriterionReached</strong></a> – if the max_fevals is reached or time limit is exceeded.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>fraction of budget spent. If both max_fevals and time_limit are set, it returns the fraction of time.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
