@@ -59,6 +59,12 @@ class Tunable(UserDict):
 def _find_bfloat16_if_available():
     # Try to get bfloat16 if available.
     try:
+        from ml_dtypes import bfloat16
+        return bfloat16
+    except ImportError:
+        pass
+
+    try:
         from bfloat16 import bfloat16
         return bfloat16
     except ImportError:
