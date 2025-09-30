@@ -1029,17 +1029,16 @@ class Searchspace:
         hamming_values_indices = self.params_values_indices[hamming_mask]
 
         # for each parameter get the closest upper and lower parameter (absolute index difference >= 1)
-        # np.PINF has been replaced by 1e12 here, as on some systems np.PINF becomes np.NINF
         upper_bound = np.min(
             hamming_values_indices,
-            initial=1e12,
+            initial=self.get_list_param_indices_numpy_max(),
             axis=0,
             where=hamming_values_indices > param_config_value_indices,
         )
 
         lower_bound = np.max(
             hamming_values_indices,
-            initial=-1e12,
+            initial=self.get_list_param_indices_numpy_min(),
             axis=0,
             where=hamming_values_indices < param_config_value_indices,
         )
