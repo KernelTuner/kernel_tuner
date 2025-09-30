@@ -59,7 +59,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                     print(e)
                 return cost_func.results
 
-            ap = acceptance_prob(old_cost, new_cost, T, tuning_options)
+            ap = acceptance_prob(old_cost, new_cost, T)
             r = random.random()
 
             if ap > r:
@@ -90,7 +90,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
 tune.__doc__ = common.get_strategy_docstring("Simulated Annealing", _options)
 
-def acceptance_prob(old_cost, new_cost, T, tuning_options):
+def acceptance_prob(old_cost, new_cost, T):
     """Annealing equation, with modifications to work towards a lower value."""
     res = 0.0
     # if start pos is not valid, always move
