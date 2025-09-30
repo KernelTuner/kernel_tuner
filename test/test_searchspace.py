@@ -257,6 +257,16 @@ def test_neighbors_hamming():
         assert random_neighbor != test_config
 
 
+def test_neighbors_hammingadjacent():
+    """Test whether the Hamming-adjacent neighbors are as expected."""
+    test_config = tuple([1, 4, "string_1"])
+    expected_neighbors = [
+        (1.5, 4, 'string_1'),
+    ]
+
+    __test_neighbors(test_config, expected_neighbors, "Hamming-adjacent")
+
+
 def test_neighbors_strictlyadjacent():
     """Test whether the strictly adjacent neighbors are as expected."""
     test_config = tuple([1, 4, "string_1"])
@@ -320,11 +330,19 @@ def test_neighbors_closest_param_indices():
 def test_neighbors_fictious():
     """Test whether the neighbors are as expected for a fictious parameter configuration (i.e. not existing in the search space due to restrictions)."""
     test_config = tuple([1.5, 4, "string_1"])
+
     expected_neighbors_hamming = [
         (1.5, 4, 'string_2'),
         (1.5, 5.5, 'string_1'),
         (3, 4, 'string_1'),
     ]
+
+    expected_neighbors_hammingadjacent = [
+        (1.5, 4, 'string_2'),
+        (1.5, 5.5, 'string_1'),
+        (3, 4, 'string_1'),
+    ]
+
     expected_neighbors_strictlyadjacent = [
         (1.5, 5.5, 'string_2'),
         (1.5, 5.5, 'string_1'),
@@ -340,6 +358,7 @@ def test_neighbors_fictious():
     ]
 
     __test_neighbors_direct(test_config, expected_neighbors_hamming, "Hamming")
+    __test_neighbors_direct(test_config, expected_neighbors_hammingadjacent, "Hamming-adjacent")
     __test_neighbors_direct(test_config, expected_neighbors_strictlyadjacent, "strictly-adjacent")
     __test_neighbors_direct(test_config, expected_neighbors_adjacent, "adjacent")
 
