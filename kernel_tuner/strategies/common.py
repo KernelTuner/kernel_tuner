@@ -1,8 +1,11 @@
+"""Module for functionality that is commonly used throughout the strategies."""
+
 import logging
 import sys
 from time import perf_counter
 
 import numpy as np
+from scipy.spatial import distance
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
@@ -30,7 +33,9 @@ $STRAT_OPT$
 
 def get_strategy_docstring(name, strategy_options):
     """Generate docstring for a 'tune' method of a strategy."""
-    return _docstring_template.replace("$NAME$", name).replace("$STRAT_OPT$", make_strategy_options_doc(strategy_options))
+    return _docstring_template.replace("$NAME$", name).replace(
+        "$STRAT_OPT$", make_strategy_options_doc(strategy_options)
+    )
 
 
 def make_strategy_options_doc(strategy_options):
@@ -42,35 +47,71 @@ def make_strategy_options_doc(strategy_options):
     return doc
 
 
-def get_options(strategy_options, options):
+def get_options(strategy_options, options, unsupported=None):
     """Get the strategy-specific options or their defaults from user-supplied strategy_options."""
-    accepted = list(options.keys()) + ["max_fevals", "time_limit"]
+    accepted = list(options.keys()) + ["max_fevals", "time_limit", "x0", "searchspace_construction_options"]
+    if unsupported:
+        for key in unsupported:
+            accepted.remove(key)
     for key in strategy_options:
         if key not in accepted:
-            raise ValueError(f"Unrecognized option {key} in strategy_options")
+            raise ValueError(f"Unrecognized option {key} in strategy_options (allowed: {accepted})")
     assert isinstance(options, dict)
     return [strategy_options.get(opt, default) for opt, (_, default) in options.items()]
 
 
 class CostFunc:
-    def __init__(self, searchspace: Searchspace, tuning_options, runner, *, scaling=False, snap=True):
-        self.runner = runner
-        self.tuning_options = tuning_options
-        self.snap = snap
-        self.scaling = scaling
+    """Class encapsulating the CostFunc method."""
+
+    def __init__(
+        self,
+        searchspace: Searchspace,
+        tuning_options,
+        runner,
+        *,
+        scaling=False,
+        snap=True,
+        return_invalid=False,
+        return_raw=None,
+    ):
+        """An abstract method to handle evaluation of configurations.
+
+        Args:
+            searchspace: the Searchspace to evaluate on.
+            tuning_options: various tuning options.
+            runner: the runner to use.
+            scaling: whether to internally scale parameter values. Defaults to False.
+            snap: whether to snap given configurations to their closests equivalent in the space. Defaults to True.
+            return_invalid: whether to return the util.ErrorConfig of an invalid configuration. Defaults to False.
+            return_raw: returns (result, results[raw]). Key inferred from objective if set to True. Defaults to None.
+        """
         self.searchspace = searchspace
+        self.tuning_options = tuning_options
+        if isinstance(self.tuning_options, dict):
+            self.tuning_options["max_fevals"] = min(
+                tuning_options["max_fevals"] if "max_fevals" in tuning_options else np.inf, searchspace.size
+            )
+        self.runner = runner
+        self.scaling = scaling
+        self.snap = snap
+        self.return_invalid = return_invalid
+        self.return_raw = return_raw
+        if return_raw is True:
+            self.return_raw = f"{tuning_options['objective']}s"
         self.results = []
+        self.budget_spent_fraction = 0.0
+
 
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
 
         # error value to return for numeric optimizers that need a numerical value
-        logging.debug('_cost_func called')
-        logging.debug('x: ' + str(x))
+        logging.debug("_cost_func called")
+        logging.debug("x: %s", str(x))
 
         # check if max_fevals is reached or time limit is exceeded
-        util.check_stop_criterion(self.tuning_options)
+        self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
 
         # snap values in x to nearest actual value for each parameter, unscale x if needed
         if self.snap:
@@ -80,7 +121,7 @@ class CostFunc:
                 params = snap_to_nearest_config(x, self.searchspace.tune_params)
         else:
             params = x
-        logging.debug('params ' + str(params))
+        logging.debug("params %s", str(params))
 
         legal = True
         result = {}
@@ -88,11 +129,22 @@ class CostFunc:
 
         # else check if this is a legal (non-restricted) configuration
         if check_restrictions and self.searchspace.restrictions:
-            params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
-            legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
+            legal = self.searchspace.is_param_config_valid(tuple(params))
+
+
             if not legal:
-                result = params_dict
-                result[self.tuning_options.objective] = util.InvalidConfig()
+                if "constraint_aware" in self.tuning_options.strategy_options and self.tuning_options.strategy_options["constraint_aware"]:
+                    # attempt to repair
+                    new_params = unscale_and_snap_to_nearest_valid(x, params, self.searchspace, self.tuning_options.eps)
+                    if new_params:
+                        params = new_params
+                        legal = True
+                        x_int = ",".join([str(i) for i in params])
+
+                if not legal:
+                    params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
+                    result = params_dict
+                    result[self.tuning_options.objective] = util.InvalidConfig()
 
         if legal:
             # compile and benchmark this instance
@@ -109,10 +161,28 @@ class CostFunc:
             self.runner.last_strategy_start_time = perf_counter()
 
         # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective] or sys.float_info.max
-        return_value = return_value if not self.tuning_options.objective_higher_is_better else -return_value
+        return_value = result[self.tuning_options.objective]
+        if not isinstance(return_value, util.ErrorConfig):
+            # this is a valid configuration, so invert value in case of maximization
+            return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
+        else:
+            # this is not a valid configuration, replace with float max if needed
+            if not self.return_invalid:
+                return_value = sys.float_info.max
+
+        # include raw data in return if requested
+        if self.return_raw is not None:
+            try:
+                return return_value, result[self.return_raw]
+            except KeyError:
+                return return_value, [np.nan]
 
         return return_value
+
+    def get_start_pos(self):
+        """Get starting position for optimization."""
+        _, x0, _ = self.get_bounds_x0_eps()
+        return x0
 
     def get_bounds_x0_eps(self):
         """Compute bounds, x0 (the initial guess), and eps."""
@@ -120,6 +190,7 @@ class CostFunc:
 
         if "x0" in self.tuning_options.strategy_options:
             x0 = self.tuning_options.strategy_options.x0
+            assert isinstance(x0, (tuple, list)) and len(x0) == len(values), f"Invalid x0: {x0}, expected number of parameters of `tune_params` to match ({len(values)})"
         else:
             x0 = None
 
@@ -130,7 +201,7 @@ class CostFunc:
             bounds = [(0, eps * len(v)) for v in values]
             if x0:
                 # x0 has been supplied by the user, map x0 into [0, eps*len(v)]
-                x0 = scale_from_params(x0, self.tuning_options, eps)
+                x0 = scale_from_params(x0, self.searchspace.tune_params, eps)
             else:
                 # get a valid x0
                 pos = list(self.searchspace.get_random_sample(1)[0])
@@ -138,27 +209,26 @@ class CostFunc:
         else:
             bounds = self.get_bounds()
             if not x0:
-                x0 = [(min_v + max_v) / 2.0 for (min_v, max_v) in bounds]
-            eps = 1e9
-            for v_list in values:
-                if len(v_list) > 1:
-                    vals = np.sort(v_list)
-                    eps = min(eps, np.amin(np.gradient(vals)))
+                x0 = list(self.searchspace.get_random_sample(1)[0])
+            eps = 1
 
         self.tuning_options["eps"] = eps
-        logging.debug('get_bounds_x0_eps called')
-        logging.debug('bounds ' + str(bounds))
-        logging.debug('x0 ' + str(x0))
-        logging.debug('eps ' + str(eps))
+        logging.debug("get_bounds_x0_eps called")
+        logging.debug("bounds %s", str(bounds))
+        logging.debug("x0 %s", str(x0))
+        logging.debug("eps %s", str(eps))
 
         return bounds, x0, eps
 
     def get_bounds(self):
         """Create a bounds array from the tunable parameters."""
         bounds = []
-        for values in self.searchspace.tune_params.values():
-            sorted_values = np.sort(values)
-            bounds.append((sorted_values[0], sorted_values[-1]))
+        for values in self.searchspace.params_values:
+            try:
+                bounds.append((min(values), max(values)))
+            except TypeError:
+                # if values are not numbers, use the first and last value as bounds
+                bounds.append((values[0], values[-1]))
         return bounds
 
 
@@ -167,7 +237,7 @@ def setup_method_arguments(method, bounds):
     kwargs = {}
     # pass bounds to methods that support it
     if method in ["L-BFGS-B", "TNC", "SLSQP"]:
-        kwargs['bounds'] = bounds
+        kwargs["bounds"] = bounds
     return kwargs
 
 
@@ -180,21 +250,21 @@ def setup_method_options(method, tuning_options):
         maxiter = tuning_options.strategy_options.maxiter
     else:
         maxiter = 100
-    kwargs['maxiter'] = maxiter
+    kwargs["maxiter"] = maxiter
     if method in ["Nelder-Mead", "Powell"]:
-        kwargs['maxfev'] = maxiter
+        kwargs["maxfev"] = maxiter
     elif method == "L-BFGS-B":
-        kwargs['maxfun'] = maxiter
+        kwargs["maxfun"] = maxiter
 
     # pass eps to methods that support it
     if method in ["CG", "BFGS", "L-BFGS-B", "TNC", "SLSQP"]:
-        kwargs['eps'] = tuning_options.eps
+        kwargs["eps"] = tuning_options.eps
     elif method == "COBYLA":
-        kwargs['rhobeg'] = tuning_options.eps
+        kwargs["rhobeg"] = tuning_options.eps
 
     # not all methods support 'disp' option
-    if method not in ['TNC']:
-        kwargs['disp'] = tuning_options.verbose
+    if method not in ["TNC"]:
+        kwargs["disp"] = tuning_options.verbose
 
     return kwargs
 
@@ -241,5 +311,29 @@ def scale_from_params(params, tune_params, eps):
     """Helper func to do the inverse of the 'unscale' function."""
     x = np.zeros(len(params))
     for i, v in enumerate(tune_params.values()):
-        x[i] = 0.5 * eps + v.index(params[i])*eps
+        x[i] = 0.5 * eps + v.index(params[i]) * eps
     return x
+
+
+
+def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):
+    """Helper func to snap to the nearest valid configuration"""
+    # params is nearest unscaled point, but is not valid
+    neighbors = get_neighbors(params, searchspace)
+
+    if neighbors:
+        # sort on distance to x
+        neighbors.sort(key=lambda y: distance.euclidean(x,scale_from_params(y, searchspace.tune_params, eps)))
+
+        # return closest valid neighbor
+        return neighbors[0]
+
+    return []
+
+
+def get_neighbors(params, searchspace):
+    for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
+        neighbors = searchspace.get_neighbors(tuple(params), neighbor_method=neighbor_method)
+        if len(neighbors) > 0:
+            return neighbors
+    return []

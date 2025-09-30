@@ -1,13 +1,12 @@
 import random
 
-from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import CostFunc
 
 
 def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, tuning_options,
                    cost_func: CostFunc, restart=True, randomize=True, order=None):
-    """ Hillclimbing search until max_fevals is reached or no improvement is found
+    """Hillclimbing search until max_fevals is reached or no improvement is found.
 
     Base hillclimber that evaluates neighbouring solutions in a random or fixed order
     and possibly immediately moves to the neighbour if it is an improvement.
@@ -51,6 +50,9 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
     """
     if randomize and order:
         raise ValueError("Using a preset order and randomize at the same time is not supported.")
+    
+    # limit max_fevals to max size of the parameter space
+    max_fevals = min(searchspace.size, max_fevals)
 
     tune_params = searchspace.tune_params
 

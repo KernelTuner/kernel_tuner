@@ -3,13 +3,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+<!-- ## [1.1.0] - 2025 ?? -->
+- Additional improvements to search space construction
 - changed HIP python bindings from pyhip-interface to the official hip-python
+- Added Python 3.13 and experimental 3.14 support
+- Dropped Python 3.8 and 3.9 support (due to incompatibility with newer scipy versions)
 
 ## [1.0.0] - 2024-04-04
 - HIP backend to support tuning HIP kernels on AMD GPUs
 - Experimental features for mixed-precision and accuracy tuning
 - Experimental features for OpenACC tuning
-- Major speedup due to new parser and using revamped python-constraint for searchspace building
+- Major speedup due to new parser and using revamped python-constraint for search space construction
 - Implemented ability to use `PySMT` and `ATF` for searchspace building
 - Added Poetry for dependency and build management
 - Switched from `setup.py` and `setup.cfg` to `pyproject.toml` for centralized metadata, added relevant tests
