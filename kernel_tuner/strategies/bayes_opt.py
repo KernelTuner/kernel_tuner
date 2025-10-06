@@ -501,8 +501,11 @@ class BayesianOptimization:
             normalized_param_config = self.normalize_param_config(param_config)
             try:
                 index = self.find_param_config_index(normalized_param_config)
-                indices.append(index)
-                normalized_param_configs.append(normalized_param_config)
+
+                # returned indices must not contain duplicates
+                if index not in indices:
+                    indices.append(index)
+                    normalized_param_configs.append(normalized_param_config)
             except ValueError:
                 """With search space restrictions, the search space may not be a cartesian product of parameter values.
                 It is thus possible for LHS to generate a parameter combination that is not in the actual searchspace.
