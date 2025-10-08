@@ -497,10 +497,10 @@ class Searchspace:
         """Add the user-specified restrictions as constraints on the parameter space."""
         restrictions = deepcopy(self.restrictions)
         # differentiate between old style monolithic with single 'p' argument and newer *args style
-        if (len(restrictions) == 1 
-            and not isinstance(restrictions[0], (Constraint, FunctionConstraint, str)) 
-            and callable(restrictions[0]) 
-            and len(signature(restrictions[0]).parameters) == 1 
+        if (len(restrictions) == 1
+            and not isinstance(restrictions[0], (Constraint, FunctionConstraint, str))
+            and callable(restrictions[0])
+            and len(signature(restrictions[0]).parameters) == 1
             and len(self.param_names) > 1):
             restrictions = restrictions[0]
         if isinstance(restrictions, list):
