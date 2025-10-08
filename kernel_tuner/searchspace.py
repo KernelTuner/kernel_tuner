@@ -7,6 +7,7 @@ from typing import List, Union
 from warnings import warn
 from copy import deepcopy
 from collections import defaultdict, deque
+from inspect import signature
 
 import numpy as np
 from scipy.stats.qmc import LatinHypercube
@@ -495,6 +496,8 @@ class Searchspace:
     def __add_restrictions(self, parameter_space: Problem) -> Problem:
         """Add the user-specified restrictions as constraints on the parameter space."""
         restrictions = deepcopy(self.restrictions)
+        if len(restrictions) == 1 and not isinstance(restrictions[0], (Constraint, FunctionConstraint, str)) and callable(restrictions[0]) and len(signature(restrictions[0]).parameters) == 1:
+            restrictions = restrictions[0]
         if isinstance(restrictions, list):
             for restriction in restrictions:
                 required_params = self.param_names
@@ -504,11 +507,16 @@ class Searchspace:
                     required_params = restriction[1]
                     restriction = restriction[0]
                 if callable(restriction) and not isinstance(restriction, Constraint):
-                    # def restrictions_wrapper(*args):
-                    #     return check_instance_restrictions(restriction, dict(zip(self.param_names, args)), False)
-                    # print(restriction, isinstance(restriction, Constraint))
-                    # restriction = FunctionConstraint(restrictions_wrapper)
-                    restriction = FunctionConstraint(restriction, required_params)
+                    # differentiate between old style monolithic with single 'p' argument and newer *args style
+                    if len(signature(restriction).parameters) == 1 and len(self.param_names) != 1:
+                        def restrictions_wrapper(*args):
+                            # raise ValueError(self.param_names, args, restriction, signature(restriction).parameters)
+                            # return restriction(dict(zip(self.param_names, args)))
+                            return check_instance_restrictions(restriction, dict(zip(self.param_names, args)), False)
+
+                        restriction = FunctionConstraint(restrictions_wrapper)
+                    else:
+                        restriction = FunctionConstraint(restriction, required_params)
 
                 # add as a Constraint
                 all_params_required = all(param_name in required_params for param_name in self.param_names)
