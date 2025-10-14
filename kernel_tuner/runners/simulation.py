@@ -7,6 +7,7 @@ from warnings import warn
 from kernel_tuner import util
 from kernel_tuner.runners.runner import Runner
 
+
 _SimulationDevice = namedtuple("_SimulationDevice", ["max_threads", "env", "quiet"])
 
 
@@ -90,6 +91,11 @@ class SimulationRunner(Runner):
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
                 result = tuning_options.cache[x_int].copy()
+
+                # only compute metrics on configs that have not errored
+                if tuning_options.metrics and not isinstance(result.get(tuning_options.objective), util.ErrorConfig):
+                    result = util.process_metrics(result, tuning_options.metrics)
+
 
                 # Simulate behavior of sequential runner that when a configuration is
                 # served from the cache by the sequential runner, the compile_time,
