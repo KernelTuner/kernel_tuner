@@ -597,7 +597,6 @@ def tune_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
-    print("block_size_names", block_size_names)
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # default objective if none is specified
@@ -680,7 +679,6 @@ def tune_kernel(
 
     # create search space
     tuning_options.restrictions_unmodified = deepcopy(restrictions)
-    print(searchspace_construction_options)
     searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
