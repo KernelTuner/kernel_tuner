@@ -579,6 +579,7 @@ def tune_kernel(
     observers=None,
     objective=None,
     objective_higher_is_better=None,
+    objectives=None,
 ):
     start_overhead_time = perf_counter()
     if log:
@@ -593,10 +594,17 @@ def tune_kernel(
     #     objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
 
     if isinstance(objective, str):
-        objective = list(objective)
+        objective = [objective]
 
     if isinstance(objective_higher_is_better, bool):
-        objective_higher_is_better = list(objective_higher_is_better)
+        objective_higher_is_better = [objective_higher_is_better]
+
+    if objectives:
+        if isinstance(objectives, dict):
+            objective = list(objectives.keys())
+            objective_higher_is_better = list(objectives.values())
+        else:
+            raise ValueError("objectives should be a dict of (objective, higher_is_better) pairs")
 
     assert len(list(objective)) == len(list(objective_higher_is_better))
 
@@ -693,13 +701,34 @@ def tune_kernel(
 
     # finished iterating over search space
     if results:  # checks if results is not empty
-        best_config = util.get_best_config(results, objective, objective_higher_is_better)
-        # add the best configuration to env
-        env['best_config'] = best_config
-        if not device_options.quiet:
-            units = getattr(runner, "units", None)
-            print("best performing configuration:")
-            util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
+        if len(list(objective)) == 1:
+            objective = objective[0]
+            objective_higher_is_better = objective_higher_is_better[0]
+            best_config = util.get_best_config(results, objective, objective_higher_is_better)
+            print(best_config)
+            # add the best configuration to env
+            env['best_config'] = best_config
+            if not device_options.quiet:
+                units = getattr(runner, "units", None)
+                print(f"\nBEST PERFORMING CONFIGURATION FOR OBJECTIVE {objective}:")
+                keys = list(tune_params.keys())
+                keys += [objective]
+                if metrics:
+                    keys += list(metrics.keys())
+                print(util.get_config_string(best_config, keys, units))
+        else:
+            pareto_front = util.get_pareto_results(results, objective, objective_higher_is_better)
+            # add the best configuration to env
+            env['best_config'] = pareto_front
+            if not device_options.quiet:
+                units = getattr(runner, "units", None)
+                keys = list(tune_params.keys())
+                keys += list(objective)
+                if metrics:
+                    keys += list(metrics.keys)
+                print(f"\nBEST PERFORMING CONFIGURATIONS FOR OBJECTIVES: {objective}:")
+                for best_config in pareto_front:
+                    print(util.get_config_string(best_config, keys, units))
     elif not device_options.quiet:
         print("no results to report")
 
@@ -713,6 +742,24 @@ def tune_kernel(
 
 
 tune_kernel.__doc__ = _tune_kernel_docstring
+
+
+def tune_cache(
+    cache,
+    restrictions = None,
+    **kwargs,
+):
+    tune_args = util.tune_args_from_cache_file(cache)
+    if restrictions:
+        new_restrictions = [tune_args['restrictions']]
+        if isinstance(restrictions, list):
+            new_restrictions.extend(restrictions)
+        else:
+            new_restrictions.append(restrictions)
+        tune_args['restrictions'] = new_restrictions
+    tune_args.update(kwargs)
+    return tune_kernel(simulation_mode=True, **tune_args)
+
 
 _run_kernel_docstring = """Compile and run a single kernel
 

@@ -60,10 +60,14 @@ class CostFunc:
         self.scaling = scaling
         self.searchspace = searchspace
         self.results = []
+        self.total_config_count = 0
+        self.illegal_config_count = 0
 
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
+
+        self.total_config_count += 1
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug('_cost_func called')
@@ -94,10 +98,12 @@ class CostFunc:
                 result = params_dict
                 # result[self.tuning_options.objective] = util.InvalidConfig()
                 result['error'] = util.InvalidConfig()
-
-        assert legal == ('error' not in result), "A legal config MUST NOT have an error result."
+                self.illegal_config_count += 1
 
         if legal:
+            assert ('error' not in result), "A legal config MUST NOT have an error result."
+            if 'error' in result: exit()
+
             # compile and benchmark this instance
             res = self.runner.run([params], self.tuning_options)
             result = res[0]
@@ -111,18 +117,17 @@ class CostFunc:
             # upon returning from this function control will be given back to the strategy, so reset the start time
             self.runner.last_strategy_start_time = perf_counter()
 
-        # get numerical return value, taking optimization direction into account
-        return_values = []
-        for obj, higher_is_better in zip(self.tuning_options.objective, self.tuning_options.objective_higher_is_better):
-            return_value = result[obj] if 'error' not in result else sys.float_info.max
-            return_value = return_value if not higher_is_better else -return_value
-            return_values.append(return_value)
+        # get the cost of the result
+        cost_vec = util.get_result_cost(
+            result,
+            self.tuning_options.objective,
+            self.tuning_options.objective_higher_is_better
+        )
 
-        if len(return_values) == 1:
-            return return_values[0]
+        if len(cost_vec) == 1:
+            return cost_vec[0]
         else:
-            # NOTE: MAYBE make this a tuple()
-            return return_values
+            return cost_vec
 
     def get_bounds_x0_eps(self):
         """Compute bounds, x0 (the initial guess), and eps."""

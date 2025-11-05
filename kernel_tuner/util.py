@@ -79,8 +79,27 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 
+def get_result_cost(
+    result: dict,
+    objectives: list[str],
+    objective_higher_is_better: list[bool]
+) -> list[float]:
+    """Returns the cost of a result, taking the objective directions into account."""
+    # return the highest cost for invalid results
+    if 'error' in result:
+        return [sys.float_info.max] * len(objectives)
+
+    cost_vec = list()
+    for objective, is_maximizer in zip(objectives, objective_higher_is_better):
+        objective_value = result[objective]
+        cost = -objective_value if is_maximizer else objective_value
+        cost_vec.append(cost)
+
+    return cost_vec
+
+
 def check_result_type(r):
-    "Check if the result has the right format."
+    """Check if the result has the right format."""
     if 'error' in r:
         return isinstance(r['error'], ErrorConfig)
     return True
@@ -198,10 +217,20 @@ def check_argument_list(kernel_name, kernel_string, args):
 
 def check_stop_criterion(to):
     """Checks if max_fevals is reached or time limit is exceeded."""
-    if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
-        raise StopCriterionReached("max_fevals reached")
-    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
-        raise StopCriterionReached("time limit exceeded")
+    if "max_fevals" in to:
+        if to.verbose:
+            print(f"Progress: {len(to.unique_results)/to.max_fevals}")
+        if len(to.unique_results) >= to.max_fevals:
+            raise StopCriterionReached("max_fevals reached")
+    if "time_limit" in to:
+        # if to.verbose:
+        #     print(f"Progress: {((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) / to.time_limit}")
+        # if (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
+        #     raise StopCriterionReached("time limit exceeded")
+        if to.verbose:
+            print(f"Progress: {((time.perf_counter() - to.start_time)) / to.time_limit}")
+        if (((time.perf_counter() - to.start_time)) > to.time_limit):
+            raise StopCriterionReached("time limit exceeded")
 
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
@@ -405,35 +434,37 @@ def get_best_config(results, objective, objective_higher_is_better=False):
     return best_config
 
 
-def get_pareto_front(results, objective, objective_higher_is_better):
-    assert isinstance(objective, list)
+def get_pareto_results(
+    results: list[dict],
+    objectives: list[str],
+    objective_higher_is_better: list[bool],
+    mark_optima=True
+):
+    assert isinstance(results, list)
+    assert isinstance(objectives, list)
 
-    nonerror_results = list(filter(lambda x: "error" not in x, results))
-    front = []
+    cost_points = list()
+    for res in results:
+        cost_point = get_result_cost(res, objectives, objective_higher_is_better)
+        cost_points.append(cost_point)
 
-    # A point `p` in a finite set of points `S` is said to be maximal or non-dominated if there is no other point `q` in `S` whose `q(i)` are all >= `p(i)`
-    # So for all q there must be a q(i) such that q(i) < p(i)
-    for p in nonerror_results:
-        p_nondom = True
-        for q in nonerror_results:
-            if p is q:
-                continue
-            # \forall(i): q(i) >= p(i)?
-            flag = True
-            for i, higher_is_better in zip(objective, objective_higher_is_better):
-                p_i, q_i = p[i], q[i]
-                if not higher_is_better:
-                    p_i, q_i = -p_i, -q_i
-                if q_i < p_i:
-                    flag = False
-                    break
-            if flag:
-                p_nondom = False
-                break
-        if p_nondom:
-            p["optimal"] = True
-            front.append(p)
-    
+    cost_points = np.asarray(cost_points, dtype=float)
+    is_efficient = np.ones(cost_points.shape[0], dtype=bool)
+
+    # A point `p` in a finite set of points `S` is said to be non-dominated if there is no other point `q` in `S` where `q(i) <= p(i)` for all `i`
+    for idx, cost_point in enumerate(cost_points):
+        if not is_efficient[idx]:
+            continue
+        is_efficient[is_efficient] = np.any(cost_points[is_efficient] <= cost_point, axis=1)
+
+    # select and mark the optimal points
+    front = list()
+    for idx in np.flatnonzero(is_efficient):
+        res = results[idx]
+        if mark_optima:
+            res['optimal'] = True
+        front.append(res)
+
     return front
 
 
@@ -1197,7 +1228,8 @@ def process_cache(cache, kernel_options, tuning_options, runner):
 
     # if file exists
     else:
-        cached_data = read_cache(cache)
+        # cached_data = read_cache(cache)
+        cached_data = read_cache(cache, open_cache=(not runner.simulation_mode))
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
@@ -1327,3 +1359,45 @@ def cuda_error_check(error):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
+
+
+def restriction_from_cache(cache: dict):
+    param_config_string_set = set(
+        param_config_string
+        for param_config_string, result in cache['cache'].items()
+        if 'error' not in result
+    )
+
+    # print(f"WTH: {len(config_strings)}/{len(list(cache['cache'].keys()))}")
+
+    def _restrictions_func(params_config: dict) -> bool:
+        nonlocal param_config_string_set
+
+        param_config_string = ",".join(map(str, params_config.values()))
+        return param_config_string in param_config_string_set
+
+    return _restrictions_func
+
+
+def tune_args_from_cache_file(cache_file_path) -> dict:
+    with open(cache_file_path, mode="r") as cache_file:
+        cache = json.load(cache_file)
+
+    tune_args = dict(
+        kernel_name=cache['kernel_name'],
+        kernel_source="",
+        problem_size=tuple(cache['problem_size']),
+        arguments=[],
+        tune_params=cache['tune_params'],
+        restrictions=restriction_from_cache(cache),
+        cache=cache_file_path,
+    )
+
+    return tune_args
+
+
+def results_from_cache_file(cache_file_path) -> list[dict]:
+    with open(cache_file_path, mode="r") as cache_file:
+        cache = json.load(cache_file)
+
+    return list(cache['cache'].values())

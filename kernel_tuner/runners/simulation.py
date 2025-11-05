@@ -47,7 +47,8 @@ class SimulationRunner(Runner):
         :type iterations: int
         """
         self.quiet = device_options.quiet
-        self.dev = SimulationDevice(1024, dict(device_name="Simulation"), self.quiet)
+        # NOTE(maric): had to increase max_threas so the default restraints would pass
+        self.dev = SimulationDevice(1_000_000_000, dict(device_name="Simulation"), self.quiet)
 
         self.kernel_source = kernel_source
         self.simulation_mode = True
