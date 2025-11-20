@@ -136,6 +136,9 @@ def check_argument_type(dtype, kernel_argument):
 
 def check_argument_list(kernel_name, kernel_string, args):
     """Raise an exception if kernel arguments do not match host arguments."""
+    if kernel_string is None:
+        return 
+
     kernel_arguments = list()
     collected_errors = list()
 
@@ -162,7 +165,7 @@ def check_argument_list(kernel_name, kernel_string, args):
             if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
                 raise TypeError(
                     f"Argument at position {i} of type: {type(arg)} should be of type "
-                    "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
+-                   "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
                 )
 
             correct = True
@@ -415,6 +418,8 @@ def detect_language(kernel_string):
         lang = "CUDA"
     elif "__kernel" in kernel_string:
         lang = "OpenCL"
+    elif "@triton.jit" in kernel_string:
+        lang = "Triton"
     else:
         lang = "C"
     return lang

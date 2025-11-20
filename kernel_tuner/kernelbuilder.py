@@ -4,6 +4,7 @@ from kernel_tuner import core
 from kernel_tuner.interface import Options, _kernel_options
 
 from kernel_tuner.integration import TuneResults
+from kernel_tuner.kernel_sources.kernel_source import KernelSource
 
 class PythonKernel(object):
 
@@ -30,7 +31,7 @@ class PythonKernel(object):
 
         """
         #construct device interface
-        kernel_source = core.KernelSource(kernel_name, kernel_string, lang)
+        kernel_source = KernelSource(kernel_name, kernel_string, lang)
         self.dev = core.DeviceInterface(kernel_source, device=device, quiet=True)
         if not params:
             params = {}
@@ -92,7 +93,7 @@ class PythonKernel(object):
         :type args: list(np.ndarray or np.generic)
         """
         self.update_gpu_args(args)
-        self.dev.run_kernel(self.func, self.gpu_args, self.kernel_instance)
+        self.dev.run_kernel_check(self.func, self.gpu_args, self.kernel_instance)
         return self.get_gpu_result(args)
 
     def __call__(self, *args):
