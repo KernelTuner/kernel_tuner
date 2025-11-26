@@ -69,9 +69,9 @@ class JuliaFunctions(GPUBackend):
 
         # Gather device info
         try:
-            self.name = jl.seval("CUDA.device_name()")
-            cc_tuple = jl.seval("CUDA.capability()")
-            self.cc = f"{int(cc_tuple[0])}{int(cc_tuple[1])}"
+            self.name = jl.seval("CUDA.name(CUDA.device())")
+            cc_tuple = jl.seval("CUDA.capability(CUDA.device())")
+            self.cc = f"{cc_tuple.major}{cc_tuple.minor}"
         except Exception as e:
             warn(f"Could not retrieve device name and compute capability from Julia CUDA: {e}")
             self.name = f"Julia-CUDA-device-{device}"
@@ -94,56 +94,7 @@ class JuliaFunctions(GPUBackend):
 
         # Include helper module
         jl.include(str(Path(__file__).parent / "julia_helper.jl"))
-        # jl.seval(
-        #     """
-        #     module KernelTunerHelper
-        #         using CUDA
-        #         const backend = CUDABackend() 
 
-        #         export to_cuarray, launch_kernel
-
-        #         function to_cuarray(x)
-        #             if isa(x, CuArray)
-        #                 return x
-        #             elseif isa(x, AbstractArray)
-        #                 return CuArray(x)
-        #             else
-        #                 return x
-        #             end
-        #         end
-
-        #         function launch_kernel(kernel, args::Tuple, grid::NTuple{3,Int}, block::NTuple{3,Int}, shmem::Int)
-        #             # Check if this is a KernelAbstractions kernel
-        #             if isdefined(Main, :KernelAbstractions)
-        #                 # # Try to get the appropriate backend type
-        #                 # backend_type = if isdefined(Main, :CUDABackend)
-        #                 #     Main.CUDABackend()
-        #                 # elseif isdefined(Main, :CUDADevice)
-        #                 #     Main.CUDADevice()
-        #                 # else
-        #                 #     nothing
-        #                 # end
-                        
-        #                 if backend !== nothing && applicable(kernel, backend, block)
-        #                     # KernelAbstractions.jl kernel
-        #                     workgroupsize = block
-        #                     # Calculate ndrange from grid and block
-        #                     ndrange = (grid[1] * block[1], grid[2] * block[2], grid[3] * block[3])
-        #                     configured_kernel = kernel(backend, workgroupsize)
-        #                     configured_kernel(args..., ndrange=ndrange)
-        #                     CUDA.synchronize()
-        #                 else
-        #                     # Standard CUDA.jl kernel
-        #                     CUDA.@sync @cuda threads=block blocks=grid shmem=shmem kernel(args...)
-        #                 end
-        #             else
-        #                 # Standard CUDA.jl kernel (KernelAbstractions not loaded)
-        #                 CUDA.@sync @cuda threads=block blocks=grid shmem=shmem kernel(args...)
-        #             end
-        #         end
-        #     end
-        #     """
-        # )
         self.to_cuarray = jl.KernelTunerHelper.to_cuarray
         self.launch_kernel = jl.KernelTunerHelper.launch_kernel
 
