@@ -698,6 +698,7 @@ def tune_kernel(
 
     # finished iterating over search space
     if results:  # checks if results is not empty
+        raise ValueError(results)
         best_config = util.get_best_config(results, objective, objective_higher_is_better)
         # add the best configuration to env
         env["best_config"] = best_config

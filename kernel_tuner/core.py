@@ -17,6 +17,7 @@ from kernel_tuner.accuracy import Tunable
 from kernel_tuner.backends.compiler import CompilerFunctions
 from kernel_tuner.backends.cupy import CupyFunctions
 from kernel_tuner.backends.hip import HipFunctions
+from kernel_tuner.backends.julia import JuliaFunctions
 from kernel_tuner.backends.hypertuner import HypertunerFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
@@ -309,6 +310,13 @@ class DeviceInterface(object):
             )
         elif lang.upper() == "HIP":
             dev = HipFunctions(
+                device,
+                compiler_options=compiler_options,
+                iterations=iterations,
+                observers=observers,
+            )
+        elif lang.upper() == "JULIA":
+            dev = JuliaFunctions(
                 device,
                 compiler_options=compiler_options,
                 iterations=iterations,
