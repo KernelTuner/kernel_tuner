@@ -206,7 +206,7 @@ class KernelSource(object):
         if suffix is not None:
             return suffix
 
-        _suffixes = {"CUDA": ".cu", "OpenCL": ".cl", "C": ".c"}
+        _suffixes = {"CUDA": ".cu", "OpenCL": ".cl", "C": ".c", "JULIA": ".jl"}
         try:
             return _suffixes[self.lang]
         except KeyError:

@@ -41,18 +41,6 @@ class JuliaFunctions(GPUBackend):
 
         # Ensure CUDA.jl is available
         self.check_package_and_install("CUDA")
-        # try:
-        #     jl.seval("import CUDA")
-        # except Exception:
-        #     try:
-        #         warn("CUDA.jl not found, attempting to install it directly.")
-        #         jl.seval("using Pkg; Pkg.add(\"CUDA\")")
-        #         jl.seval("import CUDA")
-        #     except Exception as e:
-        #         raise ImportError(
-        #             "CUDA.jl not found in your Julia environment. "
-        #             "Run `using Pkg; Pkg.add(\"CUDA\")` in Julia."
-        #         ) from e
 
         # Initialize CUDA events
         self.CUDA = jl.Main.CUDA

@@ -153,6 +153,9 @@ def tests(session: Session) -> None:
 
     # remove temporary files leftover from the previous session
     session.run("rm", "-f", "temp_*.c", external=True)
+    session.run("rm", "-f", "temp_*.cu", external=True)
+    session.run("rm", "-f", "temp_*.cl", external=True)
+    session.run("rm", "-f", "temp_*.jl", external=True)
 
     # set extra arguments based on optional dependencies
     extras_args = []

@@ -591,8 +591,8 @@ def get_smem_args(smem_args, params):
 def get_temp_filename(suffix=None):
     """Return a string in the form of temp_X, where X is a large integer."""
     tmp_file = tempfile.mkstemp(
-        suffix=suffix or "", prefix="temp_", dir=os.getcwd()
-    )  # or "" for Python 2 compatibility
+        suffix=suffix, prefix="temp_", dir=os.getcwd()
+    )
     os.close(tmp_file[0])
     return tmp_file[1]
 
@@ -822,12 +822,16 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
                 kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
             else:
                 kernel_prefix += f"constexpr int {k} = {v};\n"
+        elif lang.upper() == "JULIA":
+            kernel_prefix += f"{k} = {v}\n"
         else:
             kernel_prefix += f"#define {k} {v}\n"
 
     # since we insert defines above the original kernel code, the line numbers will be incorrect
     # the following preprocessor directive informs the compiler that lines should be counted from 1
-    if kernel_prefix:
+    if lang.upper() == "JULIA":
+        kernel_prefix += "\n"
+    elif kernel_prefix:
         kernel_prefix += "#line 1\n"
 
     # Also replace parameter occurrences inside the kernel name
