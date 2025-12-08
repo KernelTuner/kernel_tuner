@@ -46,14 +46,23 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     # Create skopt optimizer
     skopt_kwargs = dict(skopt_kwargs)
-    skopt_kwargs.setdefault("acq_func_kwargs", {})["kappa"] = kappa
+    skopt_kwargs["base_estimator"] = learner
+    skopt_kwargs["acq_func"] = acq_func
+
+    # Only set n_initial_points if not None
+    if num_initial is not None:
+        skopt_kwargs["n_initial_points"] = num_initial
+
+    # Set kappa is not None
+    if kappa is not None:
+        skopt_kwargs.setdefault("acq_func_kwargs", {})["kappa"] = kappa
+
+    if tuning_options.verbose:
+        print(f"Initialize scikit-optimize Optimizer object: {skopt_kwargs}")
 
     from skopt import Optimizer as SkOptimizer
     optimizer = SkOptimizer(
             dimensions=bounds,
-            base_estimator=learner,
-            n_initial_points=num_initial,
-            acq_func=acq_func,
             space_constraint=space_constraint,
             **skopt_kwargs
     )
