@@ -1,5 +1,5 @@
 import numpy as np
-from kernel_tuner.observers.observer import BenchmarkObserver
+from kernel_tuner.observers.observer import BenchmarkObserver, PrologueObserver
 
 class JuliaRuntimeObserver(BenchmarkObserver):
     """Observer that measures GPU time using CUDA.CuEvent and CUDA.elapsed."""
@@ -31,3 +31,18 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         }
         self.times = []
         return results
+
+class JuliaJITWarmup(PrologueObserver):
+    """Prologue observer to enforce warmup before every configuration to trigger JIT."""
+
+    def __init__(self, CUDA):
+        pass
+
+    def before_start(self):
+        pass
+
+    def after_finish(self):
+        pass
+
+    def get_results(self):
+        return {}

@@ -25,6 +25,7 @@ from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
+from kernel_tuner.observers.julia import JuliaJITWarmup
 
 try:
     import torch
@@ -355,6 +356,10 @@ class DeviceInterface(object):
                 if isinstance(obs, PrologueObserver):
                     self.prologue_observers.append(obs)
 
+        # for JULIA, add the JIT warmup prologue observer
+        if lang.upper() == "JULIA":
+            self.prologue_observers.append(JuliaJITWarmup(self.dev.CUDA))
+
         # Take list of observers from self.dev because Backends tend to add their own observer
         self.benchmark_observers = [
             obs for obs in self.dev.observers if not isinstance(obs, (ContinuousObserver, PrologueObserver))
@@ -366,6 +371,7 @@ class DeviceInterface(object):
         self.units = dev.units
         self.name = dev.name
         self.max_threads = dev.max_threads
+        self.last_instance_params = None
         if not quiet:
             print("Using: " + self.dev.name)
 
@@ -374,7 +380,7 @@ class DeviceInterface(object):
         for obs in self.prologue_observers:
             self.dev.synchronize()
             obs.before_start()
-            self.dev.run_kernel(func, gpu_args, threads, grid)
+            self.dev.run_kernel(func, gpu_args, threads, grid, params=self.last_instance_params)
             self.dev.synchronize()
             obs.after_finish()
             result.update(obs.get_results())
@@ -387,7 +393,7 @@ class DeviceInterface(object):
                 obs.before_start()
             self.dev.synchronize()
             self.dev.start_event()
-            self.dev.run_kernel(func, gpu_args, threads, grid)
+            self.dev.run_kernel(func, gpu_args, threads, grid, params=self.last_instance_params)
             self.dev.stop_event()
             for obs in self.benchmark_observers:
                 obs.after_start()
@@ -411,7 +417,7 @@ class DeviceInterface(object):
             obs.before_start()
         self.dev.start_event()
         for _ in range(iterations):
-            self.dev.run_kernel(func, gpu_args, threads, grid)
+            self.dev.run_kernel(func, gpu_args, threads, grid, params=self.last_instance_params)
         self.dev.stop_event()
         for obs in self.continuous_observers:
             obs.after_start()
@@ -574,6 +580,7 @@ class DeviceInterface(object):
         logging.debug("compile_and_benchmark " + instance_string)
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
+        self.last_instance_params = params
         if isinstance(instance, util.ErrorConfig):
             result[to.objective] = util.InvalidConfig()
         else:
@@ -766,7 +773,7 @@ class DeviceInterface(object):
         logging.debug("grid dims (%d, %d, %d)", *instance.grid)
 
         try:
-            self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid)
+            self.dev.run_kernel(func, gpu_args, instance.threads, instance.gridm, self.last_instance_params)
         except Exception as e:
             if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
                 logging.debug("ignoring runtime failure due to too many resources required")

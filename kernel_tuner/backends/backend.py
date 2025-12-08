@@ -38,7 +38,7 @@ class Backend(ABC):
         pass
 
     @abstractmethod
-    def run_kernel(self, func, gpu_args, threads, grid, stream):
+    def run_kernel(self, func, gpu_args, threads, grid, stream, params):
         """This method must implement the execution of the kernel on the device."""
         pass
 

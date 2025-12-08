@@ -180,7 +180,7 @@ class CupyFunctions(GPUBackend):
         """
         raise NotImplementedError("CuPy backend does not support texture memory")
 
-    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None, params=None):
         """Runs the CUDA kernel passed as 'func'.
 
         :param func: A cupy kernel compiled for this specific kernel configuration

@@ -222,7 +222,7 @@ class HipFunctions(GPUBackend):
 
         hip_check(hip.hipDeviceSynchronize())
 
-    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None, params=None):
         """Runs the HIP kernel passed as 'func'.
 
         :param func: A HIP kernel compiled for this specific kernel configuration

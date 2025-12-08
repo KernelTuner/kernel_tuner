@@ -823,7 +823,8 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             else:
                 kernel_prefix += f"constexpr int {k} = {v};\n"
         elif lang.upper() == "JULIA":
-            kernel_prefix += f"{k} = {v}\n"
+            # kernel_prefix += f"const {k} = {v}\n"
+            pass    # in Julia, we can't redefine constants like this, so we skip it and give it as arguments on the kernel launch
         else:
             kernel_prefix += f"#define {k} {v}\n"
 

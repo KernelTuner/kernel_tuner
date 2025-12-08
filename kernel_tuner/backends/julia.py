@@ -129,6 +129,7 @@ class JuliaFunctions(GPUBackend):
         """Define Julia kernel function from kernel_instance.kernel_string."""
         kernel_code = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
+        self.kernel_source = kernel_instance.kernel_source
 
         # Extract all 'using' statements and check for required packages
         uses = []
@@ -159,7 +160,7 @@ end
     # Kernel launch and timing
     # -------------------------
 
-    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None, params=None):
         """Launch a compiled Julia kernel."""
         if func is None:
             func = self.current_kernel
@@ -169,9 +170,10 @@ end
         gx, gy, gz = (grid + (1,) * (3 - len(grid)))[:3]
         tx, ty, tz = (threads + (1,) * (3 - len(threads)))[:3]
         args_tuple = tuple(gpu_args)
+        params = tuple(params.values()) # important: the order of params must match the order in the kernel definition
 
         try:
-            self.launch_kernel(func, args_tuple, (int(gx), int(gy), int(gz)),
+            self.launch_kernel(func, args_tuple, params, (int(gx), int(gy), int(gz)),
                                (int(tx), int(ty), int(tz)), int(self.smem_size))
         except Exception as e:
             raise RuntimeError(f"Julia kernel launch failed: {e}")

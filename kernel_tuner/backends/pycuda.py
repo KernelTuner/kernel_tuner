@@ -329,7 +329,7 @@ class PyCudaFunctions(GPUBackend):
                 if "normalized_coordinates" in v and v["normalized_coordinates"]:
                     tex.set_flags(tex.get_flags() | drv.TRSF_NORMALIZED_COORDINATES)
 
-    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None, params=None):
         """Runs the CUDA kernel passed as 'func'.
 
         :param func: A PyCuda kernel compiled for this specific kernel configuration

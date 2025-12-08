@@ -14,7 +14,7 @@ module KernelTunerHelper
         end
     end
 
-    function launch_kernel(kernel, args::Tuple, grid::NTuple{3,Int}, block::NTuple{3,Int}, shmem::Int)
+    function launch_kernel(kernel, args::Tuple, params::Tuple, grid::NTuple{3,Int}, block::NTuple{3,Int}, shmem::Int)
         # Check if this is a KernelAbstractions kernel
         if isdefined(Main, :KernelAbstractions) && backend !== nothing && applicable(kernel, backend, block)
             # Calculate ndrange from grid and block
@@ -22,7 +22,7 @@ module KernelTunerHelper
             ndrange = (grid[1] * block[1], grid[2] * block[2], grid[3] * block[3])
             # Launch kernel
             configured_kernel = kernel(backend, workgroupsize)
-            configured_kernel(args..., ndrange=ndrange)
+            configured_kernel(args..., ndrange=ndrange, Val.(params)...)
             # Synchronize to ensure kernel completion
             CUDA.synchronize()
         else

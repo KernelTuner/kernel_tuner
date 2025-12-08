@@ -149,7 +149,7 @@ class HypertunerFunctions(Backend):
     def synchronize(self):
         return super().synchronize()
     
-    def run_kernel(self, func, gpu_args=None, threads=None, grid=None, stream=None):
+    def run_kernel(self, func, gpu_args=None, threads=None, grid=None, stream=None, params=None):
         # from cProfile import Profile
     
         # # generate the experiments file
