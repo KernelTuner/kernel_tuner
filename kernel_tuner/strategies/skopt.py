@@ -1,76 +1,98 @@
-"""The strategy that uses a minimizer method for searching through the parameter space."""
+"""The strategy that uses the optimizer from skopt for searching through the parameter space."""
 
+import numpy as np
 from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import (
     CostFunc,
     get_options,
-    snap_to_nearest_config,
     get_strategy_docstring,
 )
 
-supported_methods = ["forest", "gbrt", "gp", "dummy"]
+supported_learners = ["RF", "ET", "GBRT", "DUMMY", "GP"]
+supported_acq = ["LCB", "EI", "PI","gp_hedge"]
+supported_liars = ["cl_min", "cl_mean", "cl_max"]
 
 _options = dict(
-    method=(f"Local optimization algorithm to use, choose any from {supported_methods}", "gp"),
-    options=("Options passed to the skopt method as kwargs.", dict()),
-    popsize=("Number of initial samples. If `None`, let skopt choose the initial population", None),
-    maxiter=("Maximum number of times to repeat the method until the budget is exhausted.", 1),
+    learner=(f"The leaner to use (supported: {supported_learners})", "RF"),
+    acq_func=(f"The acquisition function to use (supported: {supported_acq})", "gp_hedge"),
+    lie_strategy=(f"The lie strategy to use when using batches (supported: {supported_liars})", "cl_max"),
+    kappa=("The value of kappa", 1.96),
+    num_initial=("Number of initial samples. If `None`, let skopt choose the initial population", None),
+    batch_size=("The number of points to ask per batch", 1),
+    skopt_kwargs=("Additional options passed to the skopt `Optimizer` as kwargs.", dict()),
 )
 
 
 def tune(searchspace: Searchspace, runner, tuning_options):
-    import skopt
-
-    method, skopt_options, popsize, maxiter = get_options(tuning_options.strategy_options, _options)
+    learner, acq_func, lie_strategy, kappa, num_initial, batch_size, skopt_kwargs = \
+            get_options(tuning_options.strategy_options, _options)
 
     # Get maximum number of evaluations
-    max_fevals = searchspace.size
-    if "max_fevals" in tuning_options:
-        max_fevals = min(tuning_options["max_fevals"], max_fevals)
+    max_fevals = min(tuning_options.get("max_fevals", np.inf), searchspace.size)
 
-    # Set the maximum number of calls to 100 times the maximum number of evaluations.
-    # Not all calls by skopt will result in an evaluation since different calls might
-    # map to the same configuration.
-    if "n_calls" not in skopt_options:
-        skopt_options["n_calls"] = 100 * max_fevals
-
-    # If the initial population size is specified, we select `popsize` samples
-    # from the search space. This is more efficient than letting skopt select
-    # the samples as it is not aware of restrictions.
-    if popsize:
-        x0 = searchspace.get_random_sample(min(popsize, max_fevals))
-        skopt_options["x0"] = [searchspace.get_param_indices(x) for x in x0]
-
-    opt_result = None
-    tune_params_values = list(searchspace.tune_params.values())
-    bounds = [(0, len(p) - 1) if len(p) > 1 else [0] for p in tune_params_values]
-
+    # Const function
     cost_func = CostFunc(searchspace, tuning_options, runner)
-    objective = lambda x: cost_func(searchspace.get_param_config_from_param_indices(x))
-    space_constraint = lambda x: searchspace.is_param_config_valid(searchspace.get_param_config_from_param_indices(x))
+    opt_config, opt_result = None, None
 
-    skopt_options["space_constraint"] = space_constraint
-    skopt_options["verbose"] = tuning_options.verbose
+    # The dimensions. Parameters with one value become categorical
+    from skopt.space.space import Categorical, Integer
+    tune_params_values = list(searchspace.tune_params.values())
+    bounds = [Integer(0, len(p) - 1) if len(p) > 1 else Categorical([0]) for p in tune_params_values]
+
+    # Space constraint
+    space_constraint = lambda x: searchspace.is_param_config_valid(
+            searchspace.get_param_config_from_param_indices(x))
+
+    # Create skopt optimizer
+    skopt_kwargs = dict(skopt_kwargs)
+    skopt_kwargs.setdefault("acq_func_kwargs", {})["kappa"] = kappa
+
+    from skopt import Optimizer as SkOptimizer
+    optimizer = SkOptimizer(
+            dimensions=bounds,
+            base_estimator=learner,
+            n_initial_points=num_initial,
+            acq_func=acq_func,
+            space_constraint=space_constraint,
+            **skopt_kwargs
+    )
+
+    # Ask initial batch of configs
+    num_initial = optimizer._n_initial_points
+    batch = optimizer.ask(num_initial, lie_strategy)
+    Xs, Ys = [], []
+    eval_count = 0
+
+    if tuning_options.verbose:
+        print(f"Asked optimizer for {num_initial} points: {batch}")
 
     try:
-        for _ in range(maxiter):
-            if method == "dummy":
-                opt_result = skopt.dummy_minimize(objective, bounds, **skopt_options)
-            elif method == "forest":
-                opt_result = skopt.forest_minimize(objective, bounds, **skopt_options)
-            elif method == "gp":
-                opt_result = skopt.gp_minimize(objective, bounds, **skopt_options)
-            elif method == "gbrt":
-                opt_result = skopt.gbrt_minimize(objective, bounds, **skopt_options)
-            else:
-                raise ValueError(f"invalid skopt method: {method}")
+        while eval_count < max_fevals:
+            if not batch:
+                optimizer.tell(Xs, Ys)
+                batch = optimizer.ask(batch_size, lie_strategy)
+                Xs, Ys = [], []
+
+                if tuning_options.verbose:
+                    print(f"Asked optimizer for {batch_size} points: {batch}")
+
+            x = batch.pop(0)
+            y = cost_func(searchspace.get_param_config_from_param_indices(x))
+            eval_count += 1
+
+            Xs.append(x)
+            Ys.append(y)
+
+            if opt_result is None or y < opt_result:
+                opt_config, opt_result = x, y
+
     except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
 
-    if opt_result and tuning_options.verbose:
-        print(opt_result)
+    if opt_result is not None and tuning_options.verbose:
+        print(f"Best configuration: {opt_result}")
 
     return cost_func.results
 
