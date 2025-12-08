@@ -730,8 +730,8 @@ def looks_like_a_filename(kernel_source):
         for s in ["__global__ ", "__kernel ", "void ", "float "]:
             if s in kernel_source:
                 result = False
-        # string must contain substring ".c", ".opencl", or ".F"
-        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
+        # string must contain substring ".c", ".opencl", ".F", ".jl"
+        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F", ".jl")])
     logging.debug("kernel_source is a filename: %s" % str(result))
     return result
 
