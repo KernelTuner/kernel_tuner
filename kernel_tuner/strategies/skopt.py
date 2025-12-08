@@ -32,7 +32,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     max_fevals = min(tuning_options.get("max_fevals", np.inf), searchspace.size)
 
     # Const function
-    cost_func = CostFunc(searchspace, tuning_options, runner)
     opt_config, opt_result = None, None
 
     # The dimensions. Parameters with one value become categorical
@@ -70,18 +69,26 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # Ask initial batch of configs
     num_initial = optimizer._n_initial_points
     batch = optimizer.ask(num_initial, lie_strategy)
-    Xs, Ys = [], []
+    xs, ys = [], []
     eval_count = 0
 
     if tuning_options.verbose:
         print(f"Asked optimizer for {num_initial} points: {batch}")
 
+    # Create cost function
+    cost_func = CostFunc(searchspace, tuning_options, runner)
+    x0 = cost_func.get_start_pos()
+
+    # Add x0 if the user has requested it
+    if x0 is not None:
+        batch.insert(0, searchspace.get_param_indices(x0))
+
     try:
         while eval_count < max_fevals:
             if not batch:
-                optimizer.tell(Xs, Ys)
+                optimizer.tell(xs, ys)
                 batch = optimizer.ask(batch_size, lie_strategy)
-                Xs, Ys = [], []
+                xs, ys = [], []
 
                 if tuning_options.verbose:
                     print(f"Asked optimizer for {batch_size} points: {batch}")
@@ -90,8 +97,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             y = cost_func(searchspace.get_param_config_from_param_indices(x))
             eval_count += 1
 
-            Xs.append(x)
-            Ys.append(y)
+            xs.append(x)
+            ys.append(y)
 
             if opt_result is None or y < opt_result:
                 opt_config, opt_result = x, y
@@ -101,7 +108,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             print(e)
 
     if opt_result is not None and tuning_options.verbose:
-        print(f"Best configuration: {opt_result}")
+        print(f"Best configuration: {opt_config}")
 
     return cost_func.results
 
