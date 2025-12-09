@@ -108,7 +108,7 @@ def test_check_kernel_output(dev_func_interface):
     dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
 
     dfi.refresh_memory.assert_called()
-    dfi.run_kernel.assert_called_once_with('func', answer, (256, 1, 1), (1, 1, 1))
+    dfi.run_kernel.assert_called_once_with('func', answer, (256, 1, 1), (1, 1, 1), None)
 
     print(dfi.mock_calls)
 

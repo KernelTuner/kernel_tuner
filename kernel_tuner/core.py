@@ -773,7 +773,7 @@ class DeviceInterface(object):
         logging.debug("grid dims (%d, %d, %d)", *instance.grid)
 
         try:
-            self.dev.run_kernel(func, gpu_args, instance.threads, instance.gridm, self.last_instance_params)
+            self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid, self.last_instance_params)
         except Exception as e:
             if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
                 logging.debug("ignoring runtime failure due to too many resources required")
