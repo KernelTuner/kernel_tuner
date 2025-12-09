@@ -167,14 +167,17 @@ end
         if func is None:
             raise RuntimeError("No Julia kernel compiled or provided.")
 
-        gx, gy, gz = (grid + (1,) * (3 - len(grid)))[:3]
-        tx, ty, tz = (threads + (1,) * (3 - len(threads)))[:3]
         args_tuple = tuple(gpu_args)
         params = tuple(params.values()) # important: the order of params must match the order in the kernel definition
 
+        # prepare ndrange and workgroupsize
+        remove_trailing_ones = lambda tup: tup[:len(tup) - next((int(i) for i, x in enumerate(reversed(tup)) if x != 1), len(tup))]
+        ndrange = remove_trailing_ones(grid)
+        workgroupsize = remove_trailing_ones(threads)
+
         try:
-            self.launch_kernel(func, args_tuple, params, (int(gx), int(gy), int(gz)),
-                               (int(tx), int(ty), int(tz)), int(self.smem_size))
+            self.launch_kernel(func, args_tuple, params, ndrange,
+                               workgroupsize, int(self.smem_size))
         except Exception as e:
             raise RuntimeError(f"Julia kernel launch failed: {e}")
 
