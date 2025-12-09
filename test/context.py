@@ -102,6 +102,7 @@ skip_if_no_gcc = pytest.mark.skipif(not gcc_present, reason="No gcc on PATH")
 skip_if_no_gfortran = pytest.mark.skipif(
     not gfortran_present, reason="No gfortran on PATH"
 )
+skip_if_no_julia = pytest.mark.skipif(not shutil.which("julia"), reason="No Julia on PATH")
 skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
 skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on PATH")
 skip_if_no_bayesopt_gpytorch = pytest.mark.skipif(not bayes_opt_gpytorch_present, reason="Torch and GPyTorch not installed")
