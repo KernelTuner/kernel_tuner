@@ -7,7 +7,7 @@ try:
 except ImportError:
     cuda = None
 
-NVRTC_VALID_CC = np.array(["50", "52", "53", "60", "61", "62", "70", "72", "75", "80", "87", "89", "90", "90a"])
+NVRTC_VALID_CC = np.array(["50", "52", "53", "60", "61", "62", "70", "72", "75", "80", "87", "89", "90", "90a", "100", "100f", "100a", "101", "101f", "101a", "103", "103f", "103a", "120", "120f", "120a", "121", "121f", "121a"])
 
 
 def cuda_error_check(error):
@@ -28,4 +28,4 @@ def cuda_error_check(error):
 
 def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
     """Returns a valid Compute Capability for NVRTC `--gpu-architecture=`, as per https://docs.nvidia.com/cuda/nvrtc/index.html#group__options."""
-    return max(NVRTC_VALID_CC[NVRTC_VALID_CC <= compute_capability], default="52")
+    return max(NVRTC_VALID_CC[NVRTC_VALID_CC <= compute_capability], default="75")
