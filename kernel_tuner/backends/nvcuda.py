@@ -47,7 +47,7 @@ class CudaFunctions(GPUBackend):
         # initialize and select device
         err = driver.cuInit(0)
         cuda_error_check(err)
-        err, self.device = cuda.cuDeviceGet(device)
+        err, self.device = driver.cuDeviceGet(device)
         cuda_error_check(err)
         err, self.context = driver.cuDevicePrimaryCtxRetain(device)
         cuda_error_check(err)
