@@ -15,11 +15,11 @@ def cuda_error_check(error):
     if isinstance(error, driver.CUresult):
         if error != driver.CUresult.CUDA_SUCCESS:
             _, name = driver.cuGetErrorName(error)
-            raise RuntimeError(f"CUDA error: {name.decode()}")
+            raise RuntimeError(f"CUDA Driver error: {name.decode()}")
     elif isinstance(error, runtime.cudaError_t):
         if error != runtime.cudaError_t.cudaSuccess:
             _, name = runtime.cudaGetErrorName(error)
-            raise RuntimeError(f"CUDART error: {name.decode()}")
+            raise RuntimeError(f"CUDA Runtime error: {name.decode()}")
     elif isinstance(error, nvrtc.nvrtcResult):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
