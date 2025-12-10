@@ -10,7 +10,7 @@ from kernel_tuner.util import SkippableFailure, cuda_error_check, to_valid_nvrtc
 # embedded in try block to be able to generate documentation
 # and run tests without cuda-python installed
 try:
-    from cuda import cuda, cudart, nvrtc
+    from cuda.bindings import driver, runtime, nvrtc
 except ImportError:
     cuda = None
 
