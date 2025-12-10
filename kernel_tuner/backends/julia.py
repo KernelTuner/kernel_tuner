@@ -266,5 +266,5 @@ end
             except Exception as e:
                 raise ImportError(
                     f"{package}.jl not found in your Julia environment. "
-                    f"Run `using Pkg; Pkg.add(\"{package}\)` in Julia."
+                    f"Run `using Pkg; Pkg.add(\"{package}\")` in Julia."
                 ) from e

@@ -23,7 +23,7 @@ module KernelTunerHelper
             # Synchronize to ensure kernel completion
             CUDA.synchronize()
         else
-            error("Currently, only KernelAbstractions kernels are supported.")
+            error("Only KernelAbstractions kernels are supported.")
         end
     end
 end

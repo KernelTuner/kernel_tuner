@@ -231,11 +231,11 @@ def check_block_size_names(block_size_names):
     if block_size_names is not None:
         # do some type checks for the user input
         if not isinstance(block_size_names, list):
-            raise ValueError("block_size_names should be a list of strings!")
+            raise ValueError("block_size_names should be a list of strings!", block_size_names, type(block_size_names))
         if len(block_size_names) > 3:
-            raise ValueError("block_size_names should not contain more than 3 names!")
+            raise ValueError("block_size_names should not contain more than 3 names!", block_size_names)
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
-            raise ValueError("block_size_names should contain only strings!")
+            raise ValueError("block_size_names should contain only strings!", block_size_names, [type(name) for name in block_size_names])
 
 
 def append_default_block_size_names(block_size_names):
@@ -1339,3 +1339,9 @@ def cuda_error_check(error):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
+
+def possible_julia_vector_to_list(obj):
+    """Convert a Julia vector to a Python list if needed."""
+    if obj.__class__.__name__ == "VectorValue":
+        return list(obj)
+    return obj

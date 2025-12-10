@@ -594,6 +594,8 @@ def tune_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
+    block_size_names = util.possible_julia_vector_to_list(block_size_names)
+
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # default objective if none is specified
