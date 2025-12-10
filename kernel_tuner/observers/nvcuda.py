@@ -1,12 +1,12 @@
 import numpy as np
 
 try:
-    from cuda import cudart
+    from cuda.bindings import cudart
 except ImportError:
     cuda = None
 
 from kernel_tuner.observers.observer import BenchmarkObserver
-from kernel_tuner.util import cuda_error_check
+from kernel_tuner.utils.nvcuda import cuda_error_check
 
 
 class CudaRuntimeObserver(BenchmarkObserver):

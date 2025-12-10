@@ -13,7 +13,7 @@ from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_
 try:
     from cuda.bindings import driver, runtime, nvrtc
 except ImportError:
-    driver = None
+    cuda = None
 
 
 class CudaFunctions(GPUBackend):
@@ -39,7 +39,7 @@ class CudaFunctions(GPUBackend):
         """
         self.allocations = []
         self.texrefs = []
-        if not driver:
+        if not cuda:
             raise ImportError(
                 "cuda-python not installed, install using 'pip install cuda-python', or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda."
             )
