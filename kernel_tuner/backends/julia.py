@@ -173,7 +173,9 @@ end
         # prepare ndrange and workgroupsize
         remove_trailing_ones = lambda tup: tup[:len(tup) - next((int(i) for i, x in enumerate(reversed(tup)) if x != 1), len(tup))]
         ndrange = remove_trailing_ones(grid)
+        ndrange = (1,) if len(ndrange) == 0 else ndrange
         workgroupsize = remove_trailing_ones(threads)
+        workgroupsize = (1,) if len(workgroupsize) == 0 else workgroupsize
 
         try:
             self.launch_kernel(func, args_tuple, params, ndrange,

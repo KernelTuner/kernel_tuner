@@ -13,7 +13,9 @@ kernel_name = "vector_add!"
 kernel_string = r"""
     using KernelAbstractions
 
-    @kernel function vector_add!(c, a, b, n)
+    @kernel function vector_add!(
+        c, a, b, n, ::Val{block_size_x} = Val(128)
+    ) where {block_size_x}
         i = @index(Global)
         if i <= n
             c[i] = a[i] + b[i]
@@ -60,7 +62,6 @@ def test_tune_kernel(env):
     """Run a minimal Julia kernel tuner example."""
     env[0] = kernel_name
     env[1] = kernel_string
-    env[2] = (1024,)
 
     result, _ = tune_kernel(
         *env,
