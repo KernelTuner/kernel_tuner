@@ -17,7 +17,7 @@ except ImportError:
 
 
 class CudaFunctions(GPUBackend):
-    """Class that groups the Cuda functions on maintains state about the device."""
+    """Class that groups the Cuda functions and it maintains state about the device."""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """Instantiate CudaFunctions object used for interacting with the CUDA device.
