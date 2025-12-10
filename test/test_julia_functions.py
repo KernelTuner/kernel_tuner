@@ -2,20 +2,29 @@ import numpy as np
 import pytest
 
 from kernel_tuner import tune_kernel
-from kernel_tuner.backends import nvcuda
+from kernel_tuner.backends.julia import JuliaFunctions
 from kernel_tuner.core import KernelInstance, KernelSource
 
-from .context import skip_if_no_cuda
 from .test_runners import env  # noqa: F401
+from .context import skip_if_no_julia
+from juliacall import ValueBase
 
-try:
-    from cuda import cuda
-except Exception:
-    pass
+kernel_name = "vector_add!"
+kernel_string = r"""
+    using KernelAbstractions
+
+    @kernel function vector_add!(c, a, b, n)
+        i = @index(Global)
+        if i <= n
+            c[i] = a[i] + b[i]
+        end
+    end
+    """
 
 
-@skip_if_no_cuda
+@skip_if_no_julia
 def test_ready_argument_list():
+    """Ensure Julia backend correctly converts arguments into Julia objects."""
 
     size = 1000
     a = np.int32(75)
@@ -24,37 +33,39 @@ def test_ready_argument_list():
 
     arguments = [c, a, b]
 
-    dev = nvcuda.CudaFunctions(0)
+    dev = JuliaFunctions(0)
     gpu_args = dev.ready_argument_list(arguments)
 
-    assert isinstance(gpu_args[0], cuda.CUdeviceptr)
-    assert isinstance(gpu_args[1], np.int32)
-    assert isinstance(gpu_args[2], cuda.CUdeviceptr)
+    # Julia CuArray maps back through PythonCall as pyjl_pointer-like proxies
+    # Scalars remain scalars
+    assert isinstance(gpu_args[0], ValueBase)       # Julia GPU Array proxy
+    assert isinstance(gpu_args[1], np.int32)        # scalar unchanged
+    assert isinstance(gpu_args[2], ValueBase)       # Julia GPU Array proxy
 
-
-@skip_if_no_cuda
+@skip_if_no_julia
 def test_compile():
-
-    kernel_string = """
-    extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
-        int i = blockIdx.x * blockDim.x + threadIdx.x;
-        if (i<n) {
-            c[i] = a[i] + b[i];
-        }
-    }
-    """
-
-    kernel_name = "vector_add"
-    kernel_sources = KernelSource(kernel_name, kernel_string, "cuda")
+    """Check that Julia kernel code successfully compiles."""
+    kernel_sources = KernelSource(kernel_name, kernel_string, "julia")
     kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
-    dev = nvcuda.CudaFunctions(0)
+
+    dev = JuliaFunctions(0)
+
     try:
         dev.compile(kernel_instance)
     except Exception as e:
-        pytest.fail("Did not expect any exception:" + str(e))
+        pytest.fail("Did not expect any exception: " + str(e))
 
-
-@skip_if_no_cuda
+@skip_if_no_julia
 def test_tune_kernel(env):
-    result, _ = tune_kernel(*env, lang="nvcuda", verbose=True)
+    """Run a minimal Julia kernel tuner example."""
+    env[0] = kernel_name
+    env[1] = kernel_string
+    env[2] = (1024,)
+
+    result, _ = tune_kernel(
+        *env,
+        lang="julia",
+        verbose=True
+    )
+
     assert len(result) > 0
