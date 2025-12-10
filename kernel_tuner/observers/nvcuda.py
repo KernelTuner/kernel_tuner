@@ -1,7 +1,7 @@
 import numpy as np
 
 try:
-    from cuda.bindings import cudart
+    from cuda.bindings import runtime
 except ImportError:
     cuda = None
 
@@ -21,7 +21,7 @@ class CudaRuntimeObserver(BenchmarkObserver):
 
     def after_finish(self):
         # Time is measured in milliseconds
-        err, time = cudart.cudaEventElapsedTime(self.start, self.end)
+        err, time = runtime.cudaEventElapsedTime(self.start, self.end)
         cuda_error_check(err)
         self.times.append(time)
 
