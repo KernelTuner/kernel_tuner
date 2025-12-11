@@ -35,36 +35,34 @@ class JuliaFunctions(GPUBackend):
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """Initialize Julia backend using JuliaCall."""
         if jl is None:
-            raise ImportError(
-                "JuliaCall not installed. Please run `pip install juliacall`."
-            )
+            raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
 
-        # Ensure CUDA.jl is available
-        self.check_package_and_install("CUDA")
+        # # Ensure CUDA.jl is available
+        # self.check_package_and_install("CUDA")
 
-        # Initialize CUDA events
-        self.CUDA = jl.Main.CUDA
-        self.stream = self.CUDA.stream()
-        self.start_evt = None
-        self.end_evt = None
+        # # Initialize CUDA events
+        # self.CUDA = jl.Main.CUDA
+        # self.stream = self.CUDA.stream()
+        # self.start_evt = None
+        # self.end_evt = None
 
-        # Select device
-        try:
-            jl.seval(f"CUDA.device!({int(device)})")
-            JuliaFunctions.last_selected_device = device
-        except Exception as e:
-            raise RuntimeError(f"Failed to set Julia CUDA device {device}: {e}")
+        # # Select device
+        # try:
+        #     jl.seval(f"CUDA.device!({int(device)})")
+        #     JuliaFunctions.last_selected_device = device
+        # except Exception as e:
+        #     raise RuntimeError(f"Failed to set Julia CUDA device {device}: {e}")
 
-        # Gather device info
-        try:
-            self.name = jl.seval("CUDA.name(CUDA.device())")
-            cc_tuple = jl.seval("CUDA.capability(CUDA.device())")
-            self.cc = f"{cc_tuple.major}{cc_tuple.minor}"
-        except Exception as e:
-            warn(f"Could not retrieve device name and compute capability from Julia CUDA: {e}")
-            self.name = f"Julia-CUDA-device-{device}"
-            self.cc = None
-        self.max_threads = jl.seval("CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)")
+        # # Gather device info
+        # try:
+        #     self.name = jl.seval("CUDA.name(CUDA.device())")
+        #     cc_tuple = jl.seval("CUDA.capability(CUDA.device())")
+        #     self.cc = f"{cc_tuple.major}{cc_tuple.minor}"
+        # except Exception as e:
+        #     warn(f"Could not retrieve device name and compute capability from Julia CUDA: {e}")
+        #     self.name = f"Julia-CUDA-device-{device}"
+        #     self.cc = None
+        # self.max_threads = jl.seval("CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)")
 
         # Initialize backend attributes
         self.device = device
@@ -73,6 +71,11 @@ class JuliaFunctions(GPUBackend):
         self.allocations = []
         self.current_kernel = None
         self.smem_size = 0
+
+        # Initialize Julia backend
+        self.initialize_backend(device, "metal")  # TODO link to user choice
+        self.start_evt = None
+        self.end_evt = None
 
         # setup observers
         self.observers = observers or []
@@ -83,7 +86,7 @@ class JuliaFunctions(GPUBackend):
         # Include helper module
         jl.include(str(Path(__file__).parent / "julia_helper.jl"))
 
-        self.to_cuarray = jl.KernelTunerHelper.to_cuarray
+        self.to_gpuarray = jl.KernelTunerHelper.to_gpuarray
         self.launch_kernel = jl.KernelTunerHelper.launch_kernel
 
         # env info
@@ -94,8 +97,95 @@ class JuliaFunctions(GPUBackend):
             "compiler_options": self.compiler_options,
         }
 
+    def initialize_backend(self, device, backend_name):
+        """Initialize for a choice of Julia backends by backend_name, one of 'cuda', 'amd', 'intel', 'metal'."""
+
+        # Map name → Julia module and device-selection calls
+        backend_map = {
+            "cuda": {
+                "pkg": "CUDA",
+                "module": "CUDA",
+                "device_select": lambda d: f"CUDA.device!({d})",
+                "name": "CUDA.name(CUDA.device())",
+                "max_threads": "CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)",
+                "capability": "CUDA.capability(CUDA.device())",
+            },
+            "amd": {
+                "pkg": "AMDGPU",
+                "module": "AMDGPU",
+                "device_select": lambda d: f"AMDGPU.device!({d})",
+                "name": "AMDGPU.name(AMDGPU.device())",
+                "max_threads": "AMDGPU.device_attribute(AMDGPU.device(), :maxthreadsperblock)",
+                "capability": None,
+            },
+            "intel": {
+                "pkg": "oneAPI",
+                "module": "oneAPI",
+                "device_select": lambda d: f"oneAPI.device!({d})",
+                "name": "oneAPI.name(oneAPI.device())",
+                "max_threads": "oneAPI.device_attribute(oneAPI.device(), :max_work_group_size)",
+                "capability": None,
+            },
+            "metal": {
+                "pkg": "Metal",
+                "module": "Metal",
+                "device_select": lambda d: "Metal.device!(Metal.device())",  # only single device support in Metal.jl
+                "name": "Metal.name(Metal.device())",
+                "max_threads": "Int(Metal.device().maxThreadsPerThreadgroup.width)",
+                "capability": None,
+            },
+        }
+
+        backend_name = backend_name.lower()
+        if backend_name not in backend_map:
+            raise ValueError(f"Unknown backend: {backend_name}")
+        info = backend_map[backend_name]
+
+        # Ensure the package is installed
+        self.check_package_and_install(info["pkg"])
+
+        # Bring module into Python
+        backend_mod = getattr(jl.Main, info["module"])
+        self.backend_mod = backend_mod
+
+        # Select device
+        try:
+            jl.seval(info["device_select"](int(device)))
+            self.last_selected_device = device
+        except Exception as e:
+            raise RuntimeError(f"Failed to select Julia {info['module']} device {device}: {e}") from e
+
+        # Query device name
+        try:
+            self.name = jl.seval(info["name"])
+        except Exception:
+            self.name = f"{backend_name}-device-{device}"
+
+        # Query capability if available
+        if info["capability"] is not None:
+            try:
+                cc_tuple = jl.seval(info["capability"])
+                # CUDA returns structs with major/minor fields
+                self.cc = f"{cc_tuple.major}{cc_tuple.minor}"
+            except Exception:
+                self.cc = None
+        else:
+            self.cc = None
+
+        # Query max threads
+        try:
+            self.max_threads = int(jl.seval(info["max_threads"]))
+        except Exception:
+            self.max_threads = None
+
+        # Optional: common KernelAbstractions stream abstraction
+        try:
+            self.stream = backend_mod.get_default_stream()
+        except Exception:
+            self.stream = None
+
     def __del__(self):
-        # drop CuArray references to let Julia GC handle them
+        # drop GPUArray references to let Julia GC handle them
         try:
             for a in self.allocations:
                 del a
@@ -107,14 +197,14 @@ class JuliaFunctions(GPUBackend):
     # -------------------------
 
     def ready_argument_list(self, arguments):
-        """Convert numpy arrays to CuArray in Julia."""
+        """Convert numpy arrays to GPU Array in Julia."""
         gpu_args = []
         for arg in arguments:
             if isinstance(arg, np.ndarray):
                 try:
-                    cu = self.to_cuarray(arg)
-                    gpu_args.append(cu)
-                    self.allocations.append(cu)
+                    arr = self.to_gpuarray(arg)
+                    gpu_args.append(arr)
+                    self.allocations.append(arr)
                 except Exception as e:
                     raise RuntimeError(f"Failed to move array to GPU: {e}")
             else:
@@ -137,7 +227,7 @@ class JuliaFunctions(GPUBackend):
             stripped = line.strip()
             # iterate over multiple using/import statements
             if stripped.startswith("using ") or stripped.startswith("import "):
-                for part in stripped.split(','):
+                for part in stripped.split(","):
                     uses.append(part.replace("import ", "").replace("using ", "").strip())
         for package in uses:
             self.check_package_and_install(package)
@@ -168,18 +258,19 @@ end
             raise RuntimeError("No Julia kernel compiled or provided.")
 
         args_tuple = tuple(gpu_args)
-        params = tuple(params.values()) # important: the order of params must match the order in the kernel definition
+        params = tuple(params.values())  # important: the order of params must match the order in the kernel definition
 
         # prepare ndrange and workgroupsize
-        remove_trailing_ones = lambda tup: tup[:len(tup) - next((int(i) for i, x in enumerate(reversed(tup)) if x != 1), len(tup))]
+        remove_trailing_ones = lambda tup: tup[
+            : len(tup) - next((int(i) for i, x in enumerate(reversed(tup)) if x != 1), len(tup))
+        ]
         ndrange = remove_trailing_ones(grid)
         ndrange = (1,) if len(ndrange) == 0 else ndrange
         workgroupsize = remove_trailing_ones(threads)
         workgroupsize = (1,) if len(workgroupsize) == 0 else workgroupsize
 
         try:
-            self.launch_kernel(func, args_tuple, params, ndrange,
-                               workgroupsize, int(self.smem_size))
+            self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size))
         except Exception as e:
             raise RuntimeError(f"Julia kernel launch failed: {e}")
 
@@ -261,10 +352,10 @@ end
         except Exception:
             try:
                 warn(f"{package}.jl not found, attempting to install it directly.")
-                jl.seval(f"using Pkg; Pkg.add(\"{package}\")")
+                jl.seval(f'using Pkg; Pkg.add("{package}")')
                 jl.seval(f"import {package}")
             except Exception as e:
                 raise ImportError(
                     f"{package}.jl not found in your Julia environment. "
-                    f"Run `using Pkg; Pkg.add(\"{package}\")` in Julia."
+                    f'Run `using Pkg; Pkg.add("{package}")` in Julia.'
                 ) from e
