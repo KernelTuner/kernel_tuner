@@ -222,6 +222,23 @@ class KernelSource(object):
             else:
                 logging.debug("Checking of arguments list not supported yet for code generators.")
 
+    def infer_julia_backend(self):
+        """Infer the Julia backend from the kernel source."""
+        if self.lang.upper() != "JULIA":
+            return None
+
+        kernel_string = self.get_kernel_string(0)
+        if kernel_string.find("using CUDA") != -1:
+            return "cuda"
+        elif kernel_string.find("using AMDGPU") != -1:
+            return "amd"
+        elif kernel_string.find("using oneAPI") != -1:
+            return "intel"
+        elif kernel_string.find("using Metal") != -1:
+            return "metal"
+        else:
+            raise ValueError("Could not infer Julia backend from kernel source, provide it as a `compiler_option`")
+
 
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner."""

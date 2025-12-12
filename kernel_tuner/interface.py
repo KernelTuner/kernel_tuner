@@ -610,6 +610,11 @@ def tune_kernel(
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
 
+    # if Julia, infer the Julia backend from the kernelsource
+    if kernelsource.lang == "JULIA":
+        if compiler_options is None:
+            compiler_options = [kernelsource.infer_julia_backend()]
+
     # sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
@@ -623,9 +628,9 @@ def tune_kernel(
         if "max_fevals" in strategy_options:
             tuning_options["max_fevals"] = strategy_options["max_fevals"]
         if "time_limit" in strategy_options:
-            tuning_options["time_limit"] = strategy_options["time_limit"] 
+            tuning_options["time_limit"] = strategy_options["time_limit"]
         if "searchspace_construction_options" in strategy_options:
-            searchspace_construction_options = strategy_options["searchspace_construction_options"]         
+            searchspace_construction_options = strategy_options["searchspace_construction_options"]
 
     # log the user inputs
     logging.debug("tune_kernel called")
@@ -864,23 +869,19 @@ def tune_kernel_T1(
     output_T4=True,
     iterations=7,
     device=None,
-    strategy: str=None,
-    strategy_options: dict={},
+    strategy: str = None,
+    strategy_options: dict = {},
 ) -> tuple:
     """Call the tune function with a T1 input file.
-    
+
     The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
     """
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs["KernelSpecification"]
     kernel_name: str = kernelspec["KernelName"]
     kernel_filepath = Path(kernelspec["KernelFile"])
-    kernel_source = (
-        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent / kernel_filepath
-    )
-    kernel_source = (
-        kernel_source if kernel_source.exists() else Path(input_filepath).parent.parent / kernel_filepath
-    )
+    kernel_source = kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent / kernel_filepath
+    kernel_source = kernel_source if kernel_source.exists() else Path(input_filepath).parent.parent / kernel_filepath
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
     language: str = kernelspec["Language"]
     problem_size = kernelspec["ProblemSize"]
@@ -905,10 +906,12 @@ def tune_kernel_T1(
         # if it is a path, import the strategy from the file
         opt_path: Path = Path(strategy_options["custom_search_method_path"])
         class_name: str = strategy
-        assert opt_path.exists(), f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
+        assert (
+            opt_path.exists()
+        ), f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
         optimizer_class = import_class_from_file(opt_path, class_name)
         filter_keys = ["custom_search_method_path", "max_fevals", "time_limit", "constraint_aware"]
-        adjusted_strategy_options = {k:v for k, v in strategy_options.items() if k not in filter_keys}
+        adjusted_strategy_options = {k: v for k, v in strategy_options.items() if k not in filter_keys}
         optimizer_instance = optimizer_class(**adjusted_strategy_options)
         strategy = OptAlgWrapper(optimizer_instance)
         if "constraint_aware" not in strategy_options and hasattr(optimizer_instance, "constraint_aware"):

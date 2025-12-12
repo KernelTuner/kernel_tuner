@@ -36,6 +36,9 @@ class JuliaFunctions(GPUBackend):
         """Initialize Julia backend using JuliaCall."""
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
+        assert (
+            len(compiler_options) == 1
+        ), "Julia backend requires exactly one backend name: CUDA, AMDGPU, oneAPI, Metal."
 
         # Initialize backend attributes
         self.device = device
@@ -47,7 +50,7 @@ class JuliaFunctions(GPUBackend):
 
         # Initialize Julia backend
         self.backend = None
-        self.initialize_backend(device, compiler_options["julia_backend"])
+        self.initialize_backend(device, backend_name=compiler_options[0])
         self.start_evt = None
         self.end_evt = None
 
@@ -66,8 +69,16 @@ class JuliaFunctions(GPUBackend):
         for observer in self.observers:
             observer.register_device(self)
 
-        # Include helper module
-        jl.include(str(Path(__file__).parent / "julia_helper.jl"))
+        jl.seval(
+            f"""
+            module KernelTunerHelper
+                using {self.backend_mod_name}
+                const kt_julia_backend = {self.backend_mod_name}Backend()
+                const GPUArrayType = {self.GPUArrayType}
+                include("{str(Path(__file__).parent / "julia_helper.jl")}")
+            end
+            """
+        )
 
         self.to_gpuarray = jl.KernelTunerHelper.to_gpuarray
         self.launch_kernel = jl.KernelTunerHelper.launch_kernel
