@@ -47,7 +47,7 @@ class JuliaFunctions(GPUBackend):
 
         # Initialize Julia backend
         self.backend = None
-        self.initialize_backend(device, "metal")  # TODO link to user choice
+        self.initialize_backend(device, compiler_options["julia_backend"])
         self.start_evt = None
         self.end_evt = None
 
@@ -58,9 +58,9 @@ class JuliaFunctions(GPUBackend):
                 jl.Main.KernelAbstractions,
                 self.backend,
                 self.backend_mod_name,
-                self.stream,
-                self.start_evt,
-                self.end_evt,
+                stream=self.stream,
+                start_event=self.start_evt,
+                end_event=self.end_evt,
             )
         )
         for observer in self.observers:
@@ -170,6 +170,15 @@ class JuliaFunctions(GPUBackend):
         except Exception:
             self.max_threads = None
 
+        # Get the device and context
+        self.backend_device = self.backend_mod.device()
+        if backend_name == "cuda":
+            self.contextqueue = self.backend_mod.context
+        elif backend_name in ("amd", "intel"):
+            self.contextqueue = self.backend_mod.queue
+        elif backend_name == "metal":
+            self.contextqueue = self.backend_mod.MTLCommandQueue(self.backend_device)
+
         # Optional: common KernelAbstractions stream abstraction
         try:
             self.stream = backend_mod.get_default_stream()
@@ -190,8 +199,8 @@ class JuliaFunctions(GPUBackend):
             self.start_evt = None
             self.end_evt = None
         elif backend_name == "metal":
-            self.start_evt = None
-            self.end_evt = None
+            self.start_evt = self.start_event
+            self.end_evt = self.stop_event
 
     def __del__(self):
         # drop GPUArray references to let Julia GC handle them
@@ -285,15 +294,25 @@ end
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
-        pass
-        # TODO
-        # self.backend_mod.record(self.start_evt, self.stream)
+        if self.backend_mod_name in ("CUDA", "AMDGPU"):
+            self.backend_mod.record(self.start_evt, self.stream)
+        elif self.backend_mod_name == "Metal":
+            # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
+            # Normally you would just use one command buffer for the actual kernel.
+            jl.start_buf = self.create_metal_buffer()
+            jl.seval("Metal.commit!(start_buf)")
+            self.backend_mod.wait_completed(jl.start_buf)
+            return float(jl.start_buf.GPUEndTime)  # or kernelEndTime?
 
     def stop_event(self):
         """Records the event that marks the end of a measurement."""
-        # self.backend_mod.record(self.end_evt, self.stream)
-        # TODO
-        pass
+        if self.backend_mod_name in ("CUDA", "AMDGPU"):
+            self.backend_mod.record(self.end_evt, self.stream)
+        elif self.backend_mod_name == "Metal":
+            jl.end_buf = self.create_metal_buffer()
+            jl.seval("Metal.commit!(end_buf)")
+            self.backend_mod.wait_completed(jl.end_buf)
+            return float(jl.end_buf.GPUStartTime)  # or kernelStartTime?
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
@@ -379,3 +398,11 @@ end
                     f"{package}.jl not found in your Julia environment. "
                     f'Run `using Pkg; Pkg.add("{package}")` in Julia.'
                 ) from e
+
+    def create_metal_buffer(self):
+        """Create a Metal buffer in the command queue."""
+        try:
+            buf = self.contextqueue.commandBuffer()
+        except Exception:
+            buf = self.backend_mod.MTLCommandBuffer(self.contextqueue)
+        return buf

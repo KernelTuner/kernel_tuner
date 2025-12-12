@@ -13,12 +13,20 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     - Metal: host timing + synchronize
     """
 
-    def __init__(self, kernelabstractions, backend, backend_name, stream=None, start_event=None, end_event=None):
+    def __init__(
+        self,
+        kernelabstractions,
+        backend,
+        backend_name,
+        stream=None,
+        start_event=None,
+        end_event=None,
+    ):
         """Observer that measures GPU time depending on the Julia backend used."""
 
         self.kernelabstractions = kernelabstractions
         self.backend = backend
-        self.name = backend_name
+        self.name = backend_name.lower()
         self.stream = stream
         self.start = start_event
         self.end = end_event
@@ -27,16 +35,23 @@ class JuliaRuntimeObserver(BenchmarkObserver):
 
     def before_start(self):
         if self.start is not None:
-            self.backend.record(self.start, self.stream)
+            if self.name == "metal":
+                self.t0 = self.start()
+            else:
+                self.backend.record(self.start, self.stream)
         else:
             # fallback: host-side timestamp
             self.t0 = perf_counter()
 
     def after_finish(self):
         if self.end is not None:
-            self.backend.record(self.end, self.stream)
-            self.backend.synchronize(self.end)
-            ms = float(self.backend.elapsed(self.start, self.end))
+            if self.name == "metal":
+                elapsed_us = self.end() - self.t0
+                ms = elapsed_us / 1000.0
+            else:
+                self.backend.record(self.end, self.stream)
+                self.backend.synchronize(self.end)
+                ms = float(self.backend.elapsed(self.start, self.end))
         else:
             self.kernelabstractions.synchronize(self.backend)
             dt = perf_counter() - self.t0
