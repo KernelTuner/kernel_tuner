@@ -46,8 +46,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     def after_finish(self):
         if self.end is not None:
             if self.name == "metal":
-                elapsed_us = self.end() - self.t0
-                ms = elapsed_us / 1000.0
+                ms = float((self.end() - self.t0) * 1000.0)
             else:
                 self.backend.record(self.end, self.stream)
                 self.backend.synchronize(self.end)

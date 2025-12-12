@@ -50,9 +50,9 @@ class JuliaFunctions(GPUBackend):
 
         # Initialize Julia backend
         self.backend = None
-        self.initialize_backend(device, backend_name=compiler_options[0])
         self.start_evt = None
         self.end_evt = None
+        self.initialize_backend(device, backend_name=compiler_options[0])
 
         # setup observers
         self.observers = observers or []
@@ -323,7 +323,7 @@ end
             jl.end_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(end_buf)")
             self.backend_mod.wait_completed(jl.end_buf)
-            return float(jl.end_buf.GPUStartTime)  # or kernelStartTime?
+            return float(jl.end_buf.GPUEndTime)  # or kernelStartTime?
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
