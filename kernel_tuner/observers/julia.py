@@ -17,6 +17,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         self,
         kernelabstractions,
         backend,
+        backend_mod,
         backend_name,
         stream=None,
         start_event=None,
@@ -26,6 +27,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
 
         self.kernelabstractions = kernelabstractions
         self.backend = backend
+        self.backend_mod = backend_mod
         self.name = backend_name.lower()
         self.stream = stream
         self.start = start_event
@@ -33,12 +35,18 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         self.times = []
         self.t0 = None
 
+        if self.name in ("cuda", "amdgpu"):
+            # initialize events for this instance of the observer
+            self.start = self.start()
+            self.end = self.end()
+            self.stream = backend_mod.stream()
+
     def before_start(self):
         if self.start is not None:
             if self.name == "metal":
                 self.t0 = self.start()
             else:
-                self.backend.record(self.start, self.stream)
+                self.backend_mod.record(self.start, self.stream)
         else:
             # fallback: host-side timestamp
             self.t0 = perf_counter()
@@ -48,9 +56,9 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             if self.name == "metal":
                 ms = float((self.end() - self.t0) * 1000.0)
             else:
-                self.backend.record(self.end, self.stream)
-                self.backend.synchronize(self.end)
-                ms = float(self.backend.elapsed(self.start, self.end))
+                self.backend_mod.synchronize(self.end)
+                self.backend_mod.record(self.end, self.stream)
+                ms = float(self.backend_mod.elapsed(self.start, self.end))
         else:
             self.kernelabstractions.synchronize(self.backend)
             dt = perf_counter() - self.t0

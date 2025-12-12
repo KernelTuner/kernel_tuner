@@ -60,6 +60,7 @@ class JuliaFunctions(GPUBackend):
             JuliaRuntimeObserver(
                 jl.Main.KernelAbstractions,
                 self.backend,
+                self.backend_mod,
                 self.backend_mod_name,
                 stream=self.stream,
                 start_event=self.start_evt,
@@ -198,12 +199,12 @@ class JuliaFunctions(GPUBackend):
 
         # Set up stream and event attributes for observers
         if backend_name == "cuda":
-            self.start_evt = backend_mod.CuEvent()
-            self.end_evt = backend_mod.CuEvent()
+            self.start_evt = backend_mod.CuEvent
+            self.end_evt = backend_mod.CuEvent
             self.stream = backend_mod.stream()
         elif backend_name == "amd":
-            self.start_evt = backend_mod.ROCEvent()
-            self.end_evt = backend_mod.ROCEvent()
+            self.start_evt = backend_mod.ROCEvent
+            self.end_evt = backend_mod.ROCEvent
             self.stream = backend_mod.default_stream()
         elif backend_name == "intel":
             # OneAPI: no events available
@@ -212,6 +213,8 @@ class JuliaFunctions(GPUBackend):
         elif backend_name == "metal":
             self.start_evt = self.start_event
             self.end_evt = self.stop_event
+        else:
+            raise NotImplementedError(f"Backend {backend_name} not supported in Julia backend.")
 
     def __del__(self):
         # drop GPUArray references to let Julia GC handle them
@@ -306,7 +309,7 @@ end
     def start_event(self):
         """Records the event that marks the start of a measurement."""
         if self.backend_mod_name in ("CUDA", "AMDGPU"):
-            self.backend_mod.record(self.start_evt, self.stream)
+            self.backend_mod.record(self.start_evt(), self.stream)
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
             # Normally you would just use one command buffer for the actual kernel.
@@ -318,7 +321,7 @@ end
     def stop_event(self):
         """Records the event that marks the end of a measurement."""
         if self.backend_mod_name in ("CUDA", "AMDGPU"):
-            self.backend_mod.record(self.end_evt, self.stream)
+            self.backend_mod.record(self.end_evt(), self.stream)
         elif self.backend_mod_name == "Metal":
             jl.end_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(end_buf)")
