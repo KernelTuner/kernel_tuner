@@ -9,6 +9,27 @@ from .test_runners import env  # noqa: F401
 from .context import skip_if_no_julia
 from juliacall import ValueBase
 
+import subprocess
+
+available_backend = None
+try:
+    subprocess.check_output('nvidia-smi')
+    available_backend = 'cuda'
+except Exception: # this command not being found can raise quite a few different errors depending on the configuration
+    try:
+        subprocess.check_output('rocm-smi')
+        available_backend = 'amd'
+    except Exception:
+        try:
+            subprocess.check_output('intel_gpu_top -J')
+            available_backend = 'intel'
+        except Exception:
+            try:
+                subprocess.check_output('system_profiler SPDisplaysDataType | grep "Metal"')
+            except Exception:
+                available_backend = 'metal'
+                
+
 kernel_name = "vector_add!"
 kernel_string = r"""
     using KernelAbstractions
@@ -35,7 +56,7 @@ def test_ready_argument_list():
 
     arguments = [c, a, b]
 
-    dev = JuliaFunctions(0)
+    dev = JuliaFunctions(0, compiler_options=[available_backend])
     gpu_args = dev.ready_argument_list(arguments)
 
     # Julia Array maps back through PythonCall as pyjl_pointer-like proxies
@@ -50,7 +71,7 @@ def test_compile():
     kernel_sources = KernelSource(kernel_name, kernel_string, "julia")
     kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
-    dev = JuliaFunctions(0)
+    dev = JuliaFunctions(0, compiler_options=[available_backend])
 
     try:
         dev.compile(kernel_instance)
@@ -66,7 +87,8 @@ def test_tune_kernel(env):
     result, _ = tune_kernel(
         *env,
         lang="julia",
-        verbose=True
+        verbose=True,
+        compiler_options=[available_backend]
     )
 
     assert len(result) > 0
