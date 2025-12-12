@@ -11,6 +11,7 @@ from juliacall import ValueBase
 
 import subprocess
 
+# try to auto-detect which backend is available
 available_backend = None
 try:
     subprocess.check_output('nvidia-smi')
