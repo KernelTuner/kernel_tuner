@@ -1,27 +1,48 @@
 import numpy as np
+from time import perf_counter
+from warnings import warn
 from kernel_tuner.observers.observer import BenchmarkObserver, PrologueObserver
 
-class JuliaRuntimeObserver(BenchmarkObserver):
-    """Observer that measures GPU time using CUDA.CuEvent and CUDA.elapsed."""
 
-    def __init__(self, CUDA):
-        self.CUDA = CUDA
-        self.start = self.CUDA.CuEvent()
-        self.end   = self.CUDA.CuEvent()
-        self.stream = self.CUDA.stream()   # default stream
+class JuliaRuntimeObserver(BenchmarkObserver):
+    """
+    Cross-backend GPU timing for KernelAbstractions:
+    - CUDA: CuEvent timing
+    - AMDGPU: ROCEvent timing
+    - OneAPI: host timing + synchronize (less accurate, no events available)
+    - Metal: host timing + synchronize
+    """
+
+    def __init__(self, kernelabstractions, backend, backend_name, stream=None, start_event=None, end_event=None):
+        """Observer that measures GPU time depending on the Julia backend used."""
+
+        self.kernelabstractions = kernelabstractions
+        self.backend = backend
+        self.name = backend_name
+        self.stream = stream
+        self.start = start_event
+        self.end = end_event
         self.times = []
+        self.t0 = None
 
     def before_start(self):
-        # record start event
-        self.CUDA.record(self.start, self.stream)
+        if self.start is not None:
+            self.backend.record(self.start, self.stream)
+        else:
+            # fallback: host-side timestamp
+            self.t0 = perf_counter()
 
     def after_finish(self):
-        # record end event
-        self.CUDA.record(self.end, self.stream)
-        self.CUDA.synchronize(self.end)
+        if self.end is not None:
+            self.backend.record(self.end, self.stream)
+            self.backend.synchronize(self.end)
+            ms = float(self.backend.elapsed(self.start, self.end))
+        else:
+            self.kernelabstractions.synchronize(self.backend)
+            dt = perf_counter() - self.t0
+            ms = dt * 1000.0
+            warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
 
-        # milliseconds
-        ms = float(self.CUDA.elapsed(self.start, self.end))
         self.times.append(ms)
 
     def get_results(self):
@@ -32,10 +53,11 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         self.times = []
         return results
 
+
 class JuliaJITWarmup(PrologueObserver):
     """Prologue observer to enforce warmup before every configuration to trigger JIT."""
 
-    def __init__(self, CUDA):
+    def __init__(self, backend):
         pass
 
     def before_start(self):

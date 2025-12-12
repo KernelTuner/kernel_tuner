@@ -4,7 +4,7 @@ This backend allows Julia kernels to be compiled, launched, and observed from Py
 
 Requirements:
   pip install juliacall
-  and in Julia: ] add CUDA
+  and in Julia: ] add CUDA / AMDGPU / oneAPI / Metal (will be automatically installed if not present)
 
 Notes:
 - The kernel string should contain a valid Julia GPU kernel function definition.
@@ -37,33 +37,6 @@ class JuliaFunctions(GPUBackend):
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
 
-        # # Ensure CUDA.jl is available
-        # self.check_package_and_install("CUDA")
-
-        # # Initialize CUDA events
-        # self.CUDA = jl.Main.CUDA
-        # self.stream = self.CUDA.stream()
-        # self.start_evt = None
-        # self.end_evt = None
-
-        # # Select device
-        # try:
-        #     jl.seval(f"CUDA.device!({int(device)})")
-        #     JuliaFunctions.last_selected_device = device
-        # except Exception as e:
-        #     raise RuntimeError(f"Failed to set Julia CUDA device {device}: {e}")
-
-        # # Gather device info
-        # try:
-        #     self.name = jl.seval("CUDA.name(CUDA.device())")
-        #     cc_tuple = jl.seval("CUDA.capability(CUDA.device())")
-        #     self.cc = f"{cc_tuple.major}{cc_tuple.minor}"
-        # except Exception as e:
-        #     warn(f"Could not retrieve device name and compute capability from Julia CUDA: {e}")
-        #     self.name = f"Julia-CUDA-device-{device}"
-        #     self.cc = None
-        # self.max_threads = jl.seval("CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)")
-
         # Initialize backend attributes
         self.device = device
         self.iterations = iterations
@@ -73,13 +46,23 @@ class JuliaFunctions(GPUBackend):
         self.smem_size = 0
 
         # Initialize Julia backend
+        self.backend = None
         self.initialize_backend(device, "metal")  # TODO link to user choice
         self.start_evt = None
         self.end_evt = None
 
         # setup observers
         self.observers = observers or []
-        self.observers.append(JuliaRuntimeObserver(self.CUDA))
+        self.observers.append(
+            JuliaRuntimeObserver(
+                jl.Main.KernelAbstractions,
+                self.backend,
+                self.backend_mod_name,
+                self.stream,
+                self.start_evt,
+                self.end_evt,
+            )
+        )
         for observer in self.observers:
             observer.register_device(self)
 
@@ -109,6 +92,7 @@ class JuliaFunctions(GPUBackend):
                 "name": "CUDA.name(CUDA.device())",
                 "max_threads": "CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)",
                 "capability": "CUDA.capability(CUDA.device())",
+                "GPUArrayType": "CuArray",
             },
             "amd": {
                 "pkg": "AMDGPU",
@@ -117,6 +101,7 @@ class JuliaFunctions(GPUBackend):
                 "name": "AMDGPU.name(AMDGPU.device())",
                 "max_threads": "AMDGPU.device_attribute(AMDGPU.device(), :maxthreadsperblock)",
                 "capability": None,
+                "GPUArrayType": "ROCArray",
             },
             "intel": {
                 "pkg": "oneAPI",
@@ -125,6 +110,7 @@ class JuliaFunctions(GPUBackend):
                 "name": "oneAPI.name(oneAPI.device())",
                 "max_threads": "oneAPI.device_attribute(oneAPI.device(), :max_work_group_size)",
                 "capability": None,
+                "GPUArrayType": "OneArray",
             },
             "metal": {
                 "pkg": "Metal",
@@ -133,6 +119,7 @@ class JuliaFunctions(GPUBackend):
                 "name": "Metal.name(Metal.device())",
                 "max_threads": "Int(Metal.device().maxThreadsPerThreadgroup.width)",
                 "capability": None,
+                "GPUArrayType": "MtlArray",
             },
         }
 
@@ -145,8 +132,13 @@ class JuliaFunctions(GPUBackend):
         self.check_package_and_install(info["pkg"])
 
         # Bring module into Python
-        backend_mod = getattr(jl.Main, info["module"])
+        self.backend_mod_name = info["module"]
+        backend_mod = getattr(jl.Main, self.backend_mod_name)
         self.backend_mod = backend_mod
+        jl.seval(f"using KernelAbstractions, {self.backend_mod_name}")
+        jl.seval(f"tmp_arr = {info['GPUArrayType']}(Float32.(zeros(2)))")
+        self.backend = jl.seval("KernelAbstractions.get_backend(tmp_arr)")
+        self.GPUArrayType = info["GPUArrayType"]
 
         # Select device
         try:
@@ -183,6 +175,23 @@ class JuliaFunctions(GPUBackend):
             self.stream = backend_mod.get_default_stream()
         except Exception:
             self.stream = None
+
+        # Set up stream and event attributes for observers
+        if backend_name == "cuda":
+            self.start_evt = backend_mod.CuEvent()
+            self.end_evt = backend_mod.CuEvent()
+            self.stream = backend_mod.stream()
+        elif backend_name == "amd":
+            self.start_evt = backend_mod.ROCEvent()
+            self.end_evt = backend_mod.ROCEvent()
+            self.stream = backend_mod.default_stream()
+        elif backend_name == "intel":
+            # OneAPI: no events available
+            self.start_evt = None
+            self.end_evt = None
+        elif backend_name == "metal":
+            self.start_evt = None
+            self.end_evt = None
 
     def __del__(self):
         # drop GPUArray references to let Julia GC handle them
@@ -235,7 +244,7 @@ class JuliaFunctions(GPUBackend):
         # Wrap in a module to avoid name conflicts
         module_code = f"""
 module KernelTunerUserKernel
-    using CUDA
+    using {self.backend_mod_name}
     {kernel_code}
 end
         """
@@ -276,22 +285,24 @@ end
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
-        self.start_evt = self.CUDA.CuEvent()
-        self.CUDA.record(self.start_evt, self.stream)
+        pass
+        # TODO
+        # self.backend_mod.record(self.start_evt, self.stream)
 
     def stop_event(self):
         """Records the event that marks the end of a measurement."""
-        self.end_evt = self.CUDA.CuEvent()
-        self.CUDA.record(self.end_evt, self.stream)
+        # self.backend_mod.record(self.end_evt, self.stream)
+        # TODO
+        pass
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
-        return self.end_evt is not None
+        return True  # JuliaCall synchronizes on record
 
-    @staticmethod
-    def synchronize():
+    # @staticmethod
+    def synchronize(self):
         try:
-            jl.seval("CUDA.synchronize()")
+            jl.Main.KernelAbstractions.synchronize(self.backend)
         except Exception as e:
             raise RuntimeError(f"Julia synchronize failed: {e}")
 
@@ -301,6 +312,7 @@ end
 
     @staticmethod
     def memset(allocation, value, size):
+        raise NotImplementedError("memset not yet implemented for Julia backend.")
         try:
             jl.allocation_tmp = allocation
             jl.seval(f"CUDA.fill!(allocation_tmp, {int(value)})")
@@ -320,26 +332,34 @@ end
         except Exception as e:
             raise RuntimeError(f"Julia memcpy_dtoh failed: {e}")
 
-    @staticmethod
+    # @staticmethod
     def memcpy_htod(dest, src):
+        raise NotImplementedError("memcpy_htod not yet implemented for Julia backend.", dest, src)
         try:
             jl.src_tmp = src
-            jl.seval("cu_tmp = CUDA.CuArray(src_tmp)")
-            cu = jl.cu_tmp
+            jl.seval(f"arr_tmp = {self.GPUArrayType}(src_tmp)")
+            arr_tmp = jl.arr_tmp
             del jl.src_tmp
-            del jl.cu_tmp
-            return cu
+            del jl.arr_tmp
+            return arr_tmp
         except Exception as e:
             raise RuntimeError(f"Julia memcpy_htod failed: {e}")
 
     def copy_constant_memory_args(self, cmem_args):
-        raise NotImplementedError("Constant memory not supported in Julia backend. Submit a feature request if needed.")
+        raise NotImplementedError(
+            "Constant memory not yet supported in Julia backend. Submit a feature request if needed."
+        )
 
     def copy_shared_memory_args(self, smem_args):
+        raise NotImplementedError(
+            "Shared memory not yet supported in Julia backend. Submit a feature request if needed."
+        )
         self.smem_size = int(smem_args.get("size", 0))
 
     def copy_texture_memory_args(self, texmem_args):
-        raise NotImplementedError("Texture memory not supported in Julia backend. Submit a feature request if needed.")
+        raise NotImplementedError(
+            "Texture memory not yet supported in Julia backend. Submit a feature request if needed."
+        )
 
     # -------------------------
     # Helper functions

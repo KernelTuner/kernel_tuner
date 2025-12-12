@@ -4,7 +4,7 @@ module KernelTunerHelper
 # gpuarraytype = CuArray
 using Metal
 const backend = MetalBackend()
-const GPUArrayType = MetalArray
+const GPUArrayType = MtlArray
 
 export to_gpuarray, launch_kernel
 
@@ -25,7 +25,7 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
         configured_kernel = kernel(backend, workgroupsize)
         configured_kernel(args..., Val.(params)..., ndrange=ndrange)
         # Synchronize to ensure kernel completion
-        CUDA.synchronize()
+        Main.KernelAbstractions.synchronize(backend)
     else
         error("Only KernelAbstractions kernels are supported.")
     end

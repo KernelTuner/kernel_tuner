@@ -35,7 +35,7 @@ except ImportError:
 try:
     from hip._util.types import DeviceArray
 except ImportError:
-    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+    DeviceArray = Exception  # using Exception here as a type that will never be among kernel arguments
 
 _KernelInstance = namedtuple(
     "_KernelInstance",
@@ -111,15 +111,13 @@ class KernelSource(object):
         """
         logging.debug("get_kernel_string called")
 
-        if hasattr(self, 'lang') and self.lang.upper() == "HYPERTUNER":
+        if hasattr(self, "lang") and self.lang.upper() == "HYPERTUNER":
             return ""
 
         kernel_source = self.kernel_sources[index]
         return util.get_kernel_string(kernel_source, params)
 
-    def prepare_list_of_files(
-        self, kernel_name, params, grid, threads, block_size_names
-    ):
+    def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
         """Prepare the kernel string along with any additional files.
 
         The first file in the list is allowed to include or read in the others
@@ -324,10 +322,7 @@ class DeviceInterface(object):
                 observers=observers,
             )
         elif lang.upper() == "HYPERTUNER":
-            dev = HypertunerFunctions(
-                iterations=iterations,
-                compiler_options=compiler_options
-            )
+            dev = HypertunerFunctions(iterations=iterations, compiler_options=compiler_options)
             self.requires_warmup = False
         else:
             raise NotImplementedError(
@@ -358,7 +353,7 @@ class DeviceInterface(object):
 
         # for JULIA, add the JIT warmup prologue observer
         if lang.upper() == "JULIA":
-            self.prologue_observers.append(JuliaJITWarmup(self.dev.CUDA))
+            self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
 
         # Take list of observers from self.dev because Backends tend to add their own observer
         self.benchmark_observers = [
@@ -408,7 +403,6 @@ class DeviceInterface(object):
         for obs in self.benchmark_observers:
             result.update(obs.get_results())
 
-
     def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
         """Benchmark continuously for at least 'duration' seconds."""
         iterations = int(np.ceil(duration / (result["time"] / 1000)))
@@ -432,7 +426,6 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             result.update(obs.get_results())
 
-
     def set_nvml_parameters(self, instance):
         """Set the NVML parameters. Avoids setting time leaking into benchmark time."""
         if self.use_nvml:
@@ -450,7 +443,6 @@ class DeviceInterface(object):
         if self.use_tegra:
             if "tegra_gr_clock" in instance.params:
                 self.tegra.gr_clock = instance.params["tegra_gr_clock"]
-
 
     def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False):
         """Benchmark the kernel instance."""
@@ -501,9 +493,7 @@ class DeviceInterface(object):
                 raise e
         return result
 
-    def check_kernel_output(
-        self, func, gpu_args, instance, answer, atol, verify, verbose
-    ):
+    def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """Runs the kernel once and checks the result against answer."""
         logging.debug("check_kernel_output")
 
@@ -514,7 +504,9 @@ class DeviceInterface(object):
 
             should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
         else:
-            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments]
+            should_sync = [
+                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments
+            ]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
@@ -658,9 +650,7 @@ class DeviceInterface(object):
             ]
             error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
             if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
-                logging.debug(
-                    "compile_kernel failed due to kernel using too much shared memory"
-                )
+                logging.debug("compile_kernel failed due to kernel using too much shared memory")
                 if verbose:
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
@@ -805,9 +795,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     # for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
-            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(
-                arg, (np.ndarray, cp.ndarray)
-            ):
+            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
                 if not np.can_cast(arg.dtype, answer[i].dtype):
                     raise TypeError(
                         f"Element {i} of the expected results list has a dtype that is not compatible with the dtype of the kernel output: "
@@ -888,18 +876,9 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                 output_test = np.allclose(expected, result, atol=atol)
 
             if not output_test and verbose:
-                print(
-                    "Error: "
-                    + util.get_config_string(instance.params)
-                    + " detected during correctness check"
-                )
-                print(
-                    "this error occurred when checking value of the %oth kernel argument"
-                    % (i,)
-                )
-                print(
-                    "Printing kernel output and expected result, set verbose=False to suppress this debug print"
-                )
+                print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
+                print("this error occurred when checking value of the %oth kernel argument" % (i,))
+                print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
                 np.set_printoptions(edgeitems=50)
                 print("Kernel output:")
                 print(result)
