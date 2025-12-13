@@ -371,6 +371,7 @@ class DeviceInterface(object):
         # for JULIA, add the JIT warmup prologue observer
         if lang.upper() == "JULIA":
             self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
+            self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
 
         # Take list of observers from self.dev because Backends tend to add their own observer
         self.benchmark_observers = [
@@ -496,9 +497,10 @@ class DeviceInterface(object):
                 "too many resources requested for launch",
                 "OUT_OF_RESOURCES",
                 "INVALID_WORK_GROUP_SIZE",
+                "a bounds error was thrown during kernel execution",
             ]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
-                logging.debug("benchmark fails due to runtime failure too many resources required")
+                logging.debug("benchmark fails due to runtime failure / too many resources required")
                 if verbose:
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"

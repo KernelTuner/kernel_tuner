@@ -143,6 +143,10 @@ class JuliaFunctions(GPUBackend):
         # Ensure the package is installed
         self.check_package_and_install(info["pkg"])
 
+        # # Set debug level if needed
+        # if backend_name == "cuda":
+        #     jl.seval("ENV[\"JULIA_CUDA_DEBUG\"] = \"2\"")
+
         # Bring module into Python
         self.backend_mod_name = info["module"]
         backend_mod = getattr(jl.Main, self.backend_mod_name)
@@ -301,10 +305,8 @@ end
         workgroupsize = remove_trailing_ones(threads)
         workgroupsize = (1,) if len(workgroupsize) == 0 else workgroupsize
 
-        try:
-            self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size))
-        except Exception as e:
-            raise RuntimeError(f"Julia kernel launch failed: {e}")
+        # run the kernel
+        self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size))
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
