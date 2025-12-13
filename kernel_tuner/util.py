@@ -14,6 +14,7 @@ from inspect import getsource, signature
 from pathlib import Path
 from types import FunctionType
 from typing import Union
+from math import ceil, floor    # to have these available in eval contexts
 
 import numpy as np
 from constraint import (
@@ -1339,6 +1340,7 @@ def cuda_error_check(error):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
+
 
 def possible_julia_vector_to_list(obj):
     """Convert a Julia vector to a Python list if needed."""

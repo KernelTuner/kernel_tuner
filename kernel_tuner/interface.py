@@ -594,8 +594,13 @@ def tune_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
-    block_size_names = util.possible_julia_vector_to_list(block_size_names)
+    if lang == "Julia":
+        if isinstance(tune_params, dict) or "DictValue" in tune_params.__class__.__name__:
+            raise ValueError("tune_params should not be a Julia dict, because it does not preserve order. Use a list of pairs instead.")
+        tune_params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in tune_params]
+        tune_params = dict(tune_params)
     restrictions = util.possible_julia_vector_to_list(restrictions)
+    block_size_names = util.possible_julia_vector_to_list(block_size_names)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
