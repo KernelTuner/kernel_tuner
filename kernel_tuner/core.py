@@ -22,6 +22,7 @@ from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.backends.triton import TritonFunctions
+from kernel_tuner.backends.tilus import TilusFunctions
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
@@ -186,6 +187,13 @@ class DeviceInterface(object):
             self.requires_warmup = False
         elif lang.upper() == "TRITON":
             dev = TritonFunctions(
+                device,
+                compiler_options=compiler_options,
+                iterations=iterations,
+                observers=observers
+            )
+        elif lang.upper() == "GENERIC_PYTHON":
+            dev = TilusFunctions(
                 device,
                 compiler_options=compiler_options,
                 iterations=iterations,

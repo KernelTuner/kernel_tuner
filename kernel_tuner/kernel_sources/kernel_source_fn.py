@@ -10,8 +10,10 @@ import importlib.util
 
 from typing import Any
 
+from kernel_tuner.language import Language
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import PreparedKernelSourceData
+
 
 
 class KernelSourceFn(KernelSource):
@@ -21,23 +23,35 @@ class KernelSourceFn(KernelSource):
         if isinstance(kernel_source, list):
             raise ValueError("KernelSourceFn only supports a single kernel source function")
 
+
+        try:
+            self.lang = Language(lang)
+        except ValueError:
+            raise TypeError(f"Supported languages are {[l.value for l in Language]}")
         self.source_kernel_fn = kernel_source
         self.kernel_fn = self.source_kernel_fn
         self.source = inspect.getsource(kernel_source)
         self.source_tree = ast.parse(self.source)
-        self.triton_import_nodes = [
-            ast.Import(names=[ast.alias(name='triton', asname=None)]),
-            ast.ImportFrom(
-                module='triton',
-                names=[ast.alias(name='language', asname='tl')],
-                level=0
-            )
-        ]
+        if self.lang == Language.TRITON:
+            self.import_nodes = [
+                ast.Import(names=[ast.alias(name='triton', asname=None)]),
+                ast.ImportFrom(
+                    module='triton',
+                    names=[ast.alias(name='language', asname='tl')],
+                    level=0
+                )
+            ]
+        else:
+            self.import_nodes = [n for n in self.source_tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
+
 
         # Find the module where the kernel function is defined
         self.module = inspect.getmodule(kernel_source)
         # Get dependencies by analyzing the AST
-        self.dependencies = self._find_triton_dependencies()
+        if self.lang == Language.lang:
+            self.dependencies = self._find_triton_dependencies()
+        else:
+            self.dependencies = None # TODO
 
     def _find_function_dependencies(self):
         """Find all function calls in the kernel."""
@@ -55,7 +69,7 @@ class KernelSourceFn(KernelSource):
         return visitor.called_functions
 
     def _is_triton_jit_function(self, node):
-        """Check if a function has the @triton.jit decorator."""
+        """Check if a function has the @triton.jit decorator. Is triton specific"""
         if not isinstance(node, ast.FunctionDef):
             return False
         
@@ -69,7 +83,7 @@ class KernelSourceFn(KernelSource):
         return False
 
     def _find_triton_dependencies(self):
-        """Find all Triton JIT functions that are called by the kernel."""
+        """Find all Triton JIT functions that are called by the kernel. Is Triton specific"""
         dependencies = {}
         called_functions = self._find_function_dependencies()
         
@@ -105,12 +119,15 @@ class KernelSourceFn(KernelSource):
         # Create a new module with all necessary functions
         new_module = ast.Module(body=[], type_ignores=[])
         
-        # Add both triton imports
-        new_module.body.extend(self.triton_import_nodes)
+        # Add imports
+        new_module.body.extend(self.import_nodes)
         
-        # Add all Triton JIT dependencies first
-        for dep_node in self.dependencies.values():
-            new_module.body.append(copy.deepcopy(dep_node))
+        if self.lang == Language.TRITON:
+            # Add all Triton JIT dependencies first
+            for dep_node in self.dependencies.values():
+                new_module.body.append(copy.deepcopy(dep_node))
+
+        # TODO the kernel can not have dependencies yet. Obviously this needs fixing.
         
         # Add transformed main kernel
         source_tree_copy = copy.deepcopy(self.source_tree)

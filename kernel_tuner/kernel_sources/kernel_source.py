@@ -3,6 +3,7 @@ import kernel_tuner.util as util
 
 from abc import abstractmethod
 
+from kernel_tuner.language import Language
 from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import PreparedKernelSourceData
 
 
@@ -11,8 +12,16 @@ from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import Prepar
 class KernelSource:
     def __new__(cls, kernel_name, kernel_sources, lang, defines=None):
         """Factory behavior"""
+        if lang == None:
+            language = None 
+        else:
+            try:
+                language = Language(lang)
+            except ValueError:
+                raise TypeError(f"Supported languages are {[l.value for l in Language]}")
+        
         if cls is KernelSource:  
-            if inspect.isfunction(kernel_sources) and (lang and lang.upper() == "TRITON"): # TODO should this be isfunction?
+            if inspect.isfunction(kernel_sources) and (language and (language == Language.TRITON or language == Language.GENERIC_PYTHON)): # TODO should this be isfunction?
                 from kernel_tuner.kernel_sources.kernel_source_fn import KernelSourceFn
                 print("CREATING KSFN")
                 return KernelSourceFn(kernel_name, kernel_sources, lang, defines)
@@ -20,9 +29,11 @@ class KernelSource:
                 from kernel_tuner.kernel_sources.kernel_source_str import KernelSourceStr
                 print("CREATING KSSTR")
                 return KernelSourceStr(kernel_name, kernel_sources, lang, defines)
+        
         # otherwise, normal subclass init
         return super().__new__(cls)
 
+    
     def __init__(self, kernel_name, kernel_sources, lang, defines=None):
         if not isinstance(kernel_sources, list):
             kernel_sources = [kernel_sources]
