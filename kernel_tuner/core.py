@@ -481,14 +481,14 @@ class DeviceInterface(object):
                         f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
                     )
                 # result[objective] = util.RuntimeFailedConfig()
-                result['error'] = util.RuntimeFailedConfig()
+                result['__error__'] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
                 print("Error while benchmarking:", instance.name)
                 raise e
 
         assert util.check_result_type(result), "The error in a result MUST be an actual error."
-        
+
         return result
 
     def check_kernel_output(
@@ -576,7 +576,7 @@ class DeviceInterface(object):
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
             # result[to.objective] = util.InvalidConfig()
-            result['error'] = util.InvalidConfig()
+            result['__error__'] = util.InvalidConfig()
         else:
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
             gpu_args = _preprocess_gpu_arguments(gpu_args, params)
@@ -587,7 +587,7 @@ class DeviceInterface(object):
                 func = self.compile_kernel(instance, verbose)
                 if not func:
                     # result[to.objective] = util.CompilationFailedConfig()
-                    result['error'] = util.CompilationFailedConfig()
+                    result['__error__'] = util.CompilationFailedConfig()
                 else:
                     # add shared memory arguments to compiled module
                     if kernel_options.smem_args is not None:

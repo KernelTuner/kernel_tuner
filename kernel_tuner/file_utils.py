@@ -111,7 +111,7 @@ def store_output_file(output_filename: str, results, tune_params, objective="tim
 
         # encode the validity of the configuration
         # out["invalidity"] = get_configuration_validity(result[objective])
-        out["invalidity"] = get_configuration_validity(result['error'])
+        out["invalidity"] = get_configuration_validity(result['__error__'])
 
         # Kernel Tuner does not support producing results of configs that fail the correctness check
         # therefore correctness is always 1

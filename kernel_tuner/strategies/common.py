@@ -96,8 +96,7 @@ class CostFunc:
             legal = util.check_restrictions(self.searchspace.restrictions, params_dict, self.tuning_options.verbose)
             if not legal:
                 result = params_dict
-                # result[self.tuning_options.objective] = util.InvalidConfig()
-                result['error'] = util.InvalidConfig()
+                result['__error__'] = util.InvalidConfig()
                 self.illegal_config_count += 1
 
         if legal:

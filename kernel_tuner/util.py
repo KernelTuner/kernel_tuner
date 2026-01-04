@@ -86,7 +86,7 @@ def get_result_cost(
 ) -> list[float]:
     """Returns the cost of a result, taking the objective directions into account."""
     # return the highest cost for invalid results
-    if 'error' in result:
+    if '__error__' in result:
         return [sys.float_info.max] * len(objectives)
 
     cost_vec = list()
@@ -100,8 +100,8 @@ def get_result_cost(
 
 def check_result_type(r):
     """Check if the result has the right format."""
-    if 'error' in r:
-        return isinstance(r['error'], ErrorConfig)
+    if '__error__' in r:
+        return isinstance(r['__error__'], ErrorConfig)
     return True
 
 
@@ -429,7 +429,7 @@ def get_best_config(results, objective, objective_higher_is_better=False):
     ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
     best_config = func(
         results,
-        key=lambda x: x[objective] if 'error' not in x and isinstance(x[objective], float) else ignore_val,
+        key=lambda x: x[objective] if '__error__' not in x and isinstance(x[objective], float) else ignore_val,
     )
     return best_config
 
@@ -1365,7 +1365,7 @@ def restriction_from_cache(cache: dict):
     param_config_string_set = set(
         param_config_string
         for param_config_string, result in cache['cache'].items()
-        if 'error' not in result
+        if '__error__' not in result
     )
 
     # print(f"WTH: {len(config_strings)}/{len(list(cache['cache'].keys()))}")
