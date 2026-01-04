@@ -15,7 +15,7 @@ from nox_poetry import Session, session
 
 # set the test parameters
 verbose = False
-python_versions_to_test = ["3.9", "3.10", "3.11", "3.12"]
+python_versions_to_test = ["3.10", "3.11", "3.12"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
 nox.options.default_venv_backend = 'virtualenv'
@@ -38,7 +38,7 @@ def create_settings(session: Session) -> None:
         venvbackend = nox.options.default_venv_backend
         envdir = ""
         # conversion from old notenv.txt
-        if noxenv_file_path.exists(): 
+        if noxenv_file_path.exists():
             venvbackend = noxenv_file_path.read_text().strip()
             noxenv_file_path.unlink()
         # write the settings
@@ -91,7 +91,7 @@ def check_development_environment(session: Session) -> None:
         # packages = re.findall(r"• Installing .* | • Updating .*", output, flags=re.MULTILINE)
         # assert packages is not None
         session.warn(f"""
-            Your development environment is out of date ({installs} installs, {updates} updates). 
+            Your development environment is out of date ({installs} installs, {updates} updates).
             Update with 'poetry install --sync', using '--with' and '-E' for optional dependencies, extras respectively.
             Note: {removals} packages are not in the specification (i.e. installed manually) and may be removed.
             To preview changes, run 'poetry install --sync --dry-run' (with optional dependencies and extras).""")
