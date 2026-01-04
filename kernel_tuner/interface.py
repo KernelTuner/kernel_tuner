@@ -708,7 +708,6 @@ def tune_kernel(
             objective = objective[0]
             objective_higher_is_better = objective_higher_is_better[0]
             best_config = util.get_best_config(results, objective, objective_higher_is_better)
-            print(best_config)
             # add the best configuration to env
             env['best_config'] = best_config
             if not device_options.quiet:
