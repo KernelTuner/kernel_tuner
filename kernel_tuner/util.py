@@ -43,6 +43,8 @@ except ImportError:
 
 from kernel_tuner.observers.nvml import NVMLObserver
 
+from pymoo.util.nds.find_non_dominated import find_non_dominated
+
 # number of special values to insert when a configuration cannot be measured
 
 
@@ -443,29 +445,24 @@ def get_pareto_results(
     assert isinstance(results, list)
     assert isinstance(objectives, list)
 
-    cost_points = list()
-    for res in results:
-        cost_point = get_result_cost(res, objectives, objective_higher_is_better)
-        cost_points.append(cost_point)
-
-    cost_points = np.asarray(cost_points, dtype=float)
-    is_efficient = np.ones(cost_points.shape[0], dtype=bool)
-
-    # A point `p` in a finite set of points `S` is said to be non-dominated if there is no other point `q` in `S` where `q(i) <= p(i)` for all `i`
-    for idx, cost_point in enumerate(cost_points):
-        if not is_efficient[idx]:
+    n_rows = len(results)
+    n_cols = len(objectives)
+    Y = np.empty((n_rows, n_cols), dtype=float)
+    for row_idx, result in enumerate(results):
+        if "__error__" in result:
+            Y[row_idx, :] = sys.float_info.max
             continue
-        is_efficient[is_efficient] = np.any(cost_points[is_efficient] <= cost_point, axis=1)
+        for col_idx, (objective_name, higher_is_better) in enumerate(zip(objectives, objective_higher_is_better)):
+            y = result[objective_name]
+            # negate for maximizers to optimize through minimization
+            Y[row_idx, col_idx] = -y if higher_is_better else y
 
-    # select and mark the optimal points
-    front = list()
-    for idx in np.flatnonzero(is_efficient):
-        res = results[idx]
-        if mark_optima:
-            res['optimal'] = True
-        front.append(res)
-
-    return front
+    pf_indices = find_non_dominated(Y)
+    pf = [results[idx] for idx in pf_indices]
+    if mark_optima:
+        for p in pf:
+            p["optimal"] = True
+    return pf
 
 
 def get_config_string(params, keys=None, units=None):
