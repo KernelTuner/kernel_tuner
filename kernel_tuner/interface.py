@@ -76,7 +76,8 @@ strategy_map = {
     "simulated_annealing": simulated_annealing,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
-    "pymoo_minimize": pymoo_minimize,
+    "nsga2": pymoo_minimize,
+    "nsga3": pymoo_minimize,
 }
 
 
@@ -466,6 +467,7 @@ _tuning_options = Options(
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
+        ("seed", ("""The random seed.""", "int")),
     ]
 )
 
@@ -580,6 +582,7 @@ def tune_kernel(
     objective=None,
     objective_higher_is_better=None,
     objectives=None,
+    seed=None,
 ):
     start_overhead_time = perf_counter()
     if log:
