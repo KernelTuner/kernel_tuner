@@ -744,21 +744,25 @@ def tune_kernel(
 tune_kernel.__doc__ = _tune_kernel_docstring
 
 
-def tune_cache(
-    cache,
+def tune_cache(*,
+    cache_path,
     restrictions = None,
     **kwargs,
 ):
-    tune_args = util.tune_args_from_cache_file(cache)
+    cache = util.read_cache(cache_path, open_cache=False)
+    tune_args = util.infer_args_from_cache(cache)
+    _restrictions = [util.infer_restrictions_from_cache(cache)]
+
+    # Add the user provided restrictions
     if restrictions:
-        new_restrictions = [tune_args['restrictions']]
         if isinstance(restrictions, list):
-            new_restrictions.extend(restrictions)
+            _restrictions.extend(restrictions)
         else:
-            new_restrictions.append(restrictions)
-        tune_args['restrictions'] = new_restrictions
+            raise ValueError("The restrictions must be a list()")
+
     tune_args.update(kwargs)
-    return tune_kernel(simulation_mode=True, **tune_args)
+
+    return tune_kernel(**tune_args, cache=cache_path, restrictions=_restrictions, simulation_mode=True)
 
 
 _run_kernel_docstring = """Compile and run a single kernel

@@ -282,8 +282,11 @@ def check_block_size_params_names_list(block_size_names, tune_params):
 
 def check_restriction(restrict, params: dict) -> bool:
     """Check whether a configuration meets a search space restriction."""
+    # if it's a function python-constraint it can be called directly
+    if isinstance(restrict, FunctionConstraint):
+        return restrict._func(*params.values())
     # if it's a python-constraint, convert to function and execute
-    if isinstance(restrict, Constraint):
+    elif isinstance(restrict, Constraint):
         restrict = convert_constraint_restriction(restrict)
         return restrict(list(params.values()))
     # if it's a string, fill in the parameters and evaluate
@@ -1358,43 +1361,33 @@ def cuda_error_check(error):
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
 
-def restriction_from_cache(cache: dict):
-    param_config_string_set = set(
-        param_config_string
-        for param_config_string, result in cache['cache'].items()
+def infer_restrictions_from_cache(cache: dict):
+    param_names = cache["tune_params_keys"]
+    valid_param_config_set = set(
+        tuple(result[param_name] for param_name in param_names)
+        for result in cache['cache'].values()
         if '__error__' not in result
     )
 
-    # print(f"WTH: {len(config_strings)}/{len(list(cache['cache'].keys()))}")
+    def restrictions_func(*param_values) -> bool:
+        nonlocal valid_param_config_set
+        return param_values in valid_param_config_set
 
-    def _restrictions_func(params_config: dict) -> bool:
-        nonlocal param_config_string_set
-
-        param_config_string = ",".join(map(str, params_config.values()))
-        return param_config_string in param_config_string_set
-
-    return _restrictions_func
+    return FunctionConstraint(restrictions_func)
 
 
-def tune_args_from_cache_file(cache_file_path) -> dict:
-    with open(cache_file_path, mode="r") as cache_file:
-        cache = json.load(cache_file)
-
-    tune_args = dict(
-        kernel_name=cache['kernel_name'],
-        kernel_source="",
-        problem_size=tuple(cache['problem_size']),
-        arguments=[],
-        tune_params=cache['tune_params'],
-        restrictions=restriction_from_cache(cache),
-        cache=cache_file_path,
+def infer_args_from_cache(cache: dict) -> dict:
+    inferred_args = dict(
+        kernel_name = cache['kernel_name'],
+        kernel_source = "",
+        problem_size = tuple(cache['problem_size']),
+        arguments = [],
+        tune_params = cache['tune_params'],
+        # restrictions = infer_restrictions_from_cache(cache),
     )
 
-    return tune_args
+    return inferred_args
 
 
-def results_from_cache_file(cache_file_path) -> list[dict]:
-    with open(cache_file_path, mode="r") as cache_file:
-        cache = json.load(cache_file)
-
+def get_results_from_cache(cache) -> list[dict]:
     return list(cache['cache'].values())
