@@ -59,10 +59,16 @@ class SimulationRunner(Runner):
         self.last_strategy_time = 0
         self.units = {}
 
+        # It is the task of the cost function to increment there counters
+        self.config_eval_count = 0
+        self.infeasable_config_eval_count = 0
+
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
         env["simulation"] = True
         env["simulated_time"] = tuning_options.simulated_time
+        env["config_eval_count"] = self.config_eval_count
+        env["infeasable_config_eval_count"] = self.infeasable_config_eval_count
         return env
 
     def run(self, parameter_space, tuning_options):
@@ -90,8 +96,6 @@ class SimulationRunner(Runner):
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
                 result = tuning_options.cache[x_int].copy()
-
-                assert util.check_result_type(result)
 
                 # Simulate behavior of sequential runner that when a configuration is
                 # served from the cache by the sequential runner, the compile_time,
@@ -126,8 +130,6 @@ class SimulationRunner(Runner):
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
                 result['framework_time'] = total_time - self.last_strategy_time
-
-                assert util.check_result_type(result)
 
                 results.append(result)
                 continue

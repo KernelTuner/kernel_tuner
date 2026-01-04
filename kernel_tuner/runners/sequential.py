@@ -44,8 +44,15 @@ class SequentialRunner(Runner):
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
+        # It is the task of the cost function to increment there counters
+        self.config_eval_count = 0
+        self.infeasable_config_eval_count = 0
+
     def get_environment(self, tuning_options):
-        return self.dev.get_environment()
+        env = self.dev.get_environment()
+        env["config_eval_count"] = self.config_eval_count
+        env["infeasable_config_eval_count"] = self.infeasable_config_eval_count
+        return env
 
     def run(self, parameter_space, tuning_options):
         """Iterate through the entire parameter space using a single Python process.
@@ -104,7 +111,7 @@ class SequentialRunner(Runner):
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
-            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time) 
+            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
             params['strategy_time'] = self.last_strategy_time
             params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
             params['timestamp'] = str(datetime.now(timezone.utc))

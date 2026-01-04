@@ -60,14 +60,10 @@ class CostFunc:
         self.scaling = scaling
         self.searchspace = searchspace
         self.results = []
-        self.total_config_count = 0
-        self.illegal_config_count = 0
 
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
-
-        self.total_config_count += 1
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug('_cost_func called')
@@ -75,6 +71,8 @@ class CostFunc:
 
         # check if max_fevals is reached or time limit is exceeded
         util.check_stop_criterion(self.tuning_options)
+
+        self.runner.config_eval_count += 1
 
         # snap values in x to nearest actual value for each parameter, unscale x if needed
         if self.snap:
@@ -97,11 +95,10 @@ class CostFunc:
             if not legal:
                 result = params_dict
                 result['__error__'] = util.InvalidConfig()
-                self.illegal_config_count += 1
+                self.runner.infeasable_config_eval_count += 1
 
         if legal:
-            assert ('error' not in result), "A legal config MUST NOT have an error result."
-            if 'error' in result: exit()
+            assert ('__error__' not in result), "A legal config MUST NOT have an error result."
 
             # compile and benchmark this instance
             res = self.runner.run([params], self.tuning_options)
