@@ -717,21 +717,41 @@ class Searchspace:
             the NumPy array.
         """
         if self.__list_param_indices is None:
+
+            # compute the lookups
             tune_params_to_index_lookup = list()
             tune_params_from_index_lookup = list()
+            all_values_integer_nonnegative = True
             for param_name, param_values in self.tune_params.items():
                 tune_params_to_index_lookup.append({ value: index for index, value in enumerate(param_values) })
                 tune_params_from_index_lookup.append({ index: value for index, value in enumerate(param_values) })
-            
+                if (all_values_integer_nonnegative and 
+                    not all(isinstance(v, int) and v >= 0 for v in param_values) or
+                    max(param_values) >= 2**15
+                ):
+                    all_values_integer_nonnegative = False
+
             # build the list
-            lookups = [
-                {v: i for i, v in enumerate(values)}
-                for values in self.tune_params.values()
-            ]
-            list_param_indices = np.array([
-                [lookups[val] for lookup, val in zip(lookups, config)]
-                for config in self.list
-            ])
+            if all_values_integer_nonnegative:
+                # optimized case for integer non-negative values
+                configs = np.asarray(self.list)
+                index_arrays = []
+                for values in self.tune_params.values():
+                    arr = np.full(max(values) + 1, -1, dtype=np.int16)
+                    for i, v in enumerate(values):
+                        arr[v] = i
+                    index_arrays.append(arr)
+                # use advanced indexing to build the list of parameter indices
+                list_param_indices = np.column_stack([
+                    index_arrays[i][configs[:, i]]
+                    for i in range(configs.shape[1])
+                ])
+            else:
+                # general case for any type of values
+                list_param_indices = list()
+                for param_config in self.list:
+                    list_param_indices.append([tune_params_to_index_lookup[index][val] for index, val in enumerate(param_config)])
+                list_param_indices = np.array(list_param_indices)
 
             # register the computed results
             self.__tune_params_to_index_lookup = tune_params_to_index_lookup
