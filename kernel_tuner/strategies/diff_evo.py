@@ -387,12 +387,13 @@ def repair(trial_vector, searchspace):
     """
     Attempts to repair trial_vector if trial_vector is invalid
     """
-    if not searchspace.is_param_config_valid(tuple(trial_vector)):
+    trial_tuple = tuple(trial_vector)
+    if not searchspace.is_param_config_valid(trial_tuple):
         # search for valid configurations neighboring trial_vector
         for neighbor_method in ["closest-param-indices"]:
         # start from strictly-adjacent to increasingly allowing more neighbors
         # for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
-            new_trial_vector = searchspace.get_random_neighbor(tuple(trial_vector), neighbor_method=neighbor_method)
+            new_trial_vector = searchspace.get_random_neighbor(trial_tuple, neighbor_method=neighbor_method)
             if new_trial_vector is not None:
                 # print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired to {new_trial_vector=}")
                 return list(new_trial_vector)

@@ -980,7 +980,7 @@ class Searchspace:
             sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
         if return_one:
             # if return_one is True, return the index of the closest parameter configuration (faster than finding all)
-            get_partial_neighbors_indices = [np.argmin(sum_of_index_differences)]
+            matching_indices = [np.argmin(sum_of_index_differences)]
         else:
             # find the param config indices where the difference is the smallest
             min_difference = np.min(sum_of_index_differences)
@@ -1169,7 +1169,7 @@ class Searchspace:
         return self.get_param_configs_at_indices(self.get_random_sample_indices(num_samples))
 
     def get_distributed_random_sample_indices(self, num_samples: int, sampling_factor=10) -> List[int]:
-        """Get a distributed random sample of parameter configuration indices. Note: `get_LHS_random_sample_indices` is likely faster and better distributed."""
+        """Get a distributed random sample of parameter configuration indices. Note: `get_LHS_sample_indices` is likely faster and better distributed."""
         if num_samples > self.size:
             warn(
                 f"Too many samples requested ({num_samples}), reducing the number of samples to half of the searchspace size ({self.size})"
@@ -1219,16 +1219,16 @@ class Searchspace:
             self.__prepare_neighbors_index()
         target_sample_indices = list()
         for target_sample_param_config_indices in target_samples_param_indices:
-            # calculate the absolute difference between the parameter value indices
-            abs_index_difference = np.abs(self.params_values_indices - target_sample_param_config_indices, dtype=self.params_values_indices.dtype)
-            # find the param config index where the difference is the smallest
-            sum_of_index_differences = np.sum(abs_index_difference, axis=1)
             param_index = self.get_param_config_index(self.get_param_config_from_param_indices(target_sample_param_config_indices))
             if param_index is not None:
-                # set the sum of index differences to infinity for the parameter index to avoid returning the same parameter configuration
-                sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
-            min_index_difference_index = np.argmin(sum_of_index_differences)
-            target_sample_indices.append(min_index_difference_index.item())
+                target_sample_indices.append(param_index)
+            else:
+                # calculate the absolute difference between the parameter value indices
+                abs_index_difference = np.abs(self.params_values_indices - target_sample_param_config_indices, dtype=self.params_values_indices.dtype)
+                # find the param config index where the difference is the smallest
+                sum_of_index_differences = np.sum(abs_index_difference, axis=1)
+                min_index_difference_index = np.argmin(sum_of_index_differences)
+                target_sample_indices.append(min_index_difference_index.item())
 
         # filter out duplicate samples and replace with random ones
         target_sample_indices = list(set(target_sample_indices))
@@ -1264,19 +1264,40 @@ class Searchspace:
             endpoint=True)
         target_samples_param_indices = np.array(target_samples_param_indices, dtype=self.params_values_indices.dtype)
 
-        # for each of the target sample indices, calculate which parameter configuration is closest
+        # # validate and if necessary repair the target samples (slower than sum difference method below)
+        # target_sample_indices = list()
+        # for target_sample_param_config_indices in target_samples_param_indices:
+        #     param_config = self.get_param_config_from_param_indices(tuple(target_sample_param_config_indices))
+        #     target_sample_index = None
+        #     if not self.is_param_config_valid(param_config):
+        #         # if the parameter configuration is not valid, replace with a neighbor
+        #         neighbors_indices = self.get_neighbors_indices(param_config, neighbor_method="closest-param-indices")
+        #         # remove already selected samples from the neighbors
+        #         neighbors_indices = [idx for idx in neighbors_indices if idx not in target_sample_indices]
+        #         if len(neighbors_indices) == 0:
+        #             # if there are no valid neighbors, get a random sample
+        #             target_sample_index = self.get_random_sample_indices(1).item()
+        #         else:
+        #             target_sample_index = choice(neighbors_indices).item()
+        #     else:
+        #         target_sample_index = self.get_param_config_index(param_config)
+        #     target_sample_indices.append(target_sample_index)
+        
+        # allocate space for the target sample indices
         target_sample_indices = list()
+        diff = np.empty_like(self.params_values_indices, dtype=self.params_values_indices.dtype)
+        row_sums = np.empty(self.params_values_indices.shape[0], dtype=self.params_values_indices.dtype)
+
+        # for each of the target sample indices, calculate which parameter configuration is closest
         for target_sample_param_config_indices in target_samples_param_indices:
-            # calculate the absolute difference between the parameter value indices
-            abs_index_difference = np.abs(self.params_values_indices - target_sample_param_config_indices, dtype=self.params_values_indices.dtype)
-            # find the param config index where the difference is the smallest
-            sum_of_index_differences = np.sum(abs_index_difference, axis=1)
             param_index = self.get_param_config_index(self.get_param_config_from_param_indices(target_sample_param_config_indices))
             if param_index is not None:
-                # set the sum of index differences to infinity for the parameter index to avoid returning the same parameter configuration
-                sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
-            min_index_difference_index = np.argmin(sum_of_index_differences)
-            target_sample_indices.append(min_index_difference_index.item())
+                target_sample_indices.append(param_index)
+            else:
+                np.subtract(self.params_values_indices, target_sample_param_config_indices, out=diff)
+                np.abs(diff, out=diff)
+                np.einsum('ij->i', diff, out=row_sums)
+                target_sample_indices.append(np.argmin(row_sums).item())
 
         # filter out duplicate samples and replace with random ones
         target_sample_indices = list(set(target_sample_indices))
