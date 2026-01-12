@@ -724,14 +724,20 @@ class Searchspace:
                 tune_params_from_index_lookup.append({ index: value for index, value in enumerate(param_values) })
             
             # build the list
-            list_param_indices = list()
-            for param_config in self.list:
-                list_param_indices.append([tune_params_to_index_lookup[index][val] for index, val in enumerate(param_config)])
+            lookups = [
+                {v: i for i, v in enumerate(values)}
+                for values in self.tune_params.values()
+            ]
+            list_param_indices = np.array([
+                [lookups[val] for lookup, val in zip(lookups, config)]
+                for config in self.list
+            ])
 
             # register the computed results
             self.__tune_params_to_index_lookup = tune_params_to_index_lookup
             self.__tune_params_from_index_lookup = tune_params_from_index_lookup
-            self.__list_param_indices = np.array(list_param_indices)
+            self.__list_param_indices = list_param_indices
+
             assert self.__list_param_indices.shape == (self.size, self.num_params), f"Expected shape {(self.size, self.num_params)}, got {self.__list_param_indices.shape}"
 
             # calculate the actual minimum and maximum index for each parameter after restrictions
