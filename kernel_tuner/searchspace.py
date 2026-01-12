@@ -103,6 +103,8 @@ class Searchspace:
         self.param_names = list(self.tune_params.keys())
         self.params_values = tuple(tuple(param_vals) for param_vals in self.tune_params.values())
         self.params_values_indices = None
+        self._alloc_diff = None
+        self._alloc_sum_of_index_differences = None
         self.build_neighbors_index = build_neighbors_index
         self.solver_method = solver_method
         self.tune_param_is_numeric = { param_name: all(isinstance(val, (int, float)) for val in param_values) and not any(isinstance(val, bool) for val in param_values) for (param_name, param_values) in tune_params.items() }
@@ -962,6 +964,8 @@ class Searchspace:
         """Prepare by calculating the indices for the individual parameters."""
         if self.params_values_indices is None:
             self.params_values_indices = self.get_list_param_indices_numpy()
+            self._alloc_diff = np.empty_like(self.params_values_indices, dtype=self.params_values_indices.dtype)
+            self._alloc_sum_of_index_differences = np.empty((self.params_values_indices.shape[0],), dtype=self.params_values_indices.dtype)
 
     def __get_neighbor_indices_closest_param_indices(self, param_config: tuple, param_index: int = None, return_one=False) -> List[int]:
         """Get the neighbors closest in parameter indices difference from the parameter configuration. Always returns at least 1 neighbor."""
@@ -972,19 +976,21 @@ class Searchspace:
             self.__prepare_neighbors_index()
 
         # calculate the absolute difference between the parameter value indices
-        abs_index_difference = np.abs(self.params_values_indices - np.array(param_indices), dtype=self.params_values_indices.dtype)
-        # calculate the sum of the absolute differences for each parameter configuration
-        sum_of_index_differences = np.sum(abs_index_difference, axis=1)
+        np.subtract(self.params_values_indices, np.array(param_indices), out=self._alloc_diff)
+        np.abs(self._alloc_diff, out=self._alloc_diff)
+        np.einsum('ij->i', self._alloc_diff, out=self._alloc_sum_of_index_differences)
         if param_index is not None:
             # set the sum of index differences to infinity for the parameter index to avoid returning the same parameter configuration
-            sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
+            self._alloc_sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
+
+        # return the indices of the closest parameter configurations
         if return_one:
             # if return_one is True, return the index of the closest parameter configuration (faster than finding all)
-            matching_indices = [np.argmin(sum_of_index_differences)]
+            matching_indices = [np.argmin(self._alloc_sum_of_index_differences).item()]
         else:
             # find the param config indices where the difference is the smallest
-            min_difference = np.min(sum_of_index_differences)
-            matching_indices = (sum_of_index_differences == min_difference).nonzero()[0]
+            min_difference = np.min(self._alloc_sum_of_index_differences)
+            matching_indices = (self._alloc_sum_of_index_differences == min_difference).nonzero()[0]
         return matching_indices
 
     def __get_neighbors_indices_hamming(self, param_config: tuple) -> List[int]:
@@ -1073,15 +1079,17 @@ class Searchspace:
         """Get the neighbors using strictly adjacent distance from the parameter configuration (parameter index absolute difference == 1)."""
         if self.params_values_indices is None:
             self.__prepare_neighbors_index()
-        param_config_value_indices = (
+        param_config_value_indices = np.array(
             self.get_param_indices(param_config)
             if param_config_index is None
             else self.params_values_indices[param_config_index]
         )
+
         # calculate the absolute difference between the parameter value indices
         abs_index_difference = np.abs(self.params_values_indices - param_config_value_indices, dtype=self.params_values_indices.dtype)
         # get the param config indices where the difference is one or less for each position
         matching_indices = (np.max(abs_index_difference, axis=1) <= 1).nonzero()[0]
+
         # as the selected param config does not differ anywhere, remove it from the matches
         if param_config_index is not None:
             matching_indices = np.setdiff1d(matching_indices, [param_config_index], assume_unique=True)
@@ -1145,7 +1153,7 @@ class Searchspace:
             )
         if neighbor_method == "closest-param-indices":
             return list(
-                self.__get_neighbor_indices_closest_param_indices(param_config, param_config_index)
+                self.__get_neighbor_indices_closest_param_indices(param_config, param_config_index, return_one=False)
                 for param_config_index, param_config in enumerate(self.list)
             )
 
@@ -1224,11 +1232,10 @@ class Searchspace:
                 target_sample_indices.append(param_index)
             else:
                 # calculate the absolute difference between the parameter value indices
-                abs_index_difference = np.abs(self.params_values_indices - target_sample_param_config_indices, dtype=self.params_values_indices.dtype)
-                # find the param config index where the difference is the smallest
-                sum_of_index_differences = np.sum(abs_index_difference, axis=1)
-                min_index_difference_index = np.argmin(sum_of_index_differences)
-                target_sample_indices.append(min_index_difference_index.item())
+                np.subtract(self.params_values_indices, target_sample_param_config_indices, out=self._alloc_diff)
+                np.abs(self._alloc_diff, out=self._alloc_diff)
+                np.einsum('ij->i', self._alloc_diff, out=self._alloc_sum_of_index_differences)
+                target_sample_indices.append(np.argmin(self._alloc_sum_of_index_differences).item())
 
         # filter out duplicate samples and replace with random ones
         target_sample_indices = list(set(target_sample_indices))
@@ -1282,22 +1289,19 @@ class Searchspace:
         #     else:
         #         target_sample_index = self.get_param_config_index(param_config)
         #     target_sample_indices.append(target_sample_index)
-        
-        # allocate space for the target sample indices
-        target_sample_indices = list()
-        diff = np.empty_like(self.params_values_indices, dtype=self.params_values_indices.dtype)
-        row_sums = np.empty(self.params_values_indices.shape[0], dtype=self.params_values_indices.dtype)
 
         # for each of the target sample indices, calculate which parameter configuration is closest
+        target_sample_indices = list()
         for target_sample_param_config_indices in target_samples_param_indices:
             param_index = self.get_param_config_index(self.get_param_config_from_param_indices(target_sample_param_config_indices))
             if param_index is not None:
                 target_sample_indices.append(param_index)
             else:
-                np.subtract(self.params_values_indices, target_sample_param_config_indices, out=diff)
-                np.abs(diff, out=diff)
-                np.einsum('ij->i', diff, out=row_sums)
-                target_sample_indices.append(np.argmin(row_sums).item())
+                # calculate the absolute difference between the parameter value indices
+                np.subtract(self.params_values_indices, target_sample_param_config_indices, out=self._alloc_diff)
+                np.abs(self._alloc_diff, out=self._alloc_diff)
+                np.einsum('ij->i', self._alloc_diff, out=self._alloc_sum_of_index_differences)
+                target_sample_indices.append(np.argmin(self._alloc_sum_of_index_differences).item())
 
         # filter out duplicate samples and replace with random ones
         target_sample_indices = list(set(target_sample_indices))
