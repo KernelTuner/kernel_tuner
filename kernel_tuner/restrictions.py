@@ -41,7 +41,7 @@ def check_restriction(restrict, params: dict) -> bool:
     # if it's a tuple, use only the parameters in the second argument to call the restriction
     elif (
         isinstance(restrict, tuple)
-        and (len(restrict) == 2 or len(restrict) == 3)
+        and len(restrict) in (2, 3)
         and callable(restrict[0])
         and isinstance(restrict[1], (list, tuple))
     ):
@@ -170,7 +170,7 @@ def parse_restrictions(
         restrictions = [restrictions[i] for i in restrictions_unique_indices]
 
     # create the parsed restrictions
-    if monolithic is False:
+    if not monolithic:
         # split into functions that only take their relevant parameters
         parsed_restrictions = list()
         for res in restrictions:
@@ -355,7 +355,11 @@ def compile_restrictions(
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
-        (restrictions_str if isinstance(r, str) else restrictions_ignore).append(r)
+        if isinstance(r, str):
+            restrictions_str.append(r)
+        else:
+            restrictions_ignore.append(r)
+
     if len(restrictions_str) == 0:
         return restrictions_ignore
 
@@ -389,3 +393,123 @@ def compile_restrictions(
         else:
             noncompiled_restrictions.append((r, [], r))
     return noncompiled_restrictions + compiled_restrictions
+
+
+def parse_restrictions_pysmt(restrictions: list, tune_params: dict, symbols: dict):
+    """Parses restrictions from a list of strings into PySMT compatible restrictions."""
+    from pysmt.shortcuts import (
+        GE,
+        GT,
+        LE,
+        LT,
+        And,
+        Bool,
+        Div,
+        Equals,
+        Int,
+        Minus,
+        Or,
+        Plus,
+        Pow,
+        Real,
+        String,
+        Times,
+    )
+
+    regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
+
+    boolean_comparison_mapping = {
+        "==": Equals,
+        "<": LT,
+        "<=": LE,
+        ">=": GE,
+        ">": GT,
+        "&&": And,
+        "||": Or,
+    }
+
+    operators_mapping = {"+": Plus, "-": Minus, "*": Times, "/": Div, "^": Pow}
+
+    constant_init_mapping = {
+        "int": Int,
+        "float": Real,
+        "str": String,
+        "bool": Bool,
+    }
+
+    def replace_params(match_object):
+        key = match_object.group(1)
+        if key in tune_params:
+            return 'params["' + key + '"]'
+        else:
+            return key
+
+    # rewrite the restrictions so variables are singled out
+    parsed = [re.sub(regex_match_variable, replace_params, res) for res in restrictions]
+    # ensure no duplicates are in the list
+    parsed = list(set(parsed))
+    # replace ' or ' and ' and ' with ' || ' and ' && '
+    parsed = list(r.replace(" or ", " || ").replace(" and ", " && ") for r in parsed)
+
+    # compile each restriction by replacing parameters and operators with their PySMT equivalent
+    compiled_restrictions = list()
+    for parsed_restriction in parsed:
+        words = parsed_restriction.split(" ")
+
+        # make a forward pass over all the words to organize and substitute
+        add_next_var_or_constant = False
+        var_or_constant_backlog = list()
+        operator_backlog = list()
+        operator_backlog_left_right = list()
+        boolean_backlog = list()
+        for word in words:
+            if word.startswith("params["):
+                # if variable
+                varname = word.replace('params["', "").replace('"]', "")
+                var = symbols[varname]
+                var_or_constant_backlog.append(var)
+            elif word in boolean_comparison_mapping:
+                # if comparator
+                boolean_backlog.append(boolean_comparison_mapping[word])
+                continue
+            elif word in operators_mapping:
+                # if operator
+                operator_backlog.append(operators_mapping[word])
+                add_next_var_or_constant = True
+                continue
+            else:
+                # if constant: evaluate to check if it is an integer, float, etc. If not, treat it as a string.
+                try:
+                    constant = ast.literal_eval(word)
+                except ValueError:
+                    constant = word
+                # convert from Python type to PySMT equivalent
+                type_instance = constant_init_mapping[type(constant).__name__]
+                var_or_constant_backlog.append(type_instance(constant))
+            if add_next_var_or_constant:
+                right, left = var_or_constant_backlog.pop(-1), var_or_constant_backlog.pop(-1)
+                operator_backlog_left_right.append((left, right, len(var_or_constant_backlog)))
+                add_next_var_or_constant = False
+                # reserve an empty spot for the combined operation to preserve the order
+                var_or_constant_backlog.append(None)
+
+        # for each of the operators, instantiate them with variables or constants
+        for i, operator in enumerate(operator_backlog):
+            # merges the first two symbols in the backlog into one
+            left, right, new_index = operator_backlog_left_right[i]
+            assert (
+                var_or_constant_backlog[new_index] is None
+            )  # make sure that this is a reserved spot to avoid changing the order
+            var_or_constant_backlog[new_index] = operator(left, right)
+
+        # for each of the booleans, instantiate them with variables or constants
+        compiled = list()
+        assert len(boolean_backlog) <= 1, "Max. one boolean operator per restriction."
+        for boolean in boolean_backlog:
+            left, right = var_or_constant_backlog.pop(0), var_or_constant_backlog.pop(0)
+            compiled.append(boolean(left, right))
+
+        # add the restriction to the list of restrictions
+        compiled_restrictions.append(compiled[0])
+
+    return And(compiled_restrictions)
