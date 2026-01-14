@@ -1039,12 +1039,24 @@ def get_all_lambda_asts(func):
     return res
 
 
+class InvalidLambdaError(Exception):
+    def __str__(self):
+        return "lambda could not be parsed by Kernel Tuner"
+
+
 class ConstraintLambdaTransformer(ast.NodeTransformer):
     """Replaces any `NAME['string']` subscript with just `'string'`, if `NAME`
     matches the lambda argument name.
     """
     def __init__(self, dict_arg_name):
         self.dict_arg_name = dict_arg_name
+
+    def visit_Name(self, node):
+        # If we find a Name node that is not part of a Subscript expression, then
+        # we throw an exception. This happens when a lambda contains a captured
+        # variable or calls a function. In these cases, we cannot transform the
+        # lambda into a string so we just exit the ast transformer.
+        raise InvalidLambdaError()
 
     def visit_Subscript(self, node):
         # We only replace subscript expressions of the form <dict_arg_name>['some_string']
@@ -1062,19 +1074,19 @@ def unparse_constraint_lambda(lambda_ast):
     Returns string body of the rewritten lambda function
     """
     args = lambda_ast.args
-    body = lambda_ast.args
 
     # Kernel Tuner only allows constraint lambdas with a single argument
-    arg = args.args[0].arg
+    if len(args.args) != 1:
+        raise InvalidLambdaError()
+
+    first_arg = args.args[0].arg
 
     # Create transformer that replaces accesses to tunable parameter dict
     # with simply the name of the tunable parameter
-    transformer = ConstraintLambdaTransformer(arg)
+    transformer = ConstraintLambdaTransformer(first_arg)
     new_lambda_ast = transformer.visit(lambda_ast)
 
-    rewritten_lambda_body_as_string = ast.unparse(new_lambda_ast.body).strip()
-
-    return rewritten_lambda_body_as_string
+    return ast.unparse(new_lambda_ast.body).strip()
 
 
 def convert_constraint_lambdas(restrictions):
@@ -1083,16 +1095,13 @@ def convert_constraint_lambdas(restrictions):
     for c in restrictions:
         if isinstance(c, (str, Constraint)):
             res.append(c)
-        if callable(c) and not isinstance(c, Constraint):
+        elif callable(c):
             try:
                 lambda_asts = get_all_lambda_asts(c)
-            except ValueError:
+                res += [unparse_constraint_lambda(lambda_ast) for lambda_ast in lambda_asts]
+            except (InvalidLambdaError, ValueError):
                 res.append(c)   # it's just a plain function, not a lambda
-                continue
 
-            for lambda_ast in lambda_asts:
-                new_c = unparse_constraint_lambda(lambda_ast)
-                res.append(new_c)
 
     result = list(set(res))
     if not len(result) == len(restrictions):
