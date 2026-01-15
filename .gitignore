@@ -21,6 +21,7 @@ push_to_pypi.sh
 !kernel_tuner/schema/T1/1.0.0/input-schema.json
 !test/test_T1_input.json
 !test_cache_file*.json
+!test/regression/baselines/*.json
 *.csv
 .cache
 *.ipynb_checkpoints
