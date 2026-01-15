@@ -31,10 +31,13 @@ try:
 except ImportError:
     torch_available = False
 
-from kernel_tuner.util import check_restrictions as check_instance_restrictions
-from kernel_tuner.util import (
+from kernel_tuner.restrictions import check_restrictions as check_instance_restrictions
+from kernel_tuner.restrictions import (
     compile_restrictions,
     convert_constraint_lambdas,
+    parse_restrictions_pysmt,
+)
+from kernel_tuner.util import (
     default_block_size_names,
     get_interval,
 )
@@ -78,9 +81,16 @@ class Searchspace:
         if from_cache is None:
             assert tune_params is not None and max_threads is not None, "Must specify positional arguments."
 
+        # Normalize `restrictions` to a list of items
+        if restrictions is None:
+            restrictions = []
+        elif isinstance(restrictions, (tuple, list)):
+            restrictions = list(restrictions) # Create copy
+        else:
+            restrictions = [restrictions]
+
         # set the object attributes using the arguments
         framework_l = framework.lower()
-        restrictions = restrictions if restrictions is not None else []
         self.tune_params = tune_params
         self.original_tune_params = tune_params.copy() if hasattr(tune_params, "copy") else tune_params
         self.max_threads = max_threads
@@ -95,7 +105,6 @@ class Searchspace:
         self._tensorspace_param_config_structure = []
         self._map_tensor_to_param = {}
         self._map_param_to_tensor = {}
-        restrictions = [restrictions] if not isinstance(restrictions, (list, tuple)) else restrictions
         self.restrictions = deepcopy(restrictions)
         self.original_restrictions = deepcopy(restrictions)  # keep the original restrictions, so that the searchspace can be modified later
         # the searchspace can add commonly used constraints (e.g. maxprod(blocks) <= maxthreads)
@@ -123,18 +132,15 @@ class Searchspace:
             raise ValueError(f"Neighbor method is {neighbor_method}, must be one of {supported_neighbor_methods}")
 
         # if there are strings in the restrictions, parse them to split constraints or functions (improves solver performance)
-        restrictions = [restrictions] if not isinstance(restrictions, list) else restrictions
         if (
-            len(restrictions) > 0
-            and (
+            (
                 any(isinstance(restriction, str) for restriction in restrictions)
                 or any(
                     isinstance(restriction[0], str) for restriction in restrictions if isinstance(restriction, tuple)
                 )
             )
-            and not (
-                framework_l == "pysmt" or framework_l == "bruteforce" or framework_l == "pythonconstraint" or solver_method.lower() == "pc_parallelsolver"
-            )
+            and framework_l not in ("pysmt", "bruteforce" "pythonconstraint")
+            and solver_method.lower() != "pc_parallelsolver"
         ):
             self.restrictions = compile_restrictions(
                 restrictions,
@@ -166,7 +172,6 @@ class Searchspace:
                 raise ValueError(f"Invalid framework parameter {framework}")
 
             # get the solver given the solver method argument
-            solver = ""
             if solver_method.lower() == "pc_backtrackingsolver":
                 solver = BacktrackingSolver()
             elif solver_method.lower() == "pc_optimizedbacktrackingsolver":
@@ -231,10 +236,8 @@ class Searchspace:
 
     def __build_searchspace_bruteforce(self, block_size_names: list, max_threads: int, solver=None):
         # bruteforce solving of the searchspace
-
         from itertools import product
-
-        from kernel_tuner.util import check_restrictions
+        from kernel_tuner.restrictions import check_restrictions
 
         tune_params = self.tune_params
         restrictions = self.restrictions
@@ -246,11 +249,11 @@ class Searchspace:
         used_block_size_names = list(
             block_size_name for block_size_name in default_block_size_names if block_size_name in tune_params
         )
+
         if len(used_block_size_names) > 0:
-            if not isinstance(restrictions, list):
-                restrictions = [restrictions]
             block_size_restriction_spaced = f"{' * '.join(used_block_size_names)} <= {max_threads}"
             block_size_restriction_unspaced = f"{'*'.join(used_block_size_names)} <= {max_threads}"
+
             if (
                 block_size_restriction_spaced not in restrictions
                 and block_size_restriction_unspaced not in restrictions
@@ -266,7 +269,7 @@ class Searchspace:
                         self.restrictions.append(block_size_restriction_spaced)
 
         # check for search space restrictions
-        if restrictions is not None:
+        if len(restrictions) > 0:
             parameter_space = filter(
                 lambda p: check_restrictions(restrictions, dict(zip(tune_params.keys(), p)), False), parameter_space
             )
@@ -313,7 +316,7 @@ class Searchspace:
         domains = And(domains)
 
         # add the restrictions
-        problem = self.__parse_restrictions_pysmt(restrictions, tune_params, symbols)
+        problem = parse_restrictions_pysmt(restrictions, tune_params, symbols)
 
         # combine the domain and restrictions
         formula = And(domains, problem)
@@ -409,7 +412,7 @@ class Searchspace:
 
         # Define a bogus cost function
         costfunc = CostFunction(":")  # bash no-op
-        
+
         # set data
         self.tune_params_pyatf = self.get_tune_params_pyatf(block_size_names, max_threads)
 
@@ -423,16 +426,17 @@ class Searchspace:
         parameter_tuple_list = list()
         for entry in tuning_data.history._entries:
             parameter_tuple_list.append(tuple(entry.configuration[p] for p in tune_params.keys()))
-        pl = self.__parameter_space_list_to_lookup_and_return_type(parameter_tuple_list)
-        return pl
+
+        return self.__parameter_space_list_to_lookup_and_return_type(parameter_tuple_list)
 
     def __build_searchspace_ATF_cache(self, block_size_names: list, max_threads: int, solver: Solver):
+        import pandas as pd
+
         """Imports the valid configurations from an ATF CSV file, returns the searchspace, a dict of the searchspace for fast lookups and the size."""
         if block_size_names != default_block_size_names or max_threads != 1024:
             raise ValueError(
                 "It is not possible to change 'block_size_names' or 'max_threads here, because at this point ATF has already ran.'"
             )
-        import pandas as pd
 
         try:
             df = pd.read_csv(self.path_to_ATF_cache, sep=";")
@@ -459,7 +463,7 @@ class Searchspace:
             parameter_space_dict,
             size_list,
         )
-    
+
     def __build_searchspace(self, block_size_names: list, max_threads: int, solver: Solver):
         """Compute valid configurations in a search space based on restrictions and max_threads."""
         # instantiate the parameter space with all the variables
@@ -468,8 +472,6 @@ class Searchspace:
             parameter_space.addVariable(str(param_name), param_values)
 
         # add the user-specified restrictions as constraints on the parameter space
-        if not isinstance(self.restrictions, (list, tuple)):
-            self.restrictions = [self.restrictions]
         if any(not isinstance(restriction, (Constraint, FunctionConstraint, str)) for restriction in self.restrictions):
             self.restrictions = convert_constraint_lambdas(self.restrictions)
         parameter_space = self.__add_restrictions(parameter_space)
@@ -486,8 +488,7 @@ class Searchspace:
                 and max_block_size_product not in self._modified_restrictions
             ):
                 self._modified_restrictions.append(max_block_size_product)
-                if isinstance(self.restrictions, list):
-                    self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names, None))
+                self.restrictions.append((MaxProdConstraint(max_threads), valid_block_size_names, None))
 
         # construct the parameter space with the constraints applied
         return parameter_space.getSolutionsAsListDict(order=self.param_names)
@@ -495,165 +496,38 @@ class Searchspace:
     def __add_restrictions(self, parameter_space: Problem) -> Problem:
         """Add the user-specified restrictions as constraints on the parameter space."""
         restrictions = deepcopy(self.restrictions)
-        if isinstance(restrictions, list):
-            for restriction in restrictions:
-                required_params = self.param_names
 
-                # (un)wrap where necessary
-                if isinstance(restriction, tuple) and len(restriction) >= 2:
-                    required_params = restriction[1]
-                    restriction = restriction[0]
-                if callable(restriction) and not isinstance(restriction, Constraint):
-                    # def restrictions_wrapper(*args):
-                    #     return check_instance_restrictions(restriction, dict(zip(self.param_names, args)), False)
-                    # print(restriction, isinstance(restriction, Constraint))
-                    # restriction = FunctionConstraint(restrictions_wrapper)
-                    restriction = FunctionConstraint(restriction, required_params)
+        for restriction in restrictions:
+            required_params = self.param_names
 
-                # add as a Constraint
-                all_params_required = all(param_name in required_params for param_name in self.param_names)
-                variables = None if all_params_required else required_params
-                if isinstance(restriction, FunctionConstraint):
-                    parameter_space.addConstraint(restriction, variables)
-                elif isinstance(restriction, Constraint):
-                    parameter_space.addConstraint(restriction, variables)
-                elif isinstance(restriction, str):
-                    if self.solver_method.lower() == "pc_parallelsolver":
-                        parameter_space.addConstraint(restriction)
-                    else:
-                        parameter_space.addConstraint(restriction, variables)
+            # (un)wrap where necessary
+            if isinstance(restriction, tuple) and len(restriction) >= 2:
+                required_params = restriction[1]
+                restriction = restriction[0]
+
+            if callable(restriction) and not isinstance(restriction, Constraint):
+                def restrictions_wrapper(*args):
+                    return check_instance_restrictions(restriction, dict(zip(self.param_names, args)))
+
+                restriction = FunctionConstraint(restrictions_wrapper)
+
+            # add as a Constraint
+            all_params_required = all(param_name in required_params for param_name in self.param_names)
+            variables = None if all_params_required else required_params
+
+            if isinstance(restriction, Constraint):
+                parameter_space.addConstraint(restriction, variables)
+            elif isinstance(restriction, str):
+                if self.solver_method.lower() == "pc_parallelsolver":
+                    parameter_space.addConstraint(restriction)
                 else:
-                    raise ValueError(f"Unrecognized restriction type {type(restriction)} ({restriction})")
+                    parameter_space.addConstraint(restriction, variables)
+            else:
+                raise ValueError(f"Unrecognized restriction type {type(restriction)} ({restriction})")
 
-        # if the restrictions are the old monolithic function, apply them directly (only for backwards compatibility, likely slower than well-specified constraints!)
-        elif callable(restrictions):
 
-            def restrictions_wrapper(*args):
-                return check_instance_restrictions(restrictions, dict(zip(self.param_names, args)), False)
-
-            parameter_space.addConstraint(FunctionConstraint(restrictions_wrapper), self.param_names)
-        elif restrictions is not None:
-            raise ValueError(f"The restrictions are of unsupported type {type(restrictions)}")
         return parameter_space
 
-    def __parse_restrictions_pysmt(self, restrictions: list, tune_params: dict, symbols: dict):
-        """Parses restrictions from a list of strings into PySMT compatible restrictions."""
-        from pysmt.shortcuts import (
-            GE,
-            GT,
-            LE,
-            LT,
-            And,
-            Bool,
-            Div,
-            Equals,
-            Int,
-            Minus,
-            Or,
-            Plus,
-            Pow,
-            Real,
-            String,
-            Times,
-        )
-
-        regex_match_variable = r"([a-zA-Z_$][a-zA-Z_$0-9]*)"
-
-        boolean_comparison_mapping = {
-            "==": Equals,
-            "<": LT,
-            "<=": LE,
-            ">=": GE,
-            ">": GT,
-            "&&": And,
-            "||": Or,
-        }
-
-        operators_mapping = {"+": Plus, "-": Minus, "*": Times, "/": Div, "^": Pow}
-
-        constant_init_mapping = {
-            "int": Int,
-            "float": Real,
-            "str": String,
-            "bool": Bool,
-        }
-
-        def replace_params(match_object):
-            key = match_object.group(1)
-            if key in tune_params:
-                return 'params["' + key + '"]'
-            else:
-                return key
-
-        # rewrite the restrictions so variables are singled out
-        parsed = [re.sub(regex_match_variable, replace_params, res) for res in restrictions]
-        # ensure no duplicates are in the list
-        parsed = list(set(parsed))
-        # replace ' or ' and ' and ' with ' || ' and ' && '
-        parsed = list(r.replace(" or ", " || ").replace(" and ", " && ") for r in parsed)
-
-        # compile each restriction by replacing parameters and operators with their PySMT equivalent
-        compiled_restrictions = list()
-        for parsed_restriction in parsed:
-            words = parsed_restriction.split(" ")
-
-            # make a forward pass over all the words to organize and substitute
-            add_next_var_or_constant = False
-            var_or_constant_backlog = list()
-            operator_backlog = list()
-            operator_backlog_left_right = list()
-            boolean_backlog = list()
-            for word in words:
-                if word.startswith("params["):
-                    # if variable
-                    varname = word.replace('params["', "").replace('"]', "")
-                    var = symbols[varname]
-                    var_or_constant_backlog.append(var)
-                elif word in boolean_comparison_mapping:
-                    # if comparator
-                    boolean_backlog.append(boolean_comparison_mapping[word])
-                    continue
-                elif word in operators_mapping:
-                    # if operator
-                    operator_backlog.append(operators_mapping[word])
-                    add_next_var_or_constant = True
-                    continue
-                else:
-                    # if constant: evaluate to check if it is an integer, float, etc. If not, treat it as a string.
-                    try:
-                        constant = ast.literal_eval(word)
-                    except ValueError:
-                        constant = word
-                    # convert from Python type to PySMT equivalent
-                    type_instance = constant_init_mapping[type(constant).__name__]
-                    var_or_constant_backlog.append(type_instance(constant))
-                if add_next_var_or_constant:
-                    right, left = var_or_constant_backlog.pop(-1), var_or_constant_backlog.pop(-1)
-                    operator_backlog_left_right.append((left, right, len(var_or_constant_backlog)))
-                    add_next_var_or_constant = False
-                    # reserve an empty spot for the combined operation to preserve the order
-                    var_or_constant_backlog.append(None)
-
-            # for each of the operators, instantiate them with variables or constants
-            for i, operator in enumerate(operator_backlog):
-                # merges the first two symbols in the backlog into one
-                left, right, new_index = operator_backlog_left_right[i]
-                assert (
-                    var_or_constant_backlog[new_index] is None
-                )  # make sure that this is a reserved spot to avoid changing the order
-                var_or_constant_backlog[new_index] = operator(left, right)
-
-            # for each of the booleans, instantiate them with variables or constants
-            compiled = list()
-            assert len(boolean_backlog) <= 1, "Max. one boolean operator per restriction."
-            for boolean in boolean_backlog:
-                left, right = var_or_constant_backlog.pop(0), var_or_constant_backlog.pop(0)
-                compiled.append(boolean(left, right))
-
-            # add the restriction to the list of restrictions
-            compiled_restrictions.append(compiled[0])
-
-        return And(compiled_restrictions)
 
     def sorted_list(self, sort_last_param_first=False):
         """Returns list of parameter configs sorted based on the order in which the parameter values were specified.
