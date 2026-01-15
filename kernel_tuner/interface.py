@@ -799,7 +799,7 @@ def run_kernel(
     try:
         # create kernel instance
         instance = dev.create_kernel_instance(kernelsource, kernel_options, params, False)
-        if instance is None:
+        if isinstance(instance, util.InvalidConfig):
             raise RuntimeError("cannot create kernel instance, too many threads per block")
 
         # see if the kernel arguments have correct type
@@ -821,7 +821,7 @@ def run_kernel(
             dev.copy_texture_memory_args(texmem_args)
     finally:
         # delete temp files
-        if instance is not None:
+        if instance is not None and not isinstance(instance, util.ErrorConfig):
             instance.delete_temp_files()
 
     # run the kernel

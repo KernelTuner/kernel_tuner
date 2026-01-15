@@ -1,9 +1,15 @@
 import numpy as np
 
+# Support both cuda-python < 13 and >= 13 import structures
 try:
-    from cuda import cudart
+    # cuda-python >= 13 uses cuda.bindings module
+    from cuda.bindings import runtime as cudart
 except ImportError:
-    cuda = None
+    try:
+        # cuda-python < 13 uses direct imports
+        from cuda import cudart
+    except ImportError:
+        cudart = None
 
 from kernel_tuner.observers.observer import BenchmarkObserver
 from kernel_tuner.util import cuda_error_check

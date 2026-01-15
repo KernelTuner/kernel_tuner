@@ -8,10 +8,14 @@ from kernel_tuner.core import KernelInstance, KernelSource
 from .context import skip_if_no_cuda
 from .test_runners import env  # noqa: F401
 
+# Support both cuda-python < 13 and >= 13 import structures
 try:
-    from cuda import cuda
-except Exception:
-    pass
+    from cuda.bindings import driver as cuda
+except ImportError:
+    try:
+        from cuda import cuda
+    except ImportError:
+        cuda = None
 
 
 @skip_if_no_cuda

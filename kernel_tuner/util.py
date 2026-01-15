@@ -38,10 +38,20 @@ try:
     import cupy as cp
 except ImportError:
     cp = np
+# Support both cuda-python < 13 and >= 13 import structures
 try:
-    from cuda import cuda, cudart, nvrtc
+    # cuda-python >= 13 uses cuda.bindings module
+    from cuda.bindings import driver as cuda
+    from cuda.bindings import runtime as cudart
+    from cuda.bindings import nvrtc
 except ImportError:
-    cuda = None
+    try:
+        # cuda-python < 13 uses direct imports
+        from cuda import cuda, cudart, nvrtc
+    except ImportError:
+        cuda = None
+        cudart = None
+        nvrtc = None
 
 from kernel_tuner.observers.nvml import NVMLObserver
 
@@ -1077,13 +1087,29 @@ def unparse_constraint_lambda(lambda_ast):
     return rewritten_lambda_body_as_string
 
 
+def has_closure_variables(func):
+    """Check if a function has captured closure variables."""
+    return func.__closure__ is not None and len(func.__closure__) > 0
+
+
 def convert_constraint_lambdas(restrictions):
-    """Extract and convert all constraint lambdas from the restrictions"""
+    """Extract and convert all constraint lambdas from the restrictions.
+
+    Lambdas with captured closure variables are kept as-is to preserve
+    the closure context. Only simple lambdas without closures are converted
+    to strings for the constraint solver.
+    """
     res = []
     for c in restrictions:
         if isinstance(c, (str, Constraint)):
             res.append(c)
         if callable(c) and not isinstance(c, Constraint):
+            # If the lambda has closure variables, keep it as a callable
+            # to preserve the captured variable context
+            if has_closure_variables(c):
+                res.append(c)
+                continue
+
             try:
                 lambda_asts = get_all_lambda_asts(c)
             except ValueError:

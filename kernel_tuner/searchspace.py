@@ -504,11 +504,18 @@ class Searchspace:
                     required_params = restriction[1]
                     restriction = restriction[0]
                 if callable(restriction) and not isinstance(restriction, Constraint):
-                    # def restrictions_wrapper(*args):
-                    #     return check_instance_restrictions(restriction, dict(zip(self.param_names, args)), False)
-                    # print(restriction, isinstance(restriction, Constraint))
-                    # restriction = FunctionConstraint(restrictions_wrapper)
-                    restriction = FunctionConstraint(restriction, required_params)
+                    # Wrap the restriction to convert positional args to keyword args for backwards compatibility
+                    # Old API: restriction received keyword args (via **params unpacking)
+                    # New API: FunctionConstraint passes positional args
+                    original_restriction = restriction
+                    params_for_wrapper = required_params
+
+                    def make_wrapper(func, param_names):
+                        def restrictions_wrapper(*args):
+                            return func(**dict(zip(param_names, args)))
+                        return restrictions_wrapper
+
+                    restriction = FunctionConstraint(make_wrapper(original_restriction, params_for_wrapper), required_params)
 
                 # add as a Constraint
                 all_params_required = all(param_name in required_params for param_name in self.param_names)
@@ -1421,13 +1428,19 @@ class Searchspace:
         return choice(neighbors)
 
     def get_param_neighbors(self, param_config: tuple, index: int, neighbor_method: str, randomize: bool) -> list:
-        """Get the neighboring parameters at an index."""
+        """Get the neighboring parameters at an index.
+
+        Only returns values from neighbors that differ ONLY at the specified index,
+        not in multiple places. This ensures that changing only this parameter
+        produces a valid configuration in the searchspace.
+        """
         original_value = param_config[index]
         params = list(
             set(
                 neighbor[index]
                 for neighbor in self.get_neighbors(param_config, neighbor_method)
                 if neighbor[index] != original_value
+                and all(neighbor[i] == param_config[i] for i in range(len(param_config)) if i != index)
             )
         )
         if randomize:
