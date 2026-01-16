@@ -1001,9 +1001,7 @@ class Searchspace:
             self.__prepare_neighbors_index()
 
         # calculate the absolute difference between the parameter value indices
-        np.subtract(self.params_values_indices, np.array(param_indices), out=self._alloc_diff)
-        np.abs(self._alloc_diff, out=self._alloc_diff)
-        np.einsum('ij->i', self._alloc_diff, out=self._alloc_sum_of_index_differences)
+        self.__calc_sum_of_index_differences(np.array(param_indices))
         if param_index is not None:
             # set the sum of index differences to infinity for the parameter index to avoid returning the same parameter configuration
             self._alloc_sum_of_index_differences[param_index] = self.get_list_param_indices_numpy_max()
@@ -1184,6 +1182,12 @@ class Searchspace:
 
         raise NotImplementedError(f"The neighbor method {neighbor_method} is not implemented")
 
+    def __calc_sum_of_index_differences(self, target_param_config_indices: np.ndarray):
+        """Calculates the absolute difference between the parameter value indices and `target_param_config_indices` into `self._alloc_sum_of_index_differences`."""
+        np.subtract(self.params_values_indices, target_param_config_indices, out=self._alloc_diff)
+        np.abs(self._alloc_diff, out=self._alloc_diff)
+        np.einsum('ij->i', self._alloc_diff, out=self._alloc_sum_of_index_differences)
+
     def get_random_sample_indices(self, num_samples: int) -> np.ndarray:
         """Get the list indices for a random, non-conflicting sample."""
         if num_samples > self.size:
@@ -1256,10 +1260,7 @@ class Searchspace:
             if param_index is not None:
                 target_sample_indices.append(param_index)
             else:
-                # calculate the absolute difference between the parameter value indices
-                np.subtract(self.params_values_indices, target_sample_param_config_indices, out=self._alloc_diff)
-                np.abs(self._alloc_diff, out=self._alloc_diff)
-                np.einsum('ij->i', self._alloc_diff, out=self._alloc_sum_of_index_differences)
+                self.__calc_sum_of_index_differences(target_sample_param_config_indices)
                 target_sample_indices.append(np.argmin(self._alloc_sum_of_index_differences).item())
 
         # filter out duplicate samples and replace with random ones
@@ -1296,25 +1297,6 @@ class Searchspace:
             endpoint=True)
         target_samples_param_indices = np.array(target_samples_param_indices, dtype=self.params_values_indices.dtype)
 
-        # # validate and if necessary repair the target samples (slower than sum difference method below)
-        # target_sample_indices = list()
-        # for target_sample_param_config_indices in target_samples_param_indices:
-        #     param_config = self.get_param_config_from_param_indices(tuple(target_sample_param_config_indices))
-        #     target_sample_index = None
-        #     if not self.is_param_config_valid(param_config):
-        #         # if the parameter configuration is not valid, replace with a neighbor
-        #         neighbors_indices = self.get_neighbors_indices(param_config, neighbor_method="closest-param-indices")
-        #         # remove already selected samples from the neighbors
-        #         neighbors_indices = [idx for idx in neighbors_indices if idx not in target_sample_indices]
-        #         if len(neighbors_indices) == 0:
-        #             # if there are no valid neighbors, get a random sample
-        #             target_sample_index = self.get_random_sample_indices(1).item()
-        #         else:
-        #             target_sample_index = choice(neighbors_indices).item()
-        #     else:
-        #         target_sample_index = self.get_param_config_index(param_config)
-        #     target_sample_indices.append(target_sample_index)
-
         # for each of the target sample indices, calculate which parameter configuration is closest
         target_sample_indices = list()
         for target_sample_param_config_indices in target_samples_param_indices:
@@ -1322,10 +1304,7 @@ class Searchspace:
             if param_index is not None:
                 target_sample_indices.append(param_index)
             else:
-                # calculate the absolute difference between the parameter value indices
-                np.subtract(self.params_values_indices, target_sample_param_config_indices, out=self._alloc_diff)
-                np.abs(self._alloc_diff, out=self._alloc_diff)
-                np.einsum('ij->i', self._alloc_diff, out=self._alloc_sum_of_index_differences)
+                self.__calc_sum_of_index_differences(target_sample_param_config_indices)
                 target_sample_indices.append(np.argmin(self._alloc_sum_of_index_differences).item())
 
         # filter out duplicate samples and replace with random ones
