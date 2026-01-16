@@ -13,7 +13,11 @@ from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_
 try:
     from cuda.bindings import driver, runtime, nvrtc
 except ImportError:
-    driver = None
+    try:
+        # backward compatibility hack for older cuda-python versions
+        from cuda import cuda as driver, cudart as runtime, nvrtc as nvrtc
+    except ImportError:
+        driver = None
 
 
 class CudaFunctions(GPUBackend):

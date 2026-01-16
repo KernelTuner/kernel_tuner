@@ -3,7 +3,11 @@ import numpy as np
 try:
     from cuda.bindings import runtime
 except ImportError:
-    cuda = None
+    try:
+        # backward compatibility hack for older cuda-python versions
+        from cuda import cudart as runtime
+    except ImportError:
+        cuda = None
 
 from kernel_tuner.observers.observer import BenchmarkObserver
 from kernel_tuner.utils.nvcuda import cuda_error_check
