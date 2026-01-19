@@ -1,84 +1,92 @@
 """A specialized runner that tunes in parallel the parameter space."""
 import logging
+import socket
 from time import perf_counter
-from datetime import datetime, timezone
-from itertools import chain
-
-from ray import remote, get, put
-
-from kernel_tuner.runners.runner import Runner
+from kernel_tuner.interface import Options
+from kernel_tuner.util import ErrorConfig, print_config, print_config_output, process_metrics, store_cache
 from kernel_tuner.core import DeviceInterface
-from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
+from kernel_tuner.runners.runner import Runner
+from datetime import datetime, timezone
+
+try:
+    import ray
+except ImportError as e:
+    raise Exception(f"Unable to initialize the parallel runner: {e}")
 
 
-class ParallelRunnerState:
-    """This class represents the state of a parallel tuning run."""
+@ray.remote(num_gpus=1)
+class DeviceActor:
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
+        # detect language and create high-level device interface
+        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
 
-    def __init__(self, observers, iterations):
-        self.device_options = None
-        self.quiet = False
-        self.kernel_source = None
-        self.warmed_up = False
-        self.simulation_mode = False
-        self.start_time = None
-        self.last_strategy_start_time = None
+        self.units = self.dev.units
+        self.quiet = device_options.quiet
+        self.kernel_source = kernel_source
+        self.warmed_up = False if self.dev.requires_warmup else True
+        self.start_time = perf_counter()
+        self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
-        self.kernel_options = None
-        self.observers = observers
-        self.iterations = iterations
+        self.kernel_options = kernel_options
 
+        # move data to the GPU
+        self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
-@remote(num_cpus=1, num_gpus=1)
-def parallel_run(task_id: int, state: ParallelRunnerState, parameter_space, tuning_options):
-    dev = DeviceInterface(
-        state.kernel_source, iterations=state.iterations, observers=state.observers, **state.device_options
-    )
-    # move data to the GPU
-    gpu_args = dev.ready_argument_list(state.kernel_options.arguments)
-    # iterate over parameter space
-    results = []
-    elements_per_task = int(len(parameter_space) / tuning_options.parallel_runner)
-    first_element = int(task_id * elements_per_task)
-    last_element = int(
-        (task_id + 1) * elements_per_task if task_id + 1 < tuning_options.parallel_runner else len(parameter_space)
-    )
-    for element in parameter_space[first_element:last_element]:
-        params = dict(zip(tuning_options.tune_params.keys(), element))
+    def shutdown(self):
+        ray.actor.exit_actor()
 
+    def get_environment(self):
+        # Get the device properties
+        env = dict(self.dev.get_environment())
+
+        # Get the host name
+        env["host_name"] = socket.gethostname()
+
+        # Get info about the ray instance
+        ray_info = ray.get_runtime_context()
+        env["ray"] = dict(
+            node_id=ray_info.get_node_id(),
+            worker_id=ray_info.get_worker_id(),
+            actor_id=ray_info.get_actor_id(),
+        )
+
+        return env
+
+    def run(self, element, tuning_options):
+        # TODO: logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
+        objective = tuning_options.objective
+        metrics = tuning_options.metrics
+        tune_params = tuning_options.tune_params
+
+        params = dict(element)
         result = None
         warmup_time = 0
 
-        # check if configuration is in the cache
-        x_int = ",".join([str(i) for i in element])
-        if tuning_options.cache and x_int in tuning_options.cache:
-            params.update(tuning_options.cache[x_int])
-            params["compile_time"] = 0
-            params["verification_time"] = 0
-            params["benchmark_time"] = 0
-        else:
-            # attempt to warm up the GPU by running the first config in the parameter space and ignoring the result
-            if not state.warmed_up:
-                warmup_time = perf_counter()
-                dev.compile_and_benchmark(state.kernel_source, gpu_args, params, state.kernel_options, tuning_options)
-                state.warmed_up = True
-                warmup_time = 1e3 * (perf_counter() - warmup_time)
-
-            result = dev.compile_and_benchmark(
-                state.kernel_source, gpu_args, params, state.kernel_options, tuning_options
+        # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
+        if not self.warmed_up:
+            warmup_time = perf_counter()
+            self.dev.compile_and_benchmark(
+                self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
             )
+            self.warmed_up = True
+            warmup_time = 1e3 * (perf_counter() - warmup_time)
 
-            params.update(result)
+        result = self.dev.compile_and_benchmark(
+            self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
+        )
 
-            if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
-                logging.debug("kernel configuration was skipped silently due to compile or runtime failure")
+        if objective in result and isinstance(result[objective], ErrorConfig):
+            logging.debug("kernel configuration was skipped silently due to compile or runtime failure")
+
+        params.update(result)
 
         # only compute metrics on configs that have not errored
-        if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
-            params = process_metrics(params, tuning_options.metrics)
+        if metrics and not isinstance(params.get(objective), ErrorConfig):
+            params = process_metrics(params, metrics)
 
         # get the framework time by estimating based on other times
-        total_time = 1000 * ((perf_counter() - state.start_time) - warmup_time)
-        params["strategy_time"] = state.last_strategy_time
+        total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
+        params["strategy_time"] = self.last_strategy_time
         params["framework_time"] = max(
             total_time
             - (
@@ -89,85 +97,159 @@ def parallel_run(task_id: int, state: ParallelRunnerState, parameter_space, tuni
             ),
             0,
         )
+
         params["timestamp"] = str(datetime.now(timezone.utc))
-        state.start_time = perf_counter()
+        params["ray_actor_id"] = ray.get_runtime_context().get_actor_id()
+        params["host_name"] = socket.gethostname()
 
-        if result:
-            # print configuration to the console
-            print_config_output(tuning_options.tune_params, params, state.quiet, tuning_options.metrics, dev.units)
-
-            # add configuration to cache
-            store_cache(x_int, params, tuning_options)
+        self.start_time = perf_counter()
 
         # all visited configurations are added to results to provide a trace for optimization strategies
-        results.append(params)
+        return params
 
-    return results
+
+class DeviceActorState:
+    def __init__(self, actor):
+        self.actor = actor
+        self.running_jobs = []
+        self.maximum_running_jobs = 1
+        self.is_running = True
+        self.env = ray.get(actor.get_environment.remote())
+
+    def __repr__(self):
+        actor_id = self.env["ray"]["actor_id"]
+        host_name = self.env["host_name"]
+        return f"{actor_id} ({host_name})"
+
+    def shutdown(self):
+        if self.is_running:
+            self.is_running = False
+            self.actor.shutdown.remote()
+
+    def submit(self, *args):
+        job = self.actor.run.remote(*args)
+        self.running_jobs.append(job)
+        return job
+
+    def is_available(self):
+        if not self.is_running:
+            return False
+
+        # Check for ready jobs, but do not block
+        ready_jobs, self.running_jobs = ray.wait(self.running_jobs, timeout=0)
+        ray.get(ready_jobs)
+
+        # Available if this actor can run another job
+        return len(self.running_jobs) < self.maximum_running_jobs
 
 
 class ParallelRunner(Runner):
-    """ParallelRunner is used to distribute configurations across multiple nodes."""
+    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, num_workers=None):
+        if not ray.is_initialized():
+            ray.init()
 
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
-        """Instantiate the ParallelRunner.
+        if num_workers is None:
+            num_workers = int(ray.cluster_resources().get("GPU", 0))
 
-        :param kernel_source: The kernel source
-        :type kernel_source: kernel_tuner.core.KernelSource
+        if num_workers == 0:
+            raise Exception("failed to initialize parallel runner: no GPUs found")
 
-        :param kernel_options: A dictionary with all options for the kernel.
-        :type kernel_options: kernel_tuner.interface.Options
+        if num_workers < 1:
+            raise Exception(f"failed to initialize parallel runner: invalid number of GPUs specified: {num_workers}")
 
-        :param device_options: A dictionary with all options for the device
-            on which the kernel should be tuned.
-        :type device_options: kernel_tuner.interface.Options
+        self.workers = []
 
-        :param iterations: The number of iterations used for benchmarking
-            each kernel instance.
-        :type iterations: int
-        """
-        self.state = ParallelRunnerState(observers, iterations)
-        self.state.device_options = device_options
-        self.state.quiet = device_options.quiet
-        self.state.kernel_source = kernel_source
-        self.state.warmed_up = False
-        self.state.simulation_mode = False
-        self.state.start_time = perf_counter()
-        self.state.last_strategy_start_time = self.state.start_time
-        self.state.last_strategy_time = 0
-        self.state.kernel_options = kernel_options
-        # fields used directly by strategies
-        self.last_strategy_time = perf_counter()
-        self.state.last_strategy_start_time = self.last_strategy_time
-        # define a dummy device interface on the master node
-        self.dev = DeviceInterface(kernel_source)
+        try:
+            for index in range(num_workers):
+                actor = DeviceActor.remote(kernel_source, kernel_options, device_options, iterations, observers)
+                worker = DeviceActorState(actor)
+                self.workers.append(worker)
+
+                logging.info(f"launched worker {index}: {worker}")
+        except:
+            # If an exception occurs, shut down the worker
+            self.shutdown()
+            raise
+
+        # Check if all workers have the same device
+        device_names = {w.env.get("device_name") for w in self.workers}
+        if len(device_names) != 1:
+            self.shutdown()
+            raise Exception(
+                f"failed to initialize parallel runner: workers have different devices: {sorted(device_names)}"
+            )
+
+        self.device_name = device_names.pop()
+
+        # TODO
+        self.units = "sec"
+        self.quiet = device_options.quiet
+
+    def get_device_info(self):
+        return Options(dict(max_threads=1024))
 
     def get_environment(self, tuning_options):
-        # dummy environment
-        return self.dev.get_environment()
+        return dict(
+            device_name=self.device_name,
+            workers=[w.env for w in self.workers],
+        )
+
+    def shutdown(self):
+        for worker in self.workers:
+            try:
+                worker.shutdown()
+            except Exception as err:
+                logging.warning(f"error while shutting down worker {worker}: {err}")
+
+    def submit_job(self, *args):
+        while True:
+            # Find an idle actor
+            for i, worker in enumerate(list(self.workers)):
+                if worker.is_available():
+                    # push the worker to the end
+                    self.workers.pop(i)
+                    self.workers.append(worker)
+
+                    # Submit the work
+                    return worker.submit(*args)
+
+            # Gather all running jobs
+            running_jobs = [job for w in self.workers for job in w.running_jobs]
+
+            # If there are no running jobs, then something must be wrong.
+            # Maybe a worker has crashed or gotten into an invalid state.
+            if not running_jobs:
+                raise Exception("invalid state: no Ray workers are available to run job")
+
+            # Wait until any running job completes
+            ray.wait(running_jobs, num_returns=1)
 
     def run(self, parameter_space, tuning_options):
-        """Iterate through the entire parameter space using a single Python process.
+        running_jobs = dict()
+        completed_jobs = dict()
 
-        :param parameter_space: The parameter space as an iterable.
-        :type parameter_space: iterable
+        # Submit jobs which are not in the cache
+        for config in parameter_space:
+            params = dict(zip(tuning_options.tune_params.keys(), config))
+            key = ",".join([str(i) for i in config])
 
-        :param tuning_options: A dictionary with all options regarding the tuning process.
-        :type tuning_options: kernel_tuner.interface.Options
+            if key in tuning_options.cache:
+                completed_jobs[key] = tuning_options.cache[key]
+            else:
+                assert key not in running_jobs
+                running_jobs[key] = self.submit_job(params, tuning_options)
+                completed_jobs[key] = None
 
-        :returns: A list of dictionaries for executed kernel configurations and their execution times.
-        :rtype: dict()
-        """
-        # given the parameter_space, distribute it over Ray tasks
-        logging.debug("parallel runner started for " + self.state.kernel_options.kernel_name)
+        # Wait for the running jobs to finish
+        for key, job in running_jobs.items():
+            result = ray.get(job)
+            completed_jobs[key] = result
 
-        results = []
-        tasks = []
-        parameter_space_ref = put(parameter_space)
-        state_ref = put(self.state)
-        tuning_options_ref = put(tuning_options)
-        for task_id in range(0, tuning_options.parallel_runner):
-            tasks.append(parallel_run.remote(task_id, state_ref, parameter_space_ref, tuning_options_ref))
-        for task in tasks:
-            results.append(get(task))
+            if result:
+                # print configuration to the console
+                print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
 
-        return list(chain.from_iterable(results))
+                # add configuration to cache
+                store_cache(key, result, tuning_options)
+
+        return list(completed_jobs.values())

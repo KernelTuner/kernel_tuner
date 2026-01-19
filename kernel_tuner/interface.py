@@ -37,9 +37,6 @@ import kernel_tuner.core as core
 import kernel_tuner.util as util
 from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results
 from kernel_tuner.integration import get_objective_defaults
-from kernel_tuner.runners.parallel import ParallelRunner
-from kernel_tuner.runners.sequential import SequentialRunner
-from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace
 
 try:
@@ -469,7 +466,7 @@ _tuning_options = Options(
         ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
-        ("parallel_runner", ("If the value is larger than 1 use that number as the number of parallel runners doing the tuning", "int")),
+        ("parallel_workers", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
     ]
 )
@@ -581,7 +578,7 @@ def tune_kernel(
     cache=None,
     metrics=None,
     simulation_mode=False,
-    parallel_runner=1,
+    parallel_workers=None,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -608,8 +605,6 @@ def tune_kernel(
 
     if iterations < 1:
         raise ValueError("Iterations should be at least one!")
-    if parallel_runner < 1:
-        logging.warning("The number of parallel runners should be at least one!")
 
     # sort all the options into separate dicts
     opts = locals()
@@ -669,15 +664,21 @@ def tune_kernel(
 
     # select the runner for this job based on input
     # TODO: we could use the "match case" syntax when removing support for 3.9
-    if simulation_mode:
-        selected_runner = SimulationRunner
-    elif parallel_runner > 1:
-        selected_runner = ParallelRunner
-        tuning_options.parallel_runner = parallel_runner
-    else:
-        selected_runner = SequentialRunner
     tuning_options.simulated_time = 0
-    runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
+
+    if parallel_workers and simulation_mode:
+        raise ValueError("Enabling `parallel_workers` and `simulation_mode` together is not supported")
+    elif simulation_mode:
+        from kernel_tuner.runners.simulation import SimulationRunner
+        runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
+    elif parallel_workers:
+        from kernel_tuner.runners.parallel import ParallelRunner
+        num_workers = None if parallel_workers is True else parallel_workers
+        runner = ParallelRunner(kernelsource, kernel_options, device_options, iterations, observers, num_workers=num_workers)
+    else:
+        from kernel_tuner.runners.sequential import SequentialRunner
+        runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
+
 
     # the user-specified function may or may not have an optional atol argument;
     # we normalize it so that it always accepts atol.
@@ -696,7 +697,8 @@ def tune_kernel(
         tuning_options.cachefile = None
 
     # create search space
-    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
+    device_info = runner.get_device_info()
+    searchspace = Searchspace(tune_params, restrictions, device_info.max_threads, **searchspace_construction_options)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
     if verbose:
@@ -715,6 +717,9 @@ def tune_kernel(
     # call the strategy to execute the tuning process
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
+
+    # Shut down the runner
+    runner.shutdown()
 
     # finished iterating over search space
     if results:  # checks if results is not empty

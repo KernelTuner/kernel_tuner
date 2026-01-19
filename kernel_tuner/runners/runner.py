@@ -13,6 +13,13 @@ class Runner(ABC):
     ):
         pass
 
+    def shutdown(self):
+        pass
+
+    @abstractmethod
+    def get_device_info(self):
+        pass
+
     @abstractmethod
     def get_environment(self, tuning_options):
         pass

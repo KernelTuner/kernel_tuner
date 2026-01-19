@@ -42,6 +42,9 @@ class SequentialRunner(Runner):
         # move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
+    def get_device_info(self):
+        return self.dev
+
     def get_environment(self, tuning_options):
         return self.dev.get_environment()
 

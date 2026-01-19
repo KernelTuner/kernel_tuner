@@ -56,6 +56,9 @@ class SimulationRunner(Runner):
         self.last_strategy_time = 0
         self.units = {}
 
+    def get_device_info(self):
+        return self.dev
+    
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
         env["simulation"] = True
