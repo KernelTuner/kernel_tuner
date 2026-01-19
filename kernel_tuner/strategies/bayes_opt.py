@@ -237,7 +237,7 @@ class BayesianOptimization:
             self.worst_value = np.inf
             self.argopt = np.argmin
         elif opt_direction == "max":
-            self.worst_value = np.NINF
+            self.worst_value = -np.inf
             self.argopt = np.argmax
         else:
             raise ValueError("Invalid optimization direction '{}'".format(opt_direction))
@@ -268,7 +268,6 @@ class BayesianOptimization:
         self.__valid_observations = list()
         self.unvisited_cache = self.unvisited()
         time_setup = time.perf_counter_ns()
-        self.error_message_searchspace_fully_observed = "The search space has been fully observed"
 
         # take initial sample
         if self.num_initial_samples > 0:
@@ -501,8 +500,11 @@ class BayesianOptimization:
             normalized_param_config = self.normalize_param_config(param_config)
             try:
                 index = self.find_param_config_index(normalized_param_config)
-                indices.append(index)
-                normalized_param_configs.append(normalized_param_config)
+
+                # returned indices must not contain duplicates
+                if index not in indices:
+                    indices.append(index)
+                    normalized_param_configs.append(normalized_param_config)
             except ValueError:
                 """With search space restrictions, the search space may not be a cartesian product of parameter values.
                 It is thus possible for LHS to generate a parameter combination that is not in the actual searchspace.
@@ -569,7 +571,7 @@ class BayesianOptimization:
         """Find the next best candidate configuration(s), evaluate those and update the model accordingly."""
         while self.fevals < max_fevals:
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             predictions, _, std = self.predict_list(self.unvisited_cache)
             hyperparam = self.contextual_variance(std)
             list_of_acquisition_values = self.__af(predictions, hyperparam)
@@ -608,7 +610,7 @@ class BayesianOptimization:
             predictions, _, std = self.predict_list(self.unvisited_cache)
             hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             time_predictions = time.perf_counter_ns()
             actual_candidate_params = list()
             actual_candidate_indices = list()
@@ -724,7 +726,7 @@ class BayesianOptimization:
             if single_af:
                 return self.__optimize(max_fevals)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             observations_median = np.median(self.__valid_observations)
             if increase_precision is False:
                 predictions, _, std = self.predict_list(self.unvisited_cache)
@@ -832,7 +834,7 @@ class BayesianOptimization:
             predictions, _, std = self.predict_list(self.unvisited_cache)
             hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             for af in aqfs:
                 if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
                     break
@@ -873,7 +875,7 @@ class BayesianOptimization:
             eval_start = time.perf_counter()
             hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             for af in aqfs:
                 if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
                     break

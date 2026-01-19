@@ -1,7 +1,7 @@
 """Iterate over a random sample of the parameter space."""
 import numpy as np
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
@@ -26,7 +26,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     for sample in samples:
         try:
             cost_func(sample, check_restrictions=False)
-        except util.StopCriterionReached as e:
+        except StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
             return cost_func.results

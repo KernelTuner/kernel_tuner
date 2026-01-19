@@ -189,7 +189,8 @@
                     "enum": [
                         "OpenCL",
                         "CUDA",
-                        "Vulkan"
+                        "Vulkan",
+                        "Hypertuner"
                     ]
                 },
                 "CompilerOptions": {

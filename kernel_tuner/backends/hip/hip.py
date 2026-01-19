@@ -8,6 +8,7 @@ import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.hip import HipRuntimeObserver
+from kernel_tuner.backends.hip.util import hip_check
 
 try:
     from hip import hip, hiprtc
@@ -30,20 +31,6 @@ dtype_map = {
 }
 
 hipSuccess = 0
-
-
-def hip_check(call_result):
-    """helper function to check return values of hip calls"""
-    err = call_result[0]
-    result = call_result[1:]
-    if len(result) == 1:
-        result = result[0]
-    if isinstance(err, hip.hipError_t) and err != hip.hipError_t.hipSuccess:
-        _, error_name = hip.hipGetErrorName(err)
-        _, error_str = hip.hipGetErrorString(err)
-        raise RuntimeError(f"{error_name}: {error_str}")
-    return result
-
 
 class HipFunctions(GPUBackend):
     """Class that groups the HIP functions on maintains state about the device."""

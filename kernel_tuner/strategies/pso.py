@@ -1,29 +1,33 @@
 """The strategy that uses particle swarm optimization."""
+
 import random
 import sys
 
 import numpy as np
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc, scale_from_params
 
-_options = dict(popsize=("Population size", 20),
-                       maxiter=("Maximum number of iterations", 100),
-                       w=("Inertia weight constant", 0.5),
-                       c1=("Cognitive constant", 2.0),
-                       c2=("Social constant", 1.0))
+_options = dict(
+    popsize=("Population size", 50),
+    maxiter=("Maximum number of iterations", 190),
+    w=("Inertia weight constant", 0.5),
+    c1=("Cognitive constant", 3.5),
+    c2=("Social constant", 1.0),
+    constraint_aware=("constraint-aware optimization (True/False)", True))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
-    #scale variables in x because PSO works with velocities to visit different configurations
+    # scale variables in x because PSO works with velocities to visit different configurations
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
-    #using this instead of get_bounds because scaling is used
+    # using this instead of get_bounds because scaling is used
     bounds, x0, eps = cost_func.get_bounds_x0_eps()
 
-    num_particles, maxiter, w, c1, c2 = common.get_options(tuning_options.strategy_options, _options)
+    num_particles, maxiter, w, c1, c2, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
+    num_particles = min(round(searchspace.size / 2), num_particles)
 
     best_score_global = sys.float_info.max
     best_position_global = []
@@ -34,9 +38,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         swarm.append(Particle(bounds))
 
     # ensure particles start from legal points
-    population = list(list(p) for p in searchspace.get_random_sample(num_particles))
-    for i, particle in enumerate(swarm):
-        particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+    if constraint_aware:
+        population = list(list(p) for p in searchspace.get_random_sample(num_particles))
+        for i, particle in enumerate(swarm):
+            particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
 
     # include user provided starting point
     swarm[0].position = x0
@@ -50,7 +55,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         for j in range(num_particles):
             try:
                 swarm[j].evaluate(cost_func)
-            except util.StopCriterionReached as e:
+            except StopCriterionReached as e:
                 if tuning_options.verbose:
                     print(e)
                 return cost_func.results
@@ -66,7 +71,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             swarm[j].update_position(bounds)
 
     if tuning_options.verbose:
-        print('Final result:')
+        print("Final result:")
         print(best_position_global)
         print(best_score_global)
 
@@ -74,6 +79,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
 
 tune.__doc__ = common.get_strategy_docstring("Particle Swarm Optimization (PSO)", _options)
+
 
 class Particle:
     def __init__(self, bounds):
