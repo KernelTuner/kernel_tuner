@@ -103,6 +103,12 @@ class CostFunc:
 
 
     def __call__(self, x, check_restrictions=True):
+        return self.run_one(x, check_restrictions=check_restrictions)
+
+    def run_all(self, xs, check_restrictions=True):
+        return [self.run_one(x, check_restrictions=check_restrictions) for x in xs]
+
+    def run_one(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
 

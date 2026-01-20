@@ -51,24 +51,26 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         if tuning_options.verbose:
             print("start iteration ", i, "best time global", best_score_global)
 
+        try:
+            scores = cost_func.run_all([p.position for p in swarm])
+        except StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return cost_func.results
+
         # evaluate particle positions
-        for j in range(num_particles):
-            try:
-                swarm[j].evaluate(cost_func)
-            except StopCriterionReached as e:
-                if tuning_options.verbose:
-                    print(e)
-                return cost_func.results
+        for p, score in zip(swarm, scores):
+            p.set_score(score)
 
             # update global best if needed
-            if swarm[j].score <= best_score_global:
-                best_position_global = swarm[j].position
-                best_score_global = swarm[j].score
+            if score <= best_score_global:
+                best_position_global = p.position
+                best_score_global = score
 
         # update particle velocities and positions
-        for j in range(0, num_particles):
-            swarm[j].update_velocity(best_position_global, w, c1, c2)
-            swarm[j].update_position(bounds)
+        for p in swarm:
+            p.update_velocity(best_position_global, w, c1, c2)
+            p.update_position(bounds)
 
     if tuning_options.verbose:
         print("Final result:")
@@ -92,7 +94,10 @@ class Particle:
         self.score = sys.float_info.max
 
     def evaluate(self, cost_func):
-        self.score = cost_func(self.position)
+        self.set_score(cost_func(self.position))
+
+    def set_score(self, score):
+        self.score = score
         # update best_pos if needed
         if self.score < self.best_score:
             self.best_pos = self.position

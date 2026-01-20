@@ -72,33 +72,39 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
         if randomize:
             random.shuffle(indices)
 
+        children = []
+
         # in each dimension see the possible values
         for index in indices:
             neighbors = searchspace.get_param_neighbors(tuple(child), index, neighbor_method, randomize)
 
             # for each value in this dimension
             for val in neighbors:
-                orig_val = child[index]
+                child = list(child)
                 child[index] = val
+                children.append(child)
 
+        if restart:
+            for child in children:
                 # get score for this position
                 score = cost_func(child, check_restrictions=False)
 
-                # generalize this to other tuning objectives
                 if score < best_score:
                     best_score = score
                     base_sol = child[:]
                     found_improved = True
-                    if restart:
-                        break
-                else:
-                    child[index] = orig_val
+                    break
+        else:
+            # get score for all positions in parallel
+            scores = cost_func.run_all(children, check_restrictions=False)
 
-                fevals = len(tuning_options.unique_results)
-                if fevals >= max_fevals:
-                    return base_sol
+            for child, score in zip(children, scores):
+                if score < best_score:
+                    best_score = score
+                    base_sol = child[:]
+                    found_improved = True
 
-            if found_improved and restart:
-                break
+        if found_improved and restart:
+            break
 
     return base_sol

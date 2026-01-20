@@ -455,6 +455,33 @@ class BayesianOptimization:
         """Update the model based on the current list of observations."""
         self.__model.fit(self.__valid_params, self.__valid_observations)
 
+    def evaluate_parallel_objective_function(self, param_configs: list[tuple]) -> list[float]:
+        """Evaluates the objective function for multiple configurations in parallel."""
+        results = []
+        valid_param_configs = []
+        valid_indices = []
+
+        # Extract the valid configurations
+        for param_config in param_configs:
+            param_config = self.unprune_param_config(param_config)
+            denormalized_param_config = self.denormalize_param_config(param_config)
+            if not self.__searchspace_obj.is_param_config_valid(denormalized_param_config):
+                results.append(self.invalid_value)
+            else:
+                valid_indices.append(len(results))
+                results.append(None)
+                valid_param_configs.append(param_config)
+
+        # Run valid configurations in parallel
+        scores = self.cost_func.run_all(valid_param_configs)
+
+        # Put the scores at the right location in the result
+        for idx, score in zip(valid_indices, scores):
+            results[idx] = score
+            
+        self.fevals += len(scores)
+        return results
+
     def evaluate_objective_function(self, param_config: tuple) -> float:
         """Evaluates the objective function."""
         param_config = self.unprune_param_config(param_config)
