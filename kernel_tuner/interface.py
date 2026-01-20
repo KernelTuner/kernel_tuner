@@ -682,10 +682,11 @@ def tune_kernel(
     # process cache
     if cache:
         cache = preprocess_cache(cache)
-        util.process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cachefile = cache
+        tuning_options.cache = util.process_cache(cache, kernel_options, tuning_options, runner)
     else:
-        tuning_options.cache = {}
         tuning_options.cachefile = None
+        tuning_options.cache = {}
 
     # create search space
     tuning_options.restrictions_unmodified = deepcopy(restrictions)

@@ -632,7 +632,7 @@ def test_process_cache():
 
         # store one entry in the cache
         params = {"x": 4, "time": np.float32(0.1234)}
-        store_cache("4", params, tuning_options)
+        store_cache("4", params, tuning_options.cachefile, tuning_options.cache)
         assert len(tuning_options.cache) == 1
 
         # close the cache

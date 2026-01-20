@@ -123,7 +123,7 @@ class SequentialRunner(Runner):
                 print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
 
                 # add configuration to cache
-                store_cache(x_int, params, tuning_options)
+                store_cache(x_int, params, tuning_options.cachefile, tuning_options.cache)
 
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)

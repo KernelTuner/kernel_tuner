@@ -16,7 +16,7 @@ except ImportError as e:
 
 @ray.remote(num_gpus=1)
 class DeviceActor:
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers):
+    def __init__(self, kernel_source, kernel_options, device_options, tuning_options, iterations, observers):
         # detect language and create high-level device interface
         self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
 
@@ -28,6 +28,7 @@ class DeviceActor:
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
         self.kernel_options = kernel_options
+        self.tuning_options = tuning_options
 
         # move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
@@ -52,11 +53,10 @@ class DeviceActor:
 
         return env
 
-    def run(self, element, tuning_options):
+    def run(self, element):
         # TODO: logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
-        objective = tuning_options.objective
-        metrics = tuning_options.metrics
-        tune_params = tuning_options.tune_params
+        objective = self.tuning_options.objective
+        metrics = self.tuning_options.metrics
 
         params = dict(element)
         result = None
@@ -66,16 +66,16 @@ class DeviceActor:
         if not self.warmed_up:
             warmup_time = perf_counter()
             self.dev.compile_and_benchmark(
-                self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
+                self.kernel_source, self.gpu_args, params, self.kernel_options, self.tuning_options
             )
             self.warmed_up = True
             warmup_time = 1e3 * (perf_counter() - warmup_time)
 
         result = self.dev.compile_and_benchmark(
-            self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
+            self.kernel_source, self.gpu_args, params, self.kernel_options, self.tuning_options
         )
 
-        if objective in result and isinstance(result[objective], ErrorConfig):
+        if isinstance(result.get(objective), ErrorConfig):
             logging.debug("kernel configuration was skipped silently due to compile or runtime failure")
 
         params.update(result)
@@ -139,12 +139,12 @@ class DeviceActorState:
         ready_jobs, self.running_jobs = ray.wait(self.running_jobs, timeout=0)
         ray.get(ready_jobs)
 
-        # Available if this actor can run another job
+        # Available if this actor can now run another job
         return len(self.running_jobs) < self.maximum_running_jobs
 
 
 class ParallelRunner(Runner):
-    def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, num_workers=None):
+    def __init__(self, kernel_source, kernel_options, device_options, tuning_options, iterations, observers, num_workers=None):
         if not ray.is_initialized():
             ray.init()
 
@@ -152,16 +152,16 @@ class ParallelRunner(Runner):
             num_workers = int(ray.cluster_resources().get("GPU", 0))
 
         if num_workers == 0:
-            raise Exception("failed to initialize parallel runner: no GPUs found")
+            raise RuntimeError("failed to initialize parallel runner: no GPUs found")
 
         if num_workers < 1:
-            raise Exception(f"failed to initialize parallel runner: invalid number of GPUs specified: {num_workers}")
+            raise RuntimeError(f"failed to initialize parallel runner: invalid number of GPUs specified: {num_workers}")
 
         self.workers = []
 
         try:
             for index in range(num_workers):
-                actor = DeviceActor.remote(kernel_source, kernel_options, device_options, iterations, observers)
+                actor = DeviceActor.remote(kernel_source, kernel_options, device_options, tuning_options, iterations, observers)
                 worker = DeviceActorState(actor)
                 self.workers.append(worker)
 
@@ -175,14 +175,14 @@ class ParallelRunner(Runner):
         device_names = {w.env.get("device_name") for w in self.workers}
         if len(device_names) != 1:
             self.shutdown()
-            raise Exception(
+            raise RuntimeError(
                 f"failed to initialize parallel runner: workers have different devices: {sorted(device_names)}"
             )
 
         self.device_name = device_names.pop()
 
-        # TODO
-        self.units = "sec"
+        # TODO: Get this from the device
+        self.units = {"time": "ms"}
         self.quiet = device_options.quiet
 
     def get_device_info(self):
@@ -237,7 +237,7 @@ class ParallelRunner(Runner):
                 completed_jobs[key] = tuning_options.cache[key]
             else:
                 assert key not in running_jobs
-                running_jobs[key] = self.submit_job(params, tuning_options)
+                running_jobs[key] = self.submit_job(params)
                 completed_jobs[key] = None
 
         # Wait for the running jobs to finish
@@ -245,11 +245,10 @@ class ParallelRunner(Runner):
             result = ray.get(job)
             completed_jobs[key] = result
 
-            if result:
-                # print configuration to the console
-                print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
+            # print configuration to the console
+            print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
 
-                # add configuration to cache
-                store_cache(key, result, tuning_options)
+            # add configuration to cache
+            store_cache(key, result, tuning_options.cachefile, tuning_options.cache)
 
         return list(completed_jobs.values())
