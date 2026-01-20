@@ -4,7 +4,6 @@ import re
 import numpy as np
 
 from kernel_tuner.util import StopCriterionReached
-from scipy.stats.qmc import LatinHypercube
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
