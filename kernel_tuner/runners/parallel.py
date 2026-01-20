@@ -2,16 +2,18 @@
 import logging
 import socket
 from time import perf_counter
-from kernel_tuner.interface import Options
-from kernel_tuner.util import ErrorConfig, print_config, print_config_output, process_metrics, store_cache
 from kernel_tuner.core import DeviceInterface
+from kernel_tuner.interface import Options
 from kernel_tuner.runners.runner import Runner
+from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 try:
     import ray
 except ImportError as e:
-    raise Exception(f"Unable to initialize the parallel runner: {e}")
+    raise ImportError(f"unable to initialize the parallel runner: {e}") from e
 
 
 @ray.remote(num_gpus=1)
@@ -44,12 +46,12 @@ class DeviceActor:
         env["host_name"] = socket.gethostname()
 
         # Get info about the ray instance
-        ray_info = ray.get_runtime_context()
-        env["ray"] = dict(
-            node_id=ray_info.get_node_id(),
-            worker_id=ray_info.get_worker_id(),
-            actor_id=ray_info.get_actor_id(),
-        )
+        ctx = ray.get_runtime_context()
+        env["ray"] = {
+            "node_id": ctx.get_node_id(),
+            "worker_id": ctx.get_worker_id(),
+            "actor_id": ctx.get_actor_id(),
+        }
 
         return env
 
@@ -98,7 +100,7 @@ class DeviceActor:
             0,
         )
 
-        params["timestamp"] = str(datetime.now(timezone.utc))
+        params["timestamp"] = datetime.now(timezone.utc).isoformat()
         params["ray_actor_id"] = ray.get_runtime_context().get_actor_id()
         params["host_name"] = socket.gethostname()
 
@@ -122,15 +124,22 @@ class DeviceActorState:
         return f"{actor_id} ({host_name})"
 
     def shutdown(self):
-        if self.is_running:
-            self.is_running = False
-            self.actor.shutdown.remote()
+        if not self.is_running:
+            return
 
-    def submit(self, *args):
-        job = self.actor.run.remote(*args)
+        self.is_running = False
+
+        try:
+            self.actor.shutdown.remote()
+        except Exception:
+            logger.exception("Failed to request actor shutdown: %s", self)
+
+    def submit(self, config):
+        logger.info(f"jobs submitted to worker {self}: {config}")
+        job = self.actor.run.remote(config)
         self.running_jobs.append(job)
         return job
-
+    
     def is_available(self):
         if not self.is_running:
             return False
@@ -165,7 +174,7 @@ class ParallelRunner(Runner):
                 worker = DeviceActorState(actor)
                 self.workers.append(worker)
 
-                logging.info(f"launched worker {index}: {worker}")
+                logger.info(f"launched worker {index}: {worker}")
         except:
             # If an exception occurs, shut down the worker
             self.shutdown()
@@ -186,31 +195,28 @@ class ParallelRunner(Runner):
         self.quiet = device_options.quiet
 
     def get_device_info(self):
-        return Options(dict(max_threads=1024))
+        return Options({"max_threads": 1024})
 
     def get_environment(self, tuning_options):
-        return dict(
-            device_name=self.device_name,
-            workers=[w.env for w in self.workers],
-        )
+        return {
+            "device_name": self.device_name, 
+            "workers": [w.env for w in self.workers]
+        }
 
     def shutdown(self):
         for worker in self.workers:
             try:
                 worker.shutdown()
             except Exception as err:
-                logging.warning(f"error while shutting down worker {worker}: {err}")
+                logger.exception("error while shutting down worker {worker}")
 
     def submit_job(self, *args):
         while True:
-            # Find an idle actor
+            # Round-robin: first available worker gets the job and goes to the back of the list
             for i, worker in enumerate(list(self.workers)):
                 if worker.is_available():
-                    # push the worker to the end
                     self.workers.pop(i)
                     self.workers.append(worker)
-
-                    # Submit the work
                     return worker.submit(*args)
 
             # Gather all running jobs
@@ -219,7 +225,7 @@ class ParallelRunner(Runner):
             # If there are no running jobs, then something must be wrong.
             # Maybe a worker has crashed or gotten into an invalid state.
             if not running_jobs:
-                raise Exception("invalid state: no Ray workers are available to run job")
+                raise RuntimeError("invalid state: no Ray workers are available to run job")
 
             # Wait until any running job completes
             ray.wait(running_jobs, num_returns=1)

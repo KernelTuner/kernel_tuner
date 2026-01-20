@@ -662,7 +662,7 @@ def tune_kernel(
     elif parallel_workers:
         from kernel_tuner.runners.parallel import ParallelRunner
         num_workers = None if parallel_workers is True else parallel_workers
-        runner = ParallelRunner(kernelsource, kernel_options, device_options, iterations, observers, num_workers=num_workers)
+        runner = ParallelRunner(kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers)
     else:
         from kernel_tuner.runners.sequential import SequentialRunner
         runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
