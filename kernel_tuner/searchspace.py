@@ -39,7 +39,8 @@ from kernel_tuner.util import (
     get_interval,
 )
 
-supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming", "closest-param-indices"]
+
+supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming", "Hamming-adjacent", "closest-param-indices"]
 
 
 class Searchspace:
@@ -65,6 +66,7 @@ class Searchspace:
             strictly-adjacent: differs +1 or -1 parameter index value for each parameter
             adjacent: picks closest parameter value in both directions for each parameter
             Hamming: any parameter config with 1 different parameter value is a neighbor
+            Hamming-adjacent: differs by closest parameter value for exactly 1 parameter.
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         Optionally an imported cache can be used instead with `from_cache`, in which case the `tune_params`, `restrictions` and `max_threads` arguments can be set to None, and construction is skipped.
         Optionally construction can be deffered to a later time by setting `defer_construction` to True, in which case the searchspace is not built on instantiation (experimental).
@@ -1038,6 +1040,44 @@ class Searchspace:
                 return self.get_param_configs_at_indices([i])[0]
         return None
 
+    def __get_neighbors_indices_hammingadjacent(self, param_config_index: int = None, param_config: tuple = None) -> List[int]:
+        """Get the neighbors using adjacent distance from the parameter configuration (parameter index absolute difference >= 1)."""
+        param_config_value_indices = (
+            self.get_param_indices(param_config)
+            if param_config_index is None
+            else self.params_values_indices[param_config_index]
+        )
+
+        # compute boolean mask for all configuration that differ at exactly one parameter (Hamming distance == 1)
+        hamming_mask = np.count_nonzero(self.params_values_indices != param_config_value_indices, axis=1) == 1
+
+        # get the configuration indices of the hamming neighbors
+        hamming_indices, = np.nonzero(hamming_mask)
+
+        # for the hamming neighbors, calculate the difference between parameter value indices
+        hamming_values_indices = self.params_values_indices[hamming_mask]
+
+        # for each parameter get the closest upper and lower parameter (absolute index difference >= 1)
+        upper_bound = np.min(
+            hamming_values_indices,
+            initial=self.get_list_param_indices_numpy_max(),
+            axis=0,
+            where=hamming_values_indices > param_config_value_indices,
+        )
+
+        lower_bound = np.max(
+            hamming_values_indices,
+            initial=self.get_list_param_indices_numpy_min(),
+            axis=0,
+            where=hamming_values_indices < param_config_value_indices,
+        )
+
+        # return mask for adjacent neighbors (each parameter is within bounds)
+        adjacent_mask = np.all((lower_bound <= hamming_values_indices) & (hamming_values_indices <= upper_bound), axis=1)
+
+        # return hamming neighbors that are also adjacent
+        return hamming_indices[adjacent_mask]
+
     def __get_random_neighbor_adjacent(self, param_config: tuple) -> tuple:
         """Get an approximately random adjacent neighbor of the parameter configuration."""
         # NOTE: this is not truly random as we only progressively increase the allowed index difference if no neighbors are found, but much faster than generating all neighbors
@@ -1051,6 +1091,7 @@ class Searchspace:
             if param_config_index is None
             else self.params_values_indices[param_config_index]
         )
+
         max_index_difference_per_param = [max(len(self.params_values[p]) - 1 - i, i) for p, i in enumerate(param_config_value_indices)]
 
         # calculate the absolute difference between the parameter value indices
@@ -1078,6 +1119,7 @@ class Searchspace:
             # if there are no matching indices, increase the allowed index difference and start over
             allowed_index_difference += 1
         return None
+
 
     def __add_to_neighbor_partial_cache(self, param_config: tuple, neighbor_indices: List[int], neighbor_method: str, full_neighbors = False):
         """Add the neighbor indices to the partial cache using the given parameter configuration."""
@@ -1164,6 +1206,13 @@ class Searchspace:
         # for each parameter configuration, find the neighboring parameter configurations
         if self.params_values_indices is None:
             self.__prepare_neighbors_index()
+
+        if neighbor_method == "Hamming-adjacent":
+            return list(
+                self.__get_neighbors_indices_hammingadjacent(param_config_index, param_config)
+                for param_config_index, param_config in enumerate(self.list)
+            )
+
         if neighbor_method == "strictly-adjacent":
             return list(
                 self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
@@ -1348,6 +1397,8 @@ class Searchspace:
             self.__prepare_neighbors_index()
 
         # if the passed param_config is fictious, we can not use the pre-calculated neighbors index
+        if neighbor_method == "Hamming-adjacent":
+            return self.__get_neighbors_indices_hammingadjacent(param_config_index, param_config)
         if neighbor_method == "strictly-adjacent":
             return self.__get_neighbors_indices_strictlyadjacent(param_config_index, param_config)
         if neighbor_method == "adjacent":
