@@ -82,11 +82,10 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     get_next_coordinates_or_indices = search_technique.get_next_coordinates
     coordinates_or_indices = set()  # Set[Union[Coordinates, Index]]
     costs = {}   # Dict[Union[Coordinates, Index], Cost]
-    eval_count = 0
 
     try:
         # optimization loop (KT-compatible re-implementation of `make_step` from TuningRun)
-        while eval_count < searchspace.size:
+        while len(tuning_options.unique_results) < searchspace.size:
 
             # get new coordinates
             if not coordinates_or_indices:
@@ -110,7 +109,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 valid = False
             else:
                 cost = opt_result
-                eval_count += 1
 
             # record the evaluation
             costs[coords_or_index] = cost
