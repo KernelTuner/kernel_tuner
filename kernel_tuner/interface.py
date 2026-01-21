@@ -592,23 +592,19 @@ def tune_kernel(
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
-    # default objective if none is specified
-    # if len(list(objective)) == 1:
-    #     objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
-
-    if isinstance(objective, str):
-        objective = [objective]
-
-    if isinstance(objective_higher_is_better, bool):
-        objective_higher_is_better = [objective_higher_is_better]
-
     if objectives:
         if isinstance(objectives, dict):
             objective = list(objectives.keys())
             objective_higher_is_better = list(objectives.values())
         else:
             raise ValueError("objectives should be a dict of (objective, higher_is_better) pairs")
+    else:
+        objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
+        objective = [objective]
+        objective_higher_is_better = [objective_higher_is_better]
 
+    assert isinstance(objective, list)
+    assert isinstance(objective_higher_is_better, list)
     assert len(list(objective)) == len(list(objective_higher_is_better))
 
     # check for forbidden names in tune parameters
