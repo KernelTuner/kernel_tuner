@@ -733,7 +733,7 @@ class Searchspace:
                 tune_params_to_index_lookup.append({ value: index for index, value in enumerate(param_values) })
                 tune_params_from_index_lookup.append({ index: value for index, value in enumerate(param_values) })
                 if (all_values_integer_nonnegative and 
-                    not all(isinstance(v, int) and 0 < v < 2**15 for v in param_values)
+                    not all(isinstance(v, int) and 0 <= v < 2**15 for v in param_values)
                 ):
                     all_values_integer_nonnegative = False
 
