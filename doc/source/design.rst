@@ -66,7 +66,7 @@ SearchSpace
 The SearchSpace object is central to Kernel Tuner as it represents the search space that is to be 
 explored by the search strategies.
 
-kernel_tuner.searchspace.SearchSpace
+kernel_tuner.searchspace.Searchspace
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: kernel_tuner.searchspace.Searchspace
     :special-members: __init__
