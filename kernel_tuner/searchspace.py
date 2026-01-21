@@ -7,6 +7,7 @@ from typing import List, Union
 from warnings import warn
 from copy import deepcopy
 from collections import defaultdict, deque
+from inspect import signature
 
 import numpy as np
 from scipy.stats.qmc import LatinHypercube
@@ -499,6 +500,13 @@ class Searchspace:
     def __add_restrictions(self, parameter_space: Problem) -> Problem:
         """Add the user-specified restrictions as constraints on the parameter space."""
         restrictions = deepcopy(self.restrictions)
+        # differentiate between old style monolithic with single 'p' argument and newer *args style
+        if (len(restrictions) == 1
+            and not isinstance(restrictions[0], (Constraint, FunctionConstraint, str))
+            and callable(restrictions[0])
+            and len(signature(restrictions[0]).parameters) == 1
+            and len(self.param_names) > 1):
+            restrictions = restrictions[0]
         if isinstance(restrictions, list):
             for restriction in restrictions:
                 required_params = self.param_names
@@ -508,10 +516,6 @@ class Searchspace:
                     required_params = restriction[1]
                     restriction = restriction[0]
                 if callable(restriction) and not isinstance(restriction, Constraint):
-                    # def restrictions_wrapper(*args):
-                    #     return check_instance_restrictions(restriction, dict(zip(self.param_names, args)), False)
-                    # print(restriction, isinstance(restriction, Constraint))
-                    # restriction = FunctionConstraint(restrictions_wrapper)
                     restriction = FunctionConstraint(restriction, required_params)
 
                 # add as a Constraint
@@ -533,6 +537,7 @@ class Searchspace:
         elif callable(restrictions):
 
             def restrictions_wrapper(*args):
+                """Wrap old-style monolithic restrictions to work with multiple arguments."""
                 return check_instance_restrictions(restrictions, dict(zip(self.param_names, args)), False)
 
             parameter_space.addConstraint(FunctionConstraint(restrictions_wrapper), self.param_names)

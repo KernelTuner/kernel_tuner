@@ -642,3 +642,37 @@ def test_full_searchspace(compare_against_bruteforce=False):
         compare_two_searchspace_objects(searchspace, searchspace_bruteforce)
     else:
         assert searchspace.size == len(searchspace.list) == 349853
+
+def test_restriction_backwards_compatibility():
+    """Test whether the backwards compatibility code for restrictions (list of strings) works as expected."""
+    # create a searchspace with mixed parameter types
+    max_threads = 1024
+    tune_params = dict()
+    tune_params["N_PER_BLOCK"] = [32, 64, 128, 256, 512, 1024]
+    tune_params["M_PER_BLOCK"] = [32, 64, 128, 256, 512, 1024]
+    tune_params["block_size_y"] = [1, 2, 4, 8, 16, 32]
+    tune_params["block_size_z"] = [1, 2, 4, 8, 16, 32]
+
+    # old style monolithic restriction function
+    def restrict(p):
+        n_global_per_warp = int(p["N_PER_BLOCK"] // p["block_size_y"])
+        m_global_per_warp = int(p["M_PER_BLOCK"] // p["block_size_z"])
+        if n_global_per_warp == 0 or m_global_per_warp == 0:
+            return False
+
+    searchspace_callable = Searchspace(tune_params, restrict, max_threads)
+
+    def restrict_args(N_PER_BLOCK, M_PER_BLOCK, block_size_y, block_size_z):
+        n_global_per_warp = int(N_PER_BLOCK // block_size_y)
+        m_global_per_warp = int(M_PER_BLOCK // block_size_z)
+        if n_global_per_warp == 0 or m_global_per_warp == 0:
+            return False
+
+    # args-style restriction
+    searchspace_str = Searchspace(tune_params, restrict_args, max_threads)
+
+    # check the size
+    assert searchspace_str.size == searchspace_callable.size
+
+    # check that both searchspaces are identical in outcome
+    compare_two_searchspace_objects(searchspace_str, searchspace_callable)
