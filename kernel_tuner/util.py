@@ -1387,7 +1387,3 @@ def infer_args_from_cache(cache: dict) -> dict:
     )
 
     return inferred_args
-
-
-def get_results_from_cache(cache) -> list[dict]:
-    return list(cache['cache'].values())
