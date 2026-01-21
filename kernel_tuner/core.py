@@ -498,6 +498,7 @@ class DeviceInterface(object):
                 "OUT_OF_RESOURCES",
                 "INVALID_WORK_GROUP_SIZE",
                 "a bounds error was thrown during kernel execution",
+                "Julia kernel launch failed",
             ]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
                 logging.debug("benchmark fails due to runtime failure / too many resources required")
