@@ -66,7 +66,7 @@ class Searchspace:
             strictly-adjacent: differs +1 or -1 parameter index value for each parameter
             adjacent: picks closest parameter value in both directions for each parameter
             Hamming: any parameter config with 1 different parameter value is a neighbor
-            Hamming-adjacent: differs +1 or -1 parameter index value for exactly 1 parameter.
+            Hamming-adjacent: differs by closest parameter value for exactly 1 parameter.
         Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
         Optionally an imported cache can be used instead with `from_cache`, in which case the `tune_params`, `restrictions` and `max_threads` arguments can be set to None, and construction is skipped.
         Optionally construction can be deffered to a later time by setting `defer_construction` to True, in which case the searchspace is not built on instantiation (experimental).
