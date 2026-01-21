@@ -102,13 +102,11 @@ class SequentialRunner(Runner):
 
                 params.update(result)
 
-                # if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
                 if '__error__' in result:
                     logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
 
             # only compute metrics on configs that have not errored
-            # if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
-            if '__error__' in params:
+            if tuning_options.metrics and '__error__' not in params:
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
