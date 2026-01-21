@@ -480,7 +480,6 @@ class DeviceInterface(object):
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
                     )
-                # result[objective] = util.RuntimeFailedConfig()
                 result['__error__'] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
@@ -575,7 +574,6 @@ class DeviceInterface(object):
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
-            # result[to.objective] = util.InvalidConfig()
             result['__error__'] = util.InvalidConfig()
         else:
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
@@ -586,7 +584,6 @@ class DeviceInterface(object):
                 start_compilation = time.perf_counter()
                 func = self.compile_kernel(instance, verbose)
                 if not func:
-                    # result[to.objective] = util.CompilationFailedConfig()
                     result['__error__'] = util.CompilationFailedConfig()
                 else:
                     # add shared memory arguments to compiled module
