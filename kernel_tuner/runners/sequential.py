@@ -5,6 +5,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
+import kernel_tuner.util as util
 from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
 
 
