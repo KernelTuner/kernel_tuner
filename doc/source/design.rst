@@ -68,7 +68,7 @@ explored by the search strategies.
 
 kernel_tuner.searchspace.SearchSpace
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: kernel_tuner.searchspace.SearchSpace
+.. autoclass:: kernel_tuner.searchspace.Searchspace
     :special-members: __init__
     :members:
 
