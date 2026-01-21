@@ -611,25 +611,25 @@ def test_process_cache():
 
     try:
         # call process_cache without pre-existing cache
-        process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cachefile = cache
+        tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
 
         # check if file has been created
         assert os.path.isfile(cache)
         assert_open_cachefile_is_correctly_parsed(cache)
-        assert tuning_options.cachefile == cache
         assert isinstance(tuning_options.cache, dict)
         assert len(tuning_options.cache) == 0
 
         # store one entry in the cache
         params = {"x": 4, "time": np.float32(0.1234)}
-        store_cache("4", params, tuning_options)
+        store_cache("4", params, cache, tuning_options.cache)
         assert len(tuning_options.cache) == 1
 
         # close the cache
         close_cache(cache)
 
         # now test process cache with a pre-existing cache file
-        process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert_open_cachefile_is_correctly_parsed(cache)
 
         assert tuning_options.cache["4"]["time"] == params["time"]
@@ -638,7 +638,7 @@ def test_process_cache():
         # a different kernel, device, or parameter set
         with pytest.raises(ValueError) as excep:
             kernel_options.kernel_name = "wrong_kernel"
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "kernel" in str(excep.value)
 
         # correct the kernel name from last test
@@ -646,7 +646,7 @@ def test_process_cache():
 
         with pytest.raises(ValueError) as excep:
             runner.dev.name = "wrong_device"
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "device" in str(excep.value)
 
         # correct the device from last test
@@ -654,7 +654,7 @@ def test_process_cache():
 
         with pytest.raises(ValueError) as excep:
             tuning_options.tune_params["y"] = ["a", "b"]
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "parameter" in str(excep.value)
 
     finally:
