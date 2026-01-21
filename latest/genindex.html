@@ -149,6 +149,8 @@
 </li>
         <li><a href="design.html#kernel_tuner.runners.simulation.SimulationRunner.__init__">(kernel_tuner.runners.simulation.SimulationRunner method)</a>
 </li>
+        <li><a href="design.html#kernel_tuner.searchspace.Searchspace.__init__">(kernel_tuner.searchspace.Searchspace method)</a>
+</li>
       </ul></li>
   </ul></td>
 </tr></table>
@@ -158,11 +160,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="optimization.html#kernel_tuner.strategies.simulated_annealing.acceptance_prob">acceptance_prob() (in module kernel_tuner.strategies.simulated_annealing)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.after_finish">after_finish() (kernel_tuner.observers.BenchmarkObserver method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.after_start">after_start() (kernel_tuner.observers.BenchmarkObserver method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.are_neighbors_indices_cached">are_neighbors_indices_cached() (kernel_tuner.searchspace.Searchspace method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -344,19 +348,71 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.get_config_string">get_config_string() (in module kernel_tuner.util)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_distributed_random_sample">get_distributed_random_sample() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_distributed_random_sample_indices">get_distributed_random_sample_indices() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.get_grid_dimensions">get_grid_dimensions() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_instance_string">get_instance_string() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_interval">get_interval() (in module kernel_tuner.util)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.get_kernel_string">get_kernel_string() (in module kernel_tuner.util)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_LHS_sample">get_LHS_sample() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_LHS_sample_indices">get_LHS_sample_indices() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_list_dict">get_list_dict() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_list_numpy">get_list_numpy() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_list_numpy_numeric">get_list_numpy_numeric() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy">get_list_param_indices_numpy() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy_max">get_list_param_indices_numpy_max() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy_min">get_list_param_indices_numpy_min() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_neighbors">get_neighbors() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_neighbors_indices">get_neighbors_indices() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_neighbors_indices_no_cache">get_neighbors_indices_no_cache() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_neighbors_no_cache">get_neighbors_no_cache() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.strategies.common.get_options">get_options() (in module kernel_tuner.strategies.common)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_config_from_numeric">get_param_config_from_numeric() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_config_from_param_indices">get_param_config_from_param_indices() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_config_index">get_param_config_index() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_configs_at_indices">get_param_configs_at_indices() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_indices">get_param_indices() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_indices_lower_bounds">get_param_indices_lower_bounds() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_indices_upper_bounds">get_param_indices_upper_bounds() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_neighbors">get_param_neighbors() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_partial_neighbors_indices">get_partial_neighbors_indices() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.get_problem_size">get_problem_size() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_random_neighbor">get_random_neighbor() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_random_sample">get_random_sample() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_random_sample_indices">get_random_sample_indices() (kernel_tuner.searchspace.Searchspace method)</a>
 </li>
       <li><a href="observers.html#kernel_tuner.observers.BenchmarkObserver.get_results">get_results() (kernel_tuner.observers.BenchmarkObserver method)</a>
 </li>
@@ -368,15 +424,29 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.get_temp_filename">get_temp_filename() (in module kernel_tuner.util)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_tensorspace">get_tensorspace() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_tensorspace_bounds">get_tensorspace_bounds() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_tensorspace_categorical_dimensions">get_tensorspace_categorical_dimensions() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.get_thread_block_dimensions">get_thread_block_dimensions() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_total_timings">get_total_timings() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_true_tunable_params">get_true_tunable_params() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_tune_params_pyatf">get_tune_params_pyatf() (kernel_tuner.searchspace.Searchspace method)</a>
 </li>
   </ul></td>
 </tr></table>
 
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.has_tensorspace">has_tensorspace() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.backends.hip.HipFunctions">HipFunctions (class in kernel_tuner.backends.hip)</a>
 </li>
@@ -388,9 +458,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.indices_to_values">indices_to_values() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.initialize_tensorspace">initialize_tensorspace() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.InvalidConfig">InvalidConfig (class in kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.is_param_config_valid">is_param_config_valid() (kernel_tuner.searchspace.Searchspace method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -671,23 +745,31 @@
       <li><a href="design.html#kernel_tuner.backends.opencl.OpenCLFunctions">OpenCLFunctions (class in kernel_tuner.backends.opencl)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.order_param_configs">order_param_configs() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.param_config_to_tensor">param_config_to_tensor() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
       <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.parse_method">parse_method() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.parse_restrictions">parse_restrictions() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="observers.html#kernel_tuner.observers.pmt.PMTObserver">PMTObserver (class in kernel_tuner.observers.pmt)</a>
 </li>
-      <li><a href="observers.html#kernel_tuner.observers.powersensor.PowerSensorObserver">PowerSensorObserver (class in kernel_tuner.observers.powersensor)</a>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.pop_random_partial_neighbor">pop_random_partial_neighbor() (kernel_tuner.searchspace.Searchspace method)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.prepare_kernel_string">prepare_kernel_string() (in module kernel_tuner.util)</a>
+      <li><a href="observers.html#kernel_tuner.observers.powersensor.PowerSensorObserver">PowerSensorObserver (class in kernel_tuner.observers.powersensor)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.util.prepare_kernel_string">prepare_kernel_string() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.print_config">print_config() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.print_config_output">print_config_output() (in module kernel_tuner.util)</a>
@@ -774,6 +856,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.strategies.common.scale_from_params">scale_from_params() (in module kernel_tuner.strategies.common)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace">Searchspace (class in kernel_tuner.searchspace)</a>
+</li>
       <li><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner">SequentialRunner (class in kernel_tuner.runners.sequential)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.setup_block_and_grid">setup_block_and_grid() (in module kernel_tuner.util)</a>
@@ -789,6 +873,8 @@
       <li><a href="design.html#kernel_tuner.util.SkippableFailure">SkippableFailure</a>
 </li>
       <li><a href="design.html#kernel_tuner.strategies.common.snap_to_nearest_config">snap_to_nearest_config() (in module kernel_tuner.strategies.common)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.sorted_list">sorted_list() (kernel_tuner.searchspace.Searchspace method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.backends.compiler.CompilerFunctions.start_event">start_event() (kernel_tuner.backends.compiler.CompilerFunctions method)</a>
 
@@ -846,6 +932,10 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.tensor_to_param_config">tensor_to_param_config() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.searchspace.Searchspace.to_ax_searchspace">to_ax_searchspace() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
       <li><a href="optimization.html#kernel_tuner.strategies.basinhopping.tune">tune() (in module kernel_tuner.strategies.basinhopping)</a>
 
       <ul>

@@ -77,7 +77,10 @@
 <li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Design documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#searchspace">SearchSpace</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-searchspace-searchspace">kernel_tuner.searchspace.SearchSpace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-tuner-searchspace-searchspace">kernel_tuner.searchspace.SearchSpace</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.searchspace.Searchspace"><code class="docutils literal notranslate"><span class="pre">Searchspace</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#strategies">Strategies</a><ul>
@@ -273,6 +276,300 @@ discussed above. For the documentation of the user API see the
 explored by the search strategies.</p>
 <section id="kernel-tuner-searchspace-searchspace">
 <h3>kernel_tuner.searchspace.SearchSpace<a class="headerlink" href="#kernel-tuner-searchspace-searchspace" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.searchspace.</span></span><span class="sig-name descname"><span class="pre">Searchspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tune_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restrictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_threads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['block_size_x',</span> <span class="pre">'block_size_y',</span> <span class="pre">'block_size_z']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defer_construction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_neighbors_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'PythonConstraint'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'PC_OptimizedBacktrackingSolver'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_to_ATF_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace" title="Link to this definition">¶</a></dt>
+<dd><p>Class that provides the search space to strategies.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tune_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restrictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_threads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['block_size_x',</span> <span class="pre">'block_size_y',</span> <span class="pre">'block_size_z']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defer_construction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_neighbors_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'PythonConstraint'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'PC_OptimizedBacktrackingSolver'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_to_ATF_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Build a searchspace using the variables and constraints.</p>
+<dl class="simple">
+<dt>Optionally build the neighbors index - only faster if you repeatedly look up neighbors. Methods:</dt><dd><p>strictly-adjacent: differs +1 or -1 parameter index value for each parameter
+adjacent: picks closest parameter value in both directions for each parameter
+Hamming: any parameter config with 1 different parameter value is a neighbor
+Hamming-adjacent: differs by closest parameter value for exactly 1 parameter.</p>
+</dd>
+</dl>
+<p>Optionally sort the searchspace by the order in which the parameter values were specified. By default, sort goes from first to last parameter, to reverse this use sort_last_param_first.
+Optionally an imported cache can be used instead with <cite>from_cache</cite>, in which case the <cite>tune_params</cite>, <cite>restrictions</cite> and <cite>max_threads</cite> arguments can be set to None, and construction is skipped.
+Optionally construction can be deffered to a later time by setting <cite>defer_construction</cite> to True, in which case the searchspace is not built on instantiation (experimental).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.are_neighbors_indices_cached">
+<span class="sig-name descname"><span class="pre">are_neighbors_indices_cached</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.are_neighbors_indices_cached" title="Link to this definition">¶</a></dt>
+<dd><p>Returns true if the neighbor indices are in the cache, false otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_LHS_sample">
+<span class="sig-name descname"><span class="pre">get_LHS_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_LHS_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Get a distributed random sample of parameter configurations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_LHS_sample_indices">
+<span class="sig-name descname"><span class="pre">get_LHS_sample_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_LHS_sample_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Get a Latin Hypercube sample of parameter configuration indices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_distributed_random_sample">
+<span class="sig-name descname"><span class="pre">get_distributed_random_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_distributed_random_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Get a distributed random sample of parameter configurations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_distributed_random_sample_indices">
+<span class="sig-name descname"><span class="pre">get_distributed_random_sample_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_distributed_random_sample_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Get a distributed random sample of parameter configuration indices. Note: <cite>get_LHS_sample_indices</cite> is likely faster and better distributed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_list_dict">
+<span class="sig-name descname"><span class="pre">get_list_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_list_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Get the internal dictionary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_list_numpy">
+<span class="sig-name descname"><span class="pre">get_list_numpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_list_numpy" title="Link to this definition">¶</a></dt>
+<dd><p>Get the parameter space list as a NumPy array of tuples with mixed types.</p>
+<p>Rarely faster or more convenient than <cite>get_list_param_indices_numpy</cite> or <cite>get_list_numpy_numeric</cite>.
+Initializes the NumPy array if not yet done.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the NumPy array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_list_numpy_numeric">
+<span class="sig-name descname"><span class="pre">get_list_numpy_numeric</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_list_numpy_numeric" title="Link to this definition">¶</a></dt>
+<dd><p>Get the parameter space list as a 2D NumPy array of numeric values.</p>
+<p>This is a view of the NumPy array returned by <cite>get_list_numpy</cite>, but with only numeric values.
+If the searchspace contains non-numeric values, their index will be used instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the NumPy array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy">
+<span class="sig-name descname"><span class="pre">get_list_param_indices_numpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy" title="Link to this definition">¶</a></dt>
+<dd><p>Get the parameter space list as a 2D NumPy array of parameter value indices.</p>
+<p>Same as mapping <cite>get_param_indices</cite> over the searchspace, but faster.
+Assumes that the parameter configs have the same order as <cite>tune_params</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the NumPy array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy_max">
+<span class="sig-name descname"><span class="pre">get_list_param_indices_numpy_max</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy_max" title="Link to this definition">¶</a></dt>
+<dd><p>Get the maximum possible value in the numpy list of parameter indices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy_min">
+<span class="sig-name descname"><span class="pre">get_list_param_indices_numpy_min</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_list_param_indices_numpy_min" title="Link to this definition">¶</a></dt>
+<dd><p>Get the minimum possible value in the numpy list of parameter indices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_neighbors">
+<span class="sig-name descname"><span class="pre">get_neighbors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_full_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_neighbors" title="Link to this definition">¶</a></dt>
+<dd><p>Get the neighbors for a parameter configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_neighbors_indices">
+<span class="sig-name descname"><span class="pre">get_neighbors_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_full_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_neighbors_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Get the neighbors indices for a parameter configuration, cached if requested before.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_neighbors_indices_no_cache">
+<span class="sig-name descname"><span class="pre">get_neighbors_indices_no_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_full_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_neighbors_indices_no_cache" title="Link to this definition">¶</a></dt>
+<dd><p>Get the neighbors indices for a parameter configuration (does not check running cache, useful when mixing neighbor methods).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_neighbors_no_cache">
+<span class="sig-name descname"><span class="pre">get_neighbors_no_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_neighbors_no_cache" title="Link to this definition">¶</a></dt>
+<dd><p>Get the neighbors for a parameter configuration (does not check running cache, useful when mixing neighbor methods).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_param_config_from_numeric">
+<span class="sig-name descname"><span class="pre">get_param_config_from_numeric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_param_config_from_numeric" title="Link to this definition">¶</a></dt>
+<dd><p>Get the actual parameter configuration values from a numeric representation of the parameter configuration as in <cite>get_list_numpy_numeric</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_param_config_from_param_indices">
+<span class="sig-name descname"><span class="pre">get_param_config_from_param_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_indices</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_param_config_from_param_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Get the parameter configuration from the given parameter indices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_param_config_index">
+<span class="sig-name descname"><span class="pre">get_param_config_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_param_config_index" title="Link to this definition">¶</a></dt>
+<dd><p>Lookup the index for a parameter configuration, returns None if not found.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_param_configs_at_indices">
+<span class="sig-name descname"><span class="pre">get_param_configs_at_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_param_configs_at_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Get the param configs at the given indices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_param_indices">
+<span class="sig-name descname"><span class="pre">get_param_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_param_indices" title="Link to this definition">¶</a></dt>
+<dd><p>For each parameter value in the param config, find the index in the tunable parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_param_indices_lower_bounds">
+<span class="sig-name descname"><span class="pre">get_param_indices_lower_bounds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_param_indices_lower_bounds" title="Link to this definition">¶</a></dt>
+<dd><p>Get the lower bounds of the parameter indices after restrictions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_param_indices_upper_bounds">
+<span class="sig-name descname"><span class="pre">get_param_indices_upper_bounds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_param_indices_upper_bounds" title="Link to this definition">¶</a></dt>
+<dd><p>Get the upper bounds of the parameter indices after restrictions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_param_neighbors">
+<span class="sig-name descname"><span class="pre">get_param_neighbors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">randomize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_param_neighbors" title="Link to this definition">¶</a></dt>
+<dd><p>Get the neighboring parameters at an index.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_partial_neighbors_indices">
+<span class="sig-name descname"><span class="pre">get_partial_neighbors_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_partial_neighbors_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Get the partial neighbors for a parameter configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_random_neighbor">
+<span class="sig-name descname"><span class="pre">get_random_neighbor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_partial_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_random_neighbor" title="Link to this definition">¶</a></dt>
+<dd><p>Get an approximately random neighbor for a parameter configuration. Much faster than taking a random choice of all neighbors, but does not build full cache.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_random_sample">
+<span class="sig-name descname"><span class="pre">get_random_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_random_sample" title="Link to this definition">¶</a></dt>
+<dd><p>Get the parameter configurations for a random, non-conflicting sample (caution: not unique in consecutive calls).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_random_sample_indices">
+<span class="sig-name descname"><span class="pre">get_random_sample_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_random_sample_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Get the list indices for a random, non-conflicting sample.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_tensorspace">
+<span class="sig-name descname"><span class="pre">get_tensorspace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_tensorspace" title="Link to this definition">¶</a></dt>
+<dd><p>Get the searchspace encoded in a Tensor. To use a non-default dtype or device, call <cite>initialize_tensorspace</cite> first.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_tensorspace_bounds">
+<span class="sig-name descname"><span class="pre">get_tensorspace_bounds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_tensorspace_bounds" title="Link to this definition">¶</a></dt>
+<dd><p>Get the bounds to the tensorspace parameters, returned as a 2 x d dimensional tensor, and the indices of the parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_tensorspace_categorical_dimensions">
+<span class="sig-name descname"><span class="pre">get_tensorspace_categorical_dimensions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_tensorspace_categorical_dimensions" title="Link to this definition">¶</a></dt>
+<dd><p>Get the a list of the categorical dimensions in the tensorspace.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_true_tunable_params">
+<span class="sig-name descname"><span class="pre">get_true_tunable_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_true_tunable_params" title="Link to this definition">¶</a></dt>
+<dd><p>Get the tunable parameters that are actually tunable, i.e. not constant after restrictions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.get_tune_params_pyatf">
+<span class="sig-name descname"><span class="pre">get_tune_params_pyatf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_threads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.get_tune_params_pyatf" title="Link to this definition">¶</a></dt>
+<dd><p>Convert the tune_params and restrictions to pyATF tunable parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.has_tensorspace">
+<span class="sig-name descname"><span class="pre">has_tensorspace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.has_tensorspace" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the tensorspace has been initialized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.initialize_tensorspace">
+<span class="sig-name descname"><span class="pre">initialize_tensorspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.initialize_tensorspace" title="Link to this definition">¶</a></dt>
+<dd><p>Encode the searchspace in a Tensor. Save the mapping. Call this function directly to control the precision or device used.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.is_param_config_valid">
+<span class="sig-name descname"><span class="pre">is_param_config_valid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.is_param_config_valid" title="Link to this definition">¶</a></dt>
+<dd><p>Returns whether the parameter config is valid (i.e. is in the searchspace after restrictions).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.order_param_configs">
+<span class="sig-name descname"><span class="pre">order_param_configs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_configs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">randomize_in_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.order_param_configs" title="Link to this definition">¶</a></dt>
+<dd><p>Order a list of parameter configurations based on the indices of the parameters given, starting at 0. If randomize_params is true, the order within parameters is shuffled.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.param_config_to_tensor">
+<span class="sig-name descname"><span class="pre">param_config_to_tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.param_config_to_tensor" title="Link to this definition">¶</a></dt>
+<dd><p>Convert from a parameter configuration to a Tensor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.pop_random_partial_neighbor">
+<span class="sig-name descname"><span class="pre">pop_random_partial_neighbor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbor_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.pop_random_partial_neighbor" title="Link to this definition">¶</a></dt>
+<dd><p>Pop a random partial neighbor for a given a parameter configuration if there are at least <cite>threshold</cite> neighbors.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.sorted_list">
+<span class="sig-name descname"><span class="pre">sorted_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sort_last_param_first</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.sorted_list" title="Link to this definition">¶</a></dt>
+<dd><p>Returns list of parameter configs sorted based on the order in which the parameter values were specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sort_last_param_first</strong> – By default, sort goes from first to last parameter, to reverse this use sort_last_param_first</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.tensor_to_param_config">
+<span class="sig-name descname"><span class="pre">tensor_to_param_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.tensor_to_param_config" title="Link to this definition">¶</a></dt>
+<dd><p>Convert from a Tensor to a parameter configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.searchspace.Searchspace.to_ax_searchspace">
+<span class="sig-name descname"><span class="pre">to_ax_searchspace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.searchspace.Searchspace.to_ax_searchspace" title="Link to this definition">¶</a></dt>
+<dd><p>Convert this searchspace to an Ax SearchSpace.</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 <section id="strategies">
@@ -284,7 +581,7 @@ explored by the search strategies.</p>
 <p>Module for functionality that is commonly used throughout the strategies.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.common.</span></span><span class="sig-name descname"><span class="pre">CostFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Searchspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_invalid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.common.</span></span><span class="sig-name descname"><span class="pre">CostFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#kernel_tuner.searchspace.Searchspace" title="kernel_tuner.searchspace.Searchspace"><span class="pre">Searchspace</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_invalid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc" title="Link to this definition">¶</a></dt>
 <dd><p>Class encapsulating the CostFunc method.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc.get_bounds">
