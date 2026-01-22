@@ -61,6 +61,7 @@ tune.__doc__ = common.get_strategy_docstring("Differential Evolution", _options)
 
 def values_to_indices(individual_values, tune_params):
     """Converts an individual's values to its corresponding index vector."""
+    # TODO candidate for moving to Config
     idx = np.zeros(len(individual_values))
     for i, v in enumerate(tune_params.values()):
         idx[i] = v.index(individual_values[i])
@@ -69,6 +70,7 @@ def values_to_indices(individual_values, tune_params):
 
 def indices_to_values(individual_indices, tune_params):
     """Converts an individual's index vector back to its values."""
+    # TODO candidate for moving to Config
     tune_params_list = list(tune_params.values())
     values = []
     for dim, idx in enumerate(individual_indices):

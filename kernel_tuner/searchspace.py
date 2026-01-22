@@ -44,6 +44,50 @@ from kernel_tuner.util import (
 supported_neighbor_methods = ["strictly-adjacent", "adjacent", "Hamming", "Hamming-adjacent", "closest-param-indices"]
 
 
+class Config:
+    """Class that represents a single configuration in the search space."""
+
+    def __init__(self, index: int = None, param_values: tuple = None, searchspace: "Searchspace") -> None:
+        """Important: this is essentially an interface, the state and logic must be kept absolutely minimal. 
+        
+        Any operation is likely more efficient when done at scale via the Searchspace.
+        Either the index or the parameter values must be provided. The index is preferred and always searched for if not provided, as it allows for fast lookups.
+        If a Config is fictional, it means the parameter values do not exist in the searchspace, and some operations may not be valid.
+        """
+        self.index = index
+        self.param_values = param_values
+        self.searchspace = searchspace
+        self.fictional = False
+
+        # validate the input, lookup index if necessary
+        if index is None and param_values is None:
+            raise ValueError("Either index or param_values must be provided.")
+        if index is not None and param_values is not None:
+            raise ValueError("Only one of index or param_values must be provided.")
+        if index is None:
+            self.index = self.get_param_config_index(param_values)
+            if self.index is None:
+                self.fictional = True
+    
+    def values_to_indices(self) -> np.ndarray:
+        """Converts this configuration's values to its corresponding index vector."""
+        if not self.fictional:
+            return self.searchspace.get_list_param_indices_numpy()[self.index]
+        idx = np.zeros(len(individual_values))
+        for i, v in enumerate(self.searchspace.tune_params.values()):
+            idx[i] = v.index(individual_values[i])
+        return idx
+
+    def indices_to_values(self) -> tuple:
+        """Converts this configuration's index vector back to its values."""
+        if not self.fictional:
+            return self.searchspace.list[self.index]
+        values = list()
+        for i, v in enumerate(self.searchspace.tune_params.values()):
+            values.append(v[self.values_to_indices()[i]])
+        return tuple(values)
+
+
 class Searchspace:
     """Class that provides the search space to strategies."""
 
