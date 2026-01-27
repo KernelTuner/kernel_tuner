@@ -99,6 +99,7 @@ class CudaFunctions(GPUBackend):
         cuda_error_check(err)
         env = dict()
         env["device_name"] = device_properties.name.decode()
+        env["pci_bus_id"] = device_properties.pciBusID
         env["cuda_version"] = cuda.CUDA_VERSION
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations
