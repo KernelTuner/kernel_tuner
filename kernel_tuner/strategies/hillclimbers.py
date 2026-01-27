@@ -96,7 +96,7 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
                     break
         else:
             # get score for all positions in parallel
-            scores = cost_func.run_all(children, check_restrictions=False)
+            scores = cost_func.eval_all(children, check_restrictions=False)
 
             for child, score in zip(children, scores):
                 if score < best_score:

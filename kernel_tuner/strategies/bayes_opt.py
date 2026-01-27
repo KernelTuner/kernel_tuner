@@ -473,7 +473,7 @@ class BayesianOptimization:
                 valid_param_configs.append(param_config)
 
         # Run valid configurations in parallel
-        scores = self.cost_func.run_all(valid_param_configs)
+        scores = self.cost_func.eval_all(valid_param_configs)
 
         # Put the scores at the right location in the result
         for idx, score in zip(valid_indices, scores):

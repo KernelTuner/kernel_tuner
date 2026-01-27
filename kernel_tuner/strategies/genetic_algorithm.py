@@ -45,7 +45,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         weighted_population = []
         try:
             # if we are not constraint-aware we should check restrictions upon evaluation
-            times = cost_func.run_all(population, check_restrictions=not constraint_aware)
+            times = cost_func.eval_all(population, check_restrictions=not constraint_aware)
             num_evaluated += len(population)
         except StopCriterionReached as e:
             if tuning_options.verbose:

@@ -52,7 +52,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             print("start iteration ", i, "best time global", best_score_global)
 
         try:
-            scores = cost_func.run_all([p.position for p in swarm])
+            scores = cost_func.eval_all([p.position for p in swarm])
         except StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)

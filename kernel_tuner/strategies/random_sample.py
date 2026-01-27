@@ -23,7 +23,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
     try:
-        cost_func.run_all(samples, check_restrictions=False)
+        cost_func.eval_all(samples, check_restrictions=False)
     except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
