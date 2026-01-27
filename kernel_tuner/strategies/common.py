@@ -72,7 +72,6 @@ class CostFunc:
         scaling=False,
         snap=True,
         return_invalid=False,
-        return_raw=None,
     ):
         """An abstract method to handle evaluation of configurations.
 
@@ -83,7 +82,6 @@ class CostFunc:
             scaling: whether to internally scale parameter values. Defaults to False.
             snap: whether to snap given configurations to their closests equivalent in the space. Defaults to True.
             return_invalid: whether to return the util.ErrorConfig of an invalid configuration. Defaults to False.
-            return_raw: returns (result, results[raw]). Key inferred from objective if set to True. Defaults to None.
         """
         self.searchspace = searchspace
         self.tuning_options = tuning_options
@@ -91,14 +89,13 @@ class CostFunc:
             self.tuning_options["max_fevals"] = min(
                 tuning_options["max_fevals"] if "max_fevals" in tuning_options else np.inf, searchspace.size
             )
-        self.constraint_aware = tuning_options.strategy_options.get("constraint_aware")
+        self.objective = tuning_options.objective
+        self.objective_higher_is_better = tuning_options.objective_higher_is_better
+        self.constraint_aware = bool(tuning_options.strategy_options.get("constraint_aware"))
         self.runner = runner
         self.scaling = scaling
         self.snap = snap
         self.return_invalid = return_invalid
-        self.return_raw = return_raw
-        if return_raw is True:
-            self.return_raw = f"{tuning_options['objective']}s"
         self.results = []
         self.budget_spent_fraction = 0.0
     
@@ -153,7 +150,7 @@ class CostFunc:
                 final_results.append(None)
             else:
                 result = dict(zip(self.searchspace.tune_params.keys(), config))
-                result[self.tuning_options.objective] = util.InvalidConfig()
+                result[self.objective] = util.InvalidConfig()
                 final_results.append(result)
 
         # compile and benchmark the batch
@@ -178,15 +175,14 @@ class CostFunc:
         """Cost function used by almost all strategies."""
         results = self._run_configs(xs, check_restrictions=check_restrictions)
         return_values = []
-        return_raws = []
 
         for result in results:
             # get numerical return value, taking optimization direction into account
-            return_value = result[self.tuning_options.objective]
+            return_value = result[self.objective]
 
             if not isinstance(return_value, util.ErrorConfig):
                 # this is a valid configuration, so invert value in case of maximization
-                if self.tuning_options.objective_higher_is_better:
+                if self.objective_higher_is_better:
                     return_value = -return_value
             else:
                 # this is not a valid configuration, replace with float max if needed
@@ -194,18 +190,9 @@ class CostFunc:
                     return_value = sys.float_info.max
 
             # include raw data in return if requested
-            if self.return_raw is not None:
-                try:
-                    return_raws.append(result[self.return_raw])
-                except KeyError:
-                    return_raws.append([np.nan])
-
             return_values.append(return_value)
 
-        if self.return_raw is not None:
-            return return_values, return_raws
-        else:
-            return return_values
+        return return_values
 
     def eval(self, x, check_restrictions=True):
         return self.eval_all([x], check_restrictions=check_restrictions)[0]
