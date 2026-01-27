@@ -16,6 +16,10 @@ class Runner(ABC):
     def shutdown(self):
         pass
 
+    def available_parallelism(self):
+        """ Gives an indication of how many jobs this runner can execute in parallel. """
+        return 1
+
     @abstractmethod
     def get_device_info(self):
         pass
