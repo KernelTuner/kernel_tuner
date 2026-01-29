@@ -1,3 +1,4 @@
+from warnings import warn
 import numpy as np
 import pytest
 
@@ -14,22 +15,26 @@ import subprocess
 # try to auto-detect which backend is available
 available_backend = None
 try:
-    subprocess.check_output('nvidia-smi')
-    available_backend = 'cuda'
-except Exception: # this command not being found can raise quite a few different errors depending on the configuration
+    subprocess.check_output("nvidia-smi")
+    available_backend = "cuda"
+except Exception:  # this command not being found can raise quite a few different errors depending on the configuration
     try:
-        subprocess.check_output('rocm-smi')
-        available_backend = 'amd'
+        subprocess.check_output("rocm-smi")
+        available_backend = "amd"
     except Exception:
         try:
-            subprocess.check_output('intel_gpu_top -J')
-            available_backend = 'intel'
+            subprocess.check_output("intel_gpu_top -J")
+            available_backend = "intel"
         except Exception:
             try:
-                subprocess.check_output('system_profiler SPDisplaysDataType | grep "Metal"')
+                output = subprocess.check_output('system_profiler SPDisplaysDataType | grep "Metal"')
+                if b"Metal Support" in output:
+                    available_backend = "metal"
             except Exception:
-                available_backend = 'metal'
-                
+                pass
+if available_backend is None:
+    warn("No supported GPU backend detected for Julia tests.")
+
 
 kernel_name = "vector_add!"
 kernel_string = r"""
@@ -62,9 +67,10 @@ def test_ready_argument_list():
 
     # Julia Array maps back through PythonCall as pyjl_pointer-like proxies
     # Scalars remain scalars
-    assert isinstance(gpu_args[0], ValueBase)       # Julia GPU Array proxy
-    assert isinstance(gpu_args[1], np.int32)        # scalar unchanged
-    assert isinstance(gpu_args[2], ValueBase)       # Julia GPU Array proxy
+    assert isinstance(gpu_args[0], ValueBase)  # Julia GPU Array proxy
+    assert isinstance(gpu_args[1], np.int32)  # scalar unchanged
+    assert isinstance(gpu_args[2], ValueBase)  # Julia GPU Array proxy
+
 
 @skip_if_no_julia
 def test_compile():
@@ -79,17 +85,13 @@ def test_compile():
     except Exception as e:
         pytest.fail("Did not expect any exception: " + str(e))
 
+
 @skip_if_no_julia
 def test_tune_kernel(env):
     """Run a minimal Julia kernel tuner example."""
     env[0] = kernel_name
     env[1] = kernel_string
 
-    result, _ = tune_kernel(
-        *env,
-        lang="julia",
-        verbose=True,
-        compiler_options=[available_backend]
-    )
+    result, _ = tune_kernel(*env, lang="julia", verbose=True, compiler_options=[available_backend])
 
     assert len(result) > 0
