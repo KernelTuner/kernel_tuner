@@ -58,6 +58,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             else:
                 self.backend_mod.synchronize(self.end)
                 self.backend_mod.record(self.end, self.stream)
+                self.backend_mod.synchronize(self.end)
                 ms = float(self.backend_mod.elapsed(self.start, self.end))
         else:
             self.kernelabstractions.synchronize(self.backend)
