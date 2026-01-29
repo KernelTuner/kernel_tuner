@@ -39,10 +39,6 @@ try:
     import cupy as cp
 except ImportError:
     cp = np
-try:
-    from cuda import cuda, cudart, nvrtc
-except ImportError:
-    cuda = None
 
 from kernel_tuner.observers.nvml import NVMLObserver
 
@@ -644,14 +640,6 @@ def get_total_timings(results, env, overhead_time):
         total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_benchmark_time
     )
     return env
-
-
-NVRTC_VALID_CC = np.array(["50", "52", "53", "60", "61", "62", "70", "72", "75", "80", "87", "89", "90", "90a"])
-
-
-def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
-    """Returns a valid Compute Capability for NVRTC `--gpu-architecture=`, as per https://docs.nvidia.com/cuda/nvrtc/index.html#group__options."""
-    return max(NVRTC_VALID_CC[NVRTC_VALID_CC <= compute_capability], default="52")
 
 
 def print_config(config, tuning_options, runner):
@@ -1324,22 +1312,6 @@ def dump_cache(obj: str, tuning_options):
     if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
         with open(tuning_options.cachefile, "a") as cachefile:
             cachefile.write(obj)
-
-
-def cuda_error_check(error):
-    """Checking the status of CUDA calls using the NVIDIA cuda-python backend."""
-    if isinstance(error, cuda.CUresult):
-        if error != cuda.CUresult.CUDA_SUCCESS:
-            _, name = cuda.cuGetErrorName(error)
-            raise RuntimeError(f"CUDA error: {name.decode()}")
-    elif isinstance(error, cudart.cudaError_t):
-        if error != cudart.cudaError_t.cudaSuccess:
-            _, name = cudart.getErrorName(error)
-            raise RuntimeError(f"CUDART error: {name.decode()}")
-    elif isinstance(error, nvrtc.nvrtcResult):
-        if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            _, desc = nvrtc.nvrtcGetErrorString(error)
-            raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
 
 def possible_julia_vector_to_list(obj):

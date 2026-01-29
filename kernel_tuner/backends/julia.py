@@ -22,6 +22,7 @@ from kernel_tuner.util import SkippableFailure
 
 try:
     from juliacall import Main as jl
+    from juliacall import JuliaError
 except ImportError:
     jl = None
 
@@ -166,7 +167,7 @@ class JuliaFunctions(GPUBackend):
         # Query device name
         try:
             self.name = jl.seval(info["name"])
-        except Exception:
+        except JuliaError:
             self.name = f"{backend_name}-device-{device}"
 
         # Query capability if available
@@ -175,7 +176,7 @@ class JuliaFunctions(GPUBackend):
                 cc_tuple = jl.seval(info["capability"])
                 # CUDA returns structs with major/minor fields
                 self.cc = f"{cc_tuple.major}{cc_tuple.minor}"
-            except Exception:
+            except JuliaError:
                 self.cc = None
         else:
             self.cc = None
@@ -183,7 +184,7 @@ class JuliaFunctions(GPUBackend):
         # Query max threads
         try:
             self.max_threads = int(jl.seval(info["max_threads"]))
-        except Exception:
+        except JuliaError:
             self.max_threads = None
 
         # Get the device and context
@@ -306,7 +307,10 @@ end
         workgroupsize = (1,) if len(workgroupsize) == 0 else workgroupsize
 
         # run the kernel
-        self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size))
+        try:
+            self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size))
+        except JuliaError as e:
+            raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
@@ -338,7 +342,7 @@ end
     def synchronize(self):
         try:
             jl.Main.KernelAbstractions.synchronize(self.backend)
-        except Exception as e:
+        except JuliaError as e:
             raise RuntimeError(f"Julia synchronize failed: {e}")
 
     # -------------------------
@@ -352,7 +356,7 @@ end
             jl.allocation_tmp = allocation
             jl.seval(f"CUDA.fill!(allocation_tmp, {int(value)})")
             del jl.allocation_tmp
-        except Exception as e:
+        except JuliaError as e:
             raise RuntimeError(f"Julia memset failed: {e}")
 
     @staticmethod
@@ -364,7 +368,7 @@ end
             np.copyto(dest, host)
             del jl.src_tmp
             del jl.host_tmp
-        except Exception as e:
+        except JuliaError as e:
             raise RuntimeError(f"Julia memcpy_dtoh failed: {e}")
 
     # @staticmethod
@@ -377,7 +381,7 @@ end
             del jl.src_tmp
             del jl.arr_tmp
             return arr_tmp
-        except Exception as e:
+        except JuliaError as e:
             raise RuntimeError(f"Julia memcpy_htod failed: {e}")
 
     def copy_constant_memory_args(self, cmem_args):

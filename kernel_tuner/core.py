@@ -498,13 +498,20 @@ class DeviceInterface(object):
                 "OUT_OF_RESOURCES",
                 "INVALID_WORK_GROUP_SIZE",
                 "a bounds error was thrown during kernel execution",
+                "Julia kernel launch failed",
             ]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
                 logging.debug("benchmark fails due to runtime failure / too many resources required")
                 if verbose:
-                    print(
-                        f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
-                    )
+                    if "Julia" in str(e):
+                        from warnings import warn
+                        warn(
+                            f"skipping config {util.get_instance_string(instance.params)} reason: Julia kernel launch failed because of:\n{e}"
+                        )
+                    else:
+                        print(
+                            f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
+                        )
                 result[objective] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
