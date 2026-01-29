@@ -123,8 +123,9 @@ class CostFunc:
             if new_config:
                 config = new_config
                 is_legal = True
-        
+
         return config, is_legal
+
 
     def _run_configs(self, xs, check_restrictions=True):
         """ Takes a list of Euclidian coordinates and evaluates the configurations at those points. """
@@ -137,7 +138,7 @@ class CostFunc:
         self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
 
         batch_configs = []  # The configs to run
-        batch_indices = []  # Where to store result in `final_results`` 
+        batch_indices = []  # Where to store result in `final_results``
         final_results = []  # List returned to the user
         benchmark_config = []
 
@@ -155,14 +156,13 @@ class CostFunc:
                 result = dict(zip(self.searchspace.tune_params.keys(), config))
                 result[self.objective] = util.InvalidConfig()
                 final_results.append(result)
-                benchmark_config.append(False)
 
         # do not overshoot max_fevals if we can avoid it
         if "max_fevals" in self.tuning_options:
             budget = self.tuning_options.max_fevals - len(self.tuning_options.unique_results)
             if sum(benchmark_config) > budget:
-                # find index 'budget'th True value (+1 for including this last index)
-                last_index = benchmark_config.index(True, budget)+1
+                # find index 'budget'th True value
+                last_index = _get_nth_true(benchmark_config, budget)+1
                 # mask configs we cannot benchmark
                 batch_configs = batch_configs[:last_index]
                 batch_indices = batch_indices[:last_index]
@@ -270,6 +270,11 @@ class CostFunc:
                 # if values are not numbers, use the first and last value as bounds
                 bounds.append((values[0], values[-1]))
         return bounds
+
+
+def _get_nth_true(lst, n):
+    # Returns the index of the nth True value in a list
+    return [i for i, x in enumerate(lst) if x][n-1]
 
 
 def setup_method_arguments(method, bounds):

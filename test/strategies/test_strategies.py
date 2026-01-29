@@ -96,7 +96,7 @@ def test_strategies(vector_add, strategy):
         tune_params = vector_add[-1]
         unique_results = {}
         for result in results:
-            x_int = ",".join([str(v) for k, v in result.items() if k in tune_params])
+            x_int = ",".join([str(v) for k, v in result.items() if k in tune_params.keys()])
             if not isinstance(result["time"], InvalidConfig):
                 unique_results[x_int] = result["time"]
         assert len(unique_results) <= filter_options["max_fevals"]
