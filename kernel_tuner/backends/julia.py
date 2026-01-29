@@ -12,6 +12,7 @@ Notes:
 - Currently supports CuArray and scalar arguments; constant and texture memory are not implemented.
 """
 
+import subprocess
 import numpy as np
 from warnings import warn
 from pathlib import Path
@@ -37,9 +38,21 @@ class JuliaFunctions(GPUBackend):
         """Initialize Julia backend using JuliaCall."""
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
-        assert (
-            len(compiler_options) == 1
-        ), "Julia backend requires exactly one backend name: CUDA, AMDGPU, oneAPI, Metal."
+        self.available_backends = self.detect_backends()
+        if len(compiler_options) == 1:
+            if compiler_options[0].upper() not in self.available_backends:
+                raise ValueError(
+                    f"Requested Julia backend '{compiler_options[0]}' not available. "
+                    f"Available backends: {self.available_backends}"
+                )
+            backend_name = compiler_options[0].upper()
+        else:
+            if len(self.available_backends) != 1:
+                raise ValueError(
+                    f"Multiple or no Julia backends detected: {self.available_backends}. "
+                    "Please specify exactly one backend in compiler_options."
+                )
+            backend_name = self.available_backends[0]
 
         # Initialize backend attributes
         self.device = device
@@ -53,7 +66,7 @@ class JuliaFunctions(GPUBackend):
         self.backend = None
         self.start_evt = None
         self.end_evt = None
-        self.initialize_backend(device, backend_name=compiler_options[0])
+        self.initialize_backend(device, backend_name=backend_name)
 
         # setup observers
         self.observers = observers or []
@@ -98,7 +111,7 @@ class JuliaFunctions(GPUBackend):
 
         # Map name → Julia module and device-selection calls
         backend_map = {
-            "cuda": {
+            "CUDA": {
                 "pkg": "CUDA",
                 "module": "CUDA",
                 "device_select": lambda d: f"CUDA.device!({d})",
@@ -107,7 +120,7 @@ class JuliaFunctions(GPUBackend):
                 "capability": "CUDA.capability(CUDA.device())",
                 "GPUArrayType": "CuArray",
             },
-            "amd": {
+            "AMD": {
                 "pkg": "AMDGPU",
                 "module": "AMDGPU",
                 "device_select": lambda d: f"AMDGPU.device!({d})",
@@ -116,7 +129,7 @@ class JuliaFunctions(GPUBackend):
                 "capability": None,
                 "GPUArrayType": "ROCArray",
             },
-            "intel": {
+            "INTEL": {
                 "pkg": "oneAPI",
                 "module": "oneAPI",
                 "device_select": lambda d: f"oneAPI.device!({d})",
@@ -125,7 +138,7 @@ class JuliaFunctions(GPUBackend):
                 "capability": None,
                 "GPUArrayType": "OneArray",
             },
-            "metal": {
+            "METAL": {
                 "pkg": "Metal",
                 "module": "Metal",
                 "device_select": lambda d: "Metal.device!(Metal.device())",  # only single device support in Metal.jl
@@ -136,7 +149,7 @@ class JuliaFunctions(GPUBackend):
             },
         }
 
-        backend_name = backend_name.lower()
+        backend_name = backend_name.upper()
         if backend_name not in backend_map:
             raise ValueError(f"Unknown backend: {backend_name}")
         info = backend_map[backend_name]
@@ -189,11 +202,11 @@ class JuliaFunctions(GPUBackend):
 
         # Get the device and context
         self.backend_device = self.backend_mod.device()
-        if backend_name == "cuda":
+        if backend_name == "CUDA":
             self.contextqueue = self.backend_mod.context
-        elif backend_name in ("amd", "intel"):
+        elif backend_name in ("AMD", "INTEL"):
             self.contextqueue = self.backend_mod.queue
-        elif backend_name == "metal":
+        elif backend_name == "METAL":
             self.contextqueue = self.backend_mod.MTLCommandQueue(self.backend_device)
 
         # Optional: common KernelAbstractions stream abstraction
@@ -203,19 +216,19 @@ class JuliaFunctions(GPUBackend):
             self.stream = None
 
         # Set up stream and event attributes for observers
-        if backend_name == "cuda":
+        if backend_name == "CUDA":
             self.start_evt = backend_mod.CuEvent
             self.end_evt = backend_mod.CuEvent
             self.stream = backend_mod.stream()
-        elif backend_name == "amd":
+        elif backend_name == "AMD":
             self.start_evt = backend_mod.ROCEvent
             self.end_evt = backend_mod.ROCEvent
             self.stream = backend_mod.default_stream()
-        elif backend_name == "intel":
+        elif backend_name == "INTEL":
             # OneAPI: no events available
             self.start_evt = None
             self.end_evt = None
-        elif backend_name == "metal":
+        elif backend_name == "METAL":
             self.start_evt = self.start_event
             self.end_evt = self.stop_event
         else:
@@ -426,3 +439,39 @@ end
         except Exception:
             buf = self.backend_mod.MTLCommandBuffer(self.contextqueue)
         return buf
+
+    def detect_backends(self):
+        """Detect the Julia backends available."""
+        available_backends = []
+        for backend_name in ["CUDA", "AMD", "INTEL", "METAL"]:
+            if backend_name == "CUDA":
+                try:
+                    subprocess.check_output("nvidia-smi")
+                    available_backends.append(backend_name)
+                except Exception:
+                    pass
+            elif backend_name == "AMD":
+                try:
+                    subprocess.check_output("rocm-smi")
+                    available_backends.append(backend_name)
+                except Exception:
+                    pass
+            elif backend_name == "INTEL":
+                try:
+                    subprocess.check_output("intel_gpu_top -J")
+                    available_backends.append(backend_name)
+                except Exception:
+                    pass
+            elif backend_name == "METAL":
+                try:
+                    output = subprocess.check_output('system_profiler SPDisplaysDataType | grep "Metal"')
+                    if b"Metal Support" in output:
+                        available_backends.append(backend_name)
+                except Exception:
+                    pass
+            # try:
+            #     jl.seval(f"import {backend_name.upper() if backend_name != 'amd' else 'AMDGPU'}")
+            #     available_backends.append(backend_name)
+            # except Exception:
+            #     pass
+        return available_backends
