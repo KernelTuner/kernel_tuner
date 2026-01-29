@@ -117,6 +117,10 @@ class SimulationRunner(Runner):
                 # self.last_strategy_time is set by cost_func
                 result["strategy_time"] = self.last_strategy_time
 
+                # Reset last strategy time to avoid counting it more than once in the
+                # framework time when strategy requests multiple configs at once
+                self.last_strategy_time = 0
+
                 try:
                     simulated_time = result["compile_time"] + result["verification_time"] + result["benchmark_time"]
                     tuning_options.simulated_time += simulated_time
@@ -128,7 +132,7 @@ class SimulationRunner(Runner):
 
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
-                result["framework_time"] = total_time - self.last_strategy_time
+                result["framework_time"] = total_time - result["strategy_time"]
 
                 results.append(result)
                 continue
