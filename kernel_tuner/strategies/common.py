@@ -101,7 +101,7 @@ class CostFunc:
     
     def _normalize_and_validate_config(self, x, check_restrictions=True):
         # snap values in x to nearest actual value for each parameter, unscale x if needed
-        if not self.snap:
+        if self.snap:
             if self.scaling:
                 config = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)
             else:
