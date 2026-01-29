@@ -1,13 +1,10 @@
 export to_gpuarray, launch_kernel
 
-function to_gpuarray(x)
-    if isa(x, GPUArrayType)
-        return x
-    elseif isa(x, AbstractArray)
-        return GPUArrayType(x)
-    else
-        return x
+function to_gpuarray(a)
+    if isa(a, AbstractArray)
+        a = gpu_array_type(a)
     end
+    return a
 end
 
 function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workgroupsize::Tuple, shmem::Int)
