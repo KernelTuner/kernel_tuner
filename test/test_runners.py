@@ -163,8 +163,8 @@ def test_time_keeping(env):
     answer = [args[1] + args[2], None, None, None]
 
     options = dict(method="uniform",
-                   popsize=10,
-                   maxiter=1,
+                   popsize=5,
+                   maxiter=50,
                    mutation_chance=1,
                    max_fevals=10)
     start = time.perf_counter()
