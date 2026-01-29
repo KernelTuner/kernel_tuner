@@ -139,6 +139,7 @@ class CostFunc:
         batch_configs = []  # The configs to run
         batch_indices = []  # Where to store result in `final_results`` 
         final_results = []  # List returned to the user
+        benchmark_config = []
 
         for x in xs:
             config, is_legal = self._normalize_and_validate_config(x, check_restrictions=check_restrictions)
@@ -148,10 +149,24 @@ class CostFunc:
                 batch_configs.append(config)
                 batch_indices.append(len(final_results))
                 final_results.append(None)
+                x_int = ",".join([str(i) for i in config])
+                benchmark_config.append(x_int not in self.tuning_options.unique_results)
             else:
                 result = dict(zip(self.searchspace.tune_params.keys(), config))
                 result[self.objective] = util.InvalidConfig()
                 final_results.append(result)
+                benchmark_config.append(False)
+
+        # do not overshoot max_fevals if we can avoid it
+        if "max_fevals" in self.tuning_options:
+            budget = self.tuning_options.max_fevals - len(self.tuning_options.unique_results)
+            if sum(benchmark_config) > budget:
+                # find index 'budget'th True value (+1 for including this last index)
+                last_index = benchmark_config.index(True, budget)+1
+                # mask configs we cannot benchmark
+                batch_configs = batch_configs[:last_index]
+                batch_indices = batch_indices[:last_index]
+                final_results = final_results[:last_index]
 
         # compile and benchmark the batch
         batch_results = self.runner.run(batch_configs, self.tuning_options)
@@ -162,10 +177,14 @@ class CostFunc:
             final_results[index] = result
 
         # append to `unique_results`
-        for config, result in zip(batch_configs, batch_results):
-            x_int = ",".join([str(i) for i in config])
-            if x_int not in self.tuning_options.unique_results:
-                self.tuning_options.unique_results[x_int] = result
+        for config, result, benchmarked in zip(batch_configs, batch_results, benchmark_config):
+            if benchmarked:
+                x_int = ",".join([str(i) for i in config])
+                if x_int not in self.tuning_options.unique_results:
+                    self.tuning_options.unique_results[x_int] = result
+
+        # check again for stop condition
+        self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
 
         # upon returning from this function control will be given back to the strategy, so reset the start time
         self.runner.last_strategy_start_time = perf_counter()
