@@ -84,7 +84,6 @@ class CostFunc:
             scaling: whether to internally scale parameter values. Defaults to False.
             snap: whether to snap given configurations to their closests equivalent in the space. Defaults to True.
             return_invalid: whether to return the util.ErrorConfig of an invalid configuration. Defaults to False.
-            return_raw: returns (result, results[raw]). Key inferred from objective if set to True. Defaults to None.
         """
         self.searchspace = searchspace
         self.tuning_options = tuning_options
@@ -92,94 +91,139 @@ class CostFunc:
             self.tuning_options["max_fevals"] = min(
                 tuning_options["max_fevals"] if "max_fevals" in tuning_options else np.inf, searchspace.size
             )
+        self.objective = tuning_options.objective
+        self.objective_higher_is_better = tuning_options.objective_higher_is_better
+        self.constraint_aware = bool(tuning_options.strategy_options.get("constraint_aware"))
         self.runner = runner
         self.scaling = scaling
         self.snap = snap
         self.return_invalid = return_invalid
-        self.return_raw = return_raw
-        if return_raw is True:
-            self.return_raw = f"{tuning_options['objective']}s"
         self.results = []
         self.budget_spent_fraction = 0.0
         self.invalid_return_value = invalid_value
 
+    def _normalize_and_validate_config(self, x, check_restrictions=True):
+        # snap values in x to nearest actual value for each parameter, unscale x if needed
+        if self.snap:
+            if self.scaling:
+                config = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)
+            else:
+                config = snap_to_nearest_config(x, self.searchspace.tune_params)
+        else:
+            config = x
 
-    def __call__(self, x, check_restrictions=True):
-        """Cost function used by almost all strategies."""
+        is_legal = True
+
+        # else check if this is a legal (non-restricted) configuration
+        if check_restrictions:
+            is_legal = self.searchspace.is_param_config_valid(tuple(config))
+
+        # Attempt to repare the config
+        if not is_legal and self.constraint_aware:
+            # attempt to repair
+            new_config = unscale_and_snap_to_nearest_valid(x, config, self.searchspace, self.tuning_options.eps)
+
+            if new_config:
+                config = new_config
+                is_legal = True
+
+        return config, is_legal
+
+
+    def _run_configs(self, xs, check_restrictions=True):
+        """ Takes a list of Euclidian coordinates and evaluates the configurations at those points. """
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
+        self.runner.start_time = perf_counter() # start framework time
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug("_cost_func called")
-        logging.debug("x: %s", str(x))
 
         # check if max_fevals is reached or time limit is exceeded
         self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
 
-        # snap values in x to nearest actual value for each parameter, unscale x if needed
-        if self.snap:
-            if self.scaling:
-                params = unscale_and_snap_to_nearest(x, self.searchspace.tune_params, self.tuning_options.eps)
+        batch_configs = []  # The configs to run
+        batch_indices = []  # Where to store result in `final_results``
+        final_results = []  # List returned to the user
+        benchmark_config = []
+
+        for x in xs:
+            config, is_legal = self._normalize_and_validate_config(x, check_restrictions=check_restrictions)
+            logging.debug("normalize config: %s -> %s (legal: %s)", str(x), str(config), is_legal)
+
+            if is_legal:
+                batch_configs.append(config)
+                batch_indices.append(len(final_results))
+                final_results.append(None)
+                x_int = ",".join([str(i) for i in config])
+                benchmark_config.append(x_int not in self.tuning_options.unique_results)
             else:
-                params = snap_to_nearest_config(x, self.searchspace.tune_params)
-        else:
-            params = x
-        logging.debug("params %s", str(params))
+                result = dict(zip(self.searchspace.tune_params.keys(), config))
+                result[self.objective] = util.InvalidConfig()
+                final_results.append(result)
 
-        legal = True
-        result = {}
-        x_int = ",".join([str(i) for i in params])
+        # do not overshoot max_fevals if we can avoid it
+        if "max_fevals" in self.tuning_options:
+            budget = self.tuning_options.max_fevals - len(self.tuning_options.unique_results)
+            if sum(benchmark_config) > budget:
+                # find index 'budget'th True value
+                last_index = _get_nth_true(benchmark_config, budget)+1
+                # mask configs we cannot benchmark
+                batch_configs = batch_configs[:last_index]
+                batch_indices = batch_indices[:last_index]
+                final_results = final_results[:batch_indices[-1]+1]
 
-        # else check if this is a legal (non-restricted) configuration
-        if check_restrictions and self.searchspace.restrictions:
-            legal = self.searchspace.is_param_config_valid(tuple(params))
+        # compile and benchmark the batch
+        batch_results = self.runner.run(batch_configs, self.tuning_options)
+        self.results.extend(batch_results)
 
+        # set in the results array
+        for index, result in zip(batch_indices, batch_results):
+            final_results[index] = result
 
-            if not legal:
-                if "constraint_aware" in self.tuning_options.strategy_options and self.tuning_options.strategy_options["constraint_aware"]:
-                    # attempt to repair
-                    new_params = unscale_and_snap_to_nearest_valid(x, params, self.searchspace, self.tuning_options.eps)
-                    if new_params:
-                        params = new_params
-                        legal = True
-                        x_int = ",".join([str(i) for i in params])
+        # append to `unique_results`
+        for config, result, benchmarked in zip(batch_configs, batch_results, benchmark_config):
+            if benchmarked:
+                x_int = ",".join([str(i) for i in config])
+                if x_int not in self.tuning_options.unique_results:
+                    self.tuning_options.unique_results[x_int] = result
 
-                if not legal:
-                    params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
-                    result = params_dict
-                    result[self.tuning_options.objective] = util.InvalidConfig()
+        # check again for stop condition
+        # this check is necessary because some strategies cannot handle partially completed requests
+        # for example when only half of the configs in a population have been evaluated
+        self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
 
-        if legal:
-            # compile and benchmark this instance
-            res = self.runner.run([params], self.tuning_options)
-            result = res[0]
+        # upon returning from this function control will be given back to the strategy, so reset the start time
+        self.runner.last_strategy_start_time = perf_counter()
+        return final_results
 
-            # append to tuning results
-            if x_int not in self.tuning_options.unique_results:
-                self.tuning_options.unique_results[x_int] = result
+    def eval_all(self, xs, check_restrictions=True):
+        """Cost function used by almost all strategies."""
+        results = self._run_configs(xs, check_restrictions=check_restrictions)
+        return_values = []
 
-            self.results.append(result)
+        for result in results:
+            # get numerical return value, taking optimization direction into account
+            return_value = result[self.objective]
 
-            # upon returning from this function control will be given back to the strategy, so reset the start time
-            self.runner.last_strategy_start_time = perf_counter()
+            if not isinstance(return_value, util.ErrorConfig):
+                # this is a valid configuration, so invert value in case of maximization
+                if self.objective_higher_is_better:
+                    return_value = -return_value
+            else:
+                # this is not a valid configuration, replace with float max if needed
+                if not self.return_invalid:
+                    return_value = sys.float_info.max
 
-        # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective]
-        if not isinstance(return_value, util.ErrorConfig):
-            # this is a valid configuration, so invert value in case of maximization
-            return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
-        else:
-            # this is not a valid configuration, replace with float max if needed
-            if not self.return_invalid:
-                return_value = self.invalid_return_value
+            # include raw data in return if requested
+            return_values.append(return_value)
 
-        # include raw data in return if requested
-        if self.return_raw is not None:
-            try:
-                return return_value, result[self.return_raw]
-            except KeyError:
-                return return_value, [np.nan]
+        return return_values
 
-        return return_value
+    def eval(self, x, check_restrictions=True):
+        return self.eval_all([x], check_restrictions=check_restrictions)[0]
+
+    def __call__(self, x, check_restrictions=True):
+        return self.eval(x, check_restrictions=check_restrictions)
 
     def get_start_pos(self):
         """Get starting position for optimization."""
@@ -232,6 +276,11 @@ class CostFunc:
                 # if values are not numbers, use the first and last value as bounds
                 bounds.append((values[0], values[-1]))
         return bounds
+
+
+def _get_nth_true(lst, n):
+    # Returns the index of the nth True value in a list
+    return [i for i, x in enumerate(lst) if x][n-1]
 
 
 def setup_method_arguments(method, bounds):

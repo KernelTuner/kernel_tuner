@@ -16,11 +16,11 @@ class SimulationDevice(_SimulationDevice):
 
     @property
     def name(self):
-        return self.env['device_name']
+        return self.env["device_name"]
 
     @name.setter
     def name(self, value):
-        self.env['device_name'] = value
+        self.env["device_name"] = value
         if not self.quiet:
             print("Simulating: " + value)
 
@@ -40,12 +40,10 @@ class SimulationRunner(Runner):
         :param kernel_options: A dictionary with all options for the kernel.
         :type kernel_options: kernel_tuner.interface.Options
 
-        :param device_options: A dictionary with all options for the device
-            on which the kernel should be tuned.
+        :param device_options: A dictionary with all options for the device on which the kernel should be tuned.
         :type device_options: kernel_tuner.interface.Options
 
-        :param iterations: The number of iterations used for benchmarking
-            each kernel instance.
+        :param iterations: The number of iterations used for benchmarking each kernel instance.
         :type iterations: int
         """
         self.quiet = device_options.quiet
@@ -60,6 +58,9 @@ class SimulationRunner(Runner):
         self.last_strategy_time = 0
         self.units = {}
 
+    def get_device_info(self):
+        return self.dev
+    
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
         env["simulation"] = True
@@ -72,20 +73,24 @@ class SimulationRunner(Runner):
         :param parameter_space: The parameter space as an iterable.
         :type parameter_space: iterable
 
-        :param tuning_options: A dictionary with all options regarding the tuning
-            process.
+        :param tuning_options: A dictionary with all options regarding the tuning process.
         :type tuning_options: kernel_tuner.iterface.Options
 
-        :returns: A list of dictionaries for executed kernel configurations and their
-            execution times.
+        :returns: A list of dictionaries for executed kernel configurations and their execution times.
         :rtype: dict()
         """
-        logging.debug('simulation runner started for ' + self.kernel_options.kernel_name)
+        logging.debug("simulation runner started for " + self.kernel_options.kernel_name)
 
         results = []
 
-        # iterate over parameter space 
+        # self.last_strategy_time is set by cost_func
+        strategy_time_per_config = self.last_strategy_time / len(parameter_space) if len(parameter_space) > 0 else 0
+
+        # iterate over parameter space
         for element in parameter_space:
+
+            if util.stop_criterion_reached(tuning_options):
+                return results
 
             # check if element is in the cache
             x_int = ",".join([str(i) for i in element])
@@ -96,7 +101,6 @@ class SimulationRunner(Runner):
                 if tuning_options.metrics and not isinstance(result.get(tuning_options.objective), util.ErrorConfig):
                     result = util.process_metrics(result, tuning_options.metrics)
 
-
                 # Simulate behavior of sequential runner that when a configuration is
                 # served from the cache by the sequential runner, the compile_time,
                 # verification_time, and benchmark_time are set to 0.
@@ -105,21 +109,21 @@ class SimulationRunner(Runner):
                 # configuration is already counted towards the unique_results.
                 # It is the responsibility of cost_func to add configs to unique_results.
                 if x_int in tuning_options.unique_results:
-
-                    result['compile_time'] = 0
-                    result['verification_time'] = 0
-                    result['benchmark_time'] = 0
+                    result["compile_time"] = 0
+                    result["verification_time"] = 0
+                    result["benchmark_time"] = 0
 
                 else:
                     # configuration is evaluated for the first time, print to the console
-                    util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
+                    util.print_config_output(
+                        tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units
+                    )
 
                 # Everything but the strategy time and framework time are simulated,
-                # self.last_strategy_time is set by cost_func
-                result['strategy_time'] = self.last_strategy_time
+                result["strategy_time"] = strategy_time_per_config
 
                 try:
-                    simulated_time = result['compile_time'] + result['verification_time'] + result['benchmark_time']
+                    simulated_time = result["compile_time"] + result["verification_time"] + result["benchmark_time"]
                     tuning_options.simulated_time += simulated_time
                 except KeyError:
                     if "time_limit" in tuning_options:
@@ -129,9 +133,11 @@ class SimulationRunner(Runner):
 
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
-                result['framework_time'] = total_time - self.last_strategy_time
+                result["framework_time"] = total_time
 
                 results.append(result)
+                if x_int not in tuning_options.unique_results:
+                    tuning_options.unique_results[x_int] = result
                 continue
 
             # if the configuration is not in the cache and not within restrictions, simulate an InvalidConfig with warning
@@ -142,11 +148,11 @@ class SimulationRunner(Runner):
                 result['compile_time'] = 0
                 result['verification_time'] = 0
                 result['benchmark_time'] = 0
-                result['strategy_time'] = self.last_strategy_time
+                result['strategy_time'] = strategy_time_per_config
 
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
-                result['framework_time'] = total_time - self.last_strategy_time
+                result['framework_time'] = total_time
 
                 result[tuning_options.objective] = util.InvalidConfig()
                 results.append(result)

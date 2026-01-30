@@ -139,6 +139,7 @@ class PyCudaFunctions(GPUBackend):
         # collect environment information
         env = dict()
         env["device_name"] = self.context.get_device().name()
+        env["pci_bus_id"] = self.context.get_device().pci_bus_id()
         env["cuda_version"] = ".".join([str(i) for i in drv.get_version()])
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations

@@ -1,19 +1,25 @@
 import random
 
 import numpy as np
+import pytest
 
 import kernel_tuner.strategies.common as common
 from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
 
+@pytest.fixture
+def tuning_options():
+    tuning_options = Options()
+    tuning_options["strategy_options"] = {}
+    tuning_options["objective"] = "time"
+    tuning_options["objective_higher_is_better"] = False
+    return tuning_options
 
-def test_get_bounds_x0_eps():
+
+def test_get_bounds_x0_eps(tuning_options):
     tune_params = dict()
     tune_params['x'] = [0, 1, 2, 3, 4]
     searchspace = Searchspace(tune_params, [], 1024)
-
-    tuning_options = Options()
-    tuning_options["strategy_options"] = {}
 
     bounds, x0, eps = common.CostFunc(searchspace, tuning_options, None, scaling=True).get_bounds_x0_eps()
 
@@ -27,7 +33,7 @@ def test_get_bounds_x0_eps():
     assert eps == 1.0
 
 
-def test_get_bounds():
+def test_get_bounds(tuning_options):
 
     tune_params = dict()
     tune_params['x'] = [0, 1, 2, 3, 4]
@@ -39,7 +45,7 @@ def test_get_bounds():
 
     expected = [(0, 4), (0, 9900), (-11.2, 123.27)]
     searchspace = Searchspace(tune_params, None, 1024)
-    cost_func = common.CostFunc(searchspace, None, None)
+    cost_func = common.CostFunc(searchspace, tuning_options, None)
     answer = cost_func.get_bounds()
     assert answer == expected
 
