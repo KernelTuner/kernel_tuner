@@ -213,8 +213,18 @@ def check_stop_criterion(to: dict) -> float:
         if time_spent > to.time_limit:
             raise StopCriterionReached("time limit exceeded")
         return time_spent / to.time_limit
-    
 
+def stop_criterion_reached(to: dict) -> bool:
+    """Returns True if stop criterion has been reached"""
+    res = False
+    if "max_fevals" in to:
+        if len(to.unique_results) >= to.max_fevals:
+            res = True
+    if "time_limit" in to:
+        time_spent = (time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time
+        if time_spent > to.time_limit:
+            res |= True
+    return res
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
     """Raise an exception if a tune parameter has a forbidden name."""

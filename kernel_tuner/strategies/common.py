@@ -130,6 +130,7 @@ class CostFunc:
     def _run_configs(self, xs, check_restrictions=True):
         """ Takes a list of Euclidian coordinates and evaluates the configurations at those points. """
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
+        self.runner.start_time = perf_counter() # start framework time
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug("_cost_func called")
@@ -166,7 +167,7 @@ class CostFunc:
                 # mask configs we cannot benchmark
                 batch_configs = batch_configs[:last_index]
                 batch_indices = batch_indices[:last_index]
-                final_results = final_results[:last_index]
+                final_results = final_results[:batch_indices[-1]+1]
 
         # compile and benchmark the batch
         batch_results = self.runner.run(batch_configs, self.tuning_options)

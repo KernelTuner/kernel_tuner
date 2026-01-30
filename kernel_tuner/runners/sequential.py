@@ -5,7 +5,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
+from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache, stop_criterion_reached
 
 
 class SequentialRunner(Runner):
@@ -65,9 +65,15 @@ class SequentialRunner(Runner):
 
         results = []
 
+        # self.last_strategy_time is set by cost_func
+        strategy_time_per_config = self.last_strategy_time / len(parameter_space) if len(parameter_space) > 0 else 0
+
         # iterate over parameter space
         for element in parameter_space:
             params = dict(zip(tuning_options.tune_params.keys(), element))
+
+            if stop_criterion_reached(tuning_options):
+                return results
 
             result = None
             warmup_time = 0
@@ -104,14 +110,13 @@ class SequentialRunner(Runner):
 
             # get the framework time by estimating based on other times
             total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
-            params["strategy_time"] = self.last_strategy_time
+            params["strategy_time"] = strategy_time_per_config
             params["framework_time"] = max(
                 total_time
                 - (
                     params["compile_time"]
                     + params["verification_time"]
                     + params["benchmark_time"]
-                    + params["strategy_time"]
                 ),
                 0,
             )
