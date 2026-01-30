@@ -63,6 +63,7 @@ from kernel_tuner.strategies import (
     pyatf_strategies,
     random_sample,
     simulated_annealing,
+    skopt
 )
 from kernel_tuner.strategies.wrapper import OptAlgWrapper
 
@@ -80,6 +81,7 @@ strategy_map = {
     "mls": mls,
     "pso": pso,
     "simulated_annealing": simulated_annealing,
+    "skopt": skopt,
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
     "pyatf_strategies": pyatf_strategies,
@@ -392,6 +394,7 @@ _tuning_options = Options(
             * "pso" particle swarm optimization
             * "random_sample" takes a random sample of the search space
             * "simulated_annealing" simulated annealing strategy
+            * "skopt" uses the minimization methods from `skopt`
 
         Strategy-specific parameters and options are explained under strategy_options.
 

@@ -72,6 +72,8 @@ class CostFunc:
         scaling=False,
         snap=True,
         return_invalid=False,
+        return_raw=None,
+        invalid_value=sys.float_info.max,
     ):
         """An abstract method to handle evaluation of configurations.
 
@@ -98,7 +100,8 @@ class CostFunc:
         self.return_invalid = return_invalid
         self.results = []
         self.budget_spent_fraction = 0.0
-    
+        self.invalid_return_value = invalid_value
+
     def _normalize_and_validate_config(self, x, check_restrictions=True):
         # snap values in x to nearest actual value for each parameter, unscale x if needed
         if self.snap:

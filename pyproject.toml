@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "kernel_tuner"
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.3.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.3.1" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -128,6 +128,7 @@ nox-poetry = "^1.0.3"
 ruff = "^0.4.8"
 pep440 = "^0.1.2"
 tomli = "^2.0.1"          # held back by Python <= 3.10, can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
+scikit-optimize = "0.10.2"
 
 # development dependencies are unused for now, as this is already covered by test and docs
 # # ATTENTION: if anything is changed here, run `poetry update`

@@ -87,7 +87,7 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
         if restart:
             for child in children:
                 # get score for this position
-                score = cost_func(child, check_restrictions=False)
+                score = cost_func(child)
 
                 if score < best_score:
                     best_score = score
