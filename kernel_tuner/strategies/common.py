@@ -188,6 +188,8 @@ class CostFunc:
                     self.tuning_options.unique_results[x_int] = result
 
         # check again for stop condition
+        # this check is necessary because some strategies cannot handle partially completed requests
+        # for example when only half of the configs in a population have been evaluated
         self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
 
         # upon returning from this function control will be given back to the strategy, so reset the start time

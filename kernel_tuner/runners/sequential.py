@@ -132,5 +132,7 @@ class SequentialRunner(Runner):
 
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
+            if x_int not in tuning_options.unique_results:
+                tuning_options.unique_results[x_int] = result
 
         return results

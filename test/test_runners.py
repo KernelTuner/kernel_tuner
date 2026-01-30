@@ -287,6 +287,7 @@ def test_runner(env):
     device_options = Options([(k, opts.get(k, None))
                               for k in _device_options.keys()])
     tuning_options.cachefile = None
+    tuning_options.unique_results = {}
 
     # create runner
     runner = SequentialRunner(kernelsource,

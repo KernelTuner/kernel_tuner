@@ -136,6 +136,8 @@ class SimulationRunner(Runner):
                 result["framework_time"] = total_time
 
                 results.append(result)
+                if x_int not in tuning_options.unique_results:
+                    tuning_options.unique_results[x_int] = result
                 continue
 
             # if the configuration is not in the cache and not within restrictions, simulate an InvalidConfig with warning
