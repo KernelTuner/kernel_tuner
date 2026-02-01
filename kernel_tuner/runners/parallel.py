@@ -3,10 +3,18 @@ from collections import deque
 import logging
 import socket
 from time import perf_counter
+from typing import List, Optional
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.interface import Options
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
+from kernel_tuner.util import (
+    BudgetExceededConfig,
+    ErrorConfig,
+    TuningBudget,
+    print_config_output,
+    process_metrics,
+    store_cache,
+)
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
@@ -213,31 +221,31 @@ class ParallelRunner(Runner):
     def available_parallelism(self):
         return len(self.workers)
 
-    def submit_jobs(self, jobs):
+    def submit_jobs(self, jobs, budget: TuningBudget):
         pending_jobs = deque(jobs)
         running_jobs = []
 
-        while pending_jobs or running_jobs:
-            should_wait = True
+        while pending_jobs and not budget.is_done():
+            job_was_submitted = False
 
             # If there is still work left, submit it now
-            if pending_jobs:
-                for i, worker in enumerate(list(self.workers)):
-                    if worker.is_available():
-                        # Push worker to back of list
-                        self.workers.pop(i)
-                        self.workers.append(worker)
+            for i, worker in enumerate(list(self.workers)):
+                if worker.is_available():
+                    # Push worker to back of list
+                    self.workers.pop(i)
+                    self.workers.append(worker)
 
-                        # Pop job and submit it
-                        job = pending_jobs.popleft()
-                        ref = worker.submit(*job)
-                        running_jobs.append(ref)
+                    # Pop job and submit it
+                    key, config = pending_jobs.popleft()
+                    ref = worker.submit(key, config)
+                    running_jobs.append(ref)
 
-                        should_wait = False
-                        break
+                    job_was_submitted = True
+                    budget.add_evaluations(1)
+                    break
 
             # If no work was submitted, wait until a worker is available
-            if should_wait:
+            if not job_was_submitted:
                 if not running_jobs:
                     raise RuntimeError("invalid state: no ray workers available")
 
@@ -246,14 +254,28 @@ class ParallelRunner(Runner):
                 for result in ready_jobs:
                     yield ray.get(result)
 
-    def run(self, parameter_space, tuning_options):
+        # If there are still pending jobs, then the budget has been exceeded.
+        # We return `None` to indicate that no result is available for these jobs.
+        while pending_jobs:
+            key, _ = pending_jobs.popleft()
+            yield (key, None)
+
+        # Wait until running jobs complete
+        while running_jobs:
+            ready_jobs, running_jobs = ray.wait(running_jobs, num_returns=1)
+
+            for result in ready_jobs:
+                yield ray.get(result)
+
+    def run(self, parameter_space, tuning_options) -> List[Optional[dict]]:
         metrics = tuning_options.metrics
         objective = tuning_options.objective
 
         jobs = []  # Jobs that need to be executed
         results = []  # Results that will be returned at the end
         key2index = dict()  # Used to insert job result back into `results`
-        duplicate_entries = []  # Used for duplicate entries in `parameter_space`
+
+        total_worker_time = 0
 
         # Select jobs which are not in the cache
         for index, config in enumerate(parameter_space):
@@ -262,28 +284,33 @@ class ParallelRunner(Runner):
 
             if key in tuning_options.cache:
                 params.update(tuning_options.cache[key])
-                params["compile_time"] = 0
-                params["verification_time"] = 0
-                params["benchmark_time"] = 0
+
+                # Simulate compile, verification, and benchmark time
+                tuning_options.budget.add_time_spent(params["compile_time"])
+                tuning_options.budget.add_time_spent(params["verification_time"])
+                tuning_options.budget.add_time_spent(params["benchmark_time"])
                 results.append(params)
             else:
-                if key not in key2index:
-                    key2index[key] = index
-                else:
-                    duplicate_entries.append((key2index[key], index))
+                assert key not in key2index, "duplicate jobs submitted"
+                key2index[key] = index
 
                 jobs.append((key, params))
                 results.append(None)
 
-        total_worker_time = 0
 
         # Submit jobs and wait for them to finish
-        for key, result in self.submit_jobs(jobs):
+        for key, result in self.submit_jobs(jobs, tuning_options.budget):
+            # `None` indicate that no result is available since the budget is exceeded.
+            # We can skip it, meaning that `results` contains `None`s for these entries
+            if result is None:
+                continue
+
+            # Store the result into the output array
             results[key2index[key]] = result
 
             # Collect total time spent by worker
             total_worker_time += (
-                params["compile_time"] + params["verification_time"] + params["benchmark_time"]
+                result["compile_time"] + result["verification_time"] + result["benchmark_time"]
             )
 
             if isinstance(result.get(objective), ErrorConfig):
@@ -300,10 +327,6 @@ class ParallelRunner(Runner):
             # add configuration to cache
             store_cache(key, result, tuning_options.cachefile, tuning_options.cache)
 
-        # Copy each `i` to `j` for every `i,j` in `duplicate_entries`
-        for i, j in duplicate_entries:
-            results[j] = dict(results[i])
-
         total_time = 1000 * (perf_counter() - self.start_time)
         self.start_time = perf_counter()
 
@@ -313,14 +336,20 @@ class ParallelRunner(Runner):
         runner_time = total_time - strategy_time
         framework_time = max(runner_time * len(self.workers) - total_worker_time, 0)
 
+        num_valid_results = sum(bool(r) for r in results) # Count the number of valid results
+
         # Post-process all the results
-        for params in results:
+        for result in results:
+            # Skip missing results
+            if not result:
+                continue
+
             # Amortize the time over all the results
-            params["strategy_time"] = strategy_time / len(results)
-            params["framework_time"] = framework_time / len(results)
+            result["strategy_time"] = strategy_time / num_valid_results
+            result["framework_time"] = framework_time / num_valid_results
 
             # only compute metrics on configs that have not errored
-            if metrics and not isinstance(params.get(objective), ErrorConfig):
-                params = process_metrics(params, metrics)
+            if not isinstance(result.get(objective), ErrorConfig):
+                result = process_metrics(result, metrics)
 
         return results

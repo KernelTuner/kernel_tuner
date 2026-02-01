@@ -54,6 +54,7 @@ class SimulationRunner(Runner):
         self.kernel_options = kernel_options
 
         self.start_time = perf_counter()
+        self.total_simulated_time = 0
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
         self.units = {}
@@ -64,7 +65,7 @@ class SimulationRunner(Runner):
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
         env["simulation"] = True
-        env["simulated_time"] = tuning_options.simulated_time
+        env["simulated_time"] = self.total_simulated_time
         return env
 
     def run(self, parameter_space, tuning_options):
@@ -89,55 +90,48 @@ class SimulationRunner(Runner):
         # iterate over parameter space
         for element in parameter_space:
 
-            if util.stop_criterion_reached(tuning_options):
-                return results
-
+            # Append `None` to indicate that the tuning budget has been exceeded
+            if tuning_options.budget.is_done():
+                results.append(None)
+                continue
+            
             # check if element is in the cache
-            x_int = ",".join([str(i) for i in element])
-            if tuning_options.cache and x_int in tuning_options.cache:
-                result = tuning_options.cache[x_int].copy()
+            key = ",".join([str(i) for i in element])
+
+            if key in tuning_options.cache:
+                # Get from cache and create a copy
+                result = dict(tuning_options.cache[key])
 
                 # only compute metrics on configs that have not errored
                 if tuning_options.metrics and not isinstance(result.get(tuning_options.objective), util.ErrorConfig):
                     result = util.process_metrics(result, tuning_options.metrics)
 
-                # Simulate behavior of sequential runner that when a configuration is
-                # served from the cache by the sequential runner, the compile_time,
-                # verification_time, and benchmark_time are set to 0.
-                # This step is only performed in the simulation runner when a configuration
-                # is served from the cache beyond the first timel. That is, when the
-                # configuration is already counted towards the unique_results.
-                # It is the responsibility of cost_func to add configs to unique_results.
-                if x_int in tuning_options.unique_results:
-                    result["compile_time"] = 0
-                    result["verification_time"] = 0
-                    result["benchmark_time"] = 0
-
-                else:
-                    # configuration is evaluated for the first time, print to the console
-                    util.print_config_output(
-                        tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units
-                    )
+                # configuration is evaluated for the first time, print to the console
+                util.print_config_output(
+                    tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units
+                )
 
                 # Everything but the strategy time and framework time are simulated,
                 result["strategy_time"] = strategy_time_per_config
 
+                # Simulate the evaluation of this configuration
+                tuning_options.budget.add_evaluations(1)
+                tuning_options.budget.add_time_spent(result["compile_time"])
+                tuning_options.budget.add_time_spent(result["verification_time"])
+                tuning_options.budget.add_time_spent(result["benchmark_time"])
+
                 try:
-                    simulated_time = result["compile_time"] + result["verification_time"] + result["benchmark_time"]
-                    tuning_options.simulated_time += simulated_time
+                    self.total_simulated_time += result["compile_time"] + result["verification_time"] + result["benchmark_time"]
                 except KeyError:
-                    if "time_limit" in tuning_options:
-                        raise RuntimeError(
-                            "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
-                        )
+                    raise RuntimeError(
+                        "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
+                    )
 
                 total_time = 1000 * (perf_counter() - self.start_time)
                 self.start_time = perf_counter()
                 result["framework_time"] = total_time
 
                 results.append(result)
-                if x_int not in tuning_options.unique_results:
-                    tuning_options.unique_results[x_int] = result
                 continue
 
             # if the configuration is not in the cache and not within restrictions, simulate an InvalidConfig with warning

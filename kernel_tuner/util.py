@@ -1,5 +1,6 @@
 """Module for kernel tuner utility functions."""
 import ast
+from datetime import timedelta
 import errno
 import json
 import logging
@@ -187,40 +188,78 @@ def check_argument_list(kernel_name, kernel_string, args):
         warnings.warn(errors[0], UserWarning)
 
 
-def check_stop_criterion(to: dict) -> float:
-    """Check if the stop criterion is reached.
+class TuningBudget:
+    def __init__(self, time_limit=None, max_fevals=None):
+        if max_fevals is None:
+            max_fevals = float("inf")
+            
+        if time_limit is None:
+            time_limit = timedelta.max
 
-    Args:
-        to (dict): tuning options.
+        if not isinstance(time_limit, timedelta):
+            time_limit = timedelta(seconds=time_limit)
 
-    Raises:
-        StopCriterionReached: if the max_fevals is reached or time limit is exceeded.
+        if max_fevals <= 0:
+            raise ValueError("max_fevals must be greater than zero")
+        
+        if time_limit <= timedelta(seconds=0):
+            raise ValueError("time_limit must be greater than zero")
 
-    Returns:
-        float: fraction of budget spent. If both max_fevals and time_limit are set, it returns the fraction of time.
-    """
-    if "max_fevals" in to:
-        if len(to.unique_results) >= to.max_fevals:
-            raise StopCriterionReached(f"max_fevals ({to.max_fevals}) reached")
-        if not "time_limit" in to:
-            return len(to.unique_results) / to.max_fevals
-    if "time_limit" in to:
-        time_spent = (time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time
-        if time_spent > to.time_limit:
+        self.start_time_seconds = time.perf_counter()
+        self.time_spent_extra = timedelta()
+        self.time_limit = time_limit
+        self.num_fevals = 0
+        self.max_fevals = max_fevals
+    
+    def add_evaluations(self, n=1):
+        self.num_fevals += n
+    
+    def add_time_spent(self, delta):
+        if not isinstance(delta, timedelta):
+            delta = timedelta(seconds=delta)
+        self.time_spent_extra += delta
+    
+    def get_time_spent(self) -> timedelta:
+        seconds_passed = time.perf_counter() - self.start_time_seconds
+        return timedelta(seconds=seconds_passed) + self.time_spent_extra
+    
+    def get_time_remaining(self) -> timedelta:
+        return max(self.time_limit - self.get_time_spent(), timedelta(seconds=0))
+    
+    def get_evaluations_spent(self) -> int:
+        return max(self.max_fevals - self.num_fevals, 0)
+    
+    def get_evaluations_remaining(self) -> int:
+        return max(self.max_fevals - self.num_fevals, 0)
+    
+    def is_done(self) -> bool:
+        if self.num_fevals >= self.max_fevals:
+            return True
+
+        if self.get_time_spent() > self.time_limit:
+            return True
+
+        return False   
+    
+    def raise_exception_if_done(self):
+        if self.num_fevals >= self.max_fevals:
+            raise StopCriterionReached(f"max_fevals ({self.max_fevals}) reached")
+        
+        if self.get_time_spent() > self.time_limit:
             raise StopCriterionReached("time limit exceeded")
-        return time_spent / to.time_limit
+    
+    def get_fraction_consumed(self) -> float:
+        if self.num_fevals >= self.max_fevals:
+            return 1.0
+        
+        time_spent = self.get_time_spent()
 
-def stop_criterion_reached(to: dict) -> bool:
-    """Returns True if stop criterion has been reached"""
-    res = False
-    if "max_fevals" in to:
-        if len(to.unique_results) >= to.max_fevals:
-            res = True
-    if "time_limit" in to:
-        time_spent = (time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time
-        if time_spent > to.time_limit:
-            res |= True
-    return res
+        if time_spent > self.time_limit:
+            return 1.0
+        
+        return max(time_spent / self.time_limit, self.num_fevals / self.max_fevals)
+    
+
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
     """Raise an exception if a tune parameter has a forbidden name."""
@@ -694,17 +733,18 @@ def process_metrics(params, metrics):
     :rtype: dict
 
     """
-    if not isinstance(metrics, dict):
-        raise ValueError("metrics should be a dictionary to preserve order and support composability")
-    for k, v in metrics.items():
-        if isinstance(v, str):
-            value = eval(replace_param_occurrences(v, params))
-        elif callable(v):
-            value = v(params)
-        else:
-            raise ValueError("metric dicts values should be strings or callable")
-        # We overwrite any existing values for the given key
-        params[k] = value
+    if metrics:
+        if not isinstance(metrics, dict):
+            raise ValueError("metrics should be a dictionary to preserve order and support composability")
+        for k, v in metrics.items():
+            if isinstance(v, str):
+                value = eval(replace_param_occurrences(v, params))
+            elif callable(v):
+                value = v(params)
+            else:
+                raise ValueError("metric dicts values should be strings or callable")
+            # We overwrite any existing values for the given key
+            params[k] = value
     return params
 
 

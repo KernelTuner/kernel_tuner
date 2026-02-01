@@ -620,11 +620,14 @@ def tune_kernel(
 
     # copy some values from strategy_options
     searchspace_construction_options = {}
+    max_fevals = None
+    time_limit = None
+
     if strategy_options:
         if "max_fevals" in strategy_options:
-            tuning_options["max_fevals"] = strategy_options["max_fevals"]
+            max_fevals = strategy_options["max_fevals"]
         if "time_limit" in strategy_options:
-            tuning_options["time_limit"] = strategy_options["time_limit"] 
+            time_limit = strategy_options["time_limit"] 
         if "searchspace_construction_options" in strategy_options:
             searchspace_construction_options = strategy_options["searchspace_construction_options"]         
 
@@ -703,14 +706,27 @@ def tune_kernel(
         print(f"Searchspace has {searchspace.size} configurations after restrictions.")
 
     # register the times and raise an exception if the budget is exceeded
-    if "time_limit" in tuning_options:
-        tuning_options["startup_time"] = perf_counter() - start_overhead_time
-        if tuning_options["startup_time"] > tuning_options["time_limit"]:
+    startup_time = perf_counter() - start_overhead_time
+
+    if time_limit is not None:
+        if startup_time > time_limit:
             raise RuntimeError(
-                f"The startup time of the tuning process ({tuning_options['startup_time']} seconds) has exceeded the time limit ({tuning_options['time_limit']} seconds). "
+                f"The startup time of the tuning process ({startup_time} seconds) has exceeded the time limit ({time_limit} seconds). "
                 "Please increase the time limit or decrease the size of the search space."
             )
-    tuning_options["start_time"] = perf_counter()
+
+        time_limit -= startup_time
+
+    if max_fevals is None or max_fevals > searchspace.size:
+        logging.info(f"evaluation limit has been adjusted from {max_fevals} to {searchspace.size} (search space size)")
+        max_fevals = searchspace.size
+
+    # Create the budget. Add the time spent on startup to the budget
+    budget = util.TuningBudget(time_limit, max_fevals)
+    tuning_options["time_limit"] = time_limit  # TODO: Is this used?
+    tuning_options["max_fevals"] = max_fevals  # TODO: Is this used?
+    tuning_options["budget"] = budget
+
 
     # call the strategy to execute the tuning process
     results = strategy.tune(searchspace, runner, tuning_options)

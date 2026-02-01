@@ -139,53 +139,68 @@ class CostFunc:
         logging.debug("_cost_func called")
 
         # check if max_fevals is reached or time limit is exceeded
-        self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
+        self.tuning_options.budget.raise_exception_if_done()
 
         batch_configs = []  # The configs to run
-        batch_indices = []  # Where to store result in `final_results``
+        batch_keys = [] # The keys of the configs to run
+        pending_indices_by_key = dict()  # Maps key => where to store result in `final_results`
         final_results = []  # List returned to the user
         benchmark_config = []
 
+        # Loop over all configurations. For each configurations there are four cases:
+        # 1. The configuration is valid, we can skip it
+        # 2. The configuration is in  `unique_results`, we can get it from there
+        # 3. The configuration is in  `pending_indices_by_key`, it is duplicate in `xs`
+        # 4. The configuration must be evaluated by the runner.
         for x in xs:
             config, is_legal = self._normalize_and_validate_config(x, check_restrictions=check_restrictions)
             logging.debug("normalize config: %s -> %s (legal: %s)", str(x), str(config), is_legal)
+            key = ",".join([str(i) for i in config])
 
-            if is_legal:
-                batch_configs.append(config)
-                batch_indices.append(len(final_results))
-                final_results.append(None)
-                x_int = ",".join([str(i) for i in config])
-                benchmark_config.append(x_int not in self.tuning_options.unique_results)
-            else:
+            # 1. Not legal, just return `InvalidConfig`
+            if not is_legal:
                 result = dict(zip(self.searchspace.tune_params.keys(), config))
                 result[self.objective] = util.InvalidConfig()
                 final_results.append(result)
 
-        # do not overshoot max_fevals if we can avoid it
-        if "max_fevals" in self.tuning_options:
-            budget = self.tuning_options.max_fevals - len(self.tuning_options.unique_results)
-            if sum(benchmark_config) > budget:
-                # find index 'budget'th True value
-                last_index = _get_nth_true(benchmark_config, budget)+1
-                # mask configs we cannot benchmark
-                batch_configs = batch_configs[:last_index]
-                batch_indices = batch_indices[:last_index]
-                final_results = final_results[:batch_indices[-1]+1]
+            # 2. Attempt to retrieve from `unique_results` 
+            elif key in self.tuning_options.unique_results:
+                result = dict(self.tuning_options.unique_results[key])
+                final_results.append(result)
+
+            # 3. We have already seen this config in the current batch
+            elif key in pending_indices_by_key:
+                pending_indices_by_key[key].append(len(final_results))
+                final_results.append(None)
+
+            # 4. A new config, we must evaluate this
+            else:
+                batch_keys.append(key)
+                batch_configs.append(config)
+                pending_indices_by_key[key] = [len(final_results)]
+                final_results.append(None)
 
         # compile and benchmark the batch
         batch_results = self.runner.run(batch_configs, self.tuning_options)
-        self.results.extend(batch_results)
 
-        # set in the results array
-        for index, result in zip(batch_indices, batch_results):
-            final_results[index] = result
+        for key, result in zip(batch_keys, batch_results):
+            # Skip. Result is missing because the runner has exhausted the budget
+            if result is None:
+                continue
 
-        # append to `unique_results`
-        for config, result, benchmarked in zip(batch_configs, batch_results, benchmark_config):
-            if benchmarked:
-                x_int = ",".join([str(i) for i in config])
-                if x_int not in self.tuning_options.unique_results:
-                    self.tuning_options.unique_results[x_int] = result
+            # set in the results array
+            for index in pending_indices_by_key[key]:
+                final_results[index] = dict(result)
+
+                # Disable the timings. Only the first result must get these.
+                result["compile_time"] = 0
+                result["verification_time"] = 0
+                result["benchmark_time"] = 0
+
+            # Put result in `unique_results`
+            self.tuning_options.unique_results[key] = result
+            self.results.append(result)
+
 
         # check again for stop condition
         # this check is necessary because some strategies cannot handle partially completed requests
@@ -194,6 +209,16 @@ class CostFunc:
 
         # upon returning from this function control will be given back to the strategy, so reset the start time
         self.runner.last_strategy_start_time = perf_counter()
+
+        # Check the tuning budget again
+        self.tuning_options.budget.raise_exception_if_done()
+        self.budget_spent_fraction = self.tuning_options.budget.get_fraction_consumed()
+
+        # If some results are missing (`None`), then the runner did not return all results 
+        # because the budget has been exceed or some other reason causing the runner to fail.
+        if not all(final_results):
+            raise util.StopCriterionReached("runner did not evaluate all given configurations")
+
         return final_results
 
     def eval_all(self, xs, check_restrictions=True):

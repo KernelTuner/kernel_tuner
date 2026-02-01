@@ -70,6 +70,7 @@ class SequentialRunner(Runner):
 
         # iterate over parameter space
         for element in parameter_space:
+            tuning_options.budget.add_evaluations(1)
             params = dict(zip(tuning_options.tune_params.keys(), element))
 
             if stop_criterion_reached(tuning_options):
@@ -82,9 +83,11 @@ class SequentialRunner(Runner):
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
                 params.update(tuning_options.cache[x_int])
-                params["compile_time"] = 0
-                params["verification_time"] = 0
-                params["benchmark_time"] = 0
+
+                # Simulate compile, verification, and benchmark time
+                tuning_options.budget.add_time_spent(params["compile_time"])
+                tuning_options.budget.add_time_spent(params["verification_time"])
+                tuning_options.budget.add_time_spent(params["benchmark_time"])
             else:
                 # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
                 if not self.warmed_up:
