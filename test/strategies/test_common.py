@@ -46,9 +46,8 @@ def test_cost_func():
                              verbose=True, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
     
-    with raises(StopCriterionReached):
-        time = CostFunc(Searchspace(tune_params, restrictions, 1024), tuning_options, runner)(x)
-        assert time == sys.float_info.max
+    time = CostFunc(Searchspace(tune_params, restrictions, 1024), tuning_options, runner)(x)
+    assert time == sys.float_info.max
 
 
 def test_setup_method_arguments():

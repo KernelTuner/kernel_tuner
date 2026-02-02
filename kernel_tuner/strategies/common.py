@@ -87,10 +87,6 @@ class CostFunc:
         """
         self.searchspace = searchspace
         self.tuning_options = tuning_options
-        if isinstance(self.tuning_options, dict):
-            self.tuning_options["max_fevals"] = min(
-                tuning_options["max_fevals"] if "max_fevals" in tuning_options else np.inf, searchspace.size
-            )
         self.objective = tuning_options.objective
         self.objective_higher_is_better = tuning_options.objective_higher_is_better
         self.constraint_aware = bool(tuning_options.strategy_options.get("constraint_aware"))
