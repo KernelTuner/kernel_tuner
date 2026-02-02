@@ -286,9 +286,9 @@ class ParallelRunner(Runner):
                 params.update(tuning_options.cache[key])
 
                 # Simulate compile, verification, and benchmark time
-                tuning_options.budget.add_time_spent(params["compile_time"])
-                tuning_options.budget.add_time_spent(params["verification_time"])
-                tuning_options.budget.add_time_spent(params["benchmark_time"])
+                tuning_options.budget.add_time(milliseconds=params["compile_time"])
+                tuning_options.budget.add_time(milliseconds=params["verification_time"])
+                tuning_options.budget.add_time(milliseconds=params["benchmark_time"])
                 results.append(params)
             else:
                 assert key not in key2index, "duplicate jobs submitted"

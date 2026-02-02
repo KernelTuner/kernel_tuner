@@ -5,7 +5,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache, stop_criterion_reached
+from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
 
 
 class SequentialRunner(Runner):
@@ -70,11 +70,14 @@ class SequentialRunner(Runner):
 
         # iterate over parameter space
         for element in parameter_space:
+            # If the time limit is exceeded, just skip this element. Add `None` to
+            # indicate to CostFunc that no result is available for this config.
+            if tuning_options.budget.is_done():
+                results.append(None)
+                continue
+            
             tuning_options.budget.add_evaluations(1)
             params = dict(zip(tuning_options.tune_params.keys(), element))
-
-            if stop_criterion_reached(tuning_options):
-                return results
 
             result = None
             warmup_time = 0
@@ -85,9 +88,9 @@ class SequentialRunner(Runner):
                 params.update(tuning_options.cache[x_int])
 
                 # Simulate compile, verification, and benchmark time
-                tuning_options.budget.add_time_spent(params["compile_time"])
-                tuning_options.budget.add_time_spent(params["verification_time"])
-                tuning_options.budget.add_time_spent(params["benchmark_time"])
+                tuning_options.budget.add_time(milliseconds=params["compile_time"])
+                tuning_options.budget.add_time(milliseconds=params["verification_time"])
+                tuning_options.budget.add_time(milliseconds=params["benchmark_time"])
             else:
                 # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
                 if not self.warmed_up:

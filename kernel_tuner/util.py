@@ -190,19 +190,13 @@ def check_argument_list(kernel_name, kernel_string, args):
 
 class TuningBudget:
     def __init__(self, time_limit=None, max_fevals=None):
-        if max_fevals is None:
-            max_fevals = float("inf")
-            
-        if time_limit is None:
-            time_limit = timedelta.max
-
-        if not isinstance(time_limit, timedelta):
+        if time_limit is not None and not isinstance(time_limit, timedelta):
             time_limit = timedelta(seconds=time_limit)
 
-        if max_fevals <= 0:
+        if max_fevals is not None and max_fevals <= 0:
             raise ValueError("max_fevals must be greater than zero")
         
-        if time_limit <= timedelta(seconds=0):
+        if time_limit is not None and time_limit <= timedelta(seconds=0):
             raise ValueError("time_limit must be greater than zero")
 
         self.start_time_seconds = time.perf_counter()
@@ -214,50 +208,55 @@ class TuningBudget:
     def add_evaluations(self, n=1):
         self.num_fevals += n
     
-    def add_time_spent(self, delta):
-        if not isinstance(delta, timedelta):
-            delta = timedelta(seconds=delta)
-        self.time_spent_extra += delta
+    def add_time(self, seconds=0, milliseconds=0):
+        self.time_spent_extra += timedelta(seconds=seconds, milliseconds=milliseconds)
     
     def get_time_spent(self) -> timedelta:
         seconds_passed = time.perf_counter() - self.start_time_seconds
         return timedelta(seconds=seconds_passed) + self.time_spent_extra
     
     def get_time_remaining(self) -> timedelta:
-        return max(self.time_limit - self.get_time_spent(), timedelta(seconds=0))
+        if self.time_limit is not None:
+            return max(self.time_limit - self.get_time_spent(), timedelta(seconds=0))
+        else:
+            return timedelta.max
     
     def get_evaluations_spent(self) -> int:
-        return max(self.max_fevals - self.num_fevals, 0)
+        return self.num_fevals
     
     def get_evaluations_remaining(self) -> int:
-        return max(self.max_fevals - self.num_fevals, 0)
+        if self.max_fevals is not None:
+            return max(self.max_fevals - self.num_fevals, 0)
+        else:
+            return float("inf")
     
     def is_done(self) -> bool:
-        if self.num_fevals >= self.max_fevals:
+        if self.max_fevals is not None and self.num_fevals >= self.max_fevals:
             return True
 
-        if self.get_time_spent() > self.time_limit:
+        if self.time_limit is not None and self.get_time_spent() > self.time_limit:
             return True
 
         return False   
     
     def raise_exception_if_done(self):
-        if self.num_fevals >= self.max_fevals:
+        if self.max_fevals is not None and self.num_fevals >= self.max_fevals:
             raise StopCriterionReached(f"max_fevals ({self.max_fevals}) reached")
         
-        if self.get_time_spent() > self.time_limit:
+        if self.time_limit is not None and self.get_time_spent() > self.time_limit:
             raise StopCriterionReached("time limit exceeded")
     
     def get_fraction_consumed(self) -> float:
-        if self.num_fevals >= self.max_fevals:
-            return 1.0
-        
-        time_spent = self.get_time_spent()
+        if self.max_fevals is not None and self.time_limit is not None:
+            time_spent = self.get_time_spent()
+            return min(1.0, time_spent / self.time_limit, self.num_fevals / self.max_fevals)
+        elif self.max_fevals is not None:
+            return min(1.0, self.num_fevals / self.max_fevals)
+        elif self.time_limit is not None:
+            return min(1.0, self.get_time_spent() / self.time_limit)
+        else:
+            return 0.0
 
-        if time_spent > self.time_limit:
-            return 1.0
-        
-        return max(time_spent / self.time_limit, self.num_fevals / self.max_fevals)
     
 
 

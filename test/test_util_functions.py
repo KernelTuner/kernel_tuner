@@ -3,6 +3,7 @@ from __future__ import print_function
 import json
 import os
 import warnings
+import datetime
 
 import numpy as np
 import pytest
@@ -427,6 +428,92 @@ def test_check_argument_list7():
         """
     args = [np.byte(5), np.float64(4.6), np.int32([1, 2, 3]), np.uint64([3, 2, 111])]
     assert_user_warning(check_argument_list, [kernel_name, kernel_string, args])
+
+
+def test_tuning_budget1():
+    budget = TuningBudget()
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_evaluations(9000)
+    assert budget.get_evaluations_spent() == 9000
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_time(seconds=9000)
+    assert budget.get_evaluations_spent() == 9000
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+def test_tuning_budget2():
+    budget = TuningBudget(max_fevals=5)
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == 5
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_evaluations(4)
+    assert budget.get_evaluations_spent() == 4
+    assert budget.get_evaluations_remaining() == 1
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 4/5
+
+    budget.add_evaluations(1)
+    assert budget.get_evaluations_spent() == 5
+    assert budget.get_evaluations_remaining() == 0
+    assert budget.is_done()
+    assert pytest.raises(StopCriterionReached, budget.raise_exception_if_done)
+    assert budget.get_fraction_consumed() == 1.0
+
+
+def test_tuning_budget3():
+    # Two values are similar if they are within 0.01
+    approx = lambda x: pytest.approx(x, abs=0.01)
+
+    budget = TuningBudget(time_limit=5)
+    assert budget.get_time_spent().total_seconds() == approx(0)
+    assert budget.get_time_remaining().total_seconds() == approx(5)
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(0.0)
+
+    budget.add_evaluations(1)
+    assert budget.get_time_spent().total_seconds() == approx(0)
+    assert budget.get_time_remaining().total_seconds() == approx(5)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(0.0)
+
+    budget.add_time(seconds=2)
+    assert budget.get_time_spent().total_seconds() == approx(2)
+    assert budget.get_time_remaining().total_seconds() == approx(3)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(2/5)
+
+    budget.add_time(seconds=4)
+    assert budget.get_time_spent().total_seconds() == approx(6)
+    assert budget.get_time_remaining().total_seconds() == approx(0)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert budget.is_done()
+    assert pytest.raises(StopCriterionReached, budget.raise_exception_if_done)
+    assert budget.get_fraction_consumed() == 1.0
 
 
 def test_check_tune_params_list():

@@ -145,7 +145,6 @@ class CostFunc:
         batch_keys = [] # The keys of the configs to run
         pending_indices_by_key = dict()  # Maps key => where to store result in `final_results`
         final_results = []  # List returned to the user
-        benchmark_config = []
 
         # Loop over all configurations. For each configurations there are four cases:
         # 1. The configuration is valid, we can skip it
@@ -201,16 +200,11 @@ class CostFunc:
             self.tuning_options.unique_results[key] = result
             self.results.append(result)
 
-
-        # check again for stop condition
-        # this check is necessary because some strategies cannot handle partially completed requests
-        # for example when only half of the configs in a population have been evaluated
-        self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
-
         # upon returning from this function control will be given back to the strategy, so reset the start time
         self.runner.last_strategy_start_time = perf_counter()
 
-        # Check the tuning budget again
+        # this check is necessary because some strategies cannot handle partially completed requests
+        # for example when only half of the configs in a population have been evaluated
         self.tuning_options.budget.raise_exception_if_done()
         self.budget_spent_fraction = self.tuning_options.budget.get_fraction_consumed()
 

@@ -116,9 +116,9 @@ class SimulationRunner(Runner):
 
                 # Simulate the evaluation of this configuration
                 tuning_options.budget.add_evaluations(1)
-                tuning_options.budget.add_time_spent(result["compile_time"])
-                tuning_options.budget.add_time_spent(result["verification_time"])
-                tuning_options.budget.add_time_spent(result["benchmark_time"])
+                tuning_options.budget.add_time(milliseconds=result["compile_time"])
+                tuning_options.budget.add_time(milliseconds=result["verification_time"])
+                tuning_options.budget.add_time(milliseconds=result["benchmark_time"])
 
                 try:
                     self.total_simulated_time += result["compile_time"] + result["verification_time"] + result["benchmark_time"]
