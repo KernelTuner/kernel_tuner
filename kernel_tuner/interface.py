@@ -625,10 +625,13 @@ def tune_kernel(
     if strategy_options:
         if "max_fevals" in strategy_options:
             max_fevals = strategy_options["max_fevals"]
+            tuning_options["max_fevals"] = max_fevals  # TODO: Is this used?
         if "time_limit" in strategy_options:
             time_limit = strategy_options["time_limit"] 
+            tuning_options["time_limit"] = time_limit  # TODO: Is this used?
         if "searchspace_construction_options" in strategy_options:
             searchspace_construction_options = strategy_options["searchspace_construction_options"]         
+
 
     # log the user inputs
     logging.debug("tune_kernel called")
@@ -720,11 +723,8 @@ def tune_kernel(
         logging.info(f"evaluation limit has been adjusted from {max_fevals} to {searchspace.size} (search space size)")
         max_fevals = searchspace.size
 
-    # Create the budget. Add the time spent on startup to the budget
-    budget = util.TuningBudget(time_limit, max_fevals)
-    tuning_options["time_limit"] = time_limit  # TODO: Is this used?
-    tuning_options["max_fevals"] = max_fevals  # TODO: Is this used?
-    tuning_options["budget"] = budget
+    # Create the budget
+    tuning_options["budget"] = util.TuningBudget(time_limit, max_fevals)
 
 
     # call the strategy to execute the tuning process

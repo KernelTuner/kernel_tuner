@@ -7,7 +7,7 @@ from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
-from kernel_tuner.util import StopCriterionReached
+from kernel_tuner.util import StopCriterionReached, TuningBudget
 
 try:
     from mock import Mock
@@ -30,7 +30,7 @@ tune_params = dict([("x", [1, 2, 3]), ("y", [4, 5, 6])])
 
 def test_cost_func():
     x = [1, 4]
-    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
+    tuning_options = Options(tune_params=tune_params, budget=TuningBudget(),
                              restrictions=None, strategy_options={}, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
     runner = fake_runner()
@@ -41,7 +41,7 @@ def test_cost_func():
     # check if restrictions are properly handled
     def restrictions(x, y):
         return False
-    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
+    tuning_options = Options(tune_params=tune_params, budget=TuningBudget(),
                              restrictions=restrictions, strategy_options={},
                              verbose=True, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
