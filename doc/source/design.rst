@@ -60,6 +60,19 @@ discussed above. For the documentation of the user API see the
 :doc:`user-api`.
 
 
+SearchSpace
+-----------
+
+The SearchSpace object is central to Kernel Tuner as it represents the search space that is to be 
+explored by the search strategies.
+
+kernel_tuner.searchspace.Searchspace
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.searchspace.Searchspace
+    :special-members: __init__
+    :members:
+
+
 Strategies
 ----------
 
