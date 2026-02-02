@@ -616,7 +616,6 @@ def tune_kernel(
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
-    tuning_options["unique_results"] = {}
 
     # copy some values from strategy_options
     searchspace_construction_options = {}

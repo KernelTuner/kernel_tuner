@@ -36,8 +36,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
             return cost_func.results
 
         candidate = searchspace.get_random_sample(1)[0]
-
-        fevals = len(tuning_options.unique_results)
+        fevals = cost_func.get_num_unique_results()
 
     return cost_func.results
 

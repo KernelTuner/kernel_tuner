@@ -98,6 +98,7 @@ class CostFunc:
         self.scaling = scaling
         self.snap = snap
         self.return_invalid = return_invalid
+        self.unique_results = dict()
         self.results = []
         self.budget_spent_fraction = 0.0
         self.invalid_return_value = invalid_value
@@ -147,7 +148,7 @@ class CostFunc:
         final_results = []  # List returned to the user
 
         # Loop over all configurations. For each configurations there are four cases:
-        # 1. The configuration is valid, we can skip it
+        # 1. The configuration is invalid, we can skip it
         # 2. The configuration is in  `unique_results`, we can get it from there
         # 3. The configuration is in  `pending_indices_by_key`, it is duplicate in `xs`
         # 4. The configuration must be evaluated by the runner.
@@ -163,8 +164,8 @@ class CostFunc:
                 final_results.append(result)
 
             # 2. Attempt to retrieve from `unique_results` 
-            elif key in self.tuning_options.unique_results:
-                result = dict(self.tuning_options.unique_results[key])
+            elif key in self.unique_results:
+                result = dict(self.unique_results[key])
                 final_results.append(result)
 
             # 3. We have already seen this config in the current batch
@@ -197,8 +198,12 @@ class CostFunc:
                 result["benchmark_time"] = 0
 
             # Put result in `unique_results`
-            self.tuning_options.unique_results[key] = result
-            self.results.append(result)
+            self.unique_results[key] = result
+
+        for result in final_results:
+            # Skip if None. Result is missing if runner exhausted the budget
+            if result is not None:
+                self.results.append(result)
 
         # upon returning from this function control will be given back to the strategy, so reset the start time
         self.runner.last_strategy_start_time = perf_counter()
@@ -243,6 +248,12 @@ class CostFunc:
 
     def __call__(self, x, check_restrictions=True):
         return self.eval(x, check_restrictions=check_restrictions)
+    
+    def get_results(self):
+        return self.results
+    
+    def get_num_unique_results(self):
+        return len(self.unique_results)
 
     def get_start_pos(self):
         """Get starting position for optimization."""

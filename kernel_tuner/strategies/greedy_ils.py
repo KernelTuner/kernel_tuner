@@ -37,7 +37,6 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     last_improvement = 0
     while fevals < max_fevals:
-
         try:
             candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=True)
             new_score = cost_func(candidate, check_restrictions=False)
@@ -46,7 +45,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 print(e)
             return cost_func.results
 
-        fevals = len(tuning_options.unique_results)
+        fevals = cost_func.get_num_unique_results()
         if new_score < best_score:
             last_improvement = 0
         else:
