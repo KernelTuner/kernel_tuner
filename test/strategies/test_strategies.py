@@ -53,6 +53,7 @@ for s in strategy_map.keys():
         strategies.append(pytest.param(s, marks=skip_if_no_pyatf))
     else:
         strategies.append(s)
+
 @pytest.mark.parametrize('strategy', strategies)
 def test_strategies(vector_add, strategy):
     options = dict(popsize=5, neighbor='adjacent')

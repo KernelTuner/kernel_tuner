@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import kernel_tuner.strategies.common as common
+import kernel_tuner.util
 from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
 
@@ -13,6 +14,7 @@ def tuning_options():
     tuning_options["strategy_options"] = {}
     tuning_options["objective"] = "time"
     tuning_options["objective_higher_is_better"] = False
+    tuning_options["budget"] = kernel_tuner.util.TuningBudget()
     return tuning_options
 
 

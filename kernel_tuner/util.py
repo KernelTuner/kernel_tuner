@@ -732,7 +732,7 @@ def process_metrics(params, metrics):
     :rtype: dict
 
     """
-    if metrics:
+    if metrics is not None:
         if not isinstance(metrics, dict):
             raise ValueError("metrics should be a dictionary to preserve order and support composability")
         for k, v in metrics.items():

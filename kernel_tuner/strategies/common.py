@@ -146,13 +146,14 @@ class CostFunc:
         batch_keys = [] # The keys of the configs to run
         pending_indices_by_key = dict()  # Maps key => where to store result in `final_results`
         final_results = []  # List returned to the user
+        legal_indices = []  # Indices in `final_results` that are legal
 
         # Loop over all configurations. For each configurations there are four cases:
         # 1. The configuration is invalid, we can skip it
         # 2. The configuration is in  `unique_results`, we can get it from there
         # 3. The configuration is in  `pending_indices_by_key`, it is duplicate in `xs`
         # 4. The configuration must be evaluated by the runner.
-        for x in xs:
+        for index, x in enumerate(xs):
             config, is_legal = self._normalize_and_validate_config(x, check_restrictions=check_restrictions)
             logging.debug("normalize config: %s -> %s (legal: %s)", str(x), str(config), is_legal)
             key = ",".join([str(i) for i in config])
@@ -166,18 +167,19 @@ class CostFunc:
             # 2. Attempt to retrieve from `unique_results` 
             elif key in self.unique_results:
                 result = dict(self.unique_results[key])
+                legal_indices.append(index)
                 final_results.append(result)
 
             # 3. We have already seen this config in the current batch
             elif key in pending_indices_by_key:
-                pending_indices_by_key[key].append(len(final_results))
+                pending_indices_by_key[key].append(index)
                 final_results.append(None)
 
             # 4. A new config, we must evaluate this
             else:
                 batch_keys.append(key)
                 batch_configs.append(config)
-                pending_indices_by_key[key] = [len(final_results)]
+                pending_indices_by_key[key] = [index]
                 final_results.append(None)
 
         # compile and benchmark the batch
@@ -190,6 +192,7 @@ class CostFunc:
 
             # set in the results array
             for index in pending_indices_by_key[key]:
+                legal_indices.append(index)
                 final_results[index] = dict(result)
 
                 # Disable the timings. Only the first result must get these.
@@ -200,10 +203,9 @@ class CostFunc:
             # Put result in `unique_results`
             self.unique_results[key] = result
 
-        for result in final_results:
-            # Skip if None. Result is missing if runner exhausted the budget
-            if result is not None:
-                self.results.append(result)
+        # Only things in `legal_indices` are valid results
+        for index in sorted(legal_indices):
+            self.results.append(final_results[index])
 
         # upon returning from this function control will be given back to the strategy, so reset the start time
         self.runner.last_strategy_start_time = perf_counter()
