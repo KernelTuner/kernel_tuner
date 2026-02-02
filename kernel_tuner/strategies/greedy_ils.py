@@ -38,7 +38,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     last_improvement = 0
     while fevals < max_fevals:
         try:
-            candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=True)
+            candidate = base_hillclimb(candidate, neighbor, max_fevals, searchspace, cost_func, restart=restart, randomize=True)
             new_score = cost_func(candidate, check_restrictions=False)
         except StopCriterionReached as e:
             if tuning_options.verbose:
