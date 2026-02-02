@@ -115,7 +115,7 @@ class SequentialRunner(Runner):
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
-            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
+            total_time = 1000 * (perf_counter() - self.start_time) - warmup_time
             params["strategy_time"] = strategy_time_per_config
             params["framework_time"] = max(
                 total_time
