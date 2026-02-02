@@ -2,7 +2,7 @@ export to_gpuarray, launch_kernel
 
 function to_gpuarray(a)
     if isa(a, AbstractArray)
-        a = gpu_array_type(a)
+        a = GPUArrayType(a)
     end
     return a
 end

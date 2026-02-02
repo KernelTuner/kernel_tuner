@@ -19,6 +19,7 @@ python_versions_to_test = ["3.11", "3.12", "3.13", "3.14"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
 nox.options.default_venv_backend = 'virtualenv'
+julia_envdir = None
 
 # workspace level settings
 settings_file_path = Path("./noxsettings.toml")
@@ -64,6 +65,7 @@ if settings_file_path.exists():
         nox.options.venvbackend = venvbackend
         if envdir is not None and len(envdir) > 0:
             nox.options.envdir = envdir
+        julia_envdir = nox.options.envdir
 
 # @session    # to only run on the current python interpreter
 # def lint(session: Session) -> None:
@@ -106,6 +108,7 @@ def tests(session: Session) -> None:
     install_cuda = True
     install_hip = True
     install_opencl = True
+    install_julia = True
     install_additional_tests = False
     small_disk = False
     if session.posargs:
@@ -114,6 +117,7 @@ def tests(session: Session) -> None:
                 install_cuda = False
                 install_hip = False
                 install_opencl = False
+                install_julia = False
                 break
             elif arg.lower() == "skip-cuda":
                 install_cuda = False
@@ -121,6 +125,8 @@ def tests(session: Session) -> None:
                 install_hip = False
             elif arg.lower() == "skip-opencl":
                 install_opencl = False
+            elif arg.lower() == "skip-julia":
+                install_julia = False
             elif arg.lower() == "additional-tests":
                 install_additional_tests = True
             elif arg.lower() == "small-disk":
@@ -133,7 +139,7 @@ def tests(session: Session) -> None:
         if platform.system().lower() != 'linux':
             session.warn("HIP is only available on Linux, disabling dependency and tests")
             install_hip = False
-    full_install = install_cuda and install_hip and install_opencl and install_additional_tests
+    full_install = install_cuda and install_hip and install_opencl and install_julia and install_additional_tests
 
     # if the user has a small disk, remove the other environment caches before each session is ran
     if small_disk:
@@ -165,6 +171,8 @@ def tests(session: Session) -> None:
         extras_args.extend(["-E", "hip"])
     if install_opencl:
         extras_args.extend(["-E", "opencl"])
+    if install_julia:
+        extras_args.extend(["-E", "julia"])
 
     # separately install optional dependencies with weird dependencies / build process
     install_warning = """Installation failed, this likely means that the required hardware or drivers are missing.
