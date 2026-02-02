@@ -13,9 +13,12 @@ Notes:
 """
 
 import subprocess
-import numpy as np
 from warnings import warn
 from pathlib import Path
+from json import loads as json_loads, JSONDecodeError
+from re import search as regex_search
+
+import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.julia import JuliaRuntimeObserver
@@ -39,7 +42,7 @@ class JuliaFunctions(GPUBackend):
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
         self.available_backends = self.detect_backends()
-        if len(compiler_options) == 1:
+        if compiler_options is not None and len(compiler_options) == 1:
             if compiler_options[0].upper() not in self.available_backends:
                 raise ValueError(
                     f"Requested Julia backend '{compiler_options[0]}' not available. "
@@ -448,30 +451,36 @@ end
                 try:
                     subprocess.check_output("nvidia-smi")
                     available_backends.append(backend_name)
-                except Exception:
+                except (FileNotFoundError, subprocess.CalledProcessError):
                     pass
             elif backend_name == "AMD":
                 try:
                     subprocess.check_output("rocm-smi")
                     available_backends.append(backend_name)
-                except Exception:
+                except (FileNotFoundError, subprocess.CalledProcessError):
                     pass
             elif backend_name == "INTEL":
                 try:
-                    subprocess.check_output("intel_gpu_top -J")
+                    subprocess.check_output("intel_gpu_top -J".split())
                     available_backends.append(backend_name)
-                except Exception:
+                except (FileNotFoundError, subprocess.CalledProcessError):
                     pass
             elif backend_name == "METAL":
                 try:
-                    output = subprocess.check_output('system_profiler SPDisplaysDataType | grep "Metal"')
-                    if b"Metal Support" in output:
-                        available_backends.append(backend_name)
-                except Exception:
+                    output = subprocess.check_output("system_profiler -json SPDisplaysDataType".split())
+                    json_output = json_loads(output)["SPDisplaysDataType"]
+                    for gpu in json_output:
+                        if "spdisplays_mtlgpufamilysupport" in gpu:
+                            supported = gpu["spdisplays_mtlgpufamilysupport"].lower()
+                            if "metal" in supported:
+                                version = regex_search(r".*metal([\d.]+)", supported).group(1)
+                                if float(version) < 3:
+                                    warn(
+                                        f"Metal backend detected, but {supported} < 3. "
+                                        "Metal.jl requires Metal version 3 or higher."
+                                    )
+                                else:
+                                    available_backends.append(backend_name)
+                except (FileNotFoundError, subprocess.CalledProcessError, JSONDecodeError):
                     pass
-            # try:
-            #     jl.seval(f"import {backend_name.upper() if backend_name != 'amd' else 'AMDGPU'}")
-            #     available_backends.append(backend_name)
-            # except Exception:
-            #     pass
         return available_backends

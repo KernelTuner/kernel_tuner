@@ -65,7 +65,7 @@ from kernel_tuner.strategies import (
     pyatf_strategies,
     random_sample,
     simulated_annealing,
-    skopt
+    skopt,
 )
 from kernel_tuner.strategies.wrapper import OptAlgWrapper
 
@@ -599,7 +599,9 @@ def tune_kernel(
 
     if lang == "Julia":
         if isinstance(tune_params, dict) or "DictValue" in tune_params.__class__.__name__:
-            raise ValueError("tune_params should not be a Julia dict, because it does not preserve order. Use a list of pairs instead.")
+            raise ValueError(
+                "tune_params should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
+            )
         tune_params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in tune_params]
         tune_params = dict(tune_params)
     restrictions = util.possible_julia_vector_to_list(restrictions)
@@ -622,7 +624,10 @@ def tune_kernel(
     # if Julia, infer the Julia backend from the kernelsource
     if kernelsource.lang == "JULIA":
         if compiler_options is None:
-            compiler_options = [kernelsource.infer_julia_backend()]
+            try:
+                compiler_options = [kernelsource.infer_julia_backend()]
+            except ValueError:
+                pass
 
     # sort all the options into separate dicts
     opts = locals()
