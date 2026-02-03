@@ -39,7 +39,7 @@ from constraint import Constraint
 import kernel_tuner.core as core
 import kernel_tuner.util as util
 from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
-from kernel_tuner.integration import get_objective_defaults
+from kernel_tuner.util import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace

@@ -16,7 +16,6 @@ def _get_cupy():
 
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
 
@@ -336,8 +335,12 @@ class DeviceInterface(object):
         self.output_observers = []
         self.prologue_observers = []
         if observers:
+            try:
+                from kernel_tuner.observers.nvml import NVMLObserver as _NVMLObserver
+            except ImportError:
+                _NVMLObserver = None
             for obs in observers:
-                if isinstance(obs, NVMLObserver):
+                if _NVMLObserver is not None and isinstance(obs, _NVMLObserver):
                     self.nvml = obs.nvml
                     self.use_nvml = True
                 if isinstance(obs, TegraObserver):
