@@ -129,3 +129,5 @@ def skip_backend(backend: str):
         pytest.skip("No nvc++ on PATH")
     elif backend.upper() == "HIP" and not hip_present:
         pytest.skip("HIP Python not installed")
+    elif backend.upper() == "JULIA" and not shutil.which("julia"):
+        pytest.skip("No Julia on PATH")

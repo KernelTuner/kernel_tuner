@@ -102,9 +102,10 @@ If you do not have fully compatible hardware or environment, you can use the fol
 * :bash:`nox -- skip-cuda` to skip tests involving CUDA.
 * :bash:`nox -- skip-hip` to skip tests involving HIP.
 * :bash:`nox -- skip-opencl` to skip tests involving OpenCL.
-* :bash:`nox -- skip-gpu` to skip all tests on the GPU (the same as :bash:`nox -- skip-cuda skip-hip skip-opencl`), especially helpful if you don't have a GPU locally. 
+* :bash:`nox -- skip-julia` to skip tests involving Julia.
+* :bash:`nox -- skip-gpu` to skip all tests on the GPU (the same as :bash:`nox -- skip-cuda skip-hip skip-opencl`), especially helpful if you don't have a GPU in your system. 
 
-Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally!
+Contributions you make to Kernel Tuner should not break any of the tests even if you cannot run them locally!
 
 Running with :bash:`pytest` will test against your local Python version and PIP packages. 
 In this case, tests that require PyCuda and/or a CUDA capable GPU will be skipped automatically if these are not installed/present. 
